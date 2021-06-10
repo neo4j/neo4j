@@ -39,7 +39,7 @@ import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 public final class SchemaDescriptorImplementation implements SchemaDescriptor, LabelSchemaDescriptor, RelationTypeSchemaDescriptor, FulltextSchemaDescriptor,
-        AnyTokenSchemaDescriptor
+                                                             AnyTokenSchemaDescriptor
 {
     public static final long TOKEN_INDEX_LOCKING_ID = Long.MAX_VALUE;
     private static final long[] TOKEN_INDEX_LOCKING_IDS = {TOKEN_INDEX_LOCKING_ID};
@@ -48,22 +48,8 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     private final PropertySchemaType propertySchemaType;
     private final int[] entityTokens;
     private final int[] propertyKeyIds;
-    /**
-     * {@code true} if this schema matches the {@link LabelSchemaDescriptor} structure.
-     */
-    private final boolean archetypalLabelSchema;
-    /**
-     * {@code true} if this schema matches the {@link RelationTypeSchemaDescriptor} structure.
-     */
-    private final boolean archetypalRelationshipTypeSchema;
-    /**
-     * {@code true} if this schema matches the {@link FulltextSchemaDescriptor} structure.
-     */
-    private final boolean archetypalFulltextSchema;
-    /**
-     * {@code true} if this schema matches the {@link AnyTokenSchemaDescriptor} structure.
-     */
-    private final boolean archetypalAnyTokenSchema;
+
+    private final SchemaArchetype schemaArchetype;
 
     /**
      * This constructor is only public so that it can be called directly from the SchemaStore.
@@ -85,12 +71,29 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
             validateEntityTokenSchema( entityType, entityTokens, propertyKeyIds );
         }
 
-        boolean generalSingleEntity = entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS;
+        schemaArchetype = detectArchetype( entityType, propertySchemaType, entityTokens );
+    }
 
-        this.archetypalLabelSchema = entityType == NODE && generalSingleEntity;
-        this.archetypalRelationshipTypeSchema = entityType == RELATIONSHIP && generalSingleEntity;
-        this.archetypalFulltextSchema = propertySchemaType == PARTIAL_ANY_TOKEN;
-        this.archetypalAnyTokenSchema = propertySchemaType == ENTITY_TOKENS;
+    private SchemaArchetype detectArchetype( EntityType entityType, PropertySchemaType propertySchemaType, int[] entityTokens )
+    {
+        if ( entityType == NODE && entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS )
+        {
+            return SchemaArchetype.LABEL_PROPERTY;
+        }
+        if ( entityType == RELATIONSHIP && entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS )
+        {
+            return SchemaArchetype.RELATIONSHIP_PROPERTY;
+        }
+        if ( propertySchemaType == PARTIAL_ANY_TOKEN )
+        {
+            return SchemaArchetype.MULTI_TOKEN;
+        }
+        if ( propertySchemaType == ENTITY_TOKENS )
+        {
+            return SchemaArchetype.ANY_TOKEN;
+        }
+        throw new IllegalArgumentException( "Can't detect schema archetype for arguments: "
+                                            + entityType + " " + propertySchemaType + " " + Arrays.toString( entityTokens ) );
     }
 
     private static void validatePropertySchema( EntityType entityType, int[] entityTokens, int[] propertyKeyIds )
@@ -169,13 +172,13 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     @Override
     public boolean isLabelSchemaDescriptor()
     {
-        return archetypalLabelSchema;
+        return schemaArchetype == SchemaArchetype.LABEL_PROPERTY;
     }
 
     @Override
     public LabelSchemaDescriptor asLabelSchemaDescriptor()
     {
-        if ( !archetypalLabelSchema )
+        if ( schemaArchetype != SchemaArchetype.LABEL_PROPERTY )
         {
             throw cannotCastException( "LabelSchemaDescriptor" );
         }
@@ -185,13 +188,13 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     @Override
     public boolean isRelationshipTypeSchemaDescriptor()
     {
-        return archetypalRelationshipTypeSchema;
+        return schemaArchetype == SchemaArchetype.RELATIONSHIP_PROPERTY;
     }
 
     @Override
     public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor()
     {
-        if ( !archetypalRelationshipTypeSchema )
+        if ( schemaArchetype != SchemaArchetype.RELATIONSHIP_PROPERTY )
         {
             throw cannotCastException( "RelationTypeSchemaDescriptor" );
         }
@@ -201,13 +204,13 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     @Override
     public boolean isFulltextSchemaDescriptor()
     {
-        return archetypalFulltextSchema;
+        return schemaArchetype == SchemaArchetype.MULTI_TOKEN;
     }
 
     @Override
     public FulltextSchemaDescriptor asFulltextSchemaDescriptor()
     {
-        if ( !archetypalFulltextSchema )
+        if ( schemaArchetype != SchemaArchetype.MULTI_TOKEN )
         {
             throw cannotCastException( "FulltextSchemaDescriptor" );
         }
@@ -217,13 +220,13 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     @Override
     public boolean isAnyTokenSchemaDescriptor()
     {
-        return archetypalAnyTokenSchema;
+        return schemaArchetype == SchemaArchetype.ANY_TOKEN;
     }
 
     @Override
     public AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor()
     {
-        if ( !archetypalAnyTokenSchema )
+        if ( schemaArchetype != SchemaArchetype.ANY_TOKEN )
         {
             throw cannotCastException( "AnyTokenSchemaDescriptor" );
         }
@@ -251,16 +254,15 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     @Override
     public void processWith( SchemaProcessor processor )
     {
-        if ( archetypalLabelSchema )
+        switch ( schemaArchetype )
         {
+        case LABEL_PROPERTY:
             processor.processSpecific( this.asLabelSchemaDescriptor() );
-        }
-        else if ( archetypalRelationshipTypeSchema )
-        {
+            break;
+        case RELATIONSHIP_PROPERTY:
             processor.processSpecific( this.asRelationshipTypeSchemaDescriptor() );
-        }
-        else
-        {
+            break;
+        default:
             processor.processSpecific( (SchemaDescriptor) this );
         }
     }
@@ -305,7 +307,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     public long[] lockingKeys()
     {
         // for AnyToken schema which doesn't have specific token ids lock on max long
-        if ( archetypalAnyTokenSchema )
+        if ( isAnyTokenSchemaDescriptor() )
         {
             return TOKEN_INDEX_LOCKING_IDS;
         }
