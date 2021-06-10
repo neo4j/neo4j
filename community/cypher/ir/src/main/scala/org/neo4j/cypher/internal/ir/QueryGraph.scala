@@ -210,6 +210,9 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(patternRelationships = patterns)
 
+  def withAddedPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
+    copy(patternRelationships = patternRelationships ++ patterns)
+
   def withPatternNodes(nodes: Set[String]): QueryGraph =
     copy(patternNodes = nodes)
 
@@ -348,7 +351,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     argumentComponents ++ rest
   }
 
-  def withoutPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
+  def withRemovedPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(patternRelationships = patternRelationships -- patterns)
 
   def joinHints: Set[UsingJoinHint] =
