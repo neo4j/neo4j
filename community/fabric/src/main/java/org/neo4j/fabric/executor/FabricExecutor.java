@@ -114,7 +114,7 @@ public class FabricExecutor
 
         try
         {
-            String defaultGraphName = fabricTransaction.getTransactionInfo().getDatabaseName();
+            String defaultGraphName = fabricTransaction.getTransactionInfo().getSessionDatabaseId().name();
             FabricPlanner.PlannerInstance plannerInstance = planner.instance( statement, parameters, defaultGraphName );
             UseEvaluation.Instance useEvaluator = useEvaluation.instance( statement );
             FabricPlan plan = plannerInstance.plan();
@@ -189,7 +189,7 @@ public class FabricExecutor
     {
         try
         {
-            var dbId = fabricTransaction.getTransactionInfo().getDatabaseId();
+            var dbId = fabricTransaction.getTransactionInfo().getSessionDatabaseId();
             var dbName = dbId.name();
             var graph = catalogManager.currentCatalog().resolve( CatalogName.apply( dbName, scala.collection.immutable.List.empty() ) );
             var location = (Location.Local) catalogManager.locationOf( dbId, graph, false, false );
@@ -352,7 +352,7 @@ public class FabricExecutor
             Catalog.Graph graph = evalUse( fragment.use().graphSelection(), argumentValues );
             var transactionMode = getTransactionMode( fragment.queryType(), graph.toString() );
             Location location = catalogManager
-                    .locationOf( ctx.getTransactionDatabaseId(), graph, transactionMode.requiresWrite(), routingContext.isServerRoutingEnabled() );
+                    .locationOf( ctx.getSessionDatabaseId(), graph, transactionMode.requiresWrite(), routingContext.isServerRoutingEnabled() );
             if ( location instanceof Location.Local )
             {
                 Location.Local local = (Location.Local) location;

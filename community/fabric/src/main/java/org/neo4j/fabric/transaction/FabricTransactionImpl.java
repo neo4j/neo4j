@@ -156,9 +156,9 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     }
 
     @Override
-    public NamedDatabaseId getTransactionDatabaseId()
+    public NamedDatabaseId getSessionDatabaseId()
     {
-        return transactionInfo.getDatabaseId();
+        return transactionInfo.getSessionDatabaseId();
     }
 
     @Override
