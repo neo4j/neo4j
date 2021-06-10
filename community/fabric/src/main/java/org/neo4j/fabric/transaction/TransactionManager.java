@@ -33,8 +33,10 @@ import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -53,13 +55,14 @@ public class TransactionManager extends LifecycleAdapter
 
     private final Set<FabricTransactionImpl> openTransactions = ConcurrentHashMap.newKeySet();
     private final long awaitActiveTransactionDeadlineMillis;
+    private final AvailabilityGuard availabilityGuard;
 
     public TransactionManager( FabricRemoteExecutor remoteExecutor,
             FabricLocalExecutor localExecutor,
             ErrorReporter errorReporter,
             FabricConfig fabricConfig,
             FabricTransactionMonitor transactionMonitor,
-            Clock clock, Config config )
+            Clock clock, Config config, AvailabilityGuard availabilityGuard )
     {
         this.remoteExecutor = remoteExecutor;
         this.localExecutor = localExecutor;
@@ -68,10 +71,15 @@ public class TransactionManager extends LifecycleAdapter
         this.transactionMonitor = transactionMonitor;
         this.clock = clock;
         this.awaitActiveTransactionDeadlineMillis = config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
+        this.availabilityGuard = availabilityGuard;
     }
 
     public FabricTransaction begin( FabricTransactionInfo transactionInfo, TransactionBookmarkManager transactionBookmarkManager )
     {
+        if ( availabilityGuard.isShutdown() )
+        {
+            throw new DatabaseShutdownException();
+        }
         transactionInfo.getLoginContext().authorize( LoginContext.IdLookup.EMPTY, transactionInfo.getSessionDatabaseId().name() );
 
         FabricTransactionImpl fabricTransaction = new FabricTransactionImpl( transactionInfo,
@@ -90,7 +98,7 @@ public class TransactionManager extends LifecycleAdapter
     @Override
     public void stop()
     {
-        // On a fabric level we will deal with transactions that a cross databases.
+        // On a fabric level we will deal with transactions that a cross DBMS.
         // Any db specific transaction will be handled on a database level with own set of rules, checks etc
         var nonLocalTransaction = collectNonLocalTransactions();
         if ( nonLocalTransaction.isEmpty() )

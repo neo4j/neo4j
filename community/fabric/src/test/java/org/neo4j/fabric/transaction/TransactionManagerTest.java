@@ -33,6 +33,7 @@ import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.time.Clocks;
 
 import static java.util.Collections.emptyMap;
@@ -62,10 +63,12 @@ class TransactionManagerTest
         var errorReporter = mock( ErrorReporter.class );
         var transactionMonitor = mock( FabricTransactionMonitor.class );
         var bookmarkManager = mock( TransactionBookmarkManager.class );
+        var guard = mock( AvailabilityGuard.class );
         var config = Config.defaults( shutdown_transaction_end_timeout, Duration.ZERO );
         var fabricConfig = FabricConfig.from( config );
         var transactionManager =
-                new TransactionManager( fabricRemoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor, Clocks.nanoClock(), config );
+                new TransactionManager( fabricRemoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor, Clocks.nanoClock(), config,
+                        guard );
 
         //local tx
         var tx1 = transactionManager.begin( createTransactionInfo(), bookmarkManager );
