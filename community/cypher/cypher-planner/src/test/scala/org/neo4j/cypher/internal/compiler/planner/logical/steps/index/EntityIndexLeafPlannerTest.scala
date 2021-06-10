@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -32,7 +31,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -43,13 +42,10 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     selections = Selections(predicateExpressions.map(Predicate(Set(), _)))
   )
 
-  private val leafPlanner = new EntityIndexLeafPlanner {
+  private val leafPlanner = new IndexCompatiblePredicatesProvider {
 
-    override def apply(queryGraph: QueryGraph,
-                       interestingOrderConfig: InterestingOrderConfig,
-                       context: LogicalPlanningContext): Set[LogicalPlan] = ???
-
-    override protected def implicitIndexCompatiblePredicates(context: LogicalPlanningContext,
+    override protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
+                                                             aggregatingProperties: Set[PropertyAccess],
                                                              predicates: Set[Expression],
                                                              explicitCompatiblePredicates: Set[EntityIndexLeafPlanner.IndexCompatiblePredicate],
                                                              valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[EntityIndexLeafPlanner.IndexCompatiblePredicate] = Set.empty
@@ -121,7 +117,8 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
         propertyTypes.foreach(key => addTypeToSemanticTable(key._1, key._2))
         nodeConstraints = Set(("ConstraintLabel", Set("prop1")))
       }.withLogicalPlanningContext { (_, context) =>
-          val compatiblePredicates = leafPlanner.findIndexCompatiblePredicates(predicates, argumentIds, context)
+          val compatiblePredicates = leafPlanner.findIndexCompatiblePredicates(
+            predicates, argumentIds, context.semanticTable, context.planContext, context.aggregatingProperties)
           if (expectToExist) {
             withClue(s"$name should be recognized as index compatible predicate with the right parameters") {
               compatiblePredicates.size shouldBe 1
@@ -150,8 +147,9 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     new given {
       qg = queryGraph(Set.empty)
     } withLogicalPlanningContext {
-      (_, ctx) =>
-        val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(varFor("varName"), ctx, Set("prop1", "prop2"), Set.empty)
+      (_, context) =>
+        val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(
+          varFor("varName"), context.aggregatingProperties, Set("prop1", "prop2"), Set.empty)
         implicitPredicates.size should be(2)
         implicitPredicates.foreach(predicate =>
           predicate.predicate should matchPattern {
@@ -166,8 +164,9 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     new given {
       qg = queryGraph(Set.empty)
     } withLogicalPlanningContext {
-      (_, ctx) =>
-        val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(varFor("varName"), ctx, Set.empty, Set.empty)
+      (_, context) =>
+        val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(
+          varFor("varName"), context.aggregatingProperties, Set.empty, Set.empty)
         implicitPredicates.size should be(0)
     }
   }

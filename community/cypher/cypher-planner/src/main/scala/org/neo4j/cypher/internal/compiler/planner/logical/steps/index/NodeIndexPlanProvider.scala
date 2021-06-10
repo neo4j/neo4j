@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.IndexMatch
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.NodeIndexMatch
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 /**
@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 trait NodeIndexPlanProvider {
 
   def createPlans(
-    indexMatches: Set[IndexMatch],
+    indexMatches: Set[NodeIndexMatch],
     hints: Set[Hint],
     argumentIds: Set[String],
     restrictions: LeafPlanRestrictions,

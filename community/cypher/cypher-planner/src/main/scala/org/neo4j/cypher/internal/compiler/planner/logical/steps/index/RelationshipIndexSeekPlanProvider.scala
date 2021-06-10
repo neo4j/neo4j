@@ -25,15 +25,14 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexSeekPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexSeekPlanProvider.mergeQueryExpressionsToSingleOne
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexSeekPlanProvider.predicatesForIndexSeek
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.IndexMatch
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.PredicateSet
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.RelationshipIndexMatch
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 
 object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
 
-  override def createPlans(indexMatches: Set[RelationshipIndexLeafPlanner.IndexMatch],
+  override def createPlans(indexMatches: Set[RelationshipIndexMatch],
                            hints: Set[Hint],
                            argumentIds: Set[String],
                            restrictions: LeafPlanRestrictions,
@@ -43,7 +42,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 
-  private def predicateSetToSolve(indexMatch: IndexMatch): Option[PredicateSet] = {
+  private def predicateSetToSolve(indexMatch: RelationshipIndexMatch): Option[PredicateSet] = {
     val predicateSet = indexMatch.predicateSet(predicatesForIndexSeek(indexMatch.propertyPredicates), exactPredicatesCanGetValue = true)
     if (predicateSet.propertyPredicates.forall(_.isExists))
       None
@@ -51,13 +50,13 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
       Some(predicateSet)
   }
 
-  private def doCreatePlans(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
+  private def doCreatePlans(indexMatch: RelationshipIndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
     val predicateSet = predicateSetToSolve(indexMatch)
     predicateSet.map(constructPlan(_, indexMatch, hints, argumentIds, context)).toSet
   }
 
   private def constructPlan(predicateSet: PredicateSet,
-                            indexMatch: IndexMatch,
+                            indexMatch: RelationshipIndexMatch,
                             hints: Set[Hint],
                             argumentIds: Set[String],
                             context: LogicalPlanningContext): LogicalPlan = {

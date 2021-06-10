@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.mergeSolutions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.predicatesForIndexScan
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.IndexMatch
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.RelationshipIndexMatch
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -47,7 +47,7 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
                                               indexOrder: IndexOrder,
                                             )
 
-  override def createPlans(indexMatches: Set[IndexMatch],
+  override def createPlans(indexMatches: Set[RelationshipIndexMatch],
                            hints: Set[Hint],
                            argumentIds: Set[String],
                            restrictions: LeafPlanRestrictions,
@@ -77,7 +77,7 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
     }
   }
 
-  private def createSolution(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Solution[RelationshipIndexScanParameters] = {
+  private def createSolution(indexMatch: RelationshipIndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Solution[RelationshipIndexScanParameters] = {
     val predicateSet = indexMatch.predicateSet(predicatesForIndexScan(indexMatch.propertyPredicates), exactPredicatesCanGetValue = false)
 
     val hint = predicateSet.matchingHints(hints).find(_.spec.fulfilledByScan)

@@ -19,155 +19,64 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
+import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.PropertyAndPredicateType
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsExplicitlyPropertyScannable
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertySeekable
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSeekable
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.PropertySeekable
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.Seekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.MultipleExactPredicate
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NonSeekablePredicate
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NotExactPredicate
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.SingleExactPredicate
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.variable
-import org.neo4j.cypher.internal.expressions.Contains
-import org.neo4j.cypher.internal.expressions.EndsWith
-import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
-import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialDistanceSeekWrapper
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
-import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-abstract class EntityIndexLeafPlanner extends LeafPlanner {
-
-  private[index] def findIndexCompatiblePredicates(
-                                                    predicates: Set[Expression],
-                                                    argumentIds: Set[String],
-                                                    context: LogicalPlanningContext,
-                                                  ): Set[IndexCompatiblePredicate] = {
-    val arguments: Set[LogicalVariable] = argumentIds.map(variable)
-
-    def valid(ident: LogicalVariable, dependencies: Set[LogicalVariable]): Boolean =
-      !arguments.contains(ident) && dependencies.subsetOf(arguments)
-
-    val explicitCompatiblePredicates = predicates.flatMap {
-      // n.prop IN [ ... ]
-      case predicate@AsPropertySeekable(seekable: PropertySeekable) if valid(seekable.ident, seekable.dependencies) =>
-        val queryExpression = seekable.args.asQueryExpression
-        val exactness = if (queryExpression.isInstanceOf[SingleQueryExpression[_]]) SingleExactPredicate else MultipleExactPredicate
-        Set(IndexCompatiblePredicate(seekable.ident, seekable.expr, predicate, queryExpression, seekable.propertyValueType(context.semanticTable),
-          predicateExactness = exactness, solvedPredicate = Some(predicate), dependencies = seekable.dependencies))
-
-      // ... = n.prop
-      // In some rare cases, we can't rewrite these predicates cleanly,
-      // and so planning needs to search for these cases explicitly
-      case predicate@Equals(a, prop@Property(variable: LogicalVariable, _)) if valid(variable, a.dependencies) =>
-        val expr = SingleQueryExpression(a)
-        Set(IndexCompatiblePredicate(variable, prop, predicate, expr, Seekable.cypherTypeForTypeSpec(context.semanticTable.getActualTypeFor(prop)),
-          predicateExactness = SingleExactPredicate, solvedPredicate = Some(predicate), dependencies = a.dependencies))
-
-      // n.prop STARTS WITH "prefix%..."
-      case predicate@AsStringRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
-        val queryExpression = seekable.asQueryExpression
-        Set(IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(context.semanticTable),
-          predicateExactness = NotExactPredicate,
-          solvedPredicate = Some(predicate), dependencies = seekable.dependencies))
-
-      // n.prop <|<=|>|>= value
-      case predicate@AsValueRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
-        val queryExpression = seekable.asQueryExpression
-        Set(IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(context.semanticTable),
-          predicateExactness = NotExactPredicate, solvedPredicate = Some(predicate), dependencies = seekable.dependencies))
-
-      // An index seek for this will almost satisfy the predicate, but with the possibility of some false positives.
-      // Since it reduces the cardinality to almost the level of the predicate, we can use the predicate to calculate cardinality,
-      // but not mark it as solved, since the planner will still need to solve it with a Filter.
-      case predicate@AsDistanceSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
-        val queryExpression = seekable.asQueryExpression
-        Set(IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(context.semanticTable),
-          predicateExactness = NotExactPredicate, solvedPredicate = Some(PartialDistanceSeekWrapper(predicate)), dependencies = seekable.dependencies))
-
-      // MATCH (n:User) WHERE exists(n.prop) RETURN n
-      case predicate@AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty) =>
-        Set(IndexCompatiblePredicate(scannable.ident, scannable.property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
-          solvedPredicate = Some(predicate), dependencies = Set.empty).convertToScannable)
-
-      // n.prop ENDS WITH 'substring'
-      case predicate@EndsWith(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
-        Set(IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
-          solvedPredicate = Some(predicate), dependencies = expr.dependencies))
-
-      // n.prop CONTAINS 'substring'
-      case predicate@Contains(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
-        Set(IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
-          solvedPredicate = Some(predicate), dependencies = expr.dependencies))
-
-      case _ =>
-        Set.empty[IndexCompatiblePredicate]
-    }
-
-    val implicitCompatiblePredicates = implicitIndexCompatiblePredicates(context, predicates, explicitCompatiblePredicates, valid)
-    explicitCompatiblePredicates ++ implicitCompatiblePredicates
-  }
-
-  /**
-   * Find any implicit index compatible predicates.
-   *
-   * @param predicates                   the predicates in the query
-   * @param explicitCompatiblePredicates the explicit index compatible predicates that were extracted from predicates
-   * @param valid                        a test that can be applied to check if an implicit predicate is valid
-   *                                     based on its variable and dependencies as arguments to the lambda function.
-   */
-  protected def implicitIndexCompatiblePredicates(context: LogicalPlanningContext,
-                                                  predicates: Set[Expression],
-                                                  explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
-                                                  valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[IndexCompatiblePredicate]
-}
-
+/**
+ * Common functionality of NodeIndexLeafPlanner and RelationshipIndexLeafPlanner.
+ */
 object EntityIndexLeafPlanner {
 
   /**
    * Creates IS NOT NULL-predicates of the given variable to the given properties that are inferred from the context rather than read from the query.
    */
   private[index] def implicitIsNotNullPredicates(variable: Variable,
-                                                 context: LogicalPlanningContext,
+                                                 aggregatingProperties: Set[PropertyAccess],
                                                  constrainedPropNames: Set[String],
                                                  explicitCompatiblePredicates: Set[IndexCompatiblePredicate]): Set[IndexCompatiblePredicate] = {
     // Can't currently handle aggregation on more than one variable
     val aggregatedPropNames: Set[String] =
-      if (context.aggregatingProperties.forall(prop => prop.variableName.equals(variable.name))) {
-        context.aggregatingProperties.map { prop => prop.propertyName }
+      if (aggregatingProperties.forall(prop => prop.variableName.equals(variable.name))) {
+        aggregatingProperties.map { prop => prop.propertyName }
       } else {
         Set.empty
       }
 
-    // Can't currently handle aggregation on more than one property
+    //  Can't currently handle aggregation on more than one property
     val propNames = if (aggregatedPropNames.size == 1) constrainedPropNames.union(aggregatedPropNames) else constrainedPropNames
 
     for {
@@ -195,11 +104,13 @@ object EntityIndexLeafPlanner {
   private[index] def predicatesForIndex(indexDescriptor: IndexDescriptor,
                                         predicates: Set[IndexCompatiblePredicate],
                                         interestingOrderConfig: InterestingOrderConfig,
-                                        context: LogicalPlanningContext): Set[PredicatesForIndex] = {
+                                        semanticTable: SemanticTable,
+                                        providedOrderFactory: ProvidedOrderFactory
+                                       ): Set[PredicatesForIndex] = {
 
     // Group predicates by which property they include
     val predicatesByProperty = predicates
-      .groupBy(icp => context.semanticTable.id(icp.propertyKeyName))
+      .groupBy(icp => semanticTable.id(icp.propertyKeyName))
       // Sort out predicates that are not found in semantic table
       .collect { case (Some(x), v) => (x, v) }
 
@@ -213,13 +124,13 @@ object EntityIndexLeafPlanner {
     val matchingPredicateCombinations = SeqCombiner.combine(predicatesByIndexedProperty).toSet
 
     matchingPredicateCombinations
-      .map(matchingPredicates => matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrderConfig, context))
+      .map(matchingPredicates => matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrderConfig, providedOrderFactory))
   }
 
   private def matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates: Seq[IndexCompatiblePredicate],
                                                                    indexDescriptor: IndexDescriptor,
                                                                    interestingOrderConfig: InterestingOrderConfig,
-                                                                   context: LogicalPlanningContext): PredicatesForIndex = {
+                                                                   providedOrderFactory: ProvidedOrderFactory): PredicatesForIndex = {
     val types = matchingPredicates.map(mp => mp.propertyType)
 
     // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
@@ -229,7 +140,7 @@ object EntityIndexLeafPlanner {
     })
 
     val (providedOrder, indexOrder) =
-      ResultOrdering.providedOrderForIndexOperator(interestingOrderConfig.orderToSolve, indexPropertiesAndPredicateTypes, types, indexDescriptor.orderCapability, context.providedOrderFactory)
+      ResultOrdering.providedOrderForIndexOperator(interestingOrderConfig.orderToSolve, indexPropertiesAndPredicateTypes, types, indexDescriptor.orderCapability, providedOrderFactory)
 
     PredicatesForIndex(matchingPredicates, providedOrder, indexOrder)
   }
@@ -320,4 +231,47 @@ object EntityIndexLeafPlanner {
   case object MultipleExactPredicate extends PredicateExactness(true, true)
   case object NotExactPredicate extends PredicateExactness(false, true)
   case object NonSeekablePredicate extends PredicateExactness(false, false)
+}
+
+/**
+ * Represents a possible use of an index which can be used to solve a given sequence of predicates.
+ *
+ * This trait is to provide a unified interface of the two index match types for node indexes and relationship indexes.
+ */
+trait IndexMatch {
+  def propertyPredicates: Seq[IndexCompatiblePredicate]
+  def indexDescriptor: IndexDescriptor
+  def predicateSet(newPredicates: Seq[IndexCompatiblePredicate], exactPredicatesCanGetValue: Boolean): PredicateSet
+}
+
+/**
+ * Information needed to create a index leaf plan.
+ */
+trait PredicateSet {
+  def variableName: String
+  def symbolicName: SymbolicName
+  def propertyPredicates: Seq[IndexCompatiblePredicate]
+  def getValueBehaviors: Seq[GetValueFromIndexBehavior]
+
+  def getEntityType: EntityType
+
+  def allSolvedPredicates: Seq[Expression] =
+    propertyPredicates.flatMap(_.solvedPredicate)
+
+  def indexedProperties(context: LogicalPlanningContext): Seq[IndexedProperty] = propertyPredicates.zip(getValueBehaviors).map {
+    case (predicate, behavior) =>
+      val propertyName = predicate.propertyKeyName
+      val getValue = behavior
+      IndexedProperty(PropertyKeyToken(propertyName, context.semanticTable.id(propertyName).head), getValue, getEntityType)
+  }
+
+  def matchingHints(hints: Set[Hint]): Set[UsingIndexHint] = {
+    val propertyNames = propertyPredicates.map(_.propertyKeyName.name)
+    val localVariableName = variableName
+    val entityTypeName = symbolicName.name
+    hints.collect {
+      case hint@UsingIndexHint(Variable(`localVariableName`), LabelOrRelTypeName(`entityTypeName`), propertyKeyNames, _)
+        if propertyKeyNames.map(_.name) == propertyNames => hint
+    }
+  }
 }
