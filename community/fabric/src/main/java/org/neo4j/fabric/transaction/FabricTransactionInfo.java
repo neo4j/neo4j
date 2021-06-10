@@ -73,14 +73,9 @@ public class FabricTransactionInfo
         return clientConnectionInfo;
     }
 
-    public NamedDatabaseId getDatabaseId()
+    public NamedDatabaseId getSessionDatabaseId()
     {
         return sessionDatabaseId;
-    }
-
-    public String getDatabaseName()
-    {
-        return sessionDatabaseId.name();
     }
 
     public boolean isImplicitTransaction()

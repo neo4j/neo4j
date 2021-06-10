@@ -63,6 +63,6 @@ public interface FabricTransaction
 
         void validateStatementType( StatementType type );
 
-        NamedDatabaseId getTransactionDatabaseId();
+        NamedDatabaseId getSessionDatabaseId();
     }
 }
