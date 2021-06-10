@@ -28,14 +28,14 @@ import org.neo4j.cypher.internal.planner.spi.TokenContext
 import scala.collection.mutable.ArrayBuffer
 
 case class TokenContainer(
-                           labels: Seq[String] = Seq.empty,
-                           properties: Seq[String] = Seq.empty,
-                           relTypes: Seq[String] = Seq.empty,
+                           labels: Set[String] = Set.empty,
+                           properties: Set[String] = Set.empty,
+                           relTypes: Set[String] = Set.empty,
                          ) {
 
-  def addLabel(label: String): TokenContainer = this.copy(labels = labels :+ label)
-  def addRelType(relType: String): TokenContainer = this.copy(relTypes = relTypes :+ relType)
-  def addProperty(property: String): TokenContainer = this.copy(properties = properties :+ property)
+  def addLabel(label: String): TokenContainer = this.copy(labels = labels + label)
+  def addRelType(relType: String): TokenContainer = this.copy(relTypes = relTypes + relType)
+  def addProperty(property: String): TokenContainer = this.copy(properties = properties + property)
 
   def getResolver(procedures: Set[ProcedureSignature]): LogicalPlanResolver = new LogicalPlanResolver(
     labels.to[ArrayBuffer],
