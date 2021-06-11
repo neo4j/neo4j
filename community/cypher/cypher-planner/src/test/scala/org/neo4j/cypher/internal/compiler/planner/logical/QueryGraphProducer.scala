@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
-import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizerTest
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
@@ -92,7 +92,14 @@ trait QueryGraphProducer extends MockitoSugar {
     val firstRewriteStep = ASTRewriter.rewrite(cleanedStatement, semanticState, Map.empty, exceptionFactory, anonymousVariableNameGenerator)
     val state = LogicalPlanState(query, None, IDPPlannerName, newStubbedPlanningAttributes, anonymousVariableNameGenerator, Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create(logicalPlanIdGen = idGen, planContext = new TestSignatureResolvingPlanContext(procLookup, fcnLookup))
-    val output = (RewriteProcedureCalls andThen SemanticAnalysis(warn = false) andThen Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen collapseMultipleInPredicates).transform(state, context)
+    val output = (
+      RewriteProcedureCalls andThen
+        SemanticAnalysis(warn = false) andThen
+        Namespacer andThen
+        rewriteEqualityToInPredicate andThen
+        CNFNormalizerTest.getTransformer andThen
+        collapseMultipleInPredicates
+      ).transform(state, context)
 
     val semanticTable = output.semanticTable()
     val plannerQuery = toPlannerQuery(output.statement().asInstanceOf[Query], semanticTable, anonymousVariableNameGenerator)

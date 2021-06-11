@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InterestingOrderStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -407,19 +409,28 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
   }
 
   test("Extracts property lookups even for dates") {
-    val result = buildSinglePlannerQuery("WITH date() AS d RETURN d.year ORDER BY d.year")
+    val dateName = QualifiedName(Seq.empty, "date")
+    val dateSignature = Some(UserFunctionSignature(
+      name = dateName,
+      inputSignature = IndexedSeq.empty,
+      outputType = CTDate,
+      deprecationInfo = None,
+      allowed = Array.empty[String],
+      description = None,
+      isAggregate = false,
+      id = 12,
+    ))
+    val result = buildSinglePlannerQuery("WITH date() AS d RETURN d.year ORDER BY d.year",  functionLookup = Some(Map(dateName -> dateSignature)))
 
-    val expectation = RegularSinglePlannerQuery(
-      queryGraph = QueryGraph(),
-      horizon = RegularQueryProjection(Map("d" -> ResolvedFunctionInvocation(QualifiedName(Seq.empty, "date"), None, IndexedSeq.empty)(pos))),
-      tail = Some(RegularSinglePlannerQuery(
-        queryGraph = QueryGraph(argumentIds = Set("d")),
-        interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("d.year"), Map("d.year" -> prop("d", "year")))),
-        horizon = RegularQueryProjection(Map("d.year" -> prop("d", "year")))
-      ))
-    )
+    val expectedHorizon = RegularQueryProjection(Map("d" -> ResolvedFunctionInvocation(QualifiedName(Seq.empty, "date"), dateSignature, IndexedSeq.empty)(pos)))
+    val expectedTail = Some(RegularSinglePlannerQuery(
+      queryGraph = QueryGraph(argumentIds = Set("d")),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("d.year"), Map("d.year" -> prop("d", "year")))),
+      horizon = RegularQueryProjection(Map("d.year" -> prop("d", "year")))
+    ))
 
-    result should equal(expectation)
+    result.horizon should equal(expectedHorizon)
+    result.tail should equal(expectedTail)
   }
 
   test("should not find required order when there is none, single query part") {

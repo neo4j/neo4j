@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
-import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.BooleanExpression
@@ -84,7 +83,7 @@ case object simplifyPredicates extends StepSequencer.Step with PlanPipelineTrans
 
   def coerceInnerExpressionToBooleanIfNecessary(semanticState: SemanticState,
                                                 outerExpression: BooleanExpression,
-                                                innerExpression: Expression) = {
+                                                innerExpression: Expression): Expression = {
     if (needsToBeExplicitlyCoercedToBoolean(semanticState, outerExpression, innerExpression)) {
       CoerceToPredicate(innerExpression)
     } else {

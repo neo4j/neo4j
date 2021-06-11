@@ -64,7 +64,7 @@ import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
-import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizerTest
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -301,8 +301,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val config: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
 
-  def buildSinglePlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None): SinglePlannerQuery = {
-    buildPlannerQuery(query, lookup).query match {
+  def buildSinglePlannerQuery(query: String,
+                              procedureLookup: Option[QualifiedName => ProcedureSignature] = None,
+                              functionLookup: Option[QualifiedName => Option[UserFunctionSignature]] = None): SinglePlannerQuery = {
+    buildPlannerQuery(query, procedureLookup, functionLookup).query match {
       case pq: SinglePlannerQuery => pq
       case _ => throw new IllegalArgumentException("This method cannot be used for UNION queries")
     }
@@ -316,7 +318,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       RewriteProcedureCalls andThen
       Namespacer andThen
       rewriteEqualityToInPredicate andThen
-      CNFNormalizer andThen
+      CNFNormalizerTest.getTransformer andThen
       collapseMultipleInPredicates andThen
       CreatePlannerQuery andThen
       NameDeduplication

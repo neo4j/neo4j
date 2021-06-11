@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizerTest
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -30,8 +30,8 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
     override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
 
-  override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] = transitiveClosure andThen CNFNormalizer andThen removeGeneratedNames
-  override def rewriterPhaseForExpected: Transformer[BaseContext, BaseState, BaseState] = CNFNormalizer andThen removeGeneratedNames
+  override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] = transitiveClosure andThen CNFNormalizerTest.getTransformer andThen removeGeneratedNames
+  override def rewriterPhaseForExpected: Transformer[BaseContext, BaseState, BaseState] = CNFNormalizerTest.getTransformer andThen removeGeneratedNames
 
   test("MATCH (a)-->(b) WHERE a.prop = b.prop AND b.prop = 42") {
     assertRewritten(

@@ -23,6 +23,11 @@ import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyA
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.findAggregationPropertyAccesses
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.findLocalPropertyAccesses
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -122,7 +127,16 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("should return updated context for procedure call before aggregation") {
-    val plannerQuery = buildSinglePlannerQuery("MATCH (n) CALL db.labels() YIELD label RETURN count(n.prop)")
+    val qualifiedName = QualifiedName(Seq("db"), "labels")
+    val lookup = Some(Map(qualifiedName -> ProcedureSignature(
+      name = qualifiedName,
+      inputSignature = Array.empty[FieldSignature],
+      outputSignature = Some(IndexedSeq(FieldSignature("label", CTString))),
+      deprecationInfo = None,
+      accessMode = ProcedureReadOnlyAccess(Array.empty[String]),
+      id = 8,
+   )))
+    val plannerQuery = buildSinglePlannerQuery("MATCH (n) CALL db.labels() YIELD label RETURN count(n.prop)", procedureLookup = lookup)
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
     assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
