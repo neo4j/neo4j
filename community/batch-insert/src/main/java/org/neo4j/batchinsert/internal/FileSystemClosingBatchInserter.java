@@ -26,8 +26,6 @@ import java.util.Map;
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.schema.ConstraintCreator;
-import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class FileSystemClosingBatchInserter implements BatchInserter
@@ -159,18 +157,6 @@ public class FileSystemClosingBatchInserter implements BatchInserter
     public void removeRelationshipProperty( long relationship, String property )
     {
         delegate.removeRelationshipProperty( relationship, property );
-    }
-
-    @Override
-    public IndexCreator createDeferredSchemaIndex( Label label )
-    {
-        return delegate.createDeferredSchemaIndex( label );
-    }
-
-    @Override
-    public ConstraintCreator createDeferredConstraint( Label label )
-    {
-        return delegate.createDeferredConstraint( label );
     }
 
     @Override

@@ -41,9 +41,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.collection.Iterators.count;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 @Neo4jLayoutExtension
 public class BatchInsertionIT
@@ -60,41 +57,6 @@ public class BatchInsertionIT
         if ( managementService != null )
         {
             managementService.shutdown();
-        }
-    }
-
-    @Test
-    void shouldIndexNodesWithMultipleLabels() throws Exception
-    {
-        try ( var inserter = BatchInserters.inserter( databaseLayout, fileSystem ) )
-        {
-            inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
-
-            inserter.createDeferredSchemaIndex( label( "User" ) ).on( "name" ).create();
-            inserter.createDeferredSchemaIndex( label( "Admin" ) ).on( "name" ).create();
-        }
-
-        var db = getDatabase();
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( count( tx.findNodes( label( "User" ), "name", "Bob" ) ) ).isEqualTo( 1L );
-            assertThat( count( tx.findNodes( label( "Admin" ), "name", "Bob" ) ) ).isEqualTo( 1L );
-        }
-    }
-
-    @Test
-    void shouldNotIndexNodesWithWrongLabel() throws Exception
-    {
-        try ( BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem ) )
-        {
-            inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
-            inserter.createDeferredSchemaIndex( label( "Banana" ) ).on( "name" ).create();
-        }
-
-        var db = getDatabase();
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( count( tx.findNodes( label( "Banana" ), "name", "Bob" ) ) ).isEqualTo( 0L );
         }
     }
 

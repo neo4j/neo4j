@@ -31,5 +31,8 @@ public interface SchemaDescriptorSupplier
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of this schema entity.
      */
-    String userDescription( TokenNameLookup tokenNameLookup );
+    default String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        return schema().userDescription( tokenNameLookup );
+    }
 }

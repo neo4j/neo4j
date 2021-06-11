@@ -24,8 +24,6 @@ import java.util.Map;
 import org.neo4j.batchinsert.internal.BatchRelationship;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.schema.ConstraintCreator;
-import org.neo4j.graphdb.schema.IndexCreator;
 
 /**
  * The batch inserter drops support for transactions and concurrency in favor
@@ -241,42 +239,6 @@ public interface BatchInserter extends AutoCloseable
      * @param property The name of the property
      */
     void removeRelationshipProperty( long relationship, String property );
-
-    /**
-     * Returns an {@link IndexCreator} where details about the index to create can be
-     * specified. When all details have been entered {@link IndexCreator#create() create}
-     * must be called for it to actually be created.
-     *
-     * Creating an index enables indexing for nodes with the specified label. The index will
-     * have the details supplied to the {@link IndexCreator returned index creator}.
-     *
-     * Indexes created with the method are deferred until the batch inserter is shut down, at
-     * which point a background job will populate all indexes, i.e. the index
-     * is not available during the batch insertion itself. It is therefore advisable to
-     * create deferred indexes just before shutting down the batch inserter.
-     *
-     * @param label {@link Label label} on nodes to be indexed
-     *
-     * @return an {@link IndexCreator} capable of providing details for, as well as creating
-     * an index for the given {@link Label label}.
-     */
-    IndexCreator createDeferredSchemaIndex( Label label );
-
-    /**
-     * Returns a {@link ConstraintCreator} where details about the constraint can be
-     * specified. When all details have been entered {@link ConstraintCreator#create()}
-     * must be called for it to actually be created.
-     *
-     * Note that the batch inserter is not enforcing any constraint on the inserted data
-     * (also the one created with the batch inserter itself).  Although the batch inserter
-     * will verify all constraints on {@link #shutdown()} and fail in case of any constraint
-     * violation.
-     *
-     * @param label the label this constraint is for.
-     * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
-     * a constraint for the given {@linkplain Label label}.
-     */
-    ConstraintCreator createDeferredConstraint( Label label );
 
     /**
      * Shuts down this batch inserter syncing all changes that are still only

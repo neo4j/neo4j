@@ -27,14 +27,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -47,7 +44,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,56 +52,44 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.recordstorage.SchemaRuleAccess;
-import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -114,7 +98,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -131,27 +114,20 @@ import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
-import static org.neo4j.internal.helpers.collection.Iterables.single;
-import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
+import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
 class BatchInsertTest
 {
-    private static final IndexProviderDescriptor DESCRIPTOR = TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-    private static final String KEY = DESCRIPTOR.getKey();
     private static final String INTERNAL_LOG_FILE = "debug.log";
-    // This is the assumed internal index descriptor based on knowledge of what ids get assigned
-    private static final IndexDescriptor internalIndex = TestIndexDescriptorFactory.forLabel( 0, 0 );
-    private static final IndexDescriptor internalUniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
     private static final Map<String, Object> properties = new HashMap<>();
     private static final RelationshipType[] relTypeArray = {
         RelTypes.REL_TYPE1, RelTypes.REL_TYPE2, RelTypes.REL_TYPE3,
@@ -720,250 +696,40 @@ class BatchInsertTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldCreateDeferredSchemaIndexesInEmptyDatabase( int denseNodeThreshold ) throws Exception
-    {
-        // GIVEN
-        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
-
-        // WHEN
-        IndexDefinition definition = inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
-
-        // THEN
-        assertEquals( "Hacker", single( definition.getLabels() ).name() );
-        assertEquals( asCollection( iterator( "handle" ) ), Iterables.asCollection( definition.getPropertyKeys() ) );
-        inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldCreateDeferredUniquenessConstraintInEmptyDatabase( int denseNodeThreshold ) throws Exception
-    {
-        // GIVEN
-        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
-
-        // WHEN
-        ConstraintDefinition definition =
-                inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
-
-        // THEN
-        assertEquals( "Hacker", definition.getLabel().name() );
-        assertEquals( ConstraintType.UNIQUENESS, definition.getConstraintType() );
-        assertEquals( asSet( "handle" ), Iterables.asSet( definition.getPropertyKeys() ) );
-        inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldCreateConsistentUniquenessConstraint( int denseNodeThreshold ) throws Exception
-    {
-        // given
-        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
-
-        // when
-        inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
-
-        // then
-        GraphDatabaseAPI graphdb = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
-        RecordStorageEngine storageEngine = graphdb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        NeoStores neoStores = storageEngine.testAccessNeoStores();
-        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
-        {
-            SchemaStore schemaStore = neoStores.getSchemaStore();
-            TokenHolders tokenHolders = graphdb.getDependencyResolver().resolveDependency( TokenHolders.class );
-            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
-            List<Long> inUse = new ArrayList<>();
-            SchemaRecord record = schemaStore.newRecord();
-            var cursor = storeCursors.pageCursor( CursorTypes.SCHEMA_CURSOR );
-            for ( long i = 1, high = schemaStore.getHighestPossibleIdInUse( NULL ); i <= high; i++ )
-            {
-                schemaStore.getRecordByCursor( i, record, RecordLoad.FORCE, cursor );
-                if ( record.inUse() )
-                {
-                    inUse.add( i );
-                }
-            }
-            assertEquals( 2, inUse.size(), "records in use" );
-            SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ), storeCursors );
-            SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ), storeCursors );
-            IndexDescriptor indexRule;
-            ConstraintDescriptor constraint;
-            if ( rule0 instanceof IndexDescriptor )
-            {
-                indexRule = (IndexDescriptor) rule0;
-                constraint = (ConstraintDescriptor) rule1;
-            }
-            else
-            {
-                constraint = (ConstraintDescriptor) rule0;
-                indexRule = (IndexDescriptor) rule1;
-            }
-            OptionalLong owningConstraintId = indexRule.getOwningConstraintId();
-            assertTrue( owningConstraintId.isPresent(), "index should have owning constraint" );
-            assertEquals(
-                constraint.getId(), owningConstraintId.getAsLong(), "index should reference constraint" );
-            assertEquals(
-                indexRule.getId(), constraint.asIndexBackedConstraint().ownedIndexId(), "constraint should reference index" );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotAllowCreationOfDuplicateIndex( int denseNodeThreshold ) throws Exception
-    {
-        // GIVEN
-        var inserter = newBatchInserter( denseNodeThreshold );
-        String labelName = "Hacker1";
-
-        // WHEN
-        inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
-
-        assertThrows( ConstraintViolationException.class, () -> inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create() );
-        inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotAllowCreationOfDuplicateConstraint( int denseNodeThreshold ) throws Exception
-    {
-        // GIVEN
-        var inserter = newBatchInserter( denseNodeThreshold );
-        String labelName = "Hacker2";
-
-        // WHEN
-        inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
-
-        assertThrows( ConstraintViolationException.class,
-            () -> inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create() );
-        inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotAllowCreationOfDeferredSchemaConstraintAfterIndexOnSameKeys( int denseNodeThreshold ) throws Exception
-    {
-        // GIVEN
-        String labelName = "Hacker3";
-        var inserter = newBatchInserter( denseNodeThreshold );
-
-        // WHEN
-        inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
-
-        assertThrows( ConstraintViolationException.class,
-            () -> inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create() );
-        inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotAllowCreationOfDeferredSchemaIndexAfterConstraintOnSameKeys( int denseNodeThreshold ) throws Exception
-    {
-        // GIVEN
-        String labelName = "Hacker4";
-        var inserter = newBatchInserter( denseNodeThreshold );
-
-        // WHEN
-        inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
-
-        assertThrows( ConstraintViolationException.class,
-            () -> inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create() );
-        inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldRunIndexPopulationJobAtShutdown( int denseNodeThreshold ) throws Throwable
-    {
-        // GIVEN
-        IndexPopulator populator = mock( IndexPopulator.class );
-        IndexProvider provider = mock( IndexProvider.class );
-        IndexAccessor accessor = mock( IndexAccessor.class );
-
-        when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
-                .thenReturn( populator );
-        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
-                .thenReturn( accessor );
-        when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
-
-        BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
-
-        inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
-
-        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
-
-        // WHEN
-        inserter.shutdown();
-
-        // THEN
-        verify( provider ).init();
-        verify( provider ).start();
-        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
-        verify( populator ).create();
-        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ), any( CursorContext.class ) );
-        verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( populator ).close( eq( true ), any() );
-        verify( provider ).stop();
-        verify( provider ).shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldRunConstraintPopulationJobAtShutdown( int denseNodeThreshold ) throws Throwable
-    {
-        // GIVEN
-        IndexPopulator populator = mock( IndexPopulator.class );
-        IndexProvider provider = mock( IndexProvider.class );
-        IndexAccessor accessor = mock( IndexAccessor.class );
-
-        when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
-                .thenReturn( populator );
-        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
-                .thenReturn( accessor );
-        when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
-
-        BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
-
-        inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
-
-        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
-
-        // WHEN
-        inserter.shutdown();
-
-        // THEN
-        verify( provider ).init();
-        verify( provider ).start();
-        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
-        verify( populator ).create();
-        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ),
-                any( CursorContext.class ) );
-        verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( populator ).close( eq( true ), any() );
-        verify( provider ).stop();
-        verify( provider ).shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
     void shouldRepopulatePreexistingIndexed( int denseNodeThreshold ) throws Throwable
     {
         // GIVEN
-        long jakewins = dbWithIndexAndSingleIndexedNode( denseNodeThreshold );
+        var db = instantiateGraphDatabaseService( denseNodeThreshold );
+
+        SchemaDescriptor schema;
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().indexFor( label( "Hacker" ) ).on( "handle" ).create();
+            var labelId = ((TransactionImpl) tx).kernelTransaction().tokenRead().nodeLabel( "Hacker" );
+            var propId = ((TransactionImpl) tx).kernelTransaction().tokenRead().propertyKey( "handle" );
+            schema = SchemaDescriptor.forLabel( labelId, propId );
+            tx.commit();
+        }
+
+        long nodeId;
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            var node = tx.createNode( label( "Hacker" ) );
+            node.setProperty( "handle", "Jakewins" );
+            nodeId = node.getId();
+            tx.commit();
+        }
+
+        managementService.shutdown();
+
+        long jakewins = nodeId;
 
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexProvider provider = mock( IndexProvider.class );
         IndexAccessor accessor = mock( IndexAccessor.class );
 
-        when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
+        when( provider.getProviderDescriptor() ).thenReturn( GenericNativeIndexProvider.DESCRIPTOR );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( populator );
@@ -972,7 +738,8 @@ class BatchInsertTest
                 .thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
+                singleInstanceIndexProviderFactory( GenericNativeIndexProvider.DESCRIPTOR.getKey(), provider ), provider.getProviderDescriptor(),
+                denseNodeThreshold );
 
         long boggle = inserter.createNode( map( "handle", "b0ggl3" ), label( "Hacker" ) );
 
@@ -984,8 +751,8 @@ class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
         verify( populator ).create();
-        verify( populator ).add( argThat( c -> c.contains( add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ) ) &&
-                                               c.contains( add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ), any( CursorContext.class ) );
+        verify( populator ).add( argThat( c -> c.contains( add( jakewins, () -> schema, Values.of( "Jakewins" ) ) ) &&
+                                               c.contains( add( boggle, () -> schema, Values.of( "b0ggl3" ) ) ) ), any( CursorContext.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( eq( true ), any() );
         verify( provider ).stop();
@@ -1198,142 +965,6 @@ class BatchInsertTest
         Arrays.sort( sortedLabelIds );
         assertArrayEquals( sortedLabelIds, labelIds );
         inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldCreateUniquenessConstraint( int denseNodeThreshold ) throws Exception
-    {
-        // Given
-        Label label = label( "Person" );
-        String propertyKey = "name";
-        String duplicatedValue = "Tom";
-        var inserter = newBatchInserter( denseNodeThreshold );
-
-        // When
-        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( propertyKey ).create();
-
-        // Then
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
-        try
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                List<ConstraintDefinition> constraints = Iterables.asList( tx.schema().getConstraints() );
-                assertEquals( 1, constraints.size() );
-                ConstraintDefinition constraint = constraints.get( 0 );
-                assertEquals( label.name(), constraint.getLabel().name() );
-                assertEquals( propertyKey, single( constraint.getPropertyKeys() ) );
-
-                tx.createNode( label ).setProperty( propertyKey, duplicatedValue );
-
-                tx.commit();
-            }
-
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.createNode( label ).setProperty( propertyKey, duplicatedValue );
-                tx.commit();
-            }
-            fail( "Uniqueness property constraint was violated, exception expected" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            assertEquals( format( "Node(0) already exists with label `%s` and property `%s` = '%s'",
-                                    label.name(), propertyKey, duplicatedValue ), e.getMessage() );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotAllowCreationOfUniquenessConstraintAndIndexOnSameLabelAndProperty( int denseNodeThreshold ) throws Exception
-    {
-        // Given
-        Label label = label( "Person1" );
-        String property = "name";
-        var inserter = newBatchInserter( denseNodeThreshold );
-
-        // When
-        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
-        var e = assertThrows( ConstraintViolationException.class,
-            () -> inserter.createDeferredSchemaIndex( label ).on( property ).create() );
-        // Then
-        assertEquals( "Index for given {label;property} already exists", e.getMessage() );
-        inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotAllowDuplicatedUniquenessConstraints( int denseNodeThreshold ) throws Exception
-    {
-        // Given
-        Label label = label( "Person2" );
-        String property = "name";
-        var inserter = newBatchInserter( denseNodeThreshold );
-
-        // When
-        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
-        var e = assertThrows( ConstraintViolationException.class,
-            () -> inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create() );
-        assertEquals( "It is not allowed to create node keys, uniqueness constraints or indexes on the same {label;property}",
-                e.getMessage() );
-        inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotAllowDuplicatedIndexes( int denseNodeThreshold ) throws Exception
-    {
-        // Given
-        Label label = label( "Person3" );
-        String property = "name";
-        var inserter = newBatchInserter( denseNodeThreshold );
-
-        // When
-        inserter.createDeferredSchemaIndex( label ).on( property ).create();
-        var e = assertThrows( ConstraintViolationException.class,
-            () -> inserter.createDeferredSchemaIndex( label ).on( property ).create() );
-        // Then
-        assertEquals( "Index for given {label;property} already exists", e.getMessage() );
-        inserter.shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void uniquenessConstraintShouldBeCheckedOnBatchInserterShutdownAndFailIfViolated( int denseNodeThreshold ) throws Exception
-    {
-        // Given
-        Label label = label( "Foo" );
-        String property = "Bar";
-        String value = "Baz";
-
-        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
-
-        // When
-        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
-
-        inserter.createNode( Collections.singletonMap( property, value ), label );
-        inserter.createNode( Collections.singletonMap( property, value ), label );
-
-        // Then
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
-        try ( Transaction tx = db.beginTx() )
-        {
-            var schema = tx.schema();
-            IndexDefinition index = schema.getIndexes( label ).iterator().next();
-            String indexFailure = schema.getIndexFailure( index );
-            assertThat( indexFailure ).contains( "IndexEntryConflictException" );
-            assertThat( indexFailure ).contains( value );
-            tx.commit();
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
     }
 
     @ParameterizedTest
@@ -1564,8 +1195,23 @@ class BatchInsertTest
         TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( databaseLayout );
         factory.setFileSystem( fs );
         managementService = factory.impermanent()
-            // Shouldn't be necessary to set dense node threshold since it's a stick config
-            .setConfig( configuration( denseNodeThreshold ) ).build();
+                                   // Shouldn't be necessary to set dense node threshold since it's a stick config
+                                   .setConfig( configuration( denseNodeThreshold ) ).build();
+        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    private GraphDatabaseAPI instantiateGraphDatabaseServiceWithProvider( ExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor,
+                                                                          int denseNodeThreshold )
+    {
+        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( databaseLayout );
+        factory.setFileSystem( fs );
+        Config configuration = configuration( denseNodeThreshold );
+        configuration.set( GraphDatabaseSettings.default_schema_provider, providerDescriptor.name() );
+        managementService = factory.impermanent()
+                                   .removeExtensions( INDEX_PROVIDERS_FILTER )
+                                   .addExtension( provider )
+                                   .addExtension( new TokenIndexProviderFactory() )
+                                   .setConfig( configuration ).build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -1583,25 +1229,6 @@ class BatchInsertTest
         {
             inserter.createRelationship( node, node, relType, null );
         }
-    }
-
-    private long dbWithIndexAndSingleIndexedNode( int denseNodeThreshold ) throws Exception
-    {
-        IndexPopulator populator = mock( IndexPopulator.class );
-        IndexProvider provider = mock( IndexProvider.class );
-
-        when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
-                .thenReturn( populator );
-        when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
-
-        BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
-
-        inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
-        long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
-        inserter.shutdown();
-        return nodeId;
     }
 
     private static void setAndGet( BatchInserter inserter, Object value )
