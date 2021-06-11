@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.util.BitSet;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
@@ -33,6 +34,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityTokenClient;
 import org.neo4j.test.extension.Inject;
@@ -41,7 +44,10 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -50,9 +56,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 @PageCacheExtension
 class TokenIndexReaderTest
 {
-    private static final int LABEL_COUNT = 5;
-    private static final int NODE_COUNT = 10_000;
-
     @Inject
     private RandomRule random;
     @Inject
@@ -108,5 +111,57 @@ class TokenIndexReaderTest
         assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
         assertThat( cursorTracer.hits() ).isEqualTo( 1 );
         assertThat( cursorTracer.faults() ).isEqualTo( 0 );
+    }
+
+    @Test
+    void shouldStartFromGivenIdDense() throws IOException, IndexEntryConflictException
+    {
+        shouldStartFromGivenId( 10 );
+    }
+
+    @Test
+    void shouldStartFromGivenIdSparse() throws IOException, IndexEntryConflictException
+    {
+        shouldStartFromGivenId( 100 );
+    }
+
+    @Test
+    void shouldStartFromGivenIdSuperSparse() throws IOException, IndexEntryConflictException
+    {
+        shouldStartFromGivenId( 1000 );
+    }
+
+    private void shouldStartFromGivenId( int sparsity ) throws IOException, IndexEntryConflictException
+    {
+        // given
+        int labelId = 1;
+        int highNodeId = 100_000;
+        BitSet expected = new BitSet( highNodeId );
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( highNodeId, TokenIndex.EMPTY ) )
+        {
+            writer.initialize( tree.writer( NULL ) );
+            int updates = highNodeId / sparsity;
+            for ( int i = 0; i < updates; i++ )
+            {
+                int nodeId = random.nextInt( highNodeId );
+                writer.process( TokenIndexEntryUpdate.change( nodeId, null, EMPTY_LONG_ARRAY, new long[]{labelId} ) );
+                expected.set( nodeId );
+            }
+        }
+
+        // when
+        long fromId = random.nextInt( highNodeId );
+        int nextExpectedId = expected.nextSetBit( toIntExact( fromId ) );
+
+        var reader = new DefaultTokenIndexReader( tree );
+        var tokenClient = new SimpleEntityTokenClient();
+        reader.query( tokenClient, unconstrained(), new TokenPredicate( labelId ), EntityRange.from( fromId ), NULL );
+        while ( nextExpectedId != -1 )
+        {
+            assertTrue( tokenClient.next() );
+            assertThat( toIntExact( tokenClient.reference ) ).isEqualTo( nextExpectedId );
+            nextExpectedId = expected.nextSetBit( nextExpectedId + 1 );
+        }
+        assertFalse( tokenClient.next() );
     }
 }
