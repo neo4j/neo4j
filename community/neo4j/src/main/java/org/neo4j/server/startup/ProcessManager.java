@@ -182,7 +182,7 @@ class ProcessManager
                 }
                 if ( process.exitValue() != 0 )
                 {
-                    throw new BootFailureException( "Unexpected process failure. See log for info.", process.exitValue() );
+                    throw new BootProcessFailureException( process.exitValue() );
                 }
             }
             return process.pid();

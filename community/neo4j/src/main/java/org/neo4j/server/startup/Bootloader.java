@@ -258,7 +258,14 @@ class Bootloader
     {
         ctx.out.printf( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
                 ctx.getProp( PROP_JAVA_VERSION ), ctx.getProp( PROP_VM_NAME ), ctx.getProp( PROP_VM_VENDOR ) );
-        ctx.os().admin();
-        return EXIT_CODE_OK;
+        try
+        {
+            ctx.os().admin();
+            return EXIT_CODE_OK;
+        }
+        catch ( BootProcessFailureException e )
+        {
+            return e.getExitCode(); //NOTE! This is not the generic BootFailureException, it indicates a process non-zero exit, not bootloader failure.
+        }
     }
 }
