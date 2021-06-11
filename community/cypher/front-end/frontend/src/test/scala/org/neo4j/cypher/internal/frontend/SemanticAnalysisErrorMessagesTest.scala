@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -50,291 +51,135 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   test("Should give helpful error when accessing illegal variable in ORDER BY after WITH DISTINCT") {
     val query = "MATCH (p) WITH DISTINCT p.email AS mail ORDER BY p.name RETURN mail AS mail"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    expectErrorMessagesFrom(query, List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in ORDER BY after WITH with aggregation") {
     val query = "MATCH (p) WITH collect(p.email) AS mail ORDER BY p.name RETURN mail AS mail"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    expectErrorMessagesFrom(query, List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in ORDER BY after RETURN DISTINCT") {
     val query = "MATCH (p) RETURN DISTINCT p.email AS mail ORDER BY p.name"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    expectErrorMessagesFrom(query, List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in ORDER BY after RETURN with aggregation") {
     val query = "MATCH (p) RETURN collect(p.email) AS mail ORDER BY p.name"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    expectErrorMessagesFrom(query, List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in WHERE after WITH DISTINCT") {
     val query = "MATCH (p) WITH DISTINCT p.email AS mail WHERE p.name IS NOT NULL RETURN mail AS mail"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    expectErrorMessagesFrom(query, List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in WHERE after WITH with aggregation") {
     val query = "MATCH (p) WITH collect(p.email) AS mail WHERE p.name IS NOT NULL RETURN mail AS mail"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    expectErrorMessagesFrom(query, List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   // negative tests that we do not get this error message otherwise
 
   test("Should not invent helpful error when accessing undefined variable in ORDER BY after WITH DISTINCT") {
     val query = "MATCH (p) WITH DISTINCT p.email AS mail ORDER BY q.name RETURN mail AS mail"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    expectErrorMessagesFrom(query, List("Variable `q` not defined"))
   }
   test("Should not invent helpful error when accessing undefined variable in ORDER BY after WITH with aggregation") {
     val query = "MATCH (p) WITH collect(p.email) AS mail ORDER BY q.name RETURN mail AS mail"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    expectErrorMessagesFrom(query, List("Variable `q` not defined"))
   }
 
   test("Should not invent helpful error when accessing undefined variable in ORDER BY after RETURN DISTINCT") {
     val query = "MATCH (p) RETURN DISTINCT p.email AS mail ORDER BY q.name"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    expectErrorMessagesFrom(query, List("Variable `q` not defined"))
   }
 
   test("Should not invent helpful error when accessing undefined variable in ORDER BY after RETURN with aggregation") {
     val query = "MATCH (p) RETURN collect(p.email) AS mail ORDER BY q.name"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    expectErrorMessagesFrom(query, List("Variable `q` not defined"))
   }
 
   test("Should not invent helpful error when accessing undefined variable in WHERE after WITH DISTINCT") {
     val query = "MATCH (p) WITH DISTINCT p.email AS mail WHERE q.name IS NOT NULL RETURN mail AS mail"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    expectErrorMessagesFrom(query, List("Variable `q` not defined"))
   }
 
   test("Should not invent helpful error when accessing undefined variable in WHERE after WITH with aggregation") {
     val query = "MATCH (p) WITH collect(p.email) AS mail WHERE q.name IS NOT NULL RETURN mail AS mail"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    expectErrorMessagesFrom(query, List("Variable `q` not defined"))
   }
 
   // Empty tokens for node property
 
   test("Should not allow empty node property key name in CREATE clause") {
     val query = "CREATE ({prop: 5, ``: 1})"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in MERGE clause") {
     val query = "MERGE (n {``: 1})"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in ON CREATE SET") {
     val query = "MERGE (n :Label) ON CREATE SET n.`` = 1"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in ON MATCH SET") {
     val query = "MERGE (n :Label) ON MATCH SET n.`` = 1"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in MATCH clause") {
     val query = "MATCH (n {``: 1}) RETURN n AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in SET clause") {
     val query = "MATCH (n) SET n.``= 1"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in REMOVE clause") {
     val query = "MATCH (n) REMOVE n.``"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in WHERE clause") {
     val query = "MATCH (n) WHERE n.``= 1 RETURN n AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in WITH clause") {
     val query = "MATCH (n) WITH n.`` AS prop RETURN prop AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in ORDER BY in WITH") {
     val query = "MATCH (n) WITH n AS invalid ORDER BY n.`` RETURN count(*) AS count"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in RETURN clause") {
     val query = "MATCH (n) RETURN n.`` AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in DISTINCT RETURN clause") {
     val query = "MATCH (n) RETURN DISTINCT n.`` AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in aggregation in RETURN clause") {
     val query = "MATCH (n) RETURN count(n.``) AS count"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in ORDER BY in RETURN") {
     val query = "MATCH (n) RETURN n AS invalid ORDER BY n.`` DESC LIMIT 2"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in CASE clause") {
@@ -347,13 +192,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |THEN 1
         |ELSE 2 END AS result
       """.stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in CASE WHEN clause") {
@@ -366,13 +205,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |THEN 1
         |ELSE 2 END AS result
       """.stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in CASE THEN clause") {
@@ -385,13 +218,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |THEN n.``
         |ELSE 2 END AS result
       """.stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty node property key name in CASE ELSE clause") {
@@ -404,170 +231,79 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |THEN 1
         |ELSE n.`` END AS result
       """.stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
-
 
   // Empty tokens for relationship properties
 
   test("Should not allow empty relationship property key name in CREATE clause") {
     val query = "CREATE ()-[:REL {``: 1}]->()"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in MERGE clause") {
     val query = "MERGE ()-[r :REL {``: 1, prop: 42}]->()"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in ON CREATE SET") {
     val query = "MERGE ()-[r:REL]->() ON CREATE SET r.`` = 1"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in ON MATCH SET") {
     val query = "MERGE ()-[r:REL]->() ON MATCH SET r.`` = 1"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in MATCH clause") {
     val query = "MATCH ()-[r {prop:1337, ``: 1}]->() RETURN r AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in SET clause") {
     val query = "MATCH ()-[r]->() SET r.``= 1 RETURN r AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in REMOVE clause") {
     val query = "MATCH ()-[r]->() REMOVE r.``"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in WHERE clause") {
     val query = "MATCH (n)-[r]->() WHERE n.prop > r.`` RETURN n AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in WITH clause") {
     val query = "MATCH ()-[r]->() WITH r.`` AS prop, r.prop as prop2 RETURN count(*) AS count"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in ORDER BY in WITH") {
     val query = "MATCH ()-[r]->() WITH r AS invalid ORDER BY r.`` RETURN count(*) AS count"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in RETURN clause") {
     val query = "MATCH ()-[r]->() RETURN r.`` as result"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in DISTINCT RETURN clause") {
     val query = "MATCH ()-[r]->() RETURN DISTINCT r.`` as result"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in aggregation in RETURN clause") {
     val query = "MATCH ()-[r]->() RETURN max(r.``) AS max"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in ORDER BY in RETURN") {
     val query = "MATCH ()-[r]->() RETURN r AS result ORDER BY r.``"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in CASE clause") {
@@ -580,13 +316,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |THEN 1
         |ELSE 2 END AS result
       """.stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in CASE WHEN clause") {
@@ -599,13 +329,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |THEN 1
         |ELSE 2 END AS result
       """.stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in CASE THEN clause") {
@@ -618,13 +342,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |THEN r.``
         |ELSE 2 END AS result
       """.stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship property key name in CASE ELSE clause") {
@@ -637,173 +355,81 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |THEN 1
         |ELSE r.`` END AS result
       """.stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   // Empty tokens for labels
 
   test("Should not allow empty label in CREATE clause") {
     val query = "CREATE (:Valid:``)"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty label in MERGE clause") {
     val query = "MERGE (n:``)"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty label in MATCH clause") {
     val query = "MATCH (n:``:Valid) RETURN n AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty label in SET clause") {
     val query = "MATCH (n) SET n:``"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty label in REMOVE clause") {
     val query = "MATCH (n) REMOVE n:``"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   // Empty tokens for relationship type
 
   test("Should not allow empty relationship type in CREATE clause") {
     val query = "CREATE ()-[:``]->()"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship type in MERGE clause") {
     val query = "MERGE ()-[r :``]->()"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship type in MATCH clause") {
     val query = "MATCH ()-[r :``]->() RETURN r AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow empty relationship type in variable length pattern") {
     val query = "MATCH ()-[r :``*1..5]->() RETURN r AS invalid"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(emptyTokenErrorMessage))
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
   test("Should not allow to use aggregate functions inside aggregate functions") {
     val query = "WITH 1 AS x RETURN sum(max(x)) AS sumOfMax"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("Can't use aggregate functions inside of aggregate functions."))
+    expectErrorMessagesFrom(query, List("Can't use aggregate functions inside of aggregate functions."))
   }
 
   test("Should not allow to use count(*) inside aggregate functions") {
     val query = "WITH 1 AS x RETURN min(count(*)) AS minOfCount"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("Can't use aggregate functions inside of aggregate functions."))
+    expectErrorMessagesFrom(query, List("Can't use aggregate functions inside of aggregate functions."))
   }
 
   test("Should not allow repeating rel variable in pattern") {
     val query = "MATCH ()-[r]-()-[r]-() RETURN r AS r"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List("Cannot use the same relationship variable 'r' for multiple patterns"))
+    expectErrorMessagesFrom(query, List("Cannot use the same relationship variable 'r' for multiple patterns"))
   }
 
   test("Should warn about repeated rel variable in pattern expression") {
     val query = normalizeNewLines("MATCH ()-[r]-() RETURN size( ()-[r]-()-[r]-() ) AS size")
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(DeprecatedRepeatedRelVarInPatternExpression(InputPosition(33, 1, 34), "r")))
-    context.errors should be(empty)
+    expectNotificationsFrom(query, Set(DeprecatedRepeatedRelVarInPatternExpression(InputPosition(33, 1, 34), "r")))
   }
 
   test("Should warn about repeated rel variable in pattern comprehension") {
-    val query = normalizeNewLines("MATCH ()-[r]-() RETURN [ ()-[r]-()-[r]-() | r ] AS rs")
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(DeprecatedRepeatedRelVarInPatternExpression(InputPosition(29, 1, 30), "r")))
-    context.errors should be(empty)
+    val query = "MATCH ()-[r]-() RETURN [ ()-[r]-()-[r]-() | r ] AS rs"
+    expectNotificationsFrom(query, Set(DeprecatedRepeatedRelVarInPatternExpression(InputPosition(29, 1, 30), "r")))
   }
 
   test("Should type check predicates in FilteringExpression") {
@@ -816,33 +442,24 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     )
     queries.foreach { query =>
       withClue(query) {
-        val context = new ErrorCollectingContext()
-        pipeline.transform(initStartState(query), context)
-        context.errors.map(_.msg) should equal(List("Type mismatch: expected Boolean but was Integer"))
+        expectErrorMessagesFrom(query, List("Type mismatch: expected Boolean but was Integer"))
       }
     }
   }
 
   test("Should warn about variable shadowing in a subquery") {
-    val query = normalizeNewLines(
+    val query =
       """MATCH (shadowed)
         |CALL {
         |  MATCH (shadowed)-[:REL]->(m) // warning here
         |  RETURN m
         |}
-        |RETURN *""".stripMargin)
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(SubqueryVariableShadowing(InputPosition(33, 3, 10), "shadowed")))
-    context.errors should be(empty)
+        |RETURN *""".stripMargin
+    expectNotificationsFrom(query, Set(SubqueryVariableShadowing(InputPosition(33, 3, 10), "shadowed")))
   }
 
   test("Should warn about variable shadowing in a subquery when aliasing") {
-    val query = normalizeNewLines(
+    val query =
       """MATCH (shadowed)
         |CALL {
         |  MATCH (n)-[:REL]->(m)
@@ -850,19 +467,12 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |  WITH shadowed AS m
         |  RETURN m
         |}
-        |RETURN *""".stripMargin)
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(SubqueryVariableShadowing(InputPosition(60, 4, 13), "shadowed")))
-    context.errors should be(empty)
+        |RETURN *""".stripMargin
+    expectNotificationsFrom(query, Set(SubqueryVariableShadowing(InputPosition(60, 4, 13), "shadowed")))
   }
 
   test("Should warn about variable shadowing in a nested subquery") {
-    val query = normalizeNewLines(
+    val query =
       """MATCH (shadowed)
         |CALL {
         |  MATCH (n)-[:REL]->(m)
@@ -872,19 +482,12 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |  }
         |  RETURN m, x
         |}
-        |RETURN *""".stripMargin)
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(SubqueryVariableShadowing(InputPosition(68, 5, 12), "shadowed")))
-    context.errors should be(empty)
+        |RETURN *""".stripMargin
+    expectNotificationsFrom(query, Set(SubqueryVariableShadowing(InputPosition(68, 5, 12), "shadowed")))
   }
 
   test("Should warn about variable shadowing from enclosing subquery") {
-    val query = normalizeNewLines(
+    val query =
       """MATCH (shadowed)
         |CALL {
         |  WITH shadowed
@@ -895,40 +498,26 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |  }
         |  RETURN m, x
         |}
-        |RETURN *""".stripMargin)
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(SubqueryVariableShadowing(InputPosition(91, 6, 12), "shadowed")))
-    context.errors should be(empty)
+        |RETURN *""".stripMargin
+    expectNotificationsFrom(query, Set(SubqueryVariableShadowing(InputPosition(91, 6, 12), "shadowed")))
   }
 
   test("Should warn about multiple shadowed variables in a subquery") {
-    val query = normalizeNewLines(
+    val query =
       """MATCH (shadowed)-->(alsoShadowed)
         |CALL {
         |  MATCH (shadowed)-->(alsoShadowed) // multiple warnings here
         |  RETURN shadowed AS n, alsoShadowed AS m
         |}
-        |RETURN *""".stripMargin)
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(
+        |RETURN *""".stripMargin
+    expectNotificationsFrom(query, Set(
       SubqueryVariableShadowing(InputPosition(50, 3, 10), "shadowed"),
       SubqueryVariableShadowing(InputPosition(63, 3, 23), "alsoShadowed")
     ))
-    context.errors should be(empty)
   }
 
   test("Should warn about multiple shadowed variables in a nested subquery") {
-    val query = normalizeNewLines(
+    val query =
       """MATCH (shadowed)
         |CALL {
         |  MATCH (shadowed)-[:REL]->(m) // warning here
@@ -938,18 +527,11 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |  }
         |  RETURN m, x
         |}
-        |RETURN *""".stripMargin)
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(
+        |RETURN *""".stripMargin
+    expectNotificationsFrom(query, Set(
       SubqueryVariableShadowing(InputPosition(33, 3, 10), "shadowed"),
       SubqueryVariableShadowing(InputPosition(91, 5, 12), "shadowed")
     ))
-    context.errors should be(empty)
   }
 
   test("Should not warn about variable shadowing in a subquery if it has been removed from scope by WITH") {
@@ -961,14 +543,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |  RETURN m
         |}
         |RETURN *""".stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should be(empty)
-    context.errors should be(empty)
+    expectNotificationsFrom(query, Set.empty)
   }
 
   test("Should not warn about variable shadowing in a subquery if it has been imported previously") {
@@ -981,18 +556,11 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |  RETURN notShadowed AS x
         |}
         |RETURN *""".stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should be(empty)
-    context.errors should be(empty)
+    expectNotificationsFrom(query, Set.empty)
   }
 
   test("Should warn about variable shadowing in an union subquery") {
-    val query = normalizeNewLines(
+    val query =
       """MATCH (shadowed)
         |CALL {
         |  MATCH (m) RETURN m
@@ -1000,19 +568,12 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         |  MATCH (shadowed)-[:REL]->(m) // warning here
         |  RETURN m
         |}
-        |RETURN *""".stripMargin)
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(SubqueryVariableShadowing(InputPosition(61, 5, 10), "shadowed")))
-    context.errors should be(empty)
+        |RETURN *""".stripMargin
+    expectNotificationsFrom(query, Set(SubqueryVariableShadowing(InputPosition(61, 5, 10), "shadowed")))
   }
 
   test("Should warn about variable shadowing in one of the union subquery branches") {
-    val query = normalizeNewLines(
+    val query =
       """MATCH (shadowed)
         |CALL {
         |  WITH shadowed
@@ -1024,26 +585,13 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
         | UNION
         |  MATCH (x) RETURN x AS m
         |}
-        |RETURN *""".stripMargin)
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val resultState = pipeline.transform(startState, context)
-
-    resultState.semantics().notifications should equal(Set(SubqueryVariableShadowing(InputPosition(98, 7, 10), "shadowed")))
-    context.errors should be(empty)
+        |RETURN *""".stripMargin
+    expectNotificationsFrom(query, Set(SubqueryVariableShadowing(InputPosition(98, 7, 10), "shadowed")))
   }
 
   test("Should disallow introducing variables in pattern expressions") {
     val query = "MATCH (x) WHERE (x)-[r]-(y) RETURN x"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(
+    expectErrorMessagesFrom(query, List(
       "PatternExpressions are not allowed to introduce new variables: 'r'.",
       "PatternExpressions are not allowed to introduce new variables: 'y'."
     ))
@@ -1051,95 +599,58 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   test("Skip with PatternComprehension should complain") {
     val query = "RETURN 1 SKIP size([(a)-->(b) | a.prop])"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(
-      "It is not allowed to refer to variables in SKIP"
-    ))
+    expectErrorMessagesFrom(query, List("It is not allowed to refer to variables in SKIP"))
   }
 
   test("Skip with PatternExpression should complain") {
     val query = "RETURN 1 SKIP size(()-->())"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(
-      "It is not allowed to refer to variables in SKIP"
-    ))
+    expectErrorMessagesFrom(query, List("It is not allowed to refer to variables in SKIP"))
   }
 
   test("Limit with PatternComprehension should complain") {
     val query = "RETURN 1 LIMIT size([(a)-->(b) | a.prop])"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(
-      "It is not allowed to refer to variables in LIMIT"
-    ))
+    expectErrorMessagesFrom(query, List("It is not allowed to refer to variables in LIMIT"))
   }
 
   test("Limit with PatternExpression should complain") {
     val query = "RETURN 1 LIMIT size(()-->())"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(
-      "It is not allowed to refer to variables in LIMIT"
-    ))
+    expectErrorMessagesFrom(query, List("It is not allowed to refer to variables in LIMIT"))
   }
 
   test("UNION with incomplete first part") {
     val query = "MATCH (a) WITH a UNION MATCH (a) RETURN a"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(
-      "Query cannot conclude with WITH (must be RETURN, an update clause, or a procedure call with no YIELD)"
-    ))
+    expectErrorMessagesFrom(query, List("Query cannot conclude with WITH (must be RETURN, an update clause, or a procedure call with no YIELD)"))
   }
 
   test("UNION with incomplete second part") {
     val query = "MATCH (a) RETURN a UNION MATCH (a) WITH a"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) should equal(List(
-      "Query cannot conclude with WITH (must be RETURN, an update clause, or a procedure call with no YIELD)"
-    ))
+    expectErrorMessagesFrom(query, List("Query cannot conclude with WITH (must be RETURN, an update clause, or a procedure call with no YIELD)"))
   }
 
   test("Query ending in CALL ... YIELD ...") {
     val query = "MATCH (a) CALL proc.foo() YIELD bar"
+    expectErrorMessagesFrom(query, List("Query cannot conclude with CALL together with YIELD"))
+  }
 
+  private def initStartState(query: String) =
+    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+
+  private def expectErrorMessagesFrom(query: String, expectedErrors: Seq[String]): Unit = {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) should equal(List(
-      "Query cannot conclude with CALL together with YIELD"
-    ))
+    context.errors.map(_.msg) should equal(expectedErrors)
   }
 
-  private def initStartState(query: String) =
-    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+  private def expectNotificationsFrom(query: String, expectedNotifications: Set[InternalNotification]): Unit = {
+    val startState = initStartState(normalizeNewLines(query))
+    val context = new ErrorCollectingContext()
+
+    val resultState = pipeline.transform(startState, context)
+
+    resultState.semantics().notifications should equal(expectedNotifications)
+    context.errors should be(empty)
+  }
 }
