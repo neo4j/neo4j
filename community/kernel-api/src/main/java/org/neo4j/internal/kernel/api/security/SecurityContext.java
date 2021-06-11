@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api.security;
 import java.util.Collections;
 import java.util.Set;
 
+import org.neo4j.messages.MessageUtil;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -113,7 +114,7 @@ public class SecurityContext extends LoginContext
 
     public String description()
     {
-        return String.format( "user '%s' with %s", subject().username(), mode().name() );
+        return MessageUtil.withUser( subject().username(), mode().name() );
     }
 
     protected String defaultString( String name )

@@ -24,6 +24,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.neo4j.messages.MessageUtil;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -48,8 +49,9 @@ public class SecurityAuthorizationHandler
         if ( !accessMode.allowsCreateNode( labelIds ) )
         {
             String labels = null == labelIds ? "" : Arrays.stream( labelIds ).mapToObj( resolver::apply ).collect( Collectors.joining( "," ) );
-            throw logAndGetAuthorizationException( securityContext, format( "Create node with labels '%s' on database '%s' is not allowed for %s.",
-                                                           labels, securityContext.database(), securityContext.description() ) );
+            throw logAndGetAuthorizationException( securityContext, MessageUtil.createNodeWithLabelsDenied( labels,
+                                                                                                            securityContext.database(),
+                                                                                                            securityContext.description() ) );
         }
     }
 

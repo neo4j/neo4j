@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
+import org.neo4j.messages.MessageUtil;
 
 /**
  * Access mode that restricts the original access mode with the restricting mode. Allows things that both the
@@ -208,6 +209,6 @@ public class RestrictedAccessMode extends WrappedAccessMode
     @Override
     public String name()
     {
-        return original.name() + " restricted to " + wrapping.name();
+        return MessageUtil.restrictedMode( original.name(), wrapping.name() );
     }
 }

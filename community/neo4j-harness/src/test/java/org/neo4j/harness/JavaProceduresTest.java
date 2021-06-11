@@ -41,6 +41,11 @@ import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.internal.kernel.api.security.AccessMode.Static.READ;
+import static org.neo4j.messages.MessageUtil.createNodeWithLabelsDenied;
+import static org.neo4j.messages.MessageUtil.overridenMode;
+import static org.neo4j.messages.MessageUtil.withUser;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 @TestDirectoryExtension
@@ -195,7 +200,8 @@ class JavaProceduresTest
             assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 1L );
             assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 2L );
             assertQueryGetsValue( server, "CALL countNodes", 3L );
-            assertQueryGetsError( server, "CALL willFail", "Create node with labels '' on database 'neo4j' is not allowed" );
+            assertQueryGetsError( server, "CALL willFail",
+                                  createNodeWithLabelsDenied( "", "neo4j", overridenMode( withUser( "", FULL.name() ), READ.name() ) ) );
         }
     }
 

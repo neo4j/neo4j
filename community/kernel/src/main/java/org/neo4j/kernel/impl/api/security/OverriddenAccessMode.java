@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
+import org.neo4j.messages.MessageUtil;
 
 /**
  * Access mode that overrides the original access mode with the overriding mode. Allows exactly what the overriding
@@ -208,6 +209,6 @@ public class OverriddenAccessMode extends WrappedAccessMode
     @Override
     public String name()
     {
-        return original.name() + " overridden by " + wrapping.name();
+        return MessageUtil.overridenMode( original.name(), wrapping.name() );
     }
 }

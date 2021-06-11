@@ -22,6 +22,8 @@ package org.neo4j.harness;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.messages.MessageUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
@@ -33,6 +35,11 @@ import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
+import static org.neo4j.internal.kernel.api.security.AccessMode.Static.READ;
+import static org.neo4j.messages.MessageUtil.authDisabled;
+import static org.neo4j.messages.MessageUtil.createNodeWithLabelsDenied;
+import static org.neo4j.messages.MessageUtil.overridenMode;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 @TestDirectoryExtension
@@ -161,7 +168,8 @@ class JavaFunctionsTestIT
 
             // Then
             assertQueryGetsValue( server, "RETURN my.countNodes() AS value", 3L );
-            assertQueryGetsError( server, "RETURN my.willFail() AS value", "Create node with labels '' on database 'neo4j' is not allowed" );
+            assertQueryGetsError( server, "RETURN my.willFail() AS value",
+                                  createNodeWithLabelsDenied( "", "neo4j", overridenMode( authDisabled( FULL.name() ), READ.name() ) ) );
         }
     }
 
