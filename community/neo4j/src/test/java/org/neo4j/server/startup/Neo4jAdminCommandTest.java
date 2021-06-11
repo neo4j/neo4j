@@ -72,6 +72,15 @@ class Neo4jAdminCommandTest
         }
 
         @Test
+        void shouldNotPrintUnexpectedErrorStackTraceOnCommandNonZeroExit() throws Exception
+        {
+            if ( !fork.run( () -> assertThat( execute( "load" ) ).isEqualTo( 2 ) ) )
+            {
+                assertThat( err.toString() ).isEmpty();
+            }
+        }
+
+        @Test
         void shouldPassThroughAllCommandsAndWarnOnUnknownCommand() throws Exception
         {
             if ( fork.run( () -> execute( List.of( "foo", "bar", "baz" ), Map.of() ) ) )
