@@ -235,27 +235,6 @@ public class SchemaStorage implements SchemaRuleAccess
         propertyStore.setHighestPossibleIdInUse( record.getId() );
     }
 
-    @Override
-    public void deleteSchemaRule( SchemaRule rule, CursorContext cursorContext, StoreCursors storeCursors )
-    {
-        var record = loadSchemaRecord( rule.getId(), storeCursors );
-        if ( record.inUse() )
-        {
-            long nextProp = record.getNextProp();
-            record.setInUse( false );
-            schemaStore.updateRecord( record, cursorContext );
-            PropertyStore propertyStore = schemaStore.propertyStore();
-            PropertyRecord props = propertyStore.newRecord();
-            while ( nextProp != Record.NO_NEXT_PROPERTY.longValue() &&
-                    propertyStore.getRecordByCursor( nextProp, props, RecordLoad.NORMAL, storeCursors.pageCursor( PROPERTY_CURSOR ) ).inUse() )
-            {
-                nextProp = props.getNextProp();
-                props.setInUse( false );
-                propertyStore.updateRecord( props, cursorContext );
-            }
-        }
-    }
-
     private SchemaRecord loadSchemaRecord( long ruleId, StoreCursors storeCursors )
     {
         return schemaStore.getRecordByCursor( ruleId, schemaStore.newRecord(), RecordLoad.NORMAL, storeCursors.pageCursor( SCHEMA_CURSOR ) );

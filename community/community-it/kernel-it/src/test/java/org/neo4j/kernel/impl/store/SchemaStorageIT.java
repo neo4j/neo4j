@@ -253,31 +253,6 @@ class SchemaStorageIT
         assertRule( rule, LABEL1, PROP1, ConstraintType.UNIQUE );
     }
 
-    @Test
-    void shouldWriteAndReadIndexConfig() throws KernelException
-    {
-        // given
-        IndexConfig expected = IndexConfig.with( MapUtil.genericMap(
-                "value.string", Values.stringValue( "value" ),
-                "value.int", Values.intValue( 1 ),
-                "value.doubleArray", Values.doubleArray( new double[]{0.4, 0.6, 1.0} ),
-                "value.boolean", Values.booleanValue( true )
-        ) );
-        var cursorContext = NULL;
-        SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) );
-        long id = schemaStore.nextId( cursorContext );
-        IndexDescriptor storeIndexDescriptor = forSchema( schema ).withName( "index_" + id ).materialise( id ).withIndexConfig( expected );
-        storage.writeSchemaRule( storeIndexDescriptor, cursorContext, INSTANCE );
-
-        // when
-        IndexDescriptor schemaRule = (IndexDescriptor) storage.loadSingleSchemaRule( id, storageCursors );
-        storage.deleteSchemaRule( schemaRule, NULL, storageCursors ); // Clean up after ourselves.
-
-        // then
-        IndexConfig actual = schemaRule.getIndexConfig();
-        assertEquals( expected, actual, "Read index config not same as written, expected " + expected + ", actual " + actual );
-    }
-
     private void assertRule( IndexDescriptor rule, String label, String propertyKey, boolean isUnique )
     {
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );

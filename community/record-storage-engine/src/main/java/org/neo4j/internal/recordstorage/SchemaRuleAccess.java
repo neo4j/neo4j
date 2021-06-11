@@ -94,11 +94,4 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * This is a non-transactional operation that is used during schema store migration.
      */
     void writeSchemaRule( SchemaRule rule, CursorContext cursorContext, MemoryTracker memoryTracker ) throws KernelException;
-
-    /**
-     * Deletes the schema rule at the location given by the persistent id of the schema rule given as an argument.
-     * This is a non-transactional operation that is primarily used for testing.
-     */
-    @VisibleForTesting
-    void deleteSchemaRule( SchemaRule rule, CursorContext cursorContext, StoreCursors storeCursors );
 }
