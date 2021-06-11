@@ -1110,7 +1110,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) should equal(List(
-      "Query cannot conclude with WITH (must be RETURN or an update clause)"
+      "Query cannot conclude with WITH (must be RETURN, an update clause, or a procedure call with no YIELD)"
     ))
   }
 
@@ -1123,7 +1123,20 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) should equal(List(
-      "Query cannot conclude with WITH (must be RETURN or an update clause)"
+      "Query cannot conclude with WITH (must be RETURN, an update clause, or a procedure call with no YIELD)"
+    ))
+  }
+
+  test("Query ending in CALL ... YIELD ...") {
+    val query = "MATCH (a) CALL proc.foo() YIELD bar"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(
+      "Query cannot conclude with CALL together with YIELD"
     ))
   }
 

@@ -245,10 +245,15 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_ARGUMENT_TYPE
     else if (msg.startsWith("Invalid input"))
       UNEXPECTED_SYNTAX
+    else if (msg.startsWith("Query cannot conclude with"))
+      INVALID_CLAUSE_COMPOSITION
     else
-      msg
+      msg.replaceAll(DOTALL + POSITION_PATTERN, "")
   }
 
+  /**
+   * This is a modifier to match newlines with `.` in a Regex.
+   */
   private val DOTALL = "(?s)"
 
   private val POSITION_PATTERN = " \\(line .+, column .+ \\(offset: .+\\)\\).*"

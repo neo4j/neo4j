@@ -141,11 +141,11 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   private def semanticCheckAbstract(clauses: Seq[Clause], clauseCheck: Seq[Clause] => SemanticCheck): SemanticCheck =
     checkStandaloneCall(clauses) chain
-    checkOrder(clauses) chain
-    withScopedState(clauseCheck(clauses)) chain
-    checkIndexHints(clauses) chain
-    checkInputDataStream(clauses) chain
-    recordCurrentScope(this)
+      withScopedState(clauseCheck(clauses)) chain
+      checkOrder(clauses) chain
+      checkIndexHints(clauses) chain
+      checkInputDataStream(clauses) chain
+      recordCurrentScope(this)
 
   override def semanticCheck: SemanticCheck =
     semanticCheckAbstract(clauses, checkClauses)
@@ -276,9 +276,12 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
       // otherwise
       case seq => seq.last match {
-        case _: UpdateClause | _: Return | _: CommandClause => None
-        case clause                                         =>
-          Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.position))
+        case _: UpdateClause | _: Return | _: CommandClause                  => None
+        case call:CallClause if call.returnColumns.isEmpty && !call.yieldAll => None
+        case call:CallClause                                                 =>
+          Some(SemanticError(s"Query cannot conclude with ${call.name} together with YIELD", call.position))
+        case clause                                                          =>
+          Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN, an update clause, or a procedure call with no YIELD)", clause.position))
       }
     }
 

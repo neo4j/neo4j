@@ -53,7 +53,7 @@ object ResolvedCall {
     val UnresolvedCall(_, _, declaredArguments, declaredResult, yieldAll) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedName(unresolved))
-    val implicitArguments = signature.inputSignature.map(s => s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d)).getOrElse(Parameter(s.name, s.typ)(position)))
+    def implicitArguments = signature.inputSignature.map(s => s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d)).getOrElse(Parameter(s.name, s.typ)(position)))
     val callArguments = declaredArguments.getOrElse(implicitArguments)
     val sensitiveArguments = signature.inputSignature.take(callArguments.length).map(_.sensitive)
     val callArgumentsWithSensitivityMarkers = callArguments.zipAll(sensitiveArguments, null, false).map {
@@ -64,7 +64,10 @@ object ResolvedCall {
       }
       case (p, _) => p
     }
-    val callResults = declaredResult.map(_.items).getOrElse(signatureResults(signature, position))
+
+    def implicitCallResults = signatureResults(signature, position)
+    val callResults = declaredResult.map(_.items).getOrElse(implicitCallResults)
+
     val callFilter = declaredResult.flatMap(_.where)
     if (callFilter.nonEmpty)
       throw new IllegalArgumentException(s"Expected no unresolved call with WHERE but got: $unresolved")
@@ -86,7 +89,7 @@ case class ResolvedCall(signature: ProcedureSignature,
                         // true if given by the user originally
                         declaredResults: Boolean = true,
                         // YIELD *
-                        yieldAll: Boolean = false)
+                        override val yieldAll: Boolean = false)
                        (val position: InputPosition)
   extends CallClause {
 

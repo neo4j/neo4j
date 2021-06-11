@@ -677,6 +677,8 @@ abstract class CallClause extends Clause {
   def returnColumns: List[LogicalVariable]
 
   def containsNoUpdates: Boolean
+
+  def yieldAll: Boolean
 }
 
 case class UnresolvedCall(procedureNamespace: Namespace,
@@ -686,7 +688,7 @@ case class UnresolvedCall(procedureNamespace: Namespace,
                           // None: No results declared  (i.e. no "YIELD" part or "YIELD *")
                           declaredResult: Option[ProcedureResult] = None,
                           // YIELD *
-                          yieldAll: Boolean = false
+                          override val yieldAll: Boolean = false
                          )(val position: InputPosition) extends CallClause {
 
   override def returnColumns: List[LogicalVariable] =
