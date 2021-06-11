@@ -48,6 +48,12 @@ public class ThrowingFabricRemoteExecutor implements FabricRemoteExecutor
         }
 
         @Override
+        public boolean isEmptyContext()
+        {
+            return true;
+        }
+
+        @Override
         public void close()
         {
 

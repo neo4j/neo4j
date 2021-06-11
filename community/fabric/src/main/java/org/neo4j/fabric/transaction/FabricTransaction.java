@@ -55,6 +55,8 @@ public interface FabricTransaction
 
     void setMetaData( Map<String, Object> txMeta );
 
+    boolean isOpen();
+
     interface FabricExecutionContext
     {
         FabricRemoteExecutor.RemoteTransactionContext getRemote();
