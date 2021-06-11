@@ -25,23 +25,25 @@ import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
 /**
- * PlanContext is an internal access layer to the graph that is solely used during plan building
+ * PlanContext is an internal access layer to the graph that is solely used during plan building.
  *
  * As such it is similar to QueryContext. The reason for separating both interfaces is that we
  * want to control what operations can be executed at runtime.  For example, we do not give access
  * to index rule lookup in QueryContext as that should happen at query compile time.
+ *
+ * None of the functions in PlanContext takes any schema lock.
  */
 trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
   /**
    * Return all indexes (general and unique) for a given label, without taking any schema locks.
    */
-  def indexesGetForLabelNonLocking(labelId: Int): Iterator[IndexDescriptor]
+  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
 
   /**
    * Return all indexes for a given relationship type, without taking any schema locks.
    */
-  def indexesGetForRelTypeNonLocking(relTypeId: Int): Iterator[IndexDescriptor]
+  def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
 
   /**
    * Return all unique indexes for a given label, without taking any schema locks.

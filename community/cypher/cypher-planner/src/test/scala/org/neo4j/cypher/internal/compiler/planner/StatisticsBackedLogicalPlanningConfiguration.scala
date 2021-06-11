@@ -358,12 +358,12 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def statistics: InstrumentedGraphStatistics =
         InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())
 
-      override def indexesGetForLabelNonLocking(labelId: Int): Iterator[IndexDescriptor] = {
+      override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
         indexesGetForEntityType(entityType)
       }
 
-      override def indexesGetForRelTypeNonLocking(relTypeId: Int): Iterator[IndexDescriptor] = {
+      override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
         indexesGetForEntityType(entityType)
       }
@@ -425,11 +425,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       }
 
       override def indexExistsForLabel(labelId: Int): Boolean = {
-        indexesGetForLabelNonLocking(labelId).nonEmpty
+        indexesGetForLabel(labelId).nonEmpty
       }
 
       override def indexExistsForRelType(relTypeId: Int): Boolean = {
-        indexesGetForRelTypeNonLocking(relTypeId).nonEmpty
+        indexesGetForRelType(relTypeId).nonEmpty
       }
 
       override def indexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
