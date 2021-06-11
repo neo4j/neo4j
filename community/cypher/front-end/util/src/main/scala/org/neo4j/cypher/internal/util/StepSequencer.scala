@@ -47,7 +47,9 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
    *                          If there are steps that invalidate initial conditions, they will not be part of the post-conditions
    *                          of the returned sequence.
    */
-  def orderSteps(steps: Set[S], initialConditions: Set[Condition] = Set.empty): AccumulatedSteps[ACC] = {
+  def orderSteps(steps: Set[S],
+                 initialConditions: Set[Condition] = Set.empty,
+                 printGraph: Boolean = false): AccumulatedSteps[ACC] = {
     // Abort if there is a negated initial condition
     initialConditions.foreach {
       case n: NegatedCondition => throw new IllegalArgumentException(s"Initial conditions cannot be negated: $n.")
@@ -100,7 +102,6 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     }
     StepSequencer.topologicalSort(graphWithDisabling, None, (_: S, _: mutable.Set[S]) => ())
 
-
     // Assemble a dependency graph for the actual ordering.
     val graph = new MutableDirectedGraph[S]
     steps.foreach(graph.add)
@@ -126,6 +127,10 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
               graph.connect(introducingStep, step)
           }
       }
+    }
+
+    if (printGraph) {
+      println(graph)
     }
 
     val introducingStepsNotByInitial = introducingSteps.collect {
