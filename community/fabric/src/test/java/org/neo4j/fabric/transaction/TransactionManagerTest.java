@@ -22,6 +22,7 @@ package org.neo4j.fabric.transaction;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.UUID;
 
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
@@ -34,6 +35,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.time.Clocks;
 
 import static java.util.Collections.emptyMap;
@@ -90,7 +92,8 @@ class TransactionManagerTest
 
     private static FabricTransactionInfo createTransactionInfo()
     {
-        return new FabricTransactionInfo( AccessMode.READ, LoginContext.AUTH_DISABLED, ClientConnectionInfo.EMBEDDED_CONNECTION, "foo", false, Duration.ZERO,
+        return new FabricTransactionInfo( AccessMode.READ, LoginContext.AUTH_DISABLED, ClientConnectionInfo.EMBEDDED_CONNECTION,
+                DatabaseIdFactory.from( "a", UUID.randomUUID() ), false, Duration.ZERO,
                 emptyMap(), new RoutingContext( true, emptyMap() ) );
     }
 }
