@@ -95,11 +95,6 @@ public class SchemaCache
         return schemaCacheState.hasIndex( index );
     }
 
-    public boolean hasIndex( SchemaDescriptor descriptor )
-    {
-        return schemaCacheState.hasIndex( descriptor );
-    }
-
     public Iterator<ConstraintDescriptor> constraintsForLabel( final int label )
     {
         return Iterators.filter( SchemaDescriptorPredicates.hasLabel( label ), constraints().iterator() );
@@ -327,11 +322,6 @@ public class SchemaCache
         boolean hasIndex( IndexDescriptor index )
         {
             return indexesById.containsKey( index.getId() );
-        }
-
-        boolean hasIndex( SchemaDescriptor descriptor )
-        {
-            return indexesBySchema.containsKey( descriptor );
         }
 
         Iterable<ConstraintDescriptor> constraints()
