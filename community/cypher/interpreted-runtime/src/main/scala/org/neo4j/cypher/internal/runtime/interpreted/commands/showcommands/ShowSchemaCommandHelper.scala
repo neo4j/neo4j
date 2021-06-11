@@ -20,10 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.internal.schema.IndexConfig
-import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleArray
-import org.neo4j.values.storable.IntValue
-import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
@@ -34,7 +31,7 @@ import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.immutable.ListMap
 
 object ShowSchemaCommandHelper {
-  def escapeBackticks(str: String): String = str.replaceAll("`", "``")
+  def escapeBackticks(str: String): String = str.replaceAllLiterally("`", "``")
 
   def extractOptionsMap(providerName: String, indexConfig: IndexConfig): MapValue = {
     val (configKeys, configValues) = indexConfig.asMap().asScala.toSeq.unzip
