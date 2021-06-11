@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
+import picocli.CommandLine.ExitCode;
 
 import java.io.PrintStream;
 import java.util.List;
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
+import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
 import static org.neo4j.server.startup.Bootloader.PROP_JAVA_VERSION;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_VENDOR;
@@ -74,7 +76,7 @@ class Neo4jAdminCommandTest
         @Test
         void shouldNotPrintUnexpectedErrorStackTraceOnCommandNonZeroExit() throws Exception
         {
-            if ( !fork.run( () -> assertThat( execute( "load" ) ).isEqualTo( 2 ) ) )
+            if ( !fork.run( () -> assertThat( execute( "load" ) ).isEqualTo( ExitCode.USAGE ) ) )
             {
                 assertThat( err.toString() ).isEmpty();
             }
@@ -111,14 +113,14 @@ class Neo4jAdminCommandTest
         @Test
         void shouldPassParallelGcByDefault()
         {
-            assertThat( execute( null ) ).isEqualTo( 0 );
+            assertThat( execute( null ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "-XX:+UseParallelGC" );
         }
 
         @Test
         void shouldSpecifyHeapSizeWhenGiven()
         {
-            assertThat( execute( List.of(), Map.of( Bootloader.ENV_HEAP_SIZE, "666m") ) ).isEqualTo( 0 );
+            assertThat( execute( List.of(), Map.of( Bootloader.ENV_HEAP_SIZE, "666m") ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() )
                     .contains( "-Xmx666m" )
                     .contains( "-Xms666m" );
@@ -128,7 +130,7 @@ class Neo4jAdminCommandTest
         void shouldReadMaxHeapSizeFromConfig()
         {
             addConf( BootloaderSettings.max_heap_size, "222m" );
-            assertThat( execute( null ) ).isEqualTo( 0 );
+            assertThat( execute( null ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "-Xmx227328k" );
         }
 
@@ -136,7 +138,7 @@ class Neo4jAdminCommandTest
         void shouldPrioritizeHeapSizeWhenConfigProvidedGiven()
         {
             addConf( BootloaderSettings.max_heap_size, "222m" );
-            assertThat( execute( List.of(), Map.of( Bootloader.ENV_HEAP_SIZE, "666m") ) ).isEqualTo( 0 );
+            assertThat( execute( List.of(), Map.of( Bootloader.ENV_HEAP_SIZE, "666m") ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() )
                     .contains( "-Xmx666m" )
                     .contains( "-Xms666m" );
@@ -146,7 +148,7 @@ class Neo4jAdminCommandTest
         void shouldIgnoreMinHeapSizeInConfig()
         {
             addConf( BootloaderSettings.initial_heap_size, "222m" );
-            assertThat( execute( null ) ).isEqualTo( 0 );
+            assertThat( execute( null ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).doesNotContain( "-Xms" );
         }
 
@@ -154,7 +156,7 @@ class Neo4jAdminCommandTest
         void shouldPrintJVMInfo()
         {
             Map<String,String> vm = Map.of( PROP_JAVA_VERSION, "11.0", PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM", PROP_VM_VENDOR, "Oracle" );
-            assertThat( execute( List.of(), vm ) ).isEqualTo( 0 );
+            assertThat( execute( List.of(), vm ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).containsSubsequence( String.format( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
                     vm.get( PROP_JAVA_VERSION ), vm.get( PROP_VM_NAME ), vm.get( PROP_VM_VENDOR ) ) );
         }
@@ -169,7 +171,7 @@ class Neo4jAdminCommandTest
                 assumeThat( isCurrentlyRunningAsWindowsAdmin() ).isFalse();
             }
             addConf( GraphDatabaseSettings.default_database, "$(echo foo)" );
-            assertThat( execute( List.of( "foo", "-b", "--expand-commands" ), Map.of() ) ).isEqualTo( 0 );
+            assertThat( execute( List.of( "foo", "-b", "--expand-commands" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).containsSubsequence( "foo", "-b", "--expand-commands" );
         }
 
@@ -177,7 +179,7 @@ class Neo4jAdminCommandTest
         void shouldFailOnMissingExpandCommands()
         {
             addConf( GraphDatabaseSettings.default_database, "$(echo foo)" );
-            assertThat( execute( "bar" ) ).isEqualTo( 1 );
+            assertThat( execute( "bar" ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).containsSubsequence( "Failed to read config", "is a command, but config is not explicitly told to expand it" );
         }
 

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import picocli.CommandLine;
+import picocli.CommandLine.ExitCode;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,6 +60,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
+import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
+import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 class Neo4jCommandTest
@@ -71,14 +74,14 @@ class Neo4jCommandTest
         @Test
         void shouldPrintUsageWhenNoArgument()
         {
-            assertThat( execute( null ) ).isEqualTo( 2 );
+            assertThat( execute( null ) ).isEqualTo( ExitCode.USAGE );
             assertThat( err.toString() ).contains( "Usage: Neo4j" );
         }
 
         @Test
         void shouldPrintPlatformSpecificUsage()
         {
-            assertThat( execute( "help" ) ).isEqualTo( 0 );
+            assertThat( execute( "help" ) ).isEqualTo( EXIT_CODE_OK );
             String output = out.toString();
             String[] availableCommands =  new String[] {"start", "restart", "console", "status", "stop"};
             if ( SystemUtils.IS_OS_WINDOWS )
@@ -93,14 +96,14 @@ class Neo4jCommandTest
         @Test
         void shouldPrintUsageWhenInvalidArgument()
         {
-            assertThat( execute( "foo" ) ).isEqualTo( 2 );
+            assertThat( execute( "foo" ) ).isEqualTo( ExitCode.USAGE );
             assertThat( err.toString() ).contains( "Usage: Neo4j" );
         }
 
         @Test
         void shouldPrintUsageOnHelp()
         {
-            assertThat( execute( "help" ) ).isEqualTo( 0 );
+            assertThat( execute( "help" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "Usage: Neo4j" );
         }
 
@@ -116,7 +119,7 @@ class Neo4jCommandTest
         @Test
         void shouldDetectNeo4jNotRunningOnStatus()
         {
-            assertThat( execute( "status" ) ).isEqualTo( 3 );
+            assertThat( execute( "status" ) ).isEqualTo( EXIT_CODE_NOT_RUNNING );
             assertThat( out.toString() ).contains( "Neo4j is not running" );
         }
 
@@ -125,14 +128,14 @@ class Neo4jCommandTest
         {
             execute( "start" );
             clearOutAndErr();
-            assertThat( execute( "status" ) ).isEqualTo( 0 );
+            assertThat( execute( "status" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "Neo4j is running" );
         }
 
         @Test
         void shouldDoNothingWhenStoppingNonRunningNeo4j()
         {
-            assertThat( execute( "stop" ) ).isEqualTo( 0 );
+            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "Neo4j is not running" );
         }
 
@@ -140,7 +143,7 @@ class Neo4jCommandTest
         void shouldBeAbleToStopStartedNeo4j()
         {
             execute( "start" );
-            assertThat( execute( "stop" ) ).isEqualTo( 0 );
+            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "Stopping Neo4j", "stopped" );
         }
 
@@ -165,7 +168,7 @@ class Neo4jCommandTest
         {
             addConf( BootloaderSettings.max_heap_size, "100m" );
             addConf( BootloaderSettings.initial_heap_size, "10m" );
-            assertThat( execute( "start" ) ).isEqualTo( 0 );
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() )
                     .contains( "-Xmx102400k" )
                     .contains( "-Xms10240k" );
@@ -175,7 +178,7 @@ class Neo4jCommandTest
         void shouldSeeErrorMessageOnInvalidHeap()
         {
             addConf( BootloaderSettings.max_heap_size, "foo" );
-            assertThat( execute( "start" ) ).isEqualTo( 1 );
+            assertThat( execute( "start" ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).contains( "'foo' is not a valid size" );
         }
 
@@ -183,12 +186,12 @@ class Neo4jCommandTest
         void shouldOnlyPrintStacktraceOnVerbose()
         {
             addConf( GraphDatabaseSettings.read_only_database_default, "foo" );
-            assertThat( execute( "start" ) ).isEqualTo( 1 );
+            assertThat( execute( "start" ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).contains( "Run with '--verbose' for a more detailed error message." );
             assertThat( err.toString() ).doesNotContain( "Exception" );
 
             clearOutAndErr();
-            assertThat( execute( List.of( "start", "--verbose" ), Map.of() ) ).isEqualTo( 1 );
+            assertThat( execute( List.of( "start", "--verbose" ), Map.of() ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).doesNotContain( "Run with '--verbose' for a more detailed error message." );
             assertThat( err.toString() ).contains( "BootFailureException" );
         }
@@ -202,7 +205,7 @@ class Neo4jCommandTest
                 // where it's essentially impossible to create correct ACL/owner of the config file that passes the validation in the config reading.
                 assumeThat( isCurrentlyRunningAsWindowsAdmin() ).isFalse();
             }
-            assertThat( execute( List.of( "start", "--expand-commands" ), Map.of() ) ).isEqualTo( 0 );
+            assertThat( execute( List.of( "start", "--expand-commands" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "--expand-commands" );
         }
 
@@ -210,7 +213,7 @@ class Neo4jCommandTest
         void shouldNotComplainOnJavaWhenCorrectVersion()
         {
             Map<String,String> java = Map.of( Bootloader.PROP_JAVA_VERSION, "11.0.8", Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
-            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( 0 );
+            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).doesNotContain( "WARNING! You are using an unsupported Java runtime" );
         }
 
@@ -218,7 +221,7 @@ class Neo4jCommandTest
         void shouldComplainWhenJavaVersionIsTooNew()
         {
             Map<String,String> java = Map.of( Bootloader.PROP_JAVA_VERSION, "15.0.1", Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
-            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( 0 );
+            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).contains( "WARNING! You are using an unsupported Java runtime." );
         }
 
@@ -226,31 +229,31 @@ class Neo4jCommandTest
         void shouldComplainWhenRunningUnsupportedJvm()
         {
             Map<String,String> java = Map.of( Bootloader.PROP_JAVA_VERSION, "11.0.2", Bootloader.PROP_VM_NAME, "Eclipse OpenJ9 VM" );
-            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( 0 );
+            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).contains( "WARNING! You are using an unsupported Java runtime." );
         }
 
         @Test
         void shouldBeAbleToPrintCorrectVersion()
         {
-            assertThat( execute( "version" ) ).isEqualTo( 0 );
+            assertThat( execute( "version" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( Version.getNeo4jVersion() );
 
             clearOutAndErr();
-            assertThat( execute( "--version" ) ).isEqualTo( 0 );
+            assertThat( execute( "--version" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( Version.getNeo4jVersion() );
         }
 
         @Test
         void shouldBeAbleToPrintCorrectVersionWhenRunning()
         {
-            assertThat( execute( "start" ) ).isEqualTo( 0 );
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             ProcessHandle firstHandle = getProcess().get();
-            assertThat( execute( "version" ) ).isEqualTo( 0 );
+            assertThat( execute( "version" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( Version.getNeo4jVersion() );
             ProcessHandle secondHandle = getProcess().get();
             assertThat( firstHandle.pid() ).isEqualTo( secondHandle.pid() );
-            assertThat( execute( "stop" ) ).isEqualTo( 0 );
+            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( !firstHandle.isAlive() );
         }
 
@@ -258,25 +261,25 @@ class Neo4jCommandTest
         @EnabledOnOs( OS.LINUX ) //stop involves services on windows
         void shouldBeAbleToStopRunningServerWithConfigErrors()
         {
-            assertThat( execute( "start" ) ).isEqualTo( 0 );
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             addConf( BootloaderSettings.gc_logging_enabled, "yes" );
-            assertThat( execute( "stop" ) ).isEqualTo( 0 );
+            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
             clearOutAndErr();
-            assertThat( execute( "start" ) ).isEqualTo( 1 );
+            assertThat( execute( "start" ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).contains( "'yes' is not a valid boolean" );
         }
 
         @Test
         void shouldBeAbleToStartInFakeConsoleMode()
         {
-            assertThat( execute( "console" ) ).isEqualTo( 0 ); //Since we're using a fake process it does not block on anything
+            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK ); //Since we're using a fake process it does not block on anything
             assertThat( out.toString() ).contains( TestEntryPoint.class.getName() );
         }
 
         @Test
         void shouldUseUtf8ByDefault()
         {
-            assertThat( execute( "start" ) ).isEqualTo( 0 );
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "-Dfile.encoding=UTF-8" );
         }
 
@@ -288,7 +291,7 @@ class Neo4jCommandTest
             FileUtils.writeToFile( config.get( GraphDatabaseSettings.plugin_dir ).resolve( "fake.jar" ), "foo", true );
             FileUtils.writeToFile( confFile.getParent().resolve( "fake.jar" ), "foo", true );
 
-            assertThat( execute( "start" ) ).isEqualTo( 0 );
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).containsSubsequence(
                     IS_OS_WINDOWS ? "--Classpath" : "-cp",
                     config.get( GraphDatabaseSettings.plugin_dir ).toString() + File.separator + "*",
@@ -300,21 +303,21 @@ class Neo4jCommandTest
         @Test
         void shouldPassHomeAndConfArgs()
         {
-            assertThat( execute( "start" ) ).isEqualTo( 0 );
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "--home-dir", "--config-dir" );
         }
 
         @Test
         void shouldHideDryRunArgument()
         {
-            assertThat( execute( List.of( "help", "console" ), Map.of() ) ).isEqualTo( 0 );
+            assertThat( execute( List.of( "help", "console" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).doesNotContain( "--dry-run" );
         }
 
         @Test
         void shouldOnlyGetCommandLineFromDryRun()
         {
-            assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( 0 );
+            assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).hasLineCount( 1 );
             assertThat( out.toString() ).containsSubsequence( "java", "-cp", TestEntryPoint.class.getName(), "--home-dir", "--config-dir" );
         }
@@ -327,7 +330,7 @@ class Neo4jCommandTest
             addConf( BootloaderSettings.additional_jvm, "\"-Dbaz=/path/with spaces/and double qoutes\"" );
             addConf( BootloaderSettings.additional_jvm, "-Dqux=/path/with spaces/and unmatched \" qoute" );
             addConf( BootloaderSettings.additional_jvm, "-Dcorge=/path/with/no/spaces" );
-            assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( 0 );
+            assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains(
                     "\"-Dfoo=/path/with spaces/\"",
                     "\"-Dbar=/path/with spaces/and single qoutes\"",
@@ -346,30 +349,30 @@ class Neo4jCommandTest
             @Test
             void shouldNotStartIfServiceNotInstalled()
             {
-                assertThat( executeWithoutInjection( "start" ) ).isEqualTo( 3 );
+                assertThat( executeWithoutInjection( "start" ) ).isEqualTo( EXIT_CODE_NOT_RUNNING );
                 assertThat( err.toString() ).contains( "Neo4j service is not installed" );
             }
 
             @Test
             void shouldNotStopIfServiceNotInstalled()
             {
-                assertThat( executeWithoutInjection( "stop" ) ).isEqualTo( 0 );
+                assertThat( executeWithoutInjection( "stop" ) ).isEqualTo( EXIT_CODE_OK );
                 assertThat( out.toString() ).contains( "Neo4j is not running" );
             }
 
             @Test
             void shouldComplainIfAlreadyInstalled()
             {
-                assertThat( executeWithoutInjection( "install-service" ) ).isEqualTo( 0 );
+                assertThat( executeWithoutInjection( "install-service" ) ).isEqualTo( EXIT_CODE_OK );
                 clearOutAndErr();
-                assertThat( executeWithoutInjection( "install-service" ) ).isEqualTo( 1 );
+                assertThat( executeWithoutInjection( "install-service" ) ).isEqualTo( ExitCode.SOFTWARE );
                 assertThat( out.toString() ).contains( "Neo4j service is already installed" );
             }
 
             @Test
             void shouldComplainIfUninstallingWhenNotInstalled()
             {
-                assertThat( executeWithoutInjection( "uninstall-service" ) ).isEqualTo( 0 );
+                assertThat( executeWithoutInjection( "uninstall-service" ) ).isEqualTo( EXIT_CODE_OK );
                 assertThat( out.toString() ).contains( "Neo4j service is not installed" );
             }
         }
@@ -394,7 +397,7 @@ class Neo4jCommandTest
                     installArgs.remove( 0 );
                     installArgs.add( 0, "install-service" );
                     int installExitCode = super.execute( installArgs, env );
-                    if ( installExitCode != 0 )
+                    if ( installExitCode != EXIT_CODE_OK )
                     {
                         return installExitCode;
                     }
@@ -405,7 +408,7 @@ class Neo4jCommandTest
             {
                 if ( !args.isEmpty() && args.get( 0 ).equals( "stop" ) )
                 {
-                    assertThat( super.execute( List.of( "uninstall-service" ), env ) ).isEqualTo( 0 );
+                    assertThat( super.execute( List.of( "uninstall-service" ), env ) ).isEqualTo( EXIT_CODE_OK );
                 }
             }
             return exitCode;
@@ -445,8 +448,9 @@ class Neo4jCommandTest
         @Test
         void shouldBeAbleToStartInRealConsoleMode() throws Exception
         {
-            if ( fork.run( () -> assertThat( execute( "console" ) ).isEqualTo( 0 ), Map.of( TestEntryPoint.ENV_TIMEOUT, "0" ) ) )
+            if ( fork.run( () -> assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK ), Map.of( TestEntryPoint.ENV_TIMEOUT, "0" ) ) )
             {
+
                 assertThat( out.toString() ).contains( TestEntryPoint.STARTUP_MSG );
             }
         }
@@ -454,14 +458,16 @@ class Neo4jCommandTest
         @Test
         void shouldWaitForNeo4jToDieBeforeExitInConsole() throws Exception
         {
-            if ( fork.run( () -> assertThat( execute( "console" ) ).isEqualTo( 0 ), Map.of( TestEntryPoint.ENV_TIMEOUT, "1000" ), p -> {
+            if ( fork.run( () -> assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK ), Map.of( TestEntryPoint.ENV_TIMEOUT, "1000" ), p ->
+            {
                 StringBuilder sb = new StringBuilder();
-                assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(),
-                        s -> s.contains( TestEntryPoint.STARTUP_MSG ), 5, MINUTES );
+                assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(), s -> s.contains( TestEntryPoint.STARTUP_MSG ),
+                        5, MINUTES );
                 p.toHandle().destroy();
                 return IS_OS_WINDOWS ? 1 : 143;
             } ) )
             {
+
                 assertThat( out.toString() ).contains( TestEntryPoint.END_MSG );
             }
         }
@@ -472,7 +478,7 @@ class Neo4jCommandTest
             if ( fork.run( () ->
             {
                 addConf( BootloaderSettings.max_heap_size, "1k" );
-                assertThat( execute( "console" ) ).isEqualTo( 1 );
+                assertThat( execute( "console" ) ).isEqualTo( ExitCode.SOFTWARE );
             } ) )
             {
                 assertThat( out.toString() ).contains( "Too small maximum heap" );
@@ -483,7 +489,7 @@ class Neo4jCommandTest
         @Test
         void shouldWritePidFileOnStart()
         {
-            assertThat( execute( "start" ) ).isEqualTo( 0 );
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "Starting Neo4j." );
             assertThat( pidFile ).exists();
         }
@@ -493,13 +499,13 @@ class Neo4jCommandTest
         @Test
         void shouldGetReasonableErrorWhenUnableToReadPidFile() throws IOException
         {
-            assertThat( execute( "start" ) ).isEqualTo( 0 );
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( pidFile ).exists();
             Set<PosixFilePermission> origPermissions = Files.getPosixFilePermissions( pidFile );
             try
             {
                 Files.setPosixFilePermissions( pidFile, Sets.mutable.withAll( origPermissions ).without( PosixFilePermission.OWNER_READ ) );
-                assertThat( execute( "status" ) ).isEqualTo( 1 );
+                assertThat( execute( "status" ) ).isEqualTo( ExitCode.SOFTWARE );
                 assertThat( err.toString() ).contains( "Access denied" );
             }
             finally
@@ -515,7 +521,7 @@ class Neo4jCommandTest
             {
                 Files.createDirectories( config.get( GraphDatabaseSettings.logs_directory ) );
                 addConf( BootloaderSettings.gc_logging_enabled, "true" );
-                assertThat( execute( "console" ) ).isEqualTo( 0 );
+                assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
             }, Map.of( TestEntryPoint.ENV_TIMEOUT, "0" ) ) )
             {
                 assertThat( out.toString() ).containsSubsequence( "-Xlog:gc*,safepoint,age*=trace:file=", "gc.log", "::filecount=5,filesize=20480k" );

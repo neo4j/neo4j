@@ -41,6 +41,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class Neo4jCommandIT extends Neo4jCommandTestBase
@@ -95,12 +96,12 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
         addConf( BootloaderSettings.windows_service_name, "neo4j-" + currentTimeMillis() );
         try
         {
-            assertThat( execute( "install-service" ) ).isEqualTo( 0 );
+            assertThat( execute( "install-service" ) ).isEqualTo( EXIT_CODE_OK );
             shouldBeAbleToStartAndStopRealServer();
         }
         finally
         {
-            assertThat( execute( "uninstall-service" ) ).isEqualTo( 0 );
+            assertThat( execute( "uninstall-service" ) ).isEqualTo( EXIT_CODE_OK );
         }
         assertThat( err.toString() ).isEmpty();
     }
@@ -108,12 +109,12 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
     private void shouldBeAbleToStartAndStopRealServer()
     {
         int startSig = execute( List.of( "start" ), Map.of( Bootloader.ENV_NEO4J_START_WAIT, "3" ) );
-        assertThat( startSig ).isEqualTo( 0 );
+        assertThat( startSig ).isEqualTo( EXIT_CODE_OK );
         assertEventually( this::getDebugLogLines,
                           s -> s.contains( String.format( "VM Arguments: [-Xms%dk, -Xmx%dk", INITIAL_HEAP_MB * 1024, MAX_HEAP_MB * 1024 ) ), 5, MINUTES );
         assertEventually( this::getDebugLogLines, s -> s.contains( getVersion() + "NeoWebServer] ========" ), 5, MINUTES );
         assertEventually( this::getUserLogLines, s -> s.contains( "Remote interface available at" ), 5, MINUTES );
-        assertThat( execute( "stop" ) ).isEqualTo( 0 );
+        assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
     }
 
     protected String getVersion()
