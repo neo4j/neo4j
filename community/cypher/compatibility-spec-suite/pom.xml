@@ -26,6 +26,7 @@
     <properties>
         <moduleName>org.neo4j.cypher.internal.planning.spec.suite</moduleName>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
+        <cursor.counters.check>false</cursor.counters.check>
     </properties>
 
     <licenses>
