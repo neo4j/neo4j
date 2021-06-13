@@ -357,6 +357,17 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         return Optional.ofNullable( lastSubmittedStatement );
     }
 
+    public boolean isLocal()
+    {
+        return remoteTransactionContext.isEmptyContext();
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return state == State.OPEN;
+    }
+
     @Override
     public void markForTermination( Status reason )
     {

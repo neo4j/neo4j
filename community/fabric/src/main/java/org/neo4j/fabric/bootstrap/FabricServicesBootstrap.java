@@ -59,6 +59,7 @@ import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -83,6 +84,7 @@ public abstract class FabricServicesBootstrap
     private final AbstractSecurityLog securityLog;
     private final ServiceBootstrapper serviceBootstrapper;
     private final Config config;
+    private final AvailabilityGuard availabilityGuard;
 
     public FabricServicesBootstrap( LifeSupport lifeSupport, Dependencies dependencies, LogService logService, AbstractSecurityLog securityLog )
     {
@@ -93,6 +95,7 @@ public abstract class FabricServicesBootstrap
         serviceBootstrapper = new ServiceBootstrapper( lifeSupport, dependencies );
 
         config = dependencies.resolveDependency( Config.class );
+        availabilityGuard = dependencies.resolveDependency( AvailabilityGuard.class );
 
         fabricConfig = bootstrapFabricConfig();
     }
@@ -129,8 +132,8 @@ public abstract class FabricServicesBootstrap
         register( new TransactionMonitorScheduler( transactionMonitor, jobScheduler, transactionCheckInterval, null ), TransactionMonitorScheduler.class );
 
         var errorReporter = new ErrorReporter( logService );
-        register( new TransactionManager(
-                remoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor, securityLog ), TransactionManager.class );
+        register( new TransactionManager( remoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor, securityLog, systemNanoClock, config,
+                availabilityGuard ), TransactionManager.class );
 
         var cypherConfig = CypherConfiguration.fromConfig( config );
 
