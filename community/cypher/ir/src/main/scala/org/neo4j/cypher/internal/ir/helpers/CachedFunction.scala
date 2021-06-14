@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.helpers
+package org.neo4j.cypher.internal.ir.helpers
 
 import scala.collection.mutable
 
@@ -47,7 +47,7 @@ object CachedFunction {
   }
 
   /** Un-tupling for functions of arity 6. This transforms a function taking
-   *  a 6-tuple of arguments into a function of arity 6 which takes each argument separately.
+   * a 6-tuple of arguments into a function of arity 6 which takes each argument separately.
    */
   def untupled[a1, a2, a3, a4, a5, a6, b](f: ((a1, a2, a3, a4, a5, a6)) => b): (a1, a2, a3, a4, a5, a6) => b = {
     (x1, x2, x3, x4, x5, x6) => f(Tuple6(x1, x2, x3, x4, x5, x6))

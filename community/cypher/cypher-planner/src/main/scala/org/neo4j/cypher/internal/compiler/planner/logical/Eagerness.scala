@@ -106,10 +106,10 @@ object Eagerness {
 
   @tailrec
   private def headConflicts(head: SinglePlannerQuery, tail: SinglePlannerQuery, headQgWithLeafInfo: QgWithLeafInfo): Seq[EagernessReason.Reason] = {
-    val allHeadQgs = Set(headQgWithLeafInfo) ++ (headQgWithLeafInfo.queryGraph.allQueryGraphs.toSet - headQgWithLeafInfo.queryGraph).map(qgWithNoStableIdentifierAndOnlyLeaves)
+    val allHeadQgs = Set(headQgWithLeafInfo) ++ (headQgWithLeafInfo.queryGraph.allQGsWithLeafInfo.toSet.filterNot(_.queryGraph == headQgWithLeafInfo.queryGraph))
     def overlapsHead(writeQg: QueryGraph): Seq[EagernessReason.Reason] = allHeadQgs.flatMap(readQg => writeQg.overlaps(readQg)).toSeq
 
-    val conflictWithQqInHorizon = tail.horizon.allQueryGraphs.flatMap(qg => overlapsHead(qg))
+    val conflictWithQqInHorizon = tail.horizon.allQueryGraphs.flatMap(qg => overlapsHead(qg.queryGraph))
     val mergeReadWrite = head == tail && head.queryGraph.containsMergeRecursive
 
     val conflicts: Seq[EagernessReason.Reason] = {
@@ -118,7 +118,7 @@ object Eagerness {
       else if (tail.queryGraph.readOnly || mergeReadWrite)
         Seq.empty
       else
-        tail.queryGraph.allQueryGraphs.flatMap(qg => overlapsHead(qg))
+        tail.queryGraph.allQGsWithLeafInfo.flatMap(qg => overlapsHead(qg.queryGraph))
     }
 
     if (conflicts.nonEmpty)
@@ -222,14 +222,14 @@ object Eagerness {
   }
 
   private def horizonReadWriteConflict(query: SinglePlannerQuery, context: LogicalPlanningContext): Seq[EagernessReason.Reason] = {
-    query.tail.toSeq.flatMap(_.allQueryGraphs).flatMap(_.overlapsHorizon(query.horizon, context.semanticTable))
+    query.tail.toSeq.flatMap(_.allQGsWithLeafInfo).flatMap(_.queryGraph.overlapsHorizon(query.horizon, context.semanticTable))
   }
 
   private def horizonWriteReadConflict(query: SinglePlannerQuery): Seq[EagernessReason.Reason] = {
-    val horizonQgs = query.horizon.allQueryGraphs
-    val tailQgs = query.tail.toSeq.flatMap(_.allQueryGraphs)
+    val horizonQgs = query.horizon.allQueryGraphs.map(_.queryGraph)
+    val tailQgs = query.tail.toSeq.flatMap(_.allQGsWithLeafInfo)
 
-    tailQgs.map(qgWithNoStableIdentifierAndOnlyLeaves).flatMap(readQg => horizonQgs.flatMap(writeQg => writeQg.overlaps(readQg)))
+    tailQgs.flatMap(readQg => horizonQgs.flatMap(writeQg => writeQg.overlaps(readQg)))
   }
 
   /**
@@ -249,10 +249,10 @@ object Eagerness {
   }
 
   def readWriteConflict(readQuery: SinglePlannerQuery, writeQuery: SinglePlannerQuery): Seq[EagernessReason.Reason] = {
-    val readQGs = readQuery.queryGraph.allQueryGraphs.map(qgWithNoStableIdentifierAndOnlyLeaves)
-    def overlapsWithReadQg(writeQg: QueryGraph): Seq[EagernessReason.Reason] = readQGs.flatMap(readQg => writeQg.overlaps(readQg))
+    val readQGsWithLeafInfo = readQuery.queryGraph.allQGsWithLeafInfo
+    def overlapsWithReadQg(writeQg: QueryGraph): Seq[EagernessReason.Reason] = readQGsWithLeafInfo.flatMap(readQgWithLeafInfo => writeQg.overlaps(readQgWithLeafInfo))
 
-    val conflictsWithQgInHorizon = writeQuery.horizon.allQueryGraphs.flatMap(overlapsWithReadQg)
+    val conflictsWithQgInHorizon = writeQuery.horizon.allQueryGraphs.map(_.queryGraph).flatMap(overlapsWithReadQg)
     val mergeReadWrite = readQuery == writeQuery && readQuery.queryGraph.containsMergeRecursive
 
     if (conflictsWithQgInHorizon.nonEmpty)
@@ -260,19 +260,22 @@ object Eagerness {
     else if (writeQuery.queryGraph.readOnly || mergeReadWrite)
       Seq.empty
     else
-      writeQuery.queryGraph.allQueryGraphs.flatMap(overlapsWithReadQg)
+      writeQuery.queryGraph.allQGsWithLeafInfo.map(_.queryGraph).flatMap(overlapsWithReadQg)
   }
 
   @tailrec
   def writeReadConflictInTail(head: SinglePlannerQuery, tail: SinglePlannerQuery, context: LogicalPlanningContext): Seq[EagernessReason.Reason] = {
-    val readQGs = tail.queryGraph.allQueryGraphs.map(qgWithNoStableIdentifierAndOnlyLeaves)
-    def overlapsWithReadQg(writeQg: QueryGraph): Seq[EagernessReason.Reason] = readQGs.flatMap(readQg => writeQg.overlaps(readQg))
+    val readQGsWithLeafInfo = tail.queryGraph.allQGsWithLeafInfo
+    def overlapsWithReadQg(writeQg: QueryGraph): Seq[EagernessReason.Reason] = readQGsWithLeafInfo.flatMap(readQgWithLeafInfo => writeQg.overlaps(readQgWithLeafInfo))
 
     val conflicts =
       if (tail.queryGraph.writeOnly) Seq.empty
-      else head.queryGraph.allQueryGraphs.flatMap(overlapsWithReadQg) ++
-        head.queryGraph.allQueryGraphs.flatMap(_.overlapsHorizon(tail.horizon, context.semanticTable)) ++
-        head.queryGraph.allQueryGraphs.flatMap(deleteReadOverlap(_, tail.queryGraph, context))
+      else {
+        val qgS = head.queryGraph.allQGsWithLeafInfo.map(_.queryGraph)
+        qgS.flatMap(overlapsWithReadQg) ++
+          qgS.flatMap(_.overlapsHorizon(tail.horizon, context.semanticTable)) ++
+          qgS.flatMap(deleteReadOverlap(_, tail.queryGraph, context))
+      }
     if (conflicts.nonEmpty)
       conflicts
     else if (tail.tail.isEmpty)

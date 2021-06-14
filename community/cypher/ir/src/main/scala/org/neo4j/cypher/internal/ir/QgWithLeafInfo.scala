@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.Identifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
+import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 object QgWithLeafInfo {
@@ -57,8 +58,8 @@ object QgWithLeafInfo {
  * Specifically, this includes information about the leaves used to plan the query graph
  * and their stability.
  *
- * @param solvedQg The query graph that has already been solved by some plan.
- * @param unstableLeaves The unstable leaves of the considered plan.
+ * @param solvedQg         The query graph that has already been solved by some plan.
+ * @param unstableLeaves   The unstable leaves of the considered plan.
  * @param stableIdentifier The identifier of the node found in the stable iterator.
  */
 case class QgWithLeafInfo(private val solvedQg: QueryGraph,
@@ -74,65 +75,65 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
 
   def hasUnstableLeaves: Boolean = unstableLeaves.nonEmpty
 
-  def unstablePatternNodes: Set[String] = queryGraph.allPatternNodesRead -- stableIdentifier.map(_.name)
+  lazy val unstablePatternNodes: Set[String] = queryGraph.allPatternNodesRead -- stableIdentifier.map(_.name)
 
-  def unstablePatternRelationships: Set[PatternRelationship] = queryGraph.allPatternRelationshipsRead.filterNot(rel => stableIdentifier.exists(i => i.name == rel.name))
+  lazy val unstablePatternRelationships: Set[PatternRelationship] = queryGraph.allPatternRelationshipsRead.filterNot(rel => stableIdentifier.exists(i => i.name == rel.name))
 
-  def patternNodes: Set[Identifier] = {
+  lazy val patternNodes: Set[Identifier] = {
     val unstableIdentifiers: Set[Identifier] = unstablePatternNodes.map(UnstableIdentifier)
     val maybeStableIdentifier = stableIdentifier.filter(i => queryGraph.patternNodes.contains(i.name))
     unstableIdentifiers ++ maybeStableIdentifier
   }
 
-  def leafPatternNodes: Set[Identifier] = {
+  lazy val leafPatternNodes: Set[Identifier] = {
     patternNodes.filter {
       case UnstableIdentifier(name) => unstableLeaves.contains(name)
-      case _:StableIdentifier => true
+      case _: StableIdentifier => true
     }
   }
 
-  def nonArgumentPatternNodes: Set[Identifier] = {
+  lazy val nonArgumentPatternNodes: Set[Identifier] = {
     patternNodes.filterNot(node => queryGraph.argumentIds.contains(node.name))
   }
 
-  def patternNodesAndArguments: Set[Identifier] = {
+  lazy val patternNodesAndArguments: Set[Identifier] = {
     patternNodes ++ queryGraph.argumentIds.map(UnstableIdentifier)
   }
 
-  def patternRelationshipsAndArguments: Set[Identifier] = {
+  lazy val patternRelationshipsAndArguments: Set[Identifier] = {
     patternRelationships ++ queryGraph.argumentIds.map(UnstableIdentifier)
   }
 
-  def patternRelationships: Set[Identifier] = {
+  lazy val patternRelationships: Set[Identifier] = {
     val unstableIdentifiers: Set[Identifier] = unstablePatternRelationships.map(rel => UnstableIdentifier(rel.name))
     val maybeStableIdentifier = stableIdentifier.filter(i => queryGraph.patternRelationships.exists(rel => i.name == rel.name))
     unstableIdentifiers ++ maybeStableIdentifier
   }
 
-  def allKnownUnstableNodeLabelsFor(identifier: Identifier): Set[LabelName] = {
-    if (identifier.isIdStable) Set.empty
+  def allKnownUnstableNodeLabelsFor(identifier: Identifier): Set[LabelName] = CachedFunction((identifier:Identifier) => {
+    if (identifier.isIdStable) Set.empty[LabelName]
     else queryGraph.allPossibleLabelsOnNode(identifier.name)
-  }
+  })(identifier)
 
-  def allPossibleUnstableRelTypesFor(identifier: Identifier): Set[RelTypeName] = {
-    if (identifier.isIdStable) Set.empty
+  def allPossibleUnstableRelTypesFor(identifier: Identifier): Set[RelTypeName] = CachedFunction((identifier:Identifier) => {
+    if (identifier.isIdStable) Set.empty[RelTypeName]
     else queryGraph.allPossibleTypesOnRel(identifier.name)
-  }
+  })(identifier)
 
-  def allKnownUnstablePropertiesFor(identifier: Identifier): Set[PropertyKeyName] = {
-    if (identifier.isIdStable) Set.empty
+  def allKnownUnstablePropertiesFor(identifier: Identifier): Set[PropertyKeyName] = CachedFunction((identifier:Identifier) => {
+    if (identifier.isIdStable) Set.empty[PropertyKeyName]
     else queryGraph.allKnownPropertiesOnIdentifier(identifier.name)
-  }
+  })(identifier)
 
-  def allKnownUnstableNodeLabels: Set[LabelName] = {
+  lazy val allKnownUnstableNodeLabels: Set[LabelName] = {
     patternNodesAndArguments.flatMap(allKnownUnstableNodeLabelsFor)
   }
 
-  def allKnownUnstableNodeProperties: Set[PropertyKeyName] = {
+  lazy val allKnownUnstableNodeProperties: Set[PropertyKeyName] = {
     patternNodesAndArguments.flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
   }
 
-  def allKnownUnstableRelProperties: Set[PropertyKeyName] = {
+  lazy val allKnownUnstableRelProperties: Set[PropertyKeyName] = {
     patternRelationshipsAndArguments.flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
   }
 

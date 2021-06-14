@@ -41,11 +41,11 @@ trait PlannerQueryPart {
   def numHints: Int
 
   /**
-   * @return all recursively included query graphs.
+   * @return all recursively included query graphs, with leaf information for Eagerness analysis.
    *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
    *         is not safe to use for planning pattern expressions and pattern comprehensions.
    */
-  def allQueryGraphs: Seq[QueryGraph]
+  def allQGsWithLeafInfo: Seq[QgWithLeafInfo]
 
   /**
    * Use this method when you are certain that you are dealing with a SinglePlannerQuery, and not a UnionQuery.
@@ -84,5 +84,5 @@ case class UnionQuery(part: PlannerQueryPart,
 
   override def asSinglePlannerQuery: SinglePlannerQuery = throw new IllegalStateException("Called asSinglePlannerQuery on a UnionQuery")
 
-  override def allQueryGraphs: Seq[QueryGraph] = query.allQueryGraphs ++ part.allQueryGraphs
+  override def allQGsWithLeafInfo: Seq[QgWithLeafInfo] = query.allQGsWithLeafInfo ++ part.allQGsWithLeafInfo
 }

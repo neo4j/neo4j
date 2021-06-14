@@ -51,18 +51,18 @@ trait QueryHorizon {
   def couldContainRead: Boolean = dependingExpressions.exists(!_.isInstanceOf[Variable])
 
     /**
-     * @return all recursively included query graphs.
+     * @return all recursively included query graphs, with leaf information for Eagerness analysis.
      *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
      *         is not safe to use for planning pattern expressions and pattern comprehensions.
      */
-  protected def getAllQueryGraphs: Seq[QueryGraph] = {
+  protected def getAllQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
     val patternComprehensions = filtered.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
     val patternExpressions = filtered.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
-    patternComprehensions ++ patternExpressions
+    (patternComprehensions ++ patternExpressions).map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
   }
 
-  lazy val allQueryGraphs: Seq[QueryGraph] = getAllQueryGraphs
+  lazy val allQueryGraphs: Seq[QgWithLeafInfo] = getAllQGsWithLeafInfo
 }
 
 final case class PassthroughAllHorizon() extends QueryHorizon {
@@ -70,7 +70,7 @@ final case class PassthroughAllHorizon() extends QueryHorizon {
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
 
-  override lazy val allQueryGraphs: Seq[QueryGraph] = Seq.empty
+  override lazy val allQueryGraphs: Seq[QgWithLeafInfo] = Seq.empty
 }
 
 case class UnwindProjection(variable: String, exp: Expression) extends QueryHorizon {
@@ -97,7 +97,7 @@ case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boole
    */
   override def couldContainRead: Boolean = true
 
-  override lazy val allQueryGraphs: Seq[QueryGraph] = super.getAllQueryGraphs ++ callSubquery.allQueryGraphs
+  override lazy val allQueryGraphs: Seq[QgWithLeafInfo] = super.getAllQGsWithLeafInfo ++ callSubquery.allQGsWithLeafInfo
 }
 
 sealed abstract class QueryProjection extends QueryHorizon {

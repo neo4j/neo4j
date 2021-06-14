@@ -47,7 +47,7 @@ trait UpdateGraph {
   def containsUpdates: Boolean = !readOnly
 
   def containsMergeRecursive: Boolean = hasMergeNodePatterns || hasMergeRelationshipPatterns ||
-    foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(_.containsMergeRecursive))
+    foreachPatterns.exists(_.innerUpdates.allQGsWithLeafInfo.map(_.queryGraph).exists(_.containsMergeRecursive))
 
   /*
    * Finds all nodes being created with CREATE ...
@@ -101,7 +101,7 @@ trait UpdateGraph {
   /*
    * Finds all node properties being created with CREATE (:L)
    */
-  def createLabels: Set[LabelName] =
+  lazy val createLabels: Set[LabelName] =
     createPatterns.flatMap(_.nodes.flatMap(_.labels)).toSet ++
     mergeNodePatterns.flatMap(_.createNode.labels) ++
     mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(_.labels))
@@ -109,7 +109,7 @@ trait UpdateGraph {
   /*
    * Finds all node properties being created with CREATE ({prop...})
    */
-  def createNodeProperties: CreatesPropertyKeys =
+  lazy val createNodeProperties: CreatesPropertyKeys =
     CreatesPropertyKeys(createPatterns.flatMap(_.nodes.flatMap(_.properties)):_*) +
     CreatesPropertyKeys(mergeNodePatterns.flatMap(_.createNode.properties):_*) +
     CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(c => c.properties)):_*)
@@ -117,7 +117,7 @@ trait UpdateGraph {
   /*
    * Finds all rel properties being created with CREATE
    */
-  def createRelProperties: CreatesPropertyKeys =
+  lazy val createRelProperties: CreatesPropertyKeys =
     CreatesPropertyKeys(createPatterns.flatMap(_.relationships.flatMap(_.properties)):_*) +
     CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createRelationships.flatMap(c => c.properties)):_*)
 
@@ -131,7 +131,7 @@ trait UpdateGraph {
   /*
    * Relationship types being created with, CREATE/MERGE ()-[:T]->()
    */
-  def createRelTypes: Set[RelTypeName] =
+  lazy val createRelTypes: Set[RelTypeName] =
     (createPatterns.flatMap(_.relationships.map(_.relType)) ++
      mergeRelationshipPatterns.flatMap(_.createRelationships.map(_.relType))).toSet
 
@@ -139,7 +139,7 @@ trait UpdateGraph {
    * Does this UpdateGraph update nodes?
    */
   // NOTE: Put foreachPatterns first to shortcut unnecessary recursion
-  def updatesNodes: Boolean =
+  lazy val updatesNodes: Boolean =
     hasForeachPatterns ||
     createPatterns.exists(_.nodes.nonEmpty) ||
     hasRemoveLabelPatterns ||
@@ -215,9 +215,9 @@ trait UpdateGraph {
         argumentIds = dependencies,
         selections = Selections.from(dependingExpressions),
       )
-      val allQgs = horizon.allQueryGraphs :+ qgFromDependingExpressions
+      val allQgs = horizon.allQueryGraphs :+ qgWithNoStableIdentifierAndOnlyLeaves(qgFromDependingExpressions)
 
-      allQgs.map(qgWithNoStableIdentifierAndOnlyLeaves).flatMap(overlaps)
+      allQgs.flatMap(overlaps)
     }
   }
 
@@ -311,7 +311,7 @@ trait UpdateGraph {
     })
   }
 
-  private def allRelPatternsWrittenNonEmpty: Boolean = {
+  lazy val allRelPatternsWrittenNonEmpty: Boolean = {
     val allRelPatternsWritten =
       createPatterns.filter(_.relationships.nonEmpty) ++ mergeRelationshipPatterns.flatMap(_.createRelationships)
 
@@ -332,7 +332,7 @@ trait UpdateGraph {
   }
 
 
-  def labelsToSet: Set[LabelName] = {
+  lazy val labelsToSet: Set[LabelName] = {
     @tailrec
     def toLabelPattern(patterns: Seq[MutatingPattern], acc: Set[LabelName]): Set[LabelName] = {
 
