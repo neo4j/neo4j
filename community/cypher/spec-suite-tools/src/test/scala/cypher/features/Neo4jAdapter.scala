@@ -27,6 +27,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.helpers.SocketAddress
 import org.neo4j.cypher.testing.api.StatementResult
+import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.graphdb.config.Setting

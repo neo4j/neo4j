@@ -37,6 +37,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.procedure.Procedure;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -53,21 +54,10 @@ public class NotificationTestSupport
     protected GraphDatabaseAPI db;
 
     private final List<String> supportedCypherVersions = List.of( "CYPHER 3.5", "CYPHER 4.3", "CYPHER 4.4" );
-    private final List<String> supportedCypherVersions_4_X = List.of( "CYPHER 4.3", "CYPHER 4.4" );
 
     void assertNotificationsInSupportedVersions( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
         assertNotifications( supportedCypherVersions, query, matchesExpectation );
-    }
-
-    void assertNotificationsInSupportedVersions_4_X( String query, Matcher<Iterable<Notification>> matchesExpectation )
-    {
-        assertNotifications( supportedCypherVersions_4_X, query, matchesExpectation );
-    }
-
-    void assertNotificationsInLastMajorVersion( String query, Matcher<Iterable<Notification>> matchesExpectation )
-    {
-        assertNotifications( List.of( "CYPHER 3.5"), query, matchesExpectation );
     }
 
     private void assertNotifications( List<String> versions, String query, Matcher<Iterable<Notification>> matchesExpectation )
@@ -77,7 +67,7 @@ public class NotificationTestSupport
         {
             try ( Transaction transaction = db.beginTx() )
             {
-                try ( Result result = transaction.execute( String.format("%s %s", version, query) ) )
+                try ( Result result = transaction.execute( String.format( "%s %s", version, query ) ) )
                 {
                     assertThat( result.getNotifications(), matchesExpectation );
                 }
@@ -175,8 +165,7 @@ public class NotificationTestSupport
         } );
     }
 
-    void shouldNotifyInStreamWithDetail( String query, InputPosition pos, NotificationCode code,
-                                         NotificationDetail detail )
+    void shouldNotifyInStreamWithDetail( String query, InputPosition pos, NotificationCode code, NotificationDetail detail )
     {
         Stream.of( supportedCypherVersions.toArray() ).forEach( version ->
         {
@@ -250,4 +239,31 @@ public class NotificationTestSupport
     Matcher<Notification> dynamicPropertyWarning = notification( "Neo.ClientNotification.Statement.DynamicPropertyWarning",
             containsString( "Using a dynamic property makes it impossible to use an index lookup for this query" ), any( InputPosition.class ),
             SeverityLevel.WARNING );
+
+    public static class ChangedResults
+    {
+        @Deprecated
+        public final String oldField = "deprecated";
+        public final String newField = "use this";
+    }
+
+    public static class TestProcedures
+    {
+        @Procedure( "newProc" )
+        public void newProc()
+        {
+        }
+
+        @Deprecated
+        @Procedure( name = "oldProc", deprecatedBy = "newProc" )
+        public void oldProc()
+        {
+        }
+
+        @Procedure( "changedProc" )
+        public Stream<ChangedResults> changedProc()
+        {
+            return Stream.of( new ChangedResults() );
+        }
+    }
 }
