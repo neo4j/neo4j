@@ -199,7 +199,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             read = null;
             selection = null;
             mode = null;
-            storeCursor.reset();
+            storeCursor.close();
         }
         super.closeInternal();
     }
