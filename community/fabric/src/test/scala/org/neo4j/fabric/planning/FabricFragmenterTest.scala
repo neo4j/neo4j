@@ -397,6 +397,20 @@ class FabricFragmenterTest
           .leaf(Seq(match_(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)), with_(varFor("n").as("true")), returnLit(true -> "true")), Seq("true"))
       )
     }
+
+    "Last clause is an update clause" in {
+      fragment(
+        """MATCH (n)
+          |CREATE (m)
+          |""".stripMargin
+      ).shouldEqual(
+        init(defaultUse)
+          .leaf(Seq(
+            match_(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)),
+            create(NodePattern(Some(varFor("m")), Seq.empty, None)(pos)),
+          ), Seq.empty)
+      )
+    }
   }
 
   "Procedures:" - {
@@ -440,7 +454,21 @@ class FabricFragmenterTest
       )
     }
 
-    "a unknown procedure local query" in {
+    "a known procedure local query after a MATCH" in {
+      fragment(
+        """MATCH (n)
+          |CALL my.ns.unitProcedure()
+          |""".stripMargin
+      ).shouldEqual(
+        init(defaultUse)
+          .leaf(Seq(
+            match_(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)),
+            resolved(call(Seq("my", "ns"), "unitProcedure", Some(Seq()), None)),
+          ), Seq.empty)
+      )
+    }
+
+    "an unknown procedure local query" in {
       fragment(
         """CALL unknownProcedure() YIELD x, y
           |""".stripMargin

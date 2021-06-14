@@ -303,6 +303,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
             val resultState = clause match {
               case _: UpdateClause if idx == lastIndex =>
                 checked.state.newSiblingScope
+              case cc: CallClause if cc.returnColumns.isEmpty && !cc.yieldAll && idx == lastIndex =>
+                checked.state.newSiblingScope
               case _ =>
                 checked.state
             }

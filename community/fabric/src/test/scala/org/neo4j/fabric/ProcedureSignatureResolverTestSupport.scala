@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.fabric.pipeline.SignatureResolver
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
-import org.neo4j.internal.kernel.api.procs.FieldSignature.inputField
 import org.neo4j.internal.kernel.api.procs
+import org.neo4j.internal.kernel.api.procs.FieldSignature.inputField
+import org.neo4j.internal.kernel.api.procs.FieldSignature.outputField
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
 import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure
 import org.neo4j.procedure.Mode
@@ -44,6 +46,7 @@ trait ProcedureSignatureResolverTestSupport {
     mkProcedure(Seq("my", "ns", "myProcedure2"), Seq("x"), Seq("a", "b"))(Seq(Array(Values.intValue(1), Values.intValue(10)))),
     mkProcedure(Seq("my", "ns", "read"), Seq(), Seq("a", "b"), Mode.DEFAULT)(Seq(Array(Values.intValue(1), Values.intValue(10)))),
     mkProcedure(Seq("my", "ns", "write"), Seq(), Seq("a", "b"), Mode.WRITE)(Seq(Array(Values.intValue(1), Values.intValue(10)))),
+    mkProcedure(Seq("my", "ns", "unitProcedure"), Seq(), Seq(), Mode.WRITE)(Seq.empty),
   )
   val callableUseFunctions: Seq[procedure.CallableUserFunction] = Seq(
     mkFunction(Seq("const0"), Seq(), "MyCategory")(Values.intValue(0)),
@@ -95,16 +98,18 @@ trait ProcedureSignatureResolverTestSupport {
     name: Seq[String], args: Seq[String], out: Seq[String], mode: Mode = Mode.DEFAULT
   )(
     values: => Seq[Array[AnyValue]]
-  ): procedure.CallableProcedure =
+  ): procedure.CallableProcedure = {
+    val outputSignature = if (out.isEmpty) VOID else ListBuffer(out: _*).map(outputField(_, procs.Neo4jTypes.NTAny)).asJava
+
     new procedure.CallableProcedure.BasicProcedure(new procs.ProcedureSignature(
       new procs.QualifiedName(name.init.toArray, name.last),
       ListBuffer(args: _*).map(inputField(_, procs.Neo4jTypes.NTAny)).asJava,
-      ListBuffer(out: _*).map(inputField(_, procs.Neo4jTypes.NTAny)).asJava,
+      outputSignature,
       mode, false, null, Array[String](), name.last, null, false, false, false, false, false
     )) {
       override def apply(ctx: procedure.Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] =
         RawIterator.of(values: _*)
     }
-
+  }
 
 }
