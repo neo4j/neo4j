@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
@@ -113,13 +112,6 @@ public class CommunitySecurityModule extends SecurityModule
 
     public static Path getUserRepositoryFile( Config config )
     {
-        // Because it contains sensitive information there is a legacy setting to configure
-        // the location of the user store file that we still respect
-        Path authStore = config.get( GraphDatabaseInternalSettings.auth_store );
-        if ( Files.isRegularFile( authStore ) )
-        {
-            return authStore;
-        }
         return getUserRepositoryFile( config, USER_STORE_FILENAME );
     }
 

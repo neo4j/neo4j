@@ -438,14 +438,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.tools.batch_inserter.batch_size", INT, 10000 ).build();
 
     @Internal
-    @Description( "Location of the security auth store" )
-    public static final Setting<Path> auth_store =
-            newBuilder( "unsupported.dbms.security.auth_store.location", PATH, null )
-                    .setDependency( GraphDatabaseSettings.neo4j_home )
-                    .immutable()
-                    .build();
-
-    @Internal
     @Description( "Location of the auth store repository directory" )
     public static final Setting<Path> auth_store_directory = newBuilder( "unsupported.dbms.directories.auth", PATH, Path.of( "dbms" ) )
             .immutable()

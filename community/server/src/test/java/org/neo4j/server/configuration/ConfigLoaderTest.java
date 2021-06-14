@@ -264,16 +264,4 @@ class ConfigLoaderTest
         assertThat( config.get( GraphDatabaseInternalSettings.auth_store_directory ) ).isEqualTo(
                 testDirectory.homePath().resolve( "the-data-dir" ).resolve( "dbms" ).toAbsolutePath() );
     }
-
-    @Test
-    void shouldNotOverwriteAuthStoreLocationIfProvided()
-    {
-        Path configFile = ConfigFileBuilder.builder( testDirectory.homePath() ).withSetting( GraphDatabaseSettings.data_directory, "the-data-dir" ).withSetting(
-                GraphDatabaseInternalSettings.auth_store, "foo/bar/auth" ).build();
-        Config config =
-                Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homePath() ).build();
-
-        assertThat( config.get( GraphDatabaseInternalSettings.auth_store ) ).isEqualTo(
-                testDirectory.homePath().resolve( "foo" ).resolve( "bar" ).resolve( "auth" ).toAbsolutePath() );
-    }
 }
