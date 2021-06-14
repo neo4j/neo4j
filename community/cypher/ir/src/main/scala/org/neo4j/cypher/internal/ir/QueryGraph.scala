@@ -101,13 +101,19 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     )
   }
 
-  lazy val allQueryGraphs: Seq[QueryGraph] = {
+  /**
+   * @return all recursively included query graphs, with leaf information for Eagerness analysis.
+   *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
+   *         is not safe to use for planning pattern expressions and pattern comprehensions.
+   */
+  lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val patternComprehensions = this.findByAllClass[PatternComprehension].toSet.map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
     val patternExpressions = this.findByAllClass[PatternExpression].toSet.map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
-    Seq(this) ++
-      optionalMatches.flatMap(_.allQueryGraphs) ++
+    val allQgsWithLeafInfo = Seq(this) ++
       patternComprehensions ++
       patternExpressions
+    allQgsWithLeafInfo.map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves) ++
+      optionalMatches.flatMap(_.allQGsWithLeafInfo)
   }
 
   /**

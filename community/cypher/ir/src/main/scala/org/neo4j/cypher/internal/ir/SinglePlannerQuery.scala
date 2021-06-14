@@ -218,8 +218,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     recurse(in, this)
   }
 
-  //Returns a list of query graphs from this plannerquery and all of its tails
-  override lazy val allQueryGraphs: Seq[QueryGraph] = allPlannerQueries.flatMap(q => q.queryGraph.allQueryGraphs ++ q.horizon.allQueryGraphs)
+  override lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = allPlannerQueries.flatMap(q => q.queryGraph.allQGsWithLeafInfo ++ q.horizon.allQueryGraphs)
 
   //Returns list of planner query and all of its tails
   def allPlannerQueries: Seq[SinglePlannerQuery] = {
