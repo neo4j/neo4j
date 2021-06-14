@@ -253,7 +253,7 @@ class RouteMessageHandleStateDecoratorTest
         var statementProcessor = mock( StatementProcessor.class );
         doReturn( statementProcessor )
                 .when( context )
-                .setCurrentStatementProcessorForDatabase( routingMessage.getDatabaseName() );
+                .setCurrentStatementProcessorForDatabase( "system" );
         return statementProcessor;
     }
 
