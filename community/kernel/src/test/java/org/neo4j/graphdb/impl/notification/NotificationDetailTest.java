@@ -34,21 +34,21 @@ class NotificationDetailTest
     @Test
     void shouldConstructNodeIndexDetails()
     {
-        NotificationDetail detail = NotificationDetail.Factory.nodeIndex( "Person", "name" );
+        NotificationDetail detail = NotificationDetail.Factory.nodeIndex("person", "Person", "name" );
 
         assertThat( detail.name() ).isEqualTo( "hinted index" );
-        assertThat( detail.value() ).isEqualTo( "INDEX FOR (:`Person`) ON (.`name`)" );
-        assertThat( detail.toString() ).isEqualTo( "hinted index is: INDEX FOR (:`Person`) ON (.`name`)" );
+        assertThat( detail.value() ).isEqualTo( "INDEX FOR (`person`:`Person`) ON (`person`.`name`)" );
+        assertThat( detail.toString() ).isEqualTo( "hinted index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`)" );
     }
 
     @Test
     void shouldConstructRelationshipIndexDetails()
     {
-        NotificationDetail detail = NotificationDetail.Factory.relationshipIndex( "Person", "name" );
+        NotificationDetail detail = NotificationDetail.Factory.relationshipIndex( "person", "Person", "name" );
 
         assertThat( detail.name() ).isEqualTo( "hinted index" );
-        assertThat( detail.value() ).isEqualTo( "INDEX FOR ()-[:`Person`]-() ON (.`name`)" );
-        assertThat( detail.toString() ).isEqualTo( "hinted index is: INDEX FOR ()-[:`Person`]-() ON (.`name`)" );
+        assertThat( detail.value() ).isEqualTo( "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" );
+        assertThat( detail.toString() ).isEqualTo( "hinted index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" );
     }
 
     @Test

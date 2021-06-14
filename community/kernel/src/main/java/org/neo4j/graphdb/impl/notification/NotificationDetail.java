@@ -22,7 +22,9 @@ package org.neo4j.graphdb.impl.notification;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.IndexHintException;
 
 public interface NotificationDetail
 {
@@ -41,22 +43,22 @@ public interface NotificationDetail
             return createDeprecationNotificationDetail( oldName, newName );
         }
 
-        public static NotificationDetail nodeIndex( final String labelName, final String... propertyKeyNames )
+        public static NotificationDetail nodeIndex( final String variableName, final String labelName, final String... propertyKeyNames )
         {
-            String propertyNames = Arrays.stream( propertyKeyNames )
-                                         .map( p -> ".`" + p + "`" )
-                                         .collect( Collectors.joining( ", " ) );
-            return createNotificationDetail( "hinted index",
-                                             String.format( "INDEX FOR (:`%s`) ON (%s)", labelName, propertyNames ), true );
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             labelName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.NODE );
+            return createNotificationDetail( "hinted index", indexFormatString, true );
         }
 
-        public static NotificationDetail relationshipIndex( final String relationshipTypeName, final String... propertyKeyNames )
+        public static NotificationDetail relationshipIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
         {
-            String propertyNames = Arrays.stream( propertyKeyNames )
-                                         .map( p -> ".`" + p + "`" )
-                                         .collect( Collectors.joining( ", " ) );
-            return createNotificationDetail( "hinted index",
-                                             String.format( "INDEX FOR ()-[:`%s`]-() ON (%s)", relationshipTypeName, propertyNames ), true );
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             relationshipTypeName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.RELATIONSHIP );
+            return createNotificationDetail( "hinted index", indexFormatString, true );
         }
 
         public static NotificationDetail suboptimalIndex( final String labelName, final String... propertyKeyNames )

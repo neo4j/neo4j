@@ -80,10 +80,10 @@ object NotificationWrapping {
       NotificationCode.LENGTH_ON_NON_PATH.notification(pos.withOffset(offset).asInputPosition)
     case RuntimeUnsupportedNotification(msg) =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Runtime unsupported", msg))
-    case IndexHintUnfulfillableNotification(label, propertyKeys, entityType) =>
+    case IndexHintUnfulfillableNotification(variableName, label, propertyKeys, entityType) =>
       val detail = entityType match {
-        case EntityType.NODE => NotificationDetail.Factory.nodeIndex(label, propertyKeys: _*)
-        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipIndex(label, propertyKeys: _*)
+        case EntityType.NODE => NotificationDetail.Factory.nodeIndex(variableName, label, propertyKeys: _*)
+        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipIndex(variableName, label, propertyKeys: _*)
       }
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, detail)
     case JoinHintUnfulfillableNotification(variables) =>

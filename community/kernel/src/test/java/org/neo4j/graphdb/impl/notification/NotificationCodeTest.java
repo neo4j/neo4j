@@ -41,7 +41,7 @@ class NotificationCodeTest
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_index()
     {
-        NotificationDetail indexDetail = NotificationDetail.Factory.nodeIndex( "Person", "name" );
+        NotificationDetail indexDetail = NotificationDetail.Factory.nodeIndex( "person", "Person", "name" );
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
 
         assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
@@ -49,13 +49,13 @@ class NotificationCodeTest
         assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
         assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
         assertThat( notification.getDescription() ).isEqualTo(
-                "The hinted index does not exist, please check the schema (hinted index is: INDEX FOR (:`Person`) ON (.`name`))" );
+                "The hinted index does not exist, please check the schema (hinted index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`))" );
     }
 
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_index()
     {
-        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipIndex( "Person", "name" );
+        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipIndex( "person","Person", "name" );
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
 
         assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
@@ -63,7 +63,7 @@ class NotificationCodeTest
         assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
         assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
         assertThat( notification.getDescription() ).isEqualTo(
-                "The hinted index does not exist, please check the schema (hinted index is: INDEX FOR ()-[:`Person`]-() ON (.`name`))" );
+                "The hinted index does not exist, please check the schema (hinted index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))" );
     }
 
     @Test

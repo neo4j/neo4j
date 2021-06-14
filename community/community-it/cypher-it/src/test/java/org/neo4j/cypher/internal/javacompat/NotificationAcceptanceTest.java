@@ -90,7 +90,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     void shouldWarnOnceWhenSingleIndexHintCannotBeFulfilled()
     {
         shouldNotifyInStreamWithDetail( " EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", InputPosition.empty,
-                                        INDEX_HINT_UNFULFILLABLE, nodeIndex( "Person", "name" ) );
+                                        INDEX_HINT_UNFULFILLABLE, nodeIndex( "n", "Person", "name" ) );
     }
 
     @Test
@@ -99,9 +99,9 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         String query = " EXPLAIN MATCH (n:Person), (m:Party), (k:Animal) " + "USING INDEX n:Person(name) " + "USING INDEX m:Party(city) " +
                 "USING INDEX k:Animal(species) " + "WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth' " + "RETURN n";
 
-        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "Person", "name" ) );
-        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "Party", "city" ) );
-        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "Animal", "species" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "n", "Person", "name" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "m","Party", "city" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "k", "Animal", "species" ) );
     }
 
     @Test

@@ -100,11 +100,11 @@ object VerifyBestPlan {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
         val UnfulfillableIndexHint(firstIndexHint, entityType) = hints.head
-        throw new IndexHintException(firstIndexHint.labelOrRelType.name, firstIndexHint.properties.map(_.name).asJava, entityType)
+        throw new IndexHintException(firstIndexHint.variable.name, firstIndexHint.labelOrRelType.name, firstIndexHint.properties.map(_.name).asJava, entityType)
       } else {
         hints.foreach {
           case UnfulfillableIndexHint(hint, entityType) =>
-            context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.labelOrRelType.name, hint.properties.map(_.name), entityType))
+            context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.variable.name, hint.labelOrRelType.name, hint.properties.map(_.name), entityType))
         }
       }
     }

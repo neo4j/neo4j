@@ -130,7 +130,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     the [IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
-    } should have message "No such index: INDEX FOR (:`User`) ON (.`name`)"
+    } should have message "No such index: INDEX FOR (`a`:`User`) ON (`a`.`name`)"
   }
 
   test("should throw when finding plan that contains unfulfillable relationship index hint") {
@@ -146,7 +146,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     the [IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
-    } should have message "No such index: INDEX FOR ()-[:`User`]-() ON (.`name`)"
+    } should have message "No such index: INDEX FOR ()-[`r`:`User`]-() ON (`r`.`name`)"
   }
 
   test("should throw when finding plan that contains unfulfillable join hint") {
@@ -162,7 +162,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val context = newMockedLogicalPlanningContext(planContext = getPlanContext(false), notificationLogger = notificationLogger, useErrorsOverWarnings = false)
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", Seq("name"), EntityType.NODE))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE))
   }
 
   test("should issue warning when finding plan that contains unfulfillable relationship index hint") {
@@ -178,7 +178,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       useErrorsOverWarnings = false)
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", Seq("name"), EntityType.RELATIONSHIP))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP))
   }
 
   test("should issue warning when finding plan that contains unfulfillable join hint") {
