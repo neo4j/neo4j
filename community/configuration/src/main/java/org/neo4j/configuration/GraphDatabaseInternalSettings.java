@@ -53,6 +53,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 public class GraphDatabaseInternalSettings implements SettingsDeclaration
 {
     @Internal
+    @Description( "Path of the databases directory" )
     public static final Setting<Path> databases_root_path =
             newBuilder( "unsupported.dbms.directories.databases.root", PATH, Path.of( GraphDatabaseSettings.DEFAULT_DATABASES_ROOT_DIR_NAME ) )
                     .setDependency( GraphDatabaseSettings.data_directory ).immutable().build();
@@ -68,12 +69,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> ephemeral_lucene = newBuilder( "unsupported.dbms.lucene.ephemeral", BOOL, false ).build();
 
     @Internal
+    @Description( "Name of the lock manager to be used, as defined in the corresponding LocksFactory." )
     public static final Setting<String> lock_manager = newBuilder( "unsupported.dbms.lock_manager", STRING, "forseti" ).build();
 
     @Internal
+    @Description( "Include additional information in deadlock descriptions." )
     public static final Setting<Boolean> lock_manager_verbose_deadlocks = newBuilder( "unsupported.dbms.lock_manager.verbose_deadlocks", BOOL, false ).build();
 
     @Internal
+    @Description( "Name of the tracer factory to be used. Current implementations are: null, default & verbose." )
     public static final Setting<String> tracer = newBuilder( "unsupported.dbms.tracer", STRING, null ).build();
 
     @Internal
@@ -411,10 +415,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             .build();
 
     @Internal
+    @Description( "VM pause monitor measurement duration" )
     public static final Setting<Duration> vm_pause_monitor_measurement_duration =
             newBuilder( "unsupported.vm_pause_monitor.measurement_duration", DURATION, ofMillis( 100 ) ).build();
 
     @Internal
+    @Description( "Alert threshold for total pause time during one VM pause monitor measurement" )
     public static final Setting<Duration> vm_pause_monitor_stall_alert_threshold =
             newBuilder( "unsupported.vm_pause_monitor.stall_alert_threshold", DURATION, ofMillis( 100 ) ).build();
 
@@ -432,11 +438,19 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.tools.batch_inserter.batch_size", INT, 10000 ).build();
 
     @Internal
+    @Description( "Location of the security auth store" )
     public static final Setting<Path> auth_store =
             newBuilder( "unsupported.dbms.security.auth_store.location", PATH, null )
                     .setDependency( GraphDatabaseSettings.neo4j_home )
                     .immutable()
                     .build();
+
+    @Internal
+    @Description( "Location of the auth store repository directory" )
+    public static final Setting<Path> auth_store_directory = newBuilder( "unsupported.dbms.directories.auth", PATH, Path.of( "dbms" ) )
+            .immutable()
+            .setDependency( GraphDatabaseSettings.data_directory )
+            .build();
 
     @Internal
     @Description( "Whether to apply network level outbound network buffer based throttling" )
@@ -487,17 +501,21 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                     .build();
 
     @Internal
+    @Description( "Enable/disable the use of Epoll for netty" )
     public static final Setting<Boolean> netty_server_use_epoll = newBuilder( "unsupported.dbms.bolt.netty_server_use_epoll", BOOL, true ).build();
 
     @Internal
+    @Description( "Quiet period for netty shutdown" )
     public static final Setting<Integer> netty_server_shutdown_quiet_period =
             newBuilder( "unsupported.dbms.bolt.netty_server_shutdown_quiet_period", INT, 5 ).build();
 
     @Internal
+    @Description( "Timeout for netty shutdown" )
     public static final Setting<Duration> netty_server_shutdown_timeout =
             newBuilder( "unsupported.dbms.bolt.netty_server_shutdown_timeout", DURATION, ofSeconds( 15 ) ).build();
 
     @Internal
+    @Description( "Enable/disable the use of a merge cumulator for netty" )
     public static final Setting<Boolean> netty_message_merge_cumulator =
             newBuilder( "unsupported.dbms.bolt.netty_message_merge_cumulator", BOOL, false ).build();
 
@@ -511,6 +529,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> force_small_id_cache = newBuilder( "unsupported.dbms.force_small_id_cache", BOOL, Boolean.FALSE ).build();
 
     @Internal
+    @Description( "Perform some data consistency checks on transaction apply" )
     public static final Setting<Boolean> consistency_check_on_apply =
             newBuilder( "unsupported.dbms.storage.consistency_check_on_apply", BOOL, Boolean.FALSE ).build();
 
@@ -551,110 +570,130 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     // === SETTINGS FROM FEATURE TOGGLES ===
 
     @Internal
+    @Description( "Validate if transaction statements are properly closed" )
     public static final Setting<Boolean> track_tx_statement_close = newBuilder( "unsupported.dbms.debug.track_tx_statement_close", BOOL, false ).build();
 
     @Internal
+    @Description( "Trace open/close transaction statements" )
     public static final Setting<Boolean> trace_tx_statements = newBuilder( "unsupported.dbms.debug.trace_tx_statement", BOOL, false ).build();
 
     @Internal
+    @Description( "Validate if cursors are properly closed" )
     public static final Setting<Boolean> track_cursor_close = newBuilder( "unsupported.dbms.debug.track_cursor_close", BOOL, false ).build();
 
     @Internal
+    @Description( "Trace unclosed cursors" )
     public static final Setting<Boolean> trace_cursors = newBuilder( "unsupported.dbms.debug.trace_cursors", BOOL, false ).build();
 
     @Internal
+    @Description( "Reporting interval for page cache speed logging" )
     public static final Setting<Duration> page_cache_tracer_speed_reporting_threshold =
             newBuilder( "unsupported.dbms.debug.page_cache_tracer_speed_reporting_threshold", DURATION, ofSeconds( 10 ) ).build();
 
     @Internal
+    @Description( "Logging information about recovered index samples" )
     public static final Setting<Boolean> log_recover_index_samples = newBuilder( "unsupported.dbms.index.sampling.log_recovered_samples", BOOL, false ).build();
 
     @Internal
+    @Description( "Enable asynchronous index sample recovery" )
     public static final Setting<Boolean> async_recover_index_samples = newBuilder( "unsupported.dbms.index.sampling.async_recovery", BOOL, true )
             .immutable().build();
 
     @Internal
+    @Description( "Wait for asynchronous index sample recovery to finish" )
     public static final Setting<Boolean> async_recover_index_samples_wait =
             newBuilder( "unsupported.dbms.index.sampling.async_recovery_wait", BOOL, null )
                     .setDependency( async_recover_index_samples )
                     .build();
 
     @Internal
+    @Description( "Ignore store id validation during recovery" )
     public static final Setting<Boolean> recovery_ignore_store_id_validation =
             newBuilder( "unsupported.dbms.recovery.ignore_store_id_validation", BOOL, false ).build();
 
     @Internal
+    @Description( "Track heap memory allocations for transactions" )
     public static final Setting<Boolean> enable_transaction_heap_allocation_tracking =
             newBuilder( "unsupported.dbms.enable_transaction_heap_allocation_tracking", BOOL, false ).build();
 
     @Internal
+    @Description( "Chunk size for heap memory reservation from the memory pool" )
     public static final Setting<Long> initial_transaction_heap_grab_size =
             newBuilder( "unsupported.dbms.initial_transaction_heap_grab_size", BYTES, mebiBytes( 2 ) ).build();
 
-    /**
-     * Default value whether or not to strictly prioritize ids from freelist, as opposed to allocating from high id.
-     * Given a scenario where there are multiple concurrent calls to allocating IDs
-     * and there are free ids on the freelist, some perhaps cached, some not. Thread noticing that there are no free ids cached will try to acquire
-     * scanner lock and if it succeeds it will perform a scan and place found free ids in the cache and return. Otherwise:
-     * <ul>
-     *     <li>If {@code false}: thread will allocate from high id and return, to not block id allocation request.</li>
-     *     <li>If {@code true}: thread will await lock released and check cache afterwards. If no id is cached even then it will allocate from high id.</li>
-     * </ul>
-     */
     @Internal
+    @Description( "Default value whether or not to strictly prioritize ids from freelist, as opposed to allocating from high id." +
+            "Given a scenario where there are multiple concurrent calls to allocating IDs" +
+            "and there are free ids on the freelist, some perhaps cached, some not. Thread noticing that there are no free ids cached will try to acquire" +
+            "scanner lock and if it succeeds it will perform a scan and place found free ids in the cache and return. Otherwise:" +
+            "   If `false`: thread will allocate from high id and return, to not block id allocation request." +
+            "   If `true` : thread will await lock released and check cache afterwards. If no id is cached even then it will allocate from high id." )
     public static final Setting<Boolean> strictly_prioritize_id_freelist =
             newBuilder( "unsupported.dbms.strictly_prioritize_id_freelist", BOOL, false ).build();
 
     @Internal
+    @Description( "Block/buffer size for index population" )
     public static final Setting<Long> index_populator_block_size = newBuilder( "unsupported.dbms.index.populator_block_size", BYTES, mebiBytes( 1 ) )
             .addConstraint( min( 20L ) )
             .addConstraint( max( (long) Integer.MAX_VALUE ) )
             .build();
 
     @Internal
+    @Description( "Merge factory for index population" )
     public static final Setting<Integer> index_populator_merge_factor = newBuilder( "unsupported.dbms.index.populator_merge_factor", INT, 8 ).build();
 
     @Internal
+    @Description( "Enable/disable logging for the id generator" )
     public static final Setting<Boolean> id_generator_log_enabled = newBuilder( "unsupported.dbms.idgenerator.log.enabled", BOOL, false ).build();
 
     @Internal
+    @Description( "Log file rotation threshold for id generator logging" )
     public static final Setting<Long> id_generator_log_rotation_threshold =
             newBuilder( "unsupported.dbms.idgenerator.log.rotation_threshold", BYTES, mebiBytes( 200 ) ).build();
 
     @Internal
+    @Description( "Log file prune threshold for id generator logging" )
     public static final Setting<Duration> id_generator_log_prune_threshold =
             newBuilder( "unsupported.dbms.idgenerator.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
 
     @Internal
+    @Description( "Enable/disable write log for token lookup indexes" )
     public static final Setting<Boolean> token_scan_write_log_enabled = newBuilder( "unsupported.dbms.tokenscan.log.enabled", BOOL, false ).build();
 
     @Internal
+    @Description( "Log file rotation threshold for token lookup index write logging" )
     public static final Setting<Long> token_scan_write_log_rotation_threshold =
             newBuilder( "unsupported.dbms.tokenscan.log.rotation_threshold", BYTES, mebiBytes( 200 ) ).build();
 
     @Internal
+    @Description( "Log file prune threshold for token lookup index write logging" )
     public static final Setting<Duration> token_scan_write_log_prune_threshold =
             newBuilder( "unsupported.dbms.tokenscan.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
 
     @Internal
+    @Description( "Print stack trace on failed native io buffer allocation" )
     public static final Setting<Boolean> print_page_buffer_allocation_trace =
             newBuilder( "unsupported.dbms.debug.print_page_buffer_allocation_trace", BOOL, false ).build();
 
     @Internal
+    @Description( "Printing debug information on index population" )
     public static final Setting<Boolean> index_population_print_debug =
             newBuilder( "unsupported.dbms.index.population_print_debug", BOOL, false ).build();
 
     @Internal
+    @Description( "Queue size for index population batched updates" )
     public static final Setting<Integer> index_population_queue_threshold =
             newBuilder( "unsupported.dbms.index.population_queue_threshold", INT, 20_000 ).build();
 
     @Internal
+    @Description( "Max size for an index population batch" )
     public static final Setting<Long> index_population_batch_max_byte_size =
             newBuilder( "unsupported.dbms.index.population_batch_max_byte_size", BYTES, mebiBytes( 10 ) )
                     .addConstraint( max( (long) Integer.MAX_VALUE ) )
                     .build();
 
     @Internal
+    @Description( "Timeout for configuration command evaluation, per command." )
     public static final Setting<Duration> config_command_evaluation_timeout =
             newBuilder( "unsupported.dbms.config.command_evaluation_timeout", DURATION, ofSeconds( 30 ) ).build();
 
@@ -663,6 +702,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> additional_lock_verification = newBuilder( "unsupported.dbms.extra_lock_verification", BOOL, false ).build();
 
     @Internal
+    @Description( "Let the IO controller consider/ignore external IO" )
     public static final Setting<Boolean> io_controller_consider_external_io =
             newBuilder( "unsupported.dbms.io.controller.consider.external.enabled", BOOL, false ).dynamic().build();
 
@@ -673,14 +713,24 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.memory.managed_network_buffers", BOOL, false ).build();
 
     @Internal
+    @Description( "Collection interval for the NeoByteBufferPool" )
     public static final Setting<Duration> neo_byte_buffer_pool_collection_interval_override =
             newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.collection_interval_override", DURATION, null ).build();
 
     @Internal
+    @Description( "The format is <buffer size>:<slice expression>," +
+            "where <buffer size> has format supported by ByteUnit.parse" +
+            "and <slice expression> is either an integer representing" +
+            "an absolute number of slices or a double suffixed by letter 'C'" +
+            "which represents a multiplier of number of cores." +
+            "For instance \"4K:8\" means a bucket for 4k buffers with 8 slices" +
+            "and \"8k:1.5C\" means a bucket for 8k buffers with slices equal to" +
+            "1.5 times the number of available processors." )
     public static final Setting<List<String>> neo_byte_buffer_pool_buckets_override =
             newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.buckets_override", listOf( STRING ), List.of() ).build();
 
     @Internal
+    @Description( "The maximum number of cached entries in count store (based) stores " )
     public static final Setting<Integer> counts_store_max_cached_entries =
             newBuilder( "unsupported.dbms.memory.counts_store_max_cached_entries", INT, 1_000_000 ).build();
 

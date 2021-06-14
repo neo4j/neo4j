@@ -37,7 +37,6 @@ import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.server.WebContainerTestUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -251,7 +250,7 @@ class ConfigLoaderTest
         Config config =
                 Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homePath() ).build();
 
-        assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ) ).isEqualTo(
+        assertThat( config.get( GraphDatabaseInternalSettings.auth_store_directory ) ).isEqualTo(
                 testDirectory.homePath().resolve( "data" ).resolve( "dbms" ).toAbsolutePath() );
     }
 
@@ -262,7 +261,7 @@ class ConfigLoaderTest
         Config config =
                 Config.newBuilder().fromFile( configFile ).set( neo4j_home, testDirectory.homePath() ).build();
 
-        assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ) ).isEqualTo(
+        assertThat( config.get( GraphDatabaseInternalSettings.auth_store_directory ) ).isEqualTo(
                 testDirectory.homePath().resolve( "the-data-dir" ).resolve( "dbms" ).toAbsolutePath() );
     }
 

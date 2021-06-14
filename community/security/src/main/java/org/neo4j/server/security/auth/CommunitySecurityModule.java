@@ -27,7 +27,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
@@ -132,7 +131,7 @@ public class CommunitySecurityModule extends SecurityModule
     private static Path getUserRepositoryFile( Config config, String fileName )
     {
         // Resolve auth store file names
-        Path authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
+        Path authStoreDir = config.get( GraphDatabaseInternalSettings.auth_store_directory );
         return authStoreDir.resolve( fileName );
     }
 

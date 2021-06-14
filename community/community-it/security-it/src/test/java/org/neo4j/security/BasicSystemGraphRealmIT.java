@@ -27,10 +27,10 @@ import org.mockito.Mockito;
 import java.time.Clock;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.SystemGraphComponents;
@@ -226,7 +226,7 @@ class BasicSystemGraphRealmIT
 
     private void startSystemGraphRealm() throws Exception
     {
-        Config config = Config.defaults( DatabaseManagementSystemSettings.auth_store_directory, testDirectory.directory( "data/dbms" ) );
+        Config config = Config.defaults( GraphDatabaseInternalSettings.auth_store_directory, testDirectory.directory( "data/dbms" ) );
 
         var systemGraphComponents = new SystemGraphComponents();
         systemGraphComponents.register( new DefaultSystemGraphComponent( config ) );

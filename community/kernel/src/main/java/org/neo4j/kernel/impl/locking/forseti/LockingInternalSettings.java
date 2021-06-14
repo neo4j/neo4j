@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.locking.forseti;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
@@ -31,6 +32,7 @@ import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 public class LockingInternalSettings implements SettingsDeclaration
 {
     @Internal
+    @Description( "Deadlock resolution strategy for the Forseti lock manager" )
     public static final Setting<DeadlockStrategies> forseti_deadlock_resolution_strategy =
             newBuilder( "unsupported.dbms.locks.forseti_deadlock_resolution_strategy", ofEnum( DeadlockStrategies.class ),
                     DeadlockStrategies.ABORT_YOUNG ).build();

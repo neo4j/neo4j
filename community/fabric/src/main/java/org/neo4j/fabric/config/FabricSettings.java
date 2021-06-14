@@ -40,5 +40,6 @@ public class FabricSettings implements SettingsDeclaration
             .build();
 
     @Internal
+    @Description( "Toggle if fabric is enabled by default" )
     public static final Setting<Boolean> enabled_by_default = newBuilder( "fabric.enabled_by_default", BOOL, true ).build();
 }
