@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.testing.api
 
+import org.neo4j.graphdb.Notification
+
 trait StatementResult {
 
   type Record = Map[String, AnyRef]
@@ -29,4 +31,5 @@ trait StatementResult {
 
   def consume(): Unit = {}
 
+  def getNotifications(): Iterable[Notification]
 }
