@@ -107,7 +107,7 @@
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
     <forkCounts>0</forkCounts>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
-    <cursor.counters.check>false</cursor.counters.check>
+    <cursor.counters.check>true</cursor.counters.check>
 
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
