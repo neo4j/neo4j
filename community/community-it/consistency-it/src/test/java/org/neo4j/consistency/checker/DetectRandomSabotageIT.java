@@ -45,6 +45,7 @@ import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -782,7 +783,6 @@ public class DetectRandomSabotageIT
                             throws Exception
                     {
                         IndexingService indexing = otherDependencies.resolveDependency( IndexingService.class );
-                        boolean add = random.nextBoolean();
                         long[] indexIds = indexing.getIndexIds().toArray();
                         IndexProxy indexProxy = null;
                         while ( indexProxy == null )
@@ -827,6 +827,14 @@ public class DetectRandomSabotageIT
                             throw new UnsupportedOperationException( "Something is wrong with the test, could not find index entry to sabotage" );
                         }
 
+                        boolean add = random.nextBoolean();
+                        if ( indexProxy.getDescriptor().schema().entityType() == EntityType.RELATIONSHIP )
+                        {
+                            // Consistency checking of relationship indexes doesn't find entries that shouldn't exist
+                            // in the indexes (yet), just entries missing from the index.
+                            // For now just test the remove case for relationship indexes
+                            add = false;
+                        }
                         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT, NULL ) )
                         {
                             if ( add )
