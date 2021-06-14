@@ -150,6 +150,7 @@ object CompilationPhases {
   def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
+      SyntaxDeprecationWarningsAndReplacements(Deprecations.deprecatedFeaturesIn4_XAfterRewrite) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
