@@ -46,6 +46,7 @@ import static org.neo4j.values.storable.Values.longValue;
 abstract class RandomValuesTest
 {
     private static final int ITERATIONS = 500;
+    private static final Duration TIMEOUT = Duration.ofMinutes( 2 );
 
     private RandomValues randomValues;
 
@@ -176,7 +177,7 @@ abstract class RandomValuesTest
     @Test
     void nextNumberValue()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             Set<Class<? extends NumberValue>> seen = new HashSet<>( NUMBER_TYPES );
 
@@ -192,7 +193,7 @@ abstract class RandomValuesTest
     @Test
     void nextAlphaNumericString()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             Set<Integer> seenDigits = "ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz0123456789".chars().boxed()
                     .collect( Collectors.toSet() );
@@ -241,7 +242,7 @@ abstract class RandomValuesTest
     @Test
     void nextArray()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             Set<Class<? extends AnyValue>> seen = new HashSet<>( TYPES );
             while ( !seen.isEmpty() )
@@ -258,7 +259,7 @@ abstract class RandomValuesTest
     @Test
     void nextValue()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             Set<Class<? extends AnyValue>> all = new HashSet<>( TYPES );
             all.add( ArrayValue.class );
@@ -276,7 +277,7 @@ abstract class RandomValuesTest
     @Test
     void nextValueOfTypes()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             ValueType[] allTypes = ValueType.values();
             ValueType[] including = randomValues.selection( allTypes, 1, allTypes.length, false );
