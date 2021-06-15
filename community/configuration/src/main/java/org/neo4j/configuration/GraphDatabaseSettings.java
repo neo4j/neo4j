@@ -990,12 +990,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .setDependency( default_listen_address )
                     .build();
 
-    @Description( "The advertised address for the intra-cluster routing connector" )
-    public static final Setting<SocketAddress> routing_advertised_address =
-            newBuilder( "dbms.routing.advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_ROUTING_CONNECTOR_PORT ) )
-                    .setDependency( default_advertised_address )
-                    .build();
-
     @Description( "Sets level for driver internal logging." )
     @DocumentedDefaultValue( "Value of dbms.logs.debug.level" )
     public static final Setting<Level> routing_driver_logging_level =
