@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 
 public class TrackingIndexReader implements ValueIndexReader
@@ -55,10 +56,16 @@ public class TrackingIndexReader implements ValueIndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints, PropertyIndexQuery... query )
+            throws IndexNotApplicableKernelException
     {
         delegate.query( context, client, constraints, query );
+    }
+
+    @Override
+    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    {
+        return delegate.valueSeek( desiredNumberOfPartitions, query );
     }
 
     @Override

@@ -30,11 +30,9 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.WildcardQuery;
 
 import java.io.IOException;
@@ -59,6 +57,7 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
@@ -165,6 +164,12 @@ public class FulltextIndexReader implements ValueIndexReader
         ValuesIterator itr = searchLucene( query, constraints, context, context.cursorContext(), context.memoryTracker() );
         IndexProgressor progressor = new FulltextIndexProgressor( itr, client, constraints );
         client.initialize( index, progressor, queries, constraints, true );
+    }
+
+    @Override
+    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    {
+        throw new UnsupportedOperationException();
     }
 
     /**

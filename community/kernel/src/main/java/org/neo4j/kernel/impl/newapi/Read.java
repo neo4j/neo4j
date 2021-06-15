@@ -106,8 +106,25 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
+    public PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions, PropertyIndexQuery... query )
+            throws IndexNotApplicableKernelException
+    {
+        ktx.assertOpen();
+        final var descriptor = index.reference();
+        if ( descriptor.schema().entityType() != EntityType.NODE )
+        {
+            throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " +
+                                                         descriptor.userDescription( ktx.tokenRead() ) );
+        }
+
+        final var session = (DefaultIndexReadSession) index;
+        final var valueSeek = session.reader.valueSeek( desiredNumberOfPartitions, query );
+        return new PartitionedValueIndexCursorSeek<>( this, descriptor, valueSeek, query );
+    }
+
+    @Override
     public final void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
-            PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
+                                             PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;

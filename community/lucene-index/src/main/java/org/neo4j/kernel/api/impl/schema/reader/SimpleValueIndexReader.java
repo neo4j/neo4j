@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.index.AbstractValueIndexReader;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -97,6 +98,12 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
         context.monitor().queried( descriptor );
         Query query = toLuceneQuery( predicates );
         client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, constraints, false );
+    }
+
+    @Override
+    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    {
+        throw new UnsupportedOperationException();
     }
 
     private DocValuesCollector search( Query query )

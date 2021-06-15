@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -104,6 +105,12 @@ class FusionIndexReader extends FusionIndexBase<ValueIndexReader> implements Val
                 throw e.getCause();
             }
         }
+    }
+
+    @Override
+    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    {
+        throw new UnsupportedOperationException();
     }
 
     private static final class InnerException extends RuntimeException

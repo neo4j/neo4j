@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -91,6 +92,12 @@ public class PartitionedValueIndexReader extends AbstractValueIndexReader
         {
             throw e.getCause();
         }
+    }
+
+    @Override
+    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    {
+        throw new UnsupportedOperationException();
     }
 
     private static final class InnerException extends RuntimeException

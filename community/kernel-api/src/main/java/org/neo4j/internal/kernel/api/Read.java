@@ -64,6 +64,9 @@ public interface Read
     void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
             throws KernelException;
 
+    PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions, PropertyIndexQuery... query )
+            throws IndexNotApplicableKernelException;
+
     /**
      * Seek all relationships matching the provided index query in an index.
      * @param index {@link IndexReadSession} referencing index to query. This must be an index of relationships.

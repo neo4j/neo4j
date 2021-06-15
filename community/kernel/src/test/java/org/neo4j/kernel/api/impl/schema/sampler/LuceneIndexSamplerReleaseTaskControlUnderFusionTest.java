@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingJob;
 import org.neo4j.kernel.impl.api.index.sampling.OnlineIndexSamplingJobFactory;
+import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.SlotSelector;
 import org.neo4j.monitoring.Monitors;
@@ -226,6 +227,12 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
                     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
                                        PropertyIndexQuery... query )
                     {
+                    }
+
+                    @Override
+                    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+                    {
+                        throw new UnsupportedOperationException();
                     }
                 };
             }

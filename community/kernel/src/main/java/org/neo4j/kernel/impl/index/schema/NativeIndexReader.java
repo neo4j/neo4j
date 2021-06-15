@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Iterator;
+import java.util.Optional;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -35,6 +37,7 @@ import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
@@ -178,7 +181,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     }
 
     private IndexProgressor getIndexProgressor( Seeker<KEY,VALUE> seeker, IndexProgressor.EntityValueClient client, boolean needFilter,
-            PropertyIndexQuery[] query )
+                                                PropertyIndexQuery[] query )
     {
         return needFilter ? new FilteringNativeHitIndexProgressor<>( seeker, client, query )
                           : new NativeHitIndexProgressor<>( seeker, client );
@@ -187,5 +190,65 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     private boolean isEmptyRange( KEY treeKeyFrom, KEY treeKeyTo )
     {
         return layout.compare( treeKeyFrom, treeKeyTo ) > 0;
+    }
+
+    @Override
+    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    {
+        try
+        {
+            return new NativePartitionedValueSeek( desiredNumberOfPartitions, query );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    class NativePartitionedValueSeek implements PartitionedValueSeek
+    {
+        private final PropertyIndexQuery[] query;
+        private final boolean filter;
+        private final Iterator<Seeker<KEY,VALUE>> partitions;
+        private final int numberOfPartitions;
+
+        NativePartitionedValueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query ) throws IOException
+        {
+            Preconditions.requirePositive( desiredNumberOfPartitions );
+            validateQuery( IndexQueryConstraints.unorderedValues(), query );
+            this.query = query;
+
+            final var fromInclusive = layout.newKey();
+            final var toExclusive = layout.newKey();
+            initializeFromToKeys( fromInclusive, toExclusive );
+
+            filter = initializeRangeForQuery( fromInclusive, toExclusive, this.query );
+
+            final var partitions = tree.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, CursorContext.NULL );
+            this.numberOfPartitions = partitions.size();
+            this.partitions = partitions.iterator();
+        }
+
+        @Override
+        public int getNumberOfPartitions()
+        {
+            return numberOfPartitions;
+        }
+
+        @Override
+        public IndexProgressor reservePartition( IndexProgressor.EntityValueClient client )
+        {
+            final var partition = getNextPotentialPartition();
+            if ( partition.isEmpty() )
+            {
+                return IndexProgressor.EMPTY;
+            }
+            return getIndexProgressor( partition.get(), client, filter, query );
+        }
+
+        private synchronized Optional<Seeker<KEY,VALUE>> getNextPotentialPartition()
+        {
+            return partitions.hasNext() ? Optional.of( partitions.next() ) : Optional.empty();
+        }
     }
 }

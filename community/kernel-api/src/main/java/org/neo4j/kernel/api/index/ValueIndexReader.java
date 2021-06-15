@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 
 public interface ValueIndexReader extends IndexReader
@@ -49,6 +50,14 @@ public interface ValueIndexReader extends IndexReader
     void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
                 PropertyIndexQuery... query ) throws IndexNotApplicableKernelException;
 
+    /**
+     * Create a partitioning over the result set for the given query. The partitions can be processed in parallel.
+     * @param desiredNumberOfPartitions the number of desired partitions.
+     * @param query the query to serve.
+     * @return The {@link PartitionedValueSeek} from which partitions can be reserved.
+     */
+    PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query );
+
     ValueIndexReader EMPTY = new ValueIndexReader()
     {
         // Used for checking index correctness
@@ -69,6 +78,12 @@ public interface ValueIndexReader extends IndexReader
                            PropertyIndexQuery... query )
         {
             // do nothing
+        }
+
+        @Override
+        public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+        {
+            throw new UnsupportedOperationException( "EMPTY implementation does not support this method." );
         }
 
         @Override
