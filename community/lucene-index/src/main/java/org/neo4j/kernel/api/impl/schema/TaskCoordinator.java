@@ -32,7 +32,7 @@ import org.neo4j.internal.helpers.CancellationRequest;
  */
 public class TaskCoordinator implements Cancelable, CancellationRequest
 {
-    private static final AtomicInteger tasks = new AtomicInteger();
+    private final AtomicInteger tasks = new AtomicInteger();
     private volatile boolean cancelled;
 
     @Override
@@ -41,7 +41,7 @@ public class TaskCoordinator implements Cancelable, CancellationRequest
         cancelled = true;
     }
 
-    public static void awaitCompletion() throws InterruptedException
+    public void awaitCompletion() throws InterruptedException
     {
         while ( tasks.get() > 0 )
         {
