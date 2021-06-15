@@ -65,7 +65,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -362,7 +362,7 @@ public class DatabaseIndexAccessorTest
         try ( var reader = indexReader /* do not inline! */;
               IndexSampler sampler = indexSampler /* do not inline! */ )
         {
-           futures.add( threading.execute( nothing ->
+            futures.add( threading.execute( nothing ->
             {
                 try
                 {
@@ -385,12 +385,12 @@ public class DatabaseIndexAccessorTest
                 dropLatch.await(); //need to wait for the sampling to start before we drop
                 accessor.drop();
                 return nothing;
-            }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS ) );
+            }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 10, MINUTES ) );
 
-            sampleLatch.release(); //drop is blocked, okay to finish sampling (will fail since index is dropped)
         }
         finally
         {
+            sampleLatch.release(); //drop is blocked, okay to finish sampling (will fail since index is dropped)
             for ( Future<?> future : futures )
             {
                 future.get();
