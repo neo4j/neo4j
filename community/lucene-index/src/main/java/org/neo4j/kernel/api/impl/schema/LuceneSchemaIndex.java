@@ -100,7 +100,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<ValueIndexReader>
         taskCoordinator.cancel();
         try
         {
-            TaskCoordinator.awaitCompletion();
+            taskCoordinator.awaitCompletion();
         }
         catch ( InterruptedException e )
         {
