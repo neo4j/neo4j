@@ -43,9 +43,9 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.ImportLogic;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.Collector;
@@ -802,7 +802,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         LinkedHashMap<Long,SchemaRule> rules = new LinkedHashMap<>();
 
-        schemaGenerateNames( srcAccess, srcTokenHolders, rules, cursorContext );
+        schemaGenerateNames( srcAccess.getAll( cursorContext ), srcTokenHolders, rules );
 
         // Once all rules have been processed, write them out.
         for ( SchemaRule rule : rules.values() )
@@ -811,13 +811,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    public static void schemaGenerateNames( SchemaStorage srcAccess, TokenHolders srcTokenHolders,
-            Map<Long,SchemaRule> rules, CursorContext cursorContext ) throws KernelException
+    public static void schemaGenerateNames( Iterable<SchemaRule> srcRules, TokenHolders srcTokenHolders,
+            Map<Long,SchemaRule> rules ) throws KernelException
     {
         SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
         List<SchemaRule> namedRules = new ArrayList<>();
         List<SchemaRule> unnamedRules = new ArrayList<>();
-        srcAccess.getAll( cursorContext ).forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
+        srcRules.forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
         // Make sure that we process explicitly named schemas first.
         namedRules.forEach( r -> rules.put( r.getId(), r ) );
         unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
