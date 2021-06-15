@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,7 +54,6 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.util.concurrent.Futures;
 
-import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -66,6 +66,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 public class PageListTest
 {
     private static final int ALIGNMENT = 8;
+    private static final Duration TIMEOUT = Duration.ofMinutes( 1 );
 
     private static final int[] pageIds = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     private static final DummyPageSwapper DUMMY_SWAPPER = new DummyPageSwapper( "", UnsafeUtil.pageSize() );
@@ -252,7 +253,7 @@ public class PageListTest
     {
         init( pageId );
 
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             PageList.unlockExclusive( pageRef );
             assertTrue( PageList.tryWriteLock( pageRef ) );
@@ -266,7 +267,7 @@ public class PageListTest
     {
         init( pageId );
 
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             PageList.unlockExclusive( pageRef );
             int threads = 10;
@@ -303,7 +304,7 @@ public class PageListTest
         init( pageId );
 
         assertThrows( IllegalMonitorStateException.class, () ->
-            assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+            assertTimeoutPreemptively( TIMEOUT, () ->
             {
                 PageList.unlockExclusive( pageRef );
                 //noinspection InfiniteLoopStatement
@@ -452,7 +453,7 @@ public class PageListTest
     {
         init( pageId );
 
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             // exclusive lock implied by constructor
             assertFalse( PageList.tryWriteLock( pageRef ) );
@@ -492,7 +493,7 @@ public class PageListTest
     {
         init( pageId );
 
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             PageList.unlockExclusive( pageRef );
             PageList.tryExclusiveLock( pageRef );
@@ -542,7 +543,7 @@ public class PageListTest
     {
         init( pageId );
 
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             // exclusive lock implied by constructor
             PageList.unlockExclusiveAndTakeWriteLock( pageRef );
@@ -556,7 +557,7 @@ public class PageListTest
     {
         init( pageId );
 
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             // exclusive lock implied by constructor
             int threads = Runtime.getRuntime().availableProcessors() - 1;
