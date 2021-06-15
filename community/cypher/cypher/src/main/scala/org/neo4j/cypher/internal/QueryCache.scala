@@ -186,8 +186,7 @@ class QueryCache[QUERY_REP <: AnyRef,
       result
     } else {
       inner.getIfPresent(queryKey) match {
-        case NOT_PRESENT =>
-          if (replanStrategy == CypherReplanOption.force)
+        case NOT_PRESENT => if (replanStrategy == CypherReplanOption.force)
             compileWithExpressionCodeGenAndCache(queryKey, compiler, metaData)
           else
             compileAndCache(queryKey, compiler, metaData)

@@ -127,7 +127,17 @@ trait Attribute[KEY, VALUE] {
     while (array.size < requiredSize)
       array += new Unchangeable
   }
-}
+
+  override def hashCode(): Int = array.map(_.valueHashCode()).hashCode()
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case that:Attribute[KEY, VALUE] =>
+        if (this eq that) return true
+        this.array == that.array
+      case _ => false
+    }
+  }}
 
 /**
  * Mixin trait to override behavior of `get`. Does not alter behavior of other methods.

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import java.time.Clock
-
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -28,6 +26,8 @@ import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
+
+import java.time.Clock
 
 object MasterCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
@@ -52,6 +52,10 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
    */
   def clearCaches(): Long = {
     compilerLibrary.clearCaches()
+  }
+
+  def clearExecutionPlanCaches(): Unit = {
+    compilerLibrary.clearExecutionPlanCaches()
   }
 
   /**

@@ -48,6 +48,8 @@ final class Unchangeable[A]() {
 
   override def hashCode(): Int = MurmurHash3.productHash((_seen, _value))
 
+  def valueHashCode(): Int = _value.hashCode()
+
   override def equals(obj: Any): Boolean = {
     obj match {
       case that:Unchangeable[_] =>

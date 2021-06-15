@@ -273,6 +273,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> query_cache_size =
             newBuilder( "dbms.query_cache_size", INT, 1000 ).addConstraint( min( 0 ) ).build();
 
+    @Description( "The number of Cypher query execution plans, given the logical plan, that are cached." )
+    public static final Setting<Integer> query_execution_plan_cache_size =
+            newBuilder( "dbms.query_execution_plan_cache_size", INT, 1000 ).addConstraint( min( 0 ) ).build();
+
     @Description( "The threshold when a plan is considered stale. If any of the underlying " +
             "statistics used to create the plan have changed more than this value, " +
             "the plan will be considered stale and will be replanned. Change is calculated as " +

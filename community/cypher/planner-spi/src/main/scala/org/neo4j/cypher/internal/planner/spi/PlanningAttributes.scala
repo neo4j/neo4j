@@ -62,4 +62,8 @@ case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, ef
     val fullAttributes = attributes.filter(!_.isInstanceOf[PartialAttribute[_, _]])
     fullAttributes.tail.forall(_.size == fullAttributes.head.size)
   }
+
+  def cacheKey: Int = {
+    Seq(cardinalities, effectiveCardinalities, providedOrders, leveragedOrders).hashCode()
+  }
 }
