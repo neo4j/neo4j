@@ -147,13 +147,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
-            IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider logProvider,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
+            IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider internalLogProvider,
+            LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
             DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker )
     {
-        return new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
-                indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector, cacheTracer,
-                createStoreIfNotExists, memoryTracker, readOnlyChecker, new CommandLockVerification.Factory.RealFactory( config ),
+        return new RecordStorageEngine( databaseLayout, config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState,
+                constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector,
+                cacheTracer, createStoreIfNotExists, memoryTracker, readOnlyChecker, new CommandLockVerification.Factory.RealFactory( config ),
                 LockVerificationMonitor.Factory.defaultFactory( config ) );
     }
 

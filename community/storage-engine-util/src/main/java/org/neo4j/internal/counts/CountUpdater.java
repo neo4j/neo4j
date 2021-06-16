@@ -21,6 +21,8 @@ package org.neo4j.internal.counts;
 
 import java.util.concurrent.locks.Lock;
 
+import org.neo4j.counts.InvalidCountException;
+
 /**
  * Manages a {@link CountWriter}, which is injectable, and a lock which it will release in {@link #close()}.
  */
@@ -37,7 +39,18 @@ class CountUpdater implements AutoCloseable
 
     void increment( CountsKey key, long delta )
     {
-        writer.write( key, delta );
+        try
+        {
+            writer.write( key, delta );
+        }
+        catch ( InvalidCountException e )
+        {
+            // This means that the value stored in the store associated with this key is invalid.
+            // The fact was logged when the value that means 'invalid' was written to the store.
+            // There is nothing better we can do here than just ignore updates to this key.
+            // Throwing an exception here would mean panicking the database which is what this
+            // entire invalid-value exercise tries to prevent
+        }
     }
 
     @Override

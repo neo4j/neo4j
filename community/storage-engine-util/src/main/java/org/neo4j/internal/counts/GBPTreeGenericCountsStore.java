@@ -39,6 +39,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongArrayQueue;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.counts.CountsStorage;
+import org.neo4j.counts.InvalidCountException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
@@ -52,6 +53,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
@@ -88,6 +90,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     public static final Monitor NO_MONITOR = txId -> {};
     private static final long NEEDS_REBUILDING_HIGH_ID = 0;
     private static final String OPEN_COUNT_STORE_TAG = "openCountStore";
+    static final long INVALID_COUNT = -1;
 
     protected final GBPTree<CountsKey,CountsValue> tree;
     private final OutOfOrderSequence idSequence;
@@ -105,12 +108,14 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private final int highMarkCacheSize;
     protected volatile CountsChanges changes = new CountsChanges();
     private final TxIdInformation txIdInformation;
+    private final LogProvider userLogProvider;
     private volatile boolean started;
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName,
-            int maxCacheSize ) throws IOException
+            int maxCacheSize, LogProvider userLogProvider ) throws IOException
     {
+        this.userLogProvider = userLogProvider;
         this.readOnlyChecker = readOnlyChecker;
         this.name = name;
         this.monitor = monitor;
@@ -249,8 +254,9 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         try
         {
             CountUpdater.CountWriter writer = applyDeltas
-                    ? new DeltaTreeWriter( () -> tree.writer( cursorContext ), key -> readCountFromTree( key, cursorContext ), layout, maxCacheSize )
-                    : new TreeWriter( tree.writer( cursorContext ) );
+                    ? new DeltaTreeWriter( () -> tree.writer( cursorContext ), key -> readCountFromTree( key, cursorContext ), layout, maxCacheSize,
+                    userLogProvider )
+                    : new TreeWriter( tree.writer( cursorContext ), userLogProvider );
             CountUpdater updater = new CountUpdater( writer, lock );
             success = true;
             return updater;
@@ -335,7 +341,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
     private void writeCountsChanges( CountsChanges changes, CursorContext cursorContext ) throws IOException
     {
-        try ( TreeWriter writer = new TreeWriter( tree.unsafeWriter( cursorContext ) ) )
+        try ( TreeWriter writer = new TreeWriter( tree.unsafeWriter( cursorContext ), userLogProvider ) )
         {
             // Sort the entries in the natural tree order to get more performance in the writer
             changes.sortedChanges( layout ).forEach( entry -> writer.write( entry.getKey(), entry.getValue().get() ) );
@@ -422,7 +428,18 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     {
         try ( Seeker<CountsKey,CountsValue> seek = tree.seek( key, key, cursorContext ) )
         {
-            return seek.next() ? seek.value().count : 0;
+            if ( !seek.next() )
+            {
+                return 0;
+            }
+
+            if ( seek.value().count == INVALID_COUNT )
+            {
+                throw new InvalidCountException( "The count value for key '" + key + "' is invalid. " +
+                        "This is a serious error which is typically caused by a store corruption" );
+            }
+
+            return seek.value().count;
         }
         catch ( IOException e )
         {

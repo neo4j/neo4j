@@ -286,7 +286,7 @@ class BatchingNeoStoresTest
         // given
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
-                DEFAULT_DATABASE_NAME, 1_000 ) )
+                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance() ) )
         {
             countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
             countsStore.checkpoint( NULL );
@@ -320,7 +320,7 @@ class BatchingNeoStoresTest
         // then
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
-                DEFAULT_DATABASE_NAME, 1_000 ) )
+                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance() ) )
         {
             assertEquals( 10, countsStore.nodeCount( 1, NULL ) );
             assertEquals( 20, countsStore.nodeCount( 2, NULL ) );
@@ -391,7 +391,7 @@ class BatchingNeoStoresTest
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = immediate();
             RecordStorageEngine storageEngine = life.add(
                     new RecordStorageEngine( databaseLayout, Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
-                            tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
+                            NullLogProvider.getInstance(), tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( PanicEventGenerator.NO_OP, nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(),

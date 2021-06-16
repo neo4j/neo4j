@@ -21,8 +21,8 @@ package org.neo4j.internal.counts;
 
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REMOVED;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REPLACED;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
@@ -31,15 +31,17 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
  */
 class TreeWriter implements CountUpdater.CountWriter
 {
-    private static final ValueMerger<CountsKey,CountsValue> MERGER =
-            ( existingKey, newKey, existingValue, newValue ) -> newValue.count > 0 ? REPLACED : REMOVED;
+    private static final ValueMerger<CountsKey,CountsValue> REPLACING_MERGER =
+            ( existingKey, newKey, existingValue, newValue ) -> REPLACED;
 
     private final Writer<CountsKey,CountsValue> treeWriter;
     private final CountsValue value = new CountsValue();
+    private final LogProvider userLogProvider;
 
-    TreeWriter( Writer<CountsKey,CountsValue> treeWriter )
+    TreeWriter( Writer<CountsKey,CountsValue> treeWriter, LogProvider userLogProvider )
     {
         this.treeWriter = treeWriter;
+        this.userLogProvider = userLogProvider;
     }
 
     @Override
@@ -54,11 +56,11 @@ class TreeWriter implements CountUpdater.CountWriter
         closeAllUnchecked( treeWriter );
     }
 
-    private static void merge( Writer<CountsKey,CountsValue> writer, CountsKey key, CountsValue value )
+    private void merge( Writer<CountsKey,CountsValue> writer, CountsKey key, CountsValue value )
     {
         if ( value.count > 0 )
         {
-            writer.merge( key, value, MERGER );
+            writer.merge( key, value, REPLACING_MERGER );
         }
         else if ( value.count == 0 )
         {
@@ -66,7 +68,12 @@ class TreeWriter implements CountUpdater.CountWriter
         }
         else
         {
-            throw new IllegalStateException( "Count for " + key + " got negative: " + value.count );
+            userLogProvider.getLog( this.getClass() ).error( "Key '" + key + "' has a negative count.\n" +
+                    "This is a serious error which is typically caused by a store corruption\n" +
+                    "Even thought the database will continue operating, it will do so with reduced functionality\n" +
+                    "The best cause of action is running the consistency checker, fixing the corruption and rebuilding the count store\n" +
+                    "Counts for the problematic key will not be available until the count store is rebuilt.\n" );
+            writer.merge( key, new CountsValue().initialize( GBPTreeGenericCountsStore.INVALID_COUNT ), REPLACING_MERGER );
         }
     }
 }

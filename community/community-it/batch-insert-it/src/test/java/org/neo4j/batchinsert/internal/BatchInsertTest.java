@@ -82,6 +82,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -1117,7 +1118,8 @@ class BatchInsertTest
                         {
                             return 0;
                         }
-                    }, readOnly(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1000 ) )
+                    }, readOnly(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1000,
+                    NullLogProvider.getInstance() ) )
             {
                 countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
                 assertEquals( (r + 1) * 100, countsStore.nodeCount( 0, NULL ) );

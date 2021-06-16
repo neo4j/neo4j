@@ -111,7 +111,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private static final StoreType[] TEMP_STORE_TYPES = {RELATIONSHIP_GROUP, PROPERTY, PROPERTY_ARRAY, PROPERTY_STRING};
 
     private final FileSystemAbstraction fileSystem;
-    private final LogProvider logProvider;
+    private final LogProvider internalLogProvider;
+    private final LogProvider userLogProvider;
     private final DatabaseLayout databaseLayout;
     private final DatabaseLayout temporaryDatabaseLayout;
     private final Config neo4jConfig;
@@ -148,7 +149,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.recordFormats = recordFormats;
         this.importConfiguration = importConfiguration;
         this.initialIds = initialIds;
-        this.logProvider = logService.getInternalLogProvider();
+        this.internalLogProvider = logService.getInternalLogProvider();
+        this.userLogProvider = logService.getUserLogProvider();
         this.databaseLayout = databaseLayout;
         this.temporaryDatabaseLayout = DatabaseLayout.ofFlat( databaseLayout.file( TEMP_STORE_NAME ) );
         this.neo4jConfig = neo4jConfig;
@@ -325,8 +327,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, IdGeneratorFactory idGeneratorFactory, PageCacheTracer cacheTracer,
             ImmutableSet<OpenOption> openOptions )
     {
-        return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, cacheTracer, writable(),
-                openOptions );
+        return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, internalLogProvider, cacheTracer,
+                writable(), openOptions );
     }
 
     /**
@@ -398,7 +400,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         }
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), builder, writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName,
-                neo4jConfig.get( counts_store_max_cached_entries ) ) )
+                neo4jConfig.get( counts_store_max_cached_entries ), userLogProvider ) )
         {
             countsStore.start( cursorContext, storeCursors, memoryTracker );
             countsStore.checkpoint( cursorContext );

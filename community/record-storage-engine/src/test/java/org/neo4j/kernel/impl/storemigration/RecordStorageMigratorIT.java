@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -250,7 +251,8 @@ class RecordStorageMigratorIT
         };
         try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
                 databaseLayout.relationshipGroupDegreesStore(), testDirectory.getFileSystem(), immediate(), noRebuildAssertion, writable(),
-                PageCacheTracer.NULL, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue() ) )
+                PageCacheTracer.NULL, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue(),
+                NullLogProvider.getInstance() ) )
         {
             // The rebuild would happen here in start and will throw exception (above) if invoked
             groupDegreesStore.start( NULL, StoreCursors.NULL, INSTANCE );

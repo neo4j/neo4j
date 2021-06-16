@@ -427,7 +427,7 @@ public class Database extends LifecycleAdapter
             idController.initialize( transactionsSnapshotSupplier );
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
-                    constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
+                    constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider, userLogProvider,
                     recoveryCleanupWorkCollector, pageCacheTracer, !storageExists, readOnlyDatabaseChecker, otherDatabaseMemoryTracker );
 
             MetadataProvider metadataProvider = storageEngine.metadataProvider();

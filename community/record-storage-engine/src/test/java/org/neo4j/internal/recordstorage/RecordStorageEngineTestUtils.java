@@ -66,7 +66,7 @@ public class RecordStorageEngineTestUtils
                 createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                 createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        return new RecordStorageEngine( layout, config, pageCache, fs, nullLogProvider(), tokenHolders, mock( SchemaState.class ),
+        return new RecordStorageEngine( layout, config, pageCache, fs, nullLogProvider(), nullLogProvider(), tokenHolders, mock( SchemaState.class ),
                 new StandardConstraintRuleAccessor(), c -> c, NO_LOCK_SERVICE, mock( Health.class ),
                 new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(), immediate(), PageCacheTracer.NULL, true,
                 EmptyMemoryTracker.INSTANCE, writable(), CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );

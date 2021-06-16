@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.counts.InvalidCountException;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore.Rebuilder;
 import org.neo4j.internal.helpers.Exceptions;
@@ -52,6 +53,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.OtherThreadExecutor;
@@ -139,7 +141,7 @@ class GBPTreeGenericCountsStoreTest
         assertZeroGlobalTracer( pageCacheTracer );
 
         try ( var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, writable(), pageCacheTracer,
-                NO_MONITOR, DEFAULT_DATABASE_NAME, randomMaxCacheSize() ) )
+                NO_MONITOR, DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.nullLogProvider() ) )
         {
             assertThat( pageCacheTracer.pins() ).isEqualTo( 14 );
             assertThat( pageCacheTracer.unpins() ).isEqualTo( 14 );
@@ -491,7 +493,7 @@ class GBPTreeGenericCountsStoreTest
         final Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, readOnly(), PageCacheTracer.NULL, NO_MONITOR,
-                        DEFAULT_DATABASE_NAME, randomMaxCacheSize() ) );
+                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.nullLogProvider() ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof ReadOnlyDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -640,6 +642,41 @@ class GBPTreeGenericCountsStoreTest
         expected.forEach( ( key, count ) -> assertThat( countsStore.read( key, NULL ) ).isEqualTo( count * 2 ) );
     }
 
+    @Test
+    void shouldHandleInvalidCountValues() throws IOException
+    {
+        // given
+        long txId = BASE_TX_ID;
+        try ( CountUpdater updater = countsStore.updater( ++txId, NULL ) )
+        {
+            updater.increment( nodeKey( LABEL_ID_1 ), -5 );
+            updater.increment( nodeKey( LABEL_ID_2 ),  10 );
+        }
+
+        // write the illegal value to the tree
+        countsStore.checkpoint( NULL );
+
+        try ( CountUpdater updater = countsStore.updater( ++txId, NULL ) )
+        {
+            updater.increment( nodeKey( LABEL_ID_1 ), 10 ); // this will be just ignored
+            updater.increment( nodeKey( LABEL_ID_2 ), 5 ); // now at 15
+        }
+
+        // Check that the problematic count is invalid before checkpoint ...
+        InvalidCountException e1 = assertThrows( InvalidCountException.class, () -> countsStore.read( nodeKey( LABEL_ID_1 ), NULL ) );
+        assertThat( e1 ).hasMessageContaining( "The count value for key 'CountsKey[type:1, first:1, second:0]' is invalid. " +
+                "This is a serious error which is typically caused by a store corruption" );
+        // and other counts still work
+        assertEquals( 15, countsStore.read( nodeKey( LABEL_ID_2 ), NULL ) );
+
+        countsStore.checkpoint( NULL );
+
+        // ... and after checkpoint, too
+        InvalidCountException e2 = assertThrows( InvalidCountException.class, () -> countsStore.read( nodeKey( LABEL_ID_1 ), NULL ) );
+        assertThat( e2 ).hasMessageContaining( "The count value for key 'CountsKey[type:1, first:1, second:0]' is invalid." );
+        assertEquals( 15, countsStore.read( nodeKey( LABEL_ID_2 ), NULL ) );
+    }
+
     private CountsKey randomKey()
     {
         CountsKey key = new CountsKey();
@@ -767,7 +804,7 @@ class GBPTreeGenericCountsStoreTest
     {
         countsStore =
                 new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, "test", PageCacheTracer.NULL, monitor,
-                        DEFAULT_DATABASE_NAME, randomMaxCacheSize() );
+                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.nullLogProvider() );
     }
 
     private static void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )

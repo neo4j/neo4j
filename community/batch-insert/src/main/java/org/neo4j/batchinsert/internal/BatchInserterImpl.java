@@ -293,7 +293,7 @@ public class BatchInserterImpl implements BatchInserter
 
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
                     new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
-                    databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
+                    databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ), logService.getUserLogProvider() );
             groupDegreesStore.start( cursorContext, storeCursors, memoryTracker );
 
             degreeUpdater = groupDegreesStore.directApply( cursorContext );
@@ -511,7 +511,7 @@ public class BatchInserterImpl implements BatchInserter
                 new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
                 initialCountsBuilder, readOnlyChecker, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName(),
-                config.get( counts_store_max_cached_entries ) );
+                config.get( counts_store_max_cached_entries ), logService.getUserLogProvider() );
                 var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
         {
             countsStore.start( CursorContext.NULL, storeCursors, memoryTracker );

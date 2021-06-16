@@ -725,10 +725,10 @@ public class NeoStoresTest
                 createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         storageEngine =
-                new RecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider(), tokenHolders, new DatabaseSchemaState( nullLogProvider() ),
-                        new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE, mock( Health.class ), idGeneratorFactory, new DefaultIdController(),
-                        immediate(), PageCacheTracer.NULL, true, INSTANCE, writable(), CommandLockVerification.Factory.IGNORE,
-                        LockVerificationMonitor.Factory.IGNORE );
+                new RecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider(), nullLogProvider(), tokenHolders,
+                        new DatabaseSchemaState( nullLogProvider() ), new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE, mock( Health.class ),
+                        idGeneratorFactory, new DefaultIdController(), immediate(), PageCacheTracer.NULL, true, INSTANCE, writable(),
+                        CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
         life = new LifeSupport();
         life.add( storageEngine );
         life.add( storageEngine.schemaAndTokensLifecycle() );

@@ -34,6 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
@@ -225,7 +226,7 @@ class GBPTreeCountsStoreTest
     private void instantiateCountsStore( CountsBuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor ) throws IOException
     {
         countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, PageCacheTracer.NULL, monitor,
-                DEFAULT_DATABASE_NAME, 10 );
+                DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance() );
     }
 
     private static class TestableCountsBuilder implements CountsBuilder

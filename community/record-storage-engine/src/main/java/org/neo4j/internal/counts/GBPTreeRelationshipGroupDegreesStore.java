@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
@@ -49,11 +50,10 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
     public GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem,
             RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker,
-            PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName, int maxCacheSize ) throws IOException
+            PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName, int maxCacheSize, LogProvider userLogProvider ) throws IOException
     {
         super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnlyChecker, NAME, pageCacheTracer, monitor,
-                databaseName,
-                maxCacheSize );
+                databaseName, maxCacheSize, userLogProvider );
     }
 
     @Override

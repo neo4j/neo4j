@@ -92,10 +92,9 @@ public class RecordStorageEngineRule extends ExternalResource
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        RecordStorageEngine engine =
-                new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, tokenHolders, mock( SchemaState.class ),
-                        constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory,
-                        new DefaultIdController(), transactionApplierTransformer );
+        RecordStorageEngine engine = new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, nullLogProvider, tokenHolders,
+                mock( SchemaState.class ), constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory,
+                new DefaultIdController(), transactionApplierTransformer );
         engine.addIndexUpdateListener( indexUpdateListener );
         life.add( engine );
         return engine;
@@ -217,17 +216,17 @@ public class RecordStorageEngineRule extends ExternalResource
                 transactionApplierTransformer;
 
         ExtendedRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
-                LogProvider logProvider, TokenHolders tokenHolders, SchemaState schemaState,
+                LogProvider internalLogProvider, LogProvider userLogProvider, TokenHolders tokenHolders, SchemaState schemaState,
                 ConstraintRuleAccessor constraintSemantics,
                 IndexConfigCompleter indexConfigCompleter,
                 LockService lockService, Health databaseHealth,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
                 Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer )
         {
-            super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, indexConfigCompleter, lockService,
-                    databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(), PageCacheTracer.NULL, true,
-                    EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(), CommandLockVerification.Factory.IGNORE,
-                    LockVerificationMonitor.Factory.IGNORE );
+            super( databaseLayout, config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState, constraintSemantics,
+                    indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(),
+                    PageCacheTracer.NULL, true, EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(),
+                    CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

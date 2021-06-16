@@ -65,6 +65,7 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
@@ -234,9 +235,10 @@ public class ConsistencyCheckService
                 new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, pageCacheTracer, readOnlyChecker );
         // Don't start the counts stores here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
-        CountsStoreManager countsStoreManager = life.add( new CountsStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker ) );
+        CountsStoreManager countsStoreManager = life.add( new CountsStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker,
+                logProvider ) );
         RelationshipGroupDegreesStoreManager groupDegreesStoreManager =
-                life.add( new RelationshipGroupDegreesStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker ) );
+                life.add( new RelationshipGroupDegreesStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker, logProvider ) );
 
         ConsistencySummaryStatistics summary;
         final Path reportFile = chooseReportPath( reportDir );
@@ -447,10 +449,13 @@ public class ConsistencyCheckService
 
     private static class CountsStoreManager extends CountsStorageManager<CountsStore>
     {
+        private final LogProvider logProvider;
+
         CountsStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
-                MemoryTracker memoryTracker )
+                MemoryTracker memoryTracker, LogProvider logProvider )
         {
             super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );
+            this.logProvider = logProvider;
         }
 
         @Override
@@ -458,16 +463,19 @@ public class ConsistencyCheckService
         {
             return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
                     new RebuildPreventingCountsInitializer(), readOnly(), pageCacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(),
-                    100 );
+                    100, logProvider );
         }
     }
 
     private static class RelationshipGroupDegreesStoreManager extends CountsStorageManager<RelationshipGroupDegreesStore>
     {
+        private final LogProvider logProvider;
+
         RelationshipGroupDegreesStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
-                PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+                PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, LogProvider logProvider )
         {
             super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );
+            this.logProvider = logProvider;
         }
 
         @Override
@@ -475,7 +483,7 @@ public class ConsistencyCheckService
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
                     RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer(), readOnly(), pageCacheTracer,
-                    GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100 );
+                    GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, logProvider );
         }
     }
 }

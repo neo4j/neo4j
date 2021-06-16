@@ -318,8 +318,8 @@ public final class Recovery
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
                 getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE,
                 new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
-                new DefaultIdController(), databaseHealth, logService.getInternalLogProvider(), recoveryCleanupCollector, tracers.getPageCacheTracer(),
-                true, readOnlyChecker, memoryTracker );
+                new DefaultIdController(), databaseHealth, logService.getInternalLogProvider(), logService.getUserLogProvider(), recoveryCleanupCollector,
+                tracers.getPageCacheTracer(), true, readOnlyChecker, memoryTracker );
 
         // Schema indexes
         FullScanStoreView fullScanStoreView =
