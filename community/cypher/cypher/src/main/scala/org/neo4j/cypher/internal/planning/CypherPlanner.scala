@@ -153,6 +153,13 @@ object CypherPlanner {
 
 }
 
+case class ParsedQueriesCacheKey(key: String, parameterTypes: ParameterTypeMap)
+
+object ParsedQueriesCacheKey {
+  def key(preParsedQuery: PreParsedQuery, params: MapValue): ParsedQueriesCacheKey =
+    ParsedQueriesCacheKey(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
+}
+
 /**
  * Cypher planner, which either parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]] or just plans [[FullyParsedQuery]].
  */
@@ -167,7 +174,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                          compatibilityMode: CypherCompatibilityVersion
     ) {
 
-  private val parsedQueries = new LFUCache[String, BaseState](cacheFactory, config.queryCacheSize)
+  private val parsedQueries = new LFUCache[ParsedQueriesCacheKey, BaseState](cacheFactory, config.queryCacheSize)
 
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
 
@@ -213,7 +220,9 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                          offset: InputPosition,
                          tracer: CompilationPhaseTracer,
                         ): BaseState = {
-    parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
+
+    val key = ParsedQueriesCacheKey.key(preParsedQuery, params)
+    parsedQueries.get(key).getOrElse {
       val parsedQuery = planner.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,
@@ -222,7 +231,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         tracer,
         params,
         compatibilityMode)
-      if (!config.planSystemCommands) parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
+      if (!config.planSystemCommands) parsedQueries.put(key, parsedQuery)
       parsedQuery
     }
   }
