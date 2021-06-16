@@ -97,11 +97,11 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
           }
         case (Failure(javaccEx), Success(_)) =>
           throw javaccEx
+        case (Success(_), Failure(parboiledEx)) =>
+          throw parboiledEx
         case (Success(javaCCStatement), Success(parboiledStatement)) =>
           javaCCStatement shouldBe parboiledStatement
           verifyPositions(javaCCStatement, parboiledStatement)
-        case (Success(_), Failure(parboiledEx)) =>
-          throw parboiledEx
         case _ =>
       }
     }
