@@ -58,6 +58,7 @@ import static java.util.Collections.singleton;
 import static java.util.stream.IntStream.range;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -228,6 +229,50 @@ class SchemaStore35Test
 
         // THEN
         assertEquals( rules, readRules );
+    }
+
+    @Test
+    void loadAllRulesIgnoringMalformed()
+    {
+        long indexId = store.nextId( NULL );
+        long constraintId = store.nextId( NULL );
+        var rules = Arrays.asList(
+                uniqueIndexRule( indexId, constraintId, 2, 5, 3 ),
+                constraintUniqueRule( constraintId, indexId, 2, 5, 3 ),
+                indexRule( store.nextId( NULL ), 0, 5 ),
+                indexRule( store.nextId( NULL ), 1, 6, 10, 99 ),
+                constraintExistsRule( store.nextId( NULL ), 5, 1 )
+        );
+
+        for ( int i = 0; i < rules.size(); i++ )
+        {
+            var rule = rules.get( i );
+            if ( i % 2 != 0 )
+            {
+                storeRule( rule );
+            }
+            else
+            {
+                storeBrokenRule( rule );
+            }
+        }
+
+        var storage35 = new SchemaStorage35( store );
+        var readRules = asCollection( storage35.getAllIgnoreMalformed( storeCursors ) );
+
+        assertEquals( 2, readRules.size() );
+        assertTrue( readRules.contains( rules.get( 1 ) ) );
+        assertTrue( readRules.contains( rules.get( 3 ) ) );
+    }
+
+    private void storeBrokenRule( SchemaRule rule )
+    {
+        Collection<DynamicRecord> records = allocateFrom( rule, NULL );
+        for ( DynamicRecord record : records )
+        {
+            record.setData( new byte[]{1,3,4} );
+            store.updateRecord( record, NULL );
+        }
     }
 
     private void storeRule( SchemaRule rule )

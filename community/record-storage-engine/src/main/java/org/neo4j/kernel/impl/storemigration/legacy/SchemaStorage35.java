@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.storemigration.SchemaStorage;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
+import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
 
 /**
@@ -43,6 +45,14 @@ import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
  */
 public class SchemaStorage35 implements SchemaStorage
 {
+    private static final ThrowingConsumer<Exception, RuntimeException> PROPAGATE_EXCEPTION_HANDLER = e ->
+    {
+        throwIfUnchecked( e );
+        throw new RuntimeException( e );
+    };
+
+    private static final ThrowingConsumer<Exception, RuntimeException> IGNORE_EXCEPTION_HANDLER = ThrowingConsumer.noop();
+
     private final RecordStore<DynamicRecord> schemaStore;
 
     public SchemaStorage35( RecordStore<DynamicRecord> schemaStore )
@@ -53,12 +63,17 @@ public class SchemaStorage35 implements SchemaStorage
     @Override
     public Iterable<SchemaRule> getAll( StoreCursors storeCursors )
     {
-        return () -> loadAllSchemaRules( (SchemaStore35StoreCursors) storeCursors );
+        return () -> loadAllSchemaRules( (SchemaStore35StoreCursors) storeCursors, PROPAGATE_EXCEPTION_HANDLER );
+    }
+
+    public Iterable<SchemaRule> getAllIgnoreMalformed( StoreCursors storeCursors )
+    {
+        return () -> loadAllSchemaRules( (SchemaStore35StoreCursors) storeCursors, IGNORE_EXCEPTION_HANDLER );
     }
 
     public Iterator<IndexDescriptor> indexesGetAll( SchemaStore35StoreCursors storeCursors )
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexDescriptor.class, storeCursors );
+        return loadAllSchemaRules( IndexDescriptor.class, storeCursors, PROPAGATE_EXCEPTION_HANDLER );
     }
 
     public IndexDescriptor indexGetForName( String indexName, SchemaStore35StoreCursors storeCursors )
@@ -75,21 +90,21 @@ public class SchemaStorage35 implements SchemaStorage
         return null;
     }
 
-    private Iterator<SchemaRule> loadAllSchemaRules( SchemaStore35StoreCursors storeCursors )
+    private Iterator<SchemaRule> loadAllSchemaRules( SchemaStore35StoreCursors storeCursors,
+            ThrowingConsumer<Exception,RuntimeException> malformedExceptionHandler )
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class, storeCursors );
+        return loadAllSchemaRules( SchemaRule.class, storeCursors, malformedExceptionHandler );
     }
 
     /**
      * Scans the schema store and loads all {@link SchemaRule rules} in it. This method is written with the assumption
      * that there's no id reuse on schema records.
      *
-     * @param predicate filter when loading.
      * @param returnType type of {@link SchemaRule} to load.
      * @return {@link Iterator} of the loaded schema rules, lazily loaded when advancing the iterator.
      */
-    private <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules( final Predicate<ReturnType> predicate, final Class<ReturnType> returnType,
-            SchemaStore35StoreCursors storeCursors )
+    private <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules( final Class<ReturnType> returnType,
+            SchemaStore35StoreCursors storeCursors, ThrowingConsumer<Exception, RuntimeException> malformedExceptionHandler )
     {
         return new PrefetchingIterator<>()
         {
@@ -103,44 +118,47 @@ public class SchemaStorage35 implements SchemaStorage
             {
                 while ( currentId <= highestId )
                 {
-                    long id = currentId++;
-                    schemaStore.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, storeCursors.pageCursor( SCHEMA_CURSOR ) );
-                    if ( !record.inUse() )
+                    try
                     {
-                        continue;
-                    }
-                    schemaStore.getRecordByCursor( id, record, RecordLoad.NORMAL, storeCursors.pageCursor( SCHEMA_CURSOR ) );
-                    if ( record.isStartRecord() )
-                    {
-                        // It may be that concurrently to our reading there's a transaction dropping the schema rule
-                        // that we're reading and that rule may have spanned multiple dynamic records.
-                        try
+                        long id = currentId++;
+                        schemaStore.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, storeCursors.pageCursor( SCHEMA_CURSOR ) );
+                        if ( !record.inUse() )
                         {
-                            Collection<DynamicRecord> records;
+                            continue;
+                        }
+                        schemaStore.getRecordByCursor( id, record, RecordLoad.NORMAL, storeCursors.pageCursor( SCHEMA_CURSOR ) );
+                        if ( record.isStartRecord() )
+                        {
+                            // It may be that concurrently to our reading there's a transaction dropping the schema rule
+                            // that we're reading and that rule may have spanned multiple dynamic records.
                             try
                             {
-                                records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, storeCursors.pageCursor( SCHEMA_CURSOR ) );
-                            }
-                            catch ( InvalidRecordException e )
-                            {
-                                // This may have been due to a concurrent drop of this rule.
-                                continue;
-                            }
-
-                            SchemaRule schemaRule = SchemaStore35.readSchemaRule( id, records, scratchData );
-                            if ( returnType.isInstance( schemaRule ) )
-                            {
-                                ReturnType returnRule = returnType.cast( schemaRule );
-                                if ( predicate.test( returnRule ) )
+                                Collection<DynamicRecord> records;
+                                try
                                 {
-                                    return returnRule;
+                                    records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, storeCursors.pageCursor( SCHEMA_CURSOR ) );
+                                }
+                                catch ( InvalidRecordException e )
+                                {
+                                    // This may have been due to a concurrent drop of this rule.
+                                    continue;
+                                }
+
+                                SchemaRule schemaRule = SchemaStore35.readSchemaRule( id, records, scratchData );
+                                if ( returnType.isInstance( schemaRule ) )
+                                {
+                                    return returnType.cast( schemaRule );
                                 }
                             }
+                            catch ( MalformedSchemaRuleException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
                         }
-                        catch ( MalformedSchemaRuleException e )
-                        {
-                            throw new RuntimeException( e );
-                        }
+                    }
+                    catch ( Exception e )
+                    {
+                        malformedExceptionHandler.accept( e );
                     }
                 }
                 return null;

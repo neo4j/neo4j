@@ -85,7 +85,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -812,7 +811,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         LinkedHashMap<Long,SchemaRule> rules = new LinkedHashMap<>();
 
-        schemaGenerateNames( srcAccess, srcTokenHolders, rules, storeCursors );
+        schemaGenerateNames( srcAccess.getAll( storeCursors ), srcTokenHolders, rules );
 
         // Once all rules have been processed, write them out.
         for ( SchemaRule rule : rules.values() )
@@ -821,13 +820,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    public static void schemaGenerateNames( SchemaStorage srcAccess, TokenHolders srcTokenHolders,
-            Map<Long,SchemaRule> rules, StoreCursors storeCursors ) throws KernelException
+    public static void schemaGenerateNames( Iterable<SchemaRule> srcRules, TokenHolders srcTokenHolders, Map<Long,SchemaRule> rules ) throws KernelException
     {
         SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
         List<SchemaRule> namedRules = new ArrayList<>();
         List<SchemaRule> unnamedRules = new ArrayList<>();
-        srcAccess.getAll( storeCursors ).forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
+        srcRules.forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
         // Make sure that we process explicitly named schemas first.
         namedRules.forEach( r -> rules.put( r.getId(), r ) );
         unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
