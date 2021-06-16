@@ -58,9 +58,10 @@ object QgWithLeafInfo {
  * Specifically, this includes information about the leaves used to plan the query graph
  * and their stability.
  *
- * @param solvedQg         The query graph that has already been solved by some plan.
- * @param unstableLeaves   The unstable leaves of the considered plan.
- * @param stableIdentifier The identifier of the node found in the stable iterator.
+ * @param solvedQg               The query graph that has already been solved by some plan.
+ * @param stablySolvedPredicates The predicates solved by the leaf plan that solves the stable identifier.
+ * @param unstableLeaves         The unstable leaves of the considered plan.
+ * @param stableIdentifier       The identifier of the node found in the stable iterator.
  */
 case class QgWithLeafInfo(private val solvedQg: QueryGraph,
                           private val stablySolvedPredicates: Set[Predicate],

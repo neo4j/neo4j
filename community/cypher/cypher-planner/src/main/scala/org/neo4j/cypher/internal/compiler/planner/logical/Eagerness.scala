@@ -122,7 +122,7 @@ object Eagerness {
     }
 
     if (conflicts.nonEmpty)
-     conflicts
+      conflicts
     else if (tail.tail.isEmpty)
       Seq.empty
     else

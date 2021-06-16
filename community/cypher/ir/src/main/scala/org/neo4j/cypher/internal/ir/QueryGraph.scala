@@ -42,10 +42,10 @@ import scala.math.Ordering.Implicits
 import scala.runtime.ScalaRunTime
 
 /*
-This is one of the core classes used during query planning. It represents the declarative query,
-it contains no more information that the AST, but it contains data in a format that is easier
-to consume by the planner. If you want to trace this back to the original query - one QueryGraph
-represents all the MATCH, OPTIONAL MATCHes, and update clauses between two WITHs.
+ * This is one of the core classes used during query planning. It represents the declarative query,
+ * it contains no more information than the AST, but it contains data in a format that is easier
+ * to consume by the planner. If you want to trace this back to the original query - one QueryGraph
+ * represents all the MATCH, OPTIONAL MATCHes, and update clauses between two WITHs.
  */
 case class QueryGraph(// !!! If you change anything here, make sure to update the equals method at the bottom of this class !!!
                       patternRelationships: Set[PatternRelationship] = Set.empty,
@@ -501,7 +501,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
 }
 
 object QueryGraph {
-  val empty = QueryGraph()
+  val empty: QueryGraph = QueryGraph()
 
   def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]): Set[String] = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
