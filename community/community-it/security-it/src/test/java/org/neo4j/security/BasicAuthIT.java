@@ -19,6 +19,7 @@
  */
 package org.neo4j.security;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -35,8 +36,7 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 @DbmsExtension( configurationCallback = "configure" )
@@ -72,8 +72,8 @@ class BasicAuthIT
 
         // THEN
         LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "wrong" ), EMBEDDED_CONNECTION );
-        assertThat( loginContext.subject().getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.FAILURE );
         loginContext = authManager.login( AuthToken.newBasicAuthToken( "foo", "bar" ), EMBEDDED_CONNECTION );
-        assertThat( loginContext.subject().getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
+        assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
     }
 }

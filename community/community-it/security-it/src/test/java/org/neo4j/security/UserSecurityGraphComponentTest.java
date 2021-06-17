@@ -19,7 +19,6 @@
  */
 package org.neo4j.security;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,10 +67,8 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_single_automatic_upgrade;
@@ -158,7 +155,7 @@ class UserSecurityGraphComponentTest
         initializeLatestSystem();
         initUserSecurityComponent( version );
         LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ),  EMBEDDED_CONNECTION);
-        Assertions.assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
+        assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
     }
 
     @Test
@@ -172,10 +169,10 @@ class UserSecurityGraphComponentTest
             systemGraphComponents.forEach( component -> statuses.put( component.componentName(), component.detect( tx ) ) );
             statuses.put( "dbms-status", systemGraphComponents.detect( tx ) );
         } );
-        assertThat( "Expecting three components", statuses.size(), is( 3 ) );
-        assertThat( "System graph status", statuses.get( "multi-database" ), is( CURRENT ) );
-        assertThat( "Users status", statuses.get( "security-users" ), is( CURRENT ) );
-        assertThat( "Overall status", statuses.get( "dbms-status" ), is( CURRENT ) );
+        assertEquals( statuses.size(), 3, "Expecting three components" );
+        assertEquals( statuses.get( "multi-database" ), CURRENT, "System graph status" );
+        assertEquals( statuses.get( "security-users" ), CURRENT, "Users status" );
+        assertEquals( statuses.get( "dbms-status" ), CURRENT, "Overall status" );
     }
 
     @ParameterizedTest
@@ -209,7 +206,7 @@ class UserSecurityGraphComponentTest
 
         // Then
         HashMap<String, Object> usernameAndIds = getUserNamesAndIds();
-        assertThat( usernameAndIds.get( "alice" ), notNullValue() );
+        assertThat( usernameAndIds.get( "alice" ) ).isNotNull();
     }
 
     @ParameterizedTest
@@ -224,8 +221,8 @@ class UserSecurityGraphComponentTest
 
         // Then
         HashMap<String, Object> usernameAndIdsBeforeUpgrade = getUserNamesAndIds();
-        assertThat( usernameAndIdsBeforeUpgrade.get( "neo4j" ), equalTo(null) );
-        assertThat( usernameAndIdsBeforeUpgrade.get( "alice" ), equalTo(null) );
+        assertThat( usernameAndIdsBeforeUpgrade.get( "neo4j" ) ).isNull();
+        assertThat( usernameAndIdsBeforeUpgrade.get( "alice" ) ).isNull();
 
         // When running dbms.upgrade
         systemGraphComponents.upgradeToCurrent( system );
@@ -233,8 +230,8 @@ class UserSecurityGraphComponentTest
         // Then
         HashMap<String, Object> usernameAndIdsAfterUpgrade = getUserNamesAndIds();
 
-        assertThat( usernameAndIdsAfterUpgrade.get( "neo4j" ), notNullValue() );
-        assertThat( usernameAndIdsAfterUpgrade.get( "alice" ), notNullValue() );
+        assertThat( usernameAndIdsAfterUpgrade.get( "neo4j" ) ).isNotNull();
+        assertThat( usernameAndIdsAfterUpgrade.get( "alice" ) ).isNotNull();
     }
 
     private static Stream<Arguments> supportedPreviousVersions()
@@ -275,7 +272,7 @@ class UserSecurityGraphComponentTest
         } );
         for ( var entry : expected.entrySet() )
         {
-            assertThat( entry.getKey(), statuses.get( entry.getKey() ), is( entry.getValue() ) );
+            assertEquals( statuses.get( entry.getKey() ), entry.getValue(), entry.getKey() );
         }
     }
 
