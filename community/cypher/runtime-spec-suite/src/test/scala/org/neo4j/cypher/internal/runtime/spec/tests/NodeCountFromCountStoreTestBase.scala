@@ -169,4 +169,40 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     val expectedRows = nodes.map(_ => expectedCount)
     runtimeResult should beColumns("x").withRows(singleColumn(expectedRows))
   }
+
+  test("should get count for cartesian product of identical labels") {
+    // given
+    val nodes = given { nodeGraph(actualSize, "LabelA") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeCountFromCountStore("x", List(Some("LabelA"), Some("LabelA"), Some("LabelA")))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(nodes.size * nodes.size * nodes.size)))
+  }
+
+  test("should get count for cartesian product of identical labels not there at compile time") {
+    // given an empty dn
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeCountFromCountStore("x", List(Some("NotThereYet"), Some("NotThereYet"), Some("NotThereYet")))
+      .build()
+    val plan = buildPlan(logicalQuery, runtime)
+
+    //then count should be 0
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
+
+    //when we later create nodes with the label
+    val nodes = given { nodeGraph(actualSize, "NotThereYet") }
+
+    // then we should get the correct count
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(nodes.size * nodes.size * nodes.size)))
+  }
 }
