@@ -68,7 +68,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
-import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
@@ -1058,7 +1058,7 @@ public class Operations implements Write, SchemaWrite
             int[] propertyIds = schema.getPropertyIds();
             String[] propertyNames = resolveTokenNames( token::propertyKeyName, propertyIds );
 
-            prototype = prototype.withName( SchemaRule.generateName( prototype, entityTokenNames, propertyNames ) );
+            prototype = prototype.withName( SchemaNameUtil.generateName( prototype, entityTokenNames, propertyNames ) );
         }
         return prototype;
     }
@@ -1775,7 +1775,7 @@ public class Operations implements Write, SchemaWrite
             int[] propertyIds = schema.getPropertyIds();
             String[] propertyNames = resolveTokenNames( token::propertyKeyName, propertyIds );
 
-            constraint = (T) constraint.withName( SchemaRule.generateName( constraint, entityTokenNames, propertyNames ) );
+            constraint = (T) constraint.withName( SchemaNameUtil.generateName( constraint, entityTokenNames, propertyNames ) );
         }
 
         return constraint;

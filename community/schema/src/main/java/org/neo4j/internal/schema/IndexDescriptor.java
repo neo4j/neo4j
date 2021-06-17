@@ -59,9 +59,9 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
 
     IndexDescriptor( long id, IndexPrototype prototype )
     {
-        this( id, SchemaRule.sanitiseName( prototype.getName() ), prototype.schema(), prototype.isUnique(),
-                prototype.getIndexProvider(), null,
-                IndexCapability.NO_CAPABILITY, prototype.getIndexType(), prototype.getIndexConfig() );
+        this( id, SchemaNameUtil.sanitiseName( prototype.getName() ), prototype.schema(), prototype.isUnique(),
+              prototype.getIndexProvider(), null,
+              IndexCapability.NO_CAPABILITY, prototype.getIndexType(), prototype.getIndexConfig() );
     }
 
     private IndexDescriptor( long id, String name, SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, Long owningConstraintId,
@@ -71,7 +71,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         {
             throw new IllegalArgumentException( "The id of an index must not be negative, but it was attempted to assign " + id + "." );
         }
-        name = SchemaRule.sanitiseName( name );
+        name = SchemaNameUtil.sanitiseName( name );
         requireNonNull( schema, "The schema of an index cannot be null." );
         requireNonNull( indexProvider, "The index provider cannot be null." );
         // The 'owningConstraintId' is allowed to be null, which is the case when an index descriptor is initially created.
@@ -139,7 +139,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         {
             return this;
         }
-        name = SchemaRule.sanitiseName( name );
+        name = SchemaNameUtil.sanitiseName( name );
         return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability, indexType, indexConfig );
     }
 

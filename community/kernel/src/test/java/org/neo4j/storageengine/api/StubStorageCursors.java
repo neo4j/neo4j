@@ -36,7 +36,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -79,7 +79,7 @@ public class StubStorageCursors implements StorageReader
                 .forSchema( forAnyEntityTokens( entityType ) )
                 .withIndexType( LOOKUP )
                 .withIndexProvider( new IndexProviderDescriptor( "token-lookup", "1.0" ) );
-        indexPrototype = indexPrototype.withName( SchemaRule.generateName( indexPrototype, new String[]{}, new String[]{} ) );
+        indexPrototype = indexPrototype.withName( SchemaNameUtil.generateName( indexPrototype, new String[]{}, new String[]{} ) );
         return indexPrototype.materialise( id );
     }
 

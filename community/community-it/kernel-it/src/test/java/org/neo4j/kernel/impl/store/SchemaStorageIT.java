@@ -28,12 +28,10 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.IndexingTestUtil;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
-import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -41,13 +39,11 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
-import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.KernelVersion;
@@ -59,7 +55,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
-import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,7 +67,6 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ImpermanentDbmsExtension
 class SchemaStorageIT
@@ -281,7 +275,7 @@ class SchemaStorageIT
     {
         LabelSchemaDescriptor schema = forLabel( labelId( label ), propId( propertyKey ) );
         IndexPrototype prototype = forSchema( schema, GenericNativeIndexProvider.DESCRIPTOR );
-        prototype = prototype.withName( SchemaRule.generateName( prototype, new String[]{label}, new String[]{propertyKey} ) );
+        prototype = prototype.withName( SchemaNameUtil.generateName( prototype, new String[]{label}, new String[]{propertyKey} ) );
         return prototype.materialise( ruleId );
     }
 
@@ -290,7 +284,7 @@ class SchemaStorageIT
         LabelSchemaDescriptor schema = forLabel( labelId( label ), propId( propertyKey ) );
         IndexPrototype prototype = uniqueForSchema( schema, GenericNativeIndexProvider.DESCRIPTOR );
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
-        prototype = prototype.withName( SchemaRule.generateName( constraint, new String[]{label}, new String[]{propertyKey} ) );
+        prototype = prototype.withName( SchemaNameUtil.generateName( constraint, new String[]{label}, new String[]{propertyKey} ) );
         return prototype.materialise( ruleId ).withOwningConstraintId( constraintId );
     }
 

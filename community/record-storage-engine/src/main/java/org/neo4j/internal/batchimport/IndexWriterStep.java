@@ -44,7 +44,7 @@ import static org.neo4j.internal.recordstorage.SchemaRuleAccess.getSchemaRuleAcc
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
-import static org.neo4j.internal.schema.SchemaRule.generateName;
+import static org.neo4j.internal.schema.SchemaNameUtil.generateName;
 
 public abstract class IndexWriterStep<T> extends ProcessorStep<T>
 {

@@ -219,9 +219,9 @@ class SchemaRuleTest
 
     private static void assertName( SchemaDescriptorSupplier schemaish, String expectedName )
     {
-        String generateName = SchemaRule.generateName( schemaish, new String[]{"A"}, new String[]{"B", "C"} );
+        String generateName = SchemaNameUtil.generateName( schemaish, new String[]{"A"}, new String[]{"B", "C"} );
         assertThat( generateName ).isEqualTo( expectedName );
-        assertThat( SchemaRule.sanitiseName( generateName ) ).isEqualTo( expectedName );
+        assertThat( SchemaNameUtil.sanitiseName( generateName ) ).isEqualTo( expectedName );
     }
 
     private void assertUserDescription( String description, SchemaDescriptorSupplier schemaish )
@@ -233,9 +233,9 @@ class SchemaRuleTest
     @Test
     void sanitiseNameMustRejectEmptyOptionalOrNullNames()
     {
-        assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( Optional.empty() ) );
-        assertThrows( NullPointerException.class, () -> SchemaRule.sanitiseName( (Optional<String>) null ) );
-        assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( (String) null ) );
+        assertThrows( IllegalArgumentException.class, () -> SchemaNameUtil.sanitiseName( Optional.empty() ) );
+        assertThrows( NullPointerException.class, () -> SchemaNameUtil.sanitiseName( (Optional<String>) null ) );
+        assertThrows( IllegalArgumentException.class, () -> SchemaNameUtil.sanitiseName( (String) null ) );
     }
 
     @Test
@@ -245,7 +245,7 @@ class SchemaRuleTest
         reservedNames = reservedNames.stream().flatMap( n -> Stream.of( " " + n, n, n + " " ) ).collect( Collectors.toSet() );
         for ( String reservedName : reservedNames )
         {
-            assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( reservedName ), "reserved name: '" + reservedName + "'" );
+            assertThrows( IllegalArgumentException.class, () -> SchemaNameUtil.sanitiseName( reservedName ), "reserved name: '" + reservedName + "'" );
         }
     }
 
@@ -256,7 +256,7 @@ class SchemaRuleTest
 
         for ( String invalidName : invalidNames )
         {
-            assertThrows( IllegalArgumentException.class, () -> SchemaRule.sanitiseName( invalidName ), "invalid name: '" + invalidName + "'" );
+            assertThrows( IllegalArgumentException.class, () -> SchemaNameUtil.sanitiseName( invalidName ), "invalid name: '" + invalidName + "'" );
         }
     }
 
@@ -269,7 +269,7 @@ class SchemaRuleTest
 
         for ( String validName : validNames )
         {
-            SchemaRule.sanitiseName( validName );
+            SchemaNameUtil.sanitiseName( validName );
         }
     }
 }

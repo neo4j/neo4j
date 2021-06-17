@@ -79,6 +79,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -898,7 +899,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             {
                 String[] entityTokenNames = getEntityTokenNames( tokens, rule );
                 String[] propertyTokenNames = getPropertyTokenNames( tokens, rule );
-                name = SchemaRule.generateName( rule, entityTokenNames, propertyTokenNames );
+                name = SchemaNameUtil.generateName( rule, entityTokenNames, propertyTokenNames );
             }
             int count = 0;
             String originalName = name;

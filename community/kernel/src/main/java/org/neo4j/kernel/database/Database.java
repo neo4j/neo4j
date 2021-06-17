@@ -57,7 +57,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
@@ -549,7 +549,7 @@ public class Database extends LifecycleAdapter
 
         IndexPrototype prototype = IndexPrototype.forSchema( descriptor ).withIndexType( LOOKUP )
                                                  .withIndexProvider( indexProviderMap.getTokenIndexProvider().getProviderDescriptor() );
-        prototype = prototype.withName( SchemaRule.generateName( prototype, new String[]{}, new String[]{} ) );
+        prototype = prototype.withName( SchemaNameUtil.generateName( prototype, new String[]{}, new String[]{} ) );
 
         tx.schemaWrite().indexCreate( prototype );
     }
