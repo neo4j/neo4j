@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
+import static org.neo4j.util.Preconditions.requireNonNegative;
+
 class PhysicalToLogicalTokenChanges
 {
     private PhysicalToLogicalTokenChanges()
@@ -46,8 +48,8 @@ class PhysicalToLogicalTokenChanges
         long[] after = update.values();
         for ( int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; )
         {
-            long beforeId = bi < beforeLength ? before[bi] : -1;
-            long afterId = ai < afterLength ? after[ai] : -1;
+            long beforeId = bi < beforeLength ? requireNonNegative( before[bi] ) : -1;
+            long afterId = ai < afterLength ? requireNonNegative( after[ai] ) : -1;
             if ( beforeId == afterId )
             {   // no change
                 bi++;

@@ -39,7 +39,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -69,10 +68,10 @@ import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.NamedToken;
 
 import static java.util.Arrays.asList;
@@ -675,21 +674,42 @@ class NeoStoreTransactionApplierTest
     }
 
     @Test
-    void closeIndexUpdatesOnContextClose() throws Exception
+    void shouldCloseReaderAndNasNoUpdatesOnContextClose() throws Exception
     {
         RecordStorageEngine storageEngine = mock( RecordStorageEngine.class );
         RecordStorageReader storageReader = mock( RecordStorageReader.class );
         when( storageEngine.newReader() ).thenReturn( storageReader );
-        try ( var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore, storageEngine,
-                mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL ) )
-        {
-            IndexUpdates indexEntryUpdates = batchContext.indexUpdates();
-            ((OnlineIndexUpdates) indexEntryUpdates).getUpdates().add( IndexEntryUpdate.add( 1, IndexDescriptor.NO_INDEX ) );
+        var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore, storageEngine,
+                                                 mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
 
-            assertTrue( indexEntryUpdates.hasUpdates() );
-        }
+        IndexUpdates indexEntryUpdates = batchContext.indexUpdates();
+        ((OnlineIndexUpdates) indexEntryUpdates).getUpdates().add( IndexEntryUpdate.add( 1, IndexDescriptor.NO_INDEX ) );
 
+        assertTrue( batchContext.hasUpdates() );
+
+        batchContext.close();
+
+        assertFalse( batchContext.hasUpdates() );
         verify( storageReader ).close();
+    }
+
+    @Test
+    void shouldNasNoUpdatesAfterPendingUpdatesApplied() throws Exception
+    {
+        RecordStorageEngine storageEngine = mock( RecordStorageEngine.class );
+        RecordStorageReader storageReader = mock( RecordStorageReader.class );
+        when( storageEngine.newReader() ).thenReturn( storageReader );
+        var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore, storageEngine,
+                                                 mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
+
+        IndexUpdates indexEntryUpdates = batchContext.indexUpdates();
+        ((OnlineIndexUpdates) indexEntryUpdates).getUpdates().add( IndexEntryUpdate.add( 1, IndexDescriptor.NO_INDEX ) );
+
+        assertTrue( batchContext.hasUpdates() );
+
+        batchContext.applyPendingIndexUpdates();
+
+        assertFalse( batchContext.hasUpdates() );
     }
 
     @Test

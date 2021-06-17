@@ -34,6 +34,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * A batch context implementation that does not do anything with scan stores.
@@ -43,35 +44,25 @@ import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
 public class BatchContextImpl implements BatchContext
 {
     private final IndexUpdatesWorkSync indexUpdatesSync;
-    private final NodeStore nodeStore;
-    private final PropertyStore propertyStore;
-    private final StorageEngine storageEngine;
-    private final SchemaCache schemaCache;
     private final CursorContext cursorContext;
-    private final MemoryTracker memoryTracker;
     private final IdUpdateListener idUpdateListener;
-    private final StoreCursors storeCursors;
 
     private final IndexActivator indexActivator;
     private final LockGroup lockGroup;
-    private IndexUpdates indexUpdates;
+    private final IndexUpdates indexUpdates;
 
     public BatchContextImpl( IndexUpdateListener indexUpdateListener,
-            IndexUpdatesWorkSync indexUpdatesSync, NodeStore nodeStore, PropertyStore propertyStore,
-            RecordStorageEngine recordStorageEngine, SchemaCache schemaCache, CursorContext cursorContext, MemoryTracker memoryTracker,
-            IdUpdateListener idUpdateListener, StoreCursors storeCursors )
+                             IndexUpdatesWorkSync indexUpdatesSync, NodeStore nodeStore, PropertyStore propertyStore,
+                             StorageEngine recordStorageEngine, SchemaCache schemaCache, CursorContext cursorContext, MemoryTracker memoryTracker,
+                             IdUpdateListener idUpdateListener, StoreCursors storeCursors )
     {
         this.indexActivator = new IndexActivator( indexUpdateListener );
         this.indexUpdatesSync = indexUpdatesSync;
-        this.nodeStore = nodeStore;
-        this.propertyStore = propertyStore;
-        this.storageEngine = recordStorageEngine;
-        this.schemaCache = schemaCache;
         this.cursorContext = cursorContext;
-        this.memoryTracker = memoryTracker;
         this.idUpdateListener = idUpdateListener;
-        this.storeCursors = storeCursors;
         this.lockGroup = new LockGroup();
+        this.indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore, storeCursors ),
+                                                    recordStorageEngine.newReader(), cursorContext, memoryTracker, storeCursors );
     }
 
     @Override
@@ -83,7 +74,7 @@ public class BatchContextImpl implements BatchContext
     @Override
     public void close() throws Exception
     {
-        applyPendingLabelAndIndexUpdates();
+        applyPendingIndexUpdates();
 
         IOUtils.closeAll( indexUpdates, idUpdateListener, lockGroup, indexActivator );
     }
@@ -95,9 +86,9 @@ public class BatchContextImpl implements BatchContext
     }
 
     @Override
-    public void applyPendingLabelAndIndexUpdates() throws IOException
+    public void applyPendingIndexUpdates() throws IOException
     {
-        if ( indexUpdates != null && indexUpdates.hasUpdates() )
+        if ( hasUpdates() )
         {
             IndexUpdatesWorkSync.Batch indexUpdatesBatch = indexUpdatesSync.newBatch();
             indexUpdatesBatch.add( indexUpdates );
@@ -109,17 +100,22 @@ public class BatchContextImpl implements BatchContext
             {
                 throw new IOException( "Failed to flush index updates", e );
             }
+            finally
+            {
+                indexUpdates.reset();
+            }
         }
+    }
+
+    @VisibleForTesting
+    boolean hasUpdates()
+    {
+        return indexUpdates.hasUpdates();
     }
 
     @Override
     public IndexUpdates indexUpdates()
     {
-        if ( indexUpdates == null )
-        {
-            indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore, storeCursors ),
-                    storageEngine.newReader(), cursorContext, memoryTracker, storeCursors );
-        }
         return indexUpdates;
     }
 

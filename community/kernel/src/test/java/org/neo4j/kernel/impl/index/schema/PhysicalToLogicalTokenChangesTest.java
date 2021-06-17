@@ -26,7 +26,8 @@ import java.util.Arrays;
 
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @Execution( CONCURRENT )
@@ -82,18 +83,35 @@ class PhysicalToLogicalTokenChangesTest
                 ids( 1, 4 ), ids( 0, 2, 5 ) );
     }
 
+    @Test
+    void shouldFailOnNegativeInput()
+    {
+        assertIAE( ids( 1, 3, -1, 6 ), ids() );
+        assertIAE( ids( 1, 3, -1, 6 ), ids( 1, 3, 4 ) );
+        assertIAE( ids(), ids( 1, 3, -1, 6 ) );
+        assertIAE( ids( 1, 3, 4 ), ids( 1, 3, -1, 6 ) );
+    }
+
     private static void convertAndAssert( long[] before, long[] after, long[] expectedRemoved, long[] expectedAdded )
     {
         TokenIndexEntryUpdate<?> update = TokenIndexEntryUpdate.change( 0, null, before, after );
         PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update );
-        assertArrayEquals( terminate( update.beforeValues() ), expectedRemoved );
-        assertArrayEquals( terminate( update.values() ), expectedAdded );
+        assertThat( truncate( update.beforeValues() ) ).containsExactly( expectedRemoved );
+        assertThat( truncate( update.values() ) ).containsExactly( expectedAdded );
     }
 
-    private static long[] terminate( long[] labels )
+    private void assertIAE( long[] before, long[] after )
     {
-        int length = actualLength( labels );
-        return length == labels.length ? labels : Arrays.copyOf( labels, length );
+        TokenIndexEntryUpdate<?> update = TokenIndexEntryUpdate.change( 0, null, before, after );
+        assertThatThrownBy( () -> PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update ) )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasMessageContaining( "Expected non-negative long value" );
+    }
+
+    private static long[] truncate( long[] tokenIds )
+    {
+        int length = actualLength( tokenIds );
+        return length == tokenIds.length ? tokenIds : Arrays.copyOf( tokenIds, length );
     }
 
     private static int actualLength( long[] labels )

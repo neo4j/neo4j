@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
@@ -57,7 +58,7 @@ public class TokenIndexImporter implements IndexImporter
     {
         try
         {
-            updater.process( IndexEntryUpdate.change( entity, index, new long[0], tokens ) );
+            updater.process( IndexEntryUpdate.change( entity, index, EMPTY_LONG_ARRAY, tokens ) );
         }
         catch ( IndexEntryConflictException e )
         {

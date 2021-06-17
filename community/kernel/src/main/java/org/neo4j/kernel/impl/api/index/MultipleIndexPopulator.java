@@ -73,6 +73,7 @@ import org.neo4j.values.storable.Value;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
@@ -828,7 +829,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                 @Override
                 public void addRecord( long entityId, long[] tokens )
                 {
-                    updates.add( IndexEntryUpdate.change( entityId, population, new long[0], tokens ) );
+                    updates.add( IndexEntryUpdate.change( entityId, population, EMPTY_LONG_ARRAY, tokens ) );
                 }
 
                 @Override

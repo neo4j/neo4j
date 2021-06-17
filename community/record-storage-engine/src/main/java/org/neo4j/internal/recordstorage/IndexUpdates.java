@@ -40,4 +40,9 @@ public interface IndexUpdates extends Iterable<IndexEntryUpdate<IndexDescriptor>
 
     @Override
     void close();
+
+    /**
+     * Cleans collected updates. Instance should be ready for re-use after this.
+     */
+    void reset();
 }

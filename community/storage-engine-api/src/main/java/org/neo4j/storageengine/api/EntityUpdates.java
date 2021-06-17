@@ -43,6 +43,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.Changed;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.NoValue;
@@ -55,7 +56,6 @@ import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.UnChan
 public class EntityUpdates
 {
     private final long entityId;
-    private static final long[] EMPTY_LONG_ARRAY = new long[0];
 
     // ASSUMPTION: these long arrays are actually sorted sets
     private long[] entityTokensBefore;
@@ -103,6 +103,12 @@ public class EntityUpdates
         {
             this.updates.entityTokensBefore = entityTokens;
             this.updates.entityTokensAfter = entityTokens;
+            return this;
+        }
+
+        public  Builder withTokensBefore( long... entityTokensBefore )
+        {
+            this.updates.entityTokensBefore = entityTokensBefore;
             return this;
         }
 

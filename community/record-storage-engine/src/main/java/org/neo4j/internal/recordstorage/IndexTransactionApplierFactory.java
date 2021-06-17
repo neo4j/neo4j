@@ -129,7 +129,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
                 // In that scenario the index would be created, populated and then fed the [this time duplicate]
                 // update for the node created before the index. The most straight forward solution is to
                 // apply pending index updates up to this point in this batch before index schema changes occur.
-                batchContext.applyPendingLabelAndIndexUpdates();
+                batchContext.applyPendingIndexUpdates();
 
                 switch ( commandMode )
                 {

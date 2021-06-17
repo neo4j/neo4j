@@ -45,8 +45,8 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.max;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
@@ -136,22 +136,37 @@ class TokenIndexUpdaterTest
     }
 
     @Test
-    void shouldNotAcceptUnsortedLabels()
+    void shouldNotAcceptUnsortedTokens()
     {
         // GIVEN
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () ->
-        {
-            try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1, TokenIndex.EMPTY ) )
-            {
-                writer.initialize( tree.writer( NULL ) );
+        assertThatThrownBy( () ->
+                            {
+                                try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1, TokenIndex.EMPTY ) )
+                                {
+                                    writer.initialize( tree.writer( NULL ) );
 
-                // WHEN
-                writer.process( TokenIndexEntryUpdate.change( 0, null, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
-                // we can't do the usual "fail( blabla )" here since the actual write will happen
-                // when closing this writer, i.e. in the curly bracket below.
-            }
-        } );
-        assertTrue( exception.getMessage().contains( "unsorted" ) );
+                                    // WHEN
+                                    writer.process( TokenIndexEntryUpdate.change( 0, null, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
+                                }
+                            }
+        ).isInstanceOf( IllegalArgumentException.class ).hasMessageContaining( "unsorted" );
+    }
+
+    @Test
+    void shouldNotAcceptInvalidTokens()
+    {
+        // GIVEN
+        assertThatThrownBy( () ->
+                            {
+                                try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1, TokenIndex.EMPTY ) )
+                                {
+                                    writer.initialize( tree.writer( NULL ) );
+
+                                    // WHEN
+                                    writer.process( TokenIndexEntryUpdate.change( 0, null, EMPTY_LONG_ARRAY, new long[]{2, -1} ) );
+                                }
+                            }
+        ).isInstanceOf( IllegalArgumentException.class ).hasMessageContaining( "Expected non-negative long value" );
     }
 
     @Test

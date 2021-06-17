@@ -37,8 +37,9 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
-import org.neo4j.util.VisibleForTesting;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.token.api.TokenConstants;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.internal.recordstorage.Command.Mode.CREATE;
 import static org.neo4j.internal.recordstorage.Command.Mode.DELETE;
@@ -169,7 +170,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         // First get possible Label changes
         boolean complete = providesCompleteListOfProperties( nodeChanges );
         EntityUpdates.Builder nodePropertyUpdates =
-                EntityUpdates.forEntity( nodeId, complete ).withTokens( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
+                EntityUpdates.forEntity( nodeId, complete ).withTokensBefore( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
 
         // Then look for property changes
         converter.convertPropertyRecord( propertyCommandsForNode, nodePropertyUpdates );
@@ -203,8 +204,16 @@ public class OnlineIndexUpdates implements IndexUpdates
             reltypeBefore = reltypeAfter;
         }
         boolean complete = providesCompleteListOfProperties( relationshipCommand );
-        EntityUpdates.Builder relationshipPropertyUpdates =
-                EntityUpdates.forEntity( relationshipId, complete ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
+        var relationshipPropertyUpdates = EntityUpdates.forEntity( relationshipId, complete );
+        if ( reltypeBefore != TokenConstants.NO_TOKEN )
+        {
+            relationshipPropertyUpdates.withTokensBefore( reltypeBefore );
+        }
+        if ( reltypeAfter != TokenConstants.NO_TOKEN )
+        {
+            relationshipPropertyUpdates.withTokensAfter( reltypeAfter );
+        }
+
         converter.convertPropertyRecord( propertyCommands, relationshipPropertyUpdates );
         return relationshipPropertyUpdates.build();
     }
@@ -241,6 +250,12 @@ public class OnlineIndexUpdates implements IndexUpdates
     public void close()
     {
         closeAllUnchecked( nodeCursor, relationshipCursor, reader );
+    }
+
+    @Override
+    public void reset()
+    {
+        updates.clear();
     }
 
     @VisibleForTesting

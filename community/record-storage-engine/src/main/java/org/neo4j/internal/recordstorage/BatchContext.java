@@ -30,7 +30,7 @@ public interface BatchContext extends AutoCloseable
 
     IndexActivator getIndexActivator();
 
-    void applyPendingLabelAndIndexUpdates() throws IOException;
+    void applyPendingIndexUpdates() throws IOException;
 
     IndexUpdates indexUpdates();
 
