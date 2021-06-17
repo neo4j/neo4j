@@ -44,6 +44,7 @@ public interface ConstraintCreator
     /**
      * Imposes a uniqueness constraint for the given property.
      * This means that there can be at most one node, having the given label, for any set value of that property key.
+     * Multiple calls to this method will result in compound uniqueness constraint.
      *
      * @param propertyKey property to impose the uniqueness constraint for.
      * @return a {@link ConstraintCreator} instance to be used for further interaction.
@@ -62,6 +63,7 @@ public interface ConstraintCreator
     /**
      * Imposes both a uniqueness constraint, and a property existence constraint, for the given property.
      * This means that all nodes with the given label must have this property, and they must all have different values for the property.
+     * Multiple calls to this method will result in compound node key constraint.
      *
      * @param propertyKey property to use as the node key.
      * @return a {@link ConstraintCreator} instance to be used for further interaction.

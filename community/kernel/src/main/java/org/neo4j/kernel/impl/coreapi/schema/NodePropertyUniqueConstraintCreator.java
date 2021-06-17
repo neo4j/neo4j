@@ -30,6 +30,7 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
 import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
+import static org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl.copyAndAdd;
 
 public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator
 {
@@ -45,7 +46,7 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
     @Override
     public final NodePropertyUniqueConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        throw new UnsupportedOperationException( "You can only create one unique constraint at a time." );
+        return new NodePropertyUniqueConstraintCreator( actions, name, label, copyAndAdd( propertyKeys, propertyKey ), indexType, indexConfig );
     }
 
     @Override

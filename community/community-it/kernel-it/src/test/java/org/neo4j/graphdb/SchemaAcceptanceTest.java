@@ -409,24 +409,6 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
-    void shouldThrowConstraintViolationIfAskedToCreateCompoundConstraint()
-    {
-        // WHEN
-        UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                Schema schema = tx.schema();
-                schema.constraintFor( label )
-                        .assertPropertyIsUnique( "my_property_key" )
-                        .assertPropertyIsUnique( "other_property" ).create();
-                tx.commit();
-            }
-        } );
-        assertThat( e ).hasMessageContaining( "can only create one unique constraint" );
-    }
-
-    @Test
     void droppingExistingIndexRuleShouldSucceed()
     {
         // GIVEN
@@ -717,6 +699,42 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
             assertEquals( label.name(), constraint.getLabel().name() );
             assertEquals( asSet( propertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
+            assertEquals( "MyConstraint", constraint.getName() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldCreateUniquenessConstraintWithMultipleProperties()
+    {
+        // WHEN
+        ConstraintDefinition constraint = createUniquenessConstraint( label, propertyKey, secondPropertyKey );
+
+        // THEN
+        try ( Transaction tx = db.beginTx() )
+        {
+            constraint = tx.schema().getConstraintByName( constraint.getName() );
+            assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
+            assertEquals( label.name(), constraint.getLabel().name() );
+            assertEquals( asSet( propertyKey, secondPropertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
+            assertEquals( "constraint_5c46ce3d", constraint.getName() );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldCreateNamedUniquenessConstraintWithMultipleProperties()
+    {
+        // WHEN
+        ConstraintDefinition constraint = createUniquenessConstraint( "MyConstraint", label, propertyKey, secondPropertyKey );
+
+        // THEN
+        try ( Transaction tx = db.beginTx() )
+        {
+            constraint = tx.schema().getConstraintByName( constraint.getName() );
+            assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
+            assertEquals( label.name(), constraint.getLabel().name() );
+            assertEquals( asSet( propertyKey, secondPropertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
             assertEquals( "MyConstraint", constraint.getName() );
             tx.commit();
         }
@@ -2588,17 +2606,23 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private ConstraintDefinition createUniquenessConstraint( Label label, String prop )
+    private ConstraintDefinition createUniquenessConstraint( Label label, String... properties )
     {
-        return createUniquenessConstraint( null, label, prop );
+        return createUniquenessConstraint( null, label, properties );
     }
 
-    private ConstraintDefinition createUniquenessConstraint( String name, Label label, String prop )
+    private ConstraintDefinition createUniquenessConstraint( String name, Label label, String... properties )
     {
         try ( Transaction tx = db.beginTx() )
         {
             ConstraintCreator creator = tx.schema().constraintFor( label );
-            creator = creator.assertPropertyIsUnique( prop ).withName( name );
+
+            for ( String property : properties )
+            {
+                creator = creator.assertPropertyIsUnique( property );
+            }
+
+            creator = creator.withName( name );
             ConstraintDefinition constraint = creator.create();
             tx.commit();
             return constraint;

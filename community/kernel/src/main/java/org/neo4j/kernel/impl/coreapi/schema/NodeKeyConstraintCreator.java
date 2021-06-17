@@ -30,6 +30,7 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 
 import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
+import static org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl.copyAndAdd;
 
 public class NodeKeyConstraintCreator extends BaseNodeConstraintCreator
 {
@@ -57,10 +58,7 @@ public class NodeKeyConstraintCreator extends BaseNodeConstraintCreator
     @Override
     public ConstraintCreator assertPropertyIsNodeKey( String propertyKey )
     {
-        String[] keys = new String[propertyKeys.size() + 1];
-        propertyKeys.toArray( keys );
-        keys[propertyKeys.size()] = propertyKey;
-        return new NodeKeyConstraintCreator( actions, name, label, List.of( keys ), indexType, indexConfig );
+        return new NodeKeyConstraintCreator( actions, name, label, copyAndAdd( propertyKeys, propertyKey ), indexType, indexConfig );
     }
 
     @Override

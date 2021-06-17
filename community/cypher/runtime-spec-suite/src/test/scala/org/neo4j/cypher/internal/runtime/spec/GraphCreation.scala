@@ -495,9 +495,14 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * Creates a unique index and restarts the transaction. This should be called before any data creation operation.
    */
   def uniqueIndex(label: String, properties: String*): Unit = {
-    val query = s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS UNIQUE"
-    runtimeTestSupport.tx.execute(query)
-    runtimeTestSupport.restartTx()
+    try {
+      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label))) {
+        case (acc, prop) => acc.assertPropertyIsUnique(prop)
+      }
+      creator.create()
+    } finally {
+      runtimeTestSupport.restartTx()
+    }
     runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
 

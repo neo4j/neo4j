@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -126,9 +127,9 @@ public class IndexCreatorImpl implements IndexCreator
         actions.assertInOpenTransaction();
     }
 
-    private static Collection<String> copyAndAdd( Collection<String> propertyKeys, String propertyKey )
+    static List<String> copyAndAdd( Collection<String> propertyKeys, String propertyKey )
     {
-        Collection<String> ret = new ArrayList<>( propertyKeys );
+        List<String> ret = new ArrayList<>( propertyKeys );
         ret.add( propertyKey );
         return ret;
     }
