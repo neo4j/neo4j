@@ -447,6 +447,94 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     }
   }
 
+  test("Returning a variable that is already bound outside should give a useful error") {
+    val query =
+      """WITH 1 AS i
+        |CALL {
+        |  WITH 2 AS i
+        |  RETURN i
+        |}
+        |RETURN i
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
+      ("Variable `i` already declared in outer scope", 4, 10)
+    ))
+  }
+
+  test("Returning a variable that is already bound outside, from a union, should give a useful error") {
+    val query =
+      """WITH 1 AS i
+        |CALL {
+        |  WITH 2 AS i
+        |  RETURN i
+        |    UNION
+        |  WITH 3 AS i
+        |  RETURN 2 AS i
+        |}
+        |RETURN i
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
+      ("Variable `i` already declared in outer scope", 4, 10),
+      ("Variable `i` already declared in outer scope", 7, 15),
+    ))
+  }
+
+  test("Returning a variable implicitly that is already bound outside should give a useful error") {
+    val query =
+      """WITH 1 AS i
+        |CALL {
+        |  WITH 2 AS i
+        |  RETURN *
+        |}
+        |RETURN i
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(e => (e.msg, e.position.line)) should equal(List(
+      ("Variable `i` already declared in outer scope", 4)
+    ))
+  }
+
+  test("Returning a variable implicitly that is already bound outside, from a union, should give a useful error") {
+    val query =
+      """WITH 1 AS i
+        |CALL {
+        |  WITH 2 AS i
+        |  RETURN *
+        |    UNION
+        |  WITH 3 AS i
+        |  RETURN *
+        |}
+        |RETURN i
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(e => (e.msg, e.position.line)) should equal(List(
+      ("Variable `i` already declared in outer scope", 4),
+      ("Variable `i` already declared in outer scope", 7),
+    ))
+  }
+
   test("Should warn about variable shadowing in a subquery") {
     val query =
       """MATCH (shadowed)
