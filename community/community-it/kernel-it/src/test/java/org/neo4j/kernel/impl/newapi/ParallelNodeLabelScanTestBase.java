@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -261,6 +262,8 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
 
             assertDistinct( lists );
             assertEquals( FOO_NODES, LongSets.immutable.withAll( concat( lists ) ) );
+            // workaround for current concurrent access problems
+            ((DefaultPageCursorTracer) tx.cursorContext().getCursorTracer()).setIgnoreCounterCheck( true );
         }
         finally
         {
