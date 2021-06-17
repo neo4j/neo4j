@@ -133,6 +133,7 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
     case e: UnaryAdd =>
       e.rhs
 
+    case e@UnarySubtract(_: SensitiveLiteral) => e
     case e@UnarySubtract(rhs: SignedIntegerLiteral) =>
       SignedDecimalIntegerLiteral((-rhs.value).toString)(e.position)
     case e: UnarySubtract =>
