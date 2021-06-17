@@ -233,4 +233,43 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(Seq(0)))
   }
+
+  test("should get count for multiple identical relationship types and one provided label") {
+    val (aNodes, bNodes) = given {
+      bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipCountFromCountStore("x", Some("LabelA"), List("RelType", "RelType"), None)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedCount = aNodes.size * bNodes.size + aNodes.size * bNodes.size
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(expectedCount)))
+  }
+
+  test("should get count for multiple identical relationship types not there at compile time and one provided label") {
+
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipCountFromCountStore("x", Some("LabelA"), List("NotThereYet", "NotThereYet"), None)
+      .build()
+
+    val plan = buildPlan(logicalQuery, runtime)
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
+
+    val (aNodes, bNodes) = given {
+      bipartiteGraph(actualSize, "LabelA", "LabelB", "NotThereYet")
+    }
+
+    // then
+    val expectedCount = aNodes.size * bNodes.size + aNodes.size * bNodes.size
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(expectedCount)))
+  }
 }
