@@ -213,10 +213,12 @@ public class ServerSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.uris.dbms", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/dbms" ) ).build();
 
     @Internal
+    @Description( "URI to the browser home page" )
     public static final Setting<URI> browser_path =
             newBuilder( "unsupported.dbms.uris.browser", SettingValueParsers.URI, SettingValueParsers.URI.parse( "/browser/" ) ).build();
 
     @Internal
+    @Description( "Toggle WADL generation. Matching the underlying jersey server config" )
     public static final Setting<Boolean> wadl_enabled =
             newBuilder( "unsupported.dbms.wadl_generation_enabled", BOOL, false ).build();
 }
