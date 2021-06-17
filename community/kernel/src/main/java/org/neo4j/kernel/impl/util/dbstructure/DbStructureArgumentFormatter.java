@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
@@ -53,6 +54,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             NodeExistenceConstraintDescriptor.class.getCanonicalName(),
             NodeKeyConstraintDescriptor.class.getCanonicalName(),
             SchemaDescriptor.class.getCanonicalName(),
+            SchemaDescriptors.class.getCanonicalName(),
             IndexDescriptor.class.getCanonicalName(),
             IndexPrototype.class.getCanonicalName()
     );
@@ -119,7 +121,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             if ( schema.isLabelSchemaDescriptor() )
             {
                 LabelSchemaDescriptor descriptor = schema.asLabelSchemaDescriptor();
-                String className = SchemaDescriptor.class.getSimpleName();
+                String className = SchemaDescriptors.class.getSimpleName();
                 int labelId = descriptor.getLabelId();
                 builder.append( format( "%s.forLabel( %d, %s )",
                         className, labelId, asString( descriptor.getPropertyIds() ) ) );
@@ -127,7 +129,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             else if ( schema.isRelationshipTypeSchemaDescriptor() )
             {
                 RelationTypeSchemaDescriptor descriptor = schema.asRelationshipTypeSchemaDescriptor();
-                String className = SchemaDescriptor.class.getSimpleName();
+                String className = SchemaDescriptors.class.getSimpleName();
                 int labelId = descriptor.getRelTypeId();
                 builder.append( format( "%s.forRelType( %d, %s )",
                         className, labelId, asString( descriptor.getPropertyIds() ) ) );
@@ -135,7 +137,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             else if ( schema.isFulltextSchemaDescriptor() )
             {
                 FulltextSchemaDescriptor descriptor = schema.asFulltextSchemaDescriptor();
-                String className = SchemaDescriptor.class.getSimpleName();
+                String className = SchemaDescriptors.class.getSimpleName();
                 int[] entityIds = descriptor.getEntityTokenIds();
                 builder.append( format( "%s.fulltext( EntityType.%s, IndexConfig.empty(), new int[] {%s}, new int[] {%s} )",
                         className, descriptor.entityType().name(), asString( entityIds ), asString( descriptor.getPropertyIds() ) ) );
