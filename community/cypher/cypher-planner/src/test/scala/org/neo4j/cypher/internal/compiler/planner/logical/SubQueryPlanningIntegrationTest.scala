@@ -27,9 +27,10 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.SyntaxException
 
 class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
-  
+
   private def planFor(query: String): LogicalPlan = {
     plannerBuilder().setAllNodesCardinality(1000).build().plan(query)
   }
@@ -621,4 +622,94 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .build()
     )
   }
+
+  // Errors
+
+  test("Returning a variable that is already bound outside should give a useful error") {
+    val query =
+      """WITH 1 AS i
+        |CALL {
+        |  WITH 2 AS i
+        |  RETURN i
+        |}
+        |RETURN i
+        |""".stripMargin
+
+    val exception = the[SyntaxException].thrownBy(planFor(query))
+    exception.getMessage should (include("Variable `i` already declared in outer scope") and include("RETURN") and include("line 4, column 10"))
+  }
+
+  test("Returning a variable that is already bound outside, from a union, should give a useful error") {
+    val query =
+      """WITH 1 AS i
+        |CALL {
+        |  WITH 2 AS i
+        |  RETURN i
+        |    UNION
+        |  WITH 3 AS i
+        |  RETURN 2 AS i
+        |}
+        |RETURN i
+        |""".stripMargin
+
+    val exception = the[SyntaxException].thrownBy(planFor(query))
+    exception.getMessage should (include("Variable `i` already declared in outer scope") and include("RETURN") and include("line 4, column 10"))
+  }
+
+  test("Returning a variable implicitly that is already bound outside should give a useful error") {
+    val query =
+      """WITH 1 AS i
+        |CALL {
+        |  WITH 2 AS i
+        |  RETURN *
+        |}
+        |RETURN i
+        |""".stripMargin
+
+    val exception = the[SyntaxException].thrownBy(planFor(query))
+    exception.getMessage should (include("Variable `i` already declared in outer scope") and include("RETURN") and include("line 4"))
+  }
+
+  test("Returning a variable implicitly that is already bound outside, from a union, should give a useful error") {
+    val query =
+      """WITH 1 AS i
+        |CALL {
+        |  WITH 2 AS i
+        |  RETURN *
+        |    UNION
+        |  WITH 3 AS i
+        |  RETURN *
+        |}
+        |RETURN i
+        |""".stripMargin
+
+    val exception = the[SyntaxException].thrownBy(planFor(query))
+    exception.getMessage should (include("Variable `i` already declared in outer scope") and include("RETURN") and include("line 4"))
+  }
+
+  test("Returning a variable that is no longer bound outside should work") {
+    val query =
+      """WITH 1 AS n
+        |WITH n AS x
+        |CALL {
+        |  WITH x
+        |  MATCH (n)
+        |  WITH n
+        |  RETURN *
+        |}
+        |RETURN n, x
+        |""".stripMargin
+
+    planFor(query) should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n", "x")
+        .apply(fromSubquery = true)
+        .|.allNodeScan("n", "x")
+        .projection("n AS x")
+        .projection("1 AS n")
+        .argument()
+        .build()
+    )
+  }
+
 }

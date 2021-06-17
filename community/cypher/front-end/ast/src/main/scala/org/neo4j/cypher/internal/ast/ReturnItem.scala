@@ -84,6 +84,8 @@ final case class ReturnItems(
     }
   }
 
+  def explicitReturnVariables: Seq[LogicalVariable] = items.flatMap(_.alias)
+
   def containsAggregate: Boolean = items.exists(_.expression.containsAggregate)
 }
 

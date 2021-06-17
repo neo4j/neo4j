@@ -16,9 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 //noinspection ZeroIndexToHead
@@ -99,17 +104,72 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     //   RETURN 2 AS x
     // }
     // RETURN 1 AS y
+    val varPos = pos.newUniquePos()
     singleQuery(
       with_(literal(1).as("x")),
       subQuery(
-        return_(literal(2).as("x"))
+        return_(AliasedReturnItem(literal(2), Variable("x")(varPos))(pos))
       ),
       return_(literal(1).as("y"))
     )
       .semanticCheck(clean)
       .tap(_.errors.size.shouldEqual(1))
       .tap(_.errors.head.msg.shouldEqual("Variable `x` already declared in outer scope"))
+      .tap(_.errors.head.position.shouldEqual(varPos))
+  }
 
+  test("subquery can't implicitly return variable that already exists outside") {
+    // WITH 1 AS x
+    // CALL {
+    //   WITH 2 AS x
+    //   RETURN *
+    // }
+    // RETURN 1 AS y
+    val itemsPos = pos.newUniquePos()
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(
+        with_(literal(1).as("x")),
+        Return(ReturnItems(includeExisting = true, Seq())(itemsPos))(pos)
+      ),
+      return_(literal(1).as("y"))
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.shouldEqual("Variable `x` already declared in outer scope"))
+      .tap(_.errors.head.position.shouldEqual(itemsPos))
+  }
+
+  test("subquery can't implicitly return variable that already exists outside, from a union") {
+    // WITH 1 AS x
+    // CALL {
+    //   WITH 2 AS x
+    //   RETURN *
+    //     UNION
+    //   WITH 3 AS x
+    //   RETURN *
+    // }
+    // RETURN 1 AS y
+    val itemsPos1 = pos.newUniquePos()
+    val itemsPos2 = pos.newUniquePos()
+    singleQuery(
+      with_(literal(1).as("x")),
+      subQuery(union(
+        singleQuery(
+          with_(literal(2).as("x")),
+          Return(ReturnItems(includeExisting = true, Seq())(itemsPos1))(pos)),
+        singleQuery(
+          with_(literal(3).as("x")),
+          Return(ReturnItems(includeExisting = true, Seq())(itemsPos2))(pos)),
+      )),
+      return_(literal(1).as("y"))
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(2))
+      .tap(_.errors.map(e => e.msg -> e.position).toSet.shouldEqual(Set(
+        "Variable `x` already declared in outer scope" -> itemsPos1,
+        "Variable `x` already declared in outer scope" -> itemsPos2,
+      )))
   }
 
   test("subquery allows union with valid return statements at the end") {
@@ -457,7 +517,6 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     )
       .semanticCheck(clean)
       .tap(_.errors.size.shouldEqual(2))
-      .tap(_.errors.foreach(e => println(e.msg)))
       .tap(_.errors(0).msg.should(include("Importing WITH should consist only of simple references to outside variables. Aliasing or expressions are not supported.")))
       .tap(_.errors(1).msg.should(include("Variable `x` not defined")))
   }

@@ -64,12 +64,6 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def finalScope(scope: Scope): Scope
 
   /**
-   * Given the root scope for this query part,
-   * looks up the scope that could be used to validate return variables
-   */
-  def scopeForReturnVariablesValidation(scope: Scope): Scope
-
-  /**
    * Check this query part if it start with an importing WITH
    */
   def checkImportingWith: SemanticCheck
@@ -148,7 +142,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       recordCurrentScope(this)
 
   override def semanticCheck: SemanticCheck =
-    semanticCheckAbstract(clauses, checkClauses)
+    semanticCheckAbstract(clauses, checkClauses(_, None))
 
   override def checkImportingWith: SemanticCheck = importWith.foldSemanticCheck(_.semanticCheck)
 
@@ -165,7 +159,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     checkConcludesWithReturn(clausesExceptLeadingFromAndImportWith) chain
     semanticCheckAbstract(
       clausesExceptLeadingFromAndImportWith,
-      importVariables chain checkClauses(_)
+      importVariables chain checkClauses(_, Some(outer.currentScope.scope))
     ) chain
     checkShadowedVariables(outer)
   }
@@ -288,15 +282,15 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     semantics.SemanticCheckResult(s, sequenceErrors ++ concludeError)
   }
 
-  private def checkClauses(clauses: Seq[Clause]): SemanticCheck = initialState => {
+  private def checkClauses(clauses: Seq[Clause], outerScope: Option[Scope]): SemanticCheck = initialState => {
     val lastIndex = clauses.size - 1
     clauses.zipWithIndex.foldLeft(SemanticCheckResult.success(initialState)) {
       case (lastResult, (clause, idx)) =>
         val next = clause match {
           case w: With if idx == 0 && lastResult.state.features(SemanticFeature.WithInitialQuerySignature) =>
-            checkHorizon(w, lastResult.state.recogniseInitialWith, lastResult.errors)
+            checkHorizon(w, lastResult.state.recogniseInitialWith, None, lastResult.errors)
           case c: HorizonClause =>
-            checkHorizon(c, lastResult.state.clearInitialWith, lastResult.errors)
+            checkHorizon(c, lastResult.state.clearInitialWith, outerScope, lastResult.errors)
           case _ =>
             val checked = clause.semanticCheck(lastResult.state.clearInitialWith)
             val errors = lastResult.errors ++ checked.errors
@@ -315,9 +309,9 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  private def checkHorizon(clause: HorizonClause, state: SemanticState, prevErrors: Seq[SemanticErrorDef]) = {
+  private def checkHorizon(clause: HorizonClause, state: SemanticState, outerScope: Option[Scope], prevErrors: Seq[SemanticErrorDef]) = {
     val closingResult = clause.semanticCheck(state)
-    val continuationResult = clause.semanticCheckContinuation(closingResult.state.currentScope.scope)(closingResult.state)
+    val continuationResult = clause.semanticCheckContinuation(closingResult.state.currentScope.scope, outerScope)(closingResult.state)
     semantics.SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
   }
 
@@ -358,9 +352,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def finalScope(scope: Scope): Scope =
     scope.children.last
-
-  override def scopeForReturnVariablesValidation(scope: Scope): Scope =
-    finalScope(scope)
 }
 
 object Union {
@@ -429,10 +420,6 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   override def finalScope(scope: Scope): Scope =
     // Union defines all return variables in its own scope using defineUnionVariables
     scope
-
-  override def scopeForReturnVariablesValidation(scope: Scope): Scope =
-    // Return the last union branch to get a nicer error message
-    query.scopeForReturnVariablesValidation(scope.children.last)
 
   // Check that columns names agree between both parts of the union
   def checkColumnNamesAgree: SemanticCheck
