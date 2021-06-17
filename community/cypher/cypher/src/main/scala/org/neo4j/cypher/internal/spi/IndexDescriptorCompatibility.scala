@@ -26,10 +26,15 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.SkipAndLimit
 import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.LabelSchemaDescriptor
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.kernel.api.exceptions.RelationshipTypeNotFoundException
+
+import scala.util.control.Exception.catching
 
 trait IndexDescriptorCompatibility {
   def kernelToCypher(behaviour: schema.IndexBehaviour): IndexBehaviour = {
@@ -48,15 +53,23 @@ trait IndexDescriptorCompatibility {
       SchemaDescriptor.forRelType(relType.id, index.properties.map(_.id):_*)
   }
 
-  def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
-    val labelId: Int = tc.getLabelId(labelName)
-    val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
-    SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)
+  def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext,
+                              labelName: String,
+                              propertyKeys: Seq[String]): Option[LabelSchemaDescriptor] = {
+    catching(classOf[LabelNotFoundKernelException], classOf[PropertyKeyIdNotFoundKernelException]) opt {
+      val labelId: Int = tc.getLabelId(labelName)
+      val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
+      SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*)
+    }
   }
 
-  def toRelTypeSchemaDescriptor(tc: TransactionBoundTokenContext, relTypeName: String, propertyKeys: Seq[String]): RelationTypeSchemaDescriptor = {
-    val relTypeId: Int = tc.getRelTypeId(relTypeName)
-    val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
-    SchemaDescriptor.forRelType(relTypeId, propertyKeyIds:_*)
+  def toRelTypeSchemaDescriptor(tc: TransactionBoundTokenContext,
+                                relTypeName: String,
+                                propertyKeys: Seq[String]): Option[RelationTypeSchemaDescriptor] = {
+    catching(classOf[RelationshipTypeNotFoundException], classOf[PropertyKeyIdNotFoundKernelException]) opt {
+      val relTypeId: Int = tc.getRelTypeId(relTypeName)
+      val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
+      SchemaDescriptor.forRelType(relTypeId, propertyKeyIds: _*)
+    }
   }
 }

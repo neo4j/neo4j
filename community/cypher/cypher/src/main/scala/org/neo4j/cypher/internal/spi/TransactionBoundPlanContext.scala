@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.InternalIndexState
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -138,17 +139,13 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-    evalOrNone {
-      val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-      indexGetForSchemaDescriptor(descriptor)
-    }
+    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
+    descriptor.flatMap(indexGetForSchemaDescriptor)
   }
 
   override def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-    evalOrNone {
-      val descriptor = toRelTypeSchemaDescriptor(this, relTypeName, propertyKeys)
-      indexGetForSchemaDescriptor(descriptor)
-    }
+    val descriptor = toRelTypeSchemaDescriptor(this, relTypeName, propertyKeys)
+    descriptor.flatMap(indexGetForSchemaDescriptor)
   }
 
   private def indexGetForSchemaDescriptor(descriptor: SchemaDescriptor): Option[IndexDescriptor] = {
@@ -164,58 +161,58 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     indexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
   }
 
-  private def evalOrNone[T](f: => Option[T]): Option[T] =
+  private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] = {
     try {
-      f
+      tc.schemaRead.indexGetStateNonLocking(reference) match {
+        case InternalIndexState.ONLINE =>
+          val entityType = {
+            val tokenId = reference.schema().getEntityTokenIds()(0)
+            reference.schema().entityType() match {
+              case EntityType.NODE => IndexDescriptor.EntityType.Node(LabelId(tokenId))
+              case EntityType.RELATIONSHIP => IndexDescriptor.EntityType.Relationship(RelTypeId(tokenId))
+            }
+          }
+
+          val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
+          val isUnique = reference.isUnique
+          val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
+          val orderCapability: OrderCapability = tps => {
+            // The Kernel index order gives additional information if all values are sorted, or if there can be geometry values which are not sorted.
+            // From Cyphers perspective, using the Kernel API, fully and partially sorted are the same, since geometry values which come out of order
+            // from the index are sorted in DefaultNodeValueIndexCursor.
+            reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
+              case BOTH_FULLY_SORTED => IndexOrderCapability.BOTH
+              case BOTH_PARTIALLY_SORTED => IndexOrderCapability.BOTH
+              case ASC_FULLY_SORTED => IndexOrderCapability.ASC
+              case ASC_PARTIALLY_SORTED => IndexOrderCapability.ASC
+              case DESC_FULLY_SORTED => IndexOrderCapability.DESC
+              case DESC_PARTIALLY_SORTED => IndexOrderCapability.DESC
+              case NONE => IndexOrderCapability.NONE
+            }
+          }
+          val valueCapability: ValueCapability = tps => {
+            reference.getCapability.valueCapability(tps.map(typeToValueCategory): _*) match {
+              // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
+              case IndexValueCapability.YES => tps.map(_ => CanGetValue)
+              case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
+              case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
+            }
+          }
+          if (reference.getIndexType != IndexType.BTREE || behaviours.contains(EventuallyConsistent)) {
+            // Ignore IndexType.FULLTEXT indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
+            // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
+            None
+          } else {
+            Some(IndexDescriptor(entityType, properties, behaviours, orderCapability, valueCapability, isUnique))
+          }
+        case _ => None
+      }
     } catch {
-      case _: KernelException => None
+      case _: IndexNotFoundKernelException =>
+        // The index may be dropped after acquiring the reference.
+        None
     }
-
-  private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] =
-    tc.schemaRead.indexGetStateNonLocking(reference) match {
-      case InternalIndexState.ONLINE =>
-        val entityType = {
-          val tokenId = reference.schema().getEntityTokenIds()(0)
-          reference.schema().entityType() match {
-            case EntityType.NODE => IndexDescriptor.EntityType.Node(LabelId(tokenId))
-            case EntityType.RELATIONSHIP => IndexDescriptor.EntityType.Relationship(RelTypeId(tokenId))
-          }
-        }
-
-        val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
-        val isUnique = reference.isUnique
-        val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
-        val orderCapability: OrderCapability = tps => {
-          // The Kernel index order gives additional information if all values are sorted, or if there can be geometry values which are not sorted.
-          // From Cyphers perspective, using the Kernel API, fully and partially sorted are the same, since geometry values which come out of order
-          // from the index are sorted in DefaultNodeValueIndexCursor.
-          reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
-            case BOTH_FULLY_SORTED => IndexOrderCapability.BOTH
-            case BOTH_PARTIALLY_SORTED => IndexOrderCapability.BOTH
-            case ASC_FULLY_SORTED => IndexOrderCapability.ASC
-            case ASC_PARTIALLY_SORTED => IndexOrderCapability.ASC
-            case DESC_FULLY_SORTED => IndexOrderCapability.DESC
-            case DESC_PARTIALLY_SORTED => IndexOrderCapability.DESC
-            case NONE => IndexOrderCapability.NONE
-          }
-        }
-        val valueCapability: ValueCapability = tps => {
-          reference.getCapability.valueCapability(tps.map(typeToValueCategory): _*) match {
-            // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
-            case IndexValueCapability.YES => tps.map(_ => CanGetValue)
-            case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
-            case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
-          }
-        }
-        if (reference.getIndexType != IndexType.BTREE || behaviours.contains(EventuallyConsistent)) {
-          // Ignore IndexType.FULLTEXT indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
-          // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
-          None
-        } else {
-          Some(IndexDescriptor(entityType, properties, behaviours, orderCapability, valueCapability, isUnique))
-        }
-      case _ => None
-    }
+  }
 
   /**
    * Translate a Cypher Type to a ValueCategory that IndexReference can handle
