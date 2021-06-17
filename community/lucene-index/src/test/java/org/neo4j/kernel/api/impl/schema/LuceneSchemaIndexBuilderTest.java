@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -43,7 +43,7 @@ class LuceneSchemaIndexBuilderTest
     @Inject
     private DefaultFileSystemAbstraction fileSystemRule;
 
-    private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( "a" ).materialise( 0 );
+    private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 0 ) ).withName( "a" ).materialise( 0 );
 
     @Test
     void readOnlyIndexCreation() throws Exception

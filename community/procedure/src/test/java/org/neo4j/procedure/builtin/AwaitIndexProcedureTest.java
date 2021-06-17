@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -66,7 +67,7 @@ class AwaitIndexProcedureTest
     {
         final int labelId = 0;
         final int propId = 0;
-        LabelSchemaDescriptor anyDescriptor = SchemaDescriptor.forLabel( labelId, propId );
+        LabelSchemaDescriptor anyDescriptor = SchemaDescriptors.forLabel( labelId, propId );
         anyIndex = forSchema( anyDescriptor ).withName( "index" ).materialise( 13 );
         KernelTransaction transaction = mock( KernelTransaction.class );
         schemaRead = mock( SchemaRead.class );

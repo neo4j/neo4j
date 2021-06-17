@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.newapi.LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker;
 import org.neo4j.lock.LockTracer;
@@ -48,7 +48,7 @@ class LockingNodeUniqueIndexSeekTest
 {
     private final int labelId = 1;
     private final int propertyKeyId = 2;
-    private IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyKeyId ) )
+    private IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyKeyId ) )
             .withName( "index_12" ).materialise( 12 );
 
     private final Value value = Values.of( "value" );

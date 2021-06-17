@@ -27,8 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
@@ -49,7 +49,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class IndexUpdateStorageTest
 {
     private static final IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    private static final SchemaDescriptorSupplier descriptor = () -> SchemaDescriptor.forLabel( 1, 1 );
+    private static final SchemaDescriptorSupplier descriptor = () -> SchemaDescriptors.forLabel( 1, 1 );
 
     @Inject
     protected TestDirectory directory;

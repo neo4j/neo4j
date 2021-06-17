@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 
 public class TestIndexDescriptorFactory
 {
@@ -45,17 +46,17 @@ public class TestIndexDescriptorFactory
 
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )
     {
-        return forSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
+        return forSchema( SchemaDescriptors.forLabel( labelId, propertyIds ) );
     }
 
     public static IndexDescriptor forRelType( int relTypeId, int... propertyIds )
     {
-        return forSchema( SchemaDescriptor.forRelType( relTypeId, propertyIds ) );
+        return forSchema( SchemaDescriptors.forRelType( relTypeId, propertyIds ) );
     }
 
     public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
+        return uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ) );
     }
 
     private static int randomId()

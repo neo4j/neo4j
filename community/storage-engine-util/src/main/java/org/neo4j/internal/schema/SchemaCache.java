@@ -107,7 +107,7 @@ public class SchemaCache
 
     public Iterator<ConstraintDescriptor> constraintsForSchema( SchemaDescriptor descriptor )
     {
-        return Iterators.filter( SchemaDescriptor.equalTo( descriptor ), constraints().iterator() );
+        return Iterators.filter( SchemaDescriptors.equalTo( descriptor ), constraints().iterator() );
     }
 
     public <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
@@ -421,7 +421,7 @@ public class SchemaCache
 
         IndexDescriptor getTokenIndex( EntityType entityType )
         {
-            return indexesBySchema.get( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+            return indexesBySchema.get( SchemaDescriptors.forAnyEntityTokens( entityType ) );
         }
 
         private static <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( SchemaDescriptorLookupSet<T> set, long[] changedEntityTokens,

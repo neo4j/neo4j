@@ -31,7 +31,7 @@ import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -77,7 +77,7 @@ class LogTruncationTest
         permutations.put( Command.RelationshipGroupCommand.class,
                 new Command[] { new Command.LabelTokenCommand( serialization, new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
-        IndexDescriptor schemaRule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 3, 4 ) ).withName( "index_1" ).materialise( 1 );
+        IndexDescriptor schemaRule = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 3, 4 ) ).withName( "index_1" ).materialise( 1 );
         permutations.put( Command.SchemaRuleCommand.class, new Command[]{
                 new Command.SchemaRuleCommand( serialization, new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ).initialize( true, 42 ),
                         schemaRule ),

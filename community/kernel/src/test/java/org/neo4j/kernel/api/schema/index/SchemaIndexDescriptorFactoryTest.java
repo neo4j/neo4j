@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.schema.index;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,7 +41,7 @@ class SchemaIndexDescriptorFactoryTest
 
         desc = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         assertFalse( desc.isUnique() );
-        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
     }
 
     @Test
@@ -51,7 +51,7 @@ class SchemaIndexDescriptorFactoryTest
 
         desc = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         assertTrue( desc.isUnique() );
-        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
     }
 
     @Test
@@ -59,13 +59,13 @@ class SchemaIndexDescriptorFactoryTest
     {
         IndexDescriptor desc;
 
-        desc = TestIndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
+        desc = TestIndexDescriptorFactory.forSchema( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
         assertFalse( desc.isUnique() );
-        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
 
-        desc = TestIndexDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
+        desc = TestIndexDescriptorFactory.uniqueForSchema( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
         assertTrue( desc.isUnique() );
-        assertThat( desc.schema() ).isEqualTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
+        assertThat( desc.schema() ).isEqualTo( SchemaDescriptors.forLabel( LABEL_ID, 1 ) );
     }
 
     @Test

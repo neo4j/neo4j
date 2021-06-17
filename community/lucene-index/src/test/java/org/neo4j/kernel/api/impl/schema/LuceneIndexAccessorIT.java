@@ -43,7 +43,7 @@ import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -116,7 +116,7 @@ public class LuceneIndexAccessorIT
         // given
         int nodes = 100;
         MutableLongSet expectedNodes = LongSets.mutable.withInitialCapacity( nodes );
-        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "TestIndex" ).materialise( 99 );
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withName( "TestIndex" ).materialise( 99 );
         populateWithInitialNodes( indexDescriptor, nodes, expectedNodes );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
         {
@@ -138,7 +138,7 @@ public class LuceneIndexAccessorIT
     {
         int nodes = 100;
         MutableLongSet expectedNodes = LongSets.mutable.withInitialCapacity( nodes );
-        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "TestIndex" ).materialise( 99 );
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withName( "TestIndex" ).materialise( 99 );
         populateWithInitialNodes( indexDescriptor, nodes, expectedNodes );
         config.set( GraphDatabaseSettings.read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
         try ( IndexAccessor onlineAccessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
@@ -153,7 +153,7 @@ public class LuceneIndexAccessorIT
         // given
         int nodes = 300_000;
         MutableLongSet expectedNodes = LongSets.mutable.empty();
-        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3, 4, 5 ) ).withName( "TestIndex" ).materialise( 99 );
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3, 4, 5 ) ).withName( "TestIndex" ).materialise( 99 );
         populateWithInitialNodes( indexDescriptor, nodes, expectedNodes );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
         {
@@ -174,7 +174,7 @@ public class LuceneIndexAccessorIT
     void shouldReadAllDocumentsInSchemaIndexAfterRandomAdditionsAndDeletions() throws Exception
     {
         // given
-        IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
+        IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
         TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
         populateWithInitialNodes( descriptor, 0, new LongHashSet() );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup ) )

@@ -40,14 +40,14 @@ import static org.neo4j.internal.schema.IndexType.LOOKUP;
 
 class SchemaRuleTest
 {
-    private final LabelSchemaDescriptor labelSchema = SchemaDescriptor.forLabel( 1, 2, 3 );
-    private final RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptor.forRelType( 1, 2, 3 );
-    private final FulltextSchemaDescriptor fulltextNodeSchema = SchemaDescriptor.fulltext( NODE, new int[]{1, 2}, new int[]{1, 2} );
-    private final FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
-    private final LabelSchemaDescriptor labelSchema2 = SchemaDescriptor.forLabel( 0, 0, 1 );
-    private final FulltextSchemaDescriptor fulltextNodeSchema2 = SchemaDescriptor.fulltext( NODE, new int[]{0, 1}, new int[]{0, 1} );
-    private final AnyTokenSchemaDescriptor allLabelsSchema = SchemaDescriptor.forAnyEntityTokens( NODE );
-    private final AnyTokenSchemaDescriptor allRelTypesSchema = SchemaDescriptor.forAnyEntityTokens( RELATIONSHIP );
+    private final LabelSchemaDescriptor labelSchema = SchemaDescriptors.forLabel( 1, 2, 3 );
+    private final RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptors.forRelType( 1, 2, 3 );
+    private final FulltextSchemaDescriptor fulltextNodeSchema = SchemaDescriptors.fulltext( NODE, new int[]{1, 2}, new int[]{1, 2} );
+    private final FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
+    private final LabelSchemaDescriptor labelSchema2 = SchemaDescriptors.forLabel( 0, 0, 1 );
+    private final FulltextSchemaDescriptor fulltextNodeSchema2 = SchemaDescriptors.fulltext( NODE, new int[]{0, 1}, new int[]{0, 1} );
+    private final AnyTokenSchemaDescriptor allLabelsSchema = SchemaDescriptors.forAnyEntityTokens( NODE );
+    private final AnyTokenSchemaDescriptor allRelTypesSchema = SchemaDescriptors.forAnyEntityTokens( RELATIONSHIP );
     private final IndexPrototype labelPrototype = IndexPrototype.forSchema( labelSchema );
     private final IndexPrototype labelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema );
     private final IndexPrototype relTypePrototype = IndexPrototype.forSchema( relTypeSchema );

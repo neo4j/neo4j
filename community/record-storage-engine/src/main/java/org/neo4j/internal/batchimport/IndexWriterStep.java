@@ -43,7 +43,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.internal.recordstorage.SchemaRuleAccess.getSchemaRuleAccess;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaNameUtil.generateName;
 
 public abstract class IndexWriterStep<T> extends ProcessorStep<T>

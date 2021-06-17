@@ -26,7 +26,7 @@ import org.neo4j.lock.ResourceType;
 /**
  * A schema descriptor sentinel used for signalling the absence of a real schema descriptor.
  * <p>
- * The instance is acquired via the {@link SchemaDescriptor#noSchema()} method.
+ * The instance is acquired via the {@link SchemaDescriptors#noSchema()} method.
  */
 class NoSchemaDescriptor implements SchemaDescriptor
 {

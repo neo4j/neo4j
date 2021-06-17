@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -43,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
+import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
@@ -68,7 +69,7 @@ class SchemaRuleSerialization35Test
 
     private static IndexPrototype indexPrototype( boolean isUnique, String name, int labelId, int... propertyIds )
     {
-        SchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyIds );
+        SchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyIds );
         return indexPrototype( isUnique, name, schema );
     }
 

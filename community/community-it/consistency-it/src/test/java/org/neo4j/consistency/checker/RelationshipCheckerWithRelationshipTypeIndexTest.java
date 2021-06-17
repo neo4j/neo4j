@@ -38,7 +38,7 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -75,7 +75,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema( () -> SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ), storeCursors );
+                schemaStorage.indexGetForSchema( () -> SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ), storeCursors );
         // The Relationship Type Index should exist and be unique.
         assertThat( indexDescriptors.length ).isEqualTo( 1 );
         rtiDescriptor = indexDescriptors[0];

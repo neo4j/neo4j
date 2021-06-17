@@ -48,7 +48,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -131,8 +131,8 @@ public class DatabaseCompositeIndexAccessorTest
     private final Object[] values = {"value1", "values2"};
     private final Object[] values2 = {40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final IndexPrototype SCHEMA_INDEX_DESCRIPTOR = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, PROP_ID1, PROP_ID2 ) );
-    private static final IndexPrototype UNIQUE_SCHEMA_INDEX_DESCRIPTOR = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, PROP_ID1, PROP_ID2 ) );
+    private static final IndexPrototype SCHEMA_INDEX_DESCRIPTOR = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, PROP_ID1, PROP_ID2 ) );
+    private static final IndexPrototype UNIQUE_SCHEMA_INDEX_DESCRIPTOR = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( 1, PROP_ID1, PROP_ID2 ) );
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
     private Iterable<IndexProvider> providers;
 

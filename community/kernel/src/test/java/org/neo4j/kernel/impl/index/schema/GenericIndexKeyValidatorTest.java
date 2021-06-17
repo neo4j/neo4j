@@ -28,7 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -52,7 +52,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 @ExtendWith( RandomExtension.class )
 class GenericIndexKeyValidatorTest
 {
-    private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withName( "test" ).materialise( 1 );
+    private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 1 ) ).withName( "test" ).materialise( 1 );
 
     @Inject
     private RandomRule random;

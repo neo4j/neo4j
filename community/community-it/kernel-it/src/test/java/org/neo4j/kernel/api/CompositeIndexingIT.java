@@ -54,8 +54,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 
 @ImpermanentDbmsExtension
 @Timeout( 20 )

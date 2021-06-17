@@ -67,6 +67,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -89,7 +90,6 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -229,8 +229,8 @@ class FulltextIndexProviderTest
         IndexDescriptor indexReference;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{labelIdHej, labelIdHa, labelIdHe},
-                    new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
+            SchemaDescriptor schema = SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[]{labelIdHej, labelIdHa, labelIdHe},
+                                                                  new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "fulltext" );
             indexReference = transaction.schemaWrite().indexCreate( prototype );
             transaction.success();
@@ -260,8 +260,8 @@ class FulltextIndexProviderTest
         IndexDescriptor indexReference;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{labelIdHej, labelIdHa, labelIdHe},
-                    new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
+            SchemaDescriptor schema = SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[]{labelIdHej, labelIdHa, labelIdHe},
+                                                                  new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withIndexType( FULLTEXT ).withName( "fulltext" );
             indexReference = transaction.schemaWrite().indexCreate( prototype );
             transaction.success();
@@ -495,7 +495,7 @@ class FulltextIndexProviderTest
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             int[] propertyIds = {propIdHa};
-            SchemaDescriptor schema = SchemaDescriptor.forLabel( labelIdHa, propertyIds );
+            SchemaDescriptor schema = SchemaDescriptors.forLabel( labelIdHa, propertyIds );
             IndexPrototype prototype = IndexPrototype.forSchema( schema ).withIndexType( FULLTEXT ).withName( NAME );
             SchemaWrite schemaWrite = transaction.schemaWrite();
             var e = assertThrows( IllegalArgumentException.class, () -> schemaWrite.indexCreate( prototype ) );
@@ -512,7 +512,7 @@ class FulltextIndexProviderTest
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             int[] propertyIds = {propIdHa};
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{labelIdHa}, propertyIds );
+            SchemaDescriptor schema = SchemaDescriptors.fulltext( EntityType.NODE, new int[]{labelIdHa}, propertyIds );
             IndexPrototype prototype = IndexPrototype.forSchema( schema ).withIndexType( FULLTEXT ).withName( NAME );
             SchemaWrite schemaWrite = transaction.schemaWrite();
             IndexDescriptor index = schemaWrite.indexCreate( prototype );
@@ -1258,7 +1258,7 @@ class FulltextIndexProviderTest
         IndexDescriptor fulltext;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( entityType, entityTokens, propertyIds );
+            SchemaDescriptor schema = SchemaDescriptors.fulltext( entityType, entityTokens, propertyIds );
             IndexConfig config = IndexConfig
                     .with( FulltextIndexSettingsKeys.ANALYZER, Values.stringValue( analyzer ) )
                     .withIfAbsent( FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, Values.of( eventuallyConsistent ) );

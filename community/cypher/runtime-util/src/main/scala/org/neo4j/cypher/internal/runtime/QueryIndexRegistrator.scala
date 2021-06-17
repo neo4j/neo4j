@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.SchemaDescriptors
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -84,18 +85,18 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
     val indexes =
       indexReferences.map {
         case InternalIndexReference(LabelId(token), properties) =>
-          Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forLabel(token, properties: _*)))
+          Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forLabel(token, properties: _*)))
         case InternalIndexReference(RelTypeId(token), properties) =>
-          Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forRelType(token, properties: _*)))
+          Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forRelType(token, properties: _*)))
         case _ => throw new IllegalStateException()
       }.toArray
 
     val labelTokenIndex = if (labelScan) {
-      Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.NODE))))
+      Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))))
     } else None
 
     val typeTokenIndex = if (typeScan) {
-      Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP))))
+      Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP))))
     } else None
 
     QueryIndexes(indexes, labelTokenIndex, typeTokenIndex)

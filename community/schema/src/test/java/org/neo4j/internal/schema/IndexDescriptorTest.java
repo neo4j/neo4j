@@ -37,55 +37,55 @@ import static org.junit.jupiter.api.Assertions.fail;
 class IndexDescriptorTest
 {
     private static final SchemaDescriptor[] SCHEMAS = {
-            SchemaDescriptor.fulltext( EntityType.NODE, new int[] {1}, new int[] {1} ),
-            SchemaDescriptor.fulltext( EntityType.NODE, new int[] {1}, new int[] {2} ),
-            SchemaDescriptor.fulltext( EntityType.NODE, new int[] {2}, new int[] {1} ),
-            SchemaDescriptor.fulltext( EntityType.NODE, new int[] {1, 1}, new int[] {1} ),
-            SchemaDescriptor.fulltext( EntityType.NODE, new int[] {1}, new int[] {1, 1} ),
-            SchemaDescriptor.fulltext( EntityType.NODE, new int[] {1, 1}, new int[] {1, 1} ),
-            SchemaDescriptor.fulltext( EntityType.NODE, new int[] {1, 2}, new int[] {1, 1} ),
-            SchemaDescriptor.fulltext( EntityType.NODE, new int[] {1, 1}, new int[] {1, 2} ),
-            SchemaDescriptor.fulltext( EntityType.NODE, new int[] {1, 2}, new int[] {1, 2} ),
+            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1}, new int[] {1} ),
+            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1}, new int[] {2} ),
+            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {2}, new int[] {1} ),
+            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 1}, new int[] {1} ),
+            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1}, new int[] {1, 1} ),
+            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 1}, new int[] {1, 1} ),
+            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 2}, new int[] {1, 1} ),
+            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 1}, new int[] {1, 2} ),
+            SchemaDescriptors.fulltext( EntityType.NODE, new int[] {1, 2}, new int[] {1, 2} ),
 
-            SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[] {1}, new int[] {1} ),
-            SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[] {1}, new int[] {2} ),
-            SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[] {2}, new int[] {1} ),
-            SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1} ),
-            SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[] {1}, new int[] {1, 1} ),
-            SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1, 1} ),
-            SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[] {1, 2}, new int[] {1, 1} ),
-            SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1, 2} ),
-            SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[] {1, 2}, new int[] {1, 2} ),
+            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1}, new int[] {1} ),
+            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1}, new int[] {2} ),
+            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {2}, new int[] {1} ),
+            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1} ),
+            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1}, new int[] {1, 1} ),
+            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1, 1} ),
+            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 2}, new int[] {1, 1} ),
+            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 1}, new int[] {1, 2} ),
+            SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[] {1, 2}, new int[] {1, 2} ),
 
-            SchemaDescriptor.forLabel( 1, 1 ),
-            SchemaDescriptor.forLabel( 1, 2 ),
-            SchemaDescriptor.forLabel( 2, 1 ),
-            SchemaDescriptor.forLabel( 2, 2 ),
-            SchemaDescriptor.forLabel( 1, 1, 1 ),
-            SchemaDescriptor.forLabel( 1, 1, 2 ),
-            SchemaDescriptor.forLabel( 1, 2, 1 ),
-            SchemaDescriptor.forLabel( 1, 2, 2 ),
-            SchemaDescriptor.forLabel( 2, 1, 1 ),
-            SchemaDescriptor.forLabel( 2, 2, 1 ),
-            SchemaDescriptor.forLabel( 2, 1, 2 ),
-            SchemaDescriptor.forLabel( 2, 2, 2 ),
+            SchemaDescriptors.forLabel( 1, 1 ),
+            SchemaDescriptors.forLabel( 1, 2 ),
+            SchemaDescriptors.forLabel( 2, 1 ),
+            SchemaDescriptors.forLabel( 2, 2 ),
+            SchemaDescriptors.forLabel( 1, 1, 1 ),
+            SchemaDescriptors.forLabel( 1, 1, 2 ),
+            SchemaDescriptors.forLabel( 1, 2, 1 ),
+            SchemaDescriptors.forLabel( 1, 2, 2 ),
+            SchemaDescriptors.forLabel( 2, 1, 1 ),
+            SchemaDescriptors.forLabel( 2, 2, 1 ),
+            SchemaDescriptors.forLabel( 2, 1, 2 ),
+            SchemaDescriptors.forLabel( 2, 2, 2 ),
 
-            SchemaDescriptor.forRelType( 1, 1 ),
-            SchemaDescriptor.forRelType( 1, 2 ),
-            SchemaDescriptor.forRelType( 2, 1 ),
-            SchemaDescriptor.forRelType( 2, 2 ),
-            SchemaDescriptor.forRelType( 1, 1, 1 ),
-            SchemaDescriptor.forRelType( 1, 1, 2 ),
-            SchemaDescriptor.forRelType( 1, 2, 1 ),
-            SchemaDescriptor.forRelType( 1, 2, 2 ),
-            SchemaDescriptor.forRelType( 2, 1, 1 ),
-            SchemaDescriptor.forRelType( 2, 2, 1 ),
-            SchemaDescriptor.forRelType( 2, 1, 2 ),
-            SchemaDescriptor.forRelType( 2, 2, 2 ),
+            SchemaDescriptors.forRelType( 1, 1 ),
+            SchemaDescriptors.forRelType( 1, 2 ),
+            SchemaDescriptors.forRelType( 2, 1 ),
+            SchemaDescriptors.forRelType( 2, 2 ),
+            SchemaDescriptors.forRelType( 1, 1, 1 ),
+            SchemaDescriptors.forRelType( 1, 1, 2 ),
+            SchemaDescriptors.forRelType( 1, 2, 1 ),
+            SchemaDescriptors.forRelType( 1, 2, 2 ),
+            SchemaDescriptors.forRelType( 2, 1, 1 ),
+            SchemaDescriptors.forRelType( 2, 2, 1 ),
+            SchemaDescriptors.forRelType( 2, 1, 2 ),
+            SchemaDescriptors.forRelType( 2, 2, 2 ),
 
-            SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ),
-            SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ),
-    };
+            SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ),
+            SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ),
+            };
 
     @Test
     void indexDescriptorsMustBeDistinctBySchema()
@@ -140,8 +140,8 @@ class IndexDescriptorTest
     @Test
     void updatingIndexConfigLeavesOriginalDescriptorUntouched()
     {
-        IndexDescriptor a = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 1 );
-        IndexDescriptor aa = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 1 );
+        IndexDescriptor a = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 1 );
+        IndexDescriptor aa = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 1 );
         IndexDescriptor b = a.withIndexConfig( a.getIndexConfig().withIfAbsent( "x", Values.stringValue( "y" ) ) );
 
         assertThat( a.getIndexConfig() ).isNotEqualTo( b.getIndexConfig() );

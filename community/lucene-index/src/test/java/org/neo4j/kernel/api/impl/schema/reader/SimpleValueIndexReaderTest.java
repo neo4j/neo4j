@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -61,7 +62,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 class SimpleValueIndexReaderTest
 {
-    private static final SchemaDescriptor SCHEMA = SchemaDescriptor.forLabel( 0, 0 );
+    private static final SchemaDescriptor SCHEMA = SchemaDescriptors.forLabel( 0, 0 );
     private final PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
     private final Neo4jIndexSearcher indexSearcher = mock( Neo4jIndexSearcher.class );
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );

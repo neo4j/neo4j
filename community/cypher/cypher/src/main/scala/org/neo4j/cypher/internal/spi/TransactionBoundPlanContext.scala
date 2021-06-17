@@ -63,6 +63,7 @@ import org.neo4j.internal.schema.IndexOrderCapability.NONE
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.IndexValueCapability
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.Log
 import org.neo4j.values.storable.ValueCategory
@@ -237,11 +238,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def canLookupNodesByLabel: Boolean = {
-    tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.NODE)).hasNext
+    tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE)).hasNext
   }
 
   override def canLookupRelationshipsByType: Boolean = {
-    tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)).hasNext
+    tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP)).hasNext
   }
 
   override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
@@ -249,7 +250,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptor.forLabel(labelId, propertyKeyId)).hasNext
+      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptors.forLabel(labelId, propertyKeyId)).hasNext
     } catch {
       case _: KernelException => false
     }
@@ -282,7 +283,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val relTypeId = getRelTypeId(relTypeName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptor.forRelType(relTypeId, propertyKeyId)).hasNext
+      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptors.forRelType(relTypeId, propertyKeyId)).hasNext
     } catch {
       case _: KernelException => false
     }

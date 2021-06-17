@@ -52,7 +52,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -379,9 +379,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             int key1Id = tokenRead.propertyKey( KEY1 );
             int key2Id = tokenRead.propertyKey( KEY2 );
 
-            IndexDescriptor index = single( schemaRead.index( SchemaDescriptor.forLabel( labelId, key1Id ) ) );
+            IndexDescriptor index = single( schemaRead.index( SchemaDescriptors.forLabel( labelId, key1Id ) ) );
             assertIndexHasExpectedProvider( expectedDescriptor, index );
-            index = single( schemaRead.index( SchemaDescriptor.forLabel( labelId, key1Id, key2Id ) ) );
+            index = single( schemaRead.index( SchemaDescriptors.forLabel( labelId, key1Id, key2Id ) ) );
             assertIndexHasExpectedProvider( expectedDescriptor, index );
             tx.commit();
         }
@@ -522,7 +522,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             {
                 predicates[i] = PropertyIndexQuery.exists( propertyKeyIds[i] );
             }
-            IndexDescriptor index = single( ktx.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyKeyIds ) ) );
+            IndexDescriptor index = single( ktx.schemaRead().index( SchemaDescriptors.forLabel( labelId, propertyKeyIds ) ) );
             IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
             int count = 0;
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )

@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 
 public class NodeLabelIndexOrderTest extends TokenIndexOrderTestBase<NodeLabelIndexCursor>
@@ -49,7 +49,7 @@ public class NodeLabelIndexOrderTest extends TokenIndexOrderTestBase<NodeLabelIn
     @Override
     protected void tokenScan( IndexOrder indexOrder, KernelTransaction tx, int label, NodeLabelIndexCursor cursor ) throws KernelException
     {
-        IndexDescriptor index = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) ).next();
+        IndexDescriptor index = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) ).next();
         TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
         tx.dataRead().nodeLabelScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ) );
     }

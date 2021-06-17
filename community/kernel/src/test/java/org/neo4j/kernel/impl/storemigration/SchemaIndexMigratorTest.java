@@ -30,7 +30,7 @@ import java.util.List;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -113,10 +113,10 @@ class SchemaIndexMigratorTest
         when( storageEngineFactory.versionInformation( "from" ) ).thenReturn( fromVersion );
         when( storageEngineFactory.versionInformation( "to" ) ).thenReturn( toVersion );
         List<SchemaRule> schemaRules = new ArrayList<>();
-        schemaRules.add( forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "n1" ).materialise( 1L ) );
-        schemaRules.add( forSchema( SchemaDescriptor.forRelType( 5, 3 ) ).withName( "r1" ).materialise( 2L ) );
-        schemaRules.add( forSchema( SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "r2" ).materialise( 3L ) );
-        schemaRules.add( forSchema( SchemaDescriptor.fulltext( NODE, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "n2" ).materialise( 4L ) );
+        schemaRules.add( forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "n1" ).materialise( 1L ) );
+        schemaRules.add( forSchema( SchemaDescriptors.forRelType( 5, 3 ) ).withName( "r1" ).materialise( 2L ) );
+        schemaRules.add( forSchema( SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "r2" ).materialise( 3L ) );
+        schemaRules.add( forSchema( SchemaDescriptors.fulltext( NODE, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "n2" ).materialise( 4L ) );
         when( storageEngineFactory.loadSchemaRules( any(), any(), any(), any(), any() ) ).thenReturn( schemaRules );
         SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, false );
 

@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -101,11 +100,11 @@ class SchemaCheckerTest extends CheckerTestBase
         var cursorContext = CursorContext.NULL;
         try ( AutoCloseable ignored = tx() )
         {
-            IndexDescriptor index1 = IndexPrototype.forSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index1 = IndexPrototype.forSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
-            IndexDescriptor index2 = IndexPrototype.forSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index2 = IndexPrototype.forSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME2 )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -127,7 +126,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -148,7 +147,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
                     .withName( NAME )
                     .withIndexType( IndexType.LOOKUP )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -169,7 +168,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( UNUSED, propertyKey1 ) )
+            IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( UNUSED, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -190,7 +189,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forRelType( UNUSED, propertyKey1 ) )
+            IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forRelType( UNUSED, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -211,7 +210,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forRelType( relationshipType1, UNUSED ) )
+            IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forRelType( relationshipType1, UNUSED ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -232,7 +231,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) )
@@ -275,7 +274,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -302,7 +301,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -329,7 +328,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -356,11 +355,11 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
-            IndexDescriptor index2 = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label2, propertyKey2 ) )
+            IndexDescriptor index2 = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label2, propertyKey2 ) )
                     .withName( NAME2 )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -389,7 +388,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
@@ -462,7 +461,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorContext = CursorContext.NULL;
-            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );

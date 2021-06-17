@@ -29,7 +29,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -72,7 +72,7 @@ class KernelAPIParallelLabelScanStressIT
         IndexDescriptor nodeLabelIndex;
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
-            nodeLabelIndex = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) ).next();
+            nodeLabelIndex = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) ).next();
             tx.commit();
         }
 

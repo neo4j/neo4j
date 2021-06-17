@@ -75,6 +75,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -794,7 +795,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        var index = findUsableMatchingIndex( transaction, SchemaDescriptor.forLabel( labelId, query.propertyKeyId() ) );
+        var index = findUsableMatchingIndex( transaction, SchemaDescriptors.forLabel( labelId, query.propertyKeyId() ) );
         if ( index != IndexDescriptor.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching nodes
@@ -824,7 +825,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        var index = findUsableMatchingIndex( transaction, SchemaDescriptor.forRelType( typeId, query.propertyKeyId() ) );
+        var index = findUsableMatchingIndex( transaction, SchemaDescriptors.forRelType( typeId, query.propertyKeyId() ) );
         if ( index != IndexDescriptor.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching relationships
@@ -868,7 +869,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutPropertyIndex( KernelTransaction ktx, int labelId, PropertyIndexQuery... queries )
     {
-        var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -914,7 +915,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutPropertyIndex( KernelTransaction ktx, int typeId,
             PropertyIndexQuery... queries )
     {
-        var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -969,8 +970,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         }
 
         int[] propertyIds = getPropertyIds( queries );
-        IndexDescriptor index = findUsableMatchingCompositeIndex( transaction, SchemaDescriptor.forLabel( labelId, propertyIds ), propertyIds,
-                                                            () -> transaction.schemaRead().indexesGetForLabel( labelId ) );
+        IndexDescriptor index = findUsableMatchingCompositeIndex( transaction, SchemaDescriptors.forLabel( labelId, propertyIds ), propertyIds,
+                                                                  () -> transaction.schemaRead().indexesGetForLabel( labelId ) );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -1017,7 +1018,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -1055,7 +1056,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -1095,8 +1096,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         }
 
         int[] propertyIds = getPropertyIds( queries );
-        IndexDescriptor index = findUsableMatchingCompositeIndex( tx, SchemaDescriptor.forRelType( typeId, propertyIds ), propertyIds,
-                                                            () -> tx.schemaRead().indexesGetForRelationshipType( typeId ) );
+        IndexDescriptor index = findUsableMatchingCompositeIndex( tx, SchemaDescriptors.forRelType( typeId, propertyIds ), propertyIds,
+                                                                  () -> tx.schemaRead().indexesGetForRelationshipType( typeId ) );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {

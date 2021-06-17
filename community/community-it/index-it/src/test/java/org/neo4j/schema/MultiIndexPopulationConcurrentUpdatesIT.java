@@ -56,7 +56,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -293,7 +293,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
         assertThrows( IndexNotFoundKernelException.class, () ->
                 {
-                    Iterator<IndexDescriptor> iterator = schemaCache.indexesForSchema( SchemaDescriptor.forLabel( labelToDropId, propertyId ) );
+                    Iterator<IndexDescriptor> iterator = schemaCache.indexesForSchema( SchemaDescriptors.forLabel( labelToDropId, propertyId ) );
                     while ( iterator.hasNext() )
                     {
                         IndexDescriptor index = iterator.next();
@@ -304,7 +304,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private void checkIndexIsOnline( int labelId ) throws IndexNotFoundKernelException
     {
-        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
+        LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyId );
         IndexDescriptor index = single( schemaCache.indexesForSchema( schema ) );
         IndexProxy indexProxy = indexService.getIndexProxy( index );
         assertSame( InternalIndexState.ONLINE, indexProxy.getState() );
@@ -317,7 +317,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private ValueIndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException
     {
-        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( countryLabelId, propertyId );
+        LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( countryLabelId, propertyId );
         IndexDescriptor index = single( schemaCache.indexesForSchema( schema ) );
         return indexService.getIndexProxy( index ).newValueReader();
     }
@@ -400,7 +400,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
             IndexActivationFailedKernelException
     {
-        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
+        LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyId );
         IndexDescriptor index = single( schemaCache.indexesForSchema( schema ) );
         IndexProxy indexProxy = indexService.getIndexProxy( index );
         indexProxy.awaitStoreScanCompleted( 0, TimeUnit.MILLISECONDS );
@@ -419,7 +419,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         List<IndexDescriptor> list = new ArrayList<>();
         for ( Integer labelId : labelNameIdMap.values() )
         {
-            final LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
+            final LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyId );
             IndexDescriptor index = IndexPrototype.forSchema( schema, providerDescriptor )
                     .withName( "index_" + labelId ).materialise( labelId );
             index = indexProvider.completeConfiguration( index );
@@ -613,7 +613,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         Node node = transaction.getNodeById( update.getEntityId() );
                         for ( int labelId : labelsNameIdMap.values() )
                         {
-                            LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
+                            LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyId );
                             for ( IndexEntryUpdate<?> indexUpdate :
                                     update.valueUpdatesForIndexKeys( Collections.singleton( () -> schema ) ) )
                             {
@@ -671,7 +671,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         @Override
         public void run()
         {
-            LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelIdToDropIndexFor, propertyId );
+            LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel( labelIdToDropIndexFor, propertyId );
             IndexDescriptor rule = findRuleForLabel( descriptor );
             indexService.dropIndex( rule );
         }

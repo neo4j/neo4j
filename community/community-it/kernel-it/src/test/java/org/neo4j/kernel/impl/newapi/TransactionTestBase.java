@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -88,7 +89,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            schema = SchemaDescriptor.forLabel( label, propertyKey );
+            schema = SchemaDescriptors.forLabel( label, propertyKey );
             tx.schemaWrite().indexCreate( schema, "my index" );
             tx.commit();
         }
@@ -117,7 +118,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            schema = SchemaDescriptor.forLabel( label, propertyKey );
+            schema = SchemaDescriptors.forLabel( label, propertyKey );
             tx.schemaWrite().indexCreate( schema, "my index" );
             tx.commit();
         }
@@ -145,7 +146,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            schema = SchemaDescriptor.forLabel( label, propertyKey );
+            schema = SchemaDescriptors.forLabel( label, propertyKey );
             tx.schemaWrite().indexCreate( schema, "my index" );
             tx.commit();
         }
@@ -172,7 +173,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
         {
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
-            schema = SchemaDescriptor.forLabel( label, propertyKey );
+            schema = SchemaDescriptors.forLabel( label, propertyKey );
             tx.schemaWrite().indexCreate( schema, "my index" );
             tx.commit();
         }

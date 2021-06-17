@@ -93,7 +93,6 @@ import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -131,8 +130,8 @@ import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.rel
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleCreate;
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleDelete;
 import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;

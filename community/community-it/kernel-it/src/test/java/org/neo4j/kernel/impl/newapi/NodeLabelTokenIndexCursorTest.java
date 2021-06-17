@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodeCount;
@@ -113,7 +113,7 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
 
     private static TokenReadSession getTokenReadSession( KernelTransaction tx ) throws IndexNotFoundKernelException
     {
-        var descriptor = SchemaDescriptor.forAnyEntityTokens( EntityType.NODE );
+        var descriptor = SchemaDescriptors.forAnyEntityTokens( EntityType.NODE );
         var indexes = tx.schemaRead().index( descriptor );
         var session = tx.dataRead().tokenReadSession( indexes.next() );
         return session;

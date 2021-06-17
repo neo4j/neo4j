@@ -52,6 +52,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
@@ -482,7 +483,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   }
 
   private def tokenReadSession(tx: InternalTransaction): TokenReadSession = {
-    val index = tx.kernelTransaction().schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.NODE)).next()
+    val index = tx.kernelTransaction().schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE)).next()
     tx.kernelTransaction().dataRead().tokenReadSession(index)
   }
 

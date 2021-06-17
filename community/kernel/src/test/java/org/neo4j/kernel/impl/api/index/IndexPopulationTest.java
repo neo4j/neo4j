@@ -27,8 +27,8 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -159,6 +159,6 @@ class IndexPopulationTest
 
     private static ValueIndexEntryUpdate<SchemaDescriptorSupplier> someUpdate()
     {
-        return IndexEntryUpdate.add( 0, () -> SchemaDescriptor.forLabel( 0, 0 ), Values.numberValue( 0 ) );
+        return IndexEntryUpdate.add( 0, () -> SchemaDescriptors.forLabel( 0, 0 ), Values.numberValue( 0 ) );
     }
 }

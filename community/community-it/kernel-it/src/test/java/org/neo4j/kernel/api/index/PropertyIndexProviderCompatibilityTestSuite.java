@@ -48,7 +48,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
 @RunWith( ParameterizedSuiteRunner.class )
 @Suite.SuiteClasses( {

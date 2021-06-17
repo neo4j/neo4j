@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.TestAccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -969,7 +969,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
     private static TokenReadSession getTokenReadSession( KernelTransaction tx, EntityType entityType ) throws IndexNotFoundKernelException
     {
-        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( entityType ) );
         IndexDescriptor index = indexes.next();
         assertThat( indexes.hasNext() ).isFalse();
         return tx.dataRead().tokenReadSession( index );

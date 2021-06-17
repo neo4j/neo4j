@@ -60,7 +60,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 
 @PageCacheExtension
 @Neo4jLayoutExtension

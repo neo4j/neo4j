@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Relationship
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.values.storable.Values
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
@@ -68,10 +69,10 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   } )
 
   when(inner.addBtreeIndexRule(anyInt(), ArgumentMatchers.eq(EntityType.NODE), any(), any(), any(), any()))
-    .thenReturn(IndexPrototype.forSchema(SchemaDescriptor.forLabel(1, 2)).withName("index_1").materialise(1))
+    .thenReturn(IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2)).withName("index_1").materialise(1))
 
   when(inner.addBtreeIndexRule(anyInt(), ArgumentMatchers.eq(EntityType.RELATIONSHIP), any(), any(), any(), any()))
-    .thenReturn(IndexPrototype.forSchema(SchemaDescriptor.forRelType(1, 2)).withName("index_1").materialise(1))
+    .thenReturn(IndexPrototype.forSchema(SchemaDescriptors.forRelType(1, 2)).withName("index_1").materialise(1))
 
   var context: UpdateCountingQueryContext = _
 

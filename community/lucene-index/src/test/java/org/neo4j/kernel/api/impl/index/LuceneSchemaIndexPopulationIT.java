@@ -31,7 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
@@ -60,7 +60,7 @@ import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_
 @TestDirectoryExtension
 class LuceneSchemaIndexPopulationIT
 {
-    private final IndexDescriptor descriptor = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( "a" ).materialise( 1 );
+    private final IndexDescriptor descriptor = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( 0, 0 ) ).withName( "a" ).materialise( 1 );
 
     @Inject
     private TestDirectory testDir;

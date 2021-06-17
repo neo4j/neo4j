@@ -50,6 +50,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -100,8 +101,8 @@ class IndexIT extends KernelIntegrationTest
         relType2 = tokenWrites.relationshipTypeGetOrCreateForName( REL_TYPE2 );
         propertyKeyId = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY );
         propertyKeyId2 = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY2 );
-        schema = SchemaDescriptor.forLabel( labelId, propertyKeyId );
-        schema2 = SchemaDescriptor.forLabel( labelId, propertyKeyId2 );
+        schema = SchemaDescriptors.forLabel( labelId, propertyKeyId );
+        schema2 = SchemaDescriptors.forLabel( labelId, propertyKeyId2 );
         commit();
         executorService = Executors.newCachedThreadPool();
     }
@@ -146,7 +147,7 @@ class IndexIT extends KernelIntegrationTest
         int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
         commit();
 
-        LabelSchemaDescriptor anotherLabelDescriptor = SchemaDescriptor.forLabel( label2, propertyKeyId );
+        LabelSchemaDescriptor anotherLabelDescriptor = SchemaDescriptors.forLabel( label2, propertyKeyId );
         schemaWriteInNewTransaction().indexCreate( anotherLabelDescriptor, "my index" );
 
         Future<?> indexFuture = executorService.submit( createIndex( db, label( LABEL ), PROPERTY_KEY ) );
@@ -181,7 +182,7 @@ class IndexIT extends KernelIntegrationTest
 
         // WHEN
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId2 );
+        LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyKeyId2 );
         IndexDescriptor addedRule = transaction.schemaWrite().indexCreate( schema, "my other index" );
         Set<IndexDescriptor> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
         commit();
@@ -378,7 +379,7 @@ class IndexIT extends KernelIntegrationTest
         long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
         int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "property1" );
-        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId );
+        LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyKeyId );
         transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( schema ).withName( "constraint name" ) );
         commit();
 
@@ -405,7 +406,7 @@ class IndexIT extends KernelIntegrationTest
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
-        SchemaDescriptor schema = SchemaDescriptor.fulltext(
+        SchemaDescriptor schema = SchemaDescriptors.fulltext(
                 EntityType.NODE, new int[]{labelId, labelId2}, new int[]{propertyKeyId} );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, FulltextIndexProviderFactory.DESCRIPTOR )
                                                  .withIndexType( IndexType.FULLTEXT ).withName( "multi token index" );
@@ -435,7 +436,7 @@ class IndexIT extends KernelIntegrationTest
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
-        SchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId, propertyKeyId2 );
+        SchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyKeyId, propertyKeyId2 );
         transaction.schemaWrite().indexCreate( schema, "my index" );
         commit();
 
@@ -462,7 +463,7 @@ class IndexIT extends KernelIntegrationTest
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
-        SchemaDescriptor schema = SchemaDescriptor.forRelType( relType, propertyKeyId );
+        SchemaDescriptor schema = SchemaDescriptors.forRelType( relType, propertyKeyId );
         transaction.schemaWrite().indexCreate( schema, "my index" );
         commit();
 
@@ -489,8 +490,8 @@ class IndexIT extends KernelIntegrationTest
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
-        SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{relType, relType2},
-                new int[]{propertyKeyId, propertyKeyId2} );
+        SchemaDescriptor schema = SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[]{relType, relType2},
+                                                              new int[]{propertyKeyId, propertyKeyId2} );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, FulltextIndexProviderFactory.DESCRIPTOR )
                 .withIndexType( IndexType.FULLTEXT )
                 .withName( "index name" );

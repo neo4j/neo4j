@@ -58,6 +58,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -184,7 +185,7 @@ class CheckerTestBase
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema( () -> SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), storeCursors );
+                schemaStorage.indexGetForSchema( () -> SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), storeCursors );
         // The Node Label Index should exist and be unique.
         assertThat( indexDescriptors.length ).isEqualTo( 1 );
         IndexDescriptor nli = indexDescriptors[0];

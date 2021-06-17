@@ -25,7 +25,7 @@ import org.junit.runners.Suite;
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
@@ -40,7 +40,7 @@ public abstract class TokenIndexProviderCompatibilityTestSuite extends IndexProv
     @Override
     protected IndexPrototype indexPrototype()
     {
-        return IndexPrototype.forSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+        return IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
     }
 
     @Override

@@ -23,8 +23,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
@@ -100,7 +100,7 @@ class EntityTokenUpdatesTest
                     @Override
                     SchemaDescriptorSupplier getTokenIndex()
                     {
-                        return () -> SchemaDescriptor.forAnyEntityTokens( EntityType.NODE );
+                        return () -> SchemaDescriptors.forAnyEntityTokens( EntityType.NODE );
                     }
                 },
         RELATIONSHIP
@@ -108,7 +108,7 @@ class EntityTokenUpdatesTest
                     @Override
                     SchemaDescriptorSupplier getTokenIndex()
                     {
-                        return () -> SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP );
+                        return () -> SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP );
                     }
                 };
 

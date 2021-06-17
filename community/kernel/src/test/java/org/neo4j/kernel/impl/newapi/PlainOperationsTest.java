@@ -50,6 +50,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
@@ -505,7 +506,7 @@ public class PlainOperationsTest extends OperationsTest
     void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
@@ -523,7 +524,7 @@ public class PlainOperationsTest extends OperationsTest
     void shouldAcquireSchemaWriteLockBeforeRemovingIndexRuleBySchema() throws Exception
     {
         // given
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
@@ -541,8 +542,8 @@ public class PlainOperationsTest extends OperationsTest
     @Test
     void shouldDropAllGeneralIndexesMatchingSchema() throws Exception
     {
-        SchemaDescriptor schema = SchemaDescriptor.forLabel( 0, 0 );
-        SchemaDescriptor ftsSchema = SchemaDescriptor.fulltext( NODE, new int[] {0}, new int[] {0} );
+        SchemaDescriptor schema = SchemaDescriptors.forLabel( 0, 0 );
+        SchemaDescriptor ftsSchema = SchemaDescriptors.fulltext( NODE, new int[] {0}, new int[] {0} );
         IndexDescriptor indexA = IndexPrototype.forSchema( schema ).withName( "a" ).materialise( 0 );
         IndexDescriptor indexB = IndexPrototype.forSchema( ftsSchema ).withName( "b" ).withIndexType( IndexType.FULLTEXT ).materialise( 1 );
         IndexDescriptor indexC = IndexPrototype.forSchema( schema ).withName( "c" ).materialise( 2 );
@@ -567,7 +568,7 @@ public class PlainOperationsTest extends OperationsTest
     {
         // given
         String indexName = "My fancy index";
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( indexName ).materialise( 0 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 0 ) ).withName( indexName ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
@@ -694,7 +695,7 @@ public class PlainOperationsTest extends OperationsTest
     void shouldReleaseAcquiredSchemaWriteLockIfRelationshipPropertyExistenceConstraintCreationFails() throws Exception
     {
         // given
-        RelationTypeSchemaDescriptor descriptor = SchemaDescriptor.forRelType( 11, 13 );
+        RelationTypeSchemaDescriptor descriptor = SchemaDescriptors.forRelType( 11, 13 );
         RelExistenceConstraintDescriptor constraint = existsForSchema( descriptor );
         storageReaderWithConstraints( constraint );
         int relTypeId = descriptor.getRelTypeId();
@@ -902,11 +903,11 @@ public class PlainOperationsTest extends OperationsTest
         when( tokenHolders.propertyKeyTokens().getTokenById( 2 ) ).thenReturn( new NamedToken( "PropB", 2 ) );
         storageReaderWithoutConstraints();
         when( storageReader.indexGetForSchema( any() ) ).thenReturn( Collections.emptyIterator() );
-        operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ), null );
+        operations.indexCreate( SchemaDescriptors.forLabel( 1, 1 ), null );
         operations.indexCreate( IndexPrototype.forSchema(
-                SchemaDescriptor.fulltext( NODE, new int[] {2, 3}, new int[] {1, 2} ) )
+                SchemaDescriptors.fulltext( NODE, new int[] {2, 3}, new int[] {1, 2} ) )
                                               .withIndexType( IndexType.FULLTEXT ) );
-        operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", IndexConfig.empty(), null );
+        operations.indexCreate( SchemaDescriptors.forLabel( 3, 1 ), "provider-1.0", IndexConfig.empty(), null );
         IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
                                                     .stream()
                                                     .sorted( Comparator.comparing( d -> d.schema().getEntityTokenIds()[0] ) )
@@ -1083,7 +1084,7 @@ public class PlainOperationsTest extends OperationsTest
         // given
         when( tokenHolders.labelTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "Label", 123 ) );
         when( tokenHolders.propertyKeyTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "prop", 456 ) );
-        SchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, this.schema.getEntityTokenIds(), this.schema.getPropertyIds() );
+        SchemaDescriptor schema = SchemaDescriptors.fulltext( NODE, this.schema.getEntityTokenIds(), this.schema.getPropertyIds() );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
                                                  .withName( "constraint name" )
                                                  .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
@@ -1106,7 +1107,7 @@ public class PlainOperationsTest extends OperationsTest
         // given
         when( tokenHolders.relationshipTypeTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "RelType", 123 ) );
         when( tokenHolders.propertyKeyTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "prop", 456 ) );
-        SchemaDescriptor schema = SchemaDescriptor.forRelType( this.schema.getEntityTokenIds()[0], this.schema.getPropertyIds() );
+        SchemaDescriptor schema = SchemaDescriptors.forRelType( this.schema.getEntityTokenIds()[0], this.schema.getPropertyIds() );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
                                                  .withName( "constraint name" )
                                                  .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
@@ -1127,7 +1128,7 @@ public class PlainOperationsTest extends OperationsTest
     void indexedBackedConstraintCreateMustThrowOnAnyTokenSchemas() throws Exception
     {
         // given
-        SchemaDescriptor schema = SchemaDescriptor.forAnyEntityTokens( NODE );
+        SchemaDescriptor schema = SchemaDescriptors.forAnyEntityTokens( NODE );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
                                                  .withName( "constraint name" )
                                                  .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );

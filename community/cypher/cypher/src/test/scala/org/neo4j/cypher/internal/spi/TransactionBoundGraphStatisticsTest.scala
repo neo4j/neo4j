@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.logging.Log
 
 import java.util.Collections
@@ -45,7 +46,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
   private val labelId = 42
   private val propertyId = 1337
   private val index = IndexDescriptor.forLabel(LabelId(labelId), Seq(PropertyKeyId(propertyId)))
-  private val descriptor: schema.IndexDescriptor = IndexPrototype.forSchema(SchemaDescriptor.forLabel(labelId, propertyId)).withName("wut!").materialise(11L)
+  private val descriptor: schema.IndexDescriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId)).withName("wut!").materialise(11L)
   private var read: Read = _
   private var schemaRead: SchemaRead = _
   private val log = mock[Log]

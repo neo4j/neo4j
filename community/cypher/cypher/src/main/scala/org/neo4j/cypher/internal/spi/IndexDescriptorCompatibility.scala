@@ -32,6 +32,7 @@ import org.neo4j.internal.schema
 import org.neo4j.internal.schema.LabelSchemaDescriptor
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.api.exceptions.RelationshipTypeNotFoundException
 
 import scala.util.control.Exception.catching
@@ -48,9 +49,9 @@ trait IndexDescriptorCompatibility {
 
   def cypherToKernelSchema(index: spi.IndexDescriptor): SchemaDescriptor = index.entityType match {
     case IndexDescriptor.EntityType.Node(label) =>
-      SchemaDescriptor.forLabel(label.id, index.properties.map(_.id):_*)
+      SchemaDescriptors.forLabel(label.id, index.properties.map(_.id):_*)
     case IndexDescriptor.EntityType.Relationship(relType) =>
-      SchemaDescriptor.forRelType(relType.id, index.properties.map(_.id):_*)
+      SchemaDescriptors.forRelType(relType.id, index.properties.map(_.id):_*)
   }
 
   def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext,
@@ -59,7 +60,7 @@ trait IndexDescriptorCompatibility {
     catching(classOf[LabelNotFoundKernelException], classOf[PropertyKeyIdNotFoundKernelException]) opt {
       val labelId: Int = tc.getLabelId(labelName)
       val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
-      SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*)
+      SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*)
     }
   }
 
@@ -69,7 +70,7 @@ trait IndexDescriptorCompatibility {
     catching(classOf[RelationshipTypeNotFoundException], classOf[PropertyKeyIdNotFoundKernelException]) opt {
       val relTypeId: Int = tc.getRelTypeId(relTypeName)
       val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
-      SchemaDescriptor.forRelType(relTypeId, propertyKeyIds: _*)
+      SchemaDescriptors.forRelType(relTypeId, propertyKeyIds: _*)
     }
   }
 }

@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 
 public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<RelationshipTypeIndexCursor>
@@ -59,7 +59,7 @@ public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<Rela
     @Override
     protected void tokenScan( IndexOrder indexOrder, KernelTransaction tx, int label, RelationshipTypeIndexCursor cursor ) throws KernelException
     {
-        IndexDescriptor index = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) ).next();
+        IndexDescriptor index = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ) ).next();
         TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
         tx.dataRead().relationshipTypeScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ) );
     }

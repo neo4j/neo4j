@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.EntityType.NODE;
@@ -35,15 +36,15 @@ class IndexMapTest
 {
     private IndexMap indexMap;
 
-    private final LabelSchemaDescriptor schema3_4 = SchemaDescriptor.forLabel( 3, 4 );
+    private final LabelSchemaDescriptor schema3_4 = SchemaDescriptors.forLabel( 3, 4 );
     private final IndexDescriptor index3_4 = forSchema( schema3_4 ).withName( "index_1" ).materialise( 1 );
-    private final LabelSchemaDescriptor schema5_6_7 = SchemaDescriptor.forLabel( 5, 6, 7 );
+    private final LabelSchemaDescriptor schema5_6_7 = SchemaDescriptors.forLabel( 5, 6, 7 );
     private final IndexDescriptor index5_6_7 = forSchema( schema5_6_7 ).withName( "index_2" ).materialise( 2 );
-    private final LabelSchemaDescriptor schema5_8 = SchemaDescriptor.forLabel( 5, 8 );
+    private final LabelSchemaDescriptor schema5_8 = SchemaDescriptors.forLabel( 5, 8 );
     private final IndexDescriptor index5_8 = forSchema( schema5_8 ).withName( "index_3" ).materialise( 3 );
-    private final SchemaDescriptor node35_8 = SchemaDescriptor.fulltext( NODE, new int[]{3, 5}, new int[]{8} );
+    private final SchemaDescriptor node35_8 = SchemaDescriptors.fulltext( NODE, new int[]{3, 5}, new int[]{8} );
     private final IndexDescriptor index_node35_8 = forSchema( node35_8 ).withName( "index_4" ).materialise( 4 );
-    private final SchemaDescriptor rel35_8 = SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{3, 5}, new int[]{8} );
+    private final SchemaDescriptor rel35_8 = SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{3, 5}, new int[]{8} );
     private final IndexDescriptor index_rel35_8 = forSchema( rel35_8 ).withName( "index_5" ).materialise( 5 );
 
     @BeforeEach

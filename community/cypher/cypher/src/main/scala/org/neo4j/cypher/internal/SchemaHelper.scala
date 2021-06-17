@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 
@@ -99,17 +100,17 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
   }
 
   private def hasLookupIndex(tc: TransactionalContext, entityType: EntityType): Boolean =
-    tc.kernelTransaction.schemaRead().indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(entityType)).hasNext
+    tc.kernelTransaction.schemaRead().indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(entityType)).hasNext
 
   private def hasRelationshipTypeIndex(tc: TransactionalContext, relType: Long, properties: Array[Int]): Boolean =
     tc.kernelTransaction
       .schemaRead()
-      .indexForSchemaNonTransactional(SchemaDescriptor.forRelType(relType.toInt, properties: _*)).hasNext
+      .indexForSchemaNonTransactional(SchemaDescriptors.forRelType(relType.toInt, properties: _*)).hasNext
 
   private def hasLabelIndex(tc: TransactionalContext, label: Long, properties: Array[Int]): Boolean =
     tc.kernelTransaction
       .schemaRead()
-      .indexForSchemaNonTransactional(SchemaDescriptor.forLabel(label.toInt, properties: _*)).hasNext
+      .indexForSchemaNonTransactional(SchemaDescriptors.forLabel(label.toInt, properties: _*)).hasNext
 
   case class LockedEntities(successful: Boolean, needsReplan: Boolean)
 }

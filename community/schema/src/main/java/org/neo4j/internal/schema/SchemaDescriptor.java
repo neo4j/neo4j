@@ -19,18 +19,9 @@
  */
 package org.neo4j.internal.schema;
 
-import java.util.function.Predicate;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.token.api.TokenConstants;
-
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
-import static org.neo4j.internal.schema.PropertySchemaType.ENTITY_TOKENS;
-import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
 /**
  * Internal representation of one schema unit, for example a label-property pair.
@@ -57,80 +48,6 @@ import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
  */
 public interface SchemaDescriptor
 {
-    static SchemaDescriptor noSchema()
-    {
-        return NoSchemaDescriptor.NO_SCHEMA;
-    }
-
-    static FulltextSchemaDescriptor fulltext( EntityType entityType, int[] entityTokenIds, int[] propertyKeyIds )
-    {
-        return new SchemaDescriptorImplementation( entityType, PARTIAL_ANY_TOKEN, entityTokenIds, propertyKeyIds );
-    }
-
-    static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
-    {
-        validateLabelIds( labelId );
-        validatePropertyIds( propertyIds );
-        return new SchemaDescriptorImplementation( NODE, COMPLETE_ALL_TOKENS, new int[]{labelId}, propertyIds );
-    }
-
-    static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
-    {
-        validateRelationshipTypeIds( relTypeId );
-        validatePropertyIds( propertyIds );
-        return new SchemaDescriptorImplementation( RELATIONSHIP, COMPLETE_ALL_TOKENS, new int[]{relTypeId}, propertyIds );
-    }
-
-    static AnyTokenSchemaDescriptor forAnyEntityTokens( EntityType entityType )
-    {
-        return new SchemaDescriptorImplementation( entityType, ENTITY_TOKENS, new int[0], new int[0] );
-    }
-
-    /**
-     * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.
-     * @param descriptor The schema descriptor to check equality with.
-     * @return A predicate that returns {@code true} if it is given a schema descriptor supplier that supplies the
-     * same schema descriptor as the given schema descriptor.
-     */
-    static <T extends SchemaDescriptorSupplier> Predicate<T> equalTo( SchemaDescriptor descriptor )
-    {
-        return supplier -> descriptor.equals( supplier.schema() );
-    }
-
-    private static void validatePropertyIds( int[] propertyIds )
-    {
-        for ( int propertyId : propertyIds )
-        {
-            if ( TokenConstants.ANY_PROPERTY_KEY == propertyId )
-            {
-                throw new IllegalArgumentException(
-                        "Index schema descriptor can't be created for non existent property." );
-            }
-        }
-    }
-
-    private static void validateRelationshipTypeIds( int... relTypes )
-    {
-        for ( int relType : relTypes )
-        {
-            if ( TokenConstants.ANY_RELATIONSHIP_TYPE == relType )
-            {
-                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent relationship type." );
-            }
-        }
-    }
-
-    private static void validateLabelIds( int... labelIds )
-    {
-        for ( int labelId : labelIds )
-        {
-            if ( TokenConstants.ANY_LABEL == labelId )
-            {
-                throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
-            }
-        }
-    }
-
     /**
      * Test if this schema descriptor is a {@link LabelSchemaDescriptor}.
      * @return {@code true} if calling {@link #asLabelSchemaDescriptor()} will not throw an exception.

@@ -36,7 +36,7 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -583,7 +583,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
 
         IndexConfig indexConfig = IndexConfig.with( EVENTUALLY_CONSISTENT, Values.booleanValue( true ) );
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{label}, new int[]{propertyKey} );
+        FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext( NODE, new int[]{label}, new int[]{propertyKey} );
 
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
@@ -599,7 +599,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     void completeConfigurationMustNotOverwriteExistingConfiguration()
     {
         IndexConfig indexConfig = IndexConfig.with( "A", Values.stringValue( "B" ) );
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
+        FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).materialise( 1 ) ).withIndexConfig( indexConfig );
@@ -609,7 +609,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     void completeConfigurationMustBeIdempotent()
     {
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
+        FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor onceCompleted = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).materialise( 1 ) );
@@ -620,7 +620,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     void mustAssignCapabilitiesToDescriptorsThatHaveNone()
     {
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
+        FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor completed = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).materialise( 1 ) );
@@ -647,7 +647,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
                 return IndexValueCapability.NO;
             }
         };
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, new int[]{1}, new int[]{1} );
+        FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext( NODE, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor index = IndexPrototype.forSchema( schema, providerDescriptor )
                 .withName( "index_1" ).materialise( 1 ).withIndexCapability( capability );

@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.KernelVersion;
@@ -115,7 +115,7 @@ class IntegrityValidatorTest
         IntegrityValidator validator = new IntegrityValidator( store );
         validator.setIndexValidator( indexes );
 
-        var index = IndexPrototype.forSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) )
+        var index = IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) )
                                   .withIndexType( IndexType.LOOKUP )
                                   .withName( "any name" )
                                   .materialise( 4 );
@@ -139,7 +139,7 @@ class IntegrityValidatorTest
         IntegrityValidator validator = new IntegrityValidator( store );
         validator.setIndexValidator( indexes );
 
-        var index = IndexPrototype.forSchema( SchemaDescriptor.forRelType( 3, 14 ) )
+        var index = IndexPrototype.forSchema( SchemaDescriptors.forRelType( 3, 14 ) )
                                   .withIndexType( IndexType.BTREE )
                                   .withName( "any name" )
                                   .materialise( 4 );

@@ -57,6 +57,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -375,7 +376,7 @@ public class AllStoreHolder extends Read
 
     IndexDescriptor findUsableTokenIndex( EntityType entityType ) throws IndexNotFoundKernelException
     {
-        var descriptor = SchemaDescriptor.forAnyEntityTokens( entityType );
+        var descriptor = SchemaDescriptors.forAnyEntityTokens( entityType );
         var indexes = index( descriptor );
         if ( indexes.hasNext() )
         {

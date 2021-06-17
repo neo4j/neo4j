@@ -34,6 +34,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
@@ -143,7 +144,7 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public double indexUniqueValueSelectivity( int labelId, int... propertyKeyIds )
             {
-                SchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
+                SchemaDescriptor descriptor = SchemaDescriptors.forLabel( labelId, propertyKeyIds );
                 IndexStatistics result1 = regularIndices.getIndex( descriptor );
                 IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
                 return result2 == null ? Double.NaN : result2.uniqueValuesPercentage;
@@ -152,7 +153,7 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public double indexPropertyExistsSelectivity( int labelId, int... propertyKeyIds )
             {
-                SchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
+                SchemaDescriptor descriptor = SchemaDescriptors.forLabel( labelId, propertyKeyIds );
                 IndexStatistics result1 = regularIndices.getIndex( descriptor );
                 IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
                 double indexSize = result2 == null ? Double.NaN : result2.size;

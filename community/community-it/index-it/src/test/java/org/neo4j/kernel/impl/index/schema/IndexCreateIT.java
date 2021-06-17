@@ -31,7 +31,7 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
 public class IndexCreateIT extends KernelIntegrationTest
 {
@@ -85,7 +85,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{labelId, labelId}, new int[]{propId} );
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptors.fulltext( EntityType.NODE, new int[]{labelId, labelId}, new int[]{propId} );
         // then
         assertThrows( RepeatedLabelInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
     }
@@ -102,7 +102,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{relTypeId, relTypeId}, new int[]{propId} );
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[]{relTypeId, relTypeId}, new int[]{propId} );
         // then
         assertThrows( RepeatedRelationshipTypeInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
     }
@@ -119,7 +119,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{labelId}, new int[]{propId, propId} );
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptors.fulltext( EntityType.NODE, new int[]{labelId}, new int[]{propId, propId} );
         // then
         assertThrows( RepeatedPropertyInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
     }

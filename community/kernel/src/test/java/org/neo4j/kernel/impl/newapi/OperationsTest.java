@@ -48,7 +48,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -107,7 +107,7 @@ abstract class OperationsTest
     protected DefaultRelationshipScanCursor relationshipCursor;
     protected TransactionState txState;
     protected AllStoreHolder allStoreHolder;
-    protected final LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( 123, 456 );
+    protected final LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( 123, 456 );
     protected StorageReader storageReader;
     protected StorageSchemaReader storageReaderSnapshot;
     protected ConstraintIndexCreator constraintIndexCreator;

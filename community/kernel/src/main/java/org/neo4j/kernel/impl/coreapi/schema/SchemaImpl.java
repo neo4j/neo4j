@@ -64,6 +64,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -84,10 +85,10 @@ import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.map;
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
-import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
+import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
+import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
 import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.labelNameList;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
@@ -744,7 +745,7 @@ public class SchemaImpl implements Schema
         {
             try
             {
-                var schema = SchemaDescriptor.forAnyEntityTokens(
+                var schema = SchemaDescriptors.forAnyEntityTokens(
                         tokens == AnyTokens.ANY_LABELS ? EntityType.NODE : EntityType.RELATIONSHIP );
                 var indexDescriptor = createIndex( indexName, schema, IndexType.LOOKUP, indexConfig );
                 if ( tokens == AnyTokens.ANY_LABELS )

@@ -46,7 +46,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -102,7 +102,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 @EphemeralPageCacheExtension
 class BlockBasedIndexPopulatorTest
 {
-    private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptor.forLabel( 1, 1 );
+    private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptors.forLabel( 1, 1 );
     private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withName( "index" ).materialise( 1 );
     public static final int SUFFICIENTLY_LARGE_BUFFER_SIZE = (int) ByteUnit.kibiBytes( 50 );
     private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;

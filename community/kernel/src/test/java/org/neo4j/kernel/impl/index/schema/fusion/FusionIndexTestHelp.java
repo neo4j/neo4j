@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -50,8 +50,8 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 
 final class FusionIndexTestHelp
 {
-    private static final LabelSchemaDescriptor INDEX_KEY = SchemaDescriptor.forLabel( 0, 0 );
-    private static final LabelSchemaDescriptor COMPOSITE_INDEX_KEY = SchemaDescriptor.forLabel( 0, 0, 1 );
+    private static final LabelSchemaDescriptor INDEX_KEY = SchemaDescriptors.forLabel( 0, 0 );
+    private static final LabelSchemaDescriptor COMPOSITE_INDEX_KEY = SchemaDescriptors.forLabel( 0, 0, 1 );
 
     private static final Value[] stringValues = new Value[]
             {

@@ -37,7 +37,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
@@ -138,7 +138,7 @@ public class IndexProcedures
         try
         {
             SchemaWrite schemaWrite = ktx.schemaWrite();
-            LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
+            LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptors.forLabel( labelId, propertyKeyIds );
             indexCreator.create( schemaWrite, name, labelSchemaDescriptor, indexProviderDescriptor, indexConfig );
             return Stream.of( new BuiltInProcedures.SchemaIndexInfo( name, labels, properties, indexProviderDescriptor.name(), statusMessage ) );
         }

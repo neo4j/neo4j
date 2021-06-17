@@ -86,7 +86,7 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringSuffix;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;

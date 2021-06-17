@@ -30,7 +30,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DoubleArray;
@@ -51,7 +51,7 @@ class GenericNativeIndexProviderTest
         // Given
         DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, DEFAULT_DATABASE_NAME ).build();
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
-        LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 );
+        LabelSchemaDescriptor incompleteSchema = SchemaDescriptors.forLabel( 1, 1 );
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
                 .withName( "index" ).materialise( 1 );
 
@@ -82,7 +82,7 @@ class GenericNativeIndexProviderTest
         existingSettings.put( spatialMinSettingForCrs( existingCrs ).getSettingName(), min );
         existingSettings.put( spatialMaxSettingForCrs( existingCrs ).getSettingName(), max );
         IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
-        LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 );
+        LabelSchemaDescriptor incompleteSchema = SchemaDescriptors.forLabel( 1, 1 );
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
                 .withName( "index" ).materialise( 1 ).withIndexConfig( existingIndexConfig );
 

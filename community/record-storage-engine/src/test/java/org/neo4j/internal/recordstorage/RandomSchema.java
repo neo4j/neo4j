@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -229,22 +230,22 @@ public class RandomSchema implements Supplier<SchemaRule>
 
     public LabelSchemaDescriptor nextNodeSchema()
     {
-        return SchemaDescriptor.forLabel( nextLabelId(), nextPropertyKeyIdsArray() );
+        return SchemaDescriptors.forLabel( nextLabelId(), nextPropertyKeyIdsArray() );
     }
 
     public RelationTypeSchemaDescriptor nextRelationshipSchema()
     {
-        return SchemaDescriptor.forRelType( nextRelationshipTypeId(), nextPropertyKeyIdsArray() );
+        return SchemaDescriptors.forRelType( nextRelationshipTypeId(), nextPropertyKeyIdsArray() );
     }
 
     public SchemaDescriptor nextNodeFulltextSchema()
     {
-        return SchemaDescriptor.fulltext( EntityType.NODE, nextLabelIdsArray(), nextPropertyKeyIdsArray() );
+        return SchemaDescriptors.fulltext( EntityType.NODE, nextLabelIdsArray(), nextPropertyKeyIdsArray() );
     }
 
     public SchemaDescriptor nextRelationshipFulltextSchema()
     {
-        return SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, nextRelationTypeIdsArray(), nextPropertyKeyIdsArray() );
+        return SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, nextRelationTypeIdsArray(), nextPropertyKeyIdsArray() );
     }
 
     public int nextRuleId()

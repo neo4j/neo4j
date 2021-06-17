@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.test.rule.RecordStorageEngineRule;
@@ -112,7 +112,7 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
 
         // When
         Set<ConstraintDescriptor> constraints = asSet( storageReader.constraintsGetForSchema(
-                SchemaDescriptor.forLabel( labelId( label1 ), propertyKeyId( propertyKey ) ) ) );
+                SchemaDescriptors.forLabel( labelId( label1 ), propertyKeyId( propertyKey ) ) ) );
 
         // Then
         Set<ConstraintDescriptor> expected = asSet(
@@ -156,7 +156,7 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
         int relTypeId = relationshipTypeId( relType1 );
         int propKeyId = propertyKeyId( propertyKey );
         Set<ConstraintDescriptor> constraints = asSet(
-                storageReader.constraintsGetForSchema( SchemaDescriptor.forRelType( relTypeId, propKeyId ) ) );
+                storageReader.constraintsGetForSchema( SchemaDescriptors.forRelType( relTypeId, propKeyId ) ) );
 
         // Then
         Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(

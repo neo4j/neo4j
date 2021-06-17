@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
@@ -85,8 +85,8 @@ class SchemaRuleMigrationTest
     @Test
     void mustEnsureThatMigratedSchemaRuleNamesAreUnique() throws KernelException
     {
-        SchemaRule rule1 = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "a" ).materialise( 1 );
-        SchemaRule rule2 = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 3 ) ).withName( "a" ).materialise( 2 );
+        SchemaRule rule1 = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withName( "a" ).materialise( 1 );
+        SchemaRule rule2 = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 3 ) ).withName( "a" ).materialise( 2 );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "a", 2 ), new NamedToken( "b", 3 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule1, rule2 ) );
@@ -100,7 +100,7 @@ class SchemaRuleMigrationTest
     @Test
     void constraintsWithoutNamesMustBeGivenGeneratedOnes() throws KernelException
     {
-        SchemaRule rule = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withId( 1 );
+        SchemaRule rule = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withId( 1 );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule ) );
@@ -114,7 +114,7 @@ class SchemaRuleMigrationTest
     @Test
     void mustOverwritePreviousDefaultIndexNames() throws KernelException
     {
-        SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "index_1" ).materialise( 1 );
+        SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withName( "index_1" ).materialise( 1 );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule ) );
@@ -128,7 +128,7 @@ class SchemaRuleMigrationTest
     @Test
     void mustOverwritePreviousDefaultConstraintNames() throws KernelException
     {
-        SchemaRule rule = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withId( 1 ).withName( "constraint_1" );
+        SchemaRule rule = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withId( 1 ).withName( "constraint_1" );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule ) );
@@ -142,8 +142,8 @@ class SchemaRuleMigrationTest
     @Test
     void mustEnsureUniqueNamesEvenWhenOldNamesMatchesNewDefaults() throws KernelException
     {
-        SchemaRule rule1 = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withId( 1 );
-        SchemaRule rule2 = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withId( 2 );
+        SchemaRule rule1 = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withId( 1 );
+        SchemaRule rule2 = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withId( 2 );
         srcTokenHolders.labelTokens().setInitialTokens( List.of( new NamedToken( "Label", 1 ) ) );
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ), new NamedToken( "bla", 3 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule1, rule2 ) );

@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -152,8 +152,8 @@ class IndexPopulationFlipRaceIT
             int keyAId = tx.tokenRead().propertyKey( keyA( i ) );
             int labelBId = tx.tokenRead().nodeLabel( labelB( i ).name() );
             int keyBId = tx.tokenRead().propertyKey( keyB( i ) );
-            IndexDescriptor indexA = single( tx.schemaRead().index( SchemaDescriptor.forLabel( labelAId, keyAId ) ) );
-            IndexDescriptor indexB = single( tx.schemaRead().index( SchemaDescriptor.forLabel( labelBId, keyBId ) ) );
+            IndexDescriptor indexA = single( tx.schemaRead().index( SchemaDescriptors.forLabel( labelAId, keyAId ) ) );
+            IndexDescriptor indexB = single( tx.schemaRead().index( SchemaDescriptors.forLabel( labelBId, keyBId ) ) );
 
             var indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
             try ( var valueIndexReaderA = indexingService.getIndexProxy( indexA ).newValueReader();

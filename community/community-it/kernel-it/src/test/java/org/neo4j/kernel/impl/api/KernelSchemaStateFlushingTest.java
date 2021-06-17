@@ -31,7 +31,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
@@ -155,7 +155,7 @@ class KernelSchemaStateFlushingTest
         try ( KernelTransaction transaction = beginTransaction() )
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
-                    IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propId ) ) );
+                    IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( labelId, propId ) ) );
             transaction.commit();
             return descriptor;
         }
@@ -174,7 +174,7 @@ class KernelSchemaStateFlushingTest
     {
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propId );
+            LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propId );
             IndexDescriptor reference = transaction.schemaWrite().indexCreate( schema, null );
             transaction.commit();
             return reference;

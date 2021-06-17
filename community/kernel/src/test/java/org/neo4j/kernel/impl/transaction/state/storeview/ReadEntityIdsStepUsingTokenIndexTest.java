@@ -35,7 +35,7 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -71,7 +71,7 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 class ReadEntityIdsStepUsingTokenIndexTest
 {
     private static final int TOKEN_ID = 0;
-    private static final AnyTokenSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptor.forAnyEntityTokens( EntityType.NODE );
+    private static final AnyTokenSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptors.forAnyEntityTokens( EntityType.NODE );
     private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withName( "index" ).materialise( 1 );
 
     @Inject

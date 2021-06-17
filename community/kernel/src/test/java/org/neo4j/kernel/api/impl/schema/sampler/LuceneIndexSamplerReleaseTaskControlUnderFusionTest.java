@@ -64,7 +64,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.logging.NullLogProvider.getInstance;

@@ -55,6 +55,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -173,7 +174,7 @@ class IndexPopulationJobTest
         TrackingIndexPopulator populator = new TrackingIndexPopulator( actualPopulator );
         int label = tokenHolders.labelTokens().getIdByName( FIRST.name() );
         int prop = tokenHolders.propertyKeyTokens().getIdByName( name );
-        LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( label, prop );
+        LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel( label, prop );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, IndexPrototype.forSchema( descriptor ) );
 
         // WHEN
@@ -198,7 +199,7 @@ class IndexPopulationJobTest
         TrackingIndexPopulator populator = new TrackingIndexPopulator( actualPopulator );
         int label = tokenHolders.labelTokens().getIdByName( FIRST.name() );
         int prop = tokenHolders.propertyKeyTokens().getIdByName( name );
-        LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( label, prop );
+        LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel( label, prop );
         var pageCacheTracer = new DefaultPageCacheTracer();
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, IndexPrototype.forSchema( descriptor ),
                 pageCacheTracer );
@@ -229,7 +230,7 @@ class IndexPopulationJobTest
         long relationship = createRelationship( map( name, age ), likes, nodeId, nodeId );
         int relType = tokenHolders.relationshipTypeTokens().getIdByName( likes.name() );
         int propertyId = tokenHolders.propertyKeyTokens().getIdByName( name );
-        IndexPrototype descriptor = IndexPrototype.forSchema( SchemaDescriptor.forRelType( relType, propertyId ) );
+        IndexPrototype descriptor = IndexPrototype.forSchema( SchemaDescriptors.forRelType( relType, propertyId ) );
         IndexPopulator actualPopulator = indexPopulator( descriptor );
         TrackingIndexPopulator populator = new TrackingIndexPopulator( actualPopulator );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor );
@@ -255,7 +256,7 @@ class IndexPopulationJobTest
         long relationship = createRelationship( map( name, age ), likes, nodeId, nodeId );
         int rel = tokenHolders.relationshipTypeTokens().getIdByName( likes.name() );
         int prop = tokenHolders.propertyKeyTokens().getIdByName( name );
-        IndexPrototype descriptor = IndexPrototype.forSchema( SchemaDescriptor.forRelType( rel, prop ) );
+        IndexPrototype descriptor = IndexPrototype.forSchema( SchemaDescriptors.forRelType( rel, prop ) );
         IndexPopulator actualPopulator = indexPopulator( descriptor );
         TrackingIndexPopulator populator = new TrackingIndexPopulator( actualPopulator );
         var pageCacheTracer = new DefaultPageCacheTracer();
@@ -308,7 +309,7 @@ class IndexPopulationJobTest
         TrackingIndexPopulator populator = new TrackingIndexPopulator( actualPopulator );
         int label = tokenHolders.labelTokens().getIdByName( FIRST.name() );
         int prop = tokenHolders.propertyKeyTokens().getIdByName( name );
-        LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( label, prop );
+        LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel( label, prop );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, IndexPrototype.forSchema( descriptor ) );
 
         // WHEN
@@ -342,7 +343,7 @@ class IndexPopulationJobTest
 
         int rel = tokenHolders.relationshipTypeTokens().getIdByName( likes.name() );
         int prop = tokenHolders.propertyKeyTokens().getIdByName( name );
-        IndexPrototype descriptor = IndexPrototype.forSchema( SchemaDescriptor.forRelType( rel, prop ) );
+        IndexPrototype descriptor = IndexPrototype.forSchema( SchemaDescriptors.forRelType( rel, prop ) );
         IndexPopulator actualPopulator = indexPopulator( descriptor );
         TrackingIndexPopulator populator = new TrackingIndexPopulator( actualPopulator );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor );
@@ -697,7 +698,7 @@ class IndexPopulationJobTest
             this.nodeToChange = nodeToChange;
             this.previousValue = Values.of( previousValue );
             this.newValue = Values.of( newValue );
-            this.index = SchemaDescriptor.forLabel( label, propertyKeyId );
+            this.index = SchemaDescriptors.forLabel( label, propertyKeyId );
         }
 
         @Override
@@ -764,7 +765,7 @@ class IndexPopulationJobTest
         {
             this.nodeToDelete = nodeToDelete;
             this.valueToDelete = Values.of( valueToDelete );
-            this.index = SchemaDescriptor.forLabel( label, propertyKeyId );
+            this.index = SchemaDescriptors.forLabel( label, propertyKeyId );
         }
 
         void setJob( IndexPopulationJob job )
@@ -882,7 +883,7 @@ class IndexPopulationJobTest
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
-            SchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId );
+            SchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyKeyId );
             IndexPrototype descriptor = constraint ?
                                         IndexPrototype.uniqueForSchema( schema, PROVIDER_DESCRIPTOR ) :
                                         IndexPrototype.forSchema( schema, PROVIDER_DESCRIPTOR );

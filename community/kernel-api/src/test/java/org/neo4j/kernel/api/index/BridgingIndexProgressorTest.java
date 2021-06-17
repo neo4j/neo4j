@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,7 +34,7 @@ class BridgingIndexProgressorTest
     @Test
     void closeMustCloseAll()
     {
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 0 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "a" ).materialise( 0 );
         BridgingIndexProgressor progressor = new BridgingIndexProgressor( null, index.schema().getPropertyIds() );
 
         IndexProgressor[] parts = {mock(IndexProgressor.class), mock(IndexProgressor.class)};

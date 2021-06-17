@@ -30,7 +30,7 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexValueCapability;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -157,6 +157,6 @@ class IndexSizesTest
 
     private static IndexPrototype prototype()
     {
-        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1, 2 ) ).withName( "foo" );
+        return IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 1, 2 ) ).withName( "foo" );
     }
 }

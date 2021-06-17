@@ -33,8 +33,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -90,7 +90,7 @@ class MultipleIndexPopulatorTest
     @Inject
     private JobScheduler jobScheduler;
 
-    private final SchemaDescriptorSupplier index1 = () -> SchemaDescriptor.forLabel( 1, 1 );
+    private final SchemaDescriptorSupplier index1 = () -> SchemaDescriptors.forLabel( 1, 1 );
     private IndexStoreView indexStoreView;
     private SchemaState schemaState;
     private MultipleIndexPopulator multipleIndexPopulator;
@@ -541,7 +541,7 @@ class MultipleIndexPopulatorTest
         String largeString = random.nextAlphaNumericString( 100_000, 100_000 );
         int roughlyNumUpdates = (int) (multipleIndexPopulator.batchMaxByteSizeScan / HeapEstimator.sizeOf( largeString ));
         Value largeStringValue = Values.stringValue( largeString );
-        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
         multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
         boolean full = false;
 
@@ -570,7 +570,7 @@ class MultipleIndexPopulatorTest
         IndexUpdater updater = mock( IndexUpdater.class );
         IndexPopulator populator = createIndexPopulator( updater );
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        var schema = SchemaDescriptor.forLabel( 1, 1 );
+        var schema = SchemaDescriptors.forLabel( 1, 1 );
         addPopulator( populator, 1 );
 
         // when external updates comes in
@@ -634,7 +634,7 @@ class MultipleIndexPopulatorTest
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator,
         int id, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( id, id ) ).withName( "index_" + id ).materialise( id );
+        IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( id, id ) ).withName( "index_" + id ).materialise( id );
         return addPopulator( multipleIndexPopulator, descriptor, indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
     }
 

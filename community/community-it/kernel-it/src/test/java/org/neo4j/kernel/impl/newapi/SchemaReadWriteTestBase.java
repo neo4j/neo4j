@@ -38,7 +38,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.values.storable.Values;
@@ -54,9 +54,9 @@ import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.schema.IndexDescriptor.NO_INDEX;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
-import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
+import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
 
 public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
@@ -97,7 +97,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ).hasNext() );
+            assertFalse( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ).hasNext() );
         }
     }
 
@@ -114,7 +114,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat( single( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ) ) ).isEqualTo( index );
+            assertThat( single( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ) ) ).isEqualTo( index );
         }
     }
 
@@ -178,7 +178,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ).hasNext() );
+            assertFalse( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ).hasNext() );
         }
     }
 
@@ -201,7 +201,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ).hasNext() );
+            assertFalse( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ).hasNext() );
         }
     }
 
@@ -224,7 +224,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop1 ) ).hasNext() );
+            assertFalse( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ).hasNext() );
         }
     }
 
@@ -1088,7 +1088,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( existing ) );
 
-            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( label, prop2 ) ).hasNext() );
+            assertFalse( schemaRead.index( SchemaDescriptors.forLabel( label, prop2 ) ).hasNext() );
             assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEmpty();
             assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEmpty();
             assertThat( asList( before.constraintsGetForLabel( label ) ) ).isEmpty();
@@ -1204,7 +1204,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( existing ) );
 
-            assertFalse( schemaRead.index( SchemaDescriptor.forLabel( type, prop2 ) ).hasNext() );
+            assertFalse( schemaRead.index( SchemaDescriptors.forLabel( type, prop2 ) ).hasNext() );
             assertThat( asList( schemaRead.constraintsGetForLabel( label ) ) ).isEmpty();
             assertThat( asList( schemaRead.snapshot().constraintsGetForLabel( label ) ) ).isEmpty();
             assertThat( asList( before.constraintsGetForLabel( label ) ) ).isEmpty();

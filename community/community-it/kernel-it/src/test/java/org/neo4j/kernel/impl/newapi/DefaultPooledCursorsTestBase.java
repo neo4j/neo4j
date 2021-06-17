@@ -45,6 +45,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.EmptyMemoryTracker;
 
@@ -287,7 +288,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, array( connection ), array( name ) );
+            SchemaDescriptor schema = SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, array( connection ), array( name ) );
             IndexPrototype prototype = IndexPrototype.forSchema( schema, DESCRIPTOR ).withName( indexName ).withIndexType( IndexType.FULLTEXT );
             index = tx.schemaWrite().indexCreate( prototype );
             tx.commit();
@@ -319,7 +320,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
     private static TokenReadSession getTokenReadSession( KernelTransaction tx, EntityType entityType ) throws IndexNotFoundKernelException
     {
-        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( entityType ) );
         IndexDescriptor index = indexes.next();
         assertThat( indexes.hasNext() ).isFalse();
         return tx.dataRead().tokenReadSession( index );

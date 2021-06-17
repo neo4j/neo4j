@@ -30,7 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -135,7 +135,7 @@ public class DynamicIndexStoreView implements IndexStoreView
 
     private Optional<TokenIndexData> findTokenIndex( Supplier<StorageReader> storageReader, EntityType entityType )
     {
-        Iterator<IndexDescriptor> descriptorIterator = storageReader.get().indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        Iterator<IndexDescriptor> descriptorIterator = storageReader.get().indexGetForSchema( SchemaDescriptors.forAnyEntityTokens( entityType ) );
         if ( !descriptorIterator.hasNext() )
         {
             return Optional.empty();

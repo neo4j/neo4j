@@ -43,7 +43,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.test.Race;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -173,7 +173,7 @@ public class ParallelPartitionedNodeLabelScanTest extends KernelAPIReadTestBase<
 
     private TokenReadSession nodeLabelIndexSession() throws IndexNotFoundKernelException
     {
-        var indexes = schemaRead.index( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+        var indexes = schemaRead.index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
         assertThat( indexes.hasNext() ).as( "NLI exists" ).isTrue();
         var nli = indexes.next();
         softly.assertThat( indexes.hasNext() ).as( "only one NLI exists" ).isFalse();

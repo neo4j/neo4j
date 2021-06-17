@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.values.storable.Value;
@@ -136,7 +137,7 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
     @Override
     public SchemaDescriptor schemaDescriptor( int tokenId, int propId )
     {
-        return SchemaDescriptor.forRelType( tokenId, propId );
+        return SchemaDescriptors.forRelType( tokenId, propId );
     }
 
     @Override

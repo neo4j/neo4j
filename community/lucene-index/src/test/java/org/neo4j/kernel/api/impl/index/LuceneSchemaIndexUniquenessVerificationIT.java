@@ -58,7 +58,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
 @TestDirectoryExtension
 class LuceneSchemaIndexUniquenessVerificationIT

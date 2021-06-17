@@ -56,7 +56,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -545,7 +545,7 @@ public class Database extends LifecycleAdapter
 
     private void createLookupIndex( KernelTransaction tx, EntityType entityType ) throws KernelException
     {
-        var descriptor = SchemaDescriptor.forAnyEntityTokens( entityType );
+        var descriptor = SchemaDescriptors.forAnyEntityTokens( entityType );
 
         IndexPrototype prototype = IndexPrototype.forSchema( descriptor ).withIndexType( LOOKUP )
                                                  .withIndexProvider( indexProviderMap.getTokenIndexProvider().getProviderDescriptor() );

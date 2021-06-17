@@ -49,16 +49,16 @@ abstract class SchemaRuleTestBase
 
     static IndexPrototype forLabel( int labelId, int... propertyIds )
     {
-        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER );
+        return IndexPrototype.forSchema( SchemaDescriptors.forLabel( labelId, propertyIds ), PROVIDER );
     }
 
     static IndexPrototype uniqueForLabel( int labelId, int... propertyIds )
     {
-        return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER );
+        return IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ), PROVIDER );
     }
 
     static IndexPrototype namedUniqueForLabel( String name, int labelId, int... propertyIds )
     {
-        return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER ).withName( name );
+        return IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ), PROVIDER ).withName( name );
     }
 }

@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -45,7 +45,7 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexPopulatorTests<KEY,VALUE>
 {
     private static final IndexDescriptor uniqueDescriptor =
-            IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 42, 666 ) ).withName( "constraint" ).materialise( 0 );
+            IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( 42, 666 ) ).withName( "constraint" ).materialise( 0 );
 
     private final NativeIndexPopulatorTestCases.PopulatorFactory<KEY, VALUE> populatorFactory;
     private final ValueType[] typesOfGroup;

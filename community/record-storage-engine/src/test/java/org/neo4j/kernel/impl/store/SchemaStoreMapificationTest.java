@@ -32,7 +32,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.values.storable.Value;
@@ -55,10 +55,10 @@ class SchemaStoreMapificationTest
 {
     private static final RandomSchema RANDOM_SCHEMA = new RandomSchema();
 
-    private LabelSchemaDescriptor labelSchema = SchemaDescriptor.forLabel( 1, 2, 3 );
-    private RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptor.forRelType( 1, 2, 3 );
-    private FulltextSchemaDescriptor fulltextNodeSchema = SchemaDescriptor.fulltext( NODE, new int[]{1, 2}, new int[]{1, 2} );
-    private FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
+    private LabelSchemaDescriptor labelSchema = SchemaDescriptors.forLabel( 1, 2, 3 );
+    private RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptors.forRelType( 1, 2, 3 );
+    private FulltextSchemaDescriptor fulltextNodeSchema = SchemaDescriptors.fulltext( NODE, new int[]{1, 2}, new int[]{1, 2} );
+    private FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
     private IndexProviderDescriptor tree = new IndexProviderDescriptor( NATIVE_BTREE10.providerKey(), NATIVE_BTREE10.providerVersion() );
     private IndexProviderDescriptor fts = new IndexProviderDescriptor( "fulltext", "1.0" );
     private IndexDescriptor labelIndex = forSchema( labelSchema, tree ).withName( "labelIndex" ).materialise( 1 );

@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;

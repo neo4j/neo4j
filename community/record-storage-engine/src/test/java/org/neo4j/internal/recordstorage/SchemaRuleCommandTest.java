@@ -32,8 +32,8 @@ import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.ByteUnit;
@@ -72,7 +72,7 @@ class SchemaRuleCommandTest
     private NeoStoreTransactionApplierFactory storeApplier;
     private final IndexTransactionApplierFactory indexApplier = new IndexTransactionApplierFactory( indexUpdateListener );
     private final LogCommandSerialization serialization = LogCommandSerializationV4_2.INSTANCE;
-    private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyKey ) ).withName( "index" ).materialise( id );
+    private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptors.forLabel( labelId, propertyKey ) ).withName( "index" ).materialise( id );
 
     @BeforeEach
     void setup()

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.Value;
@@ -40,7 +40,7 @@ import static org.neo4j.values.storable.Values.of;
 
 class LuceneIndexValueValidatorTest
 {
-    private static final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withName( "test" ).materialise( 1 );
+    private static final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 1 ) ).withName( "test" ).materialise( 1 );
     private static final IndexValueValidator VALIDATOR = new LuceneIndexValueValidator( descriptor, SIMPLE_TOKEN_LOOKUP );
     private static final long ENTITY_ID = 42;
 

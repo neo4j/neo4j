@@ -51,7 +51,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
@@ -462,7 +462,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
 
     private static TokenReadSession getTokenReadSession( KernelTransaction tx, EntityType entityType ) throws IndexNotFoundKernelException
     {
-        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( entityType ) );
         IndexDescriptor index = indexes.next();
         assertFalse( indexes.hasNext() );
         return tx.dataRead().tokenReadSession( index );

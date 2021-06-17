@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 
@@ -131,7 +132,7 @@ public class NodeParams implements EntityParams<NodeValueIndexCursor>
     @Override
     public SchemaDescriptor schemaDescriptor( int tokenId, int propId )
     {
-        return SchemaDescriptor.forLabel( tokenId, propId );
+        return SchemaDescriptors.forLabel( tokenId, propId );
     }
 
     @Override

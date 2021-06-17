@@ -61,6 +61,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -709,7 +710,7 @@ class BatchInsertTest
             tx.schema().indexFor( label( "Hacker" ) ).on( "handle" ).create();
             var labelId = ((TransactionImpl) tx).kernelTransaction().tokenRead().nodeLabel( "Hacker" );
             var propId = ((TransactionImpl) tx).kernelTransaction().tokenRead().propertyKey( "handle" );
-            schema = SchemaDescriptor.forLabel( labelId, propId );
+            schema = SchemaDescriptors.forLabel( labelId, propId );
             tx.commit();
         }
 

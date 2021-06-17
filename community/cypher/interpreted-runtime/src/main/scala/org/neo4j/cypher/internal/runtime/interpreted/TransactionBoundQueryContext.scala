@@ -96,6 +96,7 @@ import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptor
+import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants
@@ -375,19 +376,19 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = {
     val descriptor = entityType match {
-      case EntityType.NODE         => SchemaDescriptor.forLabel(entityId, properties: _*)
-      case EntityType.RELATIONSHIP => SchemaDescriptor.forRelType(entityId, properties: _*)
+      case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, properties: _*)
+      case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, properties: _*)
     }
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
 
   override def lookupIndexReference(entityType: EntityType): IndexDescriptor = {
-    val descriptor = SchemaDescriptor.forAnyEntityTokens(entityType)
+    val descriptor = SchemaDescriptors.forAnyEntityTokens(entityType)
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
 
   override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor = {
-    val descriptor = SchemaDescriptor.fulltext(entityType, entityIds.toArray, properties.toArray)
+    val descriptor = SchemaDescriptors.fulltext(entityType, entityIds.toArray, properties.toArray)
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
 
@@ -903,8 +904,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
     val descriptor = entityType match {
-      case EntityType.NODE         => SchemaDescriptor.forLabel(entityId, propertyKeyIds: _*)
-      case EntityType.RELATIONSHIP => SchemaDescriptor.forRelType(entityId, propertyKeyIds: _*)
+      case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, propertyKeyIds: _*)
+      case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, propertyKeyIds: _*)
     }
     try {
       if (provider.isEmpty)
@@ -918,7 +919,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
-    val descriptor = SchemaDescriptor.forAnyEntityTokens(entityType)
+    val descriptor = SchemaDescriptors.forAnyEntityTokens(entityType)
     val prototype = IndexPrototype.forSchema(descriptor).withIndexType(IndexType.LOOKUP)
     val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
     try {
@@ -935,7 +936,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                     provider: Option[IndexProviderDescriptor],
                                     indexConfig: IndexConfig): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
-    val descriptor = SchemaDescriptor.fulltext(entityType, entityIds.toArray, propertyKeyIds.toArray)
+    val descriptor = SchemaDescriptors.fulltext(entityType, entityIds.toArray, propertyKeyIds.toArray)
     val prototype =
       provider.map(p => IndexPrototype.forSchema(descriptor, p)).getOrElse(IndexPrototype.forSchema(descriptor))
         .withIndexType(IndexType.FULLTEXT)
@@ -959,7 +960,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .indexDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*))
+      .indexDrop(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*))
 
   override def dropIndexRule(name: String): Unit =
     transactionalContext.kernelTransaction.schemaWrite().indexDrop(name)
@@ -1001,8 +1002,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaRead().constraintGetForName(name) != null
 
   override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
-    transactionalContext.kernelTransaction.schemaRead().constraintsGetForSchema(SchemaDescriptor.forLabel(entityId, properties: _*)).asScala.exists(matchFn) ||
-      transactionalContext.kernelTransaction.schemaRead().constraintsGetForSchema(SchemaDescriptor.forRelType(entityId, properties: _*)).asScala.exists(matchFn)
+    transactionalContext.kernelTransaction.schemaRead().constraintsGetForSchema(SchemaDescriptors.forLabel(entityId, properties: _*)).asScala.exists(matchFn) ||
+      transactionalContext.kernelTransaction.schemaRead().constraintsGetForSchema(SchemaDescriptors.forRelType(entityId, properties: _*)).asScala.exists(matchFn)
 
   override def createNodeKeyConstraint(labelId: Int,
                                        propertyKeyIds: Seq[Int],
@@ -1010,14 +1011,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                        provider: Option[String],
                                        indexConfig: IndexConfig): Unit = {
     val schemaWrite = transactionalContext.kernelTransaction.schemaWrite()
-    val indexPrototype = if (provider.isEmpty) IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*))
-                         else IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), schemaWrite.indexProviderByName(provider.get))
+    val indexPrototype = if (provider.isEmpty) IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*))
+                         else IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), schemaWrite.indexProviderByName(provider.get))
     schemaWrite.nodeKeyConstraintCreate(indexPrototype.withName(name.orNull).withIndexConfig(indexConfig))
   }
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE_EXISTS)
+      .constraintDrop(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE_EXISTS)
 
   override def createUniqueConstraint(labelId: Int,
                                       propertyKeyIds: Seq[Int],
@@ -1025,31 +1026,31 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                       provider: Option[String],
                                       indexConfig: IndexConfig): Unit = {
     val schemaWrite = transactionalContext.kernelTransaction.schemaWrite()
-    val indexPrototype = if (provider.isEmpty) IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*))
-                         else IndexPrototype.uniqueForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), schemaWrite.indexProviderByName(provider.get))
+    val indexPrototype = if (provider.isEmpty) IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*))
+                         else IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), schemaWrite.indexProviderByName(provider.get))
     schemaWrite.uniquePropertyConstraintCreate(indexPrototype.withName(name.orNull).withIndexConfig(indexConfig))
   }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE)
+      .constraintDrop(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE)
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().nodePropertyExistenceConstraintCreate(
-      SchemaDescriptor.forLabel(labelId, propertyKeyId), name.orNull)
+      SchemaDescriptors.forLabel(labelId, propertyKeyId), name.orNull)
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(SchemaDescriptor.forLabel(labelId, propertyKeyId), ConstraintType.EXISTS)
+      .constraintDrop(SchemaDescriptors.forLabel(labelId, propertyKeyId), ConstraintType.EXISTS)
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int,
                                                              name: Option[String]): Unit =
     transactionalContext.kernelTransaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-      SchemaDescriptor.forRelType(relTypeId, propertyKeyId), name.orNull)
+      SchemaDescriptors.forRelType(relTypeId, propertyKeyId), name.orNull)
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(SchemaDescriptor.forRelType(relTypeId, propertyKeyId), ConstraintType.EXISTS)
+      .constraintDrop(SchemaDescriptors.forRelType(relTypeId, propertyKeyId), ConstraintType.EXISTS)
 
   override def dropNamedConstraint(name: String): Unit =
     transactionalContext.kernelTransaction.schemaWrite().constraintDrop(name)

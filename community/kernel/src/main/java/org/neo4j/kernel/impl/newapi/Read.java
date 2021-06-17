@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -218,7 +219,7 @@ abstract class Read implements TxStateHolder,
         TokenScan tokenScan;
         try
         {
-            Iterator<IndexDescriptor> index = index( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+            Iterator<IndexDescriptor> index = index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
             if ( !index.hasNext() )
             {
                 throw new IndexNotFoundKernelException( "There is no index that can back a node label scan." );
@@ -528,14 +529,14 @@ abstract class Read implements TxStateHolder,
     @Override
     public void acquireSharedLookupLock( EntityType entityType )
     {
-        acquireSharedSchemaLock( () -> SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        acquireSharedSchemaLock( () -> SchemaDescriptors.forAnyEntityTokens( entityType ) );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedLookupLock( EntityType entityType )
     {
-        releaseSharedSchemaLock( () -> SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        releaseSharedSchemaLock( () -> SchemaDescriptors.forAnyEntityTokens( entityType ) );
         ktx.assertOpen();
     }
 }

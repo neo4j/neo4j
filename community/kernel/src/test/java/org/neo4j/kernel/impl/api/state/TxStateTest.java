@@ -53,6 +53,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -91,7 +92,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Pair.of;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @ExtendWith( RandomExtension.class )
@@ -102,7 +103,7 @@ abstract class TxStateTest
 
     private final IndexDescriptor indexOn_1_1 = TestIndexDescriptorFactory.forLabel( 1, 1 );
     private final IndexDescriptor indexOn_2_1 = TestIndexDescriptorFactory.forLabel( 2, 1 );
-    private final IndexDescriptor indexOnRels = TestIndexDescriptorFactory.forSchema( SchemaDescriptor.forRelType( 3, 1 ) );
+    private final IndexDescriptor indexOnRels = TestIndexDescriptorFactory.forSchema( SchemaDescriptors.forRelType( 3, 1 ) );
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private CollectionsFactory collectionsFactory;
     private TxState state;

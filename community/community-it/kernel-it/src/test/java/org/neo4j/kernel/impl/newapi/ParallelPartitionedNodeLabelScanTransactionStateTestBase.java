@@ -26,12 +26,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -40,7 +37,7 @@ import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -155,7 +152,7 @@ public abstract class ParallelPartitionedNodeLabelScanTransactionStateTestBase<G
 
     protected TokenReadSession nodeLabelIndexSession( KernelTransaction tx ) throws IndexNotFoundKernelException
     {
-        final var indexes = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+        final var indexes = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
         assertThat( indexes.hasNext() ).as( "NLI exists" ).isTrue();
         final var nli = indexes.next();
         softly.assertThat( indexes.hasNext() ).as( "only one NLI exists" ).isFalse();

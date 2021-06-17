@@ -38,7 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -109,7 +109,7 @@ class IndexCRUDIT
             TokenRead tokenRead = ktx.tokenRead();
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );
-            var descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
+            var descriptor = SchemaDescriptors.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), () -> descriptor, Values.of( value1 ) ) ) );
             tx.commit();
         }
@@ -150,7 +150,7 @@ class IndexCRUDIT
             TokenRead tokenRead = ktx.tokenRead();
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );
-            var descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
+            var descriptor = SchemaDescriptors.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), () -> descriptor, Values.of( value ) ) ) );
             tx.commit();
         }

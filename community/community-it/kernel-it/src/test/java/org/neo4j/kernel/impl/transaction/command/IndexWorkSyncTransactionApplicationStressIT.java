@@ -38,7 +38,7 @@ import org.neo4j.internal.recordstorage.Commands;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -82,7 +82,7 @@ import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 @PageCacheExtension
 class IndexWorkSyncTransactionApplicationStressIT
 {
-    private static final LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( 0, 0 );
+    private static final LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel( 0, 0 );
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;

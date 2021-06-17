@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -87,7 +87,7 @@ class TokenIndexPopulationTest
     @BeforeEach
     void beforeEach()
     {
-        tokenIndex = IndexPrototype.forSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
+        tokenIndex = IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
                                    .withName( "label_index" )
                                    .withIndexType( IndexType.LOOKUP )
                                    .materialise( 123 );

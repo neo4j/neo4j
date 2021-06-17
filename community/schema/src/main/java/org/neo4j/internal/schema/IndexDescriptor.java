@@ -41,7 +41,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     public static final long INJECTED_NLI_ID = -2;
     public static final String NLI_GENERATED_NAME =
             "__org_neo4j_schema_index_label_scan_store_converted_to_token_index";
-    public static final IndexPrototype NLI_PROTOTYPE = IndexPrototype.forSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ),
+    public static final IndexPrototype NLI_PROTOTYPE = IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ),
                                                                                  new IndexProviderDescriptor( "token-lookup", "1.0" ) )
                                                                      .withIndexType( IndexType.LOOKUP )
                                                                      .withName( IndexDescriptor.NLI_GENERATED_NAME );
@@ -96,7 +96,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     {
         this.id = -1;
         this.name = ReservedSchemaRuleNames.NO_INDEX.getReservedName();
-        this.schema = SchemaDescriptor.noSchema();
+        this.schema = SchemaDescriptors.noSchema();
         this.isUnique = false;
         this.indexProvider = IndexProviderDescriptor.UNDECIDED;
         this.owningConstraintId = null;

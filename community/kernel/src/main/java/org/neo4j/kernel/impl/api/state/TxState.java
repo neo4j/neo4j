@@ -40,6 +40,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
@@ -741,7 +742,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public DiffSets<ConstraintDescriptor> constraintsChangesForSchema( SchemaDescriptor descriptor )
     {
-        return constraintsChangesDiffSets().filterAdded( SchemaDescriptor.equalTo( descriptor ) );
+        return constraintsChangesDiffSets().filterAdded( SchemaDescriptors.equalTo( descriptor ) );
     }
 
     @Override

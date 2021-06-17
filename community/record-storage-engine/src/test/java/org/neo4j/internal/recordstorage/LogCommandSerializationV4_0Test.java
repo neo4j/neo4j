@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -484,7 +484,7 @@ class LogCommandSerializationV4_0Test
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
 
         long id = after.getId();
-        SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "index_" + id ).materialise( id );
+        SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "index_" + id ).materialise( id );
         writer().writeSchemaRuleCommand( channel, new Command.SchemaRuleCommand( writer(), before, after, rule ) );
 
         CommandReader reader = createReader();

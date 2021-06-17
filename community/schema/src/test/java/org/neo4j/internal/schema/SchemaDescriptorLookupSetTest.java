@@ -56,7 +56,7 @@ class SchemaDescriptorLookupSetTest
     {
         // given
         SchemaDescriptorLookupSet<SchemaDescriptorSupplier> set = new SchemaDescriptorLookupSet<>();
-        var expected = of( SchemaDescriptor.forLabel( 1, 2 ) );
+        var expected = of( SchemaDescriptors.forLabel( 1, 2 ) );
         set.add( expected );
 
         // when
@@ -72,8 +72,8 @@ class SchemaDescriptorLookupSetTest
     {
         // given
         var set = new SchemaDescriptorLookupSet<>();
-        var expected1 = of( SchemaDescriptor.forLabel( 1, 2 ) );
-        var expected2 = of( SchemaDescriptor.forLabel( 1, 2, 3 ) );
+        var expected1 = of( SchemaDescriptors.forLabel( 1, 2 ) );
+        var expected2 = of( SchemaDescriptors.forLabel( 1, 2, 3 ) );
         set.add( expected1 );
         set.add( expected2 );
 
@@ -90,9 +90,9 @@ class SchemaDescriptorLookupSetTest
     {
         // given
         var set = new SchemaDescriptorLookupSet<>();
-        var descriptor1 = of( SchemaDescriptor.forLabel( 1, 2, 3 ) );
-        var descriptor2 = of( SchemaDescriptor.forLabel( 1, 2, 4 ) );
-        var descriptor3 = of( SchemaDescriptor.forLabel( 1, 2, 5, 6 ) );
+        var descriptor1 = of( SchemaDescriptors.forLabel( 1, 2, 3 ) );
+        var descriptor2 = of( SchemaDescriptors.forLabel( 1, 2, 4 ) );
+        var descriptor3 = of( SchemaDescriptors.forLabel( 1, 2, 5, 6 ) );
         set.add( descriptor1 );
         set.add( descriptor2 );
         set.add( descriptor3 );
@@ -110,11 +110,11 @@ class SchemaDescriptorLookupSetTest
     {
         // given
         var set = new SchemaDescriptorLookupSet<>();
-        var descriptor1 = of( SchemaDescriptor.forLabel( 1, 2, 3 ) );
-        var descriptor2 = of( SchemaDescriptor.forLabel( 1, 2, 4 ) );
-        var descriptor3 = of( SchemaDescriptor.forLabel( 1, 2, 5, 6 ) );
-        var descriptor4 = of( SchemaDescriptor.forLabel( 2, 2, 3 ) );
-        var descriptor5 = of( SchemaDescriptor.forLabel( 3, 2, 5, 6 ) );
+        var descriptor1 = of( SchemaDescriptors.forLabel( 1, 2, 3 ) );
+        var descriptor2 = of( SchemaDescriptors.forLabel( 1, 2, 4 ) );
+        var descriptor3 = of( SchemaDescriptors.forLabel( 1, 2, 5, 6 ) );
+        var descriptor4 = of( SchemaDescriptors.forLabel( 2, 2, 3 ) );
+        var descriptor5 = of( SchemaDescriptors.forLabel( 3, 2, 5, 6 ) );
         set.add( descriptor1 );
         set.add( descriptor2 );
         set.add( descriptor3 );
@@ -250,8 +250,8 @@ class SchemaDescriptorLookupSetTest
         int numberOfPropertyKeys = random.nextInt( 1, maxNumberOfPropertyKeys );
         int[] propertyKeys = randomUniqueUnsortedIntArray( highPropertyKeyId, numberOfPropertyKeys );
         return entityKeys.length > 1
-               ? SchemaDescriptor.fulltext( EntityType.NODE, entityKeys, propertyKeys )
-               : SchemaDescriptor.forLabel( entityKeys[0], propertyKeys );
+               ? SchemaDescriptors.fulltext( EntityType.NODE, entityKeys, propertyKeys )
+               : SchemaDescriptors.forLabel( entityKeys[0], propertyKeys );
     }
 
     private int[] randomUniqueUnsortedIntArray( int maxValue, int length )

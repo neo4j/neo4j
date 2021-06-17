@@ -99,7 +99,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;

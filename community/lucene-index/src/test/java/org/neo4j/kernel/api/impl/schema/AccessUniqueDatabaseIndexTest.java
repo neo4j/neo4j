@@ -28,7 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -63,7 +63,7 @@ class AccessUniqueDatabaseIndexTest
     @Inject
     private DatabaseLayout databaseLayout;
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private final IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1000, 100 ) ).withName( "a" ).materialise( 0 );
+    private final IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( 1000, 100 ) ).withName( "a" ).materialise( 0 );
 
     @Test
     void shouldAddUniqueEntries() throws Exception

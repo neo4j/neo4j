@@ -25,8 +25,8 @@ import org.mockito.ArgumentCaptor;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -52,7 +52,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
 class UniqueDatabaseIndexPopulatingUpdaterTest
 {
-    private static final SchemaDescriptorSupplier descriptor = () -> SchemaDescriptor.forLabel( 1, 42 );
+    private static final SchemaDescriptorSupplier descriptor = () -> SchemaDescriptors.forLabel( 1, 42 );
 
     @Test
     void closeVerifiesUniquenessOfAddedValues() throws Exception

@@ -27,6 +27,7 @@ import java.util.List;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaProcessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,11 +75,11 @@ class SchemaProcessorTest
 
     private static SchemaDescriptor disguisedLabel()
     {
-        return SchemaDescriptor.forLabel( LABEL_ID, 1 );
+        return SchemaDescriptors.forLabel( LABEL_ID, 1 );
     }
 
     private static SchemaDescriptor disguisedRelType()
     {
-        return SchemaDescriptor.forRelType( REL_TYPE_ID, 1 );
+        return SchemaDescriptors.forRelType( REL_TYPE_ID, 1 );
     }
 }

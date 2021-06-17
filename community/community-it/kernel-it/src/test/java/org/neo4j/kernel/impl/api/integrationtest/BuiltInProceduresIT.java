@@ -43,7 +43,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
@@ -66,7 +66,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -136,7 +136,7 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             try ( Resource ignore = captureTransaction() )
             {
-                IndexPrototype prototype = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propKey ) ).withName( "constraint name" );
+                IndexPrototype prototype = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( labelId, propKey ) ).withName( "constraint name" );
                 schemaWrite.uniquePropertyConstraintCreate( prototype );
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();

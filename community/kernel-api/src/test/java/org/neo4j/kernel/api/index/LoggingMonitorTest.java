@@ -25,7 +25,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 class LoggingMonitorTest
