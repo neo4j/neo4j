@@ -2099,13 +2099,14 @@ EXPRESSION Expression4() :
 
 EXPRESSION Expression3() :
 {
+    Token t;
     EXPRESSION e;
 }
 {
     (
         LOOKAHEAD(3) e=Expression2()
-        | <PLUS> e=Expression2() { e = astFactory.unaryPlus( e ); }
-        | <MINUS> e=Expression2() { e = astFactory.unaryMinus( e ); }
+        | t = <PLUS> e=Expression2() { e = astFactory.unaryPlus( pos( t ), e ); }
+        | t = <MINUS> e=Expression2() { e = astFactory.unaryMinus( pos( t ), e ); }
     )
     {
         return e;
@@ -2504,16 +2505,17 @@ EXPRESSION StringLiteral() :
 
 EXPRESSION NumberLiteral() :
 {
+    Token sign = null;
     Token t;
     boolean negated = false;
 }
 {
     t=<DECIMAL_DOUBLE> { return astFactory.newDouble( pos( t ), token.image ); }
-    | ( <MINUS> { negated = true; })?
+    | ( sign=<MINUS> { negated = true; })?
     (
-        t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger( pos( t ), token.image, negated ); }
-        | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger( pos( t ), token.image, negated ); }
-        | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger( pos( t ), token.image, negated ); }
+        t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger( pos( sign != null ? sign : t ), token.image, negated ); }
+                | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger( pos( sign != null ? sign : t ), token.image, negated ); }
+                | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger( pos( sign != null ? sign : t ), token.image, negated ); }
     )
 }
 

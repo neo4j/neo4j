@@ -731,7 +731,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public Object unaryMinus( Object e )
+    public Object unaryPlus( NULL p, Object e )
+    {
+        throw new UnsupportedOperationException( "unaryPlus is not a literal" );
+    }
+
+    @Override
+    public Object unaryMinus( NULL p, Object e )
     {
         throw new UnsupportedOperationException( "unaryMinus is not a literal" );
     }

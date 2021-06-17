@@ -102,7 +102,9 @@ public interface ASTExpressionFactory<
 
     EXPRESSION unaryPlus( EXPRESSION e );
 
-    EXPRESSION unaryMinus( EXPRESSION e );
+    EXPRESSION unaryPlus( POS p, EXPRESSION e );
+
+    EXPRESSION unaryMinus( POS p, EXPRESSION e );
 
     EXPRESSION eq( POS p, EXPRESSION lhs, EXPRESSION rhs );
 

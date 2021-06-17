@@ -652,9 +652,11 @@ class Neo4jASTFactory(query: String)
                    lhs: Expression,
                    rhs: Expression): Expression = Pow(lhs, rhs)(p)
 
-  override def unaryPlus(e: Expression): Expression = UnaryAdd(e)(e.position)
+  override def unaryPlus(e: Expression): Expression = unaryPlus(e.position, e)
 
-  override def unaryMinus(e: Expression): Expression = UnarySubtract(e)(e.position)
+  override def unaryPlus(p: InputPosition, e: Expression): Expression = UnaryAdd(e)(p)
+
+  override def unaryMinus(p: InputPosition, e: Expression): Expression = UnarySubtract(e)(p)
 
   override def eq(p: InputPosition,
                   lhs: Expression,
