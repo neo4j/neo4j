@@ -45,8 +45,8 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
 }
 
 object Transformer {
-  val identity: Transformer[BaseContext, Unit, Unit] = new Transformer[BaseContext, Unit, Unit] {
-    override def transform(from: Unit, context: BaseContext): Unit = ()
+  def identity[C <: BaseContext, FROM]: Transformer[C, FROM, FROM] = new Transformer[C, FROM, FROM] {
+    override def transform(from: FROM, context: C): FROM = from
 
     override def name: String = "identity"
 

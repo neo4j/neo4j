@@ -17,14 +17,15 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
-import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
-import org.neo4j.cypher.internal.rewriting.Deprecations
-import org.neo4j.cypher.internal.rewriting.Deprecations.deprecatedFeaturesIn4_X
+import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFeaturesIn4_X
+import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeaturesIn4_X
+import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
+import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -32,14 +33,59 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
 
   test("should warn about deprecation octal syntax") {
-    check(deprecatedFeaturesIn4_X, "RETURN 01277") should equal(Set(
+    check("RETURN 01277") should equal(Set(
       DeprecatedOctalLiteralSyntax(InputPosition(7, 1, 8))
     ))
   }
 
-  private def check(deprecations: Deprecations, query: String): Set[InternalNotification] = {
+  test("should warn about pattern expression in RETURN clause") {
+    check("RETURN ()--()") should equal(Set(
+      DeprecatedPatternExpressionOutsideExistsSyntax(InputPosition(7, 1, 8))
+    ))
+  }
+
+  test("should not warn about pattern expression in exists function") {
+    check("WITH 1 AS foo WHERE exists(()--()) RETURN *") should equal(Set.empty)
+  }
+
+  test("should only warn about coercion with a pattern expression in WHERE clause") {
+    check("WITH 1 AS foo WHERE ()--() RETURN *") should equal(Set(
+      DeprecatedCoercionOfListToBoolean(InputPosition(20, 1, 21))
+    ))
+  }
+
+  test("should only warn about coercion with a pattern expression in boolean expression") {
+    check("RETURN NOT ()--()") should equal(Set(
+      DeprecatedCoercionOfListToBoolean(InputPosition(11, 1, 12))
+    ))
+    check("RETURN ()--() AND ()--()--()") should equal(Set(
+      DeprecatedCoercionOfListToBoolean(InputPosition(7, 1, 8)),
+      DeprecatedCoercionOfListToBoolean(InputPosition(18, 1, 19)),
+    ))
+    check("RETURN ()--() OR ()--()--()") should equal(Set(
+      DeprecatedCoercionOfListToBoolean(InputPosition(7, 1, 8)),
+      DeprecatedCoercionOfListToBoolean(InputPosition(17, 1, 18)),
+    ))
+  }
+
+  private val plannerName = new PlannerName {
+    override def name: String = "fake"
+    override def toTextOutput: String = "fake"
+    override def version: String = "fake"
+  }
+
+  private def check(query: String) = {
     val logger = new RecordingNotificationLogger()
-    SyntaxDeprecationWarningsAndReplacements(deprecations).transform(TestState(Some(parse(query))), TestContext(logger))
+    val statement = parse(query)
+    val initialState = InitialState(query, None, plannerName, maybeStatement = Some(statement))
+
+    val pipeline =
+      SyntaxDeprecationWarningsAndReplacements(syntacticallyDeprecatedFeaturesIn4_X) andThen
+        PreparatoryRewriting andThen
+        SemanticAnalysis(warn = true) andThen
+        SyntaxDeprecationWarningsAndReplacements(semanticallyDeprecatedFeaturesIn4_X)
+
+    pipeline.transform(initialState, TestContext(logger))
     logger.notifications
   }
 

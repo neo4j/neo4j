@@ -106,34 +106,33 @@ object CompilationPhases {
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     val parse = (if (config.useJavaCCParser) JavaccParsing else Parsing)
-    val parseAndCompatibilityCheck: Transformer[BaseContext, BaseState, BaseState] =
+    val compatibilityCheck: Transformer[BaseContext, BaseState, BaseState] =
       config.compatibilityMode match {
         case Compatibility3_5 =>
-          parse andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
             SyntaxDeprecationWarningsAndReplacements(Deprecations.removedFeaturesIn4_0) andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_3)
         case Compatibility4_2 =>
-          parse andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_3)
         case Compatibility4_3 =>
-          parse
+          Transformer.identity
       }
 
-    parseAndCompatibilityCheck andThen
-      SyntaxDeprecationWarningsAndReplacements(Deprecations.deprecatedFeaturesIn4_X) andThen
+    parse andThen
+      compatibilityCheck andThen
+      SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeaturesIn4_X) andThen
       PreparatoryRewriting andThen
       If( (_: BaseState) => config.obfuscateLiterals) (
         extractSensitiveLiterals
       ) andThen
-      SemanticAnalysis(warn = true, config.semanticFeatures: _*)
+      SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
+      SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeaturesIn4_X)
   }
 
   // Phase 1
   def parsing(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     parsingBase(config) andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
-      SyntaxDeprecationWarningsAndReplacements(Deprecations.deprecatedFeaturesIn4_XAfterRewrite) andThen
       LiteralExtraction(config.literalExtractionStrategy)
   }
 
@@ -150,7 +149,6 @@ object CompilationPhases {
   def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
-      SyntaxDeprecationWarningsAndReplacements(Deprecations.deprecatedFeaturesIn4_XAfterRewrite) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }

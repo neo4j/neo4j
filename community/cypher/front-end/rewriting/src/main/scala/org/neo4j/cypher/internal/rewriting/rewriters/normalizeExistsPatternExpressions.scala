@@ -16,14 +16,11 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.FilteringExpression
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.Not
-import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
@@ -33,10 +30,6 @@ import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSema
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
-import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -64,50 +57,20 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
  */
 case class normalizeExistsPatternExpressions(semanticState: SemanticState) extends Rewriter {
 
-  override def apply(v: AnyRef): AnyRef = {
-    val replacements: IdentityMap[AnyRef, AnyRef] = computeReplacements(v)
-    createRewriter(replacements).apply(v)
-  }
+  private val instance = bottomUp(Rewriter.lift {
+    case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
+      Exists(p)(p.position)
+    case GreaterThan(Size(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
+      Exists(p)(p.position)
+    case LessThan(SignedDecimalIntegerLiteral("0"), Size(p: PatternExpression)) =>
+      Exists(p)(p.position)
+    case Equals(Size(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
+      Not(Exists(p)(p.position))(p.position)
+    case Equals(SignedDecimalIntegerLiteral("0"), Size(p: PatternExpression)) =>
+      Not(Exists(p)(p.position))(p.position)
+  })
 
-  private def computeReplacements(v: AnyRef): IdentityMap[AnyRef, AnyRef] = {
-    v.treeFold(IdentityMap.empty[AnyRef, AnyRef]) {
-      // find replacements for pattern expressions, ONLY if they are used in supported places (e.g. inside WHERE clause or inside a pattern comprehension)
-      case w: Where =>
-        acc => TraverseChildren(patternExpressionAsBooleanReplacements(w, acc))
-      case e:FilteringExpression if e.innerPredicate.isDefined =>
-        acc => SkipChildren(patternExpressionAsBooleanReplacements(e, acc))
-      case p@PatternComprehension(_, _, Some(predicate), _) =>
-        acc => SkipChildren(patternExpressionAsBooleanReplacements(p, acc))
-
-      // other replacements for pattern expressions
-      case g@GreaterThan(Size(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
-        acc => SkipChildren(acc.updated(g, Exists(p)(p.position)))
-      case l@LessThan(SignedDecimalIntegerLiteral("0"), Size(p: PatternExpression)) =>
-        acc => SkipChildren(acc.updated(l, Exists(p)(p.position)))
-      case e@Equals(Size(p: PatternExpression), SignedDecimalIntegerLiteral("0")) =>
-        acc => SkipChildren(acc.updated(e, Not(Exists(p)(p.position))(p.position)))
-      case e@Equals(SignedDecimalIntegerLiteral("0"), Size(p: PatternExpression)) =>
-        acc => SkipChildren(acc.updated(e, Not(Exists(p)(p.position))(p.position)))
-
-      case _ =>
-        acc => TraverseChildren(acc)
-    }
-  }
-
-  private def patternExpressionAsBooleanReplacements(v: AnyRef, accumulator: IdentityMap[AnyRef, AnyRef]): IdentityMap[AnyRef, AnyRef] = {
-    v.treeFold(accumulator) {
-      case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
-        acc => SkipChildren(acc.updated(p, Exists(p)(p.position)))
-      case _ =>
-        acc => TraverseChildren(acc)
-    }
-  }
-
-  private def createRewriter(replacements: IdentityMap[AnyRef, AnyRef]): Rewriter = {
-    bottomUp(Rewriter.lift {
-      case that => replacements.getOrElse(that, that)
-    })
-  }
+  override def apply(v: AnyRef): AnyRef = instance(v)
 }
 
 object normalizeExistsPatternExpressions extends StepSequencer.Step with ASTRewriterFactory {
