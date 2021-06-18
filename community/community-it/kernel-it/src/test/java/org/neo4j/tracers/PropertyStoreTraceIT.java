@@ -95,9 +95,9 @@ class PropertyStoreTraceIT
             propertyStore.encodeValue( propertyBlock, 1, stringValue( randomAlphabetic( (int) kibiBytes( 4 ) ) ), cursorContext, INSTANCE );
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            assertThat( cursorTracer.pins() ).isOne();
-            assertThat( cursorTracer.unpins() ).isOne();
-            assertThat( cursorTracer.hits() ).isOne();
+            assertThat( cursorTracer.pins() ).isZero();
+            assertThat( cursorTracer.unpins() ).isZero();
+            assertThat( cursorTracer.hits() ).isZero();
         }
     }
 

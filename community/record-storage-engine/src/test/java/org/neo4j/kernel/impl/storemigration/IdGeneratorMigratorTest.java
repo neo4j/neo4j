@@ -123,6 +123,7 @@ class IdGeneratorMigratorTest
             {
                 for ( int d = 0; d < numDeleted; d++ )
                 {
+                    idGenerator.maintenance( true, CursorContext.NULL );
                     assertEquals( nextExpectedId++, idGenerator.nextId( CursorContext.NULL ) );
                 }
                 nextExpectedId += numCreated;

@@ -102,7 +102,7 @@ class DynamicArrayStoreTest
 
             store.allocateRecords( new ArrayList<>(), array, cursorContext, INSTANCE );
 
-            assertOneCursor( cursorContext );
+            assertZeroCursor( cursorContext );
         }
     }
 
@@ -112,14 +112,6 @@ class DynamicArrayStoreTest
         var marker = idGenerator.marker( NULL );
         marker.markDeleted( 1L );
         idGenerator.clearCache( NULL );
-    }
-
-    private static void assertOneCursor( CursorContext cursorContext )
-    {
-        var cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.hits() ).isOne();
-        assertThat( cursorTracer.pins() ).isOne();
-        assertThat( cursorTracer.unpins() ).isOne();
     }
 
     private static void assertZeroCursor( CursorContext cursorContext )

@@ -119,7 +119,7 @@ class PropertyCreatorTest
         prepareDirtyGenerator( propertyStore );
 
         setProperty( 10, 10 );
-        assertOneCursor();
+        assertZeroCursor();
     }
 
     @Test

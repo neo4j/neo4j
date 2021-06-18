@@ -94,7 +94,7 @@ public class CommandCreationContextIT
             {
                 creationContext.initialize( cursorContext, StoreCursors.NULL );
                 idReservation.applyAsLong( creationContext );
-                assertCursorOne( cursorContext );
+                assertCursorZero( cursorContext );
             }
         }
     }
@@ -156,12 +156,12 @@ public class CommandCreationContextIT
         );
     }
 
-    private static void assertCursorOne( CursorContext cursorContext )
+    private static void assertCursorZero( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isOne();
-        assertThat( cursorTracer.unpins() ).isOne();
-        assertThat( cursorTracer.hits() ).isOne();
+        assertThat( cursorTracer.pins() ).isZero();
+        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat( cursorTracer.hits() ).isZero();
     }
 
     private static void prepareIdGenerator( IdGenerator idGenerator )

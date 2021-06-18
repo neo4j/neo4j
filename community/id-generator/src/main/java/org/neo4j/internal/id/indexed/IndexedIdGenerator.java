@@ -317,6 +317,7 @@ public class IndexedIdGenerator implements IdGenerator
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
     private final Monitor monitor;
+    private boolean strictlyPrioritizeFreelist;
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
             boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, DatabaseReadOnlyChecker readOnlyChecker, Config config, String databaseName,
@@ -379,7 +380,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.layout = new IdRangeLayout( idsPerEntry );
         this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnlyChecker, databaseName, openOptions );
 
-        boolean strictlyPrioritizeFreelist = config.get( GraphDatabaseInternalSettings.strictly_prioritize_id_freelist );
+        this.strictlyPrioritizeFreelist = config.get( GraphDatabaseInternalSettings.strictly_prioritize_id_freelist );
         this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
                 tracer -> lockAndInstantiateMarker( true, tracer ), generation, strictlyPrioritizeFreelist, monitor );
     }
@@ -400,17 +401,20 @@ public class IndexedIdGenerator implements IdGenerator
         }
     }
 
+    private void prepareIdAllocation( CursorContext cursorContext )
+    {
+        assertNotReadOnly();
+        if ( strictlyPrioritizeFreelist )
+        {
+            maintenance( true, cursorContext );
+        }
+    }
+
     @Override
     public long nextId( CursorContext cursorContext )
     {
-        assertNotReadOnly();
-        // To try and minimize the gap where the cache is empty and scanner is trying to find more to put in the cache
-        // we can see if the cache is starting to dry out and if so do a scan right here.
-        // There may be multiple allocation requests doing this, but it should be very cheap:
-        // comparing two ints, reading an AtomicBoolean and trying to CAS an AtomicBoolean.
-        maintenance( false, cursorContext );
+        prepareIdAllocation( cursorContext );
 
-        // try get from cache
         long id = cache.takeOrDefault( NO_ID );
         if ( id != NO_ID )
         {
@@ -437,8 +441,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public org.neo4j.internal.id.IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext )
     {
-        assertNotReadOnly();
-        maintenance( false, cursorContext );
+        prepareIdAllocation( cursorContext );
 
         if ( forceConsecutiveAllocation )
         {
