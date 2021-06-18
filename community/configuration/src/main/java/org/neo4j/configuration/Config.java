@@ -57,6 +57,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
@@ -230,17 +231,17 @@ public class Config implements Configuration
         {
             if ( path != null )
             {
-                fromFile( path, false );
+                fromFile( path, false, s -> true );
             }
             return this;
         }
 
         public Builder fromFile( Path cfg )
         {
-            return fromFile( cfg, true );
+            return fromFile( cfg, true, s -> true );
         }
 
-        private Builder fromFile( Path file, boolean allowThrow )
+        public Builder fromFile( Path file, boolean allowThrow, Predicate<String> filter )
         {
             if ( file == null || Files.notExists( file ) )
             {
@@ -267,7 +268,11 @@ public class Config implements Configuration
                             @Override
                             public synchronized Object put( Object key, Object value )
                             {
-                                setRaw( key.toString(), value.toString() );
+                                String setting = key.toString();
+                                if ( filter.test( setting ) )
+                                {
+                                    setRaw( setting, value.toString() );
+                                }
                                 return null;
                             }
                         }.load( stream );
@@ -299,7 +304,6 @@ public class Config implements Configuration
 
         private Builder()
         {
-
         }
 
         public Config build()
@@ -502,7 +506,6 @@ public class Config implements Configuration
         Services.loadAll( SettingsDeclaration.class ).forEach( decl -> builder.addSettingsClass( decl.getClass() ) );
         Services.loadAll( GroupSetting.class ).forEach( decl -> builder.addGroupSettingClass( decl.getClass() ) );
         Services.loadAll( SettingMigrator.class ).forEach( builder::addMigrator );
-
         return builder;
     }
 

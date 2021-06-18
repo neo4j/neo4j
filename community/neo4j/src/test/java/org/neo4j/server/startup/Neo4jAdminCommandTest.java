@@ -178,7 +178,7 @@ class Neo4jAdminCommandTest
         @Test
         void shouldFailOnMissingExpandCommands()
         {
-            addConf( GraphDatabaseSettings.default_database, "$(echo foo)" );
+            addConf( BootloaderSettings.max_heap_size, "$(echo foo)" );
             assertThat( execute( "bar" ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).containsSubsequence( "Failed to read config", "is a command, but config is not explicitly told to expand it" );
         }

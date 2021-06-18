@@ -34,8 +34,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.BootloaderSettings;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileUtils;
 
@@ -202,7 +202,7 @@ abstract class BootloaderOsAbstraction
         String xmsValue;
         String xmxValue;
         String envHeapSize = ctx.getEnv( ENV_HEAP_SIZE );
-        Config config = ctx.config();
+        Configuration config = ctx.config();
         if ( isNotEmpty( envHeapSize ) )
         {
             // HEAP_SIZE env. variable has highest prio

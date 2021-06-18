@@ -469,6 +469,7 @@ abstract class BootloaderCommandTestBase
         @Override
         Long getPidFromFile()
         {
+            ctx.config().get( BootloaderSettings.pid_file ); // Read from config to "simulate" real process manager
             return handler.isRunning() ? handler.runningPid : null;
         }
 

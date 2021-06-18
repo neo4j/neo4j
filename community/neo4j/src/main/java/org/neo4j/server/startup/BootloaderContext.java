@@ -21,17 +21,23 @@ package org.neo4j.server.startup;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.factory.Lists;
+import org.glassfish.jersey.internal.guava.Predicates;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
+import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParser;
 import org.neo4j.configuration.SettingValueParsers;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.util.Preconditions;
 
@@ -59,7 +65,8 @@ abstract class BootloaderContext
     //inferred
     private Path home;
     private Path conf;
-    private Config config;
+    private Configuration config;
+    private boolean fullConfig;
     private BootloaderOsAbstraction os;
     private ProcessManager processManager;
 
@@ -146,27 +153,79 @@ abstract class BootloaderContext
         return conf;
     }
 
-    Config config()
+    void validateConfig()
     {
-        if ( config == null )
+        config( true );
+    }
+
+    Configuration config()
+    {
+        return config( false );
+    }
+
+    private Configuration config( boolean full )
+    {
+        if ( config == null || !fullConfig && full )
         {
             assertInitiated();
-            Path confFile = confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME );
-            try
-            {
-                this.config = Config.newBuilder()
-                        .commandExpansion( expandCommands )
-                        .setDefaults( overriddenDefaultsValues() )
-                        .set( GraphDatabaseSettings.neo4j_home, home() )
-                        .fromFileNoThrow( confFile )
-                        .build();
-            }
-            catch ( RuntimeException e )
-            {
-                throw new BootFailureException( "Failed to read config " + confFile + ": " + e.getMessage(), e );
-            }
+            this.config = buildConfig( full );
+            this.fullConfig = full;
         }
         return config;
+    }
+
+    private Configuration buildConfig( boolean full )
+    {
+        Path confFile = confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME );
+        try
+        {
+            Predicate<String> filter = full ? Predicates.alwaysTrue() : settingsUsedByBootloader()::contains;
+
+            Configuration config = Config.newBuilder()
+                    .commandExpansion( expandCommands )
+                    .setDefaults( overriddenDefaultsValues() )
+                    .set( GraphDatabaseSettings.neo4j_home, home() )
+                    .fromFile( confFile, false, filter )
+                    .build();
+
+            return new Configuration()
+            {
+                @Override
+                public <T> T get( Setting<T> setting )
+                {
+                    if ( filter.test( setting.name() ) )
+                    {
+                        return config.get( setting );
+                    }
+                    //This is to prevent silent error and should only be encountered while developing. Just add the setting to the filter!
+                    throw new IllegalArgumentException( "Not allowed to read this setting " + setting.name() + ". It has been filtered out" );
+                }
+            };
+        }
+        catch ( RuntimeException e )
+        {
+            throw new BootFailureException( "Failed to read config " + confFile + ": " + e.getMessage(), e );
+        }
+    }
+
+    private Set<String> settingsUsedByBootloader()
+    {
+        //These settings are the that might be used by the bootloader minor commands (stop/status etc..)
+        //Additional settings are used on the start/console path, but they use the full config anyway so not added here.
+        return Set.of(
+                GraphDatabaseSettings.neo4j_home.name(),
+                GraphDatabaseSettings.logs_directory.name(),
+                GraphDatabaseSettings.plugin_dir.name(),
+                GraphDatabaseSettings.store_user_log_path.name(),
+                GraphDatabaseSettings.strict_config_validation.name(),
+                GraphDatabaseInternalSettings.config_command_evaluation_timeout.name(),
+                BootloaderSettings.run_directory.name(),
+                BootloaderSettings.additional_jvm.name(),
+                BootloaderSettings.lib_directory.name(),
+                BootloaderSettings.windows_service_name.name(),
+                BootloaderSettings.windows_tools_directory.name(),
+                BootloaderSettings.pid_file.name()
+        );
     }
 
     protected abstract Map<Setting<?>,Object> overriddenDefaultsValues();

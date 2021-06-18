@@ -49,6 +49,7 @@ import java.util.function.Function;
 
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.extension.DisabledForRoot;
@@ -185,7 +186,7 @@ class Neo4jCommandTest
         @Test
         void shouldOnlyPrintStacktraceOnVerbose()
         {
-            addConf( GraphDatabaseSettings.read_only_database_default, "foo" );
+            addConf( HttpConnector.enabled, "foo" );
             assertThat( execute( "start" ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).contains( "Run with '--verbose' for a more detailed error message." );
             assertThat( err.toString() ).doesNotContain( "Exception" );
@@ -194,6 +195,43 @@ class Neo4jCommandTest
             assertThat( execute( List.of( "start", "--verbose" ), Map.of() ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).doesNotContain( "Run with '--verbose' for a more detailed error message." );
             assertThat( err.toString() ).contains( "BootFailureException" );
+        }
+
+        @Test
+        void shouldNotValidateSettingsNotUsedByBootloaderOnStopAndStatus()
+        {
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( err.toString() ).isEmpty();
+
+            addConf( GraphDatabaseSettings.allow_upgrade, "foo" ); //This setting is not used by the bootloader, so ignored.
+            assertThat( execute( "status" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( err.toString() ).isEmpty();
+        }
+
+        @Test
+        void shouldValidateSettingsUsedByBootloaderOnStopAndStatus()
+        {
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( err.toString() ).isEmpty();
+
+            addConf( GraphDatabaseSettings.strict_config_validation, "foo" );
+            assertThat( execute( "status" ) ).isEqualTo( ExitCode.SOFTWARE );
+            assertThat( err.toString() ).contains( "'foo' is not a valid boolean value" );
+            clearOutAndErr();
+            assertThat( execute( "stop" ) ).isEqualTo( ExitCode.SOFTWARE );
+            assertThat( err.toString() ).contains( "'foo' is not a valid boolean value" );
+        }
+
+        @Test
+        void shouldValidateSettingsOnStartAndConsole()
+        {
+            addConf( HttpConnector.enabled, "foo" );
+            assertThat( execute( "start" ) ).isEqualTo( ExitCode.SOFTWARE );
+            assertThat( err.toString() ).contains( "'foo' is not a valid boolean value" );
+            clearOutAndErr();
+            assertThat( execute( "console" ) ).isEqualTo( ExitCode.SOFTWARE );
+            assertThat( err.toString() ).contains( "'foo' is not a valid boolean value" );
         }
 
         @Test

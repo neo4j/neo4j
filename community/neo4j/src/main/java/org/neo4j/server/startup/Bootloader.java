@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.time.Stopwatch;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -70,6 +71,7 @@ class Bootloader
     int start()
     {
         BootloaderOsAbstraction os = ctx.os();
+        ctx.validateConfig();
         Long pid = os.getPidIfRunning();
         if ( pid != null )
         {
@@ -89,7 +91,7 @@ class Bootloader
         }
 
         String serverLocation;
-        Config config = ctx.config();
+        Configuration config = ctx.config();
         if ( config.get( HttpsConnector.enabled ) )
         {
             serverLocation = "It is available at https://" + config.get( HttpsConnector.listen_address );
@@ -109,7 +111,7 @@ class Bootloader
 
     private void printDirectories()
     {
-        Config config = ctx.config();
+        Configuration config = ctx.config();
 
         ctx.out.println( "Directories in use:" );
         ctx.out.println( "home:         " + ctx.home().toAbsolutePath() );
@@ -126,6 +128,7 @@ class Bootloader
     int console( boolean dryRun )
     {
         BootloaderOsAbstraction os = ctx.os();
+        ctx.validateConfig();
         if ( dryRun )
         {
             List<String> args = os.buildStandardStartArguments();
@@ -220,6 +223,7 @@ class Bootloader
 
     int installService()
     {
+        ctx.validateConfig();
         if ( ctx.os().serviceInstalled() )
         {
             ctx.out.println( "Neo4j service is already installed" );
@@ -244,6 +248,7 @@ class Bootloader
 
     int updateService()
     {
+        ctx.validateConfig();
         if ( !ctx.os().serviceInstalled() )
         {
             ctx.out.println( "Neo4j service is not installed" );
@@ -260,6 +265,7 @@ class Bootloader
                 ctx.getProp( PROP_JAVA_VERSION ), ctx.getProp( PROP_VM_NAME ), ctx.getProp( PROP_VM_VENDOR ) );
         try
         {
+            ctx.validateConfig();
             ctx.os().admin();
             return EXIT_CODE_OK;
         }

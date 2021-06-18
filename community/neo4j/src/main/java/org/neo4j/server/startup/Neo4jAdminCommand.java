@@ -29,7 +29,7 @@ import java.util.function.Function;
 
 import org.neo4j.cli.AdminTool;
 import org.neo4j.configuration.BootloaderSettings;
-import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.util.VisibleForTesting;
 
@@ -89,7 +89,7 @@ class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>
         }
 
         @Override
-        Config config()
+        Configuration config()
         {
             return super.config();
         }
