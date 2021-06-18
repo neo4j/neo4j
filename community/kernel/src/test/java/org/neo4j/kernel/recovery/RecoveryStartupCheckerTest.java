@@ -21,6 +21,8 @@ package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -29,12 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomNamedDatabaseId;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 class RecoveryStartupCheckerTest
 {
     private final DatabaseStartupController startupController = mock( DatabaseStartupController.class );
-    private final NamedDatabaseId namedDatabaseId = randomNamedDatabaseId();
+    private final NamedDatabaseId namedDatabaseId = from( DEFAULT_DATABASE_NAME, UUID.randomUUID() );
 
     @Test
     void throwAboutExceptionOnShouldAbort()

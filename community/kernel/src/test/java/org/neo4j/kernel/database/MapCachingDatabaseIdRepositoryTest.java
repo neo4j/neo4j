@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atMostOnce;
@@ -31,15 +32,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
 
 class MapCachingDatabaseIdRepositoryTest
 {
-    private DatabaseIdRepository delegate = Mockito.mock( DatabaseIdRepository.class );
+    private final DatabaseIdRepository delegate = Mockito.mock( DatabaseIdRepository.class );
 
-    private NamedDatabaseId otherNamedDbId = TestDatabaseIdRepository.randomNamedDatabaseId();
-    private String otherDbName = otherNamedDbId.name();
-    private DatabaseId otherDbid = otherNamedDbId.databaseId();
+    private final NamedDatabaseId otherNamedDbId = from( "randomDb", UUID.randomUUID() );
+    private final String otherDbName = otherNamedDbId.name();
+    private final DatabaseId otherDbid = otherNamedDbId.databaseId();
     private DatabaseIdRepository.Caching databaseIdRepository;
 
     @BeforeEach

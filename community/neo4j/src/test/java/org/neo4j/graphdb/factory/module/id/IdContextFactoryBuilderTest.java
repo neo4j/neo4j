@@ -37,8 +37,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
@@ -66,7 +64,6 @@ class IdContextFactoryBuilderTest
     @Inject
     private PageCache pageCache;
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
-    private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     @Test
     void requireFileSystemWhenIdGeneratorFactoryNotProvided()
@@ -84,7 +81,7 @@ class IdContextFactoryBuilderTest
         IdContextFactory contextFactory =
                 IdContextFactoryBuilder.of( fs, jobScheduler, config, PageCacheTracer.NULL ).withIdGenerationFactoryProvider(
                         any -> idGeneratorFactory ).build();
-        DatabaseIdContext idContext = contextFactory.createIdContext( databaseIdRepository.getByName( "database" ).get() );
+        DatabaseIdContext idContext = contextFactory.createIdContext( from( "database", UUID.randomUUID() ) );
 
         IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();
         assertThat( idContext.getIdController() ).isInstanceOf( BufferedIdController.class );
@@ -111,7 +108,7 @@ class IdContextFactoryBuilderTest
                                         .withFactoryWrapper( factoryWrapper )
                                         .build();
 
-        DatabaseIdContext idContext = contextFactory.createIdContext( databaseIdRepository.getByName( "database" ).get() );
+        DatabaseIdContext idContext = contextFactory.createIdContext( from( "database", UUID.randomUUID() ) );
 
         assertSame( idGeneratorFactory, idContext.getIdGeneratorFactory() );
     }

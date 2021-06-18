@@ -37,7 +37,7 @@ import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.bolt.v41.messaging.BoltRequestMessageReaderV41;
 import org.neo4j.bolt.v41.messaging.BoltResponseMessageWriterV41;
 import org.neo4j.configuration.Config;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.Clocks;
@@ -50,7 +50,7 @@ import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 
 class BoltProtocolV42Test
 {
-    private final BookmarksParserV4 bookmarksParser = new BookmarksParserV4( new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT );
+    private final BookmarksParserV4 bookmarksParser = new BookmarksParserV4( mock( DatabaseIdRepository.class ), CustomBookmarkFormatParser.DEFAULT );
 
     @Test
     void shouldCreatePackForBoltV42()

@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.SortedMap;
+import java.util.UUID;
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseExistsException;
@@ -31,18 +32,20 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 class DatabaseManagerTest
 {
     private static final String KNOWN_DATABASE_NAME = "known";
     private static final String UNKNOWN_DATABASE_NAME = "unknown";
-    private static final NamedDatabaseId DATABASE_ID_NAMED = TestDatabaseIdRepository.randomNamedDatabaseId();
+    private static final NamedDatabaseId DATABASE_ID_NAMED = from( DEFAULT_DATABASE_NAME, UUID.randomUUID() );
 
-    private DatabaseManager<?> databaseManager = new TestDatabaseManager();
+    private final DatabaseManager<?> databaseManager = new TestDatabaseManager();
 
     @Test
     void shouldReturnContextForKnownDatabaseName()
@@ -56,7 +59,7 @@ class DatabaseManagerTest
         assertFalse( databaseManager.getDatabaseContext( UNKNOWN_DATABASE_NAME ).isPresent() );
     }
 
-    private static class TestDatabaseManager implements DatabaseManager<DatabaseContext>
+    private static class TestDatabaseManager extends LifecycleAdapter implements DatabaseManager<DatabaseContext>
     {
         @Override
         public Optional<DatabaseContext> getDatabaseContext( NamedDatabaseId namedDatabaseId )
@@ -137,30 +140,6 @@ class DatabaseManagerTest
         public SortedMap<NamedDatabaseId,DatabaseContext> registeredDatabases()
         {
             return null;
-        }
-
-        @Override
-        public void init() throws Exception
-        {
-
-        }
-
-        @Override
-        public void start() throws Exception
-        {
-
-        }
-
-        @Override
-        public void stop() throws Exception
-        {
-
-        }
-
-        @Override
-        public void shutdown() throws Exception
-        {
-
         }
     }
 }

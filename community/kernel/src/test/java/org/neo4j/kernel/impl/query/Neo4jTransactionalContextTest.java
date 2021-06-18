@@ -27,6 +27,7 @@ import org.mockito.Mockito;
 import org.mockito.internal.stubbing.defaultanswers.ReturnsDeepStubs;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -41,7 +42,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
@@ -57,6 +57,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 class Neo4jTransactionalContextTest
 {
@@ -64,7 +66,7 @@ class Neo4jTransactionalContextTest
     private KernelStatement statement;
     private ConfiguredExecutionStatistics statistics;
     private final KernelTransactionFactory transactionFactory = mock( KernelTransactionFactory.class );
-    private final NamedDatabaseId namedDatabaseId = TestDatabaseIdRepository.randomNamedDatabaseId();
+    private final NamedDatabaseId namedDatabaseId = from( DEFAULT_DATABASE_NAME, UUID.randomUUID() );
 
     @BeforeEach
     void setUp()
@@ -144,7 +146,6 @@ class Neo4jTransactionalContextTest
         order.verify( initialKTX ).commit();
     }
 
-    @SuppressWarnings( "ConstantConditions" )
     @Test
     void rollsBackNewlyCreatedTransactionIfTerminationDetectedOnCloseDuringPeriodicCommit() throws TransactionFailureException
     {
@@ -376,8 +377,6 @@ class Neo4jTransactionalContextTest
         when( statement.queryRegistration() ).thenReturn( queryRegistry );
         when( queryService.getDependencyResolver() ).thenReturn( resolver );
         when( queryService.beginTransaction( any(), any(), any() ) ).thenReturn( internalTransaction );
-
-        KernelTransaction mockTransaction = mockTransaction( statement );
     }
 
     private Neo4jTransactionalContext newContext( InternalTransaction initialTx )

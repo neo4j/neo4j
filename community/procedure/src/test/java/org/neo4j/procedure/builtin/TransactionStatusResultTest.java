@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -48,7 +49,6 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QueryObfuscator;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.database.DatabaseTracers;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TestKernelTransactionHandle;
@@ -83,6 +83,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
@@ -219,7 +221,7 @@ class TransactionStatusResultTest
 
     private static ExecutingQuery createExecutingQuery( long queryId )
     {
-        return new ExecutingQuery( queryId, getTestConnectionInfo(), new TestDatabaseIdRepository().defaultDatabase(), "testUser", "testQuery", EMPTY_MAP,
+        return new ExecutingQuery( queryId, getTestConnectionInfo(), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), "testUser", "testQuery", EMPTY_MAP,
                 stringObjectEmptyMap(), () -> 1L, () -> 1, () -> 2,
                 Thread.currentThread().getId(), Thread.currentThread().getName(),
                 new CountingNanoClock(), new CountingCpuClock(), true );
@@ -286,7 +288,7 @@ class TransactionStatusResultTest
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
                     mockedTokenHolders(), mock( IndexingService.class ),
                     mock( IndexStatisticsStore.class ), dependencies,
-                    new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
+                    from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
                     TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) )
             {
                 @Override

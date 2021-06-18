@@ -35,7 +35,7 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.bolt.v43.messaging.BoltRequestMessageReaderV43;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 
 import static org.mockito.Mockito.mock;
@@ -58,7 +58,7 @@ public class BoltProtocolV43ComponentFactory
     public static BoltRequestMessageReader requestMessageReader( BoltStateMachine stateMachine )
     {
         return new BoltRequestMessageReaderV43( new SynchronousBoltConnection( stateMachine ), mock( BoltResponseMessageWriter.class ),
-                                                new BookmarksParserV4( new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT ),
+                                                new BookmarksParserV4( mock( DatabaseIdRepository.class ), CustomBookmarkFormatParser.DEFAULT ),
                                                 mock( ChannelProtector.class ), NullLogService.getInstance() );
     }
 

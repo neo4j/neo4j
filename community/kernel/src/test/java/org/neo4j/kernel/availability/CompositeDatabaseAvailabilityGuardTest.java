@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.stubbing.Answer;
 
 import java.time.Clock;
+import java.util.UUID;
 
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -42,8 +43,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
-import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomNamedDatabaseId;
 
 @ExtendWith( LifeExtension.class )
 class CompositeDatabaseAvailabilityGuardTest
@@ -62,7 +64,7 @@ class CompositeDatabaseAvailabilityGuardTest
     {
         mockClock = mock( Clock.class );
         compositeGuard = new CompositeDatabaseAvailabilityGuard( mockClock );
-        defaultGuard = createDatabaseAvailabilityGuard( randomNamedDatabaseId(), mockClock, compositeGuard );
+        defaultGuard = createDatabaseAvailabilityGuard( from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), mockClock, compositeGuard );
         systemGuard = createDatabaseAvailabilityGuard( NAMED_SYSTEM_DATABASE_ID, mockClock, compositeGuard );
         defaultGuard.start();
         systemGuard.start();
@@ -161,8 +163,8 @@ class CompositeDatabaseAvailabilityGuardTest
     void stopOfAvailabilityGuardDeregisterItInCompositeParent() throws Exception
     {
         int initialGuards = compositeGuard.getGuards().size();
-        DatabaseAvailabilityGuard firstGuard = createDatabaseAvailabilityGuard( randomNamedDatabaseId(), mockClock, compositeGuard );
-        DatabaseAvailabilityGuard secondGuard = createDatabaseAvailabilityGuard( randomNamedDatabaseId(), mockClock, compositeGuard );
+        DatabaseAvailabilityGuard firstGuard = createDatabaseAvailabilityGuard( from( "foo", UUID.randomUUID() ), mockClock, compositeGuard );
+        DatabaseAvailabilityGuard secondGuard = createDatabaseAvailabilityGuard( from( "bar", UUID.randomUUID() ), mockClock, compositeGuard );
         firstGuard.start();
         secondGuard.start();
 

@@ -21,23 +21,23 @@ package org.neo4j.bolt.v4.runtime.bookmarking;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class BookmarkWithDatabaseIdTest
 {
-    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-
     @Test
     void shouldHaveTransactionIdAndDatabaseId()
     {
         var txId = 42;
-        var databaseId = databaseIdRepository.getRaw( "foo" );
+        var databaseId = from( "morty", UUID.randomUUID() );
 
         var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
 
@@ -49,7 +49,7 @@ class BookmarkWithDatabaseIdTest
     void shouldAttachToMetadata()
     {
         var txId = 42;
-        var namedDatabaseId = databaseIdRepository.getRaw( "foo" );
+        var namedDatabaseId = from( "morty", UUID.randomUUID() );
         var responseHandler = mock( BoltResponseHandler.class );
         var bookmark = new BookmarkWithDatabaseId( txId, namedDatabaseId );
 
@@ -63,7 +63,7 @@ class BookmarkWithDatabaseIdTest
     void shouldFormatAsString()
     {
         var txId = 424242;
-        var namedDatabaseId = databaseIdRepository.getRaw( "bar" );
+        var namedDatabaseId = from( "morty", UUID.randomUUID() );
 
         var bookmark = new BookmarkWithDatabaseId( txId, namedDatabaseId );
 

@@ -22,6 +22,7 @@ package org.neo4j.bolt.v4.runtime;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
@@ -30,7 +31,6 @@ import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,17 +39,16 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 class TransactionStateMachineV4SPITest
 {
-    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-
     @Test
     void shouldCheckDatabaseIdInBookmark()
     {
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var databaseId = databaseIdRepository.getRaw( "molly" );
+        var databaseId = from( "morty", UUID.randomUUID() );
         when( dbSpi.getNamedDatabaseId() ).thenReturn( databaseId );
 
         var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
@@ -71,7 +70,7 @@ class TransactionStateMachineV4SPITest
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
         var tx = mock( BoltTransaction.class );
 
-        var databaseId = databaseIdRepository.getRaw( "molly" );
+        var databaseId = from( "morty", UUID.randomUUID() );
         when( tx.getBookmarkMetadata() ).thenReturn( new BookmarkMetadata( 42L, databaseId ));
         when( dbSpi.getNamedDatabaseId() ).thenReturn( databaseId );
 

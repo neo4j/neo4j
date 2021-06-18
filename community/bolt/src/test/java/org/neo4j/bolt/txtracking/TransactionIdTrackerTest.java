@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.UUID;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -30,7 +31,6 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -50,6 +50,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.BookmarkTimeout;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 class TransactionIdTrackerTest
@@ -58,8 +59,7 @@ class TransactionIdTrackerTest
 
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard = mock( DatabaseAvailabilityGuard.class );
-    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final NamedDatabaseId namedDatabaseId = databaseIdRepository.getRaw( "foo" );
+    private final NamedDatabaseId namedDatabaseId = from( "foo", UUID.randomUUID() );
     private final Database db = mock( Database.class );
     private final DatabaseManagementService managementService = mock( DatabaseManagementService.class );
 
@@ -268,7 +268,7 @@ class TransactionIdTrackerTest
     void shouldNotReturnNewestTransactionIdForDatabaseThatDoesNotExist()
     {
         // given
-        var unknownDatabaseId = databaseIdRepository.getRaw( "bar" );
+        var unknownDatabaseId = from( "bar", UUID.randomUUID() );
         when( managementService.database( unknownDatabaseId.name() ) ).thenThrow( DatabaseNotFoundException.class );
 
         // when
@@ -283,7 +283,7 @@ class TransactionIdTrackerTest
     void shouldNotAwaitForTransactionForDatabaseThatDoesNotExist()
     {
         // given
-        var unknownDatabaseId = databaseIdRepository.getRaw( "bar" );
+        var unknownDatabaseId = from( "bar", UUID.randomUUID() );
         when( managementService.database( unknownDatabaseId.name() ) ).thenThrow( DatabaseNotFoundException.class );
 
         // when

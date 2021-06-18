@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 
@@ -34,6 +34,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 class StatementLifecycleTest
 {
@@ -74,7 +76,7 @@ class StatementLifecycleTest
     private static KernelStatement createStatement( KernelTransactionImplementation transaction )
     {
         return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(),
-                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new TestDatabaseIdRepository().defaultDatabase(),
+                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
                 Config.defaults( GraphDatabaseInternalSettings.track_tx_statement_close, true ) );
     }
 }

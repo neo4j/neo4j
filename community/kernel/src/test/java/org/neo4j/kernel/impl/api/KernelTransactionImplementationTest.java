@@ -27,6 +27,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +51,7 @@ import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -791,7 +792,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     {
         // given
         var fooName = "foo";
-        var fooDb = new TestDatabaseIdRepository().getRaw( fooName );
+        var fooDb = DatabaseIdFactory.from( fooName, UUID.randomUUID() );
         var configValues = Map.of( read_only_database_default, false,
                                    read_only_databases, Set.of( fooName ) );
         var config = Config.defaults( configValues );

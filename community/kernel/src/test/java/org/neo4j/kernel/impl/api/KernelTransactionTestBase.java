@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.Dependencies;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -97,6 +97,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 class KernelTransactionTestBase
@@ -173,7 +174,7 @@ class KernelTransactionTestBase
 
     KernelTransactionImplementation newNotInitializedTransaction()
     {
-        return newNotInitializedTransaction( LeaseService.NO_LEASES, config, new TestDatabaseIdRepository().defaultDatabase() );
+        return newNotInitializedTransaction( LeaseService.NO_LEASES, config, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ) );
     }
 
     KernelTransactionImplementation newNotInitializedTransaction( Config config, NamedDatabaseId databaseId )
@@ -202,7 +203,7 @@ class KernelTransactionTestBase
 
     KernelTransactionImplementation newNotInitializedTransaction( LeaseService leaseService )
     {
-        return newNotInitializedTransaction( leaseService, config, new TestDatabaseIdRepository().defaultDatabase() );
+        return newNotInitializedTransaction( leaseService, config, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ) );
     }
 
     public static class CapturingCommitProcess implements TransactionCommitProcess

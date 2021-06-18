@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.OptionalLong;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -45,10 +46,10 @@ import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
-import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomNamedDatabaseId;
+import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -199,7 +200,7 @@ class ExecutingQueryTest
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
-                ClientConnectionInfo.EMBEDDED_CONNECTION, randomNamedDatabaseId(), "neo4j", "hello world",
+                ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), "neo4j", "hello world",
                 EMPTY_MAP,
                 Collections.emptyMap(),
                 () -> lockCount, () -> 0, () -> 1,
@@ -222,7 +223,8 @@ class ExecutingQueryTest
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
-                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, randomNamedDatabaseId(), "neo4j", "hello world",
+                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
+                                        "neo4j", "hello world",
                                                    EMPTY_MAP,
                                                    Collections.emptyMap(),
                                                    () -> lockCount,
@@ -246,7 +248,8 @@ class ExecutingQueryTest
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
-                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, randomNamedDatabaseId(), "neo4j", "hello world",
+                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
+                                         "neo4j", "hello world",
                                                    EMPTY_MAP,
                                                    Collections.emptyMap(),
                                                    () -> lockCount,
@@ -396,7 +399,7 @@ class ExecutingQueryTest
     private ExecutingQuery createExecutingQuery( int queryId, String hello_world, PageCursorCountersStub page,
             FakeClock clock, FakeCpuClock cpuClock )
     {
-        return createExecutingQuery( queryId, hello_world, page, clock, cpuClock, randomNamedDatabaseId(), EMPTY_MAP );
+        return createExecutingQuery( queryId, hello_world, page, clock, cpuClock, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), EMPTY_MAP );
     }
 
     private ExecutingQuery createExecutingQuery( int queryId, String hello_world, PageCursorCountersStub page,
