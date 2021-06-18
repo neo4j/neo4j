@@ -39,7 +39,6 @@ import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
@@ -50,11 +49,11 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 {
     private static final RelationshipType WILDCARD_REL_TYPE = () -> "";
 
-    private final GraphDatabaseAPI db;
+    private final GraphDatabaseService db;
 
     public GraphDbStructureGuide( GraphDatabaseService graph )
     {
-        this.db = (GraphDatabaseAPI) graph;
+        this.db = graph;
     }
 
     @Override

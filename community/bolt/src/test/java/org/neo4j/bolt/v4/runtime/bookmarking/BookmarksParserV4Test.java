@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v4.runtime.bookmarking;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -48,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmark;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmarkMixture;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
@@ -55,13 +57,24 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABA
 
 class BookmarksParserV4Test
 {
-    private final BookmarksParser parser = new BookmarksParserV4( mock( DatabaseIdRepository.class ), CustomBookmarkFormatParser.DEFAULT );
+    private final DatabaseIdRepository idRepository = mock( DatabaseIdRepository.class );
+    private final BookmarksParser parser = new BookmarksParserV4( idRepository, CustomBookmarkFormatParser.DEFAULT );
+    private final NamedDatabaseId dbId = from( "morty", UUID.randomUUID() );
+    private final NamedDatabaseId dbId2 = from( "morty2", UUID.randomUUID() );
+    private final NamedDatabaseId systemDbId = NAMED_SYSTEM_DATABASE_ID;
+
+    @BeforeEach
+    void setUp()
+    {
+        when( idRepository.getById( dbId.databaseId() ) ).thenReturn( Optional.of( dbId ) );
+        when( idRepository.getById( dbId2.databaseId() ) ).thenReturn( Optional.of( dbId2 ) );
+        when( idRepository.getById( systemDbId.databaseId() ) ).thenReturn( Optional.of( systemDbId ) );
+    }
 
     @Test
     void shouldIgnoreSingleBookmarkMetadata() throws Exception
     {
         var txId = 1234;
-        var dbId = from( "morty", UUID.randomUUID() );
         var metadata = singletonMap( "bookmark", bookmarkString( txId, dbId ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
@@ -74,7 +87,6 @@ class BookmarksParserV4Test
     {
         var txId1 = 1234;
         var txId2 = 12345;
-        var dbId = from( "morty", UUID.randomUUID() );
         var metadata = metadata( List.of( bookmarkString( txId1, dbId ), bookmarkString( txId2, dbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
@@ -85,14 +97,13 @@ class BookmarksParserV4Test
     @Test
     void shouldParseMultipleBookmarksContainingTransactionId() throws Exception
     {
-        var dbId = from( "morty", UUID.randomUUID() );
         var bookmark1 = bookmarkString( 1234, dbId );
         var bookmark2 = bookmarkString( 12345, dbId );
         var metadata = metadata( List.of( bookmark1, bookmark2 ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
 
-        assertEquals( List.of( new BookmarkWithDatabaseId( 12345, from( "morty", UUID.randomUUID() ) ) ), bookmarks );
+        assertEquals( List.of( new BookmarkWithDatabaseId( 12345, dbId ) ), bookmarks );
     }
 
     @Test
@@ -136,8 +147,8 @@ class BookmarksParserV4Test
     @Test
     void shouldFailWhenMixingBookmarksFromDifferentDatabases()
     {
-        var bookmarkString = bookmarkString( 1234, from( "foo", UUID.randomUUID() ) );
-        var wrongBookmarkString = bookmarkString( 1234, from( "bar", UUID.randomUUID() ) );
+        var bookmarkString = bookmarkString( 1234, dbId );
+        var wrongBookmarkString = bookmarkString( 1234, dbId2 );
 
         var error = assertThrows( BookmarkParsingException.class,
                 () -> parser.parseBookmarks( metadata( List.of( bookmarkString, wrongBookmarkString ) ) ) );
@@ -194,12 +205,11 @@ class BookmarksParserV4Test
     @Test
     void shouldSkipNullsInMultipleBookmarks() throws Exception
     {
-        var dbId = from( "neo4j", UUID.randomUUID() );
         var metadata = metadata( Arrays.asList( bookmarkString( 3, dbId ), bookmarkString( 5, dbId ), null, bookmarkString( 17, dbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
 
-        assertEquals( List.of( new BookmarkWithDatabaseId( 17, from( "neo4j", UUID.randomUUID() ) ) ), bookmarks );
+        assertEquals( List.of( new BookmarkWithDatabaseId( 17, dbId ) ), bookmarks );
     }
 
     @Test
@@ -249,38 +259,33 @@ class BookmarksParserV4Test
     @Test
     void shouldParseSingleSystemAndSingleUserDbBookmarks() throws Exception
     {
-        var systemDbId = NAMED_SYSTEM_DATABASE_ID;
-        var userDbId = from( "foo", UUID.randomUUID() );
-        var metadata = metadata( List.of( bookmarkString( 33, systemDbId ), bookmarkString( 22, userDbId ) ) );
+        var metadata = metadata( List.of( bookmarkString( 33, systemDbId ), bookmarkString( 22, dbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
 
-        assertEquals( List.of( new BookmarkWithDatabaseId( 33, systemDbId ), new BookmarkWithDatabaseId( 22, userDbId ) ), bookmarks );
+        assertEquals( List.of( new BookmarkWithDatabaseId( 33, systemDbId ), new BookmarkWithDatabaseId( 22, dbId ) ), bookmarks );
     }
 
     @Test
     void shouldParseMultipleSystemAndSingleUserDbBookmarks() throws Exception
     {
         var systemDbId = NAMED_SYSTEM_DATABASE_ID;
-        var userDbId = from( "foo", UUID.randomUUID() );
-        var metadata = metadata( List.of( bookmarkString( 33, systemDbId ), bookmarkString( 9, userDbId ), bookmarkString( 44, systemDbId ) ) );
+        var metadata = metadata( List.of( bookmarkString( 33, systemDbId ), bookmarkString( 9, dbId ), bookmarkString( 44, systemDbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
 
-        assertEquals( List.of( new BookmarkWithDatabaseId( 44, systemDbId ), new BookmarkWithDatabaseId( 9, userDbId ) ), bookmarks );
+        assertEquals( List.of( new BookmarkWithDatabaseId( 44, systemDbId ), new BookmarkWithDatabaseId( 9, dbId ) ), bookmarks );
     }
 
     @Test
     void shouldParseMultipleSystemAndMultipleUserDbBookmarks() throws Exception
     {
-        var systemDbId = NAMED_SYSTEM_DATABASE_ID;
-        var userDbId = from( "foo", UUID.randomUUID() );
         var metadata = metadata( List.of(
-                bookmarkString( 12, systemDbId ), bookmarkString( 69, userDbId ), bookmarkString( 83, systemDbId ), bookmarkString( 17, userDbId ) ) );
+                bookmarkString( 12, systemDbId ), bookmarkString( 69, dbId ), bookmarkString( 83, systemDbId ), bookmarkString( 17, dbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
 
-        assertEquals( List.of( new BookmarkWithDatabaseId( 83, systemDbId ), new BookmarkWithDatabaseId( 69, userDbId ) ), bookmarks );
+        assertEquals( List.of( new BookmarkWithDatabaseId( 83, systemDbId ), new BookmarkWithDatabaseId( 69, dbId ) ), bookmarks );
     }
 
     @Test
@@ -323,12 +328,12 @@ class BookmarksParserV4Test
     @Test
     void shouldParseCustomBookmarksMixUp() throws BoltIOException
     {
-        var parser = new BookmarksParserV4( mock( DatabaseIdRepository.class ), new CustomParser() );
+        var parser = new BookmarksParserV4( idRepository, new CustomParser() );
 
         var metadata = metadata( List.of(
                 customBookmarkString( "text1" ),
-                bookmarkString( 1234, NAMED_SYSTEM_DATABASE_ID ),
-                bookmarkString( 4321, from( "morty", UUID.randomUUID() ) ),
+                bookmarkString( 1234, systemDbId ),
+                bookmarkString( 4321, dbId ),
                 customBookmarkString( "text2" )
                 ) );
 
@@ -337,8 +342,8 @@ class BookmarksParserV4Test
         assertEquals( List.of(
                 new CustomBookmark( "text1" ),
                 new CustomBookmark( "text2" ),
-                new BookmarkWithDatabaseId( 1234, NAMED_SYSTEM_DATABASE_ID ),
-                new BookmarkWithDatabaseId( 4321, from( "morty", UUID.randomUUID() ) )
+                new BookmarkWithDatabaseId( 1234, systemDbId ),
+                new BookmarkWithDatabaseId( 4321, dbId )
         ), bookmarks );
     }
 

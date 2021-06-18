@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
