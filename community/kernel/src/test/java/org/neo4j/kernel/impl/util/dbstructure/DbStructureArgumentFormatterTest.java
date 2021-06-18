@@ -68,18 +68,18 @@ class DbStructureArgumentFormatterTest
     void shouldFormatIndexDescriptors()
     {
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 23, 42 );
-        assertEquals( "IndexPrototype.forSchema( SchemaDescriptor.forLabel( 23, 42 ) )" +
+        assertEquals( "IndexPrototype.forSchema( SchemaDescriptors.forLabel( 23, 42 ) )" +
                         ".withName( \"" + index.getName() + "\" ).materialise( " + index.getId() + " )",
                 formatArgument( index ) );
 
         index = TestIndexDescriptorFactory.forSchema(
                 SchemaDescriptors.fulltext( EntityType.NODE, new int[] {23}, new int[] {42} ) );
-        assertEquals( "IndexPrototype.forSchema( SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {23}, new int[] {42} ) )" +
+        assertEquals( "IndexPrototype.forSchema( SchemaDescriptors.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {23}, new int[] {42} ) )" +
                         ".withName( \"" + index.getName() + "\" ).materialise( " + index.getId() + " )",
                 formatArgument( index ) );
 
         index = TestIndexDescriptorFactory.forSchema( SchemaDescriptors.forRelType( 23, 42 ) );
-        assertEquals( "IndexPrototype.forSchema( SchemaDescriptor.forRelType( 23, 42 ) )" +
+        assertEquals( "IndexPrototype.forSchema( SchemaDescriptors.forRelType( 23, 42 ) )" +
                         ".withName( \"" + index.getName() + "\" ).materialise( " + index.getId() + " )",
                 formatArgument( index ) );
     }
