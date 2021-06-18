@@ -83,6 +83,16 @@ class SafePropertyChainReader implements AutoCloseable
         this.dynamicRecords = new ArrayList<>();
     }
 
+    /**
+     * Reads all property values from an entity into the given {@code intoValues}. Values are safely read and encountered inconsistencies are reported.
+     *
+     * @param intoValues map to put read values into.
+     * @param entity the entity to read property values from.
+     * @param primitiveReporter reporter for encountered inconsistencies.
+     * @param storeCursors to get cursors from.
+     * @param <PRIMITIVE> entity type.
+     * @return {@code true} if there were no inconsistencies encountered, otherwise {@code false}.
+     */
     <PRIMITIVE extends PrimitiveRecord> boolean read( MutableIntObjectMap<Value> intoValues, PRIMITIVE entity,
             Function<PRIMITIVE,ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter, StoreCursors storeCursors )
     {
@@ -148,7 +158,8 @@ class SafePropertyChainReader implements AutoCloseable
                                 if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( record.copy() ), stringReader, seenDynamicRecordIds,
                                         block.getSingleValueLong(), stringStoreBlockSize, NO_DYNAMIC_HANDLER,
                                         ( id, record ) -> reporter.forProperty( propertyRecord ).stringNotInUse( block, record ),
-                                        ( id, record ) -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, stringReader.record() ).nextNotInUse( record ),
+                                        ( id, record ) -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, stringReader.record() )
+                                                .nextNotInUse( record ),
                                         ( id, record ) -> reporter.forProperty( propertyRecord ).stringEmpty( block, record ),
                                         record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).recordNotFullReferencesNext(),
                                         record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).invalidLength() ) )
@@ -161,7 +172,8 @@ class SafePropertyChainReader implements AutoCloseable
                                 if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( record.copy() ), arrayReader, seenDynamicRecordIds,
                                         block.getSingleValueLong(), arrayStoreBlockSize, NO_DYNAMIC_HANDLER,
                                         ( id, record ) -> reporter.forProperty( propertyRecord ).arrayNotInUse( block, record ),
-                                        ( id, record ) -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, arrayReader.record() ).nextNotInUse( record ),
+                                        ( id, record ) -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, arrayReader.record() )
+                                                .nextNotInUse( record ),
                                         ( id, record ) -> reporter.forProperty( propertyRecord ).arrayEmpty( block, record ),
                                         record -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, record ).recordNotFullReferencesNext(),
                                         record -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, record ).invalidLength() ) )

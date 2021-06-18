@@ -269,7 +269,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting(), CursorContext.NULL ) )
         {
             MutableIntObjectMap<Value> values = new IntObjectHashMap<>();
-            reader.read( values, entity, primitiveReporter, storeCursors  );
+            reader.read( values, entity, primitiveReporter, storeCursors );
             return values;
         }
     }

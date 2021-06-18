@@ -174,7 +174,7 @@ class SchemaComplianceChecker implements AutoCloseable
         if ( count == 0 )
         {
             // Fulltext indexes only index text values, so if the entity only have non-string properties it is correct to not find it in the index.
-            if ( !(indexRule.getIndexType() == IndexType.FULLTEXT && !valuesContainTextProperty( propertyValues ) ) )
+            if ( !(indexRule.getIndexType() == IndexType.FULLTEXT && !valuesQualifiesForFulltextIndex( propertyValues ) ) )
             {
                 reportSupplier.apply( context.recordLoader.entity( entity, storeCursors ) ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
             }
@@ -186,7 +186,7 @@ class SchemaComplianceChecker implements AutoCloseable
         }
     }
 
-    private static boolean valuesContainTextProperty( Value[] values )
+    static boolean valuesQualifiesForFulltextIndex( Value[] values )
     {
         for ( Value value : values )
         {

@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 

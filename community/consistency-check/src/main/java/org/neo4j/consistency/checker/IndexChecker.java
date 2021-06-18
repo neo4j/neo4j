@@ -39,17 +39,18 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.consistency.checker.RecordLoading.lightClear;
 import static org.neo4j.consistency.checker.RecordLoading.safeGetNodeLabels;
+import static org.neo4j.consistency.checker.SchemaComplianceChecker.valuesQualifiesForFulltextIndex;
 
 public class IndexChecker implements Checker
 {
@@ -269,34 +270,55 @@ public class IndexChecker implements Checker
                         {
                             IndexContext index = indexes.get( i );
                             IndexDescriptor descriptor = index.descriptor;
-                            Value[] values = RecordLoading.entityIntersectionWithSchema( entityTokens, allValues, descriptor.schema() );
                             long cachedValue = client.getFromCache( entityId, i );
                             boolean nodeIsInIndex = (cachedValue & IN_USE_MASK ) != 0;
-                            if ( values != null )
+                            Value[] values = RecordLoading.entityIntersectionWithSchema( entityTokens, allValues, descriptor.schema() );
+                            if ( index.descriptor.schema().isFulltextSchemaDescriptor() )
                             {
-                                // This node should really be in the index, is it?
-                                if ( !nodeIsInIndex )
+                                // The strategy for fulltext indexes is way simpler. Simply check of the sets of tokens (label tokens and property key tokens)
+                                // and if they match the index schema descriptor then the node should be in the index, otherwise not
+                                int[] nodePropertyKeys = allValues.keySet().toArray();
+                                int[] indexPropertyKeys = index.descriptor.schema().getPropertyIds();
+                                boolean nodeShouldBeInIndex =
+                                        index.descriptor.schema().isAffected( entityTokens ) && containsAny( indexPropertyKeys, nodePropertyKeys ) &&
+                                                valuesQualifiesForFulltextIndex( values );
+                                if ( nodeShouldBeInIndex && !nodeIsInIndex )
                                 {
-                                    // It wasn't, report it
-                                    getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor, Values.asObjects( values ) );
+                                    getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor, new Object[0] );
                                 }
-                                else if ( index.hasValues )
+                                else if ( !nodeShouldBeInIndex && nodeIsInIndex )
                                 {
-                                    int cachedChecksum = (int) cachedValue & CHECKSUM_MASK;
-                                    int actualChecksum = checksum( values );
-                                    if ( cachedChecksum != actualChecksum )
-                                    {
-                                        getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor,
-                                                Values.asObjects( values ) );
-                                    }
+                                    getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor, new Object[0] );
                                 }
                             }
                             else
                             {
-                                if ( nodeIsInIndex )
+                                if ( values != null )
                                 {
-                                    reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
-                                            context.recordLoader.node( entityId, storeCursors ) );
+                                    // This node should really be in the index, is it?
+                                    if ( !nodeIsInIndex )
+                                    {
+                                        // It wasn't, report it
+                                        getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor, Values.asObjects( values ) );
+                                    }
+                                    else if ( index.hasValues )
+                                    {
+                                        int cachedChecksum = (int) cachedValue & CHECKSUM_MASK;
+                                        int actualChecksum = checksum( values );
+                                        if ( cachedChecksum != actualChecksum )
+                                        {
+                                            getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor,
+                                                    Values.asObjects( values ) );
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if ( nodeIsInIndex )
+                                    {
+                                        reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
+                                                context.recordLoader.node( entityId, storeCursors ) );
+                                    }
                                 }
                             }
                         }
@@ -319,6 +341,21 @@ public class IndexChecker implements Checker
             }
             localScanProgress.done();
         }
+    }
+
+    private static boolean containsAny( int[] values, int[] toCheck )
+    {
+        for ( int value : values )
+        {
+            for ( int candidate : toCheck )
+            {
+                if ( value == candidate )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
