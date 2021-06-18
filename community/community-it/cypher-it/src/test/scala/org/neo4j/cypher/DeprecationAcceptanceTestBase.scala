@@ -162,8 +162,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     val queries = Seq(
       "EXPLAIN MATCH (a) RETURN (a)--()",
       "EXPLAIN MATCH (a) WHERE ANY (x IN (a)--() WHERE 1=1) RETURN a",
-      "EXPLAIN RETURN NOT ()--()",
-      "EXPLAIN RETURN ()--() OR ()--()--()"
     )
 
     assertNotificationInSupportedVersions(queries, DEPRECATED_USE_OF_PATTERN_EXPRESSION)
@@ -178,7 +176,26 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "EXPLAIN MATCH (a) WHERE exists((a)--()) RETURN a",
       "EXPLAIN MATCH (a) WHERE (a)--() RETURN a",
       "EXPLAIN MATCH (a) RETURN [p=(a)--(b) | p]",
-      "EXPLAIN RETURN NOT exists(()--())"
+      "EXPLAIN RETURN NOT exists(()--())",
+      "EXPLAIN RETURN NOT ()--()",
+      "EXPLAIN RETURN ()--() OR ()--()--()",
+      """
+        |EXPLAIN
+        |MATCH (actor:Actor)
+        |RETURN actor,
+        |  CASE
+        |    WHEN (actor)-[:WON]->(:Oscar) THEN 'Oscar winner'
+        |    WHEN (actor)-[:WON]->(:GoldenGlobe) THEN 'Golden Globe winner'
+        |    ELSE 'None'
+        |  END AS accolade
+        |""".stripMargin,
+      """
+        |EXPLAIN
+        |MATCH (movie:Movie)<-[:ACTED_IN]-(actor:Actor)
+        |WITH movie, collect(actor) AS cast
+        |WHERE ANY(actor IN cast WHERE (actor)-[:WON]->(:Award))
+        |RETURN movie
+        |""".stripMargin
     )
     assertNoNotificationInSupportedVersions(queries, DEPRECATED_USE_OF_PATTERN_EXPRESSION)
   }
@@ -233,7 +250,26 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "EXPLAIN RETURN NOT (TRUE AND [])",
       "EXPLAIN MATCH (n) WHERE [] RETURN TRUE",
       "EXPLAIN MATCH (n) WHERE range(0, 10) RETURN TRUE",
-      "EXPLAIN MATCH (n) WHERE range(0, 10) RETURN range(0, 10)"
+      "EXPLAIN MATCH (n) WHERE range(0, 10) RETURN range(0, 10)",
+      "EXPLAIN RETURN NOT ()--()",
+      "EXPLAIN RETURN ()--() OR ()--()--()",
+      """
+        |EXPLAIN
+        |MATCH (actor:Actor)
+        |RETURN actor,
+        |  CASE
+        |    WHEN (actor)-[:WON]->(:Oscar) THEN 'Oscar winner'
+        |    WHEN (actor)-[:WON]->(:GoldenGlobe) THEN 'Golden Globe winner'
+        |    ELSE 'None'
+        |  END AS accolade
+        |""".stripMargin,
+      """
+        |EXPLAIN
+        |MATCH (movie:Movie)<-[:ACTED_IN]-(actor:Actor)
+        |WITH movie, collect(actor) AS cast
+        |WHERE ANY(actor IN cast WHERE (actor)-[:WON]->(:Award))
+        |RETURN movie
+        |""".stripMargin
     )
 
     assertNotificationInSupportedVersions(queries, DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)

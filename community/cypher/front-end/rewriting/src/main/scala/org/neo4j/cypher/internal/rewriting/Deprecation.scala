@@ -88,8 +88,7 @@ object Deprecations {
   def renameFunctionTo(newName: String): FunctionInvocation => FunctionInvocation =
     f => f.copy(functionName = FunctionName(newName)(f.functionName.position))(f.position)
 
-  case object deprecatedFeaturesIn4_X extends Deprecations {
-
+  case object syntacticallyDeprecatedFeaturesIn4_X extends SyntacticDeprecations {
     override val find: PartialFunction[Any, Deprecation] = {
 
       // old octal literal syntax
@@ -247,9 +246,8 @@ object Deprecations {
         )
     }
 
-    override def findWithContext(statement: Statement,
-                                 semanticTable: Option[SemanticTable]): Set[Deprecation] = {
-      statement.treeFold[Set[Deprecation]](Set.empty) {
+    override def findWithContext(statement: Statement): Set[Deprecation] = {
+      val replacementsFromExistsToIsNotNull = statement.treeFold[Set[Deprecation]](Set.empty) {
         case w: Where =>
           val deprecations = w.treeFold[Set[Deprecation]](Set.empty) {
             case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
@@ -267,19 +265,40 @@ object Deprecations {
           }
           acc => SkipChildren(acc ++ deprecations)
       }
+
+      replacementsFromExistsToIsNotNull
     }
   }
 
-  case object deprecatedFeaturesIn4_XAfterRewrite extends Deprecations {
-    override def find: PartialFunction[Any, Deprecation] = PartialFunction.empty
+  case object semanticallyDeprecatedFeaturesIn4_X extends SemanticDeprecations {
 
-    override def findWithContext(statement: Statement, semanticTable: Option[SemanticTable]): Set[Deprecation] = {
+    private def isExpectedTypeBoolean(semanticTable: SemanticTable, e: Expression) = semanticTable.types.get(e).exists(
+      typeInfo => typeInfo.expected.fold(false)(CTBoolean.covariant.containsAll)
+    )
+
+    private def isListCoercedToBoolean(semanticTable: SemanticTable, e: Expression) = semanticTable.types.get(e).exists(
+      typeInfo =>
+        CTList(CTAny).covariant.containsAll(typeInfo.specified) && isExpectedTypeBoolean(semanticTable, e)
+    )
+
+    override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = {
+
+      case e: Expression if isListCoercedToBoolean(semanticTable, e) =>
+        Deprecation(
+          None,
+          Some(DeprecatedCoercionOfListToBoolean(e.position))
+        )
+
+    }
+
+    override def findWithContext(statement: Statement,
+                                 semanticTable: SemanticTable): Set[Deprecation] = {
       val deprecationsOfPatternExpressionsOutsideExists = statement.treeFold[Set[Deprecation]](Set.empty) {
         case Exists(_) =>
           // Don't look inside exists()
           deprecations => SkipChildren(deprecations)
 
-        case p: PatternExpression =>
+        case p: PatternExpression if !isExpectedTypeBoolean(semanticTable, p) =>
           val deprecation = Deprecation(
             None,
             Some(DeprecatedPatternExpressionOutsideExistsSyntax(p.position))
@@ -287,27 +306,12 @@ object Deprecations {
           deprecations => SkipChildren(deprecations + deprecation)
       }
 
-      val deprecationsOfCoercingListToBoolean = semanticTable.map { table =>
-          def isListCoercedToBoolean(e: Expression) = table.types.get(e).exists(
-            typeInfo => CTList(CTAny).covariant.containsAll(typeInfo.specified) && CTBoolean.covariant.containsAll(typeInfo.actual)
-          )
-
-          statement.treeFold[Set[Deprecation]](Set.empty) {
-            case e: Expression if isListCoercedToBoolean(e) =>
-              val deprecation = Deprecation(
-                None,
-                Some(DeprecatedCoercionOfListToBoolean(e.position))
-              )
-              deprecations => SkipChildren(deprecations + deprecation)
-          }
-      }.getOrElse(Set.empty)
-
-      deprecationsOfPatternExpressionsOutsideExists ++ deprecationsOfCoercingListToBoolean
+      deprecationsOfPatternExpressionsOutsideExists
     }
   }
 
   // This is functionality that has been removed in 4.0 but still should work (but be deprecated) when using CYPHER 3.5
-  case object removedFeaturesIn4_0 extends Deprecations {
+  case object removedFeaturesIn4_0 extends SyntacticDeprecations {
     val removedFunctionsRenames: Map[String, String] =
       TreeMap(
         "toInt" -> "toInteger",
@@ -316,7 +320,7 @@ object Deprecations {
         "rels" -> "relationships"
       )(CaseInsensitiveOrdered)
 
-    override def find: PartialFunction[Any, Deprecation] = {
+    override val find: PartialFunction[Any, Deprecation] = {
 
       case f@FunctionInvocation(_, FunctionName(name), _, _) if removedFunctionsRenames.contains(name) =>
         Deprecation(
@@ -380,7 +384,14 @@ object Deprecations {
  */
 case class Deprecation(replacement: Option[(ASTNode, ASTNode)], notification: Option[InternalNotification])
 
-trait Deprecations extends {
+sealed trait Deprecations
+
+trait SyntacticDeprecations extends Deprecations {
   def find: PartialFunction[Any, Deprecation]
-  def findWithContext(statement: Statement, semanticTable: Option[SemanticTable]): Set[Deprecation] = Set.empty
+  def findWithContext(statement: Statement): Set[Deprecation] = Set.empty
+}
+
+trait SemanticDeprecations extends Deprecations {
+  def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation]
+  def findWithContext(statement: Statement, semanticTable: SemanticTable): Set[Deprecation] = Set.empty
 }
