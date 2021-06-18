@@ -32,6 +32,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -70,8 +71,7 @@ class BatchInsertersTest
 
     private static Iterable<ExtensionFactory<?>> getExtensions()
     {
-        return Iterables.asIterable( new GenericNativeIndexProviderFactory(),
-                new TokenIndexProviderFactory() );
+        return Iterables.asIterable( new GenericNativeIndexProviderFactory(), new TokenIndexProviderFactory(), new TextIndexProviderFactory() );
     }
 
     private static Config getConfig()

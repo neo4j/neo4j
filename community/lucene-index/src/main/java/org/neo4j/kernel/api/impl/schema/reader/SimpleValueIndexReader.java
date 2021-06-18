@@ -94,6 +94,7 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
             PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
+        context.monitor().queried( descriptor );
         Query query = toLuceneQuery( predicates );
         client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, constraints, false );
     }

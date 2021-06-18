@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -131,7 +132,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     public void setUp()
     {
         managementService = new TestDatabaseManagementServiceBuilder( graphDbDir )
-                .setExtensions( asList( new PredefinedIndexProviderFactory( indexProvider ), new TokenIndexProviderFactory() ) )
+                .setExtensions( asList( new PredefinedIndexProviderFactory( indexProvider ), new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) )
                 .noOpSystemGraphInitializer()
                 .impermanent()
                 .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )

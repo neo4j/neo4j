@@ -46,6 +46,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -342,7 +343,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
             indexService = IndexingServiceFactory.createIndexingService( config, scheduler,
                     providerMap, indexStoreViewFactory, ktx.tokenRead(), initialSchemaRulesLoader( storageEngine ),
-                    nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
+                    nullLogProvider, nullLogProvider, IndexMonitor.NO_MONITOR, getSchemaState(),
                     mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, "", writable() );
             indexService.start();
 

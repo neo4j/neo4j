@@ -44,6 +44,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -238,7 +239,7 @@ class LuceneIndexRecoveryIT
 
         TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
         factory.setFileSystem( fs );
-        factory.setExtensions( asList( indexProviderFactory, new TokenIndexProviderFactory() ) );
+        factory.setExtensions( asList( indexProviderFactory, new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) );
         managementService = factory.impermanent()
                 .setConfig( default_schema_provider, DESCRIPTOR.name() ).build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

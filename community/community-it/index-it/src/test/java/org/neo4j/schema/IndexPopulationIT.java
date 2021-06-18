@@ -42,10 +42,10 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.database.DatabaseMemoryTrackers;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
@@ -113,7 +113,7 @@ class IndexPopulationIT
         var usedNativeBefore = otherTracker.usedNativeMemory();
         AtomicLong peakUsage = new AtomicLong();
         CountDownLatch populationJobCompleted = new CountDownLatch( 1 );
-        monitors.addMonitorListener( new IndexingService.MonitorAdapter()
+        monitors.addMonitorListener( new IndexMonitor.MonitorAdapter()
         {
             @Override
             public void populationCompleteOn( IndexDescriptor descriptor )

@@ -109,7 +109,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
+import static org.neo4j.internal.kernel.api.IndexMonitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;

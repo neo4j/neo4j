@@ -85,6 +85,7 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
@@ -679,7 +680,7 @@ public class Database extends LifecycleAdapter
             MemoryTracker memoryTracker )
     {
         return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore, databaseConfig, scheduler,
-                indexProviderMap, tokenHolders, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ),
+                indexProviderMap, tokenHolders, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexMonitor.class ),
                 pageCacheTracer, memoryTracker, namedDatabaseId.name(), readOnlyDatabaseChecker ) );
     }
 
@@ -697,14 +698,14 @@ public class Database extends LifecycleAdapter
             TokenNameLookup tokenNameLookup,
             LogProvider internalLogProvider,
             LogProvider userLogProvider,
-            IndexingService.Monitor indexingServiceMonitor,
+            IndexMonitor indexMonitor,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker )
     {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory,
-                tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, userLogProvider, indexingServiceMonitor,
+                tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, userLogProvider, indexMonitor,
                 databaseSchemaState, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnlyChecker );
         storageEngine.addIndexUpdateListener( indexingService );
         return indexingService;

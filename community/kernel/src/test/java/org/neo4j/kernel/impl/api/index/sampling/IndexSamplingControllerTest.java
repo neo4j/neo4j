@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobHandle;
@@ -55,8 +56,8 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.foregroundRebuildUpdated;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildUpdated;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.foregroundRebuildUpdated;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 class IndexSamplingControllerTest

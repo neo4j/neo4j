@@ -29,6 +29,8 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
@@ -48,6 +50,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
     private IndexProvider defaultIndexProvider;
     private IndexProvider fulltextIndexProvider;
     private IndexProvider tokenIndexProvider;
+    private IndexProvider textIndexProvider;
     private final Config config;
 
     public DefaultIndexProviderMap( DependencyResolver dependencies, Config config )
@@ -96,6 +99,13 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
     }
 
     @Override
+    public IndexProvider getTextIndexProvider()
+    {
+        assertInit();
+        return textIndexProvider;
+    }
+
+    @Override
     public IndexProvider lookup( IndexProviderDescriptor providerDescriptor )
     {
         assertInit();
@@ -132,7 +142,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
 
     private void assertInit()
     {
-        if ( defaultIndexProvider == null || fulltextIndexProvider == null || tokenIndexProvider == null )
+        if ( defaultIndexProvider == null || fulltextIndexProvider == null || tokenIndexProvider == null || textIndexProvider == null )
         {
             throw new IllegalStateException( "DefaultIndexProviderMap must be part of life cycle and initialized before getting providers." );
         }
@@ -158,6 +168,12 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
         requireNonNull( configuredTokenIndexProvider, () -> format( "Token index provider: `%s` not found. Available index providers: %s.",
                 TOKEN_INDEX_PROVIDER_NAME, indexProvidersByName.keySet().toString() ) );
         tokenIndexProvider = configuredTokenIndexProvider;
+
+        var configuredTextIndexProvider = indexProvidersByName.get( TextIndexProvider.DESCRIPTOR.name() );
+        requireNonNull( configuredTextIndexProvider, () -> format(
+                "Text index provider: `%s` not found. Available index providers: %s.",
+                TextIndexProvider.DESCRIPTOR.name(), indexProvidersByName.keySet().toString() ) );
+        textIndexProvider = configuredTextIndexProvider;
     }
 
     private IndexProvider put( IndexProviderDescriptor providerDescriptor, IndexProvider provider )

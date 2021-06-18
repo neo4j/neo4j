@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -753,7 +754,7 @@ class IndexStatisticsTest
         assertEquals( expected, actual, maxDelta, message );
     }
 
-    private class IndexOnlineMonitor extends IndexingService.MonitorAdapter
+    private class IndexOnlineMonitor extends IndexMonitor.MonitorAdapter
     {
         private CountDownLatch updateTrackerCompletionLatch;
         private final CountDownLatch startSignal = new CountDownLatch( 1 );

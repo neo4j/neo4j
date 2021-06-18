@@ -37,7 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
+import static org.neo4j.internal.kernel.api.IndexMonitor.NO_MONITOR;
 
 class IndexPopulationJobMonitoringTest
 {

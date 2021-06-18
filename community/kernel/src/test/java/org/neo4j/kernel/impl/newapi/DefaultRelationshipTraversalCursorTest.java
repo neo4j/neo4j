@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -501,6 +502,12 @@ class DefaultRelationshipTraversalCursorTest
         public MemoryTracker memoryTracker()
         {
             return null;
+        }
+
+        @Override
+        public IndexMonitor monitor()
+        {
+            return IndexMonitor.NO_MONITOR;
         }
 
         @Override

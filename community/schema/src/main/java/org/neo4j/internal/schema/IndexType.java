@@ -37,7 +37,11 @@ public enum IndexType
     /**
      * @see org.neo4j.graphdb.schema.IndexType#LOOKUP
      */
-    LOOKUP;
+    LOOKUP,
+    /**
+     * @see org.neo4j.graphdb.schema.IndexType#TEXT
+     */
+    TEXT;
 
     public static IndexType fromPublicApi( org.neo4j.graphdb.schema.IndexType type )
     {
@@ -53,6 +57,8 @@ public enum IndexType
             return FULLTEXT;
         case LOOKUP:
             return LOOKUP;
+        case TEXT:
+            return TEXT;
         default:
             throw new IllegalArgumentException( "Unknown index type: " + type );
         }
@@ -68,6 +74,8 @@ public enum IndexType
             return org.neo4j.graphdb.schema.IndexType.FULLTEXT;
         case LOOKUP:
             return org.neo4j.graphdb.schema.IndexType.LOOKUP;
+        case TEXT:
+            return org.neo4j.graphdb.schema.IndexType.TEXT;
         default:
             throw new IllegalStateException( "Missing index type variant in IndexType.toPublicApi: " + this );
         }

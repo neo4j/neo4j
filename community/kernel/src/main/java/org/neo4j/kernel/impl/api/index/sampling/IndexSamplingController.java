@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.Group;
@@ -56,7 +57,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildUpdated;
 
 public class IndexSamplingController
 {

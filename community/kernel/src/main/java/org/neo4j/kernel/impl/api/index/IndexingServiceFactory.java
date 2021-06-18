@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -50,7 +51,7 @@ public final class IndexingServiceFactory
                                           Iterable<IndexDescriptor> indexRules,
                                           LogProvider internalLogProvider,
                                           LogProvider userLogProvider,
-                                          IndexingService.Monitor monitor,
+                                          IndexMonitor monitor,
                                           SchemaState schemaState,
                                           IndexStatisticsStore indexStatisticsStore,
                                           PageCacheTracer pageCacheTracer,

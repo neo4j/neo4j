@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index.sampling;
+package org.neo4j.kernel.impl.api.index;
 
 import java.util.Objects;
 
@@ -36,7 +36,7 @@ public final class IndexSamplingMode
         this.description = description;
     }
 
-    boolean sampleOnlyIfUpdated()
+    public boolean sampleOnlyIfUpdated()
     {
         return sampleOnlyIfUpdated;
     }

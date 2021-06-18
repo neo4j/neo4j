@@ -33,6 +33,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -1164,5 +1165,11 @@ public class AllStoreHolder extends Read
     public MemoryTracker memoryTracker()
     {
         return memoryTracker;
+    }
+
+    @Override
+    public IndexMonitor monitor()
+    {
+        return indexingService.getMonitor();
     }
 }

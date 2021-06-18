@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -84,7 +84,7 @@ public abstract class StringLengthIndexValidationIT
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         Monitors monitors = new Monitors();
-        IndexingService.MonitorAdapter trappingMonitor = new IndexingService.MonitorAdapter()
+        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter()
         {
             @Override
             public void indexPopulationScanComplete()

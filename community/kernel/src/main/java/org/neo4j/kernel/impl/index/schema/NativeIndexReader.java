@@ -123,6 +123,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             PropertyIndexQuery... predicates )
     {
         validateQuery( constraints, predicates );
+        context.monitor().queried( descriptor );
 
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();

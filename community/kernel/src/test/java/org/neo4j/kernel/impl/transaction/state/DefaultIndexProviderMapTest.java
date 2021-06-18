@@ -60,6 +60,7 @@ class DefaultIndexProviderMapTest
         dependencies.satisfyDependency( provider = provider( "provider", "1.2" ) );
         dependencies.satisfyDependency( fulltext() );
         dependencies.satisfyDependency( tokenProvider() );
+        dependencies.satisfyDependency( textIndex() );
 
         // when
         DefaultIndexProviderMap defaultIndexProviderMap = createDefaultProviderMap( dependencies, provider.getProviderDescriptor() );
@@ -76,6 +77,7 @@ class DefaultIndexProviderMapTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( provider = provider( "provider", "1.2" ) );
         dependencies.satisfyDependency( tokenIndexProvider );
+        dependencies.satisfyDependency( textIndex() );
 
         // when
         DefaultIndexProviderMap defaultIndexProviderMap = new DefaultIndexProviderMap( dependencies,
@@ -97,6 +99,11 @@ class DefaultIndexProviderMapTest
     private static IndexProvider fulltext()
     {
         return provider( "fulltext", "1.0" );
+    }
+
+    private static IndexProvider textIndex()
+    {
+        return provider( "text", "1.0" );
     }
 
     private static IndexProvider tokenProvider()

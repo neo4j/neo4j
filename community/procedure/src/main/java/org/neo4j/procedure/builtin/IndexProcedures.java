@@ -42,14 +42,14 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildAll;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.foregroundRebuildUpdated;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildAll;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildUpdated;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.foregroundRebuildUpdated;
 
 public class IndexProcedures
 {

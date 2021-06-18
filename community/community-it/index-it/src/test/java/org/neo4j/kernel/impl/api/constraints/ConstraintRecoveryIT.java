@@ -31,9 +31,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -76,7 +76,7 @@ class ConstraintRecoveryIT
         final AtomicBoolean monitorCalled = new AtomicBoolean( false );
 
         Monitors monitors = new Monitors();
-        monitors.addMonitorListener( new IndexingService.MonitorAdapter()
+        monitors.addMonitorListener( new IndexMonitor.MonitorAdapter()
         {
             @Override
             public void indexPopulationScanComplete()

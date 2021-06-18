@@ -22,6 +22,7 @@ package org.neo4j.graphdb.schema;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.StringSearchMode;
 
 /**
  * The index type describes the overall behaviour and performance profile of an index.
@@ -69,5 +70,18 @@ public enum IndexType
      *     {@link AnyTokens#ANY_RELATIONSHIP_TYPES relationship type} token index.</li>
      * </ul>
      */
-    LOOKUP
+    LOOKUP,
+
+    /**
+     * Text indexes only index string values, it can only answer {@link StringSearchMode  basic string queries}
+     *
+     * <p>
+     * TEXT indexes have the following abilities and limitations:
+     * <ul>
+     *     <li>They do not support fuzzy matching and scoring, use FULLTEXT index for advance text searching</li>
+     *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
+     *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
+     * </ul>
+     */
+    TEXT,
 }

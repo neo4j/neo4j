@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildUpdated;
 
 class ResampleOutdatedIndexesProcedureTest
 {

@@ -34,6 +34,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -67,7 +68,8 @@ class IndexRestartIT
     {
         factory = new TestDatabaseManagementServiceBuilder();
         factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
-        factory.setExtensions( Arrays.asList( singleInstanceIndexProviderFactory( "test", provider ), new TokenIndexProviderFactory() ) );
+        factory.setExtensions( Arrays.asList(
+                singleInstanceIndexProviderFactory( "test", provider ), new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) );
     }
 
     @AfterEach

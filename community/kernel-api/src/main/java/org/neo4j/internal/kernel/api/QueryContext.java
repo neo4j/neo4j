@@ -65,6 +65,12 @@ public interface QueryContext
         {
             return INSTANCE;
         }
+
+        @Override
+        public IndexMonitor monitor()
+        {
+            return IndexMonitor.NO_MONITOR;
+        }
     };
 
     /**
@@ -95,4 +101,9 @@ public interface QueryContext
      * @return underlying transactional memory tracker
      */
     MemoryTracker memoryTracker();
+
+    /**
+     * @return underlying index monitor
+     */
+    IndexMonitor monitor();
 }

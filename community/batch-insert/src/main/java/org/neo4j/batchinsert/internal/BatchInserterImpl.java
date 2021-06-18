@@ -57,6 +57,7 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.DirectRecordAccessSet;
@@ -462,7 +463,7 @@ public class BatchInserterImpl implements BatchInserter
                 immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory, tokenHolders, emptyList(), logProvider, userLogProvider,
-                        IndexingService.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker,
+                        IndexMonitor.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker,
                         databaseLayout.getDatabaseName(), readOnlyChecker );
         life.add( indexingService );
         try

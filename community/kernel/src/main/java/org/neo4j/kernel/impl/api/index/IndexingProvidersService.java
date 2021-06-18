@@ -68,4 +68,9 @@ public interface IndexingProvidersService extends IndexConfigCompleter
      * @return the token index provider for this instance.
      */
     IndexProviderDescriptor getTokenIndexProvider();
+
+    /**
+     * @return the text index provider for this instance.
+     */
+    IndexProviderDescriptor getTextIndexProvider();
 }

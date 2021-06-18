@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryTracker;
@@ -53,7 +54,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_popula
 public class IndexPopulationJob implements Runnable
 {
     private static final String INDEX_POPULATION_TAG = "indexPopulationJob";
-    private final IndexingService.Monitor monitor;
+    private final IndexMonitor monitor;
     private final boolean verifyBeforeFlipping;
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
@@ -78,7 +79,7 @@ public class IndexPopulationJob implements Runnable
      */
     private volatile JobHandle<?> jobHandle;
 
-    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping,
+    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexMonitor monitor, boolean verifyBeforeFlipping,
             PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, String databaseName, Subject subject, EntityType populatedEntityType,
             Config config )
     {

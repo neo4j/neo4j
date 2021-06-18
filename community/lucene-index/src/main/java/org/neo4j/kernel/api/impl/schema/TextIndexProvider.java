@@ -28,14 +28,16 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.monitoring.Monitors;
 
-public class LuceneIndexProvider extends AbstractLuceneIndexProvider
+public class TextIndexProvider extends AbstractLuceneIndexProvider
 {
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "lucene", "2.0" );
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "text", "1.0" );
 
-    public LuceneIndexProvider(
-            FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory, IndexDirectoryStructure.Factory directoryStructureFactory,
-            Monitors monitors, Config config, DatabaseReadOnlyChecker readOnlyChecker )
+    public TextIndexProvider( FileSystemAbstraction fileSystem,
+                              DirectoryFactory directoryFactory,
+                              IndexDirectoryStructure.Factory directoryStructureFactory,
+                              Monitors monitors, Config config,
+                              DatabaseReadOnlyChecker readOnlyChecker )
     {
-        super( IndexType.BTREE, DESCRIPTOR, fileSystem, directoryFactory, directoryStructureFactory, monitors, config, readOnlyChecker );
+        super( IndexType.TEXT, DESCRIPTOR, fileSystem, directoryFactory, directoryStructureFactory, monitors, config, readOnlyChecker );
     }
 }

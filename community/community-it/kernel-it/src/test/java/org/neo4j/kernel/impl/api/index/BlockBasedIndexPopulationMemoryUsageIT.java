@@ -29,6 +29,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -148,7 +149,7 @@ class BlockBasedIndexPopulationMemoryUsageIT
         }
     }
 
-    private static class IndexPopulationMemoryUsageMonitor extends IndexingService.MonitorAdapter
+    private static class IndexPopulationMemoryUsageMonitor extends IndexMonitor.MonitorAdapter
     {
         private volatile long peakDirectMemoryUsage;
         private final CountDownLatch called = new CountDownLatch( 1 );

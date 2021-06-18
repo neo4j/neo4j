@@ -27,7 +27,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
@@ -118,9 +118,9 @@ class CancelIndexPopulationIT
         }
     }
 
-    private static IndexingService.MonitorAdapter populationCompletionBlocker( Barrier.Control barrier )
+    private static IndexMonitor.MonitorAdapter populationCompletionBlocker( Barrier.Control barrier )
     {
-        return new IndexingService.MonitorAdapter()
+        return new IndexMonitor.MonitorAdapter()
         {
             @Override
             public void indexPopulationScanComplete()

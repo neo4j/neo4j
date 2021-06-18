@@ -53,6 +53,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -331,7 +332,7 @@ public final class Recovery
         IndexStatisticsStore indexStatisticsStore =
                 new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, readOnlyChecker, tracers.getPageCacheTracer() );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreViewFactory, indexStatisticsStore,
-                config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
+                config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexMonitor.class ),
                 tracers.getPageCacheTracer(), memoryTracker, databaseLayout.getDatabaseName(), readOnlyChecker );
 
         MetadataProvider metadataProvider = storageEngine.metadataProvider();

@@ -72,6 +72,13 @@ public interface IndexProviderMap extends IndexConfigCompleter
     IndexProvider getTokenIndexProvider();
 
     /**
+     * The preferred {@link IndexProvider} for handling text indexes.
+     *
+     * @return the default or preferred index provider for full-text indexes.
+     */
+    IndexProvider getTextIndexProvider();
+
+    /**
      * Visits all the {@link IndexProvider} with the visitor.
      *
      * @param visitor {@link Consumer} visiting all the {@link IndexProvider index providers} in this map.
@@ -112,6 +119,12 @@ public interface IndexProviderMap extends IndexConfigCompleter
 
         @Override
         public IndexProvider getTokenIndexProvider()
+        {
+            return IndexProvider.EMPTY;
+        }
+
+        @Override
+        public IndexProvider getTextIndexProvider()
         {
             return IndexProvider.EMPTY;
         }

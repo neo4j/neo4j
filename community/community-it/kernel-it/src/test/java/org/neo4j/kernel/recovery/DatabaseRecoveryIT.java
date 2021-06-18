@@ -76,6 +76,7 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
+import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
@@ -824,7 +825,7 @@ class DatabaseRecoveryIT
         }
         managementService = new TestDatabaseManagementServiceBuilder( homeDir )
                 .setFileSystem( fs )
-                .setExtensions( asList( new IndexExtensionFactory( indexProvider ), new TokenIndexProviderFactory() ) )
+                .setExtensions( asList( new IndexExtensionFactory( indexProvider ), new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) )
                 .impermanent()
                 .noOpSystemGraphInitializer()
                 .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )

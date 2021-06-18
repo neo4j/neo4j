@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -56,7 +57,6 @@ import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
@@ -555,7 +555,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         return false;
     }
 
-    private static class IndexRecoveryTracker extends IndexingService.MonitorAdapter
+    private static class IndexRecoveryTracker extends IndexMonitor.MonitorAdapter
     {
         Map<IndexDescriptor,InternalIndexState> initialStateMap = new HashMap<>();
 

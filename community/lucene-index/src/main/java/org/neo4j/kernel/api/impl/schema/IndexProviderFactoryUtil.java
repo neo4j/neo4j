@@ -20,22 +20,25 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.monitoring.Monitors;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.ephemeral_lucene;
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 
 public class IndexProviderFactoryUtil
 {
     public static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
-            Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker )
+            Monitors monitors, Config config, DatabaseReadOnlyChecker readOnlyChecker )
     {
-        boolean ephemeral = config.get( GraphDatabaseInternalSettings.ephemeral_lucene );
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral );
-        return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitors, monitorTag, config, readOnlyChecker );
+        return new LuceneIndexProvider( fs, directoryFactory( config.get( ephemeral_lucene ) ), directoryStructure, monitors, config, readOnlyChecker );
+    }
+
+    public static TextIndexProvider textProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
+            Monitors monitors, Config config, DatabaseReadOnlyChecker readOnlyChecker )
+    {
+        return new TextIndexProvider( fs, directoryFactory( config.get( ephemeral_lucene ) ), directoryStructure, monitors, config, readOnlyChecker );
     }
 }

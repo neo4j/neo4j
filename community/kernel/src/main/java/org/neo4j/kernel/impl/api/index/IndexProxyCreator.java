@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 
@@ -58,7 +59,7 @@ class IndexProxyCreator
         this.logProvider = logProvider;
     }
 
-    IndexProxy createPopulatingIndexProxy( IndexDescriptor index, boolean flipToTentative, IndexingService.Monitor monitor,
+    IndexProxy createPopulatingIndexProxy( IndexDescriptor index, boolean flipToTentative, IndexMonitor monitor,
             IndexPopulationJob populationJob )
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();

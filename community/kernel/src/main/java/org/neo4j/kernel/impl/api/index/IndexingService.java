@@ -71,8 +71,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -130,7 +130,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler jobScheduler;
     private final LogProvider internalLogProvider;
-    private final Monitor monitor;
+    private final IndexMonitor monitor;
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
     private static final String INIT_TAG = "Initialize IndexingService";
@@ -143,70 +143,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         RUNNING,
         STOPPED
     }
-
-    public interface Monitor
-    {
-        void initialState( String databaseName, IndexDescriptor descriptor, InternalIndexState state );
-
-        void populationCompleteOn( IndexDescriptor descriptor );
-
-        void indexPopulationScanStarting();
-
-        void indexPopulationScanComplete();
-
-        void awaitingPopulationOfRecoveredIndex( IndexDescriptor descriptor );
-
-        void indexSamplingTriggered( IndexSamplingMode mode );
-
-        void populationCancelled();
-
-        void populationJobCompleted( long peakDirectMemoryUsage );
-    }
-
-    public static class MonitorAdapter implements Monitor
-    {
-        @Override
-        public void initialState( String databaseName, IndexDescriptor descriptor, InternalIndexState state )
-        {   // Do nothing
-        }
-
-        @Override
-        public void populationCompleteOn( IndexDescriptor descriptor )
-        {   // Do nothing
-        }
-
-        @Override
-        public void indexPopulationScanStarting()
-        {   // Do nothing
-        }
-
-        @Override
-        public void indexPopulationScanComplete()
-        {   // Do nothing
-        }
-
-        @Override
-        public void awaitingPopulationOfRecoveredIndex( IndexDescriptor descriptor )
-        {   // Do nothing
-        }
-
-        @Override
-        public void indexSamplingTriggered( IndexSamplingMode mode )
-        {   // Do nothing
-        }
-
-        @Override
-        public void populationCancelled()
-        {   // Do nothing
-        }
-
-        @Override
-        public void populationJobCompleted( long peakDirectMemoryUsage )
-        {   // Do nothing
-        }
-    }
-
-    public static final Monitor NO_MONITOR = new MonitorAdapter();
 
     private volatile State state = State.NOT_STARTED;
 
@@ -221,7 +157,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             SchemaState schemaState,
             LogProvider internalLogProvider,
             LogProvider userLogProvider,
-            Monitor monitor,
+            IndexMonitor monitor,
             IndexStatisticsStore indexStatisticsStore,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
@@ -551,6 +487,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
+    public IndexProviderDescriptor getTextIndexProvider()
+    {
+        return providerMap.getTextIndexProvider().getProviderDescriptor();
+    }
+
+    @Override
     public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
         return providerMap.completeConfiguration( index );
@@ -875,6 +817,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             snapshots.add( indexProxy.snapshotFiles() );
         }
         return Iterators.concatResourceIterators( snapshots.iterator() );
+    }
+
+    public IndexMonitor getMonitor()
+    {
+        return monitor;
     }
 
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping, Subject subject )

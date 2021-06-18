@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -1183,7 +1184,8 @@ class BatchInsertTest
     {
         Config configuration = configuration( denseNodeThreshold );
         configuration.set( GraphDatabaseSettings.default_schema_provider, providerDescriptor.name() );
-        return BatchInserters.inserter( databaseLayout, fs, configuration, asList( provider, new TokenIndexProviderFactory() ) );
+        return BatchInserters.inserter(
+                databaseLayout, fs, configuration, asList( provider, new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) );
     }
 
     private GraphDatabaseAPI switchToEmbeddedGraphDatabaseService( BatchInserter inserter, int denseNodeThreshold )

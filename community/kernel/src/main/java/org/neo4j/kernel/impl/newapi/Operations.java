@@ -113,6 +113,8 @@ import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
+import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
@@ -158,6 +160,7 @@ public class Operations implements Write, SchemaWrite
     private DefaultPropertyCursor propertyCursor;
     private DefaultPropertyCursor restrictedPropertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
+    private final boolean textIndexesEnabled;
 
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
             KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
@@ -179,7 +182,8 @@ public class Operations implements Write, SchemaWrite
         this.memoryTracker = memoryTracker;
         this.kernelVersionRepository = kernelVersionRepository;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
-        additionLockVerification = config.get( additional_lock_verification );
+        this.additionLockVerification = config.get( additional_lock_verification );
+        this.textIndexesEnabled  = config.get( text_indexes_enabled );
     }
 
     public void initialize( CursorContext cursorContext )
@@ -953,6 +957,10 @@ public class Operations implements Write, SchemaWrite
         {
             assertTokenAndRelationshipPropertyIndexesSupported( "Failed to create btree relationship property index." );
         }
+        if ( prototype.getIndexType() == IndexType.TEXT && !textIndexesEnabled )
+        {
+            throw new UnsupportedOperationException( "Text indexes are not supported." );
+        }
 
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();
@@ -1077,6 +1085,10 @@ public class Operations implements Write, SchemaWrite
             else if ( prototype.getIndexType() == IndexType.LOOKUP )
             {
                 provider = indexProviders.getTokenIndexProvider();
+            }
+            else if ( prototype.getIndexType() == IndexType.TEXT )
+            {
+                provider = indexProviders.getTextIndexProvider();
             }
             else
             {
@@ -1220,7 +1232,10 @@ public class Operations implements Write, SchemaWrite
 
         // Equivalent index
         IndexDescriptor indexWithSameSchema = IndexDescriptor.NO_INDEX;
-        Iterator<IndexDescriptor> indexesWithSameSchema = allStoreHolder.index( prototype.schema() );
+        Iterator<IndexDescriptor> indexesWithSameSchema = stream( allStoreHolder.index( prototype.schema() ) )
+                .filter( index -> index.getIndexType() == prototype.getIndexType() )
+                .iterator();
+
         while ( indexesWithSameSchema.hasNext() )
         {
             indexWithSameSchema = indexesWithSameSchema.next();

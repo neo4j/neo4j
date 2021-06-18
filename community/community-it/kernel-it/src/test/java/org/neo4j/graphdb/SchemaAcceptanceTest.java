@@ -53,6 +53,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -63,7 +64,6 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsExc
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
@@ -126,7 +126,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         Monitors monitors = new Monitors();
-        IndexingService.MonitorAdapter trappingMonitor = new IndexingService.MonitorAdapter()
+        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter()
         {
             @Override
             public void indexPopulationScanComplete()

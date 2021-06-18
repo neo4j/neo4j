@@ -750,4 +750,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_inconsistent_data_deletion = newBuilder( "dbms.log_inconsistent_data_deletion", BOOL, Boolean.FALSE )
             .dynamic()
             .build();
+
+    @Internal
+    @Description( "Feature flag to enable/disable text indexes" )
+    public static final Setting<Boolean> text_indexes_enabled = newBuilder( "unsupported.dbms.text_indexes_enabled", BOOL, false ).build();
 }

@@ -46,7 +46,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Level;
 import org.neo4j.monitoring.Monitors;
@@ -98,7 +98,7 @@ class FulltextProceduresTestSupport
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         Monitors monitors = new Monitors();
-        IndexingService.MonitorAdapter trappingMonitor = new IndexingService.MonitorAdapter()
+        IndexMonitor.MonitorAdapter trappingMonitor = new IndexMonitor.MonitorAdapter()
         {
             @Override
             public void indexPopulationScanComplete()

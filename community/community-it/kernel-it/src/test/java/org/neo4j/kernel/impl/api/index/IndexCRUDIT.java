@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
+import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -179,7 +180,7 @@ class IndexCRUDIT
 
         managementService = new TestDatabaseManagementServiceBuilder()
             .setFileSystem( fs )
-                .setExtensions( asList( mockedIndexProviderFactory, new TokenIndexProviderFactory() ) )
+                .setExtensions( asList( mockedIndexProviderFactory, new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) )
                 .noOpSystemGraphInitializer()
                 .impermanent()
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() )
