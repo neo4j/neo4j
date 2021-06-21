@@ -297,6 +297,12 @@ public abstract class Command implements StorageCommand
         }
     }
 
+    /**
+     * This command can be serialized into two different command types, depending on if the relationship type will fit in 2 or 3 bytes.
+     * High-limit format might require more bytes, this was unfortunately not tested properly, so this is an afterthought.
+     * This approach was chosen to minimize impact of introducing a new command in a patch release, that could prevent
+     * users from upgrading.
+     */
     public static class RelationshipGroupCommand extends BaseCommand<RelationshipGroupRecord>
     {
         public RelationshipGroupCommand( RelationshipGroupRecord before, RelationshipGroupRecord after )
@@ -313,14 +319,26 @@ public abstract class Command implements StorageCommand
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
-            channel.put( NeoCommandType.REL_GROUP_COMMAND );
-            channel.putLong( after.getId() );
-            writeRelationshipGroupRecord( channel, before );
-            writeRelationshipGroupRecord( channel, after );
+            int relType = Math.max( before.getType(), after.getType() );
+            if ( relType == Record.NULL_REFERENCE.intValue() || relType >>> Short.SIZE == 0 )
+            {
+                // relType will fit in a short
+                channel.put( NeoCommandType.REL_GROUP_COMMAND );
+                channel.putLong( after.getId() );
+                writeRelationshipGroupRecord( channel, before );
+                writeRelationshipGroupRecord( channel, after );
+            }
+            else
+            {
+                // here we need 3 bytes to store the relType
+                channel.put( NeoCommandType.REL_GROUP_EXTENDED_COMMAND );
+                channel.putLong( after.getId() );
+                writeRelationshipGroupExtendedRecord( channel, before );
+                writeRelationshipGroupExtendedRecord( channel, after );
+            }
         }
 
-        private void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record )
-                throws IOException
+        private void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record ) throws IOException
         {
             byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                                    bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
@@ -328,6 +346,26 @@ public abstract class Command implements StorageCommand
                                    bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
             channel.put( flags );
             channel.putShort( (short) record.getType() );
+            channel.putLong( record.getNext() );
+            channel.putLong( record.getFirstOut() );
+            channel.putLong( record.getFirstIn() );
+            channel.putLong( record.getFirstLoop() );
+            channel.putLong( record.getOwningNode() );
+            if ( record.hasSecondaryUnitId() )
+            {
+                channel.putLong( record.getSecondaryUnitId() );
+            }
+        }
+
+        private void writeRelationshipGroupExtendedRecord( WritableChannel channel, RelationshipGroupRecord record ) throws IOException
+        {
+            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                    bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                    bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
+                    bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
+            channel.put( flags );
+            channel.putShort( (short) record.getType() );
+            channel.put( (byte) (record.getType() >>> Short.SIZE) );
             channel.putLong( record.getNext() );
             channel.putLong( record.getFirstOut() );
             channel.putLong( record.getFirstIn() );
