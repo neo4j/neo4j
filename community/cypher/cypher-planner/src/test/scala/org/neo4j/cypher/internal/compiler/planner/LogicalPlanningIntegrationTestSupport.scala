@@ -23,3 +23,4 @@ trait LogicalPlanningIntegrationTestSupport
   extends StatisticsBackedLogicalPlanningSupport
     with LogicalPlanTestOps
     with LogicalPlanMatchers
+    with ProcedureTestSupport
