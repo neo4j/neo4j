@@ -156,19 +156,12 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     checkCorrelatedSubQueriesFeature chain
     checkIllegalImportWith chain
     checkLeadingFrom(outer) chain
-    checkConcludesWithReturn(clausesExceptLeadingFromAndImportWith) chain
     semanticCheckAbstract(
       clausesExceptLeadingFromAndImportWith,
       importVariables chain checkClauses(_, Some(outer.currentScope.scope))
     ) chain
     checkShadowedVariables(outer)
   }
-
-  private def checkConcludesWithReturn(clauses: Seq[Clause]): SemanticCheck =
-    clauses.last match {
-      case _: Return => success
-      case clause    => error(s"CALL subquery cannot conclude with ${clause.name} (must be RETURN)", clause.position)
-    }
 
   private def checkCorrelatedSubQueriesFeature: SemanticCheck =
     importWith match {

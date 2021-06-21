@@ -24,8 +24,15 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.SyntaxException
 
@@ -307,6 +314,77 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .allNodeScan("n")
         .build()
     )
+  }
+
+  test("CALL ending with CREATE") {
+    val query = "UNWIND [1, 2] AS x CALL { CREATE (n:N) } RETURN x"
+
+    planFor(query) should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .apply(true)
+        .|.emptyResult()
+        .|.create(createNode("n", "N"))
+        .|.argument()
+        .unwind("[1, 2] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("CALL ending with void procedure call") {
+    val query = "WITH 1 AS x CALL { WITH 2 AS y CALL my.println(y) } RETURN x"
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addProcedure(ProcedureSignature(
+        name = QualifiedName(Seq("my"), "println"),
+        inputSignature = IndexedSeq(FieldSignature("value", symbols.CTInteger)),
+        outputSignature = None,
+        deprecationInfo = None,
+        accessMode = ProcedureReadWriteAccess(Array.empty),
+        id = 1))
+      .build()
+
+    planner
+      .plan(query)
+      .shouldEqual(planner
+        .planBuilder()
+        .produceResults("x")
+        .apply(true)
+        .|.emptyResult()
+        .|.procedureCall("my.println(y)")
+        .|.projection("2 AS y")
+        .|.argument()
+        .projection("1 AS x")
+        .argument()
+        .build())
+  }
+
+
+
+  def procedureSignature(qualifiedName: String): ProcedureSignatureBuilder1 = ProcedureSignatureBuilder1(qualifiedName)
+
+
+  case class ProcedureSignatureBuilder1(
+    qualifiedName: String,
+    inputSignature: IndexedSeq[FieldSignature] = IndexedSeq(),
+    outputSignature: Option[IndexedSeq[FieldSignature]] = None,
+    deprecationInfo: Option[String] = None,
+    accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess(Array.empty),
+  ) {
+    def build() = {
+      val splitName = qualifiedName.split("\\.")
+
+      ProcedureSignature(
+        name = QualifiedName(splitName.init.toSeq, splitName.last),
+        inputSignature = inputSignature,
+        outputSignature = outputSignature,
+        deprecationInfo = deprecationInfo,
+        accessMode = accessMode,
+        // TODO: Do we need to generate ids?
+        id = 1)
+    }
   }
 
   // Correlated subqueries

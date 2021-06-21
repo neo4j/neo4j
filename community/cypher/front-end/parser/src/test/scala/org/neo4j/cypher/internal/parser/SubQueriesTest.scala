@@ -48,4 +48,8 @@ class SubQueriesTest
     failsToParse
   }
 
+  test("CALL { CREATE (n:N) }") {
+    gives(subQuery(create(nodePat("n", "N"))))
+  }
+
 }

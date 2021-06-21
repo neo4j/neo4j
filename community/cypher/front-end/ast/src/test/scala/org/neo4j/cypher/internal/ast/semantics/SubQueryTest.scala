@@ -212,7 +212,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .errors.size.shouldEqual(0)
   }
 
-  test("subquery does not allow union without return statements at the end") {
+  test("subquery allows union with update clauses at the end") {
     // CALL {
     //   CREATE (a)
     //     UNION
@@ -229,9 +229,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       return_(countStar().as("count"))
     )
       .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(2))
-      .tap(_.errors(0).msg.should(include("CALL subquery cannot conclude with CREATE (must be RETURN)")))
-      .tap(_.errors(1).msg.should(include("CALL subquery cannot conclude with CREATE (must be RETURN)")))
+      .tap(_.errors.size.shouldEqual(0))
   }
 
   test("subquery allows union with create and return statement at the end") {
@@ -254,20 +252,43 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .errors.size.shouldEqual(0)
   }
 
-  test("subquery does not allow single query without return statement at the end") {
+  test("subquery allows single query with update clause at the end") {
     // CALL {
     //   MERGE (a)
     // }
     // RETURN count(*) AS count
     singleQuery(
       subQuery(
-        singleQuery(merge(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)))
+        singleQuery(merge(nodePat("a")))
+      ),
+      return_(countStar().as("count"))
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(0))
+  }
+
+  test("subquery disallows single query ending in clause that is neither update nor return") {
+    // CALL {
+    //   MERGE (a)
+    //   WITH a AS a
+    //   UNWIND [1] AS x
+    // }
+    // RETURN count(*) AS count
+    val unwindPos = pos.newUniquePos()
+    singleQuery(
+      subQuery(
+        singleQuery(
+          merge(
+            nodePat("a")),
+            with_(varFor("a").aliased),
+            unwind(listOfInt(1), varFor("x")).copy()(unwindPos))
       ),
       return_(countStar().as("count"))
     )
       .semanticCheck(clean)
       .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("CALL subquery cannot conclude with MERGE (must be RETURN)")))
+      .tap(_.errors.head.msg.should(include("Query cannot conclude with UNWIND")))
+      .tap(_.errors.head.position.shouldEqual(unwindPos))
   }
 
   test("subquery allows single query with create and return statement at the end") {
@@ -277,7 +298,7 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN count(*) AS count
     singleQuery(
       subQuery(
-        singleQuery(merge(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)), return_(varFor("a").as("a")))
+        singleQuery(merge(nodePat("a")), return_(varFor("a").as("a")))
       ),
       return_(countStar().as("count"))
     )
