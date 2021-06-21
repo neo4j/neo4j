@@ -1593,6 +1593,11 @@
         <artifactId>aws-java-sdk-ecs</artifactId>
         <version>${amazon-sdk.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-logs</artifactId>
+        <version>${amazon-sdk.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>
