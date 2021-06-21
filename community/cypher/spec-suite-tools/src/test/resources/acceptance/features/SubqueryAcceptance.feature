@@ -482,3 +482,73 @@ Feature: SubqueryAcceptance
       | 3     |
     And the side effects should be:
       | +nodes  | 3 |
+
+  Scenario: Side-effects in order dependant subquery
+    And having executed:
+      """
+      CREATE ({value: 3})
+      """
+    When executing query:
+      """
+      UNWIND [1, 2, 3] AS i
+      WITH i ORDER BY i DESC
+      CALL {
+        WITH i
+        MATCH (n {value: i})
+        CREATE (m {value: i - 1})
+        RETURN m
+      }
+      RETURN count(*) as count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes       | 3 |
+      | +properties  | 3 |
+
+  Scenario: Side-effects in subquery with update that depending on previous updates
+    And having executed:
+      """
+      CREATE (:Number {value: 19})
+      """
+    When executing query:
+      """
+      WITH 100 AS maxIterations
+      UNWIND range(1, maxIterations) AS i
+      CALL {
+        MATCH (n:Number) WHERE n.value <> 1
+        WITH CASE n.value % 2
+          WHEN 0 THEN n.value / 2
+          WHEN 1 THEN 3*n.value + 1
+        END AS newVal, n AS n
+        SET n.value = newVal
+        RETURN newVal
+      }
+      RETURN i, newVal
+      """
+    Then the result should be, in order:
+      | i  | newVal  |
+      | 1  | 58      |
+      | 2  | 29      |
+      | 3  | 88      |
+      | 4  | 44      |
+      | 5  | 22      |
+      | 6  | 11      |
+      | 7  | 34      |
+      | 8  | 17      |
+      | 9  | 52      |
+      | 10 | 26      |
+      | 11 | 13      |
+      | 12 | 40      |
+      | 13 | 20      |
+      | 14 | 10      |
+      | 15 | 5       |
+      | 16 | 16      |
+      | 17 | 8       |
+      | 18 | 4       |
+      | 19 | 2       |
+      | 20 | 1       |
+    And the side effects should be:
+      | -properties  | 1 |
+      | +properties  | 1 |
