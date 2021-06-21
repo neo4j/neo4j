@@ -324,7 +324,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = {
         labelId.map(_.id)
                .map(resolver.getLabelName)
-               .map(label => cardinalities.labels.getOrElse(label, fail(s"No cardinality set for label $label")))
+               .map(label => cardinalities.labels.getOrElse(label, fail(
+                 s"""No cardinality set for label $label. Please specify using
+                    |.setLabelCardinality("$label", cardinality)""".stripMargin)))
                .map(Cardinality.apply)
                .getOrElse(Cardinality.EMPTY)
       }
@@ -335,7 +337,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
           relType = relTypeId.map(_.id).map(resolver.getRelTypeName),
           toLabel = toLabelId.map(_.id).map(resolver.getLabelName),
         )
-        cardinalities.relationships.getOrElse(relDef, fail(s"No cardinality set for relationship $relDef"))
+        cardinalities.relationships.getOrElse(relDef, fail(
+          s"""No cardinality set for relationship $relDef. Please specify using
+             |.setRelationshipCardinality("$relDef", cardinality)""".stripMargin))
       }
 
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
