@@ -64,19 +64,20 @@ case object PlanUpdates extends UpdatesPlanner {
   }
 
   override def apply(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): LogicalPlan = {
+    val eagerAnalyzer = new EagerAnalyzer(context)
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
     val plan = if (firstPlannerQuery)
-      Eagerness.headReadWriteEagerize(in, query, context)
+      eagerAnalyzer.headReadWriteEagerize(in, query)
     else
     //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
-      Eagerness.tailReadWriteEagerizeNonRecursive(in, query, context)
+      eagerAnalyzer.tailReadWriteEagerizeNonRecursive(in, query)
 
     val updatePlan = computePlan(plan, query, context)
 
     if (firstPlannerQuery)
-      Eagerness.headWriteReadEagerize(updatePlan, query, context)
+      eagerAnalyzer.headWriteReadEagerize(updatePlan, query)
     else {
-      Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query, context), query, context)
+      eagerAnalyzer.tailWriteReadEagerize(eagerAnalyzer.tailReadWriteEagerizeRecursive(updatePlan, query), query)
     }
   }
 
