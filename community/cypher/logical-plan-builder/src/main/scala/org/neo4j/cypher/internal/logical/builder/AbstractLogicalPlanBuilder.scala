@@ -314,9 +314,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def procedureCall(call: String): IMPL = {
-    val uc = Parser.parseProcedureCall(call)
-    appendAtCurrentIndent(UnaryOperator(lp => ProcedureCall(lp, ResolvedCall(resolver.procedureSignature)(uc))(_)))
+  def procedureCall(call: String, withFakedFullDeclarations: Boolean = false): IMPL = {
+    val unresolvedCall = Parser.parseProcedureCall(call)
+    appendAtCurrentIndent(UnaryOperator(lp => {
+      val resolvedCall =
+        ResolvedCall(resolver.procedureSignature)(unresolvedCall)
+          .coerceArguments
+      val rewrittenResolvedCall = if (withFakedFullDeclarations) resolvedCall.withFakedFullDeclarations else resolvedCall
+      ProcedureCall(lp, rewrittenResolvedCall)(_)
+    }))
     self
   }
 
