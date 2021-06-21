@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UpdateGraphTest extends CypherFunSuite {
   private val pos = DummyPosition(0)
+  private implicit val semanticTable: SemanticTable = SemanticTable()
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()

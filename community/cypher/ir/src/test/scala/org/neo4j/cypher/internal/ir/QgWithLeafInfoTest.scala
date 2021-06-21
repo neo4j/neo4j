@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -34,6 +35,8 @@ import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConver
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  private val semanticTable = SemanticTable()
 
   test("unstablePatternNodes includes only nodes excluding stable identifier") {
     val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
@@ -389,7 +392,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
 
-    qgWithLeafInfo.allKnownUnstableNodeLabels should equal(Set(labelName("B")))
+    qgWithLeafInfo.allKnownUnstableNodeLabels(semanticTable) should equal(Set(labelName("B")))
   }
 
   test("allKnownUnstableNodeProperties includes arguments not proven to be nodes") {
@@ -401,7 +404,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
 
-    qgWithLeafInfo.allKnownUnstableNodeProperties should equal(Set(propName("prop")))
+    qgWithLeafInfo.allKnownUnstableNodeProperties(semanticTable) should equal(Set(propName("prop")))
   }
 
   test("allKnownUnstableNodeProperties includes pattern expression property key names") {
@@ -419,7 +422,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
 
-    qgWithLeafInfo.allKnownUnstableNodeProperties should equal(Set(propName("prop")))
+    qgWithLeafInfo.allKnownUnstableNodeProperties(semanticTable) should equal(Set(propName("prop")))
   }
 
   test("allKnownUnstableRelProperties includes arguments not proven to be relationships") {
@@ -431,7 +434,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
 
-    qgWithLeafInfo.allKnownUnstableRelProperties should equal(Set(propName("prop")))
+    qgWithLeafInfo.allKnownUnstableRelProperties(semanticTable) should equal(Set(propName("prop")))
   }
 
   test("allKnownUnstableRelProperties includes pattern comprehension property key names") {
@@ -449,6 +452,6 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
 
-    qgWithLeafInfo.allKnownUnstableRelProperties should equal(Set(propName("prop")))
+    qgWithLeafInfo.allKnownUnstableRelProperties(semanticTable) should equal(Set(propName("prop")))
   }
 }

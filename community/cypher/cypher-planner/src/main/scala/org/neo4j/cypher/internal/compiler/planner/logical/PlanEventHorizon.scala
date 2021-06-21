@@ -179,6 +179,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
     }
 
     // We need to check if reads introduced in the horizon conflicts with future writes
-    Eagerness.horizonEagerize(projectedPlan, query, context)
+    val eagerAnalyzer = new EagerAnalyzer(context)
+    eagerAnalyzer.horizonEagerize(projectedPlan, query)
   }
 }

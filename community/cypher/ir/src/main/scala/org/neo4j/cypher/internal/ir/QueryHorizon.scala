@@ -59,7 +59,20 @@ trait QueryHorizon {
     val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
     val patternComprehensions = filtered.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
     val patternExpressions = filtered.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
-    (patternComprehensions ++ patternExpressions).map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
+    val qgs = patternComprehensions ++ patternExpressions :+ getQueryGraphFromDependingExpressions
+    qgs.map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
+  }
+
+  protected def getQueryGraphFromDependingExpressions: QueryGraph = {
+    val dependencies = dependingExpressions
+      .flatMap(_.dependencies)
+      .map(_.name)
+      .toSet
+
+    QueryGraph(
+      argumentIds = dependencies,
+      selections = Selections.from(dependingExpressions),
+    )
   }
 
   lazy val allQueryGraphs: Seq[QgWithLeafInfo] = getAllQGsWithLeafInfo

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.ContainerIndex
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -31,10 +30,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
-import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 import scala.annotation.tailrec
 
@@ -164,7 +160,7 @@ trait UpdateGraph {
    * Checks if there is overlap between what is being read in the query graph
    * and what is being written here
    */
-  def overlaps(qgWithInfo: QgWithLeafInfo): Boolean = {
+  def overlaps(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     containsUpdates && {
       // A MERGE is always on its own in a QG. That's why we pick either the read graph of a MERGE or the qg itself.
       val readQg = qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
@@ -183,24 +179,9 @@ trait UpdateGraph {
   /*
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
    */
-  def overlapsHorizon(horizon: QueryHorizon, semanticTable: SemanticTable): Boolean = {
+  def overlapsHorizon(horizon: QueryHorizon)(implicit semanticTable: SemanticTable): Boolean = {
     containsUpdates && horizon.couldContainRead && {
-      val dependingExpressions = horizon.dependingExpressions
-      val dependencies = dependingExpressions
-        .flatMap(_.dependencies)
-        // This filter avoids being eager on simple projections like `WITH a.prop AS prop`, if we can rule out `a` is an entity.
-        .filter(couldBeEntity(semanticTable, _))
-        .map(_.name)
-        .toSet
-
-
-      val qgFromDependingExpressions = QueryGraph(
-        argumentIds = dependencies,
-        selections = Selections.from(dependingExpressions),
-      )
-      val allQgs = horizon.allQueryGraphs :+ qgWithNoStableIdentifierAndOnlyLeaves(qgFromDependingExpressions)
-
-      allQgs.exists(overlaps)
+      horizon.allQueryGraphs.exists(overlaps)
     }
   }
 
@@ -225,12 +206,12 @@ trait UpdateGraph {
    * with the labels or properties updated in this query. This may cause the read to affected
    * by the writes.
    */
-  def nodeOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
+  def nodeOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     val labelsToCreate = createLabels
     val propertiesToCreate = createNodeProperties
     val tailCreatesNodes = createsNodes
 
-    val relevantNodes = qgWithInfo.nonArgumentPatternNodes intersect qgWithInfo.leafPatternNodes
+    val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable) intersect qgWithInfo.leafPatternNodes
     updatesNodes && relevantNodes.exists { currentNode =>
       val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)
       val propertiesOnCurrentNode = qgWithInfo.allKnownUnstablePropertiesFor(currentNode)
@@ -332,9 +313,9 @@ trait UpdateGraph {
    * Checks for overlap between labels being read in query graph
    * and labels being updated with SET and MERGE here
    */
-  def setLabelOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
+  def setLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     // For SET label, we even have to look at the arguments for which we don't know if they are a node or not, so we consider HasLabelsOrTypes predicates.
-    def overlapWithKnownLabels = qgWithInfo.patternNodesAndArguments
+    def overlapWithKnownLabels = qgWithInfo.patternNodesAndArguments(semanticTable)
       .exists(p => qgWithInfo.allKnownUnstableNodeLabelsFor(p).intersect(labelsToSet).nonEmpty)
     def overlapWithLabelsFunction = qgWithInfo.treeExists {
       case f: FunctionInvocation => f.function == Labels
@@ -346,12 +327,12 @@ trait UpdateGraph {
    * Checks for overlap between what props are read in query graph
    * and what is updated with SET and MERGE here
    */
-  def setPropertyOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
+  def setPropertyOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     val hasDynamicProperties = qgWithInfo.treeExists {
       case _: ContainerIndex => true
     }
-    setNodePropertyOverlap(qgWithInfo.allKnownUnstableNodeProperties, hasDynamicProperties) ||
-      setRelPropertyOverlap(qgWithInfo.allKnownUnstableRelProperties, hasDynamicProperties)
+    setNodePropertyOverlap(qgWithInfo.allKnownUnstableNodeProperties(semanticTable), hasDynamicProperties) ||
+      setRelPropertyOverlap(qgWithInfo.allKnownUnstableRelProperties(semanticTable), hasDynamicProperties)
   }
 
   /*
@@ -364,31 +345,17 @@ trait UpdateGraph {
     (identifiersToRead intersect identifiersToDelete).nonEmpty
   }
 
-  def removeLabelOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
+  def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     removeLabelPatterns.exists {
       case RemoveLabelPattern(_, labelsToRemove) =>
         //does any other identifier match on the labels I am deleting?
         //MATCH (a:BAR)..(b) REMOVE b:BAR
         labelsToRemove.exists(l => {
-          val otherLabelsRead = qgWithInfo.allKnownUnstableNodeLabels
+          val otherLabelsRead = qgWithInfo.allKnownUnstableNodeLabels(semanticTable)
           otherLabelsRead(l)
         })
     }
   }
-
-  /**
-   * Checks whether the given expression could be of type `CTNode` or `CTRelationship`.
-   */
-  private def couldBeEntity(semanticTable: SemanticTable, exp:Expression): Boolean =
-    semanticTable.types.get(exp) match {
-      case Some(expressionTypeInfo) =>
-        val actualType = expressionTypeInfo.actual
-        actualType.contains(CTNode) || actualType.contains(CTRelationship)
-
-      case None =>
-        // No type information available, we have to be conservative
-        true
-    }
 
   /*
   * Checks for overlap between what node props are read in query graph

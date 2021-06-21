@@ -75,7 +75,7 @@ case class PlanSingleQuery(planHead: HeadPlanner = PlanHead(),
   }
 
   private def unnestEager(plans: BestPlans, context: LogicalPlanningContext): StepResult = {
-    val unnest = Eagerness.unnestEager(
+    val unnest = EagerAnalyzer.unnestEager(
       context.planningAttributes.solveds,
       context.planningAttributes.cardinalities,
       context.planningAttributes.providedOrders,
