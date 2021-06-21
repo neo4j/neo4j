@@ -27,16 +27,16 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Comparator.comparing;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.TRUE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
 
 /**
  * All functionality for reading, writing, comparing, calculating size etc a specific value type in a native index.
  * This is not an enum mostly because of arrays having a shared subclass with lots of shared functionality applicable to all array types.
- * The type classes are state-less singletons and operate on state in {@link BtreeKey} which is passed in as argument to the methods.
+ * The type classes are state-less singletons and operate on state in {@link GenericKey} which is passed in as argument to the methods.
  * <p>
- * Looking solely at {@link BtreeKey} is has a bunch of state with no specific meaning, but they get meaning when looking at them
+ * Looking solely at {@link GenericKey} it has a bunch of state with no specific meaning, but they get meaning when looking at them
  * through a {@link Type}, where e.g. the fields `long0` and `long1` means perhaps string length of a string or the integer value for a number type.
  */
 abstract class Type
@@ -78,18 +78,18 @@ abstract class Type
     }
 
     /**
-     * Size of the key state of this type in the given {@link BtreeKey}.
-     * @param state the {@link BtreeKey} holding the initialized key state.
+     * Size of the key state of this type in the given {@link GenericKey}.
+     * @param state the {@link GenericKey} holding the initialized key state.
      * @return size, in bytes of the key state, not counting tree overhead or entity id.
      */
-    abstract int valueSize( BtreeKey state );
+    abstract int valueSize( GenericKey<?> state );
 
     /**
      * Copies key state from {@code from} to {@code to}.
      * @param to key state to copy into.
      * @param from key state to copy from.
      */
-    abstract void copyValue( BtreeKey to, BtreeKey from );
+    abstract void copyValue( GenericKey<?> to, GenericKey<?> from );
 
     /**
      * Calculates minimal splitter between {@code left} and {@code right} and copies that state, potentially a sub-part of that state into {@code into}.
@@ -97,7 +97,7 @@ abstract class Type
      * @param right right key state to compare.
      * @param into state which gets initialized with the minimal splitter key state between {@code left} and {@code right}.
      */
-    void minimalSplitter( BtreeKey left, BtreeKey right, BtreeKey into )
+    void minimalSplitter( GenericKey<?> left, GenericKey<?> right, GenericKey<?> into )
     {
         // if not a specific implementation then default is to just copy from 'right'
         into.copyFromInternal( right );
@@ -108,7 +108,7 @@ abstract class Type
      * @param state key state to materialize a {@link Value} from.
      * @return a {@link Value} from the given {@code state}.
      */
-    abstract Value asValue( BtreeKey state );
+    abstract Value asValue( GenericKey<?> state );
 
     /**
      * Compares {@code left} and {@code right} key state. Follows semantics of {@link Comparator#compare(Object, Object)}.
@@ -116,32 +116,32 @@ abstract class Type
      * @param right right key state to compare.
      * @return comparison between the {@code left} and {@code right} key state.
      */
-    abstract int compareValue( BtreeKey left, BtreeKey right );
+    abstract int compareValue( GenericKey<?> left, GenericKey<?> right );
 
     /**
      * Serializes key state from {@code state} into the {@code cursor}.
      * @param cursor {@link PageCursor} initialized at correct offset, capable of writing the key state.
      * @param state key state to write to the {@code cursor}.
      */
-    abstract void putValue( PageCursor cursor, BtreeKey state );
+    abstract void putValue( PageCursor cursor, GenericKey<?> state );
 
     /**
      * Deserializes key state from {@code cursor} into {@code state}.
      * @param cursor {@link PageCursor} initialized at correct offset to read from.
      * @param size total number of remaining bytes for this key state.
-     * @param into {@link BtreeKey} to deserialize the key state into.
+     * @param into {@link GenericKey} to deserialize the key state into.
      * @return whether or not this was a sane read. Returning {@code false} should mean that it was simply a bad read,
      * and that the next read in this shouldRetry loop will get a good read. This will signal that it's not worth it to read any further
      * for this key and that the cursor have been told about this error, via {@link PageCursor#setCursorException(String)}.
      * Otherwise, for a successful read, returns {@code true}.
      */
-    abstract boolean readValue( PageCursor cursor, int size, BtreeKey into );
+    abstract boolean readValue( PageCursor cursor, int size, GenericKey<?> into );
 
     /**
      * Initializes key state to be the lowest possible of this type, i.e. all actual key states of this type are bigger in comparison.
      * @param state key state to initialize as lowest of this type.
      */
-    void initializeAsLowest( BtreeKey state )
+    void initializeAsLowest( GenericKey<?> state )
     {
         state.writeValue( minValue, LOW );
     }
@@ -150,7 +150,7 @@ abstract class Type
      * Initializes key state to be the highest possible of this type, i.e. all actual key states of this type are smaller in comparison.
      * @param state key state to initialize as highest of this type.
      */
-    void initializeAsHighest( BtreeKey state )
+    void initializeAsHighest( GenericKey<?> state )
     {
         state.writeValue( maxValue, HIGH );
     }
@@ -160,7 +160,7 @@ abstract class Type
      * @param state the key state containing the state to generate string representation for.
      * @return a string-representation of the key state of this type.
      */
-    String toString( BtreeKey state )
+    String toString( GenericKey<?> state )
     {
         // For most types it's a straight-forward Value#toString().
         return asValue( state ).toString();
@@ -186,7 +186,7 @@ abstract class Type
         return (longValue & MASK_BOOLEAN) == TRUE;
     }
 
-    String toDetailedString( BtreeKey state )
+    String toDetailedString( GenericKey<?> state )
     {
         StringJoiner joiner = new StringJoiner( ", " );
         joiner.add( toString( state ) );
@@ -200,5 +200,5 @@ abstract class Type
         return joiner.toString();
     }
 
-    protected abstract void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state );
+    protected abstract void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state );
 }

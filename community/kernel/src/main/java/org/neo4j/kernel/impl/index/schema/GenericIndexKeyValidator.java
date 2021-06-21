@@ -31,7 +31,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.BIGGEST_STATIC_SIZE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.BIGGEST_STATIC_SIZE;
 
 /**
  * Validates Value[] tuples, whether or not they fit inside a {@link GBPTree} with a layout using {@link CompositeBtreeKey}.
@@ -118,7 +118,7 @@ class GenericIndexKeyValidator implements IndexValueValidator
 
     private static int stringWorstCaseLength( int stringLength )
     {
-        return BtreeKey.SIZE_STRING_LENGTH + stringLength * 4;
+        return Types.SIZE_STRING_LENGTH + stringLength * 4;
     }
 
     private int actualLength( Value[] values )

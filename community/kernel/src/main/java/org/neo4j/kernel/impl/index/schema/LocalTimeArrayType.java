@@ -42,31 +42,31 @@ class LocalTimeArrayType extends AbstractArrayType<LocalTime>
     }
 
     @Override
-    int valueSize( BtreeKey state )
+    int valueSize( GenericKey<?> state )
     {
-        return arrayKeySize( state, BtreeKey.SIZE_LOCAL_TIME );
+        return arrayKeySize( state, Types.SIZE_LOCAL_TIME );
     }
 
     @Override
-    void copyValue( BtreeKey to, BtreeKey from, int length )
+    void copyValue( GenericKey<?> to, GenericKey<?> from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
     }
 
     @Override
-    void initializeArray( BtreeKey key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey<?> key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
     }
 
-    static void write( BtreeKey state, int offset, long nanoOfDay )
+    static void write( GenericKey<?> state, int offset, long nanoOfDay )
     {
         state.long0Array[offset] = nanoOfDay;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
     {
         joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
         super.addTypeSpecificDetails( joiner, state );

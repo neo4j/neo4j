@@ -27,13 +27,13 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_BYTE;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_DOUBLE;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_FLOAT;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_INT;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_LONG;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_SHORT;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_TYPE;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_BYTE;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_DOUBLE;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_FLOAT;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_INT;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_LONG;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_SHORT;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_TYPE;
 
 class NumberType extends Type
 {
@@ -47,26 +47,26 @@ class NumberType extends Type
     }
 
     @Override
-    int valueSize( BtreeKey state )
+    int valueSize( GenericKey<?> state )
     {
         return numberKeySize( state.long1 ) + SIZE_NUMBER_TYPE;
     }
 
     @Override
-    void copyValue( BtreeKey to, BtreeKey from )
+    void copyValue( GenericKey<?> to, GenericKey<?> from )
     {
         to.long0 = from.long0;
         to.long1 = from.long1;
     }
 
     @Override
-    Value asValue( BtreeKey state )
+    Value asValue( GenericKey<?> state )
     {
         return asValue( state.long0, state.long1 );
     }
 
     @Override
-    int compareValue( BtreeKey left, BtreeKey right )
+    int compareValue( GenericKey<?> left, GenericKey<?> right )
     {
         return compare(
                 left.long0, left.long1,
@@ -74,7 +74,7 @@ class NumberType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, BtreeKey state )
+    void putValue( PageCursor cursor, GenericKey<?> state )
     {
         cursor.putByte( (byte) state.long1 );
         switch ( (int) state.long1 )
@@ -99,7 +99,7 @@ class NumberType extends Type
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, BtreeKey into )
+    boolean readValue( PageCursor cursor, int size, GenericKey<?> into )
     {
         into.long1 = cursor.getByte();
         switch ( (int) into.long1 )
@@ -156,14 +156,14 @@ class NumberType extends Type
         return RawBits.compare( this_long0, (byte) this_long1, that_long0, (byte) that_long1 );
     }
 
-    static void write( BtreeKey state, long value, byte numberType )
+    static void write( GenericKey<?> state, long value, byte numberType )
     {
         state.long0 = value;
         state.long1 = numberType;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
     {
         joiner.add( "long0=" + state.long0 );
         joiner.add( "long1=" + state.long1 );

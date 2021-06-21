@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema;
+package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,21 +61,21 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_BOOLEAN;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_DATE;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_DURATION;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_GEOMETRY;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_LOCAL_DATE_TIME;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_LOCAL_TIME;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_BYTE;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_DOUBLE;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_FLOAT;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_INT;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_LONG;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_NUMBER_SHORT;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_STRING_LENGTH;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_ZONED_DATE_TIME;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_ZONED_TIME;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_BOOLEAN;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_DATE;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_DURATION;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_GEOMETRY;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_LOCAL_DATE_TIME;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_LOCAL_TIME;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_BYTE;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_DOUBLE;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_FLOAT;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_INT;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_LONG;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_SHORT;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_STRING_LENGTH;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_ZONED_DATE_TIME;
+import static org.neo4j.kernel.impl.index.schema.Types.SIZE_ZONED_TIME;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @Neo4jLayoutExtension

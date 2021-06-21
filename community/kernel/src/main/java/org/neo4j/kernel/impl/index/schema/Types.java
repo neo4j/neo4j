@@ -27,13 +27,22 @@ import java.util.List;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+
 /**
  * A collection of all instances of {@link Type} and mappings to and from them.
  */
 class Types
 {
     // A list of all supported types
+
+    // Geometry type cannot be replaced directly, because we need to support
+    // sorting of points both in BTREE and RANGE index types.
+    // Since only one geometry type will be used in each index type,
+    // we keep the same typeId to more easily fit it into how the type arrays are handled in this file.
+    // GeometryType will be removed in 5.0.
     static final GeometryType GEOMETRY = new GeometryType( (byte) 0 );
+    static final GeometryType2 GEOMETRY_2 = new GeometryType2( (byte) 0 );
     static final ZonedDateTimeType ZONED_DATE_TIME = new ZonedDateTimeType( (byte) 1 );
     static final LocalDateTimeType LOCAL_DATE_TIME = new LocalDateTimeType( (byte) 2 );
     static final DateType DATE = new DateType( (byte) 3 );
@@ -43,7 +52,9 @@ class Types
     static final TextType TEXT = new TextType( (byte) 7 );
     static final BooleanType BOOLEAN = new BooleanType( (byte) 8 );
     static final NumberType NUMBER = new NumberType( (byte) 9 );
+    // See the comment about geometry type for explanation about the two geometry array types
     static final GeometryArrayType GEOMETRY_ARRAY = new GeometryArrayType( (byte) 10 );
+    static final GeometryArrayType2 GEOMETRY_ARRAY_2 = new GeometryArrayType2( (byte) 10 );
     static final ZonedDateTimeArrayType ZONED_DATE_TIME_ARRAY = new ZonedDateTimeArrayType( (byte) 11 );
     static final LocalDateTimeArrayType LOCAL_DATE_TIME_ARRAY = new LocalDateTimeArrayType( (byte) 12 );
     static final DateArrayType DATE_ARRAY = new DateArrayType( (byte) 13 );
@@ -54,47 +65,35 @@ class Types
     static final BooleanArrayType BOOLEAN_ARRAY = new BooleanArrayType( (byte) 18 );
     static final NumberArrayType NUMBER_ARRAY = new NumberArrayType( (byte) 19 );
 
-    /**
-     * Holds typeId --> {@link Type} mapping.
-     */
-    static final Type[] BY_ID = instantiateTypes();
+    static final int SIZE_GEOMETRY_COORDINATE =    Long.BYTES;     /* one coordinate */
+    public static final int SIZE_GEOMETRY_HEADER = 3;              /* 2b tableId and 22b code */
+    public static final int SIZE_GEOMETRY =        Long.BYTES;     /* rawValueBits */
+    public static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
+                                                   Integer.BYTES + /* nanoOfSecond */
+                                                   Integer.BYTES;  /* timeZone */
+    public static final int SIZE_LOCAL_DATE_TIME = Long.BYTES +    /* epochSecond */
+                                                   Integer.BYTES;  /* nanoOfSecond */
+    public static final int SIZE_DATE =            Long.BYTES;     /* epochDay */
+    public static final int SIZE_ZONED_TIME = Long.BYTES +    /* nanosOfDayUTC */
+                                              Integer.BYTES;  /* zoneOffsetSeconds */
+    public static final int SIZE_LOCAL_TIME =      Long.BYTES;     /* nanoOfDay */
+    public static final int SIZE_DURATION = Long.BYTES +    /* totalAvgSeconds */
+                                            Integer.BYTES + /* nanosOfSecond */
+                                            Long.BYTES +    /* months */
+                                            Long.BYTES;     /* days */
+    public static final int SIZE_STRING_LENGTH =   Short.BYTES;    /* length of string byte array */
+    public static final int SIZE_BOOLEAN =         Byte.BYTES;     /* byte for this boolean value */
+    public static final int SIZE_NUMBER_TYPE =     Byte.BYTES;     /* type of value */
+    public static final int SIZE_NUMBER_BYTE =     Byte.BYTES;     /* raw value bits */
+    static final int BIGGEST_REASONABLE_ARRAY_LENGTH = PAGE_SIZE / SIZE_NUMBER_BYTE;
+    public static final int SIZE_NUMBER_SHORT =    Short.BYTES;    /* raw value bits */
+    public static final int SIZE_NUMBER_INT =      Integer.BYTES;  /* raw value bits */
+    public static final int SIZE_NUMBER_LONG =     Long.BYTES;     /* raw value bits */
+    public static final int SIZE_NUMBER_FLOAT =    Integer.BYTES;  /* raw value bits */
+    public static final int SIZE_NUMBER_DOUBLE =   Long.BYTES;     /* raw value bits */
+    public static final int SIZE_ARRAY_LENGTH =    Short.BYTES;
 
-    /**
-     * Holds {@link ValueGroup#ordinal()} --> {@link Type} mapping.
-     */
-    static final Type[] BY_GROUP = new Type[ValueGroup.values().length];
-
-    /**
-     * Holds {@link ValueWriter.ArrayType} --> {@link Type} mapping.
-     */
-    static final AbstractArrayType[] BY_ARRAY_TYPE = new AbstractArrayType[ValueWriter.ArrayType.values().length];
-
-    /**
-     * Lowest {@link Type} according to {@link Type#COMPARATOR}.
-     */
-    static final Type LOWEST_BY_VALUE_GROUP = Collections.min( Arrays.asList( BY_ID ), Type.COMPARATOR );
-
-    /**
-     * Highest {@link Type} according to {@link Type#COMPARATOR}.
-     */
-    static final Type HIGHEST_BY_VALUE_GROUP = Collections.max( Arrays.asList( BY_ID ), Type.COMPARATOR );
-
-    static
-    {
-        // Build BY_GROUP mapping.
-        for ( Type type : BY_ID )
-        {
-            BY_GROUP[type.valueGroup.ordinal()] = type;
-        }
-
-        // Build BY_ARRAY_TYPE mapping.
-        for ( ValueWriter.ArrayType arrayType : ValueWriter.ArrayType.values() )
-        {
-            BY_ARRAY_TYPE[arrayType.ordinal()] = typeOf( arrayType );
-        }
-    }
-
-    private static AbstractArrayType<?> typeOf( ValueWriter.ArrayType arrayType )
+    private static AbstractArrayType<?> typeOf( ValueWriter.ArrayType arrayType, AbstractArrayType<?> geometryArrayType )
     {
         switch ( arrayType )
         {
@@ -117,7 +116,7 @@ class Types
         case DURATION:
             return DURATION_ARRAY;
         case POINT:
-            return GEOMETRY_ARRAY;
+            return geometryArrayType;
         case LOCAL_TIME:
             return LOCAL_TIME_ARRAY;
         case ZONED_DATE_TIME:
@@ -129,11 +128,11 @@ class Types
         }
     }
 
-    private static Type[] instantiateTypes()
+    private static Type[] instantiateTypes( Type geometryType, Type geometryArrayType )
     {
         List<Type> types = new ArrayList<>();
 
-        types.add( GEOMETRY );
+        types.add( geometryType );
         types.add( ZONED_DATE_TIME );
         types.add( LOCAL_DATE_TIME );
         types.add( DATE );
@@ -144,7 +143,7 @@ class Types
         types.add( BOOLEAN );
         types.add( NUMBER );
 
-        types.add( GEOMETRY_ARRAY );
+        types.add( geometryArrayType );
         types.add( ZONED_DATE_TIME_ARRAY );
         types.add( LOCAL_DATE_TIME_ARRAY );
         types.add( DATE_ARRAY );
@@ -167,4 +166,91 @@ class Types
         }
         return types.toArray( new Type[0] );
     }
+
+    static class Btree
+    {
+        /**
+         * Holds typeId --> {@link Type} mapping.
+         */
+        static final Type[] BY_ID = instantiateTypes( GEOMETRY, GEOMETRY_ARRAY );
+
+        /**
+         * Holds {@link ValueGroup#ordinal()} --> {@link Type} mapping.
+         */
+        static final Type[] BY_GROUP = new Type[ValueGroup.values().length];
+
+        /**
+         * Holds {@link ValueWriter.ArrayType} --> {@link Type} mapping.
+         */
+        static final AbstractArrayType[] BY_ARRAY_TYPE = new AbstractArrayType[ValueWriter.ArrayType.values().length];
+
+        /**
+         * Lowest {@link Type} according to {@link Type#COMPARATOR}.
+         */
+        static final Type LOWEST_BY_VALUE_GROUP = Collections.min( Arrays.asList( BY_ID ), Type.COMPARATOR );
+
+        /**
+         * Highest {@link Type} according to {@link Type#COMPARATOR}.
+         */
+        static final Type HIGHEST_BY_VALUE_GROUP = Collections.max( Arrays.asList( BY_ID ), Type.COMPARATOR );
+
+        static
+        {
+            // Build BY_GROUP mapping.
+            for ( Type type : BY_ID )
+            {
+                BY_GROUP[type.valueGroup.ordinal()] = type;
+            }
+
+            // Build BY_ARRAY_TYPE mapping.
+            for ( ValueWriter.ArrayType arrayType : ValueWriter.ArrayType.values() )
+            {
+                BY_ARRAY_TYPE[arrayType.ordinal()] = typeOf( arrayType, GEOMETRY_ARRAY );
+            }
+        }
+    }
+
+    static class Range
+    {
+        /**
+         * Holds typeId --> {@link Type} mapping.
+         */
+        static final Type[] BY_ID = instantiateTypes( GEOMETRY_2, GEOMETRY_ARRAY_2);
+
+        /**
+         * Holds {@link ValueGroup#ordinal()} --> {@link Type} mapping.
+         */
+        static final Type[] BY_GROUP = new Type[ValueGroup.values().length];
+
+        /**
+         * Holds {@link ValueWriter.ArrayType} --> {@link Type} mapping.
+         */
+        static final AbstractArrayType[] BY_ARRAY_TYPE = new AbstractArrayType[ValueWriter.ArrayType.values().length];
+
+        /**
+         * Lowest {@link Type} according to {@link Type#COMPARATOR}.
+         */
+        static final Type LOWEST_BY_VALUE_GROUP = Collections.min( Arrays.asList( BY_ID ), Type.COMPARATOR );
+
+        /**
+         * Highest {@link Type} according to {@link Type#COMPARATOR}.
+         */
+        static final Type HIGHEST_BY_VALUE_GROUP = Collections.max( Arrays.asList( BY_ID ), Type.COMPARATOR );
+
+        static
+        {
+            // Build BY_GROUP mapping.
+            for ( Type type : BY_ID )
+            {
+                BY_GROUP[type.valueGroup.ordinal()] = type;
+            }
+
+            // Build BY_ARRAY_TYPE mapping.
+            for ( ValueWriter.ArrayType arrayType : ValueWriter.ArrayType.values() )
+            {
+                BY_ARRAY_TYPE[arrayType.ordinal()] = typeOf( arrayType, GEOMETRY_ARRAY_2 );
+            }
+        }
+    }
+
 }

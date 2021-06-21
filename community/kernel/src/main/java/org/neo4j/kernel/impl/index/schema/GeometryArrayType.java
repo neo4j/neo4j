@@ -68,14 +68,14 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    int valueSize( BtreeKey state )
+    int valueSize( GenericKey<?> state )
     {
-        return BtreeKey.SIZE_GEOMETRY_HEADER +
-               arrayKeySize( state, BtreeKey.SIZE_GEOMETRY + dimensions( state ) * BtreeKey.SIZE_GEOMETRY_COORDINATE );
+        return Types.SIZE_GEOMETRY_HEADER +
+               arrayKeySize( state, Types.SIZE_GEOMETRY + dimensions( state ) * Types.SIZE_GEOMETRY_COORDINATE );
     }
 
     @Override
-    void copyValue( BtreeKey to, BtreeKey from, int length )
+    void copyValue( GenericKey<?> to, GenericKey<?> from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
@@ -89,7 +89,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    void initializeArray( BtreeKey key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey<?> key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
 
@@ -104,7 +104,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    Value asValue( BtreeKey state )
+    Value asValue( GenericKey<?> state )
     {
         Point[] points = new Point[state.arrayLength];
         if ( points.length > 0 )
@@ -121,7 +121,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    void putValue( PageCursor cursor, BtreeKey state )
+    void putValue( PageCursor cursor, GenericKey<?> state )
     {
         putCrs( cursor, state.long1, state.long2, state.long3 );
         int dimensions = dimensions( state );
@@ -129,21 +129,21 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, BtreeKey into )
+    boolean readValue( PageCursor cursor, int size, GenericKey<?> into )
     {
         readCrs( cursor, into );
         return readArray( cursor, ValueWriter.ArrayType.POINT, GeometryArrayType::readGeometryArrayItem, into );
     }
 
     @Override
-    String toString( BtreeKey state )
+    String toString( GenericKey<?> state )
     {
         String asValueString = hasCoordinates( state ) ? asValue( state ).toString() : "NO_COORDINATES";
         return format( "GeometryArray[tableId:%d, code:%d, rawValues:%s, value:%s]",
                 state.long1, state.long2, Arrays.toString( Arrays.copyOf( state.long0Array, state.arrayLength ) ), asValueString );
     }
 
-    private static boolean readGeometryArrayItem( PageCursor cursor, BtreeKey into )
+    private static boolean readGeometryArrayItem( PageCursor cursor, GenericKey<?> into )
     {
         into.long0Array[into.currentArrayOffset] = cursor.getLong();
         int dimensions = dimensions( into );
@@ -177,7 +177,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
     {
         joiner.add( "long1=" + state.long1 );
         joiner.add( "long2=" + state.long2 );

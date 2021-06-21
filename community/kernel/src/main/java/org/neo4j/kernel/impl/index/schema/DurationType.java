@@ -26,8 +26,8 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.AVG_DAY_SECONDS;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.AVG_MONTH_SECONDS;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.AVG_DAY_SECONDS;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.AVG_MONTH_SECONDS;
 
 class DurationType extends Type
 {
@@ -43,13 +43,13 @@ class DurationType extends Type
     }
 
     @Override
-    int valueSize( BtreeKey state )
+    int valueSize( GenericKey<?> state )
     {
-        return BtreeKey.SIZE_DURATION;
+        return Types.SIZE_DURATION;
     }
 
     @Override
-    void copyValue( BtreeKey to, BtreeKey from )
+    void copyValue( GenericKey<?> to, GenericKey<?> from )
     {
         to.long0 = from.long0;
         to.long1 = from.long1;
@@ -58,13 +58,13 @@ class DurationType extends Type
     }
 
     @Override
-    Value asValue( BtreeKey state )
+    Value asValue( GenericKey<?> state )
     {
         return asValue( state.long0, state.long1, state.long2, state.long3 );
     }
 
     @Override
-    int compareValue( BtreeKey left, BtreeKey right )
+    int compareValue( GenericKey<?> left, GenericKey<?> right )
     {
         return compare(
                 left.long0, left.long1, left.long2, left.long3,
@@ -72,13 +72,13 @@ class DurationType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, BtreeKey state )
+    void putValue( PageCursor cursor, GenericKey<?> state )
     {
         put( cursor, state.long0, state.long1, state.long2, state.long3 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, BtreeKey into )
+    boolean readValue( PageCursor cursor, int size, GenericKey<?> into )
     {
         return read( cursor, into );
     }
@@ -118,7 +118,7 @@ class DurationType extends Type
         cursor.putLong( long3 );
     }
 
-    static boolean read( PageCursor cursor, BtreeKey into )
+    static boolean read( PageCursor cursor, GenericKey<?> into )
     {
         // TODO unify order of fields
         long totalAvgSeconds = cursor.getLong();
@@ -129,7 +129,7 @@ class DurationType extends Type
         return true;
     }
 
-    static void write( BtreeKey state, long months, long days, long totalAvgSeconds, int nanos )
+    static void write( GenericKey<?> state, long months, long days, long totalAvgSeconds, int nanos )
     {
         state.long0 = totalAvgSeconds;
         state.long1 = nanos;
@@ -138,7 +138,7 @@ class DurationType extends Type
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
     {
         joiner.add( "long0=" + state.long0 );
         joiner.add( "long1=" + state.long1 );

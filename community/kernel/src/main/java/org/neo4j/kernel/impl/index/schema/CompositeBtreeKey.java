@@ -97,7 +97,7 @@ class CompositeBtreeKey extends BtreeKey
     }
 
     @Override
-    void copyFromInternal( BtreeKey key )
+    void copyFromInternal( GenericKey<?> key )
     {
         int slots = numberOfStateSlots();
         if ( key.numberOfStateSlots() != slots )

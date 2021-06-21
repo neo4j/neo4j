@@ -27,8 +27,8 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.FALSE;
-import static org.neo4j.kernel.impl.index.schema.BtreeKey.TRUE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
 
 // <Boolean> as generic raw type is mostly for show, this class overrides default object:y behaviour to create primitive boolean[] array
 class BooleanArrayType extends AbstractArrayType<Boolean>
@@ -47,26 +47,26 @@ class BooleanArrayType extends AbstractArrayType<Boolean>
     }
 
     @Override
-    int valueSize( BtreeKey state )
+    int valueSize( GenericKey<?> state )
     {
-        return arrayKeySize( state, BtreeKey.SIZE_BOOLEAN );
+        return arrayKeySize( state, Types.SIZE_BOOLEAN );
     }
 
     @Override
-    void copyValue( BtreeKey to, BtreeKey from, int length )
+    void copyValue( GenericKey<?> to, GenericKey<?> from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
     }
 
     @Override
-    void initializeArray( BtreeKey key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey<?> key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
     }
 
     @Override
-    Value asValue( BtreeKey state )
+    Value asValue( GenericKey<?> state )
     {
         boolean[] array = new boolean[state.arrayLength];
         for ( int i = 0; i < state.arrayLength; i++ )
@@ -76,13 +76,13 @@ class BooleanArrayType extends AbstractArrayType<Boolean>
         return Values.of( array );
     }
 
-    static void write( BtreeKey state, int offset, boolean value )
+    static void write( GenericKey<?> state, int offset, boolean value )
     {
         state.long0Array[offset] = value ? TRUE : FALSE;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
     {
         joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
         super.addTypeSpecificDetails( joiner, state );

@@ -55,13 +55,13 @@ class ZonedDateTimeType extends Type
     }
 
     @Override
-    int valueSize( BtreeKey state )
+    int valueSize( GenericKey<?> state )
     {
-        return BtreeKey.SIZE_ZONED_DATE_TIME;
+        return Types.SIZE_ZONED_DATE_TIME;
     }
 
     @Override
-    void copyValue( BtreeKey to, BtreeKey from )
+    void copyValue( GenericKey<?> to, GenericKey<?> from )
     {
         to.long0 = from.long0;
         to.long1 = from.long1;
@@ -70,13 +70,13 @@ class ZonedDateTimeType extends Type
     }
 
     @Override
-    Value asValue( BtreeKey state )
+    Value asValue( GenericKey<?> state )
     {
         return asValue( state.long0, state.long1, state.long2, state.long3 );
     }
 
     @Override
-    int compareValue( BtreeKey left, BtreeKey right )
+    int compareValue( GenericKey<?> left, GenericKey<?> right )
     {
         return compare(
                 left.long0, left.long1, left.long2, left.long3,
@@ -84,13 +84,13 @@ class ZonedDateTimeType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, BtreeKey state )
+    void putValue( PageCursor cursor, GenericKey<?> state )
     {
         put( cursor, state.long0, state.long1, state.long2, state.long3 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, BtreeKey into )
+    boolean readValue( PageCursor cursor, int size, GenericKey<?> into )
     {
         return read( cursor, into );
     }
@@ -132,7 +132,7 @@ class ZonedDateTimeType extends Type
         }
     }
 
-    static boolean read( PageCursor cursor, BtreeKey into )
+    static boolean read( PageCursor cursor, GenericKey<?> into )
     {
         long epochSecondUTC = cursor.getLong();
         int nanoOfSecond = cursor.getInt();
@@ -160,7 +160,7 @@ class ZonedDateTimeType extends Type
                DateTimeValue.datetimeRaw( long0, long1, ZoneOffset.ofTotalSeconds( (int) long3 ) );
     }
 
-    static void write( BtreeKey state, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
+    static void write( GenericKey<?> state, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
     {
         state.long0 = epochSecondUTC;
         state.long1 = nano;
@@ -169,7 +169,7 @@ class ZonedDateTimeType extends Type
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
     {
         joiner.add( "long0=" + state.long0 );
         joiner.add( "long1=" + state.long1 );

@@ -43,13 +43,13 @@ class LocalDateTimeArrayType extends AbstractArrayType<LocalDateTime>
     }
 
     @Override
-    int valueSize( BtreeKey state )
+    int valueSize( GenericKey<?> state )
     {
-        return arrayKeySize( state, BtreeKey.SIZE_LOCAL_DATE_TIME );
+        return arrayKeySize( state, Types.SIZE_LOCAL_DATE_TIME );
     }
 
     @Override
-    void copyValue( BtreeKey to, BtreeKey from, int length )
+    void copyValue( GenericKey<?> to, GenericKey<?> from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
@@ -57,20 +57,20 @@ class LocalDateTimeArrayType extends AbstractArrayType<LocalDateTime>
     }
 
     @Override
-    void initializeArray( BtreeKey key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey<?> key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         key.long1Array = ensureBigEnough( key.long1Array, length );
     }
 
-    static void write( BtreeKey state, int offset, long epochSecond, int nano )
+    static void write( GenericKey<?> state, int offset, long epochSecond, int nano )
     {
         state.long0Array[offset] = nano;
         state.long1Array[offset] = epochSecond;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey<?> state )
     {
         joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
         joiner.add( "long1Array=" + Arrays.toString( state.long1Array ) );
