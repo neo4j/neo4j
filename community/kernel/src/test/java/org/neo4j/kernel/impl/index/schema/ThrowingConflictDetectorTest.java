@@ -36,7 +36,7 @@ import static org.neo4j.internal.helpers.ArrayUtil.array;
 class ThrowingConflictDetectorTest
 {
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    private final ThrowingConflictDetector<GenericKey,NativeIndexValue> detector = new ThrowingConflictDetector<>( true );
+    private final ThrowingConflictDetector<BtreeKey,NativeIndexValue> detector = new ThrowingConflictDetector<>( true );
 
     @Test
     void shouldReportConflictOnSameValueAndDifferentEntityIds()
@@ -80,9 +80,9 @@ class ThrowingConflictDetectorTest
         detector.checkConflict( array() ); // <-- should not throw conflict exception
     }
 
-    private static GenericKey key( long entityId, Value value )
+    private static BtreeKey key( long entityId, Value value )
     {
-        GenericKey key = new GenericKey( specificSettings );
+        BtreeKey key = new BtreeKey( specificSettings );
         key.initialize( entityId );
         key.initFromValue( 0, value, NativeIndexKey.Inclusion.NEUTRAL );
         return key;

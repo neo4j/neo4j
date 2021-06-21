@@ -27,8 +27,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.FALSE;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.TRUE;
 
 class BooleanType extends Type
 {
@@ -41,25 +41,25 @@ class BooleanType extends Type
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
-        return GenericKey.SIZE_BOOLEAN;
+        return BtreeKey.SIZE_BOOLEAN;
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from )
+    void copyValue( BtreeKey to, BtreeKey from )
     {
         to.long0 = from.long0;
     }
 
     @Override
-    Value asValue( GenericKey state )
+    Value asValue( BtreeKey state )
     {
         return asValue( state.long0 );
     }
 
     @Override
-    int compareValue( GenericKey left, GenericKey right )
+    int compareValue( BtreeKey left, BtreeKey right )
     {
         return compare(
                 left.long0,
@@ -67,13 +67,13 @@ class BooleanType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey state )
+    void putValue( PageCursor cursor, BtreeKey state )
     {
         put( cursor, state.long0 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey into )
+    boolean readValue( PageCursor cursor, int size, BtreeKey into )
     {
         return read( cursor, into );
     }
@@ -100,19 +100,19 @@ class BooleanType extends Type
         cursor.putByte( (byte) long0 );
     }
 
-    static boolean read( PageCursor cursor, GenericKey into )
+    static boolean read( PageCursor cursor, BtreeKey into )
     {
         into.writeBoolean( cursor.getByte() == TRUE );
         return true;
     }
 
-    static void write( GenericKey state, boolean value )
+    static void write( BtreeKey state, boolean value )
     {
         state.long0 = value ? TRUE : FALSE;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long0=" + state.long0 );
     }

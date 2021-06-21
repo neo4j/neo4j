@@ -23,7 +23,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
-class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
+class GenericLayout extends IndexLayout<BtreeKey,NativeIndexValue>
 {
     private final int numberOfSlots;
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
@@ -36,42 +36,42 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     }
 
     @Override
-    public GenericKey newKey()
+    public BtreeKey newKey()
     {
         return numberOfSlots == 1
                // An optimized version which has the GenericKeyState built-in w/o indirection
-               ? new GenericKey( spatialSettings )
+               ? new BtreeKey( spatialSettings )
                // A version which has an indirection to GenericKeyState[]
-               : new CompositeGenericKey( numberOfSlots, spatialSettings );
+               : new CompositeBtreeKey( numberOfSlots, spatialSettings );
     }
 
     @Override
-    public GenericKey copyKey( GenericKey key, GenericKey into )
+    public BtreeKey copyKey( BtreeKey key, BtreeKey into )
     {
         into.copyFrom( key );
         return into;
     }
 
     @Override
-    public int keySize( GenericKey key )
+    public int keySize( BtreeKey key )
     {
         return key.size();
     }
 
     @Override
-    public void writeKey( PageCursor cursor, GenericKey key )
+    public void writeKey( PageCursor cursor, BtreeKey key )
     {
         key.put( cursor );
     }
 
     @Override
-    public void readKey( PageCursor cursor, GenericKey into, int keySize )
+    public void readKey( PageCursor cursor, BtreeKey into, int keySize )
     {
         into.get( cursor, keySize );
     }
 
     @Override
-    public void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
+    public void minimalSplitter( BtreeKey left, BtreeKey right, BtreeKey into )
     {
         right.minimalSplitter( left, right, into );
     }
@@ -82,13 +82,13 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     }
 
     @Override
-    public void initializeAsLowest( GenericKey key )
+    public void initializeAsLowest( BtreeKey key )
     {
         key.initValuesAsLowest();
     }
 
     @Override
-    public void initializeAsHighest( GenericKey key )
+    public void initializeAsHighest( BtreeKey key )
     {
         key.initValuesAsHighest();
     }

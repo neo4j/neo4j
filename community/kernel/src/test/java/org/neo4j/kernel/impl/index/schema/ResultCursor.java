@@ -27,12 +27,12 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 
 import static org.neo4j.values.storable.Values.stringValue;
 
-class ResultCursor implements Seeker<GenericKey,NativeIndexValue>
+class ResultCursor implements Seeker<BtreeKey,NativeIndexValue>
 {
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private final Iterator<String> iterator;
     private int pos = -1;
-    private GenericKey key;
+    private BtreeKey key;
 
     ResultCursor( Iterator<String> keys )
     {
@@ -46,7 +46,7 @@ class ResultCursor implements Seeker<GenericKey,NativeIndexValue>
         {
             String current = iterator.next();
             pos++;
-            key = new GenericKey( specificSettings );
+            key = new BtreeKey( specificSettings );
             key.initialize( pos );
             key.initFromValue( 0, stringValue( current ), NativeIndexKey.Inclusion.NEUTRAL );
             return true;
@@ -61,7 +61,7 @@ class ResultCursor implements Seeker<GenericKey,NativeIndexValue>
     }
 
     @Override
-    public GenericKey key()
+    public BtreeKey key()
     {
         return key;
     }

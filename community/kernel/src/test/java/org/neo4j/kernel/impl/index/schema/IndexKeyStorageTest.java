@@ -74,10 +74,10 @@ class IndexKeyStorageTest
     @Test
     void shouldAddAndReadZeroKey() throws IOException
     {
-        try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage() )
+        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage() )
         {
             keyStorage.doneAdding();
-            try ( IndexKeyStorage.KeyEntryCursor<GenericKey> reader = keyStorage.reader() )
+            try ( IndexKeyStorage.KeyEntryCursor<BtreeKey> reader = keyStorage.reader() )
             {
                 assertFalse( reader.next(), "Didn't expect reader to have any entries." );
             }
@@ -87,15 +87,15 @@ class IndexKeyStorageTest
     @Test
     void shouldAddAndReadOneKey() throws IOException
     {
-        try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage() )
+        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage() )
         {
-            GenericKey expected = randomKey( 1 );
+            BtreeKey expected = randomKey( 1 );
             keyStorage.add( expected );
             keyStorage.doneAdding();
-            try ( IndexKeyStorage.KeyEntryCursor<GenericKey> reader = keyStorage.reader() )
+            try ( IndexKeyStorage.KeyEntryCursor<BtreeKey> reader = keyStorage.reader() )
             {
                 assertTrue( reader.next(), "Expected reader to have one entry" );
-                GenericKey actual = reader.key();
+                BtreeKey actual = reader.key();
                 assertEquals( 0, layout.compare( expected, actual ), "Expected stored key to be equal to original." );
                 assertFalse( reader.next(), "Expected reader to have only one entry, second entry was " + reader.key() );
             }
@@ -105,25 +105,25 @@ class IndexKeyStorageTest
     @Test
     void shouldAddAndReadMultipleKeys() throws IOException
     {
-        List<GenericKey> keys = new ArrayList<>();
+        List<BtreeKey> keys = new ArrayList<>();
         int numberOfKeys = 1000;
         for ( int i = 0; i < numberOfKeys; i++ )
         {
             keys.add( randomKey( i ) );
         }
-        try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage() )
+        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage() )
         {
-            for ( GenericKey key : keys )
+            for ( BtreeKey key : keys )
             {
                 keyStorage.add( key );
             }
             keyStorage.doneAdding();
-            try ( IndexKeyStorage.KeyEntryCursor<GenericKey> reader = keyStorage.reader() )
+            try ( IndexKeyStorage.KeyEntryCursor<BtreeKey> reader = keyStorage.reader() )
             {
-                for ( GenericKey expected : keys )
+                for ( BtreeKey expected : keys )
                 {
                     assertTrue( reader.next() );
-                    GenericKey actual = reader.key();
+                    BtreeKey actual = reader.key();
                     assertEquals( 0, layout.compare( expected, actual ), "Expected stored key to be equal to original." );
                 }
                 assertFalse( reader.next(), "Expected reader to have no more entries, but had at least one additional " + reader.key() );
@@ -136,7 +136,7 @@ class IndexKeyStorageTest
     {
         FileSystemAbstraction fs = directory.getFileSystem();
         Path makeSureImDeleted = directory.file( "makeSureImDeleted" );
-        try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
+        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
             keyStorage.doneAdding();
@@ -150,7 +150,7 @@ class IndexKeyStorageTest
     {
         FileSystemAbstraction fs = directory.getFileSystem();
         Path makeSureImDeleted = directory.file( "makeSureImDeleted" );
-        try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
+        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             keyStorage.add( randomKey( 1 ) );
             keyStorage.doneAdding();
@@ -164,7 +164,7 @@ class IndexKeyStorageTest
     {
         FileSystemAbstraction fs = directory.getFileSystem();
         Path makeSureImDeleted = directory.file( "makeSureImDeleted" );
-        try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage( makeSureImDeleted ) )
+        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             keyStorage.add( randomKey( 1 ) );
             assertTrue( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
@@ -179,7 +179,7 @@ class IndexKeyStorageTest
         LocalMemoryTracker allocationTracker = new LocalMemoryTracker();
         Path file = directory.file( "file" );
         try ( UnsafeDirectByteBufferAllocator bufferFactory = new UnsafeDirectByteBufferAllocator();
-              IndexKeyStorage<GenericKey> keyStorage = keyStorage( file, bufferFactory, allocationTracker ) )
+              IndexKeyStorage<BtreeKey> keyStorage = keyStorage( file, bufferFactory, allocationTracker ) )
         {
             assertEquals( 0, allocationTracker.usedNativeMemory(), "Expected to not have any buffers allocated yet" );
             assertFalse( fs.fileExists( file ), "Expected file to be created lazily" );
@@ -193,7 +193,7 @@ class IndexKeyStorageTest
     @Test
     void shouldReportCorrectCount() throws IOException
     {
-        try ( IndexKeyStorage<GenericKey> keyStorage = keyStorage() )
+        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage() )
         {
             assertEquals( 0, keyStorage.count() );
             keyStorage.add( randomKey( 1 ) );
@@ -205,9 +205,9 @@ class IndexKeyStorageTest
         }
     }
 
-    private GenericKey randomKey( int entityId )
+    private BtreeKey randomKey( int entityId )
     {
-        GenericKey key = layout.newKey();
+        BtreeKey key = layout.newKey();
         key.initialize( entityId );
         for ( int i = 0; i < numberOfSlots; i++ )
         {
@@ -217,17 +217,17 @@ class IndexKeyStorageTest
         return key;
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage()
+    private IndexKeyStorage<BtreeKey> keyStorage()
     {
         return keyStorage( directory.file( "file" ) );
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage( Path file )
+    private IndexKeyStorage<BtreeKey> keyStorage( Path file )
     {
         return keyStorage( file, heapBufferFactory( 0 ).newLocalAllocator(), INSTANCE );
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage( Path file, ByteBufferFactory.Allocator bufferFactory, MemoryTracker memoryTracker )
+    private IndexKeyStorage<BtreeKey> keyStorage( Path file, ByteBufferFactory.Allocator bufferFactory, MemoryTracker memoryTracker )
     {
         return new IndexKeyStorage<>( directory.getFileSystem(), file, bufferFactory, BLOCK_SIZE, layout, memoryTracker );
     }

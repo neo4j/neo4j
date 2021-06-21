@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 
-class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIndexValue>
+class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
@@ -47,7 +47,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     private IndexValueValidator validator;
 
     GenericNativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-            IndexLayout<GenericKey,NativeIndexValue> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
+            IndexLayout<BtreeKey,NativeIndexValue> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
             IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration, TokenNameLookup tokenNameLookup )
     {
         super( databaseIndexContext, indexFiles, layout, descriptor );
@@ -58,7 +58,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     }
 
     @Override
-    protected void afterTreeInstantiation( GBPTree<GenericKey,NativeIndexValue> tree )
+    protected void afterTreeInstantiation( GBPTree<BtreeKey,NativeIndexValue> tree )
     {
         validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
     }
@@ -94,17 +94,17 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     @Override
     public IndexEntriesReader[] newAllEntriesValueReader( int partitions, CursorContext cursorContext )
     {
-        GenericKey lowest = layout.newKey();
+        BtreeKey lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );
         lowest.initValuesAsLowest();
-        GenericKey highest = layout.newKey();
+        BtreeKey highest = layout.newKey();
         highest.initialize( Long.MAX_VALUE );
         highest.initValuesAsHighest();
         try
         {
-            Collection<Seeker<GenericKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
+            Collection<Seeker<BtreeKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
             Collection<IndexEntriesReader> readers = new ArrayList<>();
-            for ( Seeker<GenericKey,NativeIndexValue> seeker : seekers )
+            for ( Seeker<BtreeKey,NativeIndexValue> seeker : seekers )
             {
                 readers.add( new IndexEntriesReader()
                 {

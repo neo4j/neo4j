@@ -57,19 +57,19 @@ class GeometryType extends Type
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
-        int coordinatesSize = dimensions( state ) * GenericKey.SIZE_GEOMETRY_COORDINATE;
-        return GenericKey.SIZE_GEOMETRY_HEADER + GenericKey.SIZE_GEOMETRY + coordinatesSize;
+        int coordinatesSize = dimensions( state ) * BtreeKey.SIZE_GEOMETRY_COORDINATE;
+        return BtreeKey.SIZE_GEOMETRY_HEADER + BtreeKey.SIZE_GEOMETRY + coordinatesSize;
     }
 
-    static int dimensions( GenericKey state )
+    static int dimensions( BtreeKey state )
     {
         return toIntExact( state.long3 );
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from )
+    void copyValue( BtreeKey to, BtreeKey from )
     {
         to.long0 = from.long0;
         to.long1 = from.long1;
@@ -82,14 +82,14 @@ class GeometryType extends Type
     }
 
     @Override
-    Value asValue( GenericKey state )
+    Value asValue( BtreeKey state )
     {
         assertHasCoordinates( state );
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( (int) state.long1, (int) state.long2 );
         return asValue( state, crs, 0 );
     }
 
-    static PointValue asValue( GenericKey state, CoordinateReferenceSystem crs, int offset )
+    static PointValue asValue( BtreeKey state, CoordinateReferenceSystem crs, int offset )
     {
         double[] coordinates = new double[dimensions( state )];
         for ( int i = 0; i < coordinates.length; i++ )
@@ -100,7 +100,7 @@ class GeometryType extends Type
     }
 
     @Override
-    int compareValue( GenericKey left, GenericKey right )
+    int compareValue( BtreeKey left, BtreeKey right )
     {
         return compare(
                 left.long0, left.long1, left.long2, left.long3, left.long1Array, 0,
@@ -108,20 +108,20 @@ class GeometryType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey state )
+    void putValue( PageCursor cursor, BtreeKey state )
     {
         putCrs( cursor, state.long1, state.long2, state.long3 );
         putPoint( cursor, state.long0, state.long3, state.long1Array, 0 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey into )
+    boolean readValue( PageCursor cursor, int size, BtreeKey into )
     {
         return readCrs( cursor, into ) && readPoint( cursor, into );
     }
 
     @Override
-    String toString( GenericKey state )
+    String toString( BtreeKey state )
     {
         String asValueString = hasCoordinates( state ) ? asValue( state ).toString() : "NO_COORDINATES";
         return format( "Geometry[tableId:%d, code:%d, rawValue:%d, value:%s", state.long1, state.long2, state.long0, asValueString );
@@ -208,7 +208,7 @@ class GeometryType extends Type
      *
      * @param state holds the key state.
      */
-    static void assertHasCoordinates( GenericKey state )
+    static void assertHasCoordinates( BtreeKey state )
     {
         if ( !hasCoordinates( state ) )
         {
@@ -216,12 +216,12 @@ class GeometryType extends Type
         }
     }
 
-    static boolean hasCoordinates( GenericKey state )
+    static boolean hasCoordinates( BtreeKey state )
     {
         return state.long3 != 0 && state.long1Array != null;
     }
 
-    static void setNoCoordinates( GenericKey state )
+    static void setNoCoordinates( BtreeKey state )
     {
         state.long3 = 0;
     }
@@ -232,7 +232,7 @@ class GeometryType extends Type
         cursor.putByte( (byte) (value >>> Short.SIZE) );
     }
 
-    static boolean readCrs( PageCursor cursor, GenericKey into )
+    static boolean readCrs( PageCursor cursor, BtreeKey into )
     {
         int header = read3BInt( cursor );
         into.long1 = (header & MASK_TABLE_READ) >>> SHIFT_TABLE;
@@ -241,7 +241,7 @@ class GeometryType extends Type
         return true;
     }
 
-    private static boolean readPoint( PageCursor cursor, GenericKey into )
+    private static boolean readPoint( PageCursor cursor, BtreeKey into )
     {
         into.long0 = cursor.getLong();
         // into.long3 have just been read by readCrs, before this method is called
@@ -261,7 +261,7 @@ class GeometryType extends Type
         return high << Short.SIZE | low;
     }
 
-    static void write( GenericKey state, long derivedSpaceFillingCurveValue, double[] coordinate )
+    static void write( BtreeKey state, long derivedSpaceFillingCurveValue, double[] coordinate )
     {
         state.long0 = derivedSpaceFillingCurveValue;
         state.long1Array = ensureBigEnough( state.long1Array, coordinate.length );
@@ -273,7 +273,7 @@ class GeometryType extends Type
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long0=" + state.long0 );
         joiner.add( "long1=" + state.long1 );

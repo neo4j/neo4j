@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith( RandomExtension.class )
-class CompositeGenericKeyTest
+class CompositeBtreeKeyTest
 {
     @Inject
     RandomRule random;
@@ -46,7 +46,7 @@ class CompositeGenericKeyTest
     @Test
     void testDocumentedStringArrayKeySizeFormulaIsCorrect()
     {
-        CompositeGenericKey key = new CompositeGenericKey( 1, mock( IndexSpecificSpaceFillingCurveSettings.class ) );
+        CompositeBtreeKey key = new CompositeBtreeKey( 1, mock( IndexSpecificSpaceFillingCurveSettings.class ) );
         int maxArrayLength = random.nextInt( 500 );
         int maxStringLength = random.nextInt( 100 );
         for ( int i = 0; i < 100; i++ )

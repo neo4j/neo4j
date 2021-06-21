@@ -117,16 +117,16 @@ class GenericKeyStateCompareTest
         );
         allValues.sort( Values.COMPARATOR );
 
-        List<GenericKey> states = new ArrayList<>();
+        List<BtreeKey> states = new ArrayList<>();
         for ( Value value : allValues )
         {
-            GenericKey state = new GenericKey( null );
+            BtreeKey state = new BtreeKey( null );
             state.writeValue( value, NativeIndexKey.Inclusion.NEUTRAL );
             states.add( state );
         }
         Collections.shuffle( states );
-        states.sort( GenericKey::compareValueTo );
-        List<Value> sortedStatesAsValues = states.stream().map( GenericKey::asValue ).collect( Collectors.toList() );
+        states.sort( BtreeKey::compareValueTo );
+        List<Value> sortedStatesAsValues = states.stream().map( BtreeKey::asValue ).collect( Collectors.toList() );
         assertEquals( allValues, sortedStatesAsValues );
     }
 }

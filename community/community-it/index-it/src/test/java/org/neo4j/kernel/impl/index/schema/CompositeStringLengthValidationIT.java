@@ -31,9 +31,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -81,8 +81,8 @@ class CompositeStringLengthValidationIT
     @BeforeEach
     void calculateSlotSizes()
     {
-        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - GenericKey.ENTITY_ID_SIZE;
-        int perSlotOverhead = GenericKey.TYPE_ID_SIZE + GenericKey.SIZE_STRING_LENGTH;
+        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - BtreeKey.ENTITY_ID_SIZE;
+        int perSlotOverhead = BtreeKey.TYPE_ID_SIZE + BtreeKey.SIZE_STRING_LENGTH;
         int firstSlotSpace = totalSpace / 2;
         int secondSlotSpace = totalSpace - firstSlotSpace;
         this.firstSlotLength = firstSlotSpace - perSlotOverhead;

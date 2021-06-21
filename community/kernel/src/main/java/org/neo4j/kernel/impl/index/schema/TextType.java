@@ -29,11 +29,11 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.min;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_STRING_LENGTH;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.setCursorException;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.toNonNegativeShortExact;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.FALSE;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_STRING_LENGTH;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.TRUE;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.setCursorException;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.toNonNegativeShortExact;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class TextType extends Type
@@ -59,13 +59,13 @@ class TextType extends Type
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
         return textKeySize( state.long0 );
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from )
+    void copyValue( BtreeKey to, BtreeKey from )
     {
         to.long0 = from.long0;
         // don't copy long1 since it's instance-local (bytesDereferenced)
@@ -76,7 +76,7 @@ class TextType extends Type
     }
 
     @Override
-    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
+    void minimalSplitter( BtreeKey left, BtreeKey right, BtreeKey into )
     {
         int length = 0;
         if ( left.type == Types.TEXT )
@@ -87,7 +87,7 @@ class TextType extends Type
     }
 
     @Override
-    Value asValue( GenericKey state )
+    Value asValue( BtreeKey state )
     {
         // There's a difference between composing a single text value and a array text values
         // and there's therefore no common "raw" variant of it
@@ -108,7 +108,7 @@ class TextType extends Type
     }
 
     @Override
-    int compareValue( GenericKey left, GenericKey right )
+    int compareValue( BtreeKey left, BtreeKey right )
     {
         return compare(
                 left.byteArray, left.long0, left.long2, left.long3,
@@ -116,13 +116,13 @@ class TextType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey state )
+    void putValue( PageCursor cursor, BtreeKey state )
     {
         put( cursor, state.byteArray, state.long0, state.long2 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey into )
+    boolean readValue( PageCursor cursor, int size, BtreeKey into )
     {
         return read( cursor, size, into );
     }
@@ -172,7 +172,7 @@ class TextType extends Type
         cursor.putBytes( byteArray, 0, length );
     }
 
-    static boolean read( PageCursor cursor, int maxSize, GenericKey into )
+    static boolean read( PageCursor cursor, int maxSize, BtreeKey into )
     {
         // For performance reasons cannot be redirected to writeString, due to byte[] reuse
         short rawLength = cursor.getShort();
@@ -191,7 +191,7 @@ class TextType extends Type
         return true;
     }
 
-    static void setCharType( GenericKey into, boolean isCharType )
+    static void setCharType( BtreeKey into, boolean isCharType )
     {
         if ( isCharType )
         {
@@ -213,7 +213,7 @@ class TextType extends Type
         return booleanOf( long2 >> 1 );
     }
 
-    static void write( GenericKey state, byte[] bytes, boolean isCharType )
+    static void write( BtreeKey state, byte[] bytes, boolean isCharType )
     {
         state.byteArray = bytes;
         state.long0 = bytes.length;
@@ -221,7 +221,7 @@ class TextType extends Type
     }
 
     @Override
-    void initializeAsHighest( GenericKey state )
+    void initializeAsHighest( BtreeKey state )
     {
         super.initializeAsHighest( state );
         state.long3 = TRUE;
@@ -237,7 +237,7 @@ class TextType extends Type
         return (char) codePoint;
     }
 
-    private static void setBytesLength( GenericKey state, int length )
+    private static void setBytesLength( BtreeKey state, int length )
     {
         if ( booleanOf( state.long1 ) || state.byteArray == null || state.byteArray.length < length )
         {
@@ -251,7 +251,7 @@ class TextType extends Type
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long0=" + state.long0 );
         joiner.add( "long1=" + state.long1 );

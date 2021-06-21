@@ -36,7 +36,7 @@ class NativeIndexPopulatorTestCases
     static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
-    static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
+    static PopulatorFactory<BtreeKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
         return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
                 new GenericBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, spaceFillingCurveSettings, configuration, false,

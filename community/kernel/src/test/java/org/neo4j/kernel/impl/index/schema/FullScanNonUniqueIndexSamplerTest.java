@@ -53,14 +53,14 @@ import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueVal
 import static org.neo4j.values.storable.RandomValues.typesOfGroup;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
-public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,NativeIndexValue,IndexLayout<GenericKey,NativeIndexValue>>
+public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,NativeIndexValue,IndexLayout<BtreeKey,NativeIndexValue>>
 {
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
 
     private static final IndexDescriptor index = forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 );
 
-    NativeValueIndexUtility<GenericKey,NativeIndexValue> valueUtil;
-    ValueCreatorUtil<GenericKey,NativeIndexValue> valueCreatorUtil;
+    NativeValueIndexUtility<BtreeKey,NativeIndexValue> valueUtil;
+    ValueCreatorUtil<BtreeKey,NativeIndexValue> valueCreatorUtil;
 
     @BeforeEach
     void setupValueCreator()
@@ -78,9 +78,9 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,
 
         // WHEN
         IndexSample sample;
-        try ( GBPTree<GenericKey,NativeIndexValue> gbpTree = getTree() )
+        try ( GBPTree<BtreeKey,NativeIndexValue> gbpTree = getTree() )
         {
-            FullScanNonUniqueIndexSampler<GenericKey,NativeIndexValue> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
+            FullScanNonUniqueIndexSampler<BtreeKey,NativeIndexValue> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
             sample = sampler.sample( NULL );
         }
 
@@ -101,9 +101,9 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,
 
         assertZeroCursor( cursorContext );
 
-        try ( GBPTree<GenericKey,NativeIndexValue> gbpTree = getTree() )
+        try ( GBPTree<BtreeKey,NativeIndexValue> gbpTree = getTree() )
         {
-            FullScanNonUniqueIndexSampler<GenericKey,NativeIndexValue> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
+            FullScanNonUniqueIndexSampler<BtreeKey,NativeIndexValue> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
             sampler.sample( cursorContext );
         }
 
@@ -135,11 +135,11 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,
 
     private void buildTree( Value[] values ) throws IOException
     {
-        try ( GBPTree<GenericKey,NativeIndexValue> gbpTree = getTree() )
+        try ( GBPTree<BtreeKey,NativeIndexValue> gbpTree = getTree() )
         {
-            try ( Writer<GenericKey,NativeIndexValue> writer = gbpTree.writer( NULL ) )
+            try ( Writer<BtreeKey,NativeIndexValue> writer = gbpTree.writer( NULL ) )
             {
-                GenericKey key = layout.newKey();
+                BtreeKey key = layout.newKey();
                 NativeIndexValue value = layout.newValue();
                 long nodeId = 0;
                 for ( Value number : values )
@@ -155,7 +155,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,
         }
     }
 
-    private static ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
+    private static ValueCreatorUtil<BtreeKey,NativeIndexValue> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( index, typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
     }
@@ -175,7 +175,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,
     }
 
     @Override
-    IndexLayout<GenericKey,NativeIndexValue> createLayout()
+    IndexLayout<BtreeKey,NativeIndexValue> createLayout()
     {
         return new GenericLayout( 1,specificSettings );
     }

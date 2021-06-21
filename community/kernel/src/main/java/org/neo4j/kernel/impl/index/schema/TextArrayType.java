@@ -29,10 +29,10 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_ARRAY_LENGTH;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.setCursorException;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.toNonNegativeShortExact;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.FALSE;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.SIZE_ARRAY_LENGTH;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.setCursorException;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.toNonNegativeShortExact;
 import static org.neo4j.kernel.impl.index.schema.TextType.CHAR_TYPE_LENGTH_MARKER;
 import static org.neo4j.kernel.impl.index.schema.TextType.isCharValueType;
 import static org.neo4j.kernel.impl.index.schema.TextType.setCharType;
@@ -58,7 +58,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
         int stringArraySize = 0;
         for ( int i = 0; i < state.arrayLength; i++ )
@@ -69,7 +69,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from, int length )
+    void copyValue( BtreeKey to, BtreeKey from, int length )
     {
         to.long1 = FALSE;
         to.long2 = from.long2;
@@ -85,7 +85,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( BtreeKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         key.byteArrayArray = ensureBigEnough( key.byteArrayArray, length );
@@ -96,7 +96,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey state )
+    void putValue( PageCursor cursor, BtreeKey state )
     {
         short typeMarker = (short) (isCharValueType( state.long2 ) ? CHAR_TYPE_LENGTH_MARKER : 0);
         putArrayHeader( cursor, (short) (toNonNegativeShortExact( state.arrayLength ) | typeMarker) );
@@ -104,7 +104,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey into )
+    boolean readValue( PageCursor cursor, int size, BtreeKey into )
     {
         short rawLength = cursor.getShort();
         short length = (short) (rawLength & ~CHAR_TYPE_LENGTH_MARKER);
@@ -132,7 +132,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    Value asValue( GenericKey state )
+    Value asValue( BtreeKey state )
     {
         // no need to set bytes dereferenced because byte[][] owned by this class will be deserialized into String objects.
         if ( isCharValueType( state.long2 ) )
@@ -144,7 +144,7 @@ class TextArrayType extends AbstractArrayType<String>
         return super.asValue( state );
     }
 
-    private static Value charArrayAsValue( GenericKey state )
+    private static Value charArrayAsValue( BtreeKey state )
     {
         char[] chars = new char[state.arrayLength];
         for ( int i = 0; i < state.arrayLength; i++ )
@@ -159,14 +159,14 @@ class TextArrayType extends AbstractArrayType<String>
         return byteArray == null ? null : UTF8.decode( byteArray, 0, (int) long0 );
     }
 
-    static void write( GenericKey state, int offset, byte[] bytes )
+    static void write( BtreeKey state, int offset, byte[] bytes )
     {
         state.byteArrayArray[offset] = bytes;
         state.long0Array[offset] = bytes.length;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long1=" + state.long1 );
         joiner.add( "long2=" + state.long2 );

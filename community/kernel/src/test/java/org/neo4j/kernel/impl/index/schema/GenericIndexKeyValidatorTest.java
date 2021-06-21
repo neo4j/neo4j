@@ -61,7 +61,7 @@ class GenericIndexKeyValidatorTest
     void shouldNotBotherSerializingToRealBytesIfFarFromThreshold()
     {
         // given
-        Layout<GenericKey,NativeIndexValue> layout = mock( Layout.class );
+        Layout<BtreeKey,NativeIndexValue> layout = mock( Layout.class );
         doThrow( RuntimeException.class ).when( layout ).newKey();
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, descriptor, layout, SIMPLE_NAME_LOOKUP );
 
@@ -75,8 +75,8 @@ class GenericIndexKeyValidatorTest
     void shouldInvolveSerializingToRealBytesIfMayCrossThreshold()
     {
         // given
-        Layout<GenericKey,NativeIndexValue> layout = mock( Layout.class );
-        when( layout.newKey() ).thenReturn( new CompositeGenericKey( 3, spatialSettings() ) );
+        Layout<BtreeKey,NativeIndexValue> layout = mock( Layout.class );
+        when( layout.newKey() ).thenReturn( new CompositeBtreeKey( 3, spatialSettings() ) );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, descriptor, layout, SIMPLE_NAME_LOOKUP );
 
         // when
@@ -94,7 +94,7 @@ class GenericIndexKeyValidatorTest
         int maxLength = random.nextInt( 15, 30 ) * slots;
         GenericLayout layout = new GenericLayout( slots, spatialSettings() );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, descriptor, layout, SIMPLE_NAME_LOOKUP );
-        GenericKey key = layout.newKey();
+        BtreeKey key = layout.newKey();
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -127,7 +127,7 @@ class GenericIndexKeyValidatorTest
         return IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     }
 
-    private static int actualSize( Value[] tuple, GenericKey key )
+    private static int actualSize( Value[] tuple, BtreeKey key )
     {
         key.initialize( 0 );
         for ( int i = 0; i < tuple.length; i++ )

@@ -32,13 +32,13 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
-class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKey,NativeIndexValue>
+class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<BtreeKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
     private final SpaceFillingCurveConfiguration configuration;
     private final TokenNameLookup tokenNameLookup;
 
-    GenericBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
+    GenericBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<BtreeKey,NativeIndexValue> layout,
             IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings, SpaceFillingCurveConfiguration configuration,
             boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
@@ -49,7 +49,7 @@ class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKe
     }
 
     @Override
-    NativeIndexReader<GenericKey,NativeIndexValue> newReader()
+    NativeIndexReader<BtreeKey,NativeIndexValue> newReader()
     {
         return new GenericNativeIndexReader( tree, layout, descriptor, spatialSettings, configuration );
     }

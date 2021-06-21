@@ -46,13 +46,13 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
-        return arrayKeySize( state, GenericKey.SIZE_ZONED_DATE_TIME );
+        return arrayKeySize( state, BtreeKey.SIZE_ZONED_DATE_TIME );
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from, int length )
+    void copyValue( BtreeKey to, BtreeKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
@@ -62,7 +62,7 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
     }
 
     @Override
-    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( BtreeKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         key.long1Array = ensureBigEnough( key.long1Array, length );
@@ -70,7 +70,7 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
         key.long3Array = ensureBigEnough( key.long3Array, length );
     }
 
-    static void write( GenericKey state, int offset, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
+    static void write( BtreeKey state, int offset, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
     {
         state.long0Array[offset] = epochSecondUTC;
         state.long1Array[offset] = nano;
@@ -79,7 +79,7 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
         joiner.add( "long1Array=" + Arrays.toString( state.long1Array ) );

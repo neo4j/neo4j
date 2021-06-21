@@ -31,20 +31,20 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKey.BIGGEST_STATIC_SIZE;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.BIGGEST_STATIC_SIZE;
 
 /**
- * Validates Value[] tuples, whether or not they fit inside a {@link GBPTree} with a layout using {@link CompositeGenericKey}.
- * Most values won't even be serialized to {@link CompositeGenericKey}, values that fit well within the margin.
+ * Validates Value[] tuples, whether or not they fit inside a {@link GBPTree} with a layout using {@link CompositeBtreeKey}.
+ * Most values won't even be serialized to {@link CompositeBtreeKey}, values that fit well within the margin.
  */
 class GenericIndexKeyValidator implements IndexValueValidator
 {
     private final IndexDescriptor descriptor;
     private final int maxLength;
-    private final Layout<GenericKey,NativeIndexValue> layout;
+    private final Layout<BtreeKey,NativeIndexValue> layout;
     private final TokenNameLookup tokenNameLookup;
 
-    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<GenericKey,NativeIndexValue> layout,
+    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<BtreeKey,NativeIndexValue> layout,
             TokenNameLookup tokenNameLookup )
     {
         this.maxLength = maxLength;
@@ -118,12 +118,12 @@ class GenericIndexKeyValidator implements IndexValueValidator
 
     private static int stringWorstCaseLength( int stringLength )
     {
-        return GenericKey.SIZE_STRING_LENGTH + stringLength * 4;
+        return BtreeKey.SIZE_STRING_LENGTH + stringLength * 4;
     }
 
     private int actualLength( Value[] values )
     {
-        GenericKey key = layout.newKey();
+        BtreeKey key = layout.newKey();
         key.initialize( 0 /*doesn't quite matter for size calculations, but an important method to call*/ );
         for ( int i = 0; i < values.length; i++ )
         {

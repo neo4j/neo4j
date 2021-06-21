@@ -158,7 +158,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         TrappingMonitor monitor = new TrappingMonitor( ignore -> false );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( monitor );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( monitor );
         boolean closed = false;
         try
         {
@@ -187,7 +187,7 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    private Callable<Object> scanCompletedTask( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator )
+    private Callable<Object> scanCompletedTask( BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator )
     {
         return () ->
         {
@@ -201,7 +201,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         TrappingMonitor monitor = new TrappingMonitor( numberOfBlocks -> numberOfBlocks == 2 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( monitor );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( monitor );
         boolean closed = false;
         try
         {
@@ -237,7 +237,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         TrappingMonitor monitor = new TrappingMonitor( numberOfBlocks -> numberOfBlocks == 1 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( monitor );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( monitor );
         try
         {
             populator.add( batchOfUpdates(), NULL );
@@ -265,7 +265,7 @@ class BlockBasedIndexPopulatorTest
     void shouldCorrectlyDecideToAwaitMergeDependingOnProgress() throws Throwable
     {
         // given
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
         boolean closed = false;
         try
         {
@@ -296,7 +296,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         TrappingMonitor monitor = new TrappingMonitor( ignore -> false );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( monitor );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( monitor );
         boolean closed = false;
         try
         {
@@ -336,7 +336,7 @@ class BlockBasedIndexPopulatorTest
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         boolean closed = false;
         try
         {
@@ -374,7 +374,7 @@ class BlockBasedIndexPopulatorTest
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         boolean closed = false;
         try
         {
@@ -411,7 +411,7 @@ class BlockBasedIndexPopulatorTest
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         Collection<IndexEntryUpdate<?>> populationUpdates = batchOfUpdates();
         populator.add( populationUpdates, NULL );
 
@@ -456,7 +456,7 @@ class BlockBasedIndexPopulatorTest
         databaseIndexContext = DatabaseIndexContext.builder( databaseIndexContext )
                 .withMonitors( monitors )
                 .build();
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         try
         {
             // when
@@ -476,7 +476,7 @@ class BlockBasedIndexPopulatorTest
     void shouldScheduleMergeOnJobSchedulerWithCorrectGroup() throws IndexEntryConflictException, IOException
     {
         // given
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
         boolean closed = false;
         try
         {
@@ -513,7 +513,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap();
@@ -524,7 +524,7 @@ class BlockBasedIndexPopulatorTest
             populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
             // when
-            try ( Seeker<GenericKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
+            try ( Seeker<BtreeKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
             {
                 // then
                 assertTrue( seek.next() );
@@ -543,7 +543,7 @@ class BlockBasedIndexPopulatorTest
     {
         /// given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap() + 1;
@@ -562,7 +562,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap();
@@ -588,7 +588,7 @@ class BlockBasedIndexPopulatorTest
             }
 
             // when
-            try ( Seeker<GenericKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
+            try ( Seeker<BtreeKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
             {
                 // then
                 assertTrue( seek.next() );
@@ -608,7 +608,7 @@ class BlockBasedIndexPopulatorTest
     {
         /// given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap() + 1;
@@ -634,7 +634,7 @@ class BlockBasedIndexPopulatorTest
     void shouldCountExternalUpdatesAsSampleUpdates() throws IOException, IndexEntryConflictException
     {
         // given
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
         try
         {
             populator.add( List.of( add( 0 ), add( 1 ) ), NULL );
@@ -663,19 +663,19 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    private static Seeker<GenericKey,NativeIndexValue> seek( GBPTree<GenericKey,NativeIndexValue> tree, Layout<GenericKey,NativeIndexValue> layout )
+    private static Seeker<BtreeKey,NativeIndexValue> seek( GBPTree<BtreeKey,NativeIndexValue> tree, Layout<BtreeKey,NativeIndexValue> layout )
             throws IOException
     {
-        GenericKey low = layout.newKey();
+        BtreeKey low = layout.newKey();
         low.initialize( Long.MIN_VALUE );
         low.initValuesAsLowest();
-        GenericKey high = layout.newKey();
+        BtreeKey high = layout.newKey();
         high.initialize( Long.MAX_VALUE );
         high.initValuesAsHighest();
         return tree.seek( low, high, NULL );
     }
 
-    private static void externalUpdates( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator, int firstId, int lastId )
+    private static void externalUpdates( BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator, int firstId, int lastId )
             throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
@@ -687,22 +687,22 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor ) throws IOException
+    private BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor ) throws IOException
     {
         return instantiatePopulator( monitor, heapBufferFactory( 100), INSTANCE );
     }
 
-    private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
+    private BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker ) throws IOException
     {
         GenericLayout layout = layout();
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
+        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator =
                 new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory,
                         Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 ),
                         memoryTracker, monitor )
                 {
                     @Override
-                    NativeIndexReader<GenericKey,NativeIndexValue> newReader()
+                    NativeIndexReader<BtreeKey,NativeIndexValue> newReader()
                     {
                         throw new UnsupportedOperationException( "Not needed in this test" );
                     }

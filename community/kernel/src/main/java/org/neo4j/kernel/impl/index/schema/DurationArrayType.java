@@ -46,13 +46,13 @@ class DurationArrayType extends AbstractArrayType<DurationValue>
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
-        return arrayKeySize( state, GenericKey.SIZE_DURATION );
+        return arrayKeySize( state, BtreeKey.SIZE_DURATION );
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from, int length )
+    void copyValue( BtreeKey to, BtreeKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
@@ -62,7 +62,7 @@ class DurationArrayType extends AbstractArrayType<DurationValue>
     }
 
     @Override
-    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( BtreeKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         key.long1Array = ensureBigEnough( key.long1Array, length );
@@ -70,7 +70,7 @@ class DurationArrayType extends AbstractArrayType<DurationValue>
         key.long3Array = ensureBigEnough( key.long3Array, length );
     }
 
-    static void write( GenericKey state, int offset, long months, long days, long totalAvgSeconds, int nanos )
+    static void write( BtreeKey state, int offset, long months, long days, long totalAvgSeconds, int nanos )
     {
         state.long0Array[offset] = totalAvgSeconds;
         state.long1Array[offset] = nanos;
@@ -79,7 +79,7 @@ class DurationArrayType extends AbstractArrayType<DurationValue>
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
         joiner.add( "long1Array=" + Arrays.toString( state.long1Array ) );

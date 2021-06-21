@@ -84,7 +84,7 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.NO_ENTITY_ID;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.NO_ENTITY_ID;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY_ARRAY;
@@ -170,7 +170,7 @@ class GenericKeyStateTest
     {
         // Given
         PageCursor cursor = newPageCursor();
-        GenericKey writeState = newKeyState();
+        BtreeKey writeState = newKeyState();
         Value value = valueGenerator.next();
         int offset = cursor.getOffset();
 
@@ -179,7 +179,7 @@ class GenericKeyStateTest
         writeState.put( cursor );
 
         // Then
-        GenericKey readState = newKeyState();
+        BtreeKey readState = newKeyState();
         int size = writeState.size();
         cursor.setOffset( offset );
         assertTrue( readState.get( cursor, size ), "failed to read" );
@@ -193,10 +193,10 @@ class GenericKeyStateTest
     void copyShouldCopy( ValueGenerator valueGenerator )
     {
         // Given
-        GenericKey from = newKeyState();
+        BtreeKey from = newKeyState();
         Value value = valueGenerator.next();
         from.writeValue( value, NEUTRAL );
-        GenericKey to = genericKeyStateWithSomePreviousState( valueGenerator );
+        BtreeKey to = genericKeyStateWithSomePreviousState( valueGenerator );
 
         // When
         to.copyFrom( from );
@@ -209,8 +209,8 @@ class GenericKeyStateTest
     void copyShouldCopyExtremeValues()
     {
         // Given
-        GenericKey extreme = newKeyState();
-        GenericKey copy = newKeyState();
+        BtreeKey extreme = newKeyState();
+        BtreeKey copy = newKeyState();
 
         for ( ValueGroup valueGroup : ValueGroup.values() )
         {
@@ -232,19 +232,19 @@ class GenericKeyStateTest
     {
         // Given
         List<Value> values = new ArrayList<>();
-        List<GenericKey> states = new ArrayList<>();
+        List<BtreeKey> states = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
             Value value = valueGenerator.next();
             values.add( value );
-            GenericKey state = newKeyState();
+            BtreeKey state = newKeyState();
             state.writeValue( value, NEUTRAL );
             states.add( state );
         }
 
         // When
         values.sort( COMPARATOR );
-        states.sort( GenericKey::compareValueTo );
+        states.sort( BtreeKey::compareValueTo );
 
         // Then
         for ( int i = 0; i < values.size(); i++ )
@@ -263,13 +263,13 @@ class GenericKeyStateTest
         Long spaceFillingCurveValue = curve.derivedValueFor( firstPoint.coordinate() );
         PointValue centerPoint = Values.pointValue( crs, curve.centerPointFor( spaceFillingCurveValue ) );
 
-        GenericKey firstKey = newKeyState();
+        BtreeKey firstKey = newKeyState();
         firstKey.writeValue( firstPoint, NEUTRAL );
-        GenericKey equalKey = newKeyState();
+        BtreeKey equalKey = newKeyState();
         equalKey.writeValue( equalPoint, NEUTRAL );
-        GenericKey centerKey = newKeyState();
+        BtreeKey centerKey = newKeyState();
         centerKey.writeValue( centerPoint, NEUTRAL );
-        GenericKey noCoordsKey = newKeyState();
+        BtreeKey noCoordsKey = newKeyState();
         noCoordsKey.writeValue( equalPoint, NEUTRAL );
         GeometryType.setNoCoordinates( noCoordsKey );
 
@@ -296,13 +296,13 @@ class GenericKeyStateTest
         }
         PointArray centerArray = Values.pointArray( centerPointValues );
 
-        GenericKey firstKey = newKeyState();
+        BtreeKey firstKey = newKeyState();
         firstKey.writeValue( firstArray, NEUTRAL );
-        GenericKey equalKey = newKeyState();
+        BtreeKey equalKey = newKeyState();
         equalKey.writeValue( equalArray, NEUTRAL );
-        GenericKey centerKey = newKeyState();
+        BtreeKey centerKey = newKeyState();
         centerKey.writeValue( centerArray, NEUTRAL );
-        GenericKey noCoordsKey = newKeyState();
+        BtreeKey noCoordsKey = newKeyState();
         noCoordsKey.writeValue( equalArray, NEUTRAL );
         GeometryType.setNoCoordinates( noCoordsKey );
 
@@ -348,7 +348,7 @@ class GenericKeyStateTest
         // Given
         PageCursor cursor = newPageCursor();
         Value value = valueGenerator.next();
-        GenericKey state = newKeyState();
+        BtreeKey state = newKeyState();
         state.writeValue( value, NEUTRAL );
         int offsetBefore = cursor.getOffset();
 
@@ -484,7 +484,7 @@ class GenericKeyStateTest
     {
         // Given a value that we dereference
         Value srcValue = Values.utf8Value( "First string".getBytes( UTF_8 ) );
-        GenericKey genericKeyState = newKeyState();
+        BtreeKey genericKeyState = newKeyState();
         genericKeyState.writeValue( srcValue, NEUTRAL );
         Value dereferencedValue = genericKeyState.asValue();
         assertEquals( srcValue, dereferencedValue );
@@ -534,9 +534,9 @@ class GenericKeyStateTest
         // Given
         Value value = valueGenerator.next();
         GenericLayout layout = newLayout( 1 );
-        GenericKey left = layout.newKey();
-        GenericKey right = layout.newKey();
-        GenericKey minimalSplitter = layout.newKey();
+        BtreeKey left = layout.newKey();
+        BtreeKey right = layout.newKey();
+        BtreeKey minimalSplitter = layout.newKey();
 
         // keys with same value but different entityId
         left.initialize( 1 );
@@ -565,9 +565,9 @@ class GenericKeyStateTest
         Value rightValue = pickOther( firstValue, secondValue, leftValue );
 
         GenericLayout layout = newLayout( 1 );
-        GenericKey left = layout.newKey();
-        GenericKey right = layout.newKey();
-        GenericKey minimalSplitter = layout.newKey();
+        BtreeKey left = layout.newKey();
+        BtreeKey right = layout.newKey();
+        BtreeKey minimalSplitter = layout.newKey();
 
         // keys with unique values
         left.initialize( 1 );
@@ -591,9 +591,9 @@ class GenericKeyStateTest
         // Given composite keys with same set of values
         int nbrOfSlots = random.nextInt( 1, 5 );
         GenericLayout layout = newLayout( nbrOfSlots );
-        GenericKey left = layout.newKey();
-        GenericKey right = layout.newKey();
-        GenericKey minimalSplitter = layout.newKey();
+        BtreeKey left = layout.newKey();
+        BtreeKey right = layout.newKey();
+        BtreeKey minimalSplitter = layout.newKey();
         left.initialize( 1 );
         right.initialize( 2 );
         Value[] values = new Value[nbrOfSlots];
@@ -623,9 +623,9 @@ class GenericKeyStateTest
         int nbrOfSlots = random.nextInt( 1, 5 );
         int differingSlot = random.nextInt( nbrOfSlots );
         GenericLayout layout = newLayout( nbrOfSlots );
-        GenericKey left = layout.newKey();
-        GenericKey right = layout.newKey();
-        GenericKey minimalSplitter = layout.newKey();
+        BtreeKey left = layout.newKey();
+        BtreeKey right = layout.newKey();
+        BtreeKey minimalSplitter = layout.newKey();
         left.initialize( 1 );
         right.initialize( 2 );
         // Same value on all except one slot
@@ -664,10 +664,10 @@ class GenericKeyStateTest
     void testDocumentedKeySizesNonArrays( ValueGenerator generator )
     {
         Value value = generator.next();
-        GenericKey key = newKeyState();
+        BtreeKey key = newKeyState();
         key.initFromValue( 0, value, NEUTRAL );
         int keySize = key.size();
-        int keyOverhead = GenericKey.ENTITY_ID_SIZE;
+        int keyOverhead = BtreeKey.ENTITY_ID_SIZE;
         int actualSizeOfData = keySize - keyOverhead;
 
         int expectedSizeOfData;
@@ -725,10 +725,10 @@ class GenericKeyStateTest
     void testDocumentedKeySizesArrays( ValueGenerator generator )
     {
         Value value = generator.next();
-        GenericKey key = newKeyState();
+        BtreeKey key = newKeyState();
         key.initFromValue( 0, value, NEUTRAL );
         int keySize = key.size();
-        int keyOverhead = GenericKey.ENTITY_ID_SIZE;
+        int keyOverhead = BtreeKey.ENTITY_ID_SIZE;
         int actualSizeOfData = keySize - keyOverhead;
 
         int arrayLength = 0;
@@ -806,7 +806,7 @@ class GenericKeyStateTest
     private void shouldReadBackToExactOriginalValue( Value srcValue )
     {
         // given
-        GenericKey state = newKeyState();
+        BtreeKey state = newKeyState();
         state.clear();
         state.writeValue( srcValue, NEUTRAL );
         Value retrievedValueAfterWrittenToState = state.asValue();
@@ -848,9 +848,9 @@ class GenericKeyStateTest
 
     private void assertHighest( Value value )
     {
-        GenericKey highestOfAll = newKeyState();
-        GenericKey highestInValueGroup = newKeyState();
-        GenericKey other = newKeyState();
+        BtreeKey highestOfAll = newKeyState();
+        BtreeKey highestInValueGroup = newKeyState();
+        BtreeKey other = newKeyState();
         highestOfAll.initValueAsHighest( ValueGroup.UNKNOWN );
         highestInValueGroup.initValueAsHighest( value.valueGroup() );
         other.writeValue( value, NEUTRAL );
@@ -862,9 +862,9 @@ class GenericKeyStateTest
 
     private void assertLowest( Value value )
     {
-        GenericKey lowestOfAll = newKeyState();
-        GenericKey lowestInValueGroup = newKeyState();
-        GenericKey other = newKeyState();
+        BtreeKey lowestOfAll = newKeyState();
+        BtreeKey lowestInValueGroup = newKeyState();
+        BtreeKey other = newKeyState();
         lowestOfAll.initValueAsLowest( ValueGroup.UNKNOWN );
         lowestInValueGroup.initValueAsLowest( value.valueGroup() );
         other.writeValue( value, NEUTRAL );
@@ -880,12 +880,12 @@ class GenericKeyStateTest
 
     private void assertValidMinimalSplitter( Value left, Value right )
     {
-        GenericKey leftState = newKeyState();
+        BtreeKey leftState = newKeyState();
         leftState.writeValue( left, NEUTRAL );
-        GenericKey rightState = newKeyState();
+        BtreeKey rightState = newKeyState();
         rightState.writeValue( right, NEUTRAL );
 
-        GenericKey minimalSplitter = newKeyState();
+        BtreeKey minimalSplitter = newKeyState();
         rightState.minimalSplitter( leftState, rightState, minimalSplitter );
 
         assertTrue( leftState.compareValueTo( minimalSplitter ) < 0,
@@ -896,12 +896,12 @@ class GenericKeyStateTest
 
     private void assertValidMinimalSplitterForEqualValues( Value value )
     {
-        GenericKey leftState = newKeyState();
+        BtreeKey leftState = newKeyState();
         leftState.writeValue( value, NEUTRAL );
-        GenericKey rightState = newKeyState();
+        BtreeKey rightState = newKeyState();
         rightState.writeValue( value, NEUTRAL );
 
-        GenericKey minimalSplitter = newKeyState();
+        BtreeKey minimalSplitter = newKeyState();
         rightState.minimalSplitter( leftState, rightState, minimalSplitter );
 
         assertEquals( 0, leftState.compareValueTo( minimalSplitter ),
@@ -1184,9 +1184,9 @@ class GenericKeyStateTest
         return arrayElementSize;
     }
 
-    private GenericKey genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
+    private BtreeKey genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
     {
-        GenericKey to = newKeyState();
+        BtreeKey to = newKeyState();
         if ( random.nextBoolean() )
         {
             // Previous value
@@ -1203,9 +1203,9 @@ class GenericKeyStateTest
         return ByteArrayPageCursor.wrap( PageCache.PAGE_SIZE );
     }
 
-    private GenericKey newKeyState()
+    private BtreeKey newKeyState()
     {
-        return new GenericKey( noSpecificIndexSettings );
+        return new BtreeKey( noSpecificIndexSettings );
     }
 
     private static Value pickOther( Value value1, Value value2, Value currentValue )

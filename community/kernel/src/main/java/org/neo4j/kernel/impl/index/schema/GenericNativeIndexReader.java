@@ -43,12 +43,12 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexValue>
+class GenericNativeIndexReader extends NativeIndexReader<BtreeKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
 
-    GenericNativeIndexReader( GBPTree<GenericKey,NativeIndexValue> tree, IndexLayout<GenericKey,NativeIndexValue> layout,
+    GenericNativeIndexReader( GBPTree<BtreeKey,NativeIndexValue> tree, IndexLayout<BtreeKey,NativeIndexValue> layout,
             IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
             SpaceFillingCurveConfiguration configuration )
     {
@@ -87,8 +87,8 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
                 {
                     // Here's a sub-query that we'll have to do for this geometry range. Build this query from all predicates
                     // and when getting to the geometry range predicate that sparked these sub-query chenanigans, swap in this sub-query in its place.
-                    GenericKey treeKeyFrom = layout.newKey();
-                    GenericKey treeKeyTo = layout.newKey();
+                    BtreeKey treeKeyFrom = layout.newKey();
+                    BtreeKey treeKeyTo = layout.newKey();
                     initializeFromToKeys( treeKeyFrom, treeKeyTo );
                     boolean needFiltering = initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, crs, range );
                     startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, constraints, needFiltering, context.cursorContext() );
@@ -123,7 +123,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
      * in the query.
      * @return {@code true} if filtering is needed for the results from the reader, otherwise {@code false}.
      */
-    private static boolean initializeRangeForGeometrySubQuery( GenericKey treeKeyFrom, GenericKey treeKeyTo,
+    private static boolean initializeRangeForGeometrySubQuery( BtreeKey treeKeyFrom, BtreeKey treeKeyTo,
             PropertyIndexQuery[] query, CoordinateReferenceSystem crs, SpaceFillingCurve.LongRange range )
     {
         boolean needsFiltering = false;
@@ -178,12 +178,12 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
     }
 
     @Override
-    boolean initializeRangeForQuery( GenericKey treeKeyFrom, GenericKey treeKeyTo, PropertyIndexQuery[] query )
+    boolean initializeRangeForQuery( BtreeKey treeKeyFrom, BtreeKey treeKeyTo, PropertyIndexQuery[] query )
     {
         return initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, null, null );
     }
 
-    private static void initFromForRange( int stateSlot, RangePredicate<?> rangePredicate, GenericKey treeKeyFrom )
+    private static void initFromForRange( int stateSlot, RangePredicate<?> rangePredicate, BtreeKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
@@ -197,7 +197,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
         }
     }
 
-    private static void initToForRange( int stateSlot, RangePredicate<?> rangePredicate, GenericKey treeKeyTo )
+    private static void initToForRange( int stateSlot, RangePredicate<?> rangePredicate, BtreeKey treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )

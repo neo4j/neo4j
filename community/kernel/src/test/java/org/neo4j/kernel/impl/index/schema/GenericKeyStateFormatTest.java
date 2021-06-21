@@ -235,7 +235,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     private void putData( PageCursor c )
     {
         GenericLayout layout = getLayout();
-        GenericKey key = layout.newKey();
+        BtreeKey key = layout.newKey();
         for ( Value value : values )
         {
             initializeFromValue( key, value );
@@ -244,7 +244,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         }
     }
 
-    private static void initializeFromValue( GenericKey key, Value value )
+    private static void initializeFromValue( BtreeKey key, Value value )
     {
         key.initialize( ENTITY_ID );
         for ( int i = 0; i < NUMBER_OF_SLOTS; i++ )
@@ -256,8 +256,8 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     private void verifyData( PageCursor c )
     {
         GenericLayout layout = getLayout();
-        GenericKey readCompositeKey = layout.newKey();
-        GenericKey comparison = layout.newKey();
+        BtreeKey readCompositeKey = layout.newKey();
+        BtreeKey comparison = layout.newKey();
         for ( Value value : values )
         {
             int keySize = c.getInt();
@@ -274,7 +274,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         }
     }
 
-    private static String detailedFailureMessage( GenericKey actualKey, GenericKey expectedKey )
+    private static String detailedFailureMessage( BtreeKey actualKey, BtreeKey expectedKey )
     {
         return "expected " + expectedKey.toDetailedString() + ", but was " + actualKey.toDetailedString();
     }

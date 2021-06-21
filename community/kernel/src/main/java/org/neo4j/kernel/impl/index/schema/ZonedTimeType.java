@@ -40,26 +40,26 @@ class ZonedTimeType extends Type
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
-        return GenericKey.SIZE_ZONED_TIME;
+        return BtreeKey.SIZE_ZONED_TIME;
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from )
+    void copyValue( BtreeKey to, BtreeKey from )
     {
         to.long0 = from.long0;
         to.long1 = from.long1;
     }
 
     @Override
-    Value asValue( GenericKey state )
+    Value asValue( BtreeKey state )
     {
         return asValue( state.long0, state.long1 );
     }
 
     @Override
-    int compareValue( GenericKey left, GenericKey right )
+    int compareValue( BtreeKey left, BtreeKey right )
     {
         return compare(
                 left.long0, left.long1,
@@ -67,13 +67,13 @@ class ZonedTimeType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey state )
+    void putValue( PageCursor cursor, BtreeKey state )
     {
         put( cursor, state.long0, state.long1 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey into )
+    boolean readValue( PageCursor cursor, int size, BtreeKey into )
     {
         return read( cursor, into );
     }
@@ -95,7 +95,7 @@ class ZonedTimeType extends Type
         cursor.putInt( (int) long1 );
     }
 
-    static boolean read( PageCursor cursor, GenericKey into )
+    static boolean read( PageCursor cursor, BtreeKey into )
     {
         into.writeTime( cursor.getLong(), cursor.getInt() );
         return true;
@@ -113,14 +113,14 @@ class ZonedTimeType extends Type
         return compare;
     }
 
-    static void write( GenericKey state, long nanosOfDayUTC, int offsetSeconds )
+    static void write( BtreeKey state, long nanosOfDayUTC, int offsetSeconds )
     {
         state.long0 = nanosOfDayUTC;
         state.long1 = offsetSeconds;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long0=" + state.long0 );
         joiner.add( "long1=" + state.long1 );

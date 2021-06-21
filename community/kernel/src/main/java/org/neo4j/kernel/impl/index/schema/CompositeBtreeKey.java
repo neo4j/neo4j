@@ -28,21 +28,21 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 /**
- * {@link GenericKey} which has an array of {@link GenericKey} inside and can therefore hold composite key state.
- * For single-keys please instead use the more efficient {@link GenericKey}.
+ * {@link BtreeKey} which has an array of {@link BtreeKey} inside and can therefore hold composite key state.
+ * For single-keys please instead use the more efficient {@link BtreeKey}.
  */
-class CompositeGenericKey extends GenericKey
+class CompositeBtreeKey extends BtreeKey
 {
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    private GenericKey[] states;
+    private BtreeKey[] states;
 
-    CompositeGenericKey( int slots, IndexSpecificSpaceFillingCurveSettings spatialSettings )
+    CompositeBtreeKey( int slots, IndexSpecificSpaceFillingCurveSettings spatialSettings )
     {
         super( spatialSettings );
-        states = new GenericKey[slots];
+        states = new BtreeKey[slots];
         for ( int i = 0; i < slots; i++ )
         {
-            states[i] = new GenericKey( spatialSettings );
+            states[i] = new BtreeKey( spatialSettings );
         }
     }
 
@@ -82,7 +82,7 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    int compareValueToInternal( GenericKey other )
+    int compareValueToInternal( BtreeKey other )
     {
         int slots = numberOfStateSlots();
         for ( int i = 0; i < slots; i++ )
@@ -97,7 +97,7 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    void copyFromInternal( GenericKey key )
+    void copyFromInternal( BtreeKey key )
     {
         int slots = numberOfStateSlots();
         if ( key.numberOfStateSlots() != slots )
@@ -168,7 +168,7 @@ class CompositeGenericKey extends GenericKey
     public String toStringInternal()
     {
         StringJoiner joiner = new StringJoiner( "," );
-        for ( GenericKey state : states )
+        for ( BtreeKey state : states )
         {
             joiner.add( state.toStringInternal() );
         }
@@ -179,7 +179,7 @@ class CompositeGenericKey extends GenericKey
     String toDetailedStringInternal()
     {
         StringJoiner joiner = new StringJoiner( "," );
-        for ( GenericKey state : states )
+        for ( BtreeKey state : states )
         {
             joiner.add( state.toDetailedStringInternal() );
         }
@@ -187,7 +187,7 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    void minimalSplitterInternal( GenericKey left, GenericKey right, GenericKey into )
+    void minimalSplitterInternal( BtreeKey left, BtreeKey right, BtreeKey into )
     {
         int firstStateToDiffer = 0;
         int compare = 0;
@@ -200,8 +200,8 @@ class CompositeGenericKey extends GenericKey
 
         while ( compare == 0 && firstStateToDiffer < stateCount )
         {
-            GenericKey leftState = left.stateSlot( firstStateToDiffer );
-            GenericKey rightState = right.stateSlot( firstStateToDiffer );
+            BtreeKey leftState = left.stateSlot( firstStateToDiffer );
+            BtreeKey rightState = right.stateSlot( firstStateToDiffer );
             firstStateToDiffer++;
             compare = leftState.compareValueToInternal( rightState );
         }
@@ -212,14 +212,14 @@ class CompositeGenericKey extends GenericKey
         }
         for ( int i = firstStateToDiffer; i < stateCount; i++ )
         {
-            GenericKey leftState = left.stateSlot( i );
-            GenericKey rightState = right.stateSlot( i );
+            BtreeKey leftState = left.stateSlot( i );
+            BtreeKey rightState = right.stateSlot( i );
             rightState.minimalSplitterInternal( leftState, rightState, into.stateSlot( i ) );
         }
     }
 
     @Override
-    GenericKey stateSlot( int slot )
+    BtreeKey stateSlot( int slot )
     {
         return states[slot];
     }

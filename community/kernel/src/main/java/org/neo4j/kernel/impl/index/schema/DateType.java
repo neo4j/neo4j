@@ -38,25 +38,25 @@ class DateType extends Type
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
-        return GenericKey.SIZE_DATE;
+        return BtreeKey.SIZE_DATE;
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from )
+    void copyValue( BtreeKey to, BtreeKey from )
     {
         to.long0 = from.long0;
     }
 
     @Override
-    Value asValue( GenericKey state )
+    Value asValue( BtreeKey state )
     {
         return asValue( state.long0 );
     }
 
     @Override
-    int compareValue( GenericKey left, GenericKey right )
+    int compareValue( BtreeKey left, BtreeKey right )
     {
         return compare(
                 left.long0,
@@ -64,13 +64,13 @@ class DateType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey state )
+    void putValue( PageCursor cursor, BtreeKey state )
     {
         put( cursor, state.long0 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey into )
+    boolean readValue( PageCursor cursor, int size, BtreeKey into )
     {
         return read( cursor, into );
     }
@@ -95,19 +95,19 @@ class DateType extends Type
         cursor.putLong( long0 );
     }
 
-    static boolean read( PageCursor cursor, GenericKey into )
+    static boolean read( PageCursor cursor, BtreeKey into )
     {
         into.writeDate( cursor.getLong() );
         return true;
     }
 
-    static void write( GenericKey state, long epochDay )
+    static void write( BtreeKey state, long epochDay )
     {
         state.long0 = epochDay;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long0=" + state.long0 );
     }

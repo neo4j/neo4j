@@ -95,7 +95,7 @@ class RawBitsTest
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<GenericKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<BtreeKey> numberIndexKeys = asNumberIndexKeys( values );
         Collections.shuffle( values );
         Collections.shuffle( numberIndexKeys );
 
@@ -113,18 +113,18 @@ class RawBitsTest
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<GenericKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<BtreeKey> numberIndexKeys = asNumberIndexKeys( values );
         values.sort( Values.COMPARATOR );
 
         // when
-        for ( GenericKey genericKey : numberIndexKeys )
+        for ( BtreeKey genericKey : numberIndexKeys )
         {
-            List<GenericKey> withoutThisOne = new ArrayList<>( numberIndexKeys );
+            List<BtreeKey> withoutThisOne = new ArrayList<>( numberIndexKeys );
             assertTrue( withoutThisOne.remove( genericKey ) );
             withoutThisOne = unmodifiableList( withoutThisOne );
             for ( int i = 0; i < withoutThisOne.size(); i++ )
             {
-                List<GenericKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
+                List<BtreeKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
                 withThisOneInWrongPlace.add( i, genericKey );
                 withThisOneInWrongPlace.sort( layout );
                 List<Value> actual = asValues( withThisOneInWrongPlace );
@@ -140,18 +140,18 @@ class RawBitsTest
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<GenericKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<BtreeKey> numberIndexKeys = asNumberIndexKeys( values );
 
         // when
         for ( int i = 0; i < values.size(); i++ )
         {
             Value value1 = values.get( i );
-            GenericKey numberIndexKey1 = numberIndexKeys.get( i );
+            BtreeKey numberIndexKey1 = numberIndexKeys.get( i );
             for ( int j = 0; j < values.size(); j++ )
             {
                 // then
                 Value value2 = values.get( j );
-                GenericKey numberIndexKey2 = numberIndexKeys.get( j );
+                BtreeKey numberIndexKey2 = numberIndexKeys.get( j );
                 assertEquals( Values.COMPARATOR.compare( value1, value2 ),
                         layout.compare( numberIndexKey1, numberIndexKey2 ) );
                 assertEquals( Values.COMPARATOR.compare( value2, value1 ),
@@ -160,7 +160,7 @@ class RawBitsTest
         }
     }
 
-    private static List<Value> asValues( List<GenericKey> numberIndexKeys )
+    private static List<Value> asValues( List<BtreeKey> numberIndexKeys )
     {
         return numberIndexKeys.stream()
                 .map( k -> RawBits.asNumberValue( k.long0, (byte) k.long1 ) )
@@ -196,12 +196,12 @@ class RawBitsTest
         return values;
     }
 
-    private List<GenericKey> asNumberIndexKeys( List<Value> values )
+    private List<BtreeKey> asNumberIndexKeys( List<Value> values )
     {
-        List<GenericKey> numberIndexKeys = new ArrayList<>();
+        List<BtreeKey> numberIndexKeys = new ArrayList<>();
         for ( Value value : values )
         {
-            GenericKey key = layout.newKey();
+            BtreeKey key = layout.newKey();
             key.initialize( 0 );
             key.initFromValue( 0, value, NEUTRAL );
             numberIndexKeys.add( key );

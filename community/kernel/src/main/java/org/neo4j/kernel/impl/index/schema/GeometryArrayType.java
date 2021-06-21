@@ -44,8 +44,8 @@ import static org.neo4j.kernel.impl.index.schema.GeometryType.readCrs;
 /**
  * Handles {@link PointValue[]}.
  *
- * Note about lazy initialization of {@link GenericKey} data structures: a point type is special in that it contains a {@link CoordinateReferenceSystem},
- * which dictates how much space it will occupy. When serializing a {@link PointArray} into {@link GenericKey} (via the logic in this class)
+ * Note about lazy initialization of {@link BtreeKey} data structures: a point type is special in that it contains a {@link CoordinateReferenceSystem},
+ * which dictates how much space it will occupy. When serializing a {@link PointArray} into {@link BtreeKey} (via the logic in this class)
  * the {@link CoordinateReferenceSystem} isn't known at initialization, where only the type and array length is known.
  * This is why some state is initialize lazily when observing the first point in the array.
  */
@@ -68,14 +68,14 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
-        return GenericKey.SIZE_GEOMETRY_HEADER +
-                arrayKeySize( state, GenericKey.SIZE_GEOMETRY + dimensions( state ) * GenericKey.SIZE_GEOMETRY_COORDINATE );
+        return BtreeKey.SIZE_GEOMETRY_HEADER +
+               arrayKeySize( state, BtreeKey.SIZE_GEOMETRY + dimensions( state ) * BtreeKey.SIZE_GEOMETRY_COORDINATE );
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from, int length )
+    void copyValue( BtreeKey to, BtreeKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
@@ -89,7 +89,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( BtreeKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
 
@@ -104,7 +104,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    Value asValue( GenericKey state )
+    Value asValue( BtreeKey state )
     {
         Point[] points = new Point[state.arrayLength];
         if ( points.length > 0 )
@@ -121,7 +121,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey state )
+    void putValue( PageCursor cursor, BtreeKey state )
     {
         putCrs( cursor, state.long1, state.long2, state.long3 );
         int dimensions = dimensions( state );
@@ -129,21 +129,21 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey into )
+    boolean readValue( PageCursor cursor, int size, BtreeKey into )
     {
         readCrs( cursor, into );
         return readArray( cursor, ValueWriter.ArrayType.POINT, GeometryArrayType::readGeometryArrayItem, into );
     }
 
     @Override
-    String toString( GenericKey state )
+    String toString( BtreeKey state )
     {
         String asValueString = hasCoordinates( state ) ? asValue( state ).toString() : "NO_COORDINATES";
         return format( "GeometryArray[tableId:%d, code:%d, rawValues:%s, value:%s]",
                 state.long1, state.long2, Arrays.toString( Arrays.copyOf( state.long0Array, state.arrayLength ) ), asValueString );
     }
 
-    private static boolean readGeometryArrayItem( PageCursor cursor, GenericKey into )
+    private static boolean readGeometryArrayItem( PageCursor cursor, BtreeKey into )
     {
         into.long0Array[into.currentArrayOffset] = cursor.getLong();
         int dimensions = dimensions( into );
@@ -160,7 +160,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
         return true;
     }
 
-    static void write( GenericKey state, int offset, long derivedSpaceFillingCurveValue, double[] coordinates )
+    static void write( BtreeKey state, int offset, long derivedSpaceFillingCurveValue, double[] coordinates )
     {
         state.long0Array[offset] = derivedSpaceFillingCurveValue;
         if ( offset == 0 )
@@ -177,7 +177,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long1=" + state.long1 );
         joiner.add( "long2=" + state.long2 );

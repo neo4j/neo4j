@@ -41,7 +41,7 @@ import static org.neo4j.kernel.impl.index.schema.Types.LOWEST_BY_VALUE_GROUP;
 
 /**
  * A key instance which can handle all types of single values, i.e. not composite keys, but all value types.
- * See {@link CompositeGenericKey} for implementation which supports composite keys.
+ * See {@link CompositeBtreeKey} for implementation which supports composite keys.
  *
  * Regarding why the "internal" versions of some methods which are overridden by the CompositeGenericKey sub-class. Example:
  * - Consider a method a() which is used by some part of the implementation of the generic index provider.
@@ -51,7 +51,7 @@ import static org.neo4j.kernel.impl.index.schema.Types.LOWEST_BY_VALUE_GROUP;
  * This is why aInternal() exists and GenericKey#a() is implemented by simply forwarding to aInternal().
  * CompositeGenericKey#a() is implemented by looping over multiple GenericKey instances, also calling aInternal() in each of those, instead of a().
  */
-public class GenericKey extends NativeIndexKey<GenericKey>
+public class BtreeKey extends NativeIndexKey<BtreeKey>
 {
     /**
      * This is the biggest size a static (as in non-dynamic, like string), non-array value can have.
@@ -131,7 +131,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
      */
     SpaceFillingCurve spaceFillingCurve;
 
-    GenericKey( IndexSpecificSpaceFillingCurveSettings settings )
+    BtreeKey( IndexSpecificSpaceFillingCurveSettings settings )
     {
         this.settings = settings;
     }
@@ -201,20 +201,20 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     }
 
     /* </initializers> */
-    void copyFrom( GenericKey key )
+    void copyFrom( BtreeKey key )
     {
         setEntityId( key.getEntityId() );
         setCompareId( key.getCompareId() );
         copyFromInternal( key );
     }
 
-    void copyFromInternal( GenericKey key )
+    void copyFromInternal( BtreeKey key )
     {
         copyMetaFrom( key );
         type.copyValue( this, key );
     }
 
-    void copyMetaFrom( GenericKey key )
+    void copyMetaFrom( BtreeKey key )
     {
         this.type = key.type;
         this.inclusion = key.inclusion;
@@ -264,7 +264,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         initValueAsHighest( valueGroup );
     }
 
-    GenericKey stateSlot( int slot )
+    BtreeKey stateSlot( int slot )
     {
         assert slot == 0;
         return this;
@@ -277,12 +277,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     }
 
     @Override
-    int compareValueTo( GenericKey other )
+    int compareValueTo( BtreeKey other )
     {
         return compareValueToInternal( other );
     }
 
-    int compareValueToInternal( GenericKey other )
+    int compareValueToInternal( BtreeKey other )
     {
         if ( type != other.type )
         {
@@ -310,7 +310,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         return inclusion.compareTo( other.inclusion );
     }
 
-    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
+    void minimalSplitter( BtreeKey left, BtreeKey right, BtreeKey into )
     {
         into.setCompareId( right.getCompareId() );
         if ( left.compareValueTo( right ) != 0 )
@@ -325,7 +325,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         minimalSplitterInternal( left, right, into );
     }
 
-    void minimalSplitterInternal( GenericKey left, GenericKey right, GenericKey into )
+    void minimalSplitterInternal( BtreeKey left, BtreeKey right, BtreeKey into )
     {
         into.clear();
         into.copyMetaFrom( right );

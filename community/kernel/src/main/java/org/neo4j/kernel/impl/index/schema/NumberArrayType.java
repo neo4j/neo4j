@@ -28,7 +28,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKey.setCursorException;
+import static org.neo4j.kernel.impl.index.schema.BtreeKey.setCursorException;
 import static org.neo4j.kernel.impl.index.schema.NumberType.numberKeySize;
 
 // Raw Number type is mostly for show as internally specific primitive int/long/short etc. arrays are created instead
@@ -47,13 +47,13 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    int valueSize( GenericKey state )
+    int valueSize( BtreeKey state )
     {
-        return arrayKeySize( state, numberKeySize( state.long1 ) ) + GenericKey.SIZE_NUMBER_TYPE;
+        return arrayKeySize( state, numberKeySize( state.long1 ) ) + BtreeKey.SIZE_NUMBER_TYPE;
     }
 
     @Override
-    void copyValue( GenericKey to, GenericKey from, int length )
+    void copyValue( BtreeKey to, BtreeKey from, int length )
     {
         to.long1 = from.long1;
         initializeArray( to, length );
@@ -61,7 +61,7 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( BtreeKey key, int length, ValueWriter.ArrayType arrayType )
     {
         initializeArray( key, length );
         switch ( arrayType )
@@ -89,14 +89,14 @@ class NumberArrayType extends AbstractArrayType<Number>
         }
     }
 
-    private static void initializeArray( GenericKey key, int length )
+    private static void initializeArray( BtreeKey key, int length )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         // plain long1 for number type
     }
 
     @Override
-    Value asValue( GenericKey state )
+    Value asValue( BtreeKey state )
     {
         byte numberType = (byte) state.long1;
         switch ( numberType )
@@ -144,13 +144,13 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKey state )
+    void putValue( PageCursor cursor, BtreeKey state )
     {
         cursor.putByte( (byte) state.long1 );
         putArray( cursor, state, numberArrayElementWriter( state ) );
     }
 
-    private static ArrayElementWriter numberArrayElementWriter( GenericKey key )
+    private static ArrayElementWriter numberArrayElementWriter( BtreeKey key )
     {
         switch ( (int) key.long1 )
         {
@@ -170,7 +170,7 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKey into )
+    boolean readValue( PageCursor cursor, int size, BtreeKey into )
     {
         into.long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
         ValueWriter.ArrayType numberType = numberArrayTypeOf( (byte) into.long1 );
@@ -183,14 +183,14 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    void initializeAsLowest( GenericKey state )
+    void initializeAsLowest( BtreeKey state )
     {
         state.initializeArrayMeta( 0 );
         initializeArray( state, 0, ValueWriter.ArrayType.BYTE );
     }
 
     @Override
-    void initializeAsHighest( GenericKey state )
+    void initializeAsHighest( BtreeKey state )
     {
         state.initializeArrayMeta( 0 );
         initializeArray( state, 0, ValueWriter.ArrayType.BYTE );
@@ -219,7 +219,7 @@ class NumberArrayType extends AbstractArrayType<Number>
         }
     }
 
-    private static ArrayElementReader numberArrayElementReader( GenericKey key )
+    private static ArrayElementReader numberArrayElementReader( BtreeKey key )
     {
         switch ( (int) key.long1 )
         {
@@ -264,13 +264,13 @@ class NumberArrayType extends AbstractArrayType<Number>
         }
     }
 
-    static void write( GenericKey state, int offset, long value )
+    static void write( BtreeKey state, int offset, long value )
     {
         state.long0Array[offset] = value;
     }
 
     @Override
-    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    protected void addTypeSpecificDetails( StringJoiner joiner, BtreeKey state )
     {
         joiner.add( "long1=" + state.long1 );
         joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
