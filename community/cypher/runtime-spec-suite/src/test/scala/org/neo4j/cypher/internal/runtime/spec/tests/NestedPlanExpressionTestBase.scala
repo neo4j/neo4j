@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util.Collections
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType
 
+import java.util.Collections
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
 abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
@@ -258,5 +260,68 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = (0 until size).map(_ => Array[Any](true))
     runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("should support nested plan exists under nested apply") {
+    // given
+    val size = Math.sqrt(sizeHint).toInt
+    given {
+      bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.apply()
+      .|.|.nestedPlanExistsExpressionProjection("x")
+      .|.|.|.expand("(a)-->(b)")
+      .|.|.|.argument("a")
+      .|.|.argument()
+      .|.argument()
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = (0 until size).map(_ => Array[Any](true))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("should support nested plan exists as predicate of SelectOrSemiApply") {
+    // given
+    val seas = given {
+      val seas = nodeGraph(7, "Sea")
+      seas.zipWithIndex.foreach {
+        case (sea, seaNumber) =>
+          nodePropertyGraph(10, { case i => Map("isPirate" -> (seaNumber == 2 && i == 9))}, "Ship")
+            .foreach(ship => ship.createRelationshipTo(sea, RelationshipType.withName("SAILS")))
+      }
+      seas
+    }
+
+    val idGen = new SequentialIdGen()
+
+    val nestedPlan = new LogicalQueryBuilder(this, false, idGen = idGen, wholePlan = false)
+      .filter("seaworthy.isPirate")
+      .projection("ship as seaworthy")
+      .expand("(sea)<-[:SAILS]-(ship)")
+      .argument()
+      .build()
+      .logicalPlan
+
+    val logicalQuery = new LogicalQueryBuilder(this, idGen = idGen)
+      .produceResults("sea")
+      .selectOrSemiApply(NestedPlanExistsExpression(nestedPlan, "exists(...)")(pos))
+      .|.emptyResult()
+      .|.argument()
+      .nodeByLabelScan("sea", "Sea")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("sea").withRows(singleColumn(Seq(seas(2))))
   }
 }
