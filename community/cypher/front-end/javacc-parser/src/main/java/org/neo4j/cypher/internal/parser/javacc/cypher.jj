@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
 import org.neo4j.cypher.internal.ast.factory.ActionType;
+import org.neo4j.cypher.internal.ast.factory.ConstraintType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 
@@ -81,8 +82,10 @@ public class Cypher<STATEMENT,
                     PROPERTY extends EXPRESSION,
                     MAP_PROJECTION_ITEM,
                     USE_CLAUSE extends CLAUSE,
+                    STATEMENT_WITH_GRAPH extends STATEMENT,
+                    ADMINISTRATION_COMMAND extends STATEMENT_WITH_GRAPH,
+                    SCHEMA_COMMAND extends STATEMENT_WITH_GRAPH,
                     YIELD extends CLAUSE,
-                    ADMINISTRATION_COMMAND extends STATEMENT,
                     DATABASE_SCOPE,
                     WAIT_CLAUSE,
                     ADMINISTRATION_ACTION,
@@ -114,7 +117,9 @@ public class Cypher<STATEMENT,
                PROPERTY,
                MAP_PROJECTION_ITEM,
                USE_CLAUSE,
+               STATEMENT_WITH_GRAPH,
                ADMINISTRATION_COMMAND,
+               SCHEMA_COMMAND,
                YIELD,
                DATABASE_SCOPE,
                WAIT_CLAUSE,
@@ -146,7 +151,9 @@ public class Cypher<STATEMENT,
                              PROPERTY,
                              MAP_PROJECTION_ITEM,
                              USE_CLAUSE,
+                             STATEMENT_WITH_GRAPH,
                              ADMINISTRATION_COMMAND,
+                             SCHEMA_COMMAND,
                              YIELD,
                              DATABASE_SCOPE,
                              WAIT_CLAUSE,
@@ -177,24 +184,25 @@ public class Cypher<STATEMENT,
         }
     }
 
+    private Optional<ConstraintType> setOrThrowIfTypeAlreadySet( Token start, Optional<ConstraintType> optional, ConstraintType value ) throws Exception
+    {
+        if ( optional.isEmpty() )
+        {
+            return Optional.of( value );
+        }
+        else
+        {
+            throw exceptionFactory.syntaxException( new ParseException( ASTExceptionFactory.constraintTypeNotAllowed( value, optional.get() ) ),
+                                                    start.beginOffset, start.beginLine, start.beginColumn );
+        }
+    }
+
     private void assertNotAlreadySet( Object object, Token token, String errorMessage ) throws Exception
     {
         if ( object != null )
         {
             throw exceptionFactory.syntaxException( new ParseException( errorMessage ), token.beginOffset, token.beginLine, token.beginColumn );
         }
-    }
-
-    private ADMINISTRATION_COMMAND addUseClauseAndCatalog( ADMINISTRATION_COMMAND command, USE_CLAUSE useClause, boolean hasCatalog )
-    {
-      if( hasCatalog )
-      {
-          return astFactory.hasCatalog(astFactory.useGraph( command, useClause ));
-      }
-      else
-      {
-          return astFactory.useGraph( command, useClause );
-      }
     }
 }
 
@@ -345,9 +353,10 @@ TOKEN [IGNORE_CASE] :
     | < DOT: "." >
     | < DOTDOT: ".." >
     | < DROP: "DROP" >
-    | < DUMP: "DUMP">
-    | < ELEMENT: "ELEMENT">
-    | < ELEMENTS: "ELEMENTS">
+    | < DUMP: "DUMP" >
+    | < EACH: "EACH" >
+    | < ELEMENT: "ELEMENT" >
+    | < ELEMENTS: "ELEMENTS" >
     | < ELSE: "ELSE" >
     | < ENCRYPTED: "ENCRYPTED" >
     | < END: "END" >
@@ -358,9 +367,10 @@ TOKEN [IGNORE_CASE] :
     | < EXISTENCE: "EXISTENCE" >
     | < EXISTS: "EXISTS" >
     | < EXTRACT: "EXTRACT" >
-    | < FALSE: "false">
+    | < FALSE: "false" >
     | < FIELDTERMINATOR: "FIELDTERMINATOR" >
     | < FILTER: "FILTER" >
+    | < FOR: "FOR" >
     | < FOREACH: "FOREACH" >
     | < FROM: "FROM" >
     | < FULLTEXT: "FULLTEXT" >
@@ -1178,28 +1188,31 @@ STATEMENT Statement() throws Exception:
 {
     (
         statement=PeriodicCommitQuery()
-        | ( useClause=UseClause() )? statement=SingleQueryOrAdministrationCommand(useClause)
+        | ( useClause=UseClause() )? statement=SingleQueryOrCommand(useClause)
     )
     {
         return statement;
     }
 }
 
-STATEMENT SingleQueryOrAdministrationCommand( USE_CLAUSE useClause ) throws Exception:
+STATEMENT SingleQueryOrCommand( USE_CLAUSE useClause ) throws Exception:
 {
     STATEMENT statement = null;
     QUERY query = null;
+    boolean hasCatalog = false;
 }
 {
     (
-        LOOKAHEAD(2) statement=CreateAdministrationCommand( useClause ) // CREATE admin thing vs CREATE graph thing
-        | statement=ShowCommand( useClause )
-        | <CATALOG> ( statement=AdministrationCommand( useClause, true ) | statement=ShowAdministrationCommandAfterCatalog( useClause ) )
-        | statement=AdministrationCommand( useClause, false )
+        LOOKAHEAD(2) (<CATALOG> { hasCatalog = true; })? statement=CreateCommand( useClause ) // CREATE admin thing vs CREATE graph thing
+        | (<CATALOG> { hasCatalog = true; })? statement=Command( useClause )
         | query=SingleQuery( useClause ) ( query=Union(query) )*
     )
     {
-        return ( query != null ) ? query : statement;
+        if ( query != null )
+        {
+            return query;
+        }
+        return hasCatalog ? astFactory.hasCatalog( statement ) : statement;
     }
 }
 
@@ -1865,6 +1878,19 @@ Token LabelOrRelType() :
     ":" t=SymbolicNameString()
     {
         return t;
+    }
+}
+
+List<StringPos<POS>> LabelOrRelTypes() :
+{
+    List<StringPos<POS>> labels = new ArrayList<>();
+    StringPos<POS> label;
+}
+{
+    ":" SymbolicNameString() { labels.add( new StringPos( token.image, pos(token) ) ); }
+    ( <BAR> SymbolicNameString() { labels.add( new StringPos( token.image, pos(token) ) ); } )*
+    {
+        return labels;
     }
 }
 
@@ -2714,6 +2740,81 @@ List<String> SymbolicNameList1() :
     }
 }
 
+// Command Section
+
+STATEMENT_WITH_GRAPH CreateCommand( USE_CLAUSE useClause ) throws Exception:
+{
+    Token start;
+    boolean replace = false;
+    STATEMENT_WITH_GRAPH statement;
+}
+{
+    start=<CREATE> (<OR> <REPLACE> { replace = true; })? (
+        statement=CreateRole( start, replace )
+        | statement=CreateUser( start, replace )
+        | statement=CreateDatabase( start, replace )
+        | statement=CreateConstraint( start, replace )
+        | statement=CreateIndex( start, replace )
+    )
+    {
+        return astFactory.useGraph( statement, useClause );
+    }
+}
+
+STATEMENT Command( USE_CLAUSE useClause ) throws Exception:
+{
+    STATEMENT statement = null;
+}
+{
+    (
+
+        statement=CommandWithUseGraph( useClause )
+        | statement=ShowCommand( useClause )
+    )
+    {
+        return statement;
+    }
+}
+
+STATEMENT_WITH_GRAPH CommandWithUseGraph( USE_CLAUSE useClause ) throws Exception:
+{
+    STATEMENT_WITH_GRAPH s;
+}
+{
+    (
+        s=DropCommand()
+        | s=AlterUserCommand()
+        | s=RenameCommand()
+        | s=DenyPrivilege()
+        | s=RevokeCommand()
+        | s=GrantCommand()
+        | s=StartDatabase()
+        | s=StopDatabase()
+    )
+    {
+        return astFactory.useGraph( s, useClause );
+    }
+}
+
+STATEMENT_WITH_GRAPH DropCommand() throws Exception:
+{
+    Token start;
+    STATEMENT_WITH_GRAPH s;
+}
+{
+    start=<DROP>
+    (
+        s=DropRole( start )
+        | s=DropUser( start )
+        | s=DropDatabase( start )
+        | s=DropConstraint( start )
+        | s=DropIndex( start )
+    )
+    {
+        return s;
+    }
+}
+
 // SHOW commands
 
 STATEMENT ShowCommand( USE_CLAUSE useClause ) :
@@ -3111,82 +3212,346 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, String functionType 
     }
 }
 
+// Schema commands
+// Constraint commands
+
+SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception:
+{
+    String name = null;
+    boolean ifNotExists = false;
+    Token label;
+    VARIABLE variable = null;
+    List<PROPERTY> properties= new ArrayList<>();
+    Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+    Optional<ConstraintType> constraintType = Optional.empty();
+    boolean isNode = false;
+    Token errorStart;
+}
+{
+    <CONSTRAINT>
+    (
+        //special construct for allowing lookahead since on could also be an identifier
+        LOOKAHEAD (<ON> <LPAREN>) <ON> <LPAREN>
+        | LOOKAHEAD (<IF> <NOT>) <IF> <NOT> <EXISTS> { ifNotExists = true; } <ON> <LPAREN>
+        | ( SymbolicNameString() { name = token.image; } )? ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <ON> <LPAREN>
+    )
+    (
+        //(variable:LABEL)
+        variable=Variable() label=LabelOrRelType() <RPAREN> { isNode = true; }
+    |   //()-[variable:LABEL]-()
+        <RPAREN> ( LeftArrow() )? ArrowLine()
+        <LBRACKET> variable=Variable() label=LabelOrRelType() <RBRACKET>
+        ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN>
+    )
+    <ASSERT>
+    (
+        // CREATE CONSTRAINT ON (variable:LABEL) ASSERT EXISTS variable.prop
+        errorStart=<EXISTS> { constraintType = Optional.of( isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS ); }
+    )?
+    properties=PropertyList()
+    (
+        errorStart=<IS>
+        (
+            <UNIQUE> {
+                    // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS UNIQUE
+                    constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.UNIQUE );
+                    if ( !isNode )
+                    {
+                        throw exceptionFactory.syntaxException(
+                            new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType.get() ) ),
+                            errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                    }
+                 }
+            | <NODE> <KEY>
+                {
+                    // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NODE KEY
+                    constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.NODE_KEY );
+                    if ( !isNode )
+                    {
+                        throw exceptionFactory.syntaxException(
+                            new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType.get() ) ),
+                            errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                    }
+                }
+            | <NOT> <NULL> {
+                // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NOT NULL
+                ConstraintType setType = isNode ? ConstraintType.NODE_IS_NOT_NULL : ConstraintType.REL_IS_NOT_NULL;
+                constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, setType );
+            }
+        )
+    )?
+    ( <OPTIONS> options=MapOrParameter() )?
+    <EOF>
+    {
+        if ( constraintType.isEmpty() )
+        {
+            throw exceptionFactory.syntaxException( new ParseException( exceptionFactory.undefinedConstraintType ),
+                start.beginOffset,
+                start.beginLine,
+                start.beginColumn );
+        }
+        return astFactory.createConstraint( pos( start ), constraintType.get(), replace, ifNotExists, name, variable,
+        new StringPos<POS>( label.image, pos( label ) ), properties, options );
+    }
+}
+
+SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
+{
+        Token name = null;
+        boolean ifExists = false;
+        VARIABLE variable = null;
+        Token label = null;
+        List<PROPERTY> properties= new ArrayList<>();
+        Optional<ConstraintType> constraintType = Optional.empty();
+        boolean isNode = false;
+        Token errorStart;
+}
+{
+    <CONSTRAINT>
+    ( LOOKAHEAD (<ON> <LPAREN>) <ON> <LPAREN>
+        (
+            //(n:LABEL)
+            variable=Variable() label=LabelOrRelType() <RPAREN> { isNode = true; }
+        |   //()-[r:RELTYPE]-()
+            <RPAREN> ( LeftArrow() )? ArrowLine()
+            <LBRACKET> variable=Variable() label=LabelOrRelType() <RBRACKET>
+            ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN>
+        )
+        <ASSERT>
+        (
+            //DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)
+            errorStart=<EXISTS> { constraintType = Optional.of( isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS ); }
+        )?
+        properties=PropertyList()
+        (
+            errorStart=<IS>
+            (
+                //DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE
+                <UNIQUE> {
+                        constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.UNIQUE );
+                        if ( !isNode )
+                        {
+                            throw exceptionFactory.syntaxException(
+                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType.get() ) ),
+                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                        }
+                     }
+                | //DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY
+                    <NODE> <KEY>
+                    {
+                        constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.NODE_KEY );
+                        if ( !isNode )
+                        {
+                            throw exceptionFactory.syntaxException(
+                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType.get() ) ),
+                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                        }
+                    }
+                | <NOT> <NULL> {
+                    ConstraintType setType = isNode ? ConstraintType.NODE_IS_NOT_NULL : ConstraintType.REL_IS_NOT_NULL;
+                    constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, setType );
+                }
+            )
+        )?
+        {
+            if ( constraintType.isEmpty() )
+            {
+                throw exceptionFactory.syntaxException( new ParseException( exceptionFactory.undefinedConstraintType ),
+                    start.beginOffset,
+                    start.beginLine,
+                    start.beginColumn );
+            }
+            return astFactory.dropConstraint( pos( start ), constraintType.get(), variable, new StringPos<POS>( label.image, pos( label ) ),
+                properties );
+        }
+    |   //DROP CONSTRAINT name IF EXISTS
+        name=SymbolicNameString() ( <IF> <EXISTS> { ifExists = true; } )? <EOF>
+        {
+            return astFactory.dropConstraint( pos( start ), name.image, ifExists );
+        }
+    )
+}
+
+// Index commands
+
+SCHEMA_COMMAND CreateIndex( Token start, boolean replace ) throws Exception:
+{
+    SCHEMA_COMMAND command = null;
+}
+{
+    (
+        <BTREE> <INDEX> command=createBtreeIndex( start, replace )
+        | <FULLTEXT> <INDEX> command=createFulltextIndex( start, replace )
+        | <LOOKUP> <INDEX> command=createLookupIndex( start, replace )
+        | <INDEX> (
+            <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
+            | command=createBtreeIndex( start, replace )
+        )
+    )
+    {
+        return command;
+    }
+}
+
+SCHEMA_COMMAND oldCreateIndex(Token start, boolean replace ) throws Exception:
+{
+    Token nodeLabel;
+    List<StringPos<POS>> properties;
+}
+{
+    //CREATE INDEX ON :nodeLabel(prop1, prop2)
+    nodeLabel=LabelOrRelType()
+    <LPAREN> properties = SymbolicNamePositions() <RPAREN>
+    {
+        if (replace) {
+            throw exceptionFactory.syntaxException( new ParseException("'REPLACE' is not allowed for this index syntax"), start.beginOffset, start.beginLine, start.beginColumn );
+        }
+        return astFactory.createIndexWithOldSyntax( pos(start), new StringPos<>(nodeLabel.image, pos(nodeLabel) ), properties );
+    }
+}
+
+SCHEMA_COMMAND createBtreeIndex( Token start, boolean replace ) throws Exception:
+{
+    boolean ifNotExists = false;
+    boolean isNode = false;
+    String indexName = null;
+    VARIABLE variable = null;
+    Token label = null;
+    List<PROPERTY> properties= new ArrayList<>();
+    Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+}
+{
+    //CREATE [BTREE] INDEX FOR (n:label) ON (n.prop)
+    (
+        //lookaheads for potential symbolicNames "for", "if"
+        LOOKAHEAD(<FOR> <LPAREN>) <FOR> <LPAREN>
+        | LOOKAHEAD(<IF> <NOT>) <IF> <NOT> <EXISTS> { ifNotExists = true; }  <FOR> <LPAREN>
+        | (SymbolicNameString() { indexName = token.image; } ) ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <FOR> <LPAREN>
+    )
+    (
+        //(n:LABEL)
+        variable=Variable() label=LabelOrRelType() <RPAREN> { isNode = true; }
+    |   //()-[r:RELTYPE]-()
+        <RPAREN> ( LeftArrow() )? ArrowLine()
+        <LBRACKET> variable=Variable() label=LabelOrRelType() <RBRACKET>
+        ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN>
+    )
+    <ON>
+    properties=PropertyList()
+    ( <OPTIONS> options=MapOrParameter() )?
+    {
+        return astFactory.createBtreeIndex( pos(start), replace, ifNotExists, isNode, indexName, variable, new StringPos<>(label.image, pos(label)), properties, options );
+    }
+}
+
+SCHEMA_COMMAND createFulltextIndex( Token start, boolean replace):
+{
+    boolean ifNotExists = false;
+    boolean isNode = false;
+    String indexName = null;
+    VARIABLE variable = null;
+    VARIABLE propName = null;
+    PROPERTY p = null;
+    List<StringPos<POS>> labels = new ArrayList<>();
+    List<PROPERTY> properties= new ArrayList<>();
+    Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+}
+{
+    //CREATE FULLTEXT INDEX FOR (n:T1 | T2) ON (v.prop)
+    (
+        //lookaheads for potential symbolicNames "for", "if"
+        LOOKAHEAD(<FOR> <LPAREN>) <FOR> <LPAREN>
+        | LOOKAHEAD(<IF> <NOT>) ( <IF> <NOT> <EXISTS> { ifNotExists = true; } ) <FOR> <LPAREN>
+        | (SymbolicNameString() { indexName = token.image; } ) ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <FOR> <LPAREN>
+    )
+        (   //(v:L1 | ... | Ln)
+            variable=Variable() labels=LabelOrRelTypes() <RPAREN> { isNode = true; }
+        |
+            //()-[r:R1 | ... | Rn]-()
+            <RPAREN> ( LeftArrow() )? ArrowLine()
+            <LBRACKET> variable=Variable() labels=LabelOrRelTypes() <RBRACKET>
+            ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN>
+        )
+        <ON> <EACH>
+        <LBRACKET>
+            propName=Variable() p=Property( propName ) { properties.add( p ); }
+            ( "," propName=Variable() p=Property( propName ) { properties.add( p ); } )*
+        <RBRACKET>
+        ( <OPTIONS> options=MapOrParameter() )?
+        {
+            return astFactory.createFulltextIndex( pos(start), replace, ifNotExists, isNode, indexName, variable, labels, properties, options );
+        }
+}
+
+SCHEMA_COMMAND createLookupIndex( Token start, boolean replace ):
+{
+    boolean ifNotExists = false;
+    boolean isNode = false;
+    String indexName = null;
+    VARIABLE variable = null;
+    StringPos<POS> funcName = null;
+    VARIABLE funcParam = variable;
+    Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+}
+{
+    //CREATE LOOKUP INDEX FOR (n) ON EACH funcName(funcParam)
+    (
+            //lookaheads for potential symbolicNames "for", "if"
+            LOOKAHEAD(<FOR> <LPAREN>) <FOR> <LPAREN>
+            | LOOKAHEAD(<IF> <NOT>)( <IF> <NOT> <EXISTS> { ifNotExists = true; } ) <FOR> <LPAREN>
+            | (SymbolicNameString() { indexName = token.image; } ) ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <FOR> <LPAREN>
+    )
+    (   //(v)
+        variable=Variable() <RPAREN> <ON> <EACH> { isNode = true; }
+    |
+        //()-[r]-()
+        <RPAREN> ( LeftArrow() )? ArrowLine()
+        <LBRACKET> variable=Variable() <RBRACKET>
+        ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN> <ON> (<EACH>)?
+    )
+    SymbolicNameString() { funcName = new StringPos<POS>( token.image, pos(token) ); } <LPAREN> funcParam=Variable() <RPAREN>
+    ( <OPTIONS> options=MapOrParameter() )?
+    {
+        return astFactory.createLookupIndex( pos(start), replace, ifNotExists, isNode, indexName, variable, funcName, funcParam, options );
+    }
+}
+
+SCHEMA_COMMAND DropIndex( Token start ):
+{
+    Token nodeLabel;
+    List<StringPos<POS>> properties;
+    Token name;
+    boolean ifExists = false;
+}
+{
+    <INDEX>
+    ( LOOKAHEAD(2) <ON> nodeLabel=LabelOrRelType() <LPAREN> properties=SymbolicNamePositions() <RPAREN>
+        { return astFactory.dropIndex( pos(start), new StringPos<>(nodeLabel.image, pos(nodeLabel) ), properties ); }
+    | name=SymbolicNameString() ( <IF> <EXISTS> { ifExists = true; } )?
+        { return astFactory.dropIndex( pos(start), name.image, ifExists ); }
+    )
+}
+
+List<PROPERTY> PropertyList():
+{
+    VARIABLE variable;
+    PROPERTY p;
+    List<PROPERTY> properties= new ArrayList<>();
+}
+{
+        (
+            variable=Variable() p=Property( variable ) { properties.add( p ); }
+            | <LPAREN>
+                variable=Variable() p=Property( variable ) { properties.add( p ); }
+                ( "," variable=Variable() p=Property( variable ) { properties.add( p ); } )*
+            <RPAREN>
+        )
+        {
+            return properties;
+        }
+}
+
 // Administration Commands
-
-ADMINISTRATION_COMMAND ShowAdministrationCommandAfterCatalog( USE_CLAUSE useClause ):
-{
-    Token show = null;
-    ADMINISTRATION_COMMAND s;
-    boolean showAll = true;
-}
-{
-    show=<SHOW>
-    (
-       ( ( <POPULATED> { showAll = false; }) | <ALL> )? s=ShowRoles( show, useClause, showAll )
-       | s=ShowDatabase( show, useClause )
-       | s=ShowUsers( show, useClause )
-       | s=ShowCurrentUser( show, useClause )
-    )
-    {
-        return astFactory.hasCatalog( s );
-    }
-}
-
-ADMINISTRATION_COMMAND CreateAdministrationCommand( USE_CLAUSE useClause ) throws Exception:
-{
-    Token start;
-    boolean replace = false;
-    boolean hasCatalog = false;
-    ADMINISTRATION_COMMAND command;
-}
-{
-    (<CATALOG> { hasCatalog = true; } )?
-    start=<CREATE> (<OR> <REPLACE> { replace = true; })? (
-        command=CreateRole( start, replace )
-        | command=CreateUser( start, replace )
-        | command=CreateDatabase( start, replace )
-    )
-    {
-        return addUseClauseAndCatalog( command, useClause, hasCatalog );
-    }
-}
-
-ADMINISTRATION_COMMAND AdministrationCommand( USE_CLAUSE useClause, boolean hasCatalog ) throws Exception:
-{
-    ADMINISTRATION_COMMAND s;
-}
-{
-    (
-        s=DropCommand()
-        | s=AlterUserCommand()
-        | s=RenameCommand()
-        | s=DenyPrivilege()
-        | s=RevokeCommand()
-        | s=GrantCommand()
-        | s=StartDatabase()
-        | s=StopDatabase()
-    )
-    {
-        return addUseClauseAndCatalog( s, useClause, hasCatalog );
-    }
-}
-
-ADMINISTRATION_COMMAND DropCommand():
-{
-    Token start;
-    ADMINISTRATION_COMMAND c;
-}
-{
-    start=<DROP>
-    (
-        c=DropRole( start )
-        | c=DropUser( start )
-        | c=DropDatabase( start )
-    )
-    {
-        return c;
-    }
-}
 
 ADMINISTRATION_COMMAND RenameCommand():
 {
@@ -3295,7 +3660,7 @@ ADMINISTRATION_COMMAND RenameRole( Token start ):
     }
 }
 
-ADMINISTRATION_COMMAND ShowRoles( Token start, USE_CLAUSE useClause, boolean showAll ):
+STATEMENT_WITH_GRAPH ShowRoles( Token start, USE_CLAUSE useClause, boolean showAll ):
 {
     boolean withUsers = false;
     YIELD yield = null;
@@ -3551,7 +3916,7 @@ Optional<Either<String, PARAMETER>> HomeDatabase( Token start, Optional<Either<S
     }
 }
 
-ADMINISTRATION_COMMAND ShowUsers( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowUsers( Token start, USE_CLAUSE useClause ):
 {
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
@@ -3567,7 +3932,7 @@ ADMINISTRATION_COMMAND ShowUsers( Token start, USE_CLAUSE useClause ):
     }
 }
 
-ADMINISTRATION_COMMAND ShowCurrentUser( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowCurrentUser( Token start, USE_CLAUSE useClause ):
 {
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
@@ -4026,10 +4391,21 @@ ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ):
     <DATABASE>
     databaseName=SymbolicDatabaseNameStringOrParameter()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
-    ( <OPTIONS> options=MapOrParameter() )?
+    ( options=Options() )?
     ( wait = WaitClause() )?
     {
        return astFactory.createDatabase( pos( start ), replace, databaseName, ifNotExists, wait, options );
+    }
+}
+
+Either<Map<String, EXPRESSION>, PARAMETER> Options() :
+{
+     Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+}
+{
+    <OPTIONS> options=MapOrParameter()
+    {
+        return options;
     }
 }
 
@@ -4096,7 +4472,7 @@ WAIT_CLAUSE WaitClause():
     }
 }
 
-ADMINISTRATION_COMMAND ShowDatabase( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ):
 {
     DATABASE_SCOPE scope;
     YIELD yield = null;
@@ -4220,10 +4596,19 @@ Either<String, PARAMETER> SymbolicNameOrStringParameter():
 
 Either<Map<String, EXPRESSION>, PARAMETER> MapOrParameter():
 {
+    Map<String, EXPRESSION> map = null;
+    PARAMETER parameter;
+}
+{
+    map=Map() { return new Left<Map<String,EXPRESSION>,PARAMETER> ( map ); }
+    | parameter=Parameter( ParameterType.MAP ) { return new Right<Map<String,EXPRESSION>,PARAMETER>( parameter ); }
+}
+
+Map<String, EXPRESSION> Map():
+{
     Token key;
     EXPRESSION expr;
-    Map<String, EXPRESSION> map = new LinkedHashMap();
-    PARAMETER parameter;
+    LinkedHashMap<String, EXPRESSION> map = new LinkedHashMap<>();
 }
 {
     <LCURLY>
@@ -4233,11 +4618,21 @@ Either<Map<String, EXPRESSION>, PARAMETER> MapOrParameter():
     )?
     <RCURLY>
     {
-        return new Left<Map<String,EXPRESSION>,PARAMETER> ( map );
+        return map;
     }
-    | parameter=Parameter( ParameterType.MAP ) { return new Right<Map<String,EXPRESSION>,PARAMETER>( parameter ); }
 }
 
+List<StringPos<POS>> SymbolicNamePositions():
+{
+    List<StringPos<POS>> names = new ArrayList<>();
+}
+{
+    SymbolicNameString() { names.add( new StringPos<>( token.image, pos( token ) ) ); }
+    ( "," SymbolicNameString() { names.add( new StringPos<>( token.image, pos( token ) ) ); } )*
+    {
+        return names;
+    }
+}
 
 Token SymbolicNameString() :
 {
@@ -4291,6 +4686,7 @@ Token SymbolicNameString() :
         | t=<DISTINCT>
         | t=<DROP>
         | t=<DUMP>
+        | t=<EACH>
         | t=<ELEMENT>
         | t=<ELEMENTS>
         | t=<ELSE>
@@ -4306,6 +4702,7 @@ Token SymbolicNameString() :
         | t=<FIELDTERMINATOR>
         | t=<FILTER>
         | t=<FOREACH>
+        | t=<FOR>
         | t=<FROM>
         | t=<FULLTEXT>
         | t=<FUNCTION>

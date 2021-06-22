@@ -61,6 +61,16 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   }
 
   /**
+   * Tests that JavaCC parser produces given exception.
+   */
+  protected def assertJavaCCException(query: String, expected:Exception): Assertion = {
+    val exception = the[expected.type] thrownBy {
+      JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator())
+    }
+    exception.getMessage shouldBe fixLineSeparator(expected.getMessage)
+  }
+
+  /**
    * Tests that JavaCC parser produces SyntaxException.
    */
   protected def assertJavaCCExceptionStart(query: String, expectedMessage: String): Assertion = {

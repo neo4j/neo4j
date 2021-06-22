@@ -75,18 +75,7 @@ class UserAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("CATALOG SHOW USER") {
-    val expected =
-      """Invalid input 'USER': expected
-        |  "ALL"
-        |  "CURRENT"
-        |  "DATABASE"
-        |  "DATABASES"
-        |  "DEFAULT"
-        |  "HOME"
-        |  "POPULATED"
-        |  "ROLES"
-        |  "USERS" (line 1, column 14 (offset: 13))""".stripMargin
-    assertJavaCCException(testName, expected)
+    assertJavaCCException(testName, "Invalid input '': expected \"DEFINED\" (line 1, column 18 (offset: 17))")
   }
 
   test("SHOW USERS YIELD *,blah RETURN user") {

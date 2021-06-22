@@ -34,14 +34,14 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-sealed trait AdministrationCommand extends Statement with SemanticAnalysisTooling {
+sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnalysisTooling {
 
   def name: String
 
   // We parse USE to give a nice error message, but it's not considered to be a part of the AST
   private var useGraphVar: Option[UseGraph] = None
   def useGraph: Option[UseGraph] = useGraphVar
-  def withGraph(useGraph: Option[UseGraph]): AdministrationCommand = {
+  override def withGraph(useGraph: Option[UseGraph]): AdministrationCommand = {
     this.useGraphVar = useGraph
     this
   }

@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
 import org.neo4j.cypher.internal.ast.factory.ActionType;
+import org.neo4j.cypher.internal.ast.factory.ConstraintType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.values.storable.DateTimeValue;
@@ -71,6 +72,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         Object,
         Object,
         Object,
+        NULL,
+        NULL,
         NULL,
         NULL,
         NULL,
@@ -348,6 +351,66 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public NULL showFunctionClause( NULL p, String functionType, boolean currentUser, String user, Object where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showFunctionClause is not a literal" );
+    }
+
+    // Schema commands
+
+    @Override
+    public NULL createConstraint( NULL p, ConstraintType constraintType, boolean replace, boolean ifNotExsits, String name, Object o, StringPos<NULL> label,
+                                  List<Object> objects, Either<Map<String,Object>,Object> options )
+    {
+        throw new UnsupportedOperationException( "createConstraint is not a literal" );
+    }
+
+    @Override
+    public NULL dropConstraint( NULL p, String name, boolean ifExists )
+    {
+        throw new UnsupportedOperationException( "dropConstraint is not a literal" );
+    }
+
+    @Override
+    public NULL dropConstraint( NULL p, ConstraintType constraintType, Object o, StringPos<NULL> label, List<Object> objects )
+    {
+        throw new UnsupportedOperationException( "dropConstraint is not a literal" );
+    }
+
+    @Override
+    public NULL createIndexWithOldSyntax( NULL p, StringPos<NULL> label, List<StringPos<NULL>> properties )
+    {
+        throw new UnsupportedOperationException( "createIndexWithOldSyntax is not a literal" );
+    }
+
+    @Override
+    public NULL createLookupIndex( NULL p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, Object o, StringPos<NULL> functionName,
+                                   Object functionParameter, Either<Map<String,Object>,Object> options )
+    {
+        throw new UnsupportedOperationException( "createLookupIndex is not a literal" );
+    }
+
+    @Override
+    public NULL createBtreeIndex( NULL p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, Object o,
+                                  StringPos<NULL> label, List<Object> objects, Either<Map<String,Object>,Object> options )
+    {
+        throw new UnsupportedOperationException( "createBtreeIndex is not a literal" );
+    }
+
+    @Override
+    public NULL createFulltextIndex( NULL p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, Object o,
+                                     List<StringPos<NULL>> labels, List<Object> objects, Either<Map<String,Object>,Object> options )
+    {
+        throw new UnsupportedOperationException( "createFulltextIndex is not a literal" );
+    }
+
+    @Override
+    public NULL dropIndex( NULL p, String name, boolean ifExists )
+    {
+        throw new UnsupportedOperationException( "dropIndex is not a literal" );
+    }
+
+    @Override
+    public NULL dropIndex( NULL p, StringPos<NULL> label, List<StringPos<NULL>> propertyNames )
+    {
+        throw new UnsupportedOperationException( "dropIndex is not a literal" );
     }
 
     // Administration Commands

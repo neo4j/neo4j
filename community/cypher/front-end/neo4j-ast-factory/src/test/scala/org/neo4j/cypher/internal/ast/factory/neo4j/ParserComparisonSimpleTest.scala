@@ -218,16 +218,6 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
     assertSameASTWithExtraSpaces(testName)
   }
 
-  // schema commands are not supported
-  ignore("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    assertSameASTWithExtraSpaces(testName)
-  }
-
-  // schema commands are not supported
-  ignore("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    assertSameASTWithExtraSpaces(testName)
-  }
-
   test("MATCH (n) WHERE n.name STARTS WITH 'hello'") {
     assertSameASTWithExtraSpaces(testName)
   }

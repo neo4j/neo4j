@@ -54,11 +54,18 @@ import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
+import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateElementAction
+import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
+import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
+import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
+import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
@@ -82,12 +89,19 @@ import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintAction
+import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
+import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexAction
+import org.neo4j.cypher.internal.ast.DropIndexOnName
+import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
+import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
+import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
@@ -165,6 +179,7 @@ import org.neo4j.cypher.internal.ast.RevokeDenyType
 import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
+import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.SetClause
@@ -201,6 +216,7 @@ import org.neo4j.cypher.internal.ast.SortItem
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.StatementWithGraph
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubQuery
@@ -227,10 +243,13 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
+import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
 import org.neo4j.cypher.internal.ast.factory.ActionType
+import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.ScopeType
 import org.neo4j.cypher.internal.expressions.Add
@@ -362,7 +381,9 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     Property,
     MapProjectionElement,
     UseGraph,
+    StatementWithGraph,
     AdministrationCommand,
+    SchemaCommand,
     Yield,
     DatabaseScope,
     WaitUntilComplete,
@@ -945,6 +966,19 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def inputPosition(offset: Int, line: Int, column: Int): InputPosition = InputPosition(offset, line, column)
 
+  // Commands
+
+  override def useGraph(command: StatementWithGraph, graph: UseGraph): StatementWithGraph = {
+    command.withGraph(Option(graph))
+  }
+
+  override def hasCatalog(statement: Statement): AdministrationCommand = {
+    statement match {
+      case command: AdministrationCommand => HasCatalog(command)
+      case _ => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidCatalogStatement)
+    }
+  }
+
   // Show Commands
 
   override def yieldClause(p: InputPosition,
@@ -1030,16 +1064,137 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     ShowFunctionsClause(functionType, executableBy, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
   }
 
+  // Schema Commands
+  // Constraint Commands
+
+  override def createConstraint(p: InputPosition,
+                                constraintType: ConstraintType,
+                                replace: Boolean,
+                                ifNotExists:Boolean,
+                                name: String,
+                                variable: Variable,
+                                label: StringPos[InputPosition],
+                                javaProperties: util.List[Property],
+                                options: Either[util.Map[String, Expression], Parameter]): SchemaCommand = {
+    val properties = javaProperties.asScala
+    constraintType match {
+      case ConstraintType.UNIQUE => ast.CreateUniquePropertyConstraint(variable, LabelName(label.string)(label.pos), properties, Option(name),
+        ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
+      case ConstraintType.NODE_KEY => ast.CreateNodeKeyConstraint(variable, LabelName(label.string)(label.pos), properties, Option(name),
+        ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
+      case ConstraintType.NODE_EXISTS =>
+        validateSingleProperty(properties, constraintType)
+        ast.CreateNodePropertyExistenceConstraint(variable, LabelName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists),
+          oldSyntax = true, asOptionsAst(options))(p)
+      case ConstraintType.NODE_IS_NOT_NULL =>
+        validateSingleProperty(properties, constraintType)
+        ast.CreateNodePropertyExistenceConstraint(variable, LabelName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists),
+          oldSyntax = false, asOptionsAst(options))(p)
+      case ConstraintType.REL_EXISTS =>
+        validateSingleProperty(properties, constraintType)
+        ast.CreateRelationshipPropertyExistenceConstraint(variable, RelTypeName(label.string)(label.pos), properties.head, Option(name),
+          ifExistsDo(replace, ifNotExists), oldSyntax = true, asOptionsAst(options))(p)
+      case ConstraintType.REL_IS_NOT_NULL =>
+        validateSingleProperty(properties, constraintType)
+        ast.CreateRelationshipPropertyExistenceConstraint(variable, RelTypeName(label.string)(label.pos), properties.head, Option(name),
+          ifExistsDo(replace, ifNotExists), oldSyntax = false, asOptionsAst(options))(p)
+    }
+  }
+
+  override def dropConstraint(p: InputPosition, name: String, ifExists: Boolean): DropConstraintOnName = DropConstraintOnName(name, ifExists)(p)
+
+  override def dropConstraint(p: InputPosition,
+                              constraintType: ConstraintType,
+                              variable: Variable,
+                              label: StringPos[InputPosition],
+                              javaProperties: util.List[Property]): SchemaCommand = {
+    val properties = javaProperties.asScala
+    constraintType match {
+      case ConstraintType.UNIQUE => DropUniquePropertyConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
+      case ConstraintType.NODE_KEY => DropNodeKeyConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
+      case ConstraintType.NODE_EXISTS =>
+        validateSingleProperty(properties, constraintType)
+        DropNodePropertyExistenceConstraint(variable, LabelName(label.string)(label.pos), properties.head)(p)
+      case ConstraintType.NODE_IS_NOT_NULL =>
+        throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand)
+      case ConstraintType.REL_EXISTS =>
+        validateSingleProperty(properties, constraintType)
+        DropRelationshipPropertyExistenceConstraint(variable, RelTypeName(label.string)(label.pos), properties.head)(p)
+      case ConstraintType.REL_IS_NOT_NULL =>
+        throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand)
+    }
+  }
+
+  private def validateSingleProperty(seq: Seq[_], constraintType:ConstraintType): Unit = {
+    if (seq.size != 1) throw new Neo4jASTConstructionException(ASTExceptionFactory.onlySinglePropertyAllowed(constraintType))
+  }
+
+  // Index Commands
+
+  override def createLookupIndex(p: InputPosition,
+                                 replace: Boolean,
+                                 ifNotExists:Boolean,
+                                 isNode: Boolean,
+                                 indexName: String,
+                                 variable: Variable,
+                                 functionName: StringPos[InputPosition],
+                                 functionParameter: Variable,
+                                 options: Either[util.Map[String, Expression], Parameter]
+                                ): CreateLookupIndex = {
+    val function = FunctionInvocation(FunctionName(functionName.string) (functionName.pos), distinct = false, IndexedSeq(functionParameter))(functionName.pos)
+    CreateLookupIndex(variable, isNode, function, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
+  }
+
+  override def createIndexWithOldSyntax(p: InputPosition,
+                                        label: StringPos[InputPosition],
+                                        properties: util.List[StringPos[InputPosition]]): CreateIndexOldSyntax = {
+    CreateIndexOldSyntax(LabelName(label.string)(label.pos), properties.asScala.toList.map(prop => PropertyKeyName(prop.string)(prop.pos)))(p)
+  }
+
+  override def createBtreeIndex(p: InputPosition,
+                                replace: Boolean,
+                                ifNotExists: Boolean,
+                                isNode: Boolean,
+                                indexName: String,
+                                variable: Variable,
+                                label: StringPos[InputPosition],
+                                javaProperties: util.List[Property],
+                                options: Either[util.Map[String, Expression], Parameter]): CreateIndex = {
+    val properties = javaProperties.asScala.toList
+    if (isNode)
+      CreateBtreeNodeIndex(variable, LabelName(label.string)(label.pos), properties, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
+    else CreateBtreeRelationshipIndex(variable, RelTypeName(label.string)(label.pos), properties, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
+  }
+
+  override def createFulltextIndex(p: InputPosition,
+                                   replace: Boolean,
+                                   ifNotExists: Boolean,
+                                   isNode: Boolean,
+                                   indexName: String,
+                                   variable: Variable,
+                                   labels: util.List[StringPos[InputPosition]],
+                                   javaProperties: util.List[Property],
+                                   options: Either[util.Map[String, Expression], Parameter]): CreateIndex = {
+    val properties = javaProperties.asScala.toList
+    if (isNode) {
+      val labelNames = labels.asScala.toList.map(stringPos => LabelName(stringPos.string)(stringPos.pos))
+      CreateFulltextNodeIndex(variable, labelNames, properties, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
+    } else {
+      val relTypeNames = labels.asScala.toList.map(stringPos => RelTypeName(stringPos.string)(stringPos.pos))
+      CreateFulltextRelationshipIndex(variable, relTypeNames, properties, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
+    }
+  }
+
+  override def dropIndex(p: InputPosition, name: String, ifExists: Boolean): DropIndexOnName = DropIndexOnName(name, ifExists)(p)
+
+  override def dropIndex(p: InputPosition,
+                         label: StringPos[InputPosition],
+                         javaProperties: util.List[StringPos[InputPosition]]): DropIndex = {
+    val properties = javaProperties.asScala.map(property => PropertyKeyName(property.string)(property.pos)).toList
+    DropIndex(LabelName(label.string)(label.pos), properties)(p)
+  }
+
   // Administration Commands
-
-  override def useGraph(command: AdministrationCommand, graph: UseGraph): AdministrationCommand = {
-    command.withGraph(Option(graph))
-  }
-
-  override def hasCatalog(command: AdministrationCommand): AdministrationCommand = {
-    HasCatalog(command)
-  }
-
   // Role commands
 
   override def createRole(p: InputPosition,
@@ -1303,12 +1458,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                               ifNotExists: Boolean,
                               wait: WaitUntilComplete,
                               options: Either[util.Map[String, Expression], Parameter]): CreateDatabase = {
-    val optionsAst = Option(options) match {
-      case Some(Left(map)) => OptionsMap(mapAsScalaMap(map).toMap)
-      case Some(Right(param)) => OptionsParam(param)
-      case None => NoOptions
-    }
-    CreateDatabase(databaseName, ifExistsDo(replace, ifNotExists), optionsAst, wait)(p)
+    CreateDatabase(databaseName, ifExistsDo(replace, ifNotExists), asOptionsAst(options), wait)(p)
   }
 
   override def dropDatabase(p:InputPosition, databaseName: Either[String, Parameter], ifExists: Boolean, dumpData: Boolean, wait: WaitUntilComplete): DropDatabase = {
@@ -1389,6 +1539,13 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   }
 
   private def asBooleanOption(bool: lang.Boolean): Option[Boolean] = if (bool == null) None else Some(bool.booleanValue())
+
+  private def asOptionsAst(options: Either[util.Map[String, Expression], Parameter]) =
+    Option(options) match {
+      case Some(Left(map)) => OptionsMap(mapAsScalaMap(map).toMap)
+      case Some(Right(param)) => OptionsParam(param)
+      case None => NoOptions
+    }
 
   private def pretty[T <: AnyRef](ts: util.List[T]): String = {
     ts.stream().map[String](t => t.toString).collect(Collectors.joining(","))

@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DETACH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DISTINCT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DROP
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DUMP
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EACH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENTS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELSE
@@ -76,6 +77,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXTRACT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FALSE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FIELDTERMINATOR
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FILTER
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOR
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOREACH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FROM
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FULLTEXT
@@ -227,6 +229,7 @@ object IdentifierTokens {
     DISTINCT,
     DROP,
     DUMP,
+    EACH,
     ELEMENT,
     ELEMENTS,
     ELSE,
@@ -241,6 +244,7 @@ object IdentifierTokens {
     FALSE,
     FIELDTERMINATOR,
     FILTER,
+    FOR,
     FOREACH,
     FROM,
     FULLTEXT,

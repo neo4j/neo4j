@@ -59,7 +59,9 @@ public interface ASTFactory<STATEMENT,
         PROPERTY extends EXPRESSION,
         MAP_PROJECTION_ITEM,
         USE_GRAPH extends CLAUSE,
-        ADMINISTRATION_COMMAND extends STATEMENT,
+        STATEMENT_WITH_GRAPH extends STATEMENT,
+        ADMINISTRATION_COMMAND extends STATEMENT_WITH_GRAPH,
+        SCHEMA_COMMAND extends STATEMENT_WITH_GRAPH,
         YIELD extends CLAUSE,
         DATABASE_SCOPE,
         WAIT_CLAUSE,
@@ -206,6 +208,11 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE subqueryClause( POS p, QUERY subquery );
 
+    // Commands
+    STATEMENT_WITH_GRAPH useGraph( STATEMENT_WITH_GRAPH statement, USE_GRAPH useGraph );
+
+    ADMINISTRATION_COMMAND hasCatalog( STATEMENT statement );
+
     // Show Command Clauses
 
     YIELD yieldClause( POS p,
@@ -224,11 +231,34 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE showFunctionClause( POS p, String functionType, boolean currentUser, String user, EXPRESSION where, boolean hasYield );
 
+    // Schema Commands
+    // Constraint Commands
+
+    SCHEMA_COMMAND createConstraint( POS p, ConstraintType constraintType, boolean replace, boolean ifNotExists, String constraintName, VARIABLE variable,
+                                     StringPos<POS> label, List<PROPERTY> properties, Either<Map<String, EXPRESSION>, PARAMETER> options );
+
+    SCHEMA_COMMAND dropConstraint( POS p, String name, boolean ifExists );
+
+    SCHEMA_COMMAND dropConstraint( POS p, ConstraintType constraintType, VARIABLE variable, StringPos<POS> label, List<PROPERTY> properties );
+
+    // Index Commands
+
+    SCHEMA_COMMAND createIndexWithOldSyntax( POS p, StringPos<POS> label, List<StringPos<POS>> properties );
+
+    SCHEMA_COMMAND createLookupIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable,
+                                      StringPos<POS> functionName, VARIABLE functionParameter, Either<Map<String,EXPRESSION>,PARAMETER> options );
+
+    SCHEMA_COMMAND createBtreeIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable,
+                                StringPos<POS> label, List<PROPERTY> properties, Either<Map<String,EXPRESSION>,PARAMETER> options );
+
+    SCHEMA_COMMAND createFulltextIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable,
+                                        List<StringPos<POS>> labels, List<PROPERTY> properties, Either<Map<String,EXPRESSION>,PARAMETER> options );
+
+    SCHEMA_COMMAND dropIndex( POS p, String name, boolean ifExists );
+
+    SCHEMA_COMMAND dropIndex( POS p, StringPos<POS> label, List<StringPos<POS>> propertyNames );
+
     // Administration Commands
-    ADMINISTRATION_COMMAND useGraph( ADMINISTRATION_COMMAND command, USE_GRAPH useGraph );
-
-    ADMINISTRATION_COMMAND hasCatalog( ADMINISTRATION_COMMAND command );
-
     // Role Administration Commands
 
     ADMINISTRATION_COMMAND createRole( POS p, boolean replace, Either<String, PARAMETER> roleName, Either<String, PARAMETER> fromRole, boolean ifNotExists );
@@ -279,7 +309,7 @@ public interface ASTFactory<STATEMENT,
 
     ADMINISTRATION_COMMAND showCurrentUser( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
 
-    //Privilege Commands
+    // Privilege Commands
 
     ADMINISTRATION_COMMAND grantPrivilege( POS p, List<Either<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege );
 
@@ -337,7 +367,7 @@ public interface ASTFactory<STATEMENT,
 
     List<DATABASE_SCOPE> databaseScopes( POS p, List<Either<String,PARAMETER>> databaseNames, ScopeType scopeType );
 
-    //Database Administration Commands
+    // Database Administration Commands
 
     ADMINISTRATION_COMMAND createDatabase( POS p,
                                            boolean replace,
