@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static java.lang.String.format;
@@ -93,7 +94,7 @@ public class BtreeKey extends GenericKey<BtreeKey>
     @Override
     BtreeKey stateSlot( int slot )
     {
-        assert slot == 0;
+        Preconditions.checkState( slot == 0, "BtreeKey only supports a single key slot" );
         return this;
     }
 
