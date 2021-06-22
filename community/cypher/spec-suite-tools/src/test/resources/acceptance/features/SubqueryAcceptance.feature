@@ -552,3 +552,136 @@ Feature: SubqueryAcceptance
     And the side effects should be:
       | -properties  | 1 |
       | +properties  | 1 |
+
+
+  Scenario: Uncorrelated unit subquery
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL {
+        CREATE (:Label)
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes  | 3 |
+
+  Scenario: Correlated unit subquery
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL {
+        WITH x
+        SET x.prop = 1
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +properties    | 3 |
+
+  Scenario: Uncorrelated unit subquery with shadowed variable
+    And having executed:
+      """
+      CREATE (:Label {prop: 1}), (:Label {prop: 2}), (:Label {prop: 3})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        WITH 1 AS n
+        CREATE (x: Foo)
+        SET x.prop = n
+      }
+      RETURN n.prop
+      """
+    Then the result should be, in any order:
+      | n.prop |
+      | 1      |
+      | 2      |
+      | 3      |
+    And the side effects should be:
+      | +properties | 3 |
+      | +nodes      | 3 |
+      | +labels     | 1 |
+
+
+  Scenario: Correlated union unit subquery
+    When having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    And executing query:
+      """
+      MATCH (x)
+      CALL {
+        WITH x
+        SET x.prop = 1
+        UNION
+        CREATE (y:A)
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +properties | 3 |
+      | +nodes      | 3 |
+      | +labels     | 1 |
+
+  Scenario: Uncorrelated unit subquery with increasing cardinality
+    When having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    And executing query:
+      """
+      MATCH (n)
+      CALL {
+        UNWIND [1, 2] AS i
+        CREATE (x: Foo)
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes      | 6 |
+      | +labels     | 1 |
+
+  Scenario: Embedded nested unit subquery call
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        CALL {
+          CREATE (x: Foo)
+        }
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes  | 3 |
+      | +labels | 1 |
