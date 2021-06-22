@@ -173,6 +173,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
@@ -912,6 +913,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def foreach(variable: String, expression: String, mutations: Seq[SimpleMutatingPattern]): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => Foreach(lp, variable, Parser.parseExpression(expression), mutations)(_)))
+
+  def subqueryForeach(): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SubqueryForeach(lhs, rhs)(_)))
 
   def cartesianProduct(fromSubquery: Boolean = false): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs, fromSubquery)(_)))

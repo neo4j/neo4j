@@ -78,6 +78,11 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
    * True if this query part starts with an importing WITH (has incoming arguments)
    */
   def isCorrelated: Boolean
+
+  /**
+   * True iff this query part ends with a return clause.
+   */
+  def isYielding: Boolean
 }
 
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart with SemanticAnalysisTooling {
@@ -94,6 +99,11 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   override def returnColumns: List[LogicalVariable] = clauses.last.returnColumns
 
   override def isCorrelated: Boolean = importWith.isDefined
+
+  override def isYielding: Boolean = clauses.last match {
+    case _: Return => true
+    case _ => false
+  }
 
   def importColumns: Seq[String] = importWith match {
     case Some(w) => w.returnItems.items.map(_.name)
@@ -385,6 +395,8 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
       query.checkImportingWith
 
   override def isCorrelated: Boolean = query.isCorrelated || part.isCorrelated
+
+  override def isYielding: Boolean = query.isYielding // we assume part has the same value
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
     semanticCheckAbstract(

@@ -98,7 +98,7 @@ case class LoadCSVProjection(variable: String, url: Expression, format: CSVForma
   override def dependingExpressions: Seq[Expression] = Seq(url)
 }
 
-case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boolean) extends QueryHorizon {
+case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boolean, yielding: Boolean) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ callSubquery.returns
 
   override def dependingExpressions: Seq[Expression] = Seq.empty

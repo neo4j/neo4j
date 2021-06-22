@@ -106,7 +106,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       val sq = RegularSinglePlannerQuery(QueryGraph(patternNodes = Set("a")), horizon = RegularQueryProjection(Map("a" -> varFor("a"))))
 
-      val pq = RegularSinglePlannerQuery(horizon = CallSubqueryHorizon(sq, correlated = false))
+      val pq = RegularSinglePlannerQuery(horizon = CallSubqueryHorizon(sq, correlated = false, yielding = true))
       val inputPlan = Argument()
 
       // When
@@ -127,7 +127,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       val sq = RegularSinglePlannerQuery(QueryGraph(patternNodes = Set("a")), horizon = RegularQueryProjection(Map("a" -> varFor("a"))))
 
-      val pq = RegularSinglePlannerQuery(horizon = CallSubqueryHorizon(sq, correlated = true))
+      val pq = RegularSinglePlannerQuery(horizon = CallSubqueryHorizon(sq, correlated = true, yielding = true))
       val inputPlan = Argument()
 
       // When

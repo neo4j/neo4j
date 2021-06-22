@@ -360,6 +360,16 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .allNodeScan("x")
       .build())
 
+  testPlan("subqueryForeach",
+      new TestPlanBuilder()
+        .produceResults("x")
+        .subqueryForeach()
+        .|.emptyResult()
+        .|.create(createNode("n"))
+        .|.argument("x")
+        .allNodeScan("x")
+        .build())
+
   testPlan("merge",
     new TestPlanBuilder()
       .produceResults("x")

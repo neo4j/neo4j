@@ -72,7 +72,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("CALL around single query") {
     val query = buildSinglePlannerQuery("CALL { RETURN 1 as x } RETURN 2 as y")
     query.horizon should equal(CallSubqueryHorizon(RegularSinglePlannerQuery(
-      horizon = RegularQueryProjection(Map("x" -> literalInt(1)))), correlated = false))
+      horizon = RegularQueryProjection(Map("x" -> literalInt(1)))), correlated = false, yielding = true))
 
     query.tail should not be empty
 
@@ -91,6 +91,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     subQuery.horizon should equal(
       CallSubqueryHorizon(
         correlated = true,
+        yielding = true,
         callSubquery = RegularSinglePlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set("x")),
           horizon = RegularQueryProjection(Map("y" -> varFor("x"))))))
@@ -104,7 +105,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("CALL around single query - using returned var in outer query") {
     val query = buildSinglePlannerQuery("CALL { RETURN 1 as x } RETURN x")
     query.horizon should equal(CallSubqueryHorizon(RegularSinglePlannerQuery(
-      horizon = RegularQueryProjection(Map("x" -> literalInt(1)))), correlated = false))
+      horizon = RegularQueryProjection(Map("x" -> literalInt(1)))), correlated = false, yielding = true))
 
     query.tail should not be empty
 
@@ -122,7 +123,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           horizon = RegularQueryProjection(Map("x" -> literalInt(2)))),
         distinct = true,
         List(UnionMapping(varFor("x"),varFor("x"),varFor("x")))
-      ), correlated = false))
+      ),
+      correlated = false,
+      yielding = true,
+    ))
 
     query.tail should not be empty
 
@@ -140,6 +144,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val subquery = query.tail.get
     subquery.horizon should equal(CallSubqueryHorizon(
       correlated = true,
+      yielding = true,
       callSubquery = UnionQuery(
         RegularSinglePlannerQuery(
           queryGraph = QueryGraph(argumentIds = Set("x")),
@@ -166,7 +171,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           horizon = RegularQueryProjection(Map("x" -> literalInt(2)))),
         distinct = true,
         List(UnionMapping(varFor("x"),varFor("x"),varFor("x")))
-      ), correlated = false))
+      ),
+      correlated = false,
+      yielding = true,
+    ))
 
     query.tail should not be empty
 

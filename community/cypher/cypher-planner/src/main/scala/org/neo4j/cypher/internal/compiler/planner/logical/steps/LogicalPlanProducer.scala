@@ -193,6 +193,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -454,15 +455,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(plan, solved, providedOrder, context)
   }
 
-  def planSubquery(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext, correlated: Boolean): LogicalPlan = {
+  def planSubquery(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext, correlated: Boolean, yielding: Boolean): LogicalPlan = {
     val solvedLeft = solveds.get(left.id)
     val solvedRight = solveds.get(right.id)
-    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated)))
+    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated, yielding)))
 
-    val plan = if (!correlated && solvedRight.readOnly) {
-      CartesianProduct(left, right, fromSubquery = true)
+    val plan = if (yielding) {
+      if (!correlated && solvedRight.readOnly) {
+        CartesianProduct(left, right, fromSubquery = true)
+      } else {
+        Apply(left, right, fromSubquery = true)
+      }
     } else {
-      Apply(left, right, fromSubquery = true)
+      SubqueryForeach(left, right)
     }
 
     val providedOrder = providedOrderOfApply(left, right)

@@ -162,13 +162,29 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     query.readOnly shouldBe false withClue "(query should not be readonly)"
     query.horizon shouldEqual CallSubqueryHorizon(
       correlated = true,
+      yielding = true,
       callSubquery = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
           argumentIds = Set("n"),
           mutatingPatterns = IndexedSeq(
             CreatePattern(nodes("m"), Seq.empty))),
         horizon = RegularQueryProjection(
-          projections = Map("m" -> varFor("m")))))
+          projections = Map("m" -> varFor("m"))))
+    )
+  }
+
+  test("correlated subquery with create node without return") {
+    val query = buildSinglePlannerQuery("MATCH (n) CALL { WITH n CREATE (m) } RETURN n")
+    query.readOnly shouldBe false withClue "(query should not be readonly)"
+    query.horizon shouldEqual CallSubqueryHorizon(
+      correlated = true,
+      yielding = false,
+      callSubquery = RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(
+          argumentIds = Set("n"),
+          mutatingPatterns = IndexedSeq(
+            CreatePattern(nodes("m"), Seq.empty))))
+    )
   }
 
   private def nodes(names: String*) = {

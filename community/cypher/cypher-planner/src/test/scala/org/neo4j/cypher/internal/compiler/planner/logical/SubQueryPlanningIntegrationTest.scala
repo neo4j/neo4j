@@ -316,7 +316,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("x")
-        .apply(true)
+        .subqueryForeach()
         .|.emptyResult()
         .|.create(createNode("n", "N"))
         .|.argument()
@@ -344,7 +344,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
       .shouldEqual(planner
         .planBuilder()
         .produceResults("x")
-        .apply(true)
+        .subqueryForeach()
         .|.emptyResult()
         .|.procedureCall("my.println(y)")
         .|.projection("2 AS y")
