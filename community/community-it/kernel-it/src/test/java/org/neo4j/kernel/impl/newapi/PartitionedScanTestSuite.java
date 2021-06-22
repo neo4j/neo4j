@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
@@ -45,24 +46,30 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
+import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.PartitionedScanFactory;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.ScanQuery;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith( SoftAssertionsExtension.class )
+@ExtendWith( {SoftAssertionsExtension.class, RandomExtension.class} )
 @ImpermanentDbmsExtension
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR extends Cursor>
 {
     @Inject
     private GraphDatabaseService db;
+    @Inject
+    protected RandomRule random;
 
     @InjectSoftAssertions
     protected SoftAssertions softly;
@@ -214,7 +221,14 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx ) )
             {
-                final var query = entityIdsMatchingScanQuery.iterator().next().getKey();
+                var query = entityIdsMatchingScanQuery.iterator().next().getKey();
+                for ( var entry : entityIdsMatchingScanQuery )
+                {
+                    if ( entry.getValue().size() > entityIdsMatchingScanQuery.getOrCreate( query ).size() )
+                    {
+                        query = entry.getKey();
+                    }
+                }
 
                 // given  no transaction state
                 // when   partitioned scan constructed
@@ -430,6 +444,32 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         }
     }
 
+    protected void createIndexes( Iterable<IndexPrototype> indexPrototypes )
+    {
+        try ( var tx = beginTx() )
+        {
+            final var schemaWrite = tx.schemaWrite();
+            for ( var indexPrototype : indexPrototypes )
+            {
+                schemaWrite.indexCreate( indexPrototype );
+            }
+            tx.commit();
+        }
+        catch ( KernelException e )
+        {
+            throw new AssertionError( "failed to create indexes", e );
+        }
+
+        try ( var tx = beginTx() )
+        {
+            new SchemaImpl( tx ).awaitIndexesOnline( 1, TimeUnit.HOURS );
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new AssertionError( "failed waiting for indexes to come online", e );
+        }
+    }
+
     protected int calculateMaxNumberOfPartitions( Iterable<SCAN_QUERY> scanQueries )
     {
         var maxNumberOfPartitions = 0;
@@ -456,6 +496,11 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         final Set<Long> getOrCreate( SCAN_QUERY scanQuery )
         {
             return matches.computeIfAbsent( scanQuery, sq -> new HashSet<>() );
+        }
+
+        final Set<Long> addOrReplace( SCAN_QUERY scanQuery, Set<Long> entityIds )
+        {
+            return matches.put( scanQuery, entityIds );
         }
 
         final Set<SCAN_QUERY> scanQueries()

@@ -32,4 +32,9 @@ class PartitionedScanTest
     class RelationshipTypeIndex extends RelationshipTypeIndexPartitionedScanTestSuite
     {
     }
+
+    @Nested
+    class NodePropertyIndex extends NodePropertyIndexPartitionedScanTestSuite
+    {
+    }
 }

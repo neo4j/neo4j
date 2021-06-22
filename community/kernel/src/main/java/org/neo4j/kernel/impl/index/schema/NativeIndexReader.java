@@ -222,6 +222,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             final var toExclusive = layout.newKey();
             initializeFromToKeys( fromInclusive, toExclusive );
 
+            // todo: This works unless query contains GeometryRangePredicate
             filter = initializeRangeForQuery( fromInclusive, toExclusive, this.query );
 
             final var partitions = tree.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, CursorContext.NULL );

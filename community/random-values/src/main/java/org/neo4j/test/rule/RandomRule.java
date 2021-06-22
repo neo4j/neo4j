@@ -108,6 +108,11 @@ public class RandomRule
         return random.nextInt( (bound - origin) + 1 ) + origin;
     }
 
+    public IntStream ints( long streamSize )
+    {
+        return random.ints( streamSize );
+    }
+
     public IntStream ints( long streamSize, int randomNumberOrigin, int randomNumberBound )
     {
         return random.ints( streamSize, randomNumberOrigin, randomNumberBound );

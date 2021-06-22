@@ -28,7 +28,9 @@ import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenReadSession;
@@ -36,6 +38,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.ScanQuery;
+import org.neo4j.kernel.impl.newapi.PropertyIndexPartitionedScanTestSuite.PropertyKeyScanQuery;
 import org.neo4j.kernel.impl.newapi.TokenIndexPartitionedScanTestSuite.TokenScanQuery;
 import org.neo4j.util.Id;
 
@@ -123,6 +126,45 @@ class PartitionedScanFactories
         }
     }
 
+    abstract static class PropertyIndex<CURSOR extends Cursor>
+            extends PartitionedScanFactory<PropertyKeyScanQuery,CURSOR>
+    {
+        protected final IndexReadSession getSession( KernelTransaction tx, PropertyKeyScanQuery query )
+                throws IndexNotFoundKernelException
+        {
+            final var index = tx.schemaRead().indexGetForName( query.indexName() );
+            return tx.dataRead().indexReadSession( index );
+        }
+    }
+
+    static final class NodePropertyIndex extends PropertyIndex<NodeValueIndexCursor>
+    {
+        public static final NodePropertyIndex FACTORY = new NodePropertyIndex();
+
+        private NodePropertyIndex()
+        {
+        }
+
+        @Override
+        PartitionedScan<NodeValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery scanQuery, int desiredNumberOfPartitions )
+                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+        {
+            return tx.dataRead().nodeIndexSeek( getSession( tx, scanQuery ), desiredNumberOfPartitions, scanQuery.get() );
+        }
+
+        @Override
+        NodeValueIndexCursor getCursor( KernelTransaction tx )
+        {
+            return tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
+        }
+
+        @Override
+        long getEntityReference( NodeValueIndexCursor cursor )
+        {
+            return cursor.nodeReference();
+        }
+    }
+
     abstract static class Tag<TAG> implements Supplier<TAG>
     {
         protected abstract TagFromName<TAG> fromName();
@@ -206,6 +248,27 @@ class PartitionedScanFactories
         int createId( KernelTransaction tx, org.neo4j.graphdb.RelationshipType relType ) throws KernelException
         {
             return tx.tokenWrite().relationshipTypeGetOrCreateForName( relType.name() );
+        }
+    }
+
+    static final class PropertyKey extends Tag<String>
+    {
+        public static final PropertyKey FACTORY = new PropertyKey();
+
+        private PropertyKey()
+        {
+        }
+
+        @Override
+        protected TagFromName<String> fromName()
+        {
+            return name -> name;
+        }
+
+        @Override
+        int createId( KernelTransaction tx, String propertyKey ) throws KernelException
+        {
+            return tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
         }
     }
 }
