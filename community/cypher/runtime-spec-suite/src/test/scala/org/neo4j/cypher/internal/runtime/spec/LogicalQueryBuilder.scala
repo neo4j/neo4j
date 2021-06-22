@@ -31,12 +31,16 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Default
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
 /**
  * Test help utility for hand-writing logical queries.
  */
-class LogicalQueryBuilder(tokenResolver: Resolver)
-  extends AbstractLogicalPlanBuilder[LogicalQuery, LogicalQueryBuilder](tokenResolver) {
+class LogicalQueryBuilder(tokenResolver: Resolver,
+                          override val idGen: IdGen = new SequentialIdGen(),
+                          wholePlan: Boolean = true)
+  extends AbstractLogicalPlanBuilder[LogicalQuery, LogicalQueryBuilder](tokenResolver, wholePlan) {
 
   private var semanticTable = new SemanticTable()
 
