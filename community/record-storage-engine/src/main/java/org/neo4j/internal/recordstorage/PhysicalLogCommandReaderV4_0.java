@@ -49,6 +49,7 @@ import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.internal.helpers.Numbers.unsignedByteToInt;
 import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
@@ -84,6 +85,8 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             return visitLabelTokenCommand( channel );
         case NeoCommandType.REL_GROUP_COMMAND:
             return visitRelationshipGroupCommand( channel );
+        case NeoCommandType.REL_GROUP_EXTENDED_COMMAND:
+            return visitRelationshipGroupExtendedCommand( channel );
         case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
             return visitRelationshipCountsCommand( channel );
         case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
@@ -176,6 +179,43 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
         int type = unsignedShortToInt( channel.getShort() );
+        RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
+        record.setInUse( inUse );
+        record.setNext( channel.getLong() );
+        record.setFirstOut( channel.getLong() );
+        record.setFirstIn( channel.getLong() );
+        record.setFirstLoop( channel.getLong() );
+        record.setOwningNode( channel.getLong() );
+        record.setRequiresSecondaryUnit( requireSecondaryUnit );
+        if ( hasSecondaryUnit )
+        {
+            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+        }
+        record.setUseFixedReferences( usesFixedReferenceFormat );
+        return record;
+    }
+
+    private Command visitRelationshipGroupExtendedCommand( ReadableChannel channel ) throws IOException
+    {
+        long id = channel.getLong();
+        RelationshipGroupRecord before = readRelationshipGroupExtendedRecord( id, channel );
+        RelationshipGroupRecord after = readRelationshipGroupExtendedRecord( id, channel );
+
+        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
+        return new Command.RelationshipGroupCommand( before, after );
+    }
+
+    private RelationshipGroupRecord readRelationshipGroupExtendedRecord( long id, ReadableChannel channel )
+            throws IOException
+    {
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+
+        int type = unsignedShortToInt( channel.getShort() );
+        type |= unsignedByteToInt( channel.get() ) << Short.SIZE;
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
         record.setInUse( inUse );
         record.setNext( channel.getLong() );

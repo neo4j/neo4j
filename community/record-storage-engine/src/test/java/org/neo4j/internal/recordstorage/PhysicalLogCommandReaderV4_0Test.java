@@ -352,6 +352,28 @@ class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
+    public void readRelationshipGroupWithBiggerThanShortRelationshipType() throws IOException
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8, true );
+        after.setCreated();
+
+        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+
+        // When
+        BaseCommandReader reader = createReader();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.RelationshipGroupCommand);
+
+        Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
+
+        // Then
+        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+    }
+
+    @Test
     void nodeCommandWithFixedReferenceFormat() throws Exception
     {
         // Given
