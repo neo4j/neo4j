@@ -79,6 +79,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaReadCore
+import org.neo4j.internal.kernel.api.SchemaWrite
 import org.neo4j.internal.kernel.api.TokenPredicate
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenReadSession
@@ -903,31 +904,23 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
-    val ktx = transactionalContext.kernelTransaction
+    val schemaWrite = transactionalContext.kernelTransaction.schemaWrite()
     val descriptor = entityType match {
       case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, propertyKeyIds: _*)
       case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, propertyKeyIds: _*)
     }
-    try {
-      if (provider.isEmpty)
-        ktx.schemaWrite().indexCreate(descriptor, indexConfig, name.orNull)
-      else
-        ktx.schemaWrite().indexCreate(descriptor, provider.get, indexConfig, name.orNull)
-    } catch {
-      case e: EquivalentSchemaRuleAlreadyExistsException => handleEquivalentSchema(ktx, descriptor, e)
-    }
+    val prototype = provider.map(p => IndexPrototype.forSchema(descriptor,schemaWrite.indexProviderByName(p))).getOrElse(IndexPrototype.forSchema(descriptor))
+      .withIndexType(IndexType.BTREE)
+      .withIndexConfig(indexConfig)
+    val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
+    addIndexRule(descriptor, namedPrototype)
   }
 
   override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor = {
-    val ktx = transactionalContext.kernelTransaction
     val descriptor = SchemaDescriptors.forAnyEntityTokens(entityType)
     val prototype = IndexPrototype.forSchema(descriptor).withIndexType(IndexType.LOOKUP)
     val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
-    try {
-      ktx.schemaWrite().indexCreate(namedPrototype)
-    } catch {
-      case e: EquivalentSchemaRuleAlreadyExistsException => handleEquivalentSchema(ktx, descriptor, e)
-    }
+    addIndexRule(descriptor, namedPrototype)
   }
 
   override def addFulltextIndexRule(entityIds: List[Int],
@@ -936,27 +929,28 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                     name: Option[String],
                                     provider: Option[IndexProviderDescriptor],
                                     indexConfig: IndexConfig): IndexDescriptor = {
-    val ktx = transactionalContext.kernelTransaction
     val descriptor = SchemaDescriptors.fulltext(entityType, entityIds.toArray, propertyKeyIds.toArray)
     val prototype =
       provider.map(p => IndexPrototype.forSchema(descriptor, p)).getOrElse(IndexPrototype.forSchema(descriptor))
         .withIndexType(IndexType.FULLTEXT)
         .withIndexConfig(indexConfig)
     val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
-    try {
-      ktx.schemaWrite().indexCreate(namedPrototype)
-    } catch {
-      case e: EquivalentSchemaRuleAlreadyExistsException => handleEquivalentSchema(ktx, descriptor, e)
-    }
+    addIndexRule(descriptor, namedPrototype)
   }
 
-  private def handleEquivalentSchema(ktx: KernelTransaction, descriptor: SchemaDescriptor, e: EquivalentSchemaRuleAlreadyExistsException): Nothing = {
-    val indexReference = ktx.schemaRead().index(descriptor).next()
-    if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
-      val message = ktx.schemaRead().indexGetFailure(indexReference)
-      throw new FailedIndexException(indexReference.userDescription(ktx.tokenRead()), message)
+  private def addIndexRule(descriptor: SchemaDescriptor, prototype: IndexPrototype): IndexDescriptor = {
+    val ktx = transactionalContext.kernelTransaction
+    try {
+      ktx.schemaWrite().indexCreate(prototype)
+    } catch {
+      case e: EquivalentSchemaRuleAlreadyExistsException =>
+        val indexReference = ktx.schemaRead().index(descriptor).next()
+        if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
+          val message = ktx.schemaRead().indexGetFailure(indexReference)
+          throw new FailedIndexException(indexReference.userDescription(ktx.tokenRead()), message)
+        }
+        throw e
     }
-    throw e
   }
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
