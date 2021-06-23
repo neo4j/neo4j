@@ -44,4 +44,6 @@ public interface NeoCommandType
     byte SCHEMA_RULE_COMMAND = (byte) 18;
     byte META_DATA_COMMAND = (byte) 19;
     byte UPDATE_GROUP_DEGREE_COMMAND = (byte) 20;
+
+    byte REL_GROUP_EXTENDED_COMMAND = (byte) 21; // Relationship group with 3 byte type id
 }

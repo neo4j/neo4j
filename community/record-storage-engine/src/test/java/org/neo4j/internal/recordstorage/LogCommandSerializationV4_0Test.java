@@ -364,6 +364,28 @@ class LogCommandSerializationV4_0Test
     }
 
     @Test
+    public void readRelationshipGroupWithBiggerThanShortRelationshipType() throws IOException
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8 );
+        after.setCreated();
+
+        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+
+        // When
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
+        assertTrue( command instanceof Command.RelationshipGroupCommand);
+
+        Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
+
+        // Then
+        assertBeforeAndAfterEquals( relationshipGroupCommand, before, after );
+    }
+
+    @Test
     void nodeCommandWithFixedReferenceFormat() throws Exception
     {
         // Given
