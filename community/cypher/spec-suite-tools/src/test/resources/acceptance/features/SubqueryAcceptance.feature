@@ -420,18 +420,18 @@ Feature: SubqueryAcceptance
 
     Scenario: Importing path expressions into subqueries
       And having executed:
-      """
-      CREATE (:N), (:N)
-      """
+        """
+        CREATE (:N), (:N)
+        """
       When executing query:
-      """
-      MATCH p = (n)
-      CALL {
-        WITH p
-        RETURN length(p) AS l
-      }
-      RETURN p, l
-      """
+        """
+        MATCH p = (n)
+        CALL {
+          WITH p
+          RETURN length(p) AS l
+        }
+        RETURN p, l
+        """
       Then the result should be, in any order:
         | p      | l |
         | <(:N)> | 0 |
@@ -684,4 +684,59 @@ Feature: SubqueryAcceptance
       | 3     |
     And the side effects should be:
       | +nodes  | 3 |
+      | +labels | 1 |
+
+  Scenario: Ending unit subquery call
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        CREATE (x: Foo)
+      }
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 3 |
+      | +labels | 1 |
+
+  Scenario: Ending nested unit subquery call
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        CALL {
+          CREATE (x: Foo)
+        }
+      }
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 3 |
+      | +labels | 1 |
+
+  Scenario: Ending union unit subquery call
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        CREATE (x: Foo)
+          UNION
+        CREATE (x: Foo)
+      }
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 6 |
       | +labels | 1 |

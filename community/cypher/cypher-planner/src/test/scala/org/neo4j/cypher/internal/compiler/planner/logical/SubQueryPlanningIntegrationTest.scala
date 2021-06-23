@@ -354,6 +354,44 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .build())
   }
 
+
+  test("Query ending with unit subquery CALL") {
+    val query = "UNWIND [1, 2] AS x CALL { CREATE (n:N) }"
+
+    planFor(query) should equal(
+      new LogicalPlanBuilder()
+        .produceResults()
+        .emptyResult()
+        .subqueryForeach()
+        .|.emptyResult()
+        .|.create(createNode("n", "N"))
+        .|.argument()
+        .unwind("[1, 2] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Query ending with nested unit subquery CALL") {
+    val query = "UNWIND [1, 2] AS x CALL { CALL { CREATE (n:N) } }"
+
+    planFor(query) should equal(
+      new LogicalPlanBuilder()
+        .produceResults()
+        .emptyResult()
+        .subqueryForeach()
+        .|.emptyResult()
+        .|.subqueryForeach()
+        .|.|.emptyResult()
+        .|.|.create(createNode("n", "N"))
+        .|.|.argument()
+        .|.argument()
+        .unwind("[1, 2] AS x")
+        .argument()
+        .build()
+    )
+  }
+
   // Correlated subqueries
 
   test("CALL around single correlated query") {

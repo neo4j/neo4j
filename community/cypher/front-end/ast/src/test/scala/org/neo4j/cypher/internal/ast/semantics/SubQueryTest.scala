@@ -267,6 +267,63 @@ class SubQueryTest extends CypherFunSuite with AstConstructionTestSupport {
       .tap(_.errors.size.shouldEqual(0))
   }
 
+  test("query allows unit subquery at the end") {
+    // WITH 1 AS x
+    // CALL {
+    //   MERGE (a)
+    // }
+    singleQuery(
+      with_(literalInt(1).as("x")),
+      subQuery(
+        singleQuery(merge(nodePat("a")))
+      ),
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(0))
+  }
+
+  test("query allows nested unit subquery at the end") {
+    // WITH 1 AS x
+    // CALL {
+    //   CALL {
+    //     MERGE (a)
+    //   }
+    // }
+    singleQuery(
+      with_(literalInt(1).as("x")),
+      subQuery(
+        singleQuery(subQuery(
+          singleQuery(merge(nodePat("a")))
+        ))
+      ),
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(0))
+  }
+
+  test("query allows nested union unit subquery at the end") {
+    // WITH 1 AS x
+    // CALL {
+    //   CALL {
+    //     MERGE (a)
+    //       UNION
+    //     MERGE (a)
+    //   }
+    // }
+    singleQuery(
+      with_(literalInt(1).as("x")),
+      subQuery(
+        singleQuery(subQuery(
+          union(
+            singleQuery(merge(nodePat("a"))),
+            singleQuery(merge(nodePat("a"))))
+        ))
+      ),
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(0))
+  }
+
   test("subquery disallows single query ending in clause that is neither update nor return") {
     // CALL {
     //   MERGE (a)
