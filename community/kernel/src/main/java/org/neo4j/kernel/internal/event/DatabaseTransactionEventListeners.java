@@ -20,6 +20,8 @@
 package org.neo4j.kernel.internal.event;
 
 import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
@@ -27,6 +29,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.event.TransactionListenersState.ListenerState;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -36,11 +39,12 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
  * Handle the collection of transaction event listeners, and fire events as needed.
  */
 @SuppressWarnings( {"unchecked", "rawtypes"} )
-public class DatabaseTransactionEventListeners
+public class DatabaseTransactionEventListeners extends LifecycleAdapter
 {
     private final GlobalTransactionEventListeners globalTransactionEventListeners;
     private final GraphDatabaseFacade databaseFacade;
     private final String databaseName;
+    private final Set<TransactionEventListener<?>> listeners = ConcurrentHashMap.newKeySet();
 
     public DatabaseTransactionEventListeners( GraphDatabaseFacade databaseFacade, GlobalTransactionEventListeners globalTransactionEventListeners,
             NamedDatabaseId namedDatabaseId )
@@ -53,11 +57,22 @@ public class DatabaseTransactionEventListeners
     public void registerTransactionEventListener( TransactionEventListener<?> listener )
     {
         globalTransactionEventListeners.registerTransactionEventListener( databaseName, listener );
+        listeners.add( listener );
     }
 
     public void unregisterTransactionEventListener( TransactionEventListener<?> listener )
     {
+        listeners.remove( listener );
         globalTransactionEventListeners.unregisterTransactionEventListener( databaseName, listener );
+    }
+
+    @Override
+    public void shutdown()
+    {
+        for ( TransactionEventListener<?> listener : listeners )
+        {
+            globalTransactionEventListeners.unregisterTransactionEventListener( databaseName, listener );
+        }
     }
 
     public TransactionListenersState beforeCommit( ReadableTransactionState state, KernelTransaction transaction, StorageReader storageReader )

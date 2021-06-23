@@ -462,6 +462,7 @@ public class Database extends LifecycleAdapter
                             logEntryReader, metadataProvider, databaseMonitors, databaseDependencies );
 
             databaseTransactionEventListeners = new DatabaseTransactionEventListeners( databaseFacade, transactionEventListeners, namedDatabaseId );
+            life.add( databaseTransactionEventListeners );
             final DatabaseKernelModule kernelModule = buildKernel(
                     logFiles,
                     transactionLogModule.transactionAppender(),
