@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleSerialization35;
 import org.neo4j.util.VisibleForTesting;
 
+import static org.neo4j.internal.helpers.Numbers.unsignedByteToInt;
 import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
@@ -162,6 +163,41 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
         int type = unsignedShortToInt( channel.getShort() );
+        long next = channel.getLong();
+        long firstOut = channel.getLong();
+        long firstIn = channel.getLong();
+        long firstLoop = channel.getLong();
+        long owningNode = channel.getLong();
+        RelationshipGroupRecord record = new RelationshipGroupRecord( id ).initialize( inUse, type, firstOut, firstIn, firstLoop, owningNode, next );
+        record.setRequiresSecondaryUnit( requireSecondaryUnit );
+        if ( hasSecondaryUnit )
+        {
+            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+        }
+        record.setUseFixedReferences( usesFixedReferenceFormat );
+        return record;
+    }
+
+    @Override
+    protected Command readRelationshipGroupExtendedCommand( ReadableChannel channel ) throws IOException
+    {
+        long id = channel.getLong();
+        RelationshipGroupRecord before = readRelationshipGroupExtendedRecord( id, channel );
+        RelationshipGroupRecord after = readRelationshipGroupExtendedRecord( id, channel );
+        return new Command.RelationshipGroupCommand( before, after );
+    }
+
+    private RelationshipGroupRecord readRelationshipGroupExtendedRecord( long id, ReadableChannel channel )
+            throws IOException
+    {
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+
+        int type = unsignedShortToInt( channel.getShort() );
+        type |= unsignedByteToInt( channel.get() ) << Short.SIZE;
         long next = channel.getLong();
         long firstOut = channel.getLong();
         long firstIn = channel.getLong();

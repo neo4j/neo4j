@@ -57,6 +57,8 @@ public abstract class LogCommandSerialization implements CommandReader
             return readLabelTokenCommand( channel );
         case NeoCommandType.REL_GROUP_COMMAND:
             return readRelationshipGroupCommand( channel );
+        case NeoCommandType.REL_GROUP_EXTENDED_COMMAND:
+            return readRelationshipGroupExtendedCommand( channel );
         case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
             return readRelationshipCountsCommand( channel );
         case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
@@ -126,6 +128,11 @@ public abstract class LogCommandSerialization implements CommandReader
     }
 
     protected Command readRelationshipGroupCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
+    }
+
+    protected Command readRelationshipGroupExtendedCommand( ReadableChannel channel ) throws IOException
     {
         throw unsupportedInThisVersionException();
     }
