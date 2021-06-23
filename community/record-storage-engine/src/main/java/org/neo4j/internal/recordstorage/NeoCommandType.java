@@ -42,4 +42,6 @@ public interface NeoCommandType
     byte UPDATE_RELATIONSHIP_COUNTS_COMMAND = (byte) 16;
     byte UPDATE_NODE_COUNTS_COMMAND = (byte) 17;
     byte SCHEMA_RULE_COMMAND = (byte) 18;
+
+    byte REL_GROUP_EXTENDED_COMMAND = (byte) 21; // Relationship group with 3 byte type id
 }
