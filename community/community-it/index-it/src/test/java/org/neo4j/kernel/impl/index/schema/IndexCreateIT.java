@@ -27,7 +27,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -45,7 +44,8 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 public class IndexCreateIT extends KernelIntegrationTest
 {
     private static final IndexCreator INDEX_CREATOR =
-            ( schemaWrite, schema, provider, name ) -> schemaWrite.indexCreate( schema, provider, IndexConfig.empty(), name );
+            ( schemaWrite, schema, provider, name ) -> schemaWrite.indexCreate(
+                    IndexPrototype.forSchema( schema ).withIndexProvider( schemaWrite.indexProviderByName( provider ) ).withName( name ) );
     private static final IndexCreator UNIQUE_CONSTRAINT_CREATOR = ( schemaWrite, schema, provider, name ) -> schemaWrite.uniquePropertyConstraintCreate(
             IndexPrototype.uniqueForSchema( schema, schemaWrite.indexProviderByName( provider ) ).withName( name ) );
 
@@ -87,7 +87,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         // when
         final FulltextSchemaDescriptor descriptor = SchemaDescriptors.fulltext( EntityType.NODE, new int[]{labelId, labelId}, new int[]{propId} );
         // then
-        assertThrows( RepeatedLabelInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
+        assertThrows( RepeatedLabelInSchemaException.class, () -> schemaWrite.indexCreate( IndexPrototype.forSchema( descriptor ) ) );
     }
 
     @Test
@@ -104,7 +104,8 @@ public class IndexCreateIT extends KernelIntegrationTest
         // when
         final FulltextSchemaDescriptor descriptor = SchemaDescriptors.fulltext( EntityType.RELATIONSHIP, new int[]{relTypeId, relTypeId}, new int[]{propId} );
         // then
-        assertThrows( RepeatedRelationshipTypeInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
+        assertThrows( RepeatedRelationshipTypeInSchemaException.class,
+                      () -> schemaWrite.indexCreate( IndexPrototype.forSchema( descriptor ) ) );
     }
 
     @Test
@@ -121,7 +122,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         // when
         final FulltextSchemaDescriptor descriptor = SchemaDescriptors.fulltext( EntityType.NODE, new int[]{labelId}, new int[]{propId, propId} );
         // then
-        assertThrows( RepeatedPropertyInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
+        assertThrows( RepeatedPropertyInSchemaException.class, () -> schemaWrite.indexCreate( IndexPrototype.forSchema( descriptor ) ) );
     }
 
     protected void shouldFailWithNonExistentProviderName( IndexCreator creator ) throws KernelException

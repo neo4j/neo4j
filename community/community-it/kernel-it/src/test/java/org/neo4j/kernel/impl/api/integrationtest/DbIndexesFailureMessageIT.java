@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
@@ -73,7 +74,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
 
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         LabelSchemaDescriptor schema = forLabel( failedLabel, propertyKeyId1 );
-        IndexDescriptor index = transaction.schemaWrite().indexCreate( schema, "fail foo index" );
+        IndexDescriptor index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "fail foo index" ) );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )

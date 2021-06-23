@@ -237,9 +237,9 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
         transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
-        transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooBarDescriptor ).withName( "person foo bar index" ) );
         commit();
 
         //let indexes come online
@@ -311,9 +311,9 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
         LabelSchemaDescriptor personBazDescriptor = forLabel( labelId1, propertyKeyId3 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
         transaction.schemaWrite().uniquePropertyConstraintCreate( IndexPrototype.uniqueForSchema( ageFooDescriptor ).withName( "age foo constraint" ) );
-        transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooBarDescriptor ).withName( "person foo bar index" ) );
         commit();
 
         //let indexes come online

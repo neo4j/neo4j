@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
@@ -59,7 +58,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -996,26 +994,6 @@ public class Operations implements Write, SchemaWrite
         throw new UnsupportedOperationException(
                 format( "%s Version was %s, but required version for operation is %s. Please upgrade dbms using 'dbms.upgrade()'.",
                         message, currentDbmsVersion.name(), KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED.name() ) );
-    }
-
-    @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor schema, String indexName ) throws KernelException
-    {
-        return indexCreate( schema, config.get( GraphDatabaseSettings.default_schema_provider ), IndexConfig.empty(), indexName );
-    }
-
-    @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor schema, IndexConfig indexConfig, String indexName ) throws KernelException
-    {
-        return indexCreate( schema, config.get( GraphDatabaseSettings.default_schema_provider ), indexConfig, indexName );
-    }
-
-    @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, IndexConfig indexConfig, String name ) throws KernelException
-    {
-        IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, providerDescriptor ).withName( name ).withIndexConfig( indexConfig );
-        return indexCreate( prototype );
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.

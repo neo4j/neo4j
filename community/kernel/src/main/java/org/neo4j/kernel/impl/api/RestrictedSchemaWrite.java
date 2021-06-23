@@ -23,17 +23,16 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 
 public class RestrictedSchemaWrite implements SchemaWrite
 {
@@ -59,27 +58,6 @@ public class RestrictedSchemaWrite implements SchemaWrite
     {
         securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_INDEX );
         return inner.indexCreate( prototype );
-    }
-
-    @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor schema, String name ) throws KernelException
-    {
-        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_INDEX );
-        return inner.indexCreate( schema, name );
-    }
-
-    @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor schema, IndexConfig indexConfig, String name ) throws KernelException
-    {
-        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_INDEX );
-        return inner.indexCreate( schema, indexConfig, name );
-    }
-
-    @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, IndexConfig indexConfig, String name ) throws KernelException
-    {
-        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_INDEX );
-        return inner.indexCreate( schema, provider, indexConfig, name );
     }
 
     @Override

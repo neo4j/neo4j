@@ -304,7 +304,7 @@ class CheckerTestBase
         long indexId;
         try ( KernelTransaction tx = ktx() )
         {
-            IndexDescriptor index = tx.schemaWrite().indexCreate( descriptor, "the index" );
+            IndexDescriptor index = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( descriptor ).withName( "the index" ) );
             tx.commit();
             indexId = index.getId();
         }

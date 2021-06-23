@@ -105,7 +105,7 @@ class CompositeIndexingIT
             }
             else
             {
-                index = ktx.schemaWrite().indexCreate( prototype.schema(), null );
+                index = ktx.schemaWrite().indexCreate( forSchema( prototype.schema() ) );
             }
             tx.commit();
         }

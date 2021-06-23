@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -595,7 +596,7 @@ class IndexStatisticsTest
             int labelId = ktx.tokenWrite().labelGetOrCreateForName( PERSON_LABEL );
             int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( NAME_PROPERTY );
             LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyId );
-            var index = ktx.schemaWrite().indexCreate( schema, "my index" );
+            var index = ktx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
             tx.commit();
             return index;
         }

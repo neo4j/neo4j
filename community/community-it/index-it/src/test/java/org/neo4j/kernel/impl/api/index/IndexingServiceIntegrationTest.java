@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -176,7 +177,7 @@ public class IndexingServiceIntegrationTest
             int foodId = tx.tokenWrite().relationshipTypeGetOrCreateForName( FOOD_LABEL );
             int propertyId = tx.tokenWrite().propertyKeyGetOrCreateForName( PROPERTY_NAME );
             RelationTypeSchemaDescriptor schema = forRelType( foodId, propertyId );
-            index = tx.schemaWrite().indexCreate( schema, "food names" );
+            index = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "food names" ) );
             tx.commit();
         }
 

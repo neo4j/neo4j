@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -90,7 +91,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             schema = SchemaDescriptors.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( schema, "my index" );
+            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
             tx.commit();
         }
 
@@ -119,7 +120,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             schema = SchemaDescriptors.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( schema, "my index" );
+            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
             tx.commit();
         }
 
@@ -147,7 +148,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             schema = SchemaDescriptors.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( schema, "my index" );
+            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
             tx.commit();
         }
 
@@ -174,7 +175,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             schema = SchemaDescriptors.forLabel( label, propertyKey );
-            tx.schemaWrite().indexCreate( schema, "my index" );
+            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
             tx.commit();
         }
 

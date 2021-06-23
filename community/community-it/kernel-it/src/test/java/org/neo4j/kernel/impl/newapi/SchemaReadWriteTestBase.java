@@ -107,7 +107,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -125,7 +125,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction tx = beginTransaction() )
         {
             SchemaReadCore before = tx.schemaRead().snapshot();
-            index = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            index = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             assertThat( tx.schemaRead().indexGetState( index ) ).isEqualTo( InternalIndexState.POPULATING );
             assertThat( tx.schemaRead().snapshot().indexGetState( index ) ).isEqualTo( InternalIndexState.POPULATING );
             assertThat( before.indexGetState( index ) ).isEqualTo( InternalIndexState.POPULATING );
@@ -140,7 +140,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction tx = beginTransaction() )
         {
             SchemaReadCore before = tx.schemaRead().snapshot();
-            index = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            index = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             assertThat( tx.schemaRead().indexGetStateNonLocking( index ) ).isEqualTo( InternalIndexState.POPULATING );
             assertThat( tx.schemaRead().snapshot().indexGetStateNonLocking( index ) ).isEqualTo( InternalIndexState.POPULATING );
             assertThat( before.indexGetStateNonLocking( index ) ).isEqualTo( InternalIndexState.POPULATING );
@@ -165,7 +165,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -188,7 +188,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -211,7 +211,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         String indexName = "My fancy index";
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), indexName );
+            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( indexName ) );
             transaction.commit();
         }
 
@@ -244,7 +244,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -268,7 +268,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -292,7 +292,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         String indexName = "My fancy index";
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), indexName );
+            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( indexName ) );
             transaction.commit();
         }
 
@@ -316,15 +316,17 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         //Given
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
         //When
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my other index" ) );
-            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexCreate( forLabel( label, prop2 ), "my index" ) );
+            assertThrows( SchemaKernelException.class,
+                          () -> transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my other index" ) ) );
+            assertThrows( SchemaKernelException.class,
+                          () -> transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "my index" ) ) );
             transaction.commit();
         }
     }
@@ -334,14 +336,14 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     {
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
         try ( KernelTransaction transaction = beginTransaction() )
         {
             LabelSchemaDescriptor schema = forLabel( label, prop2 );
-            transaction.schemaWrite().indexCreate( schema, "my other index" );
+            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my other index" ) );
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor index = single( schemaRead.index( schema ) );
             assertThat( index.schema().getPropertyIds() ).isEqualTo( new int[]{prop2} );
@@ -354,14 +356,15 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     {
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index 1" );
+            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index 1" ) );
             transaction.commit();
         }
 
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaReadCore schemaReadBefore = transaction.schemaRead().snapshot();
-            IndexDescriptor createdIndex = transaction.schemaWrite().indexCreate( forLabel( label, prop2 ), "my index 2" );
+            IndexDescriptor createdIndex =
+                    transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "my index 2" ) );
             SchemaReadCore schemaReadAfter = transaction.schemaRead().snapshot();
 
             IndexDescriptor index = single( schemaReadBefore.index( forLabel( label, prop2 ) ) );
@@ -384,7 +387,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -402,7 +405,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -428,15 +431,15 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            toRetain = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "a" );
-            toRetain2 = tx.schemaWrite().indexCreate( forLabel( label2, prop1 ), "b" );
-            toDrop = tx.schemaWrite().indexCreate( forLabel( label, prop2 ), "c" );
+            toRetain = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "a" ) );
+            toRetain2 = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label2, prop1 ) ).withName( "b" ) );
+            toDrop = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "c" ) );
             tx.commit();
         }
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            created = tx.schemaWrite().indexCreate( forLabel( label2, prop2 ), "d" );
+            created = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label2, prop2 ) ).withName( "d" ) );
             tx.schemaWrite().indexDrop( toDrop );
 
             Iterable<IndexDescriptor> allIndexes = () -> tx.schemaRead().indexesGetAll();
@@ -456,16 +459,16 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            toRetain = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "a" );
-            toRetain2 = tx.schemaWrite().indexCreate( forLabel( label2, prop1 ), "b" );
-            toDrop = tx.schemaWrite().indexCreate( forLabel( label, prop2 ), "c" );
+            toRetain = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "a" ) );
+            toRetain2 = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label2, prop1 ) ).withName( "b" ) );
+            toDrop = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "c" ) );
             tx.commit();
         }
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             SchemaReadCore before = tx.schemaRead().snapshot();
-            created = tx.schemaWrite().indexCreate( forLabel( label2, prop2 ), "d" );
+            created = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label2, prop2 ) ).withName( "d" ) );
             tx.schemaWrite().indexDrop( toDrop );
             SchemaReadCore after = tx.schemaRead().snapshot();
 
@@ -490,16 +493,16 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             wrongLabel = tx.tokenWrite().labelGetOrCreateForName( "wrongLabel" );
             tx.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( forLabel( wrongLabel, prop1 ) ) );
 
-            inStore = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "a" );
-            droppedInTx = tx.schemaWrite().indexCreate( forLabel( label, prop2 ), "b" );
+            inStore = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "a" ) );
+            droppedInTx = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "b" ) );
 
             tx.commit();
         }
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            createdInTx = tx.schemaWrite().indexCreate( forLabel( label, prop3 ), "c" );
-            tx.schemaWrite().indexCreate( forLabel( wrongLabel, prop2 ), "d" );
+            createdInTx = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop3 ) ).withName( "c" ) );
+            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( wrongLabel, prop2 ) ).withName( "d" ) );
             tx.schemaWrite().indexDrop( droppedInTx );
 
             Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().indexesGetForLabel( label );
@@ -518,15 +521,15 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            inStore = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "a" );
-            droppedInTx = tx.schemaWrite().indexCreate( forLabel( label, prop2 ), "b" );
+            inStore = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "a" ) );
+            droppedInTx = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "b" ) );
 
             tx.commit();
         }
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            createdInTx = tx.schemaWrite().indexCreate( forLabel( label, prop3 ), "c" );
+            createdInTx = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop3 ) ).withName( "c" ) );
             tx.schemaWrite().indexDrop( droppedInTx );
 
             // Should include the index changes happening in the transaction
@@ -564,8 +567,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             wrongLabel = tx.tokenWrite().labelGetOrCreateForName( "wrongLabel" );
             tx.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( forLabel( wrongLabel, prop1 ) ) );
 
-            inStore = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "a" );
-            droppedInTx = tx.schemaWrite().indexCreate( forLabel( label, prop2 ), "b" );
+            inStore = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "a" ) );
+            droppedInTx = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "b" ) );
 
             tx.commit();
         }
@@ -573,8 +576,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction tx = beginTransaction() )
         {
             SchemaReadCore before = tx.schemaRead().snapshot();
-            createdInTx = tx.schemaWrite().indexCreate( forLabel( label, prop3 ), "c" );
-            tx.schemaWrite().indexCreate( forLabel( wrongLabel, prop2 ), "d" );
+            createdInTx = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop3 ) ).withName( "c" ) );
+            tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( wrongLabel, prop2 ) ).withName( "d" ) );
             tx.schemaWrite().indexDrop( droppedInTx );
 
             Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().snapshot().indexesGetForLabel( label );
@@ -594,15 +597,15 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            inStore = tx.schemaWrite().indexCreate( forRelType( type, prop1 ), "a" );
-            droppedInTx = tx.schemaWrite().indexCreate( forRelType( type, prop2 ), "b" );
+            inStore = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forRelType( type, prop1 ) ).withName( "a" ) );
+            droppedInTx = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forRelType( type, prop2 ) ).withName( "b" ) );
 
             tx.commit();
         }
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            createdInTx = tx.schemaWrite().indexCreate( forRelType( type, prop3 ), "c" );
+            createdInTx = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forRelType( type, prop3 ) ).withName( "c" ) );
             tx.schemaWrite().indexDrop( droppedInTx );
 
             // Should not include the index changes happening in the transaction
@@ -696,7 +699,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         //Given
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -725,8 +728,10 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         //When
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" ) );
-            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexCreate( forLabel( label, prop2 ), "constraint name" ) );
+            assertThrows( SchemaKernelException.class,
+                          () -> transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) ) );
+            assertThrows( SchemaKernelException.class,
+                          () -> transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "constraint name" ) ) );
             transaction.commit();
         }
     }
@@ -1448,7 +1453,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             try ( KernelTransaction overlapping = beginTransaction() )
             {
-                overlapping.schemaWrite().indexCreate( forLabel( label, prop1 ), "a" );
+                overlapping.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "a" ) );
                 overlapping.schemaWrite().indexCreate( IndexPrototype.forSchema(
                         fulltext( RELATIONSHIP, new int[] {type}, new int[] {prop2} ) ).withIndexType( IndexType.FULLTEXT ).withName( "b" ) );
                 overlapping.commit();
@@ -1496,7 +1501,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     {
         try ( KernelTransaction tx = beginTransaction() )
         {
-            assertThrows( SchemaKernelException.class, () -> tx.schemaWrite().indexCreate( forLabel( label, prop1, prop1 ), "my index" ) );
+            assertThrows( SchemaKernelException.class,
+                          () -> tx.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1, prop1 ) ).withName( "my index" ) ) );
         }
     }
 

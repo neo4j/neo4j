@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -209,7 +210,7 @@ class KernelIT extends KernelIntegrationTest
         SchemaWrite schemaWrite = transaction.schemaWrite();
         LabelSchemaDescriptor schema = forLabel( tokenWrite.labelGetOrCreateForName( "hello" ),
                 tokenWrite.propertyKeyGetOrCreateForName( "hepp" ) );
-        return schemaWrite.indexCreate( schema, null );
+        return schemaWrite.indexCreate( IndexPrototype.forSchema( schema ) );
     }
 
     private static void getOrCreateSchemaState( Transaction tx, String key, final String maybeSetThisState )

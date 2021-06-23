@@ -175,7 +175,7 @@ class KernelSchemaStateFlushingTest
         try ( KernelTransaction transaction = beginTransaction() )
         {
             LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propId );
-            IndexDescriptor reference = transaction.schemaWrite().indexCreate( schema, null );
+            IndexDescriptor reference = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ) );
             transaction.commit();
             return reference;
         }

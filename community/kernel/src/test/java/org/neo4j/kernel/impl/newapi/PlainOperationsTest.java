@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -903,11 +902,12 @@ public class PlainOperationsTest extends OperationsTest
         when( tokenHolders.propertyKeyTokens().getTokenById( 2 ) ).thenReturn( new NamedToken( "PropB", 2 ) );
         storageReaderWithoutConstraints();
         when( storageReader.indexGetForSchema( any() ) ).thenReturn( Collections.emptyIterator() );
-        operations.indexCreate( SchemaDescriptors.forLabel( 1, 1 ), null );
+        operations.indexCreate( IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 1 ) ) );
         operations.indexCreate( IndexPrototype.forSchema(
                 SchemaDescriptors.fulltext( NODE, new int[] {2, 3}, new int[] {1, 2} ) )
                                               .withIndexType( IndexType.FULLTEXT ) );
-        operations.indexCreate( SchemaDescriptors.forLabel( 3, 1 ), "provider-1.0", IndexConfig.empty(), null );
+        operations.indexCreate( IndexPrototype.forSchema( SchemaDescriptors.forLabel( 3, 1 ) )
+                                        .withIndexProvider( operations.indexProviderByName( "provider-1.0" ) ) );
         IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
                                                     .stream()
                                                     .sorted( Comparator.comparing( d -> d.schema().getEntityTokenIds()[0] ) )

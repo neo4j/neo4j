@@ -28,6 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -164,9 +165,9 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
         transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
-        transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooBarDescriptor ).withName( "person foo bar index" ) );
         commit();
 
         //let indexes come online
@@ -195,9 +196,9 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
         transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
-        transaction.schemaWrite().indexCreate( personFooBarDescriptor, "person foo bar index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooBarDescriptor ).withName( "person foo bar index" ) );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -216,7 +217,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -254,7 +255,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -273,7 +274,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -292,7 +293,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        transaction.schemaWrite().indexCreate( personFooDescriptor, "person foo index" );
+        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
