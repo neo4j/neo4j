@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.EagerAnalyzer.unnestEager
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanRewritingTestSupport
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 
-class unnestEagerTest extends CypherFunSuite with LogicalPlanRewritingTestSupport with LogicalPlanningTestSupport {
+class unnestEagerTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport with LogicalPlanningTestSupport {
 
   private val po_n: ProvidedOrder = ProvidedOrder.asc(varFor("n"))
 

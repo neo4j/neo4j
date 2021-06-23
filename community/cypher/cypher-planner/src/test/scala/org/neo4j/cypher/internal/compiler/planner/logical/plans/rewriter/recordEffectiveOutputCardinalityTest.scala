@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -31,7 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanRewritingTestSupport with AstConstructionTestSupport {
+class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport with AstConstructionTestSupport {
   private val precision = 0.00001
   private val leafCardinality = 10
 

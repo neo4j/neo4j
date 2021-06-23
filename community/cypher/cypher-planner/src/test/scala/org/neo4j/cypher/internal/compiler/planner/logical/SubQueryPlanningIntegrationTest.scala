@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -30,7 +31,11 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+class SubQueryPlanningIntegrationTest
+  extends CypherFunSuite
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport
+    with LogicalPlanningAttributesTestSupport {
 
   private def planFor(query: String): LogicalPlan = {
     plannerBuilder().setAllNodesCardinality(1000).build().plan(query)
@@ -390,6 +395,25 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .argument()
         .build()
     )
+  }
+
+  test("CALL unit subquery should not affect incoming cardinality estimate") {
+    val query = "UNWIND [1, 2] AS x CALL { UNWIND [1, 2, 3] AS x CREATE (n:N)} RETURN x"
+
+    val planner = plannerBuilder().setAllNodesCardinality(1000).build()
+    val actual = planner.planState(query)
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("x").withCardinality(2)
+      .subqueryForeach().withCardinality(2) // <-- here we take the cardinality from unwind and ignore the one from emptyResult.
+      .|.emptyResult().withCardinality(3)
+      .|.create(createNode("n", "N")).withCardinality(3)
+      .|.unwind("[1, 2, 3] AS x").withCardinality(3)
+      .|.argument().withCardinality(1)
+      .unwind("[1, 2] AS x").withCardinality(2)
+      .argument().withCardinality(1)
+
+    actual should haveSameCardinalitiesAs(expected)
   }
 
   // Correlated subqueries

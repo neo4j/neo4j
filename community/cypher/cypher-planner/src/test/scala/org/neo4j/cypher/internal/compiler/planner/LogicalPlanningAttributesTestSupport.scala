@@ -17,8 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
+package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
@@ -31,7 +33,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
-trait LogicalPlanRewritingTestSupport {
+trait LogicalPlanningAttributesTestSupport {
 
   private val precision = 0.00001
 
@@ -48,6 +50,13 @@ trait LogicalPlanRewritingTestSupport {
         (x, y) => (x.amount - y.amount).abs < precision
       )
     }
+
+  def haveSameCardinalitiesAs(expected: LogicalPlanBuilder): Matcher[LogicalPlanState] = {
+    val tupleMatcher = haveSameCardinalitiesAs((expected.build(), expected.cardinalities))
+    (actual: LogicalPlanState) => {
+      tupleMatcher.apply((actual.logicalPlan, actual.planningAttributes.cardinalities))
+    }
+  }
 
   def haveSameCardinalitiesAs(expected: (LogicalPlan, Cardinalities)): Matcher[(LogicalPlan, Cardinalities)] =
     (actual: (LogicalPlan, Cardinalities)) => {

@@ -137,10 +137,14 @@ class StatisticsBackedCardinalityModel(planContext: PlanContext,
     case _: PassthroughAllHorizon =>
       cardinalityAndInput
 
-    case CallSubqueryHorizon(subquery, _) =>
+    case CallSubqueryHorizon(subquery, _, true) =>
       val subQueryCardinality = apply(subquery, cardinalityAndInput.input, semanticTable, aggregatingProperties)
       // Cardinality of the subquery times current cardinality is the result
       cardinalityAndInput.copy(cardinality = cardinalityAndInput.cardinality * subQueryCardinality)
+
+    case CallSubqueryHorizon(subquery, _, false) =>
+      // Unit subquery call does not affect the driving table
+      cardinalityAndInput
   }
 
   private def queryProjectionCardinalityBeforeLimit(in: Cardinality, projection: QueryProjection): Cardinality = projection match {
