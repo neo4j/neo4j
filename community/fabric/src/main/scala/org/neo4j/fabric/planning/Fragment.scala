@@ -19,11 +19,10 @@
  */
 package org.neo4j.fabric.planning
 
-import java.util
-
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.Foldable
@@ -36,6 +35,7 @@ import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.PrettyPrinting
 import org.neo4j.graphdb.ExecutionPlanDescription
 
+import java.util
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.JavaConverters.setAsJavaSet
 
@@ -46,6 +46,8 @@ sealed trait Fragment extends Fragment.RewritingSupport {
   def importColumns: Seq[String]
   /** Produced columns */
   def outputColumns: Seq[String]
+  /** Whether this fragment produces final query output */
+  def producesResults: Boolean
   /** ExecutionPlanDescription */
   def description: Fragment.Description
   /* Original input position */
@@ -72,9 +74,10 @@ object Fragment {
     def command: ast.Statement
     def queryType: QueryType
 
-    val argumentColumns: Seq[String] = Seq.empty
-    val importColumns: Seq[String] = Seq.empty
-    val outputColumns: Seq[String] = command.returnColumns.map(_.name)
+    override val argumentColumns: Seq[String] = Seq.empty
+    override val importColumns: Seq[String] = Seq.empty
+    override val outputColumns: Seq[String] = command.returnColumns.map(_.name)
+    override val producesResults: Boolean = true
   }
 
   final case class Init(
@@ -82,9 +85,10 @@ object Fragment {
     argumentColumns: Seq[String] = Seq.empty,
     importColumns: Seq[String] = Seq.empty,
   ) extends Fragment.Chain {
-    val outputColumns: Seq[String] = Seq.empty
-    val description: Fragment.Description = Description.InitDesc(this)
-    val pos: InputPosition = InputPosition.NONE
+    override val outputColumns: Seq[String] = Seq.empty
+    override val description: Fragment.Description = Description.InitDesc(this)
+    override val producesResults: Boolean = false
+    override val pos: InputPosition = InputPosition.NONE
   }
 
   final case class Apply(
@@ -93,8 +97,9 @@ object Fragment {
   )(
     val pos: InputPosition
   ) extends Fragment.Segment {
-    val outputColumns: Seq[String] = Columns.combine(input.outputColumns, inner.outputColumns)
-    val description: Fragment.Description = Description.ApplyDesc(this)
+    override val outputColumns: Seq[String] = Columns.combine(input.outputColumns, inner.outputColumns)
+    override val producesResults: Boolean = false
+    override val description: Fragment.Description = Description.ApplyDesc(this)
   }
 
   final case class Union(
@@ -105,10 +110,11 @@ object Fragment {
   )(
     val pos: InputPosition
   ) extends Fragment {
-    val outputColumns: Seq[String] = rhs.outputColumns
-    val argumentColumns: Seq[String] = input.argumentColumns
-    val importColumns: Seq[String] = Columns.combine(lhs.importColumns, rhs.importColumns)
-    val description: Fragment.Description = Description.UnionDesc(this)
+    override val outputColumns: Seq[String] = rhs.outputColumns
+    override val producesResults: Boolean = rhs.producesResults
+    override val argumentColumns: Seq[String] = input.argumentColumns
+    override val importColumns: Seq[String] = Columns.combine(lhs.importColumns, rhs.importColumns)
+    override val description: Fragment.Description = Description.UnionDesc(this)
   }
 
   final case class Leaf(
@@ -118,8 +124,9 @@ object Fragment {
   )(
     val pos: InputPosition
   ) extends Fragment.Segment {
+    override val producesResults: Boolean = false
+    override val description: Fragment.Description = Description.LeafDesc(this)
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)
-    val description: Fragment.Description = Description.LeafDesc(this)
     val queryType: QueryType = QueryType.of(clauses)
     val executable: Boolean = hasExecutableClauses(clauses)
   }
@@ -132,6 +139,10 @@ object Fragment {
     sensitive: Boolean,
     outputColumns: Seq[String],
   ) extends Fragment.Segment {
+    override val producesResults: Boolean = query match {
+      case Query(_, part) => part.isYielding
+      case _              => true
+    }
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)
     val executable: Boolean = hasExecutableClauses(query)
     val description: Fragment.Description = Description.ExecDesc(this)

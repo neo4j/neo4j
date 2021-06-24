@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.executor;
 
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -251,7 +253,6 @@ public class FabricExecutor
 
             lifecycle.startExecution( false );
             var query = plan.query();
-            Flux<String> columns = Flux.fromIterable( asJavaIterable( query.outputColumns() ) );
 
             // EXPLAIN for multi-graph queries returns only fabric plan,
             // because it is very hard to produce anything better without actually executing the query
@@ -259,7 +260,7 @@ public class FabricExecutor
             {
                 lifecycle.endSuccess();
                 return StatementResults.create(
-                        columns,
+                        Flux.empty(),
                         Flux.empty(),
                         Mono.just( new MergedSummary( Mono.just( plan.query().description() ), statistics, notifications ) ),
                         Mono.just( EffectiveQueryType.queryExecutionType( plan, accessMode ) )
@@ -269,13 +270,27 @@ public class FabricExecutor
             {
                 FragmentResult fragmentResult = run( query, null );
 
+                Flux<String> columns;
+                Flux<Record> records;
+                if ( query.producesResults() )
+                {
+                    columns = Flux.fromIterable( asJavaIterable( query.outputColumns() ) );
+                    records = fragmentResult.records;
+                }
+                else
+                {
+                    columns = Flux.empty();
+                    records = fragmentResult.records.then( Mono.<Record>empty() ).flux();
+                }
+
+                Mono<Summary> summary = Mono.just( new MergedSummary( fragmentResult.planDescription, statistics, notifications ) );
+
                 return StatementResults.create(
                         columns,
-                        fragmentResult.records
-                                .doOnComplete( lifecycle::endSuccess )
-                                .doOnCancel( lifecycle::endSuccess )
-                                .doOnError( lifecycle::endFailure ),
-                        Mono.just( new MergedSummary( fragmentResult.planDescription, statistics, notifications ) ),
+                        records.doOnComplete( lifecycle::endSuccess )
+                               .doOnCancel( lifecycle::endSuccess )
+                               .doOnError( lifecycle::endFailure ),
+                        summary,
                         fragmentResult.executionType
                 );
             }
@@ -315,16 +330,28 @@ public class FabricExecutor
         {
             FragmentResult input = run( apply.input(), argument );
 
-            var resultRecords = input.records.flatMap(
-                    record -> run( apply.inner(), record ).records.map( outputRecord -> Records.join( record, outputRecord ) ),
-                    dataStreamConfig.getConcurrency(), 1
-            );
+            Function<Record,Publisher<Record>> runInner =
+                    apply.inner().outputColumns().isEmpty()
+                    ? ( Record record ) -> runAndProduceOnlyRecord( apply.inner(), record )    // Unit subquery
+                    : ( Record record ) -> runAndProduceJoinedResult( apply.inner(), record ); // Returning subquery
+
+            Flux<Record> resultRecords = input.records.flatMap( runInner, dataStreamConfig.getConcurrency(), 1 );
 
             // TODO: merge executionType here for subqueries
             // For now, just return global value as seen by fabric
             Mono<QueryExecutionType> executionType = Mono.just( EffectiveQueryType.queryExecutionType( plan, accessMode ) );
 
             return new FragmentResult( resultRecords, Mono.empty(), executionType );
+        }
+
+        private Flux<Record> runAndProduceJoinedResult( Fragment fragment, Record record )
+        {
+            return run( fragment, record ).records.map( outputRecord -> Records.join( record, outputRecord ) );
+        }
+
+        private Mono<Record> runAndProduceOnlyRecord( Fragment fragment, Record record )
+        {
+            return run( fragment, record ).records.then( Mono.just( record ) );
         }
 
         FragmentResult runUnion( Fragment.Union union, Record argument )
