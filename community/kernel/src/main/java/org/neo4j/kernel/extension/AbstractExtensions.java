@@ -20,6 +20,7 @@
 package org.neo4j.kernel.extension;
 
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
 
@@ -115,13 +116,16 @@ public abstract class AbstractExtensions extends DependencyResolver.Adapter impl
 
     private Object getExtensionDependencies( ExtensionFactory<?> factory )
     {
-        Class<?> factoryType = factory.getClass();
-        while ( !(factoryType.getGenericSuperclass() instanceof ParameterizedType) )
+        // superclass is either ExtensionFactory or it's subclass that can be generic too
+        Class<?> factoryType = factory.getClass().getSuperclass();
+        Type genericSuperclass = factory.getClass().getGenericSuperclass();
+        while ( factoryType.getGenericSuperclass() instanceof ParameterizedType )
         {
+            genericSuperclass = factoryType.getGenericSuperclass();
             factoryType = factoryType.getSuperclass();
         }
-        Class<?> configurationClass = (Class<?>) ((ParameterizedType) factoryType.getGenericSuperclass()).getActualTypeArguments()[0];
-        return DependenciesProxy.dependencies(dependencies, configurationClass);
+        Class<?> configurationClass = (Class<?>) ((ParameterizedType) genericSuperclass).getActualTypeArguments()[0];
+        return DependenciesProxy.dependencies( dependencies, configurationClass );
     }
 
     @SuppressWarnings( "unchecked" )

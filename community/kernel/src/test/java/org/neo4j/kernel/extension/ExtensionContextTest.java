@@ -85,6 +85,40 @@ class ExtensionContextTest
     }
 
     @Test
+    void shouldFindDependenciesFromHierarchyBottomUpWithGenericsInTheMiddle()
+    {
+        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
+        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
+        Dependencies dependencies = new Dependencies();
+        JobScheduler jobScheduler = mock( JobScheduler.class );
+        dependencies.satisfyDependencies( jobScheduler );
+        var extensionFactory = new SubGenericTestingExtensionFactory();
+        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
+
+        try ( Lifespan ignored = new Lifespan( extensions ) )
+        {
+            assertNotNull( dependencies.resolveDependency( TestingExtension.class ) );
+        }
+    }
+
+    @Test
+    void shouldFindDependenciesFromWhenExtensionIsGenerified()
+    {
+        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
+        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
+        Dependencies dependencies = new Dependencies();
+        JobScheduler jobScheduler = mock( JobScheduler.class );
+        dependencies.satisfyDependencies( jobScheduler );
+        var extensionFactory = new GenericTestingExtensionFactory<>();
+        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
+
+        try ( Lifespan ignored = new Lifespan( extensions ) )
+        {
+            assertNotNull( dependencies.resolveDependency( TestingExtension.class ) );
+        }
+    }
+
+    @Test
     void shouldConsultUnsatisfiedDependencyHandlerOnFailingDependencyClasses()
     {
         GlobalExtensionContext context = mock( GlobalExtensionContext.class );
@@ -145,5 +179,25 @@ class ExtensionContextTest
         {
             // We don't need it right now
         }
+    }
+
+    private static class GenericTestingExtensionFactory<T> extends ExtensionFactory<TestingDependencies>
+    {
+
+        protected GenericTestingExtensionFactory()
+        {
+            super( "testing generics" );
+        }
+
+        @Override
+        public Lifecycle newInstance( ExtensionContext context, TestingDependencies dependencies )
+        {
+            dependencies.jobScheduler();
+            return new TestingExtension();
+        }
+    }
+
+    private static class SubGenericTestingExtensionFactory extends GenericTestingExtensionFactory<TestingExtension>
+    {
     }
 }
