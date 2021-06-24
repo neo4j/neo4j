@@ -65,7 +65,7 @@ trait RewindableExecutionResult {
 
   def executionPlanString(): String = planDescription.toString
 
-  def queryStatistics(): QueryStatistics = statistics
+  def queryStatistics: QueryStatistics = statistics
 
   def isEmpty: Boolean = result.isEmpty
 }

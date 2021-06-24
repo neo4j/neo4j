@@ -196,6 +196,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
@@ -879,11 +880,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
           variables,
           withRawCardinalities)
 
-      case _: MultiNodeIndexSeek =>
-        PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", children, Seq.empty, variables, withRawCardinalities)
-
-      case _: AssertingMultiNodeIndexSeek =>
-        PlanDescriptionImpl(id = plan.id, "AssertingMultiNodeIndexSeek", children, Seq.empty, variables, withRawCardinalities)
+      case _: MultiNodeIndexSeek | _: AssertingMultiNodeIndexSeek | _: SubqueryForeach =>
+        PlanDescriptionImpl(id = plan.id, plan.productPrefix, children, Seq.empty, variables, withRawCardinalities)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
