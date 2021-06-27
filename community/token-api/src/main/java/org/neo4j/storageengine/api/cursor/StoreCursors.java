@@ -25,6 +25,10 @@ import org.neo4j.io.pagecache.context.CursorContext;
 /**
  * Accessor for all underlying store cursors.
  * Provides requested store cursor that is using configuration from cursor context provided in {@link StoreCursors#reset(CursorContext)}.
+ *
+ * Store cursors provide read and write cursors.
+ * We keep read cursors for as long as possible and close them only when we close instance of {@link StoreCursors}.
+ * Write cursors still should be closed when they acquired.
  */
 public interface StoreCursors extends AutoCloseable
 {
