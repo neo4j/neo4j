@@ -75,6 +75,12 @@ public class StubPageCursor extends PageCursor
     @Override
     public Path getCurrentFile()
     {
+        return getRawCurrentFile();
+    }
+
+    @Override
+    public Path getRawCurrentFile()
+    {
         return Path.of( "" );
     }
 

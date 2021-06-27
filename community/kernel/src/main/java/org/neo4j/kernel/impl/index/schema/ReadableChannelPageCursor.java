@@ -247,6 +247,12 @@ class ReadableChannelPageCursor extends PageCursor
     }
 
     @Override
+    public Path getRawCurrentFile()
+    {
+        return null;
+    }
+
+    @Override
     public void rewind()
     {
         throw new UnsupportedOperationException();

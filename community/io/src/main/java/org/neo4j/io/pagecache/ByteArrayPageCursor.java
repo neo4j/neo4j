@@ -262,6 +262,12 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public Path getRawCurrentFile()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void rewind()
     {
         setOffset( 0 );

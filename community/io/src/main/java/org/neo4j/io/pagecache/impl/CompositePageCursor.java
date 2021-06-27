@@ -413,6 +413,12 @@ public final class CompositePageCursor extends PageCursor
     }
 
     @Override
+    public Path getRawCurrentFile()
+    {
+        return null;
+    }
+
+    @Override
     public void rewind()
     {
         first.setOffset( firstBaseOffset );

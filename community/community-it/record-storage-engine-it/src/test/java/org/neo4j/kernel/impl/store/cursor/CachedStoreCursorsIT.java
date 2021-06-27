@@ -30,6 +30,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.pagecache.context.EmptyVersionContext.EMPTY;
 
 @DbmsExtension
@@ -37,6 +38,17 @@ class CachedStoreCursorsIT
 {
     @Inject
     private RecordStorageEngine storageEngine;
+
+    @Test
+    void checkValidationOfClosedReadCursors()
+    {
+        try ( var cursorContext = new CursorContext( PageCursorTracer.NULL, EMPTY ) )
+        {
+            var storageCursors = storageEngine.createStorageCursors( cursorContext );
+            storageCursors.readCursor( CursorTypes.NODE_CURSOR ).close();
+            assertThrows( IllegalStateException.class, storageCursors::close );
+        }
+    }
 
     @Test
     void cacheRequestedCursors()

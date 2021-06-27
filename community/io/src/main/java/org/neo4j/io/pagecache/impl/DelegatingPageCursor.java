@@ -94,6 +94,12 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
+    public Path getRawCurrentFile()
+    {
+        return delegate.getRawCurrentFile();
+    }
+
+    @Override
     public void putShort( short value )
     {
         delegate.putShort( value );

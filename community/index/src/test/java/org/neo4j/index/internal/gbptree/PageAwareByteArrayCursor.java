@@ -186,6 +186,12 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
+    public Path getRawCurrentFile()
+    {
+        return current.getRawCurrentFile();
+    }
+
+    @Override
     public byte getByte()
     {
         return current.getByte();

@@ -298,9 +298,15 @@ public abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
+    public Path getRawCurrentFile()
+    {
+        return pagedFile == null ? null : pagedFile.path();
+    }
+
+    @Override
     public final Path getCurrentFile()
     {
-        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? null : pagedFile.path();
+        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? null : getRawCurrentFile();
     }
 
     /**

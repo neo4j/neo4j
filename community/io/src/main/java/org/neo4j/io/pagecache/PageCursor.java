@@ -233,6 +233,12 @@ public abstract class PageCursor implements AutoCloseable
     public abstract Path getCurrentFile();
 
     /**
+     * Get page cursor page file if cursor is still open or null otherwise
+     * @return cursor page file or null if closed
+     */
+    public abstract Path getRawCurrentFile();
+
+    /**
      * Rewinds the cursor to its initial condition, as if freshly returned from
      * an equivalent io() call. In other words, the next call to next() will
      * move the cursor to the starting page that was specified in the io() that

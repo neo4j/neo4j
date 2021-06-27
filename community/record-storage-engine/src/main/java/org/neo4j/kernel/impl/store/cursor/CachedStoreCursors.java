@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
+import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_TOKEN_CURSOR;
@@ -39,9 +40,12 @@ import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_
 import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
+import static org.neo4j.util.FeatureToggles.flag;
 
 public class CachedStoreCursors implements StoreCursors
 {
+    private static final boolean CHECK_READ_CURSORS = flag( CachedStoreCursors.class, "CHECK_READ_CURSORS", false );
+
     private final NeoStores neoStores;
     private CursorContext cursorContext;
 
@@ -62,10 +66,15 @@ public class CachedStoreCursors implements StoreCursors
 
     private void resetCursors()
     {
-        for ( PageCursor pageCursor : cursorsByType )
+        for ( int i = 0; i < cursorsByType.length; i++ )
         {
+            PageCursor pageCursor = cursorsByType[i];
             if ( pageCursor != null )
             {
+                if ( CHECK_READ_CURSORS )
+                {
+                    checkReadCursor( pageCursor, safeCastIntToShort( i ) );
+                }
                 pageCursor.close();
             }
         }
@@ -163,6 +172,14 @@ public class CachedStoreCursors implements StoreCursors
     public void close()
     {
         resetCursors();
+    }
+
+    private static void checkReadCursor( PageCursor pageCursor, short type )
+    {
+        if ( pageCursor.getRawCurrentFile() == null )
+        {
+            throw new IllegalStateException( "Read cursor " + pageCursor + " with type: " + type + " is closed outside of owning store cursors." );
+        }
     }
 
     private static PageCursor[] createEmptyCursorArray()
