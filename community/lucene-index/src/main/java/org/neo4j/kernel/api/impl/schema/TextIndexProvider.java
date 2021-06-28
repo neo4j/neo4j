@@ -21,16 +21,26 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.values.storable.ValueCategory;
+
+import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
+import static org.neo4j.internal.schema.IndexOrderCapability.NONE;
+import static org.neo4j.internal.schema.IndexValueCapability.NO;
 
 public class TextIndexProvider extends AbstractLuceneIndexProvider
 {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "text", "1.0" );
+    private static final IndexCapability TEXT_CAPABILITY = new TextIndexCapability();
 
     public TextIndexProvider( FileSystemAbstraction fileSystem,
                               DirectoryFactory directoryFactory,
@@ -39,5 +49,26 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
                               DatabaseReadOnlyChecker readOnlyChecker )
     {
         super( IndexType.TEXT, DESCRIPTOR, fileSystem, directoryFactory, directoryStructureFactory, monitors, config, readOnlyChecker );
+    }
+
+    @Override
+    public IndexDescriptor completeConfiguration( IndexDescriptor index )
+    {
+        return index.getCapability().equals( NO_CAPABILITY ) ? index.withIndexCapability( TEXT_CAPABILITY ) : index;
+    }
+
+    public static class TextIndexCapability implements IndexCapability
+    {
+        @Override
+        public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
+        {
+            return NONE;
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+        {
+            return NO;
+        }
     }
 }

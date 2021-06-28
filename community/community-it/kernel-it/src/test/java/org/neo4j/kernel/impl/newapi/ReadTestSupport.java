@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -41,10 +42,16 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     private final Map<Setting<?>,Object> settings = new HashMap<>();
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
+    private Monitors monitors = new Monitors();
 
     public <T> void addSetting( Setting<T> setting, T value )
     {
         settings.put( setting, value );
+    }
+
+    public void setMonitors( Monitors monitors )
+    {
+        this.monitors = monitors;
     }
 
     @Override
@@ -52,6 +59,7 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     {
         DatabaseManagementServiceBuilder databaseManagementServiceBuilder = newManagementServiceBuilder( storeDir );
         databaseManagementServiceBuilder.setConfig( settings );
+        databaseManagementServiceBuilder.setMonitors( monitors );
         managementService = databaseManagementServiceBuilder.build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         GraphDatabaseService sysDb = managementService.database( SYSTEM_DATABASE_NAME );
