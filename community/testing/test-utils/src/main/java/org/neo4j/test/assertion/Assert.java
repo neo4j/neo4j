@@ -141,16 +141,32 @@ public final class Assert
         awaitCondition( "should not throw", timeout, timeUnit ).untilAsserted( () -> assertDoesNotThrow( action, message ) );
     }
 
+    public static void assertEventuallyDoesNotThrow( String message, Executable action,
+                                                     long timeout, TimeUnit timeoutTimeUnit,
+                                                     long delay, TimeUnit delayTimeUnit )
+    {
+        awaitCondition( "should not throw", timeout, timeoutTimeUnit, delay, delayTimeUnit )
+                .untilAsserted( () -> assertDoesNotThrow( action, message ) );
+    }
+
     private static ConditionFactory awaitCondition( String alias, long timeout, TimeUnit timeUnit )
     {
         return await( alias ).atMost( timeout, timeUnit )
-                .pollDelay( 10, MILLISECONDS ).pollInSameThread();
+                             .pollDelay( 10, MILLISECONDS ).pollInSameThread();
+    }
+
+    private static ConditionFactory awaitCondition( String alias,
+                                                    long timeout, TimeUnit timeoutTimeUnit,
+                                                    long delay, TimeUnit delayTimeUnit )
+    {
+        return await( alias ).atMost( timeout, timeoutTimeUnit )
+                             .pollDelay( delay, delayTimeUnit ).pollInSameThread();
     }
 
     private static AssertionError newAssertionError( String message, Object expected, Object actual )
     {
         return new AssertionError( ((message == null || message.isEmpty()) ? "" : message + "\n") +
-                                   "Expected: " + Strings.prettyPrint( expected ) +
-                                   ", actual: " + Strings.prettyPrint( actual ) );
+                                           "Expected: " + Strings.prettyPrint( expected ) +
+                                           ", actual: " + Strings.prettyPrint( actual ) );
     }
 }
