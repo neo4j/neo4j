@@ -31,6 +31,7 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -102,6 +103,12 @@ public class RecordStorageReader implements StorageReader
     public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.indexesForSchema( descriptor );
+    }
+
+    @Override
+    public IndexDescriptor indexGetForSchemaAndType( SchemaDescriptor descriptor, IndexType type )
+    {
+        return schemaCache.indexForSchemaAndType( descriptor, type );
     }
 
     @Override

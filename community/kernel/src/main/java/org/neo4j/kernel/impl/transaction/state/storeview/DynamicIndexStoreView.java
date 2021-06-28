@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
@@ -30,6 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -135,14 +135,14 @@ public class DynamicIndexStoreView implements IndexStoreView
 
     private Optional<TokenIndexData> findTokenIndex( Supplier<StorageReader> storageReader, EntityType entityType )
     {
-        Iterator<IndexDescriptor> descriptorIterator = storageReader.get().indexGetForSchema( SchemaDescriptors.forAnyEntityTokens( entityType ) );
-        if ( !descriptorIterator.hasNext() )
+        var descriptor = storageReader.get().indexGetForSchemaAndType( SchemaDescriptors.forAnyEntityTokens( entityType ), IndexType.LOOKUP );
+        if ( descriptor == null )
         {
             return Optional.empty();
         }
         try
         {
-            IndexProxy indexProxy = indexProxies.getIndexProxy( descriptorIterator.next() );
+            IndexProxy indexProxy = indexProxies.getIndexProxy( descriptor );
             if ( indexProxy.getState() == InternalIndexState.ONLINE )
             {
                 return Optional.of( new TokenIndexData( indexProxy.newTokenReader(), indexProxy.getDescriptor() ) );

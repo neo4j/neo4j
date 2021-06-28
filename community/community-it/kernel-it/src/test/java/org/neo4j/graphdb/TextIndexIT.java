@@ -48,7 +48,6 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.StringSearchMode.CONTAINS;
 import static org.neo4j.graphdb.StringSearchMode.PREFIX;
 import static org.neo4j.graphdb.StringSearchMode.SUFFIX;
-import static org.neo4j.graphdb.schema.IndexType.BTREE;
 
 @Neo4jLayoutExtension
 public class TextIndexIT
@@ -150,8 +149,9 @@ public class TextIndexIT
         var db = dbms.database( DEFAULT_DATABASE_NAME );
         try ( var tx = db.beginTx() )
         {
-            tx.schema().indexFor( person ).on( "name" ).withIndexType( BTREE ).create();
             tx.schema().indexFor( person ).on( "name" ).withIndexType( IndexType.TEXT ).create();
+//            TODO: add this index back to test selection in core api
+//            tx.schema().indexFor( person ).on( "name" ).withIndexType( BTREE ).create();
             tx.commit();
         }
         try ( var tx = db.beginTx() )
@@ -197,8 +197,9 @@ public class TextIndexIT
         var db = dbms.database( DEFAULT_DATABASE_NAME );
         try ( var tx = db.beginTx() )
         {
-            tx.schema().indexFor( relation ).on( "since" ).withIndexType( BTREE ).create();
             tx.schema().indexFor( relation ).on( "since" ).withIndexType( IndexType.TEXT ).create();
+//            TODO: add this index back to test selection in core api
+//            tx.schema().indexFor( relation ).on( "since" ).withIndexType( BTREE ).create();
             tx.commit();
         }
         try ( var tx = db.beginTx() )

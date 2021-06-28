@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -263,6 +264,20 @@ public class StubStorageCursors implements StorageReader
             return List.of( indexDescriptorMap.get( descriptor ) ).iterator();
         }
         return emptyIterator();
+    }
+
+    @Override
+    public IndexDescriptor indexGetForSchemaAndType( SchemaDescriptor descriptor, IndexType type )
+    {
+        if ( indexDescriptorMap.containsKey( descriptor ) )
+        {
+            var index = indexDescriptorMap.get( descriptor );
+            if ( index.getIndexType() == type )
+            {
+                return index;
+            }
+        }
+        return null;
     }
 
     @Override

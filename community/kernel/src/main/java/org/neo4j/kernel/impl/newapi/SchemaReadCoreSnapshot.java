@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StorageSchemaReader;
@@ -61,6 +62,13 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     {
         ktx.assertOpen();
         return stores.indexGetForSchema( snapshot, schema );
+    }
+
+    @Override
+    public IndexDescriptor index( SchemaDescriptor schema, IndexType type )
+    {
+        ktx.assertOpen();
+        return stores.index( schema, type );
     }
 
     @Override

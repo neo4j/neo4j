@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -44,6 +43,7 @@ import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -65,7 +65,7 @@ class IndexTransactionApplierFactoryTest
         PropertyStore propertyStore = mock( PropertyStore.class );
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
         final SchemaCache mock = mock( SchemaCache.class );
-        when( mock.getTokenIndex( EntityType.NODE ) ).thenReturn( IndexDescriptor.INJECTED_NLI );
+        when( mock.indexForSchemaAndType( any(), any() ) ).thenReturn( IndexDescriptor.INJECTED_NLI );
         try ( var batchContext = new BatchContextImpl( indexUpdateListener, indexUpdatesSync,
                 mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock, NULL, INSTANCE,
                 mock( IdUpdateListener.class ), StoreCursors.NULL ) )

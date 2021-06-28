@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 public interface StorageSchemaReader
@@ -49,6 +50,15 @@ public interface StorageSchemaReader
      * @return iterator of matching {@link IndexDescriptor}s.
      */
     Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor );
+
+    /**
+     * Looks for a stored index by given {@code descriptor} and @{code type}
+     *
+     * @param descriptor a description of the index.
+     * @param type an index type
+     * @return matching {@link IndexDescriptor} or null.
+     */
+    IndexDescriptor indexGetForSchemaAndType( SchemaDescriptor descriptor, IndexType type );
 
     /**
      * @param labelId label to list indexes for.

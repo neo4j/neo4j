@@ -527,7 +527,7 @@ public class PlainOperationsTest extends OperationsTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
-        when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( Iterators.iterator( index ) );
+        when( storageReader.indexGetForSchemaAndType( index.schema(), IndexType.BTREE ) ).thenReturn( index );
         when( storageReader.indexExists( index ) ).thenReturn( true );
 
         // when
@@ -536,30 +536,6 @@ public class PlainOperationsTest extends OperationsTest
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
         order.verify( txState ).indexDoDrop( index );
-    }
-
-    @Test
-    void shouldDropAllGeneralIndexesMatchingSchema() throws Exception
-    {
-        SchemaDescriptor schema = SchemaDescriptors.forLabel( 0, 0 );
-        SchemaDescriptor ftsSchema = SchemaDescriptors.fulltext( NODE, new int[] {0}, new int[] {0} );
-        IndexDescriptor indexA = IndexPrototype.forSchema( schema ).withName( "a" ).materialise( 0 );
-        IndexDescriptor indexB = IndexPrototype.forSchema( ftsSchema ).withName( "b" ).withIndexType( IndexType.FULLTEXT ).materialise( 1 );
-        IndexDescriptor indexC = IndexPrototype.forSchema( schema ).withName( "c" ).materialise( 2 );
-
-        // The full-text index would not actually ever match the given schema,
-        // but let's pretend in order to verify that we have safe-guards in place.
-        when( storageReader.indexGetForSchema( schema ) ).thenReturn( Iterators.iterator( indexA, indexB, indexC ) );
-        when( storageReader.indexExists( any( IndexDescriptor.class ) ) ).thenReturn( true );
-
-        // when
-        operations.indexDrop( schema );
-
-        // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
-        order.verify( txState ).indexDoDrop( indexA );
-        order.verify( txState ).indexDoDrop( indexC );
-        verify( txState, never() ).indexDoDrop( indexB );
     }
 
     @Test
@@ -1039,7 +1015,7 @@ public class PlainOperationsTest extends OperationsTest
         IndexingProvidersService indexingProvidersService = mock( IndexingProvidersService.class );
         when( indexingProvidersService.getDefaultProvider() ).thenReturn( mock( IndexProviderDescriptor.class ) );
         AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
-        when( allStoreHolder.index( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
+        when( allStoreHolder.index( any(), any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
         when( allStoreHolder.indexGetForName( any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
         when( allStoreHolder.constraintsGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Iterator;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -44,6 +42,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -219,13 +218,12 @@ abstract class Read implements TxStateHolder,
         TokenScan tokenScan;
         try
         {
-            Iterator<IndexDescriptor> index = index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
-            if ( !index.hasNext() )
+            var index = index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), IndexType.LOOKUP );
+            if ( index == IndexDescriptor.NO_INDEX )
             {
                 throw new IndexNotFoundKernelException( "There is no index that can back a node label scan." );
             }
-            IndexDescriptor nliDescriptor = index.next();
-            DefaultTokenReadSession session = (DefaultTokenReadSession) tokenReadSession( nliDescriptor );
+            DefaultTokenReadSession session = (DefaultTokenReadSession) tokenReadSession( index );
             tokenScan = session.reader.entityTokenScan( label, cursorContext );
         }
         catch ( IndexNotFoundKernelException e )

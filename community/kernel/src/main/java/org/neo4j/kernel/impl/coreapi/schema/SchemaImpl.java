@@ -50,7 +50,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
@@ -554,18 +553,12 @@ public class SchemaImpl implements Schema
             throw new IllegalArgumentException( "The given index is neither a node index, nor a relationship index: " + index + "." );
         }
 
-        Iterator<IndexDescriptor> iterator = schemaRead.index( schema );
-        if ( !iterator.hasNext() )
+        var foundReference = schemaRead.index( schema, fromPublicApi( index.getIndexType() ) );
+        if ( foundReference == IndexDescriptor.NO_INDEX )
         {
             throw new SchemaRuleNotFoundException( schema, tokenRead );
         }
-        reference = iterator.next();
-        if ( iterator.hasNext() )
-        {
-            throw new DuplicateSchemaRuleException( schema, tokenRead );
-        }
-
-        return reference;
+        return foundReference;
     }
 
     private static int[] resolveAndValidatePropertyKeys( TokenRead tokenRead, String[] propertyKeys )

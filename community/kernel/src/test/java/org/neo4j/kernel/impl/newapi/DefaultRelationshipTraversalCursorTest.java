@@ -47,6 +47,7 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -698,6 +699,12 @@ class DefaultRelationshipTraversalCursorTest
 
         @Override
         public Iterator<IndexDescriptor> index( SchemaDescriptor schema )
+        {
+            return null;
+        }
+
+        @Override
+        public IndexDescriptor index( SchemaDescriptor schema, IndexType type )
         {
             return null;
         }

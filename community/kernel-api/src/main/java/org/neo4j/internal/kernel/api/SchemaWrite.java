@@ -68,7 +68,9 @@ public interface SchemaWrite
      * Drop an index that matches the given schema.
      *
      * @param schema the schema matching the index to drop
+     * @deprecated this method only exists to support deprecated cypher syntax. to be removed in 5.0.
      */
+    @Deprecated
     void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException;
 
     /**

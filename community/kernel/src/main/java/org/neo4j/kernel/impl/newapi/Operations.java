@@ -112,7 +112,6 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
-import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
@@ -1114,26 +1113,20 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
+    @Deprecated
     @Override
     public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
     {
         exclusiveSchemaLock( schema );
-        Iterator<IndexDescriptor> iterator = Iterators.filter(
-                index -> index.getIndexType() != IndexType.FULLTEXT,
-                allStoreHolder.index( schema ) );
+        // deprecated method to drop index by scham drops only deprecated BTREE index
+        var existingIndex = allStoreHolder.index( schema, IndexType.BTREE );
 
-        if ( !iterator.hasNext() )
+        if ( existingIndex == IndexDescriptor.NO_INDEX )
         {
             String description = schema.userDescription( token );
             throw new DropIndexFailureException( "Unable to drop index on " + description + ". There is no such index." );
         }
-
-        do
-        {
-            IndexDescriptor existingIndex = iterator.next();
-            indexDrop( existingIndex );
-        }
-        while ( iterator.hasNext() );
+        indexDrop( existingIndex );
     }
 
     @Override
@@ -1209,18 +1202,11 @@ public class Operations implements Write, SchemaWrite
         String name = prototypeName.get();
 
         // Equivalent index
-        IndexDescriptor indexWithSameSchema = IndexDescriptor.NO_INDEX;
-        Iterator<IndexDescriptor> indexesWithSameSchema = stream( allStoreHolder.index( prototype.schema() ) )
-                .filter( index -> index.getIndexType() == prototype.getIndexType() )
-                .iterator();
+        var indexWithSameSchemaAndType = allStoreHolder.index( prototype.schema(), prototype.getIndexType() );
 
-        while ( indexesWithSameSchema.hasNext() )
+        if ( indexWithSameSchemaAndType.getName().equals( name ) && indexWithSameSchemaAndType.isUnique() == prototype.isUnique() )
         {
-            indexWithSameSchema = indexesWithSameSchema.next();
-            if ( indexWithSameSchema.getName().equals( name ) && indexWithSameSchema.isUnique() == prototype.isUnique() )
-            {
-                throw new EquivalentSchemaRuleAlreadyExistsException( indexWithSameSchema, INDEX_CREATION, token );
-            }
+            throw new EquivalentSchemaRuleAlreadyExistsException( indexWithSameSchemaAndType, INDEX_CREATION, token );
         }
 
         // Name conflict with other schema rule
@@ -1231,14 +1217,15 @@ public class Operations implements Write, SchemaWrite
         while ( constraintWithSameSchema.hasNext() )
         {
             final ConstraintDescriptor constraint = constraintWithSameSchema.next();
-            if ( constraint.type() != ConstraintType.EXISTS )
+            // TODO: use actual index type that backs constraint?
+            if ( constraint.type() != ConstraintType.EXISTS && prototype.getIndexType() == IndexType.BTREE )
             {
                 throw new AlreadyConstrainedException( constraint, INDEX_CREATION, token );
             }
         }
 
         // Already indexed
-        if ( indexWithSameSchema != IndexDescriptor.NO_INDEX )
+        if ( indexWithSameSchemaAndType != IndexDescriptor.NO_INDEX )
         {
             throw new AlreadyIndexedException( prototype.schema(), INDEX_CREATION, token );
         }
@@ -1282,10 +1269,10 @@ public class Operations implements Write, SchemaWrite
         // Already indexed
         if ( constraint.type() != ConstraintType.EXISTS )
         {
-            Iterator<IndexDescriptor> existingIndexes = allStoreHolder.index( constraint.schema() );
-            if ( existingIndexes.hasNext() )
+            // TODO use index type of actual index that backs this constraint? or block both range and btree indexes?
+            IndexDescriptor existingIndex = allStoreHolder.index( constraint.schema(), IndexType.BTREE );
+            if ( existingIndex != IndexDescriptor.NO_INDEX )
             {
-                IndexDescriptor existingIndex = existingIndexes.next();
                 throw new AlreadyIndexedException( existingIndex.schema(), CONSTRAINT_CREATION, token );
             }
         }

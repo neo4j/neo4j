@@ -56,6 +56,7 @@ import org.neo4j.internal.kernel.api.security.AdminAccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
@@ -377,14 +378,10 @@ public class AllStoreHolder extends Read
     IndexDescriptor findUsableTokenIndex( EntityType entityType ) throws IndexNotFoundKernelException
     {
         var descriptor = SchemaDescriptors.forAnyEntityTokens( entityType );
-        var indexes = index( descriptor );
-        if ( indexes.hasNext() )
+        var index = index( descriptor, IndexType.LOOKUP );
+        if ( index != IndexDescriptor.NO_INDEX && indexGetState( index ) == InternalIndexState.ONLINE )
         {
-            IndexDescriptor index = indexes.next();
-            if ( indexGetState( index ) == InternalIndexState.ONLINE )
-            {
-                return index;
-            }
+            return index;
         }
         return IndexDescriptor.NO_INDEX;
     }
@@ -578,6 +575,35 @@ public class AllStoreHolder extends Read
         }
 
         return indexes;
+    }
+
+    @Override
+    public IndexDescriptor index( SchemaDescriptor schema, IndexType type )
+    {
+        ktx.assertOpen();
+        return lockIndex( indexGetForSchemaAndType( storageReader, schema, type ) );
+    }
+
+    IndexDescriptor indexGetForSchemaAndType( StorageSchemaReader reader, SchemaDescriptor schema, IndexType type )
+    {
+        var index = reader.indexGetForSchemaAndType( schema, type );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            var indexChanges = ktx.txState().indexChanges();
+            if ( index == null )
+            {
+                // check if such index was added in this tx
+                var added = indexChanges.filterAdded( id -> id.schema().equals( schema ) && id.getIndexType() == type ).getAdded();
+                index = singleOrNull( added.iterator() );
+            }
+
+            if ( indexChanges.isRemoved( index ) )
+            {
+                // this index was removed in this tx
+                return null;
+            }
+        }
+        return index;
     }
 
     @Override

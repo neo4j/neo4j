@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.newapi;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Iterator;
 
@@ -97,7 +99,18 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ).hasNext() );
+            assertThat( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ) ).isExhausted();
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( IndexType.class )
+    void shouldNotFindNonExistentIndexWithType( IndexType type ) throws Exception
+    {
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertThat( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ), type ) ).isEqualTo( NO_INDEX );
         }
     }
 
@@ -115,6 +128,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertThat( single( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ) ) ).isEqualTo( index );
+            assertThat( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ), IndexType.BTREE ) ).isEqualTo( index );
         }
     }
 
@@ -343,10 +357,14 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             LabelSchemaDescriptor schema = forLabel( label, prop2 );
-            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my other index" ) );
+            var otherIndex = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my other index" ) );
             SchemaRead schemaRead = transaction.schemaRead();
             IndexDescriptor index = single( schemaRead.index( schema ) );
-            assertThat( index.schema().getPropertyIds() ).isEqualTo( new int[]{prop2} );
+            assertThat( index ).isEqualTo( otherIndex );
+
+            var indexByType = schemaRead.index( schema, IndexType.BTREE );
+            assertThat( indexByType ).isEqualTo( otherIndex );
+
             assertThat( 2 ).isEqualTo( Iterators.asList( schemaRead.indexesGetAll() ).size() );
         }
     }
@@ -362,22 +380,28 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
         try ( KernelTransaction transaction = beginTransaction() )
         {
+            var schema = forLabel( label, prop2 );
+
             SchemaReadCore schemaReadBefore = transaction.schemaRead().snapshot();
             IndexDescriptor createdIndex =
-                    transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "my index 2" ) );
+                    transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "my index 2" ) );
             SchemaReadCore schemaReadAfter = transaction.schemaRead().snapshot();
 
-            IndexDescriptor index = single( schemaReadBefore.index( forLabel( label, prop2 ) ) );
-            assertThat( index.schema().getPropertyIds() ).isEqualTo( new int[]{prop2} );
-            assertThat( 2 ).isEqualTo( Iterators.asList( schemaReadBefore.indexesGetAll() ).size() );
+            var index = single( schemaReadBefore.index( schema ) );
             assertThat( index ).isEqualTo( createdIndex );
-            assertThat( schemaReadBefore.indexGetForName( "my index 2" ) ).isEqualTo( createdIndex );
+            var indexByType = schemaReadBefore.index( schema, IndexType.BTREE );
+            assertThat( indexByType ).isEqualTo( createdIndex );
 
-            index = single( schemaReadAfter.index( forLabel( label, prop2 ) ) );
-            assertThat( index.schema().getPropertyIds() ).isEqualTo( new int[]{prop2} );
-            assertThat( 2 ).isEqualTo( Iterators.asList( schemaReadAfter.indexesGetAll() ).size() );
+            assertThat( schemaReadBefore.indexGetForName( "my index 2" ) ).isEqualTo( createdIndex );
+            assertThat( 2 ).isEqualTo( Iterators.asList( schemaReadBefore.indexesGetAll() ).size() );
+
+            index = single( schemaReadAfter.index( schema ) );
             assertThat( index ).isEqualTo( createdIndex );
+            indexByType = schemaReadAfter.index( schema, IndexType.BTREE );
+            assertThat( indexByType ).isEqualTo( createdIndex );
+
             assertThat( schemaReadAfter.indexGetForName( "my index 2" ) ).isEqualTo( createdIndex );
+            assertThat( 2 ).isEqualTo( Iterators.asList( schemaReadAfter.indexesGetAll() ).size() );
         }
     }
 
@@ -395,7 +419,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             transaction.schemaWrite().indexDrop( index );
             SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse( schemaRead.index( index.schema() ).hasNext() );
+            assertThat( schemaRead.index( index.schema() ) ).isExhausted();
+            assertThat( schemaRead.index( index.schema(), index.getIndexType() ) ).isEqualTo( NO_INDEX );
         }
     }
 
@@ -415,9 +440,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().indexDrop( index );
             SchemaReadCore schemaReadAfter = transaction.schemaRead().snapshot();
 
-            assertFalse( schemaReadBefore.index( forLabel( label, prop2 ) ).hasNext() );
-            assertFalse( schemaReadAfter.index( forLabel( label, prop2 ) ).hasNext() );
+            assertThat( schemaReadBefore.index( index.schema() ) ).isExhausted();
+            assertThat( schemaReadBefore.index( index.schema(), index.getIndexType() ) ).isEqualTo( NO_INDEX );
             assertThat( schemaReadBefore.indexGetForName( "my index" ) ).isEqualTo( NO_INDEX );
+
+            assertThat( schemaReadAfter.index( index.schema() ) ).isExhausted();
+            assertThat( schemaReadAfter.index( index.schema(), index.getIndexType() ) ).isEqualTo( NO_INDEX );
+            assertThat( schemaReadAfter.indexGetForName( "my index" ) ).isEqualTo( NO_INDEX );
         }
     }
 

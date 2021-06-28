@@ -51,6 +51,12 @@ public class StorageSchemaReaderSnapshot implements StorageSchemaReader
     }
 
     @Override
+    public IndexDescriptor indexGetForSchemaAndType( SchemaDescriptor descriptor, IndexType type )
+    {
+        return schema.indexForSchemaAndType( descriptor, type );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schema.indexesForLabel( labelId );

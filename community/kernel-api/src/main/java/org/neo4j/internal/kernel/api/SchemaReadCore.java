@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 /**
@@ -54,6 +55,16 @@ public interface SchemaReadCore
      * @return the {@link IndexDescriptor}s that match the given schema.
      */
     Iterator<IndexDescriptor> index( SchemaDescriptor schema );
+
+    /**
+     * Acquire a reference to the index mapping the given {@code SchemaDescriptor} with given type.
+     *
+     * @param schema {@link SchemaDescriptor} for the index
+     * @param type (@link IndexType} type of the index
+     * @return the {@link IndexDescriptor} that match the given schema and has given type
+     *         or {@link IndexDescriptor#NO_INDEX} if index not found
+     */
+    IndexDescriptor index( SchemaDescriptor schema, IndexType type );
 
     /**
      * Returns all indexes associated with the given label

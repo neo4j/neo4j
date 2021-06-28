@@ -38,10 +38,10 @@ import org.neo4j.values.storable.ValueCategory;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
@@ -218,6 +218,123 @@ class SchemaCacheTest
     }
 
     @Test
+    void shouldResolveIndexDescriptorBySchemaAndType()
+    {
+        // Given
+        SchemaCache cache = newSchemaCache();
+
+        IndexDescriptor expected;
+        cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
+        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.TEXT, 1, 3 ) );
+        cache.addSchemaRule( newIndexRule( 3L, 2, 2 ) );
+
+        // When
+        IndexDescriptor actual = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.TEXT );
+        IndexDescriptor wrongType = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.BTREE );
+
+        // Then
+        assertThat( actual ).isEqualTo( expected );
+        assertThat( wrongType ).isNull();
+    }
+
+    @Test
+    void shouldResolveMultipeIndexDescriptorsForSameSchema()
+    {
+        // Given
+        SchemaCache cache = newSchemaCache();
+
+        IndexDescriptor expected;
+        IndexDescriptor expected2;
+        cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
+        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.BTREE, 1, 3 ) );
+        cache.addSchemaRule( expected2 = newIndexRule( 3L, IndexType.TEXT, 1, 3 ) );
+        cache.addSchemaRule( newIndexRule( 4L, 2, 2 ) );
+
+        // When
+        var actual = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.BTREE );
+        var actual2 = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.TEXT );
+
+        // Then
+        assertThat( actual ).isEqualTo( expected );
+        assertThat( actual2 ).isEqualTo( expected2 );
+    }
+
+    @Test
+    void shouldStoreMultipeIndexDescriptorsForSameSchema()
+    {
+        // Given
+        SchemaCache cache = newSchemaCache();
+
+        IndexDescriptor expected;
+        IndexDescriptor expected2;
+        cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
+        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.BTREE, 1, 3 ) );
+        cache.addSchemaRule( expected2 = newIndexRule( 3L, IndexType.TEXT, 1, 3 ) );
+        cache.addSchemaRule( newIndexRule( 4L, 2, 2 ) );
+
+        // When
+        var actual = cache.indexesForSchema( forLabel( 1, 3 ) );
+
+        // Then
+        assertThat( actual ).toIterable().containsExactlyInAnyOrder( expected, expected2 );
+    }
+
+    @Test
+    void shouldReturnImmutableIteratorFromIndexesForSchema()
+    {
+        // Given
+        SchemaCache cache = newSchemaCache();
+
+        cache.addSchemaRule( newIndexRule( 2L, IndexType.BTREE, 1, 3 ) );
+        cache.addSchemaRule( newIndexRule( 3L, IndexType.TEXT, 1, 3 ) );
+
+        // When
+        var actual = cache.indexesForSchema( forLabel( 1, 3 ) );
+        actual.next();
+
+        // Then
+        assertThatThrownBy( actual::remove ).isInstanceOf( UnsupportedOperationException.class );
+    }
+
+    @Test
+    void shouldRelpaceEquialentIndex()
+    {
+        // Given
+        SchemaCache cache = newSchemaCache();
+
+        var schema = forLabel( 1, 3 );
+        var index = IndexPrototype.uniqueForSchema( schema ).withName( "index_id" ).withIndexType( IndexType.TEXT ).materialise( 2L );
+        cache.addSchemaRule( index );
+        var updated = index.withOwningConstraintId( 6 ); // same index, different owing constraint id should be replacable
+        cache.addSchemaRule( updated );
+
+        assertThat( cache.indexesForSchema( schema ) ).toIterable().containsOnly( updated );
+        assertThat( cache.indexForSchemaAndType( schema, IndexType.TEXT ) ).isEqualTo( updated );
+    }
+
+    @Test
+    void shouldRemoveWhenMultipeIndexDescriptorsForSameSchema()
+    {
+        // Given
+        SchemaCache cache = newSchemaCache();
+
+        IndexDescriptor expected;
+        IndexDescriptor expected2;
+        cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
+        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.BTREE, 1, 3 ) );
+        cache.addSchemaRule( expected2 = newIndexRule( 3L, IndexType.TEXT, 1, 3 ) );
+        cache.addSchemaRule( newIndexRule( 4L, 2, 2 ) );
+
+        cache.removeSchemaRule( expected.getId() );
+        // When
+
+        // Then
+        var schema = forLabel( 1, 3 );
+        assertThat( cache.indexesForSchema( schema ) ).toIterable().containsExactlyInAnyOrder( expected2 );
+        assertThat( cache.indexForSchemaAndType( schema, IndexType.TEXT ) ).isEqualTo( expected2 );
+    }
+
+    @Test
     void schemaCacheSnapshotsShouldBeReadOnly()
     {
         // Given
@@ -228,7 +345,7 @@ class SchemaCacheTest
 
         SchemaCache snapshot = cache.snapshot();
 
-        cache.addSchemaRule( newIndexRule( 3L, 1, 2 ) );
+        cache.addSchemaRule( newIndexRule( 3L, 1, 4 ) );
 
         // When
         Set<IndexDescriptor> indexes = asSet( snapshot.indexesForLabel( 1 ) );
@@ -237,11 +354,13 @@ class SchemaCacheTest
         Set<IndexDescriptor> expected = asSet( newIndexRule( 1L, 1, 2 ) );
         assertEquals( expected, indexes );
 
-        assertThrows( IllegalStateException.class, () -> snapshot.addSchemaRule( newIndexRule( 3L, 1, 2 ) ) );
+        assertThatThrownBy( () -> snapshot.addSchemaRule( newIndexRule( 3L, 1, 4 ) ) )
+                .isInstanceOf( IllegalStateException.class )
+                .hasMessageContaining( "Schema cache snapshots are read-only" );
     }
 
     @Test
-    void shouldReturnNullWhenNoIndexExists()
+    void shouldReturnEmptyWhenNoIndexExists()
     {
         // Given
         SchemaCache schemaCache = newSchemaCache();
@@ -651,6 +770,11 @@ class SchemaCacheTest
     private static int[] properties( int... propertyIds )
     {
         return propertyIds;
+    }
+
+    private static IndexDescriptor newIndexRule( long id, IndexType type, int label, int... propertyKeys )
+    {
+        return IndexPrototype.forSchema( forLabel( label, propertyKeys ) ).withName( "index_id" ).withIndexType( type ).materialise( id );
     }
 
     private static IndexDescriptor newIndexRule( long id, int label, int... propertyKeys )

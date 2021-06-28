@@ -28,7 +28,9 @@ import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaCache;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.memory.MemoryTracker;
@@ -179,7 +181,7 @@ public class OnlineIndexUpdates implements IndexUpdates
 
     private void eagerlyGatherTokenIndexUpdates( EntityUpdates entityUpdates, EntityType entityType, long txId  )
     {
-        IndexDescriptor relatedToken = schemaCache.getTokenIndex( entityType );
+        IndexDescriptor relatedToken = schemaCache.indexForSchemaAndType( SchemaDescriptors.forAnyEntityTokens( entityType ), IndexType.LOOKUP );
         entityUpdates.tokenUpdateForIndexKey( relatedToken, txId ).ifPresent( updates::add );
     }
 

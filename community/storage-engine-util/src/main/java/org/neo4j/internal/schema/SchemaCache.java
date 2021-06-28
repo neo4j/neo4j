@@ -37,14 +37,18 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 
+import static java.util.Collections.emptySet;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.neo4j.internal.helpers.collection.Pair.pair;
 
 /**
  * A cache of {@link SchemaRule schema rules} as well as enforcement of schema consistency.
@@ -170,6 +174,11 @@ public class SchemaCache
         return schemaCacheState.indexesForSchema( descriptor );
     }
 
+    public IndexDescriptor indexForSchemaAndType( SchemaDescriptor descriptor, IndexType type )
+    {
+        return schemaCacheState.indexForSchemaAndType( descriptor, type );
+    }
+
     public Iterator<IndexDescriptor> indexesForLabel( int labelId )
     {
         return schemaCacheState.indexesForLabel( labelId );
@@ -203,11 +212,6 @@ public class SchemaCache
         return schemaCacheState.getUniquenessConstraintsRelatedTo( entityType, changedLabels, unchangedLabels, properties, propertyListIsComplete );
     }
 
-    public IndexDescriptor getTokenIndex( EntityType entityType )
-    {
-        return schemaCacheState.getTokenIndex( entityType );
-    }
-
     public boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType )
     {
         return schemaCacheState.hasRelatedSchema( tokens, propertyKey, entityType );
@@ -232,7 +236,8 @@ public class SchemaCache
         private final MutableLongObjectMap<ConstraintDescriptor> constraintsById;
         private final Set<ConstraintDescriptor> constraints;
 
-        private final Map<SchemaDescriptor,IndexDescriptor> indexesBySchema;
+        private final Map<SchemaDescriptor,Set<IndexDescriptor>> indexesBySchema;
+        private final Map<Pair<SchemaDescriptor,IndexType>,IndexDescriptor> indexesBySchemaAndType;
         private final SchemaDescriptorLookupSet<IndexDescriptor> indexesByNode;
         private final SchemaDescriptorLookupSet<IndexDescriptor> indexesByRelationship;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByNode;
@@ -253,6 +258,7 @@ public class SchemaCache
             this.constraints = new HashSet<>();
 
             this.indexesBySchema = new HashMap<>();
+            this.indexesBySchemaAndType = new HashMap<>();
             this.indexesByNode = new SchemaDescriptorLookupSet<>();
             this.indexesByRelationship = new SchemaDescriptorLookupSet<>();
             this.uniquenessConstraintsByNode = new SchemaDescriptorLookupSet<>();
@@ -274,6 +280,7 @@ public class SchemaCache
             this.constraints = new HashSet<>( schemaCacheState.constraints );
 
             this.indexesBySchema = new HashMap<>( schemaCacheState.indexesBySchema );
+            this.indexesBySchemaAndType = new HashMap<>( schemaCacheState.indexesBySchemaAndType );
             this.indexesByNode = new SchemaDescriptorLookupSet<>();
             this.indexesByRelationship = new SchemaDescriptorLookupSet<>();
             this.uniquenessConstraintsByNode = new SchemaDescriptorLookupSet<>();
@@ -336,8 +343,13 @@ public class SchemaCache
 
         Iterator<IndexDescriptor> indexesForSchema( SchemaDescriptor descriptor )
         {
-            IndexDescriptor index = indexesBySchema.get( descriptor );
-            return index == null ? Iterators.emptyResourceIterator() : Iterators.iterator( index );
+            var indexes = indexesBySchema.get( descriptor );
+            return indexes == null ? Iterators.emptyResourceIterator() : indexes.iterator();
+        }
+
+        IndexDescriptor indexForSchemaAndType( SchemaDescriptor descriptor, IndexType type )
+        {
+            return indexesBySchemaAndType.get( pair( descriptor, type ) );
         }
 
         IndexDescriptor indexForName( String name )
@@ -388,7 +400,7 @@ public class SchemaCache
             SchemaDescriptorLookupSet<IndexDescriptor> set = selectIndexSetByEntityType( entityType );
             if ( set.isEmpty() )
             {
-                return Collections.emptySet();
+                return emptySet();
             }
             IndexesRelatedToKey key = new IndexesRelatedToKey( entityType, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete );
             Set<IndexDescriptor> result = indexCache.get( key );
@@ -406,7 +418,7 @@ public class SchemaCache
             SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> set = selectUniquenessConstraintSetByEntityType( entityType );
             if ( set.isEmpty() )
             {
-                return Collections.emptySet();
+                return emptySet();
             }
             UniqueIndexesRelatedToKey key = new UniqueIndexesRelatedToKey( entityType, changedEntityTokens, unchangedEntityTokens, properties,
                     propertyListIsComplete );
@@ -417,11 +429,6 @@ public class SchemaCache
             }
             return constraintCache.computeIfAbsent( key,
                     k -> getSchemaRelatedTo( set, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete ) );
-        }
-
-        IndexDescriptor getTokenIndex( EntityType entityType )
-        {
-            return indexesBySchema.get( SchemaDescriptors.forAnyEntityTokens( entityType ) );
         }
 
         private static <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( SchemaDescriptorLookupSet<T> set, long[] changedEntityTokens,
@@ -524,11 +531,19 @@ public class SchemaCache
                 }
 
                 indexesById.put( index.getId(), index );
-                SchemaDescriptor schemaDescriptor = index.schema();
-                indexesBySchema.put( schemaDescriptor, index );
+                SchemaDescriptor schema = index.schema();
+                indexesBySchema.merge( schema, Set.of( index ), SchemaCacheState::concatImmutableSets );
+                indexesBySchemaAndType.put( pair( schema, index.getIndexType() ), index );
                 indexesByName.put( rule.getName(), index );
-                selectIndexSetByEntityType( schemaDescriptor.entityType() ).add( index );
+                selectIndexSetByEntityType( schema.entityType() ).add( index );
             }
+        }
+
+        private static Set<IndexDescriptor> concatImmutableSets( Set<IndexDescriptor> left, Set<IndexDescriptor> right )
+        {
+            var newSet = new HashSet<>( left );
+            newSet.addAll( right );
+            return Set.copyOf( newSet );
         }
 
         void removeSchemaRule( long id )
@@ -547,16 +562,27 @@ public class SchemaCache
             {
                 IndexDescriptor index = indexesById.remove( id );
                 SchemaDescriptor schema = index.schema();
-                indexesBySchema.remove( schema );
+                indexesBySchema.computeIfPresent( schema, ( key, value ) -> removeFromImmutable( value, index ) );
+                indexesBySchemaAndType.remove( pair( schema, index.getIndexType() ) );
                 indexesByName.remove( index.getName(), index );
                 selectIndexSetByEntityType( schema.entityType() ).remove( index );
             }
         }
     }
 
+    private static Set<IndexDescriptor> removeFromImmutable( Set<IndexDescriptor> set, IndexDescriptor toRemove )
+    {
+        var result = set.stream().filter( i -> !i.equals( toRemove ) ).collect( Collectors.toSet() );
+        if ( result.isEmpty() )
+        {
+            return null;
+        }
+        return Set.copyOf( result );
+    }
+
     /**
-     * Sub-classes of the QueryCacheKey are used as memoization keys in the indexCache and constraintCache.
-     * These caches hold on to the results of 'getSchemaRelatedTo' calls.
+     * Sub-classes of the QueryCacheKey are used as memoization keys in the indexCache and constraintCache. These caches hold on to the results of
+     * 'getSchemaRelatedTo' calls.
      */
     private abstract static class QueryCacheKey
     {
