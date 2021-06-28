@@ -614,10 +614,8 @@ class SchemaCheckerTest extends CheckerTestBase
         {
             // (T)--->(D)---> (vandalized dynamic value chain)
             TOKEN record = store.newRecord();
-            try ( var cursor = store.getTokenStoreCursor( storeCursors ) )
-            {
-                store.getRecordByCursor( tokenId, record, RecordLoad.NORMAL, cursor );
-            }
+            var cursor = store.getTokenStoreCursor( storeCursors );
+            store.getRecordByCursor( tokenId, record, RecordLoad.NORMAL, cursor );
             store.ensureHeavy( record, storeCursors );
             vandal.accept( record );
             DynamicStringStore nameStore = store.getNameStore();
