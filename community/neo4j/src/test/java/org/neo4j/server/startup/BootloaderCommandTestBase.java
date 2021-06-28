@@ -427,7 +427,7 @@ abstract class BootloaderCommandTestBase
             //This method does not make much sense on its own, but is a result of the combined behavior of os-abstraction and command execution
             if ( commandMatches( command, "Get-Process" ) )
             {
-                throw new BootFailureException( "To exit the manual wait loop in WindowsBootloaderOs" );
+                throw new BootProcessFailureException( 1 ); // To exit the manual wait loop in WindowsBootloaderOs
             }
             else if ( commandMatches( command, "//SS//" ) )
             {
@@ -442,7 +442,7 @@ abstract class BootloaderCommandTestBase
                 }
                 else
                 {
-                    throw new BootFailureException( "To simulate command when service is not installed" );
+                    throw new BootProcessFailureException( 1 ); //To simulate command when service is not installed
                 }
             }
             else if ( commandMatches( command, entryPoint.getName() ) )

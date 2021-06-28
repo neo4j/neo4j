@@ -444,9 +444,9 @@ class Neo4jCommandTest
             int exitCode = super.execute( args, env );
             if ( IS_OS_WINDOWS )
             {
-                if ( !args.isEmpty() && args.get( 0 ).equals( "stop" ) )
+                if ( !args.isEmpty() && args.get( 0 ).equals( "stop" ) && exitCode == EXIT_CODE_OK )
                 {
-                    assertThat( super.execute( List.of( "uninstall-service" ), env ) ).isEqualTo( EXIT_CODE_OK );
+                    return super.execute( List.of( "uninstall-service" ), env );
                 }
             }
             return exitCode;
@@ -493,6 +493,8 @@ class Neo4jCommandTest
             }
         }
 
+        // Process.destroy()/destroyForcibly() on windows are the same and kills process instantly without invoking exit handler. Can't mimic CTRL+C in test.
+        @DisabledOnOs( OS.WINDOWS )
         @Test
         void shouldWaitForNeo4jToDieBeforeExitInConsole() throws Exception
         {
@@ -502,11 +504,11 @@ class Neo4jCommandTest
                 assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(), s -> s.contains( TestEntryPoint.STARTUP_MSG ),
                         5, MINUTES );
                 p.toHandle().destroy();
-                return IS_OS_WINDOWS ? 1 : 143;
+                return 143;
             } ) )
             {
-
-                assertThat( out.toString() ).contains( TestEntryPoint.END_MSG );
+                assertThat( out.toString() ).contains( TestEntryPoint.EXIT_MSG );
+                assertThat( out.toString() ).doesNotContain( TestEntryPoint.END_MSG );
             }
         }
 
@@ -577,11 +579,12 @@ class Neo4jCommandTest
     {
         static final String ENV_TIMEOUT = "TestEntryPointTimeout";
         static final String STARTUP_MSG = "TestEntryPoint started";
+        static final String EXIT_MSG = "TestEntryPoint exited";
         static final String END_MSG = "TestEntryPoint ended";
 
         public static void main( String[] args ) throws InterruptedException
         {
-            Runtime.getRuntime().addShutdownHook( new Thread( () -> System.out.println( END_MSG ) ) );
+            Runtime.getRuntime().addShutdownHook( new Thread( () -> System.out.println( EXIT_MSG ) ) );
             System.out.println( STARTUP_MSG );
             Lists.mutable
                     .with( args )
@@ -594,6 +597,7 @@ class Neo4jCommandTest
             {
                 Thread.sleep( 1000 ); //A minute should be enough for all tests and any erroneously leaked processes will eventually die.
             }
+            System.out.println( END_MSG );
         }
 
         @Override

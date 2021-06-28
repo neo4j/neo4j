@@ -170,7 +170,8 @@ class Neo4jAdminCommandTest
                 // where it's essentially impossible to create correct ACL/owner of the config file that passes the validation in the config reading.
                 assumeThat( isCurrentlyRunningAsWindowsAdmin() ).isFalse();
             }
-            addConf( GraphDatabaseSettings.default_database, "$(echo foo)" );
+            String cmd = String.format( "$(%secho foo)", IS_OS_WINDOWS ? "cmd.exe /c " : "" );
+            addConf( GraphDatabaseSettings.default_database, cmd );
             assertThat( execute( List.of( "foo", "-b", "--expand-commands" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).containsSubsequence( "foo", "-b", "--expand-commands" );
         }

@@ -205,7 +205,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
                     .findFirst()
                     .orElse( "" );
         }
-        catch ( BootFailureException e )
+        catch ( BootProcessFailureException e )
         {
             return ""; //Service did not exist
         }
@@ -260,7 +260,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
                         break;
                     }
                 }
-                catch ( BootFailureException e )
+                catch ( BootProcessFailureException e )
                 {
                     // If this command returns exit code != 0 it typically means that there's no processes of this name running
                     break;
