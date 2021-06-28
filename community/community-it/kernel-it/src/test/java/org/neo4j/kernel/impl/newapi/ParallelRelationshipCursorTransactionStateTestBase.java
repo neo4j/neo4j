@@ -70,7 +70,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( NULL ) )
             {
                 Scan<RelationshipScanCursor> scan = tx.dataRead().allRelationshipsScan();
-                while ( scan.reserveBatch( cursor, 23 ) )
+                while ( scan.reserveBatch( cursor, 23, NULL ) )
                 {
                     assertFalse( cursor.next() );
                 }
@@ -111,7 +111,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             {
                 Scan<RelationshipScanCursor> scan = tx.dataRead().allRelationshipsScan();
                 MutableLongSet seen =  LongSets.mutable.empty();
-                while ( scan.reserveBatch( cursor, 17 ) )
+                while ( scan.reserveBatch( cursor, 17, NULL ) )
                 {
                     while ( cursor.next() )
                     {
@@ -147,7 +147,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             {
                 Scan<RelationshipScanCursor> scan = tx.dataRead().allRelationshipsScan();
                 MutableLongSet seen = LongSets.mutable.empty();
-                while ( scan.reserveBatch( cursor, 17 ) )
+                while ( scan.reserveBatch( cursor, 17, NULL ) )
                 {
                     while ( cursor.next() )
                     {
@@ -179,14 +179,14 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( NULL ) )
             {
                 Scan<RelationshipScanCursor> scan = tx.dataRead().allRelationshipsScan();
-                assertTrue( scan.reserveBatch( cursor, 5 ) );
+                assertTrue( scan.reserveBatch( cursor, 5, NULL ) );
                 assertEquals( 5, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 4 ) );
+                assertTrue( scan.reserveBatch( cursor, 4, NULL ) );
                 assertEquals( 4, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 6 ) );
+                assertTrue( scan.reserveBatch( cursor, 6, NULL ) );
                 assertEquals( 2, count( cursor ) );
                 //now we should have fetched all relationships
-                while ( scan.reserveBatch( cursor, 3 ) )
+                while ( scan.reserveBatch( cursor, 3, NULL ) )
                 {
                     assertFalse( cursor.next() );
                 }
@@ -217,13 +217,13 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
 
             // when
             Future<LongList> future1 = service.submit( singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ),
-                    REL_GET, size / 4 ) );
+                    REL_GET, size / 4, NULL ) );
             Future<LongList> future2 = service.submit( singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ),
-                    REL_GET, size / 4 ) );
+                    REL_GET, size / 4, NULL ) );
             Future<LongList> future3 = service.submit( singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ),
-                    REL_GET, size / 4 ) );
+                    REL_GET, size / 4, NULL ) );
             Future<LongList> future4 = service.submit( singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ),
-                    REL_GET, size / 4 ) );
+                    REL_GET, size / 4, NULL ) );
 
             // then
             LongList ids1 = future1.get();
@@ -266,10 +266,10 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
 
             // when
             Supplier<RelationshipScanCursor> allocateCursor = () -> cursors.allocateRelationshipScanCursor( NULL );
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100 ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100 ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100 ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100 ) );
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100, NULL ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100, NULL ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100, NULL ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100, NULL ) );
 
             // then
             LongList ids1 = future1.get();
@@ -314,7 +314,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add(
-                        service.submit( randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET ) ) );
+                        service.submit( randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, NULL ) ) );
             }
 
             // then
@@ -362,7 +362,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
                     for ( int j = 0; j < workers; j++ )
                     {
                         futures.add( threadPool.submit(
-                                randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET ) ) );
+                                randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, NULL ) ) );
                     }
 
                     List<LongList> lists = getAllResults( futures );

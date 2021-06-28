@@ -52,6 +52,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
 import static org.neo4j.kernel.impl.newapi.TestUtils.count;
@@ -73,7 +74,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
-                while ( scan.reserveBatch( cursor, 23 ) )
+                while ( scan.reserveBatch( cursor, 23, NULL ) )
                 {
                     assertFalse( cursor.next() );
                 }
@@ -114,7 +115,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
                 Set<Long> seen = new HashSet<>();
-                while ( scan.reserveBatch( cursor, 128 ) )
+                while ( scan.reserveBatch( cursor, 128, NULL ) )
                 {
                     while ( cursor.next() )
                     {
@@ -143,7 +144,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
                 Set<Long> seen = new HashSet<>();
-                while ( scan.reserveBatch( cursor, 64 ) )
+                while ( scan.reserveBatch( cursor, 64, NULL ) )
                 {
                     while ( cursor.next() )
                     {
@@ -171,14 +172,14 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
-                assertTrue( scan.reserveBatch( cursor, 5 ) );
+                assertTrue( scan.reserveBatch( cursor, 5, NULL ) );
                 assertEquals( 5, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 4 ) );
+                assertTrue( scan.reserveBatch( cursor, 4, NULL ) );
                 assertEquals( 4, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 6 ) );
+                assertTrue( scan.reserveBatch( cursor, 6, NULL ) );
                 assertEquals( 2, count( cursor ) );
                 //now we should have fetched all nodes
-                while ( scan.reserveBatch( cursor, 3 ) )
+                while ( scan.reserveBatch( cursor, 3, NULL ) )
                 {
                     assertFalse( cursor.next() );
                 }
@@ -206,13 +207,13 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             // when
             Supplier<NodeLabelIndexCursor> allocateCursor = () -> cursors.allocateNodeLabelIndexCursor( tx.cursorContext() );
             Future<LongList> future1 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4 ) );
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4, NULL ) );
             Future<LongList> future2 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4 ) );
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4, NULL ) );
             Future<LongList> future3 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4 ) );
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4, NULL ) );
             Future<LongList> future4 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4 ) );
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4, NULL ) );
 
             // then
             LongList ids1 = future1.get();
@@ -253,7 +254,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add(
-                        service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( tx.cursorContext() ), NODE_GET ) ) );
+                        service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( tx.cursorContext() ), NODE_GET, NULL ) ) );
             }
 
             // then
@@ -300,7 +301,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                     {
                         futures.add(
                                 threadPool.submit(
-                                        randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( tx.cursorContext() ), NODE_GET ) ) );
+                                        randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( tx.cursorContext() ), NODE_GET, NULL ) ) );
                     }
 
                     List<LongList> lists = getAllResults( futures );

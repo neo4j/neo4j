@@ -35,6 +35,7 @@ import java.util.function.ToLongFunction;
 
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -72,13 +73,14 @@ final class TestUtils
         return concat;
     }
 
-    static <T extends Cursor> Callable<LongList> singleBatchWorker( Scan<T> scan, Supplier<T> supplier, ToLongFunction<T> producer, int sizeHint )
+    static <T extends Cursor> Callable<LongList> singleBatchWorker( Scan<T> scan, Supplier<T> supplier, ToLongFunction<T> producer, int sizeHint,
+            CursorContext cursorContext )
     {
         return () -> {
             try ( T nodes = supplier.get() )
             {
                 LongArrayList batch = new LongArrayList();
-                scan.reserveBatch( nodes, sizeHint );
+                scan.reserveBatch( nodes, sizeHint, cursorContext );
                 while ( nodes.next() )
                 {
                     batch.add( producer.applyAsLong( nodes ) );
@@ -89,7 +91,8 @@ final class TestUtils
         };
     }
 
-    static <T extends Cursor> Callable<LongList> randomBatchWorker( Scan<T> scan, Supplier<T> supplier, ToLongFunction<T> producer )
+    static <T extends Cursor> Callable<LongList> randomBatchWorker( Scan<T> scan, Supplier<T> supplier, ToLongFunction<T> producer,
+            CursorContext cursorContext )
     {
         return () -> {
             ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -98,7 +101,7 @@ final class TestUtils
             {
                 int sizeHint = random.nextInt( 1, 5 );
                 LongArrayList batch = new LongArrayList();
-                while ( scan.reserveBatch( nodes, sizeHint ) )
+                while ( scan.reserveBatch( nodes, sizeHint, cursorContext ) )
                 {
                     while ( nodes.next() )
                     {

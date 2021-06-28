@@ -39,23 +39,21 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
     final S storageScan;
     final Read read;
     final boolean hasChanges;
-    final CursorContext cursorContext;
     private volatile boolean addedItemsConsumed;
     private final long[] addedItemsArray;
     private final AtomicInteger addedChunk = new AtomicInteger( 0 );
 
-    BaseCursorScan( S storageScan, Read read, Supplier<long[]> addedInTransaction, CursorContext cursorContext )
+    BaseCursorScan( S storageScan, Read read, Supplier<long[]> addedInTransaction )
     {
         this.storageScan = storageScan;
         this.read = read;
         this.hasChanges = read.hasTxStateWithChanges();
         this.addedItemsArray = hasChanges ? addedInTransaction.get() : EMPTY_LONG_ARRAY;
-        this.cursorContext = cursorContext;
         this.addedItemsConsumed = addedItemsArray.length == 0;
     }
 
     @Override
-    public boolean reserveBatch( C cursor, int sizeHint )
+    public boolean reserveBatch( C cursor, int sizeHint, CursorContext cursorContext )
     {
         requirePositive( sizeHint );
 
@@ -76,8 +74,8 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
                 addedItemsConsumed = true;
             }
         }
-        return scanStore( cursor, sizeHint, addedItems );
+        return scanStore( cursor, sizeHint, addedItems, cursorContext );
     }
 
-    abstract boolean scanStore( C cursor, int sizeHint, LongIterator addedItems );
+    abstract boolean scanStore( C cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext );
 }

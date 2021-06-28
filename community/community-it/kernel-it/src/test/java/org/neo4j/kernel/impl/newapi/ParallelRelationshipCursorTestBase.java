@@ -81,7 +81,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
         {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
-            assertTrue( scan.reserveBatch( relationships, 3 ) );
+            assertTrue( scan.reserveBatch( relationships, 3, NULL ) );
 
             assertTrue( relationships.next() );
             assertEquals( RELATIONSHIPS.get( 0 ), relationships.relationshipReference() );
@@ -100,7 +100,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
         {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
-            assertTrue( scan.reserveBatch( relationships, NUMBER_OF_RELATIONSHIPS * 2 ) );
+            assertTrue( scan.reserveBatch( relationships, NUMBER_OF_RELATIONSHIPS * 2, NULL ) );
 
             LongArrayList ids = new LongArrayList();
             while ( relationships.next() )
@@ -121,7 +121,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
 
             // when
-            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( relationships, 0 ) );
+            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( relationships, 0, NULL ) );
         }
     }
 
@@ -134,7 +134,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
         {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
-            while ( scan.reserveBatch( relationships, 3 ) )
+            while ( scan.reserveBatch( relationships, 3, NULL ) )
             {
                 while ( relationships.next() )
                 {
@@ -158,13 +158,13 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
         {
             // when
             Future<LongList> future1 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32, NULL ) );
             Future<LongList> future2 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32, NULL ) );
             Future<LongList> future3 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32, NULL ) );
             Future<LongList> future4 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32 ) );
+                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32, NULL ) );
 
             // then
             LongList ids1 = future1.get();
@@ -195,10 +195,10 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
         {
             // when
             Supplier<RelationshipScanCursor> allocateRelCursor = () -> cursors.allocateRelationshipScanCursor( NULL );
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100 ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100 ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100 ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100 ) );
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100, NULL ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100, NULL ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100, NULL ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100, NULL ) );
 
             // then
             LongList ids1 = future1.get();
@@ -231,7 +231,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
             List<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 11; i++ )
             {
-                futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET ) ) );
+                futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, NULL ) ) );
             }
 
             service.shutdown();

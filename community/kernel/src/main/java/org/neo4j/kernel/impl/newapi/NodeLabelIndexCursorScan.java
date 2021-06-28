@@ -36,9 +36,9 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Token
     private final LongSet removed;
     private final int label;
 
-    NodeLabelIndexCursorScan( Read read, int label, TokenScan tokenScan, CursorContext cursorContext )
+    NodeLabelIndexCursorScan( Read read, int label, TokenScan tokenScan )
     {
-        super( tokenScan, read, () -> read.txState().nodesWithLabelChanged( label ).getAdded().toArray(), cursorContext );
+        super( tokenScan, read, () -> read.txState().nodesWithLabelChanged( label ).getAdded().toArray() );
         this.label = label;
         if ( hasChanges )
         {
@@ -53,7 +53,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Token
     }
 
     @Override
-    protected boolean scanStore( NodeLabelIndexCursor cursor, int sizeHint, LongIterator addedItems )
+    protected boolean scanStore( NodeLabelIndexCursor cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext )
     {
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );

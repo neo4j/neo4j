@@ -294,7 +294,7 @@ abstract class Read implements TxStateHolder,
         {
             throw new RuntimeException( e );
         }
-        return new NodeLabelIndexCursorScan( this, label, tokenScan, cursorContext );
+        return new NodeLabelIndexCursorScan( this, label, tokenScan );
     }
 
     @Override
@@ -341,7 +341,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeCursor> allNodesScan()
     {
         ktx.assertOpen();
-        return new NodeCursorScan( storageReader.allNodeScan(), this, ktx.cursorContext() );
+        return new NodeCursorScan( storageReader.allNodeScan(), this );
     }
 
     @Override
@@ -369,7 +369,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<RelationshipScanCursor> allRelationshipsScan()
     {
         ktx.assertOpen();
-        return new RelationshipCursorScan( storageReader.allRelationshipScan(), this, ktx.cursorContext() );
+        return new RelationshipCursorScan( storageReader.allRelationshipScan(), this );
     }
 
     @Override

@@ -28,13 +28,13 @@ import org.neo4j.storageengine.api.AllRelationshipsScan;
 final class RelationshipCursorScan extends BaseCursorScan<RelationshipScanCursor,AllRelationshipsScan>
 {
 
-    RelationshipCursorScan( AllRelationshipsScan allRelationshipsScan, Read read, CursorContext cursorContext )
+    RelationshipCursorScan( AllRelationshipsScan allRelationshipsScan, Read read )
     {
-        super( allRelationshipsScan, read, () -> read.txState().addedAndRemovedRelationships().getAdded().toArray(), cursorContext );
+        super( allRelationshipsScan, read, () -> read.txState().addedAndRemovedRelationships().getAdded().toArray() );
     }
 
     @Override
-    boolean scanStore( RelationshipScanCursor cursor, int sizeHint, LongIterator addedItems )
+    boolean scanStore( RelationshipScanCursor cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext )
     {
         return ((DefaultRelationshipScanCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
     }

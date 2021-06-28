@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.io.pagecache.context.CursorContext;
+
 /**
  * Initializer for spreading a scan operator over multiple cursors for use from different threads in parallel.
  *
@@ -59,5 +61,5 @@ public interface Scan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
      * @param sizeHint The approximate size the batch, the provided size must be greater than 0.
      * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
      */
-    boolean reserveBatch( Cursor cursor, int sizeHint );
+    boolean reserveBatch( Cursor cursor, int sizeHint, CursorContext cursorContext );
 }

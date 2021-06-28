@@ -71,7 +71,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL ) )
             {
                 Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
-                while ( scan.reserveBatch( cursor, 23 ) )
+                while ( scan.reserveBatch( cursor, 23, NULL ) )
                 {
                     assertFalse( cursor.next() );
                 }
@@ -111,7 +111,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             {
                 Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
                 MutableLongSet seen =  LongSets.mutable.empty();
-                while ( scan.reserveBatch( cursor, 17 ) )
+                while ( scan.reserveBatch( cursor, 17, NULL ) )
                 {
                     while ( cursor.next() )
                     {
@@ -144,7 +144,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             {
                 Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
                 MutableLongSet seen = LongSets.mutable.empty();
-                while ( scan.reserveBatch( cursor, 17 ) )
+                while ( scan.reserveBatch( cursor, 17, NULL ) )
                 {
                     while ( cursor.next() )
                     {
@@ -175,14 +175,14 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL ) )
             {
                 Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
-                assertTrue( scan.reserveBatch( cursor, 5 ) );
+                assertTrue( scan.reserveBatch( cursor, 5, NULL ) );
                 assertEquals( 5, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 4 ) );
+                assertTrue( scan.reserveBatch( cursor, 4, NULL ) );
                 assertEquals( 4, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 6 ) );
+                assertTrue( scan.reserveBatch( cursor, 6, NULL ) );
                 assertEquals( 2, count( cursor ) );
                 //now we should have fetched all nodes
-                while ( scan.reserveBatch( cursor, 3 ) )
+                while ( scan.reserveBatch( cursor, 3, NULL ) )
                 {
                     assertFalse( cursor.next() );
                 }
@@ -213,13 +213,13 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
 
             // when
             Future<LongList> future1 =
-                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4 ) );
+                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4, NULL ) );
             Future<LongList> future2 =
-                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4 ) );
+                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4, NULL ) );
             Future<LongList> future3 =
-                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4 ) );
+                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4, NULL ) );
             Future<LongList> future4 =
-                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4 ) );
+                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4, NULL ) );
 
             // then
             LongList ids1 = future1.get();
@@ -262,10 +262,10 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
 
             // when
             Supplier<NodeCursor> allocateCursor = () -> cursors.allocateNodeCursor( NULL );
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100 ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100 ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100 ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100 ) );
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100, NULL ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100, NULL ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100, NULL ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100, NULL ) );
 
             // then
             LongList ids1 = future1.get();
@@ -309,7 +309,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             List<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
-                futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET ) ) );
+                futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET, NULL ) ) );
             }
 
             // then
@@ -354,7 +354,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
                     List<Future<LongList>> futures = new ArrayList<>( workers );
                     for ( int j = 0; j < workers; j++ )
                     {
-                        futures.add( threadPool.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET ) ) );
+                        futures.add( threadPool.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET, NULL ) ) );
                     }
 
                     List<LongList> lists = getAllResults( futures );

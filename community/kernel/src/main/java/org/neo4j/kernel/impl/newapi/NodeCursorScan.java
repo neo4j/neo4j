@@ -27,13 +27,13 @@ import org.neo4j.storageengine.api.AllNodeScan;
 
 final class NodeCursorScan extends BaseCursorScan<NodeCursor,AllNodeScan>
 {
-    NodeCursorScan( AllNodeScan allNodeScan, Read read, CursorContext cursorContext )
+    NodeCursorScan( AllNodeScan allNodeScan, Read read )
     {
-        super( allNodeScan, read, () -> read.txState().addedAndRemovedNodes().getAdded().toArray(), cursorContext );
+        super( allNodeScan, read, () -> read.txState().addedAndRemovedNodes().getAdded().toArray() );
     }
 
     @Override
-    boolean scanStore( NodeCursor cursor, int sizeHint, LongIterator addedItems )
+    boolean scanStore( NodeCursor cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext )
     {
         return ((DefaultNodeCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
     }

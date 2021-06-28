@@ -115,7 +115,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             for ( int label : ALL_LABELS )
             {
                 Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( label );
-                assertTrue( scan.reserveBatch( nodes, 11 ) );
+                assertTrue( scan.reserveBatch( nodes, 11, NULL ) );
 
                MutableLongList found = LongLists.mutable.empty();
                 while ( nodes.next() )
@@ -151,7 +151,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
         {
             // when
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
-            assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2 ) );
+            assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2, NULL ) );
 
             MutableLongList ids = LongLists.mutable.empty();
             while ( nodes.next() )
@@ -174,7 +174,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
 
             // when
-            assertThrows( IllegalArgumentException.class , () -> scan.reserveBatch( nodes, 0 ) );
+            assertThrows( IllegalArgumentException.class , () -> scan.reserveBatch( nodes, 0, NULL ) );
         }
     }
 
@@ -187,7 +187,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             // when
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
             MutableLongList ids = LongLists.mutable.empty();
-            while ( scan.reserveBatch( nodes, 3 ) )
+            while ( scan.reserveBatch( nodes, 3, NULL ) )
             {
                 while ( nodes.next() )
                 {
@@ -215,13 +215,13 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             // when
             Supplier<NodeLabelIndexCursor> allocateCursor = () -> cursors.allocateNodeLabelIndexCursor( NULL );
             Future<LongList> future1 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES, NULL ) );
             Future<LongList> future2 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES, NULL ) );
             Future<LongList> future3 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES, NULL ) );
             Future<LongList> future4 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES, NULL ) );
 
             // then
             LongList ids1 = future1.get();
@@ -254,7 +254,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add(
-                        service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( NULL ), NODE_GET ) ) );
+                        service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( NULL ), NODE_GET, NULL ) ) );
             }
 
             // then
