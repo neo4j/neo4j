@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
@@ -87,6 +88,11 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
         TokenHolders tokenHolders = dependencies.tokenHolders();
         Log log = dependencies.getLogService().getInternalLog( FulltextIndexProvider.class );
         var readOnlyChecker = dependencies.readOnlyChecker();
+        if ( OperationalMode.SINGLE != context.dbmsInfo().operationalMode )
+        {
+            // if running as part of cluster indexes should be writable to allow catchup process to accept transactions
+            readOnlyChecker = DatabaseReadOnlyChecker.writable();
+        }
 
         return new FulltextIndexProvider(
                 DESCRIPTOR, directoryStructureFactory, fileSystemAbstraction, config, tokenHolders,
