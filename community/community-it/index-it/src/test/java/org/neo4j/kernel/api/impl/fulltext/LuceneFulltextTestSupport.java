@@ -152,7 +152,7 @@ public class LuceneFulltextTestSupport
         {
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
                 {
                     long nodeId = cursor.nodeReference();
@@ -164,7 +164,7 @@ public class LuceneFulltextTestSupport
         {
             try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().relationshipIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
+                ktx.dataRead().relationshipIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
                 {
                     long relationshipId = cursor.relationshipReference();
@@ -190,7 +190,7 @@ public class LuceneFulltextTestSupport
         {
             int num = 0;
             float score = Float.MAX_VALUE;
-            ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
+            ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
             while ( cursor.next() )
             {
                 long nextId = cursor.nodeReference();

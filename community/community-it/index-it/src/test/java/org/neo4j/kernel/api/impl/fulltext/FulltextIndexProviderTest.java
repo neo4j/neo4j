@@ -475,7 +475,7 @@ class FulltextIndexProviderTest
             };
             Read read = ktx.dataRead();
             IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-            read.nodeIndexSeek( indexSession, cursor, unconstrained(), fulltextSearch( "hej:\"villa\"" ) );
+            read.nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), fulltextSearch( "hej:\"villa\"" ) );
             int counter = 0;
             while ( cursor.next() )
             {
@@ -1175,7 +1175,7 @@ class FulltextIndexProviderTest
         try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
         {
             List<Long> actualResult = new ArrayList<>();
-            ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), query );
+            ktx.dataRead().nodeIndexSeek( ktx.queryContext(), index, cursor, unconstrained(), query );
             while ( cursor.next() )
             {
                 actualResult.add( cursor.nodeReference() );
@@ -1302,17 +1302,17 @@ class FulltextIndexProviderTest
             IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( "fulltext" ) );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), fulltextSearch( "value" ) );
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), index, cursor, unconstrained(), fulltextSearch( "value" ) );
                 assertTrue( cursor.next() );
                 assertEquals( 0L, cursor.nodeReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), fulltextSearch( "villa" ) );
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), index, cursor, unconstrained(), fulltextSearch( "villa" ) );
                 assertTrue( cursor.next() );
                 assertEquals( thirdNodeId, cursor.nodeReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), fulltextSearch( "value3" ) );
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), index, cursor, unconstrained(), fulltextSearch( "value3" ) );
                 MutableLongSet ids = LongSets.mutable.empty();
                 ids.add( 0L );
                 ids.add( thirdNodeId );
@@ -1335,17 +1335,17 @@ class FulltextIndexProviderTest
             IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
             try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "valuuu" ) );
+                ktx.dataRead().relationshipIndexSeek( ktx.queryContext(), indexReadSession, cursor, unconstrained(), fulltextSearch( "valuuu" ) );
                 assertTrue( cursor.next() );
                 assertEquals( 0L, cursor.relationshipReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "villa" ) );
+                ktx.dataRead().relationshipIndexSeek( ktx.queryContext(), indexReadSession, cursor, unconstrained(), fulltextSearch( "villa" ) );
                 assertTrue( cursor.next() );
                 assertEquals( secondRelId, cursor.relationshipReference() );
                 assertFalse( cursor.next() );
 
-                ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "value3" ) );
+                ktx.dataRead().relationshipIndexSeek( ktx.queryContext(), indexReadSession, cursor, unconstrained(), fulltextSearch( "value3" ) );
                 assertTrue( cursor.next() );
                 assertEquals( 0L, cursor.relationshipReference() );
                 assertTrue( cursor.next() );

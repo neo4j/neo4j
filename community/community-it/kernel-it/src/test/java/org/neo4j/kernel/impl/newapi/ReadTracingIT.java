@@ -76,7 +76,8 @@ class ReadTracingIT
             try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.cursorContext(),
                                                                                          kernelTransaction.memoryTracker() ) )
             {
-                dataRead.nodeIndexSeek( indexSession, cursor, unconstrained(), stringContains( propertyId, stringValue( testPropertyValue ) ) );
+                dataRead.nodeIndexSeek( transaction.kernelTransaction().queryContext(), indexSession, cursor, unconstrained(),
+                        stringContains( propertyId, stringValue( testPropertyValue ) ) );
 
                 consumeCursor( cursor );
             }
@@ -112,7 +113,8 @@ class ReadTracingIT
             try ( var cursor = kernelTransaction.cursors().allocateRelationshipValueIndexCursor( kernelTransaction.cursorContext(),
                     kernelTransaction.memoryTracker() ) )
             {
-                dataRead.relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( testPropertyValue ) );
+                dataRead.relationshipIndexSeek( kernelTransaction.queryContext(), indexReadSession, cursor, unconstrained(),
+                        fulltextSearch( testPropertyValue ) );
 
                 consumeCursor( cursor );
             }

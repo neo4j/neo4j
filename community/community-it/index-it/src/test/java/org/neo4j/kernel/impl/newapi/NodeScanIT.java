@@ -60,7 +60,7 @@ class NodeScanIT
             TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
             try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
             {
-                tx.dataRead().nodeLabelScan( tokenReadSession, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( label ) );
+                tx.dataRead().nodeLabelScan( tokenReadSession, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( label ), cursorContext );
 
                 assertThat( cursorContext.getCursorTracer().pins() ).isNotZero();
             }

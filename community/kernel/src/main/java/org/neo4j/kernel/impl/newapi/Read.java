@@ -90,21 +90,21 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
-            throws IndexNotApplicableKernelException
+    public final void nodeIndexSeek( QueryContext queryContext, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints,
+            PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
 
         if ( indexSession.reference.schema().entityType() != EntityType.NODE )
         {
-            throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " +
-                                                         index.reference().userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException(
+                    "Node index seek can only be performed on node indexes: " + index.reference().userDescription( ktx.tokenRead() ) );
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        indexSession.reader.query( this, client, constraints, query );
+        indexSession.reader.query( queryContext, client, constraints, query );
     }
 
     @Override
@@ -117,14 +117,14 @@ abstract class Read implements TxStateHolder,
         if ( descriptor.schema().entityType() != EntityType.NODE )
         {
             throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " +
-                                                         descriptor.userDescription( ktx.tokenRead() ) );
+                    descriptor.userDescription( ktx.tokenRead() ) );
         }
         return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext, query );
     }
 
     @Override
-    public final void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
-                                             PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
+    public final void relationshipIndexSeek( QueryContext queryContext, IndexReadSession index, RelationshipValueIndexCursor cursor,
+            IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
@@ -136,7 +136,7 @@ abstract class Read implements TxStateHolder,
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        indexSession.reader.query( this, client, constraints, query );
+        indexSession.reader.query( queryContext, client, constraints, query );
     }
 
     @Override
@@ -312,8 +312,8 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
-            throws KernelException
+    public final void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
+            CursorContext cursorContext ) throws KernelException
     {
         ktx.assertOpen();
 
@@ -327,7 +327,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        tokenSession.reader.query( indexCursor, constraints, query, ktx.cursorContext() );
+        tokenSession.reader.query( indexCursor, constraints, query, cursorContext );
     }
 
     @Override
@@ -388,7 +388,7 @@ abstract class Read implements TxStateHolder,
 
     @Override
     public final void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints,
-                                            TokenPredicate query )
+                                            TokenPredicate query, CursorContext cursorContext )
             throws KernelException
     {
         ktx.assertOpen();
@@ -403,7 +403,7 @@ abstract class Read implements TxStateHolder,
 
         var indexCursor = (DefaultRelationshipTypeIndexCursor) cursor;
         indexCursor.setRead( this );
-        tokenSession.reader.query( indexCursor, constraints, query, ktx.cursorContext() );
+        tokenSession.reader.query( indexCursor, constraints, query, cursorContext );
     }
 
     @Override

@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodeCount;
@@ -79,31 +80,32 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
 
             var session = getTokenReadSession( tx );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
+            CursorContext cursorContext = tx.cursorContext();
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 
                 // WHEN
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelOne ) );
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelOne ), cursorContext );
 
                 // THEN
                 assertNodeCount( cursor, 1, uniqueIds );
 
                 // WHEN
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelTwo ) );
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelTwo ), cursorContext );
 
                 // THEN
                 assertNodeCount( cursor, 2, uniqueIds );
 
                 // WHEN
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelThree ) );
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelThree ), cursorContext );
 
                 // THEN
                 assertNodeCount( cursor, 3, uniqueIds );
 
                 // WHEN
                 uniqueIds.clear();
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelFirst ) );
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelFirst ), cursorContext );
 
                 // THEN
                 assertNodeCount( cursor, 3, uniqueIds );
@@ -145,12 +147,13 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
 
             var session = getTokenReadSession( tx );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
+            CursorContext cursorContext = tx.cursorContext();
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 
                 // when
-                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelOne ) );
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelOne ), cursorContext );
 
                 // then
                 assertNodes( cursor, uniqueIds, inStore, createdInTx );

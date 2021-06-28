@@ -51,7 +51,7 @@ public class NodeLabelIndexOrderTest extends TokenIndexOrderTestBase<NodeLabelIn
     {
         IndexDescriptor index = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) ).next();
         TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
-        tx.dataRead().nodeLabelScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ) );
+        tx.dataRead().nodeLabelScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ), tx.cursorContext() );
     }
 
     @Override

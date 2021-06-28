@@ -97,7 +97,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( NODES_INDEX_NAME ) );
             try ( NodeValueIndexCursor bobCursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().nodeIndexSeek( index, bobCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "bob" ) );
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), index, bobCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "bob" ) );
                 int bobCount = 0;
                 while ( bobCursor.next() )
                 {
@@ -107,7 +107,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             }
             try ( NodeValueIndexCursor aliceCursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().nodeIndexSeek( index, aliceCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "alice" ) );
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), index, aliceCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "alice" ) );
                 int aliceCount = 0;
                 while ( aliceCursor.next() )
                 {
@@ -126,7 +126,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( RELS_INDEX_NAME ) );
             try ( var bobCursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().relationshipIndexSeek( index, bobCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "bob" ) );
+                ktx.dataRead().relationshipIndexSeek( ktx.queryContext(), index, bobCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "bob" ) );
                 int bobCount = 0;
                 while ( bobCursor.next() )
                 {
@@ -136,7 +136,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             }
             try ( var aliceCursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().relationshipIndexSeek( index, aliceCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "alice" ) );
+                ktx.dataRead().relationshipIndexSeek( ktx.queryContext(), index, aliceCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "alice" ) );
                 int aliceCount = 0;
                 while ( aliceCursor.next() )
                 {

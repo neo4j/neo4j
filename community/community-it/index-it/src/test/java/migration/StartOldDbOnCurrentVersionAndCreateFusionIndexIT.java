@@ -527,7 +527,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             int count = 0;
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), predicates );
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), predicates );
                 while ( cursor.next() )
                 {
                     count++;

@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -362,6 +363,24 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public CursorContext cursorContext()
+    {
+        return null;
+    }
+
+    @Override
+    public ExecutionContext createExecutionContext()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void mergeExecutionContext( ExecutionContext executionContext )
+    {
+
+    }
+
+    @Override
+    public QueryContext queryContext()
     {
         return null;
     }

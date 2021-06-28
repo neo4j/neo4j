@@ -209,6 +209,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
     {
         IndexDescriptor index = tx.schemaRead().indexGetForName( "rti" );
         TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
-        tx.dataRead().relationshipTypeScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ) );
+        tx.dataRead().relationshipTypeScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ),
+                tx.cursorContext() );
     }
 }

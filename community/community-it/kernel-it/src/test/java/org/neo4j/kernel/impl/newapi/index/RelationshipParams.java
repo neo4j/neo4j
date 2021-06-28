@@ -94,7 +94,7 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
     public void entityIndexSeek( KernelTransaction tx, IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
                                  PropertyIndexQuery... query ) throws KernelException
     {
-        tx.dataRead().relationshipIndexSeek( index, cursor, constraints, query );
+        tx.dataRead().relationshipIndexSeek( tx.queryContext(), index, cursor, constraints, query );
     }
 
     @Override

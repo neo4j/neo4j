@@ -422,7 +422,7 @@ class RecoveryIT
         int relationshipsInIndex = 0;
         try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
         {
-            ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), query );
+            ktx.dataRead().relationshipIndexSeek( ktx.queryContext(), indexReadSession, cursor, unconstrained(), query );
             while ( cursor.next() )
             {
                 relationshipsInIndex++;

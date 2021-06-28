@@ -247,7 +247,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
                     {
                         try ( var cursor = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
                         {
-                            tx.dataRead().nodeIndexSeek( index, cursor, constrained( indexOrder, false ), range );
+                            tx.dataRead().nodeIndexSeek( tx.queryContext(), index, cursor, constrained( indexOrder, false ), range );
 
                             List<Long> actualIdsInOrder = new ArrayList<>();
                             while ( cursor.next() )
@@ -280,7 +280,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
                     {
                         try ( var cursor = cursors.allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() ) )
                         {
-                            tx.dataRead().relationshipIndexSeek( index, cursor, constrained( indexOrder, false ), range );
+                            tx.dataRead().relationshipIndexSeek( tx.queryContext(), index, cursor, constrained( indexOrder, false ), range );
 
                             List<Long> actualIdsInOrder = new ArrayList<>();
                             while ( cursor.next() )

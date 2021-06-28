@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
@@ -235,7 +236,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             // when
             cursor.setTracer( tracer );
             read.nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
-                                IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ) );
+                                IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ), NULL );
             while ( cursor.next() )
             {
                 expectedEvents.add( OnNode( cursor.nodeReference() ) );
@@ -270,7 +271,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
     {
         // when
         cursor.setTracer( tracer );
-        read.nodeIndexSeek( session, cursor, constrained( order, false ), PropertyIndexQuery.range( prop, 0, false, 10, false ) );
+        read.nodeIndexSeek( tx.queryContext(), session, cursor, constrained( order, false ), PropertyIndexQuery.range( prop, 0, false, 10, false ) );
 
         tracer.assertEvents( OnIndexSeek() );
 
@@ -433,7 +434,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             // when
             cursor.setTracer( tracer );
             read.relationshipTypeScan( getTokenReadSession( tx, EntityType.RELATIONSHIP ), cursor,
-                                       IndexQueryConstraints.unconstrained(), new TokenPredicate( hasId ) );
+                                       IndexQueryConstraints.unconstrained(), new TokenPredicate( hasId ), NULL );
             while ( cursor.next() )
             {
                 expectedEvents.add( OnRelationship( cursor.relationshipReference() ) );
@@ -455,8 +456,8 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             int p1 = token.propertyKey( "p1" );
             IndexReadSession session = read.indexReadSession( relIndex );
 
-            assertRelationshipIndexSeekTracing( tracer, cursor, session, IndexOrder.NONE, p1 );
-            assertRelationshipIndexSeekTracing( tracer, cursor, session, IndexOrder.ASCENDING, p1 );
+            assertRelationshipIndexSeekTracing( tracer, cursor, session, tx.queryContext(), IndexOrder.NONE, p1 );
+            assertRelationshipIndexSeekTracing( tracer, cursor, session, tx.queryContext(), IndexOrder.ASCENDING, p1 );
         }
     }
 
@@ -471,12 +472,14 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
     private void assertRelationshipIndexSeekTracing( TestKernelReadTracer tracer,
                                                      RelationshipValueIndexCursor cursor,
                                                      IndexReadSession session,
+                                                     QueryContext queryContext,
                                                      IndexOrder order,
                                                      int prop ) throws KernelException
     {
         // when
         cursor.setTracer( tracer );
-        read.relationshipIndexSeek( session, cursor, constrained( order, false ), PropertyIndexQuery.range( prop, 0, false, 10, false ) );
+        read.relationshipIndexSeek( queryContext, session, cursor, constrained( order, false ),
+                PropertyIndexQuery.range( prop, 0, false, 10, false ) );
 
         tracer.assertEvents( OnIndexSeek() );
 

@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -1061,6 +1062,24 @@ class QueryExecutionLocksIT
         public CursorContext cursorContext()
         {
             return null;
+        }
+
+        @Override
+        public ExecutionContext createExecutionContext()
+        {
+            return internal.createExecutionContext();
+        }
+
+        @Override
+        public void mergeExecutionContext( ExecutionContext executionContext )
+        {
+            internal.mergeExecutionContext( executionContext );
+        }
+
+        @Override
+        public QueryContext queryContext()
+        {
+            return internal.queryContext();
         }
 
         @Override

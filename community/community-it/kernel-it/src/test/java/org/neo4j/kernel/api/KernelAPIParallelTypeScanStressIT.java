@@ -97,9 +97,13 @@ class KernelAPIParallelTypeScanStressIT
 
         KernelAPIParallelStress.parallelStressInTx( kernel,
                                                     N_THREADS,
-                                                    tx -> tx.cursors().allocateRelationshipTypeIndexCursor( CursorContext.NULL ),
-                                                    ( read, cursor ) -> typeScan( read,
-                                                                                  cursor,
+                                                    tx -> {
+                                                        var executionContext = tx.createExecutionContext();
+                                                        var cursor = tx.cursors().allocateRelationshipTypeIndexCursor( executionContext.cursorContext() );
+                                                        return new WorkerContext<>( cursor, executionContext, tx );
+                                                    },
+                                                    ( read, workerContext ) -> typeScan( read,
+                                                                                  workerContext.getCursor(), workerContext.getContext().cursorContext(),
                                                                                   types[random.nextInt( types.length )] ) );
     }
 
@@ -115,14 +119,14 @@ class KernelAPIParallelTypeScanStressIT
         return type;
     }
 
-    private Runnable typeScan( Read read, RelationshipTypeIndexCursor cursor, int type )
+    private Runnable typeScan( Read read, RelationshipTypeIndexCursor cursor,  CursorContext cursorContext, int type )
     {
         return () ->
         {
             try
             {
                 TokenReadSession readSession = read.tokenReadSession( rti );
-                read.relationshipTypeScan( readSession, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( type ) );
+                read.relationshipTypeScan( readSession, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( type ), cursorContext );
             }
             catch ( KernelException e )
             {

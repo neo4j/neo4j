@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -874,6 +875,11 @@ public class Operations implements Write, SchemaWrite
         return allStoreHolder;
     }
 
+    public QueryContext queryContext()
+    {
+        return allStoreHolder;
+    }
+
     public void release()
     {
         if ( nodeCursor != null )
@@ -1383,7 +1389,7 @@ public class Operations implements Write, SchemaWrite
             try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( ktx.cursorContext() ) )
             {
                 var session = allStoreHolder.tokenReadSession( index );
-                allStoreHolder.nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( schema.getLabelId() ) );
+                allStoreHolder.nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( schema.getLabelId() ), ktx.cursorContext() );
                 constraintSemantics.validateNodeKeyConstraint( cursor, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
             }
         }
@@ -1419,7 +1425,7 @@ public class Operations implements Write, SchemaWrite
             try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( ktx.cursorContext() ) )
             {
                 var session = allStoreHolder.tokenReadSession( index );
-                allStoreHolder.nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( schema.getLabelId() ) );
+                allStoreHolder.nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( schema.getLabelId() ), ktx.cursorContext() );
                 constraintSemantics.validateNodePropertyExistenceConstraint( cursor, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
             }
         }
@@ -1457,7 +1463,8 @@ public class Operations implements Write, SchemaWrite
                   var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( ktx.cursorContext() ) )
             {
                 var session = allStoreHolder.tokenReadSession( index );
-                allStoreHolder.relationshipTypeScan( session, fullAccessIndexCursor, unconstrained(), new TokenPredicate( schema.getRelTypeId() ) );
+                allStoreHolder.relationshipTypeScan( session, fullAccessIndexCursor, unconstrained(), new TokenPredicate( schema.getRelTypeId() ),
+                        ktx.cursorContext() );
                 constraintSemantics.validateRelationshipPropertyExistenceConstraint( fullAccessIndexCursor, fullAccessCursor, propertyCursor, schema,
                         token );
             }

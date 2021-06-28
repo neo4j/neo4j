@@ -61,7 +61,8 @@ public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<Rela
     {
         IndexDescriptor index = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ) ).next();
         TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
-        tx.dataRead().relationshipTypeScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ) );
+        tx.dataRead().relationshipTypeScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ),
+                tx.cursorContext() );
     }
 
     @Override

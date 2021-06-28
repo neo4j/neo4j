@@ -81,7 +81,7 @@ public class NodeIndexOrderTest extends IndexOrderTestBase<NodeValueIndexCursor>
                                     IndexQueryConstraints constraints, PropertyIndexQuery query )
             throws KernelException
     {
-        tx.dataRead().nodeIndexSeek( index, cursor, constraints, query );
+        tx.dataRead().nodeIndexSeek( tx.queryContext(), index, cursor, constraints, query );
     }
 
     @Override

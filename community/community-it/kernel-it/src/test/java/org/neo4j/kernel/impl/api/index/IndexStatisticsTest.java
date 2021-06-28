@@ -394,7 +394,7 @@ class IndexStatisticsTest
                 {
                     nodesInStore++;
                     String name = (String) node.getProperty( NAME_PROPERTY );
-                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, name ) );
+                    ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, name ) );
                     boolean found = false;
                     while ( cursor.next() )
                     {
@@ -418,7 +418,7 @@ class IndexStatisticsTest
                     fail( String.join( format( "%n" ), mismatches ) );
                 }
                 // Node count == indexed node count
-                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.exists( propertyKeyId ) );
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), PropertyIndexQuery.exists( propertyKeyId ) );
                 int nodesInIndex = 0;
                 while ( cursor.next() )
                 {

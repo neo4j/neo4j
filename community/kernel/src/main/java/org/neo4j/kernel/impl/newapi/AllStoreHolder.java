@@ -300,7 +300,7 @@ public class AllStoreHolder extends Read
                           DefaultNodeCursor targetNode = cursors.allocateNodeCursor( cursorContext ) )
                     {
                         var session = tokenReadSession( index );
-                        this.relationshipTypeScan( session, relationshipsWithType, unconstrained(), new TokenPredicate( typeId ) );
+                        this.relationshipTypeScan( session, relationshipsWithType, unconstrained(), new TokenPredicate( typeId ), ktx.cursorContext() );
                         while ( relationshipsWithType.next() )
                         {
                             relationshipsWithType.relationship( relationship );

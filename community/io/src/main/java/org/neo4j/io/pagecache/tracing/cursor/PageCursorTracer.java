@@ -127,6 +127,11 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
         public void closeCursor()
         {
         }
+
+        @Override
+        public void merge( PageCursorTracer cursorTracer )
+        {
+        }
     };
 
     PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
@@ -153,4 +158,10 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
      * Page cache cursor closed
      */
     void closeCursor();
+
+    /**
+     * Merge values collected by another tracer into current.
+     * @param cursorTracer tracer with externally collected data
+     */
+    void merge( PageCursorTracer cursorTracer );
 }

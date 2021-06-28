@@ -807,7 +807,7 @@ class MultipleOpenCursorsTest
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() );
             IndexReadSession index = ktx.dataRead().indexReadSession( indexDescriptor );
-            ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), indexQueries );
+            ktx.dataRead().nodeIndexSeek( ktx.queryContext(), index, cursor, unconstrained(), indexQueries );
             return cursor;
         }
     }

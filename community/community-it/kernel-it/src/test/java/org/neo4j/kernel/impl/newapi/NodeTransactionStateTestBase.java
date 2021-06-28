@@ -548,7 +548,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeDelete( node.node );
             tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
-                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( node.labels[0] ) );
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( node.labels[0] ), tx.cursorContext() );
 
             // then
             assertFalse( cursor.next() );
@@ -567,7 +567,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeRemoveLabel( node.node, node.labels[0] );
             tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
-                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( node.labels[0] ) );
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( node.labels[0] ), tx.cursorContext() );
 
             // then
             assertFalse( cursor.next() );
@@ -587,7 +587,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             int label = tx.tokenWrite().labelGetOrCreateForName( "label" );
             tx.dataWrite().nodeAddLabel( node.node, label );
             tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
-                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( label ) );
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( label ), tx.cursorContext() );
 
             // then
             assertTrue( cursor.next() );
@@ -609,7 +609,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.dataWrite().nodeRemoveLabel( node1.node, node1.labels[0] );
             tx.dataWrite().nodeAddLabel( node2.node, node1.labels[0] );
             tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
-                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( node1.labels[0] ) );
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( node1.labels[0] ), tx.cursorContext() );
 
             // then
             assertTrue( cursor.next() );

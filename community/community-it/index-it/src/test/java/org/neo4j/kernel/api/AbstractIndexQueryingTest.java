@@ -65,7 +65,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
-                    read.nodeIndexSeek( index, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "search" ) ) );
+                    read.nodeIndexSeek( tx.queryContext(), index, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "search" ) ) );
         }
     }
 
@@ -77,7 +77,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
         try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
-                    read.relationshipIndexSeek( indexReadSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "search" ) ) );
+                    read.relationshipIndexSeek( tx.queryContext(), indexReadSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "search" ) ) );
         }
     }
 }

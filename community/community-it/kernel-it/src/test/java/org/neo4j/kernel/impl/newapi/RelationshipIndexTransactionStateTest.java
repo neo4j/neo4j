@@ -101,7 +101,7 @@ public class RelationshipIndexTransactionStateTest extends IndexTransactionState
         try ( RelationshipValueIndexCursor relationships = tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ) )
         {
             IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-            tx.dataRead().relationshipIndexSeek( indexSession, relationships, unordered( needsValues ), queries );
+            tx.dataRead().relationshipIndexSeek( tx.queryContext(), indexSession, relationships, unordered( needsValues ), queries );
             assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new RelationshipCursorAdapter( relationships ) );
         }
     }

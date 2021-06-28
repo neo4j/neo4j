@@ -30,6 +30,8 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -78,9 +80,13 @@ class KernelAPIParallelLabelScanStressIT
 
         KernelAPIParallelStress.parallelStressInTx( kernel,
                 N_THREADS,
-                tx -> tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ),
-                ( read, cursor ) -> labelScan( read,
-                        cursor,
+                tx ->  {
+                    var executionContext = tx.createExecutionContext();
+                    var cursor = tx.cursors().allocateNodeLabelIndexCursor( executionContext.cursorContext() );
+                    return new WorkerContext<>( cursor, executionContext, tx );
+                },
+                ( read, workerContext ) -> labelScan( read,
+                        workerContext.getCursor(), workerContext.getContext().cursorContext(),
                         nodeLabelIndex,
                         labels[random.nextInt( labels.length )] ) );
     }
@@ -96,12 +102,12 @@ class KernelAPIParallelLabelScanStressIT
         return label;
     }
 
-    private static Runnable labelScan( Read read, NodeLabelIndexCursor cursor, IndexDescriptor index, int label )
+    private static Runnable labelScan( Read read, NodeLabelIndexCursor cursor, CursorContext cursorContext, IndexDescriptor index, int label )
     {
         return throwing( () ->
         {
             var tokenReadSession = read.tokenReadSession( index );
-            read.nodeLabelScan( tokenReadSession, cursor, unconstrained(), new TokenPredicate( label ) );
+            read.nodeLabelScan( tokenReadSession, cursor, unconstrained(), new TokenPredicate( label ), cursorContext );
 
             int n = 0;
             while ( cursor.next() )

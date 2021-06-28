@@ -435,7 +435,7 @@ class CompositeIndexingIT
                         Set<Long> result = new HashSet<>();
                         try ( var cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
                         {
-                            ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), exactQuery( index ) );
+                            ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), exactQuery( index ) );
                             while ( cursor.next() )
                             {
                                 result.add( cursor.nodeReference() );
@@ -496,7 +496,7 @@ class CompositeIndexingIT
                         Set<Long> result = new HashSet<>();
                         try ( var cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
                         {
-                            ktx.dataRead().relationshipIndexSeek( indexSession, cursor, unconstrained(), exactQuery( index ) );
+                            ktx.dataRead().relationshipIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), exactQuery( index ) );
                             while ( cursor.next() )
                             {
                                 result.add( cursor.relationshipReference() );

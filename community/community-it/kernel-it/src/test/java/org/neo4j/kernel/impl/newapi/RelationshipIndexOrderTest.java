@@ -83,7 +83,7 @@ public class RelationshipIndexOrderTest extends IndexOrderTestBase<RelationshipV
                                     IndexQueryConstraints constraints, PropertyIndexQuery query )
             throws KernelException
     {
-        tx.dataRead().relationshipIndexSeek( index, cursor, constraints, query );
+        tx.dataRead().relationshipIndexSeek( tx.queryContext(), index, cursor, constraints, query );
     }
 
     @Override

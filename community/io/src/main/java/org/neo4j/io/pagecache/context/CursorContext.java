@@ -56,4 +56,9 @@ public class CursorContext implements AutoCloseable
     {
         cursorTracer.close();
     }
+
+    public void merge( CursorContext cursorContext )
+    {
+        cursorTracer.merge( cursorContext.cursorTracer );
+    }
 }

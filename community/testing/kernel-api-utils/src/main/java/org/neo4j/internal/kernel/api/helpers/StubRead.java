@@ -56,7 +56,8 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
+    public void nodeIndexSeek( QueryContext queryContext, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints,
+            PropertyIndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
@@ -69,8 +70,8 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
-            PropertyIndexQuery... query )
+    public void relationshipIndexSeek( QueryContext queryContext, IndexReadSession index, RelationshipValueIndexCursor cursor,
+            IndexQueryConstraints constraints, PropertyIndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
@@ -129,7 +130,8 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
+    public void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
+            CursorContext cursorContext )
     {
         throw new UnsupportedOperationException();
     }
@@ -226,7 +228,8 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
+    public void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
+            CursorContext cursorContext )
     {
         throw new UnsupportedOperationException();
     }

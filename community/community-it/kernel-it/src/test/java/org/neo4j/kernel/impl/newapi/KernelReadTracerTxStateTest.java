@@ -114,7 +114,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
             // when
             cursor.setTracer( tracer );
             tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
-                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ) );
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ), tx.cursorContext() );
             tracer.assertEvents( OnLabelScan( barId ) );
 
             assertTrue( cursor.next() );
@@ -162,7 +162,8 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
     {
         cursor.setTracer( tracer );
 
-        tx.dataRead().nodeIndexSeek( session, cursor, constrained( order, needsValues ), PropertyIndexQuery.stringPrefix( user, Values.stringValue( "B" ) ) );
+        tx.dataRead().nodeIndexSeek( tx.queryContext(), session, cursor, constrained( order, needsValues ),
+                PropertyIndexQuery.stringPrefix( user, Values.stringValue( "B" ) ) );
         tracer.assertEvents( OnIndexSeek() );
 
         assertTrue( cursor.next() );
@@ -300,7 +301,8 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         {
             cursor.setTracer( tracer );
             IndexReadSession indexReadSession = tx.dataRead().indexReadSession( index );
-            tx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "transformational" ) );
+            tx.dataRead().relationshipIndexSeek( tx.queryContext(), indexReadSession, cursor, unconstrained(),
+                    PropertyIndexQuery.fulltextSearch( "transformational" ) );
 
             assertTrue( cursor.next() );
             tracer.assertEvents( OnIndexSeek(), OnRelationship( cursor.relationshipReference() ) );
@@ -328,7 +330,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
             // when
             cursor.setTracer( tracer );
             tx.dataRead().relationshipTypeScan( getTokenReadSession( tx, EntityType.RELATIONSHIP ), cursor,
-                                                IndexQueryConstraints.unconstrained(), new TokenPredicate( rType ) );
+                                                IndexQueryConstraints.unconstrained(), new TokenPredicate( rType ), tx.cursorContext() );
             tracer.assertEvents( OnRelationshipTypeScan( rType ) );
 
             assertTrue( cursor.next() );

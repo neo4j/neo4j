@@ -99,7 +99,7 @@ public class NodeIndexTransactionStateTest extends IndexTransactionStateTestBase
         try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ) )
         {
             IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-            tx.dataRead().nodeIndexSeek( indexSession, nodes, unordered( needsValues ), queries );
+            tx.dataRead().nodeIndexSeek( tx.queryContext(), indexSession, nodes, unordered( needsValues ), queries );
             assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new NodeCursorAdapter( nodes ) );
         }
     }

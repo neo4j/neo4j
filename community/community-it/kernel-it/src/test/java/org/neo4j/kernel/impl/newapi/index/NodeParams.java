@@ -89,7 +89,7 @@ public class NodeParams implements EntityParams<NodeValueIndexCursor>
     public void entityIndexSeek( KernelTransaction tx, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints,
                                  PropertyIndexQuery... query ) throws KernelException
     {
-        tx.dataRead().nodeIndexSeek( index, cursor, constraints, query );
+        tx.dataRead().nodeIndexSeek( tx.queryContext(), index, cursor, constraints, query );
     }
 
     @Override

@@ -99,7 +99,7 @@ class NonUniqueIndexTest
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
                 try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
                 {
-                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.exact( 1, VALUE ) );
+                    ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexSession, cursor, unconstrained(), PropertyIndexQuery.exact( 1, VALUE ) );
                     assertTrue( cursor.next() );
                     assertEquals( node.getId(), cursor.nodeReference() );
                     assertFalse( cursor.next() );

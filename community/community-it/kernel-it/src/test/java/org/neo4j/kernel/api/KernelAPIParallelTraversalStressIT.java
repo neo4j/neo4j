@@ -118,17 +118,22 @@ class KernelAPIParallelTraversalStressIT
     {
         final NodeCursor nodeCursor;
         final RelationshipTraversalCursor traversalCursor;
+        private final KernelTransaction tx;
+        private final KernelTransaction.ExecutionContext executionContext;
 
         NodeAndTraverseCursors( KernelTransaction tx )
         {
-            nodeCursor = tx.cursors().allocateNodeCursor( tx.cursorContext() );
-            traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( tx.cursorContext() );
+            executionContext = tx.createExecutionContext();
+            nodeCursor = tx.cursors().allocateNodeCursor( executionContext.cursorContext() );
+            traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( executionContext.cursorContext() );
+            this.tx = tx;
         }
 
         @Override
         public void close() throws Exception
         {
             IOUtils.closeAll( nodeCursor, traversalCursor );
+            tx.mergeExecutionContext( executionContext );
         }
     }
 }

@@ -284,7 +284,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val cursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.cursorContext)
     resources.trace(cursor)
     val read = reads()
-    read.relationshipTypeScan(session, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(relType))
+    read.relationshipTypeScan(session, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(relType), transactionalContext.kernelTransaction.cursorContext())
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.relationshipReference() else -1L
       override def close(): Unit = cursor.close()
@@ -409,7 +409,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         null
       }
     val needsValuesFromIndexSeek = actualValues == null && needsValues
-    reads().nodeIndexSeek(index, nodeCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek), queries: _*)
+    reads().nodeIndexSeek(transactionalContext.kernelTransaction.queryContext(), index, nodeCursor,
+      IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek), queries: _*)
     if (needsValues && actualValues != null) {
       new ValuedNodeIndexCursor(nodeCursor, actualValues)
     } else {
@@ -432,7 +433,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         null
       }
     val needsValuesFromIndexSeek = actualValues == null && needsValues
-    reads().relationshipIndexSeek(index, relCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek), queries: _*)
+    reads().relationshipIndexSeek(transactionalContext.kernelTransaction.queryContext(), index, relCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek), queries: _*)
     if (needsValues && actualValues != null) {
       new ValuedRelationshipIndexCursor(relCursor, actualValues)
     } else {
@@ -491,7 +492,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
-    reads().nodeLabelScan(tokenReadSession, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(id))
+    reads().nodeLabelScan(tokenReadSession, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(id),
+      transactionalContext.kernelTransaction.cursorContext())
     new CursorIterator[NodeValue] {
       override protected def fetchNext(): NodeValue = {
         if (cursor.next()) fromNodeEntity(entityAccessor.newNodeEntity(cursor.nodeReference()))
@@ -535,7 +537,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
-    reads().nodeLabelScan(tokenReadSession, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(id))
+    reads().nodeLabelScan(tokenReadSession, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(id),
+      transactionalContext.kernelTransaction.cursorContext())
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
 

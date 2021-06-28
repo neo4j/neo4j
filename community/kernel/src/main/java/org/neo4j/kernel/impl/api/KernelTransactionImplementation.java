@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -60,6 +61,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -435,6 +437,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public CursorContext cursorContext()
     {
         return cursorContext;
+    }
+
+    @Override
+    public ExecutionContext createExecutionContext()
+    {
+        return new ThreadExecutionContext();
+    }
+
+    @Override
+    public void mergeExecutionContext( ExecutionContext executionContext )
+    {
+        cursorContext.merge( executionContext.cursorContext() );
+    }
+
+    @Override
+    public QueryContext queryContext()
+    {
+        return operations.queryContext();
     }
 
     @Override
@@ -1405,6 +1425,30 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
         {
             return SCHEMA;
+        }
+    }
+
+    private class ThreadExecutionContext implements ExecutionContext
+    {
+        private final CursorContext context;
+        private final AccessMode accessMode;
+
+        ThreadExecutionContext()
+        {
+            this.context = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), cursorContext.getVersionContext() );
+            this.accessMode = securityContext.mode();
+        }
+
+        @Override
+        public CursorContext cursorContext()
+        {
+            return context;
+        }
+
+        @Override
+        public AccessMode accessMode()
+        {
+            return accessMode;
         }
     }
 }

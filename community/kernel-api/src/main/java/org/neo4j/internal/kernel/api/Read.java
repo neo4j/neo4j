@@ -62,8 +62,8 @@ public interface Read
      * together with node ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
      */
-    void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
-            throws KernelException;
+    void nodeIndexSeek( QueryContext queryContext, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints,
+            PropertyIndexQuery... query ) throws KernelException;
 
     /**
      * Seek all nodes matching the provided index query in an index. NOTE! This is not thread-safe for transaction state.
@@ -84,8 +84,8 @@ public interface Read
      * together with relationship ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
      */
-    void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
-            throws KernelException;
+    void relationshipIndexSeek( QueryContext queryContext, IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
+            PropertyIndexQuery... query ) throws KernelException;
 
     /**
      * Seek all relationships matching the provided index query in an index. NOTE! This is not thread-safe for transaction state.
@@ -179,8 +179,8 @@ public interface Read
      *                    The constraints must be satisfiable given the capabilities of the index.
      * @param query the query to run against index
      */
-    void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
-            throws KernelException;
+    void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
+            CursorContext cursorContext ) throws KernelException;
 
     /**
      * Return all nodes in the graph.
@@ -384,8 +384,8 @@ public interface Read
      *                    The constraints must be satisfiable given the capabilities of the index.
      * @param query the query to run against index
      */
-    void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
-            throws KernelException;
+    void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query,
+            CursorContext cursorContext ) throws KernelException;
 
     /**
      * @param nodeReference

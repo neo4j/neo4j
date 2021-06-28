@@ -135,7 +135,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( nodeIndexName ) );
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
-            read.nodeIndexSeek( index, cursor, unconstrained(), query );
+            read.nodeIndexSeek( tx.queryContext(), index, cursor, unconstrained(), query );
             assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
             return count( cursor );
         }
@@ -147,7 +147,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( relIndexName ) );
         try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
-            read.relationshipIndexSeek( index, cursor, unconstrained(), query );
+            read.relationshipIndexSeek( tx.queryContext(), index, cursor, unconstrained(), query );
             assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
             return count( cursor );
         }

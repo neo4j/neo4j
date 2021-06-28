@@ -205,6 +205,11 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     {
     }
 
+    @Override
+    public void merge( PageCursorTracer cursorTracer )
+    {
+    }
+
     private void pageFaulted( long filePageId, PageSwapper swapper )
     {
         faults++;

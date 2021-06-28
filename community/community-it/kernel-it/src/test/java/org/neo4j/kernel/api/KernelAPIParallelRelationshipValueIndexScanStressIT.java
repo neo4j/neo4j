@@ -28,6 +28,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -35,6 +36,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -100,10 +102,16 @@ class KernelAPIParallelRelationshipValueIndexScanStressIT
 
         KernelAPIParallelStress.parallelStressInTx( kernel,
                                                     N_THREADS,
-                                                    tx -> tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ),
-                                                    ( read, cursor ) -> indexSeek( read,
-                                                                                   cursor,
-                                                                                   indexes[random.nextInt( indexes.length )] ));
+                tx ->  {
+                    var executionContext = tx.createExecutionContext();
+                    var cursor = tx.cursors().allocateRelationshipValueIndexCursor( executionContext.cursorContext(),
+                            EmptyMemoryTracker.INSTANCE );
+                    return new WorkerContext<>( cursor, executionContext, tx );
+                },
+                                                    ( read, workerContext ) -> indexSeek( read,
+                                                            new WorkerQueryContext( workerContext.getTransaction().queryContext(),
+                                                                    workerContext.getContext().cursorContext() ), workerContext.getCursor(),
+                                                            indexes[random.nextInt( indexes.length )] ));
 
     }
 
@@ -129,14 +137,14 @@ class KernelAPIParallelRelationshipValueIndexScanStressIT
         }
     }
 
-    private static Runnable indexSeek( Read read, RelationshipValueIndexCursor cursor, IndexReadSession index )
+    private static Runnable indexSeek( Read read, QueryContext queryContext, RelationshipValueIndexCursor cursor, IndexReadSession index )
     {
         return () ->
         {
             try
             {
                 var query = PropertyIndexQuery.exists( index.reference().schema().getPropertyIds()[0] );
-                read.relationshipIndexSeek( index, cursor, unorderedValues(), query );
+                read.relationshipIndexSeek( queryContext, index, cursor, unorderedValues(), query );
                 int n = 0;
                 while ( cursor.next() )
                 {

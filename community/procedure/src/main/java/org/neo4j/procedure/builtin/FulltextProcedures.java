@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -232,7 +233,7 @@ public class FulltextProcedures
         NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexReference );
         IndexQueryConstraints constraints = queryConstraints( options );
-        tx.dataRead().nodeIndexSeek( indexSession, cursor, constraints, PropertyIndexQuery.fulltextSearch( query ) );
+        tx.dataRead().nodeIndexSeek( tx.queryContext(), indexSession, cursor, constraints, PropertyIndexQuery.fulltextSearch( query ) );
 
         Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<>()
         {
@@ -299,7 +300,7 @@ public class FulltextProcedures
         RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
         IndexReadSession indexReadSession = tx.dataRead().indexReadSession( indexReference );
         IndexQueryConstraints constraints = queryConstraints( options );
-        tx.dataRead().relationshipIndexSeek( indexReadSession, cursor, constraints, PropertyIndexQuery.fulltextSearch( query ) );
+        tx.dataRead().relationshipIndexSeek( tx.queryContext(), indexReadSession, cursor, constraints, PropertyIndexQuery.fulltextSearch( query ) );
 
         Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<>()
         {

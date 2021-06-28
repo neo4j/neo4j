@@ -130,4 +130,9 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     public void closeCursor()
     {
     }
+
+    @Override
+    public void merge( PageCursorTracer cursorTracer )
+    {
+    }
 }

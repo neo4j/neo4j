@@ -115,7 +115,7 @@ class CompositeStringLengthValidationIT
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
                 IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
-                ktx.dataRead().nodeIndexSeek( indexReadSession,
+                ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexReadSession,
                                               cursor, unconstrained(), PropertyIndexQuery.exact( propertyKeyId1, firstSlot ),
                                               PropertyIndexQuery.exact( propertyKeyId2, secondSlot ) );
                 assertTrue( cursor.next() );

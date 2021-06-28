@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -44,6 +45,7 @@ import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
@@ -432,6 +434,13 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      */
     CursorContext cursorContext();
 
+    //TODO
+    ExecutionContext createExecutionContext();
+
+    void mergeExecutionContext( ExecutionContext executionContext );
+
+    QueryContext queryContext();
+
     /**
      * Get transaction local store cursors used to access underlying stores
      */
@@ -469,5 +478,13 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
          * but before the commands have been applied to the transaction log and store.
          */
         void beforeApply();
+    }
+
+    interface ExecutionContext
+    {
+
+        CursorContext cursorContext();
+
+        AccessMode accessMode();
     }
 }
