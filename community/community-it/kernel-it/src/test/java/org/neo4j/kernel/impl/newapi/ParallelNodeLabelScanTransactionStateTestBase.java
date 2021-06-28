@@ -289,9 +289,6 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                 MutableLongSet allNodes = LongSets.mutable.withAll( existingNodes );
                 try ( KernelTransaction tx = beginTransaction() )
                 {
-                    // parallel scans are failing checks atm
-                    ((DefaultPageCursorTracer) tx.cursorContext().getCursorTracer()).setIgnoreCounterCheck( true );
-
                     int nodeInTx = random.nextInt( 1000 );
                     allNodes.addAll( createNodesWithLabel( tx.dataWrite(), label, nodeInTx ) );
                     Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );

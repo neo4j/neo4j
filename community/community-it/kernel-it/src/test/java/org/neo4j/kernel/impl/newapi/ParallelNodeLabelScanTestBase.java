@@ -262,8 +262,6 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
 
             assertDistinct( lists );
             assertEquals( FOO_NODES, LongSets.immutable.withAll( concat( lists ) ) );
-            // workaround for current concurrent access problems
-            ((DefaultPageCursorTracer) tx.cursorContext().getCursorTracer()).setIgnoreCounterCheck( true );
         }
         finally
         {

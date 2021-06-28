@@ -49,9 +49,6 @@ class KernelAPIParallelStress
         List<RESOURCE> cursors = new ArrayList<>();
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
-            // parallel scans are failing checks atm
-            ((DefaultPageCursorTracer) tx.cursorContext().getCursorTracer()).setIgnoreCounterCheck( true );
-
             // assert our test works single-threaded before racing
             try ( RESOURCE cursor = resourceSupplier.apply( tx ) )
             {
