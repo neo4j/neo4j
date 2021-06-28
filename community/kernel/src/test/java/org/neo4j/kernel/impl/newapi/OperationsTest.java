@@ -159,7 +159,7 @@ abstract class OperationsTest
         var facade = mock( GraphDatabaseFacade.class );
         dependencies.satisfyDependency( facade );
         allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock( GlobalProcedures.class ), mock( SchemaState.class ), indexingService,
-                mock( IndexStatisticsStore.class ), dependencies, Config.defaults(), INSTANCE );
+                mock( IndexStatisticsStore.class ), dependencies, INSTANCE );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         tokenHolders = mockedTokenHolders();
         creationContext = mock( CommandCreationContext.class );

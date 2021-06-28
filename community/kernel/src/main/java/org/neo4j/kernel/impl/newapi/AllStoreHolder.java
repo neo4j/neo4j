@@ -107,7 +107,7 @@ public class AllStoreHolder extends Read
 
     public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, DefaultPooledCursors cursors, GlobalProcedures globalProcedures,
                            SchemaState schemaState, IndexingService indexingService,
-                           IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, Config config,
+                           IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies,
                            MemoryTracker memoryTracker )
     {
         super( storageReader, cursors, ktx );

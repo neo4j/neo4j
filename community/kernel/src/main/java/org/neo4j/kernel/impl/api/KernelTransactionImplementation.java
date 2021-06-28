@@ -266,7 +266,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler( securityLog );
         this.allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, indexStatisticsStore,
-                        dependencies, config, memoryTracker );
+                        dependencies, memoryTracker );
         this.operations =
                 new Operations(
                         allStoreHolder,
