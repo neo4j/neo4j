@@ -175,6 +175,7 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
@@ -1084,6 +1085,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def transactionForeach(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionForeach(lhs, rhs)(_)))
+
+  def transactionApply(): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionApply(lhs, rhs)(_)))
 
   // SHIP IP
 
