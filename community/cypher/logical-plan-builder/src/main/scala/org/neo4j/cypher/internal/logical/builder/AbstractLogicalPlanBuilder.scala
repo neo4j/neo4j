@@ -175,6 +175,7 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -197,7 +198,6 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.topDown
 
-import scala.collection.GenTraversable
 import scala.collection.GenTraversableOnce
 import scala.collection.mutable.ArrayBuffer
 
@@ -1081,6 +1081,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     indent = level
     aggregation(Seq(), Seq(s"collect($variable) AS $collection"))
   }
+
+  def transactionForeach(): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionForeach(lhs, rhs)(_)))
 
   // SHIP IP
 
