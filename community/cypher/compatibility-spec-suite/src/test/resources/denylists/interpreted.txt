@@ -38,5 +38,4 @@ Feature "TypeConversion2 - To Integer": Scenario "`toInteger()` failing on inval
 Feature "TypeConversion1 - To Boolean": Scenario "`toBoolean()` on invalid types": Example "2"
 
 // Failing with M16 TCK - require investigation
-Feature "Literals2 - Decimal integer": Scenario "Fail on an integer containing a alphabetic character"
 Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"
