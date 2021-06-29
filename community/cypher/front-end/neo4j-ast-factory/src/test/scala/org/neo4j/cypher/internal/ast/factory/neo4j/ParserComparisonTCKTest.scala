@@ -37,12 +37,11 @@ class ParserComparisonTCKTest extends ParserComparisonTestBase with FunSpecLike 
     }
   var x = 0
 
-  val DENYLIST = Set[String](
+  val DENYLIST: Set[String] = Set[String](
     // defers to semantic checking
     """Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an incomplete hexadecimal integer"""",
 
     // Failing with M16 TCK - require investigation
-    """Feature "Literals2 - Decimal integer": Scenario "Fail on an integer containing a alphabetic character"""",
     """Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"""",
     """Feature "Literals7 - List": Scenario "Fail on a list containing only a comma"""",
     """Feature "Literals8 - Maps": Scenario "Fail on a map containing only a comma"""",

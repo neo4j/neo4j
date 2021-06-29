@@ -280,7 +280,7 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
     assertSameAST(testName)
   }
 
-  test("RETURN 0.0f as flat") {
+  test("RETURN 0.0f as float") {
     assertSameAST(testName)
   }
 
@@ -325,6 +325,38 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   }
 
   test("MATCH (n) WITH CASE when(v1) + 1 WHEN THEN v2 ELSE null END as e RETURN e") {
+    assertSameAST(testName)
+  }
+
+  //parameter number boundaries
+
+  test("RETURN $1_2") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN $0_2") {
+    //this fails on both parsers because it starts with 0 -> which is not a UnsignedDecimalInteger (but an Octal?)
+    assertJavaCCException(testName, "Invalid input '$': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))")
+  }
+
+  test("RETURN $0") {
+    //0, on the other hand, is an UnsignedDecimalInteger
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0_2 as Literal") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN $1") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN $1.0f") {
+    assertJavaCCException(testName, "Invalid input '$': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))" )
+  }
+
+  test("RETURN $1gibberish") {
     assertSameAST(testName)
   }
 }
