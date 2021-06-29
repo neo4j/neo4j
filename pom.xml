@@ -130,7 +130,7 @@
     <mockito.version>3.11.0</mockito.version>
     <opencypher.version>1.0.0-M16</opencypher.version>
     <caffeine.version>3.0.2</caffeine.version>
-    <required.maven.version>3.5.4</required.maven.version>
+    <required.maven.version>3.6.2</required.maven.version>
     <jackson.version>2.12.3</jackson.version>
 	<amazon-sdk.version>1.11.1022</amazon-sdk.version>
     <guava.version>30.1.1-jre</guava.version>
