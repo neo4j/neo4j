@@ -33,8 +33,8 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -69,7 +69,7 @@ public class StoreUpgradeOnStartupTest
     @Inject
     private FileSystemAbstraction fileSystem;
 
-    private DatabaseLayout workingDatabaseLayout;
+    private RecordDatabaseLayout workingDatabaseLayout;
     private StoreVersionCheck check;
     private Path workingHomeDir;
     private DatabaseManagementService managementService;
@@ -83,7 +83,7 @@ public class StoreUpgradeOnStartupTest
     private void init( String version ) throws IOException
     {
         workingHomeDir = testDir.homePath( "working_" + version );
-        workingDatabaseLayout = Neo4jLayout.of( workingHomeDir ).databaseLayout( DEFAULT_DATABASE_NAME );
+        workingDatabaseLayout = RecordDatabaseLayout.of( Neo4jLayout.of( workingHomeDir ), DEFAULT_DATABASE_NAME );
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
         Path prepareDirectory = testDir.directory( "prepare_" + version );

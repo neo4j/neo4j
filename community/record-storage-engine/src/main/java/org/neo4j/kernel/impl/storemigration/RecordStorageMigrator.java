@@ -78,13 +78,16 @@ import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaNameUtil;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -198,9 +201,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
+    public void migrate( DatabaseLayout directoryLayoutArg, DatabaseLayout migrationLayoutArg, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo, IndexImporterFactory indexImporterFactory ) throws IOException, KernelException
     {
+        RecordDatabaseLayout directoryLayout = RecordDatabaseLayout.convert( directoryLayoutArg );
+        RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert( migrationLayoutArg );
         // Extract information about the last transaction from legacy neostore
         Path neoStore = directoryLayout.metadataStore();
         try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) ) )
@@ -265,9 +270,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 // migration, we will be reading and writing properties, and property key tokens, so we need those files.
                 // To get them, we just copy them again with the SKIP strategy, so we avoid overwriting any files that might have
                 // been migrated earlier.
-                List<DatabaseFile> databaseFiles = asList( DatabaseFile.PROPERTY_STORE, DatabaseFile.PROPERTY_ARRAY_STORE, DatabaseFile.PROPERTY_STRING_STORE,
-                        DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE, DatabaseFile.LABEL_TOKEN_STORE,
-                        DatabaseFile.LABEL_TOKEN_NAMES_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
+                List<DatabaseFile> databaseFiles =
+                        asList( RecordDatabaseFile.PROPERTY_STORE, RecordDatabaseFile.PROPERTY_ARRAY_STORE, RecordDatabaseFile.PROPERTY_STRING_STORE,
+                                RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                                RecordDatabaseFile.LABEL_TOKEN_STORE, RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE,
+                                RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
                 fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, !requiresIdFilesMigration,
                         ExistingTargetStrategy.SKIP );
                 migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorContext, memoryTracker );
@@ -285,7 +292,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      * Instead of a rebuild this could have been done by reading the old counts store, but since we don't want any of that complex
      * code lingering in the code base a rebuild is cleaner, but will require a longer migration time. Worth it?
      */
-    private void migrateCountsStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat,
+    private void migrateCountsStore( RecordDatabaseLayout directoryLayout, RecordDatabaseLayout migrationLayout, RecordFormats oldFormat,
             CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException
     {
         // Just read from the old store (nodes, relationships, highLabelId, highRelationshipTypeId). This way we don't have to try and figure
@@ -439,7 +446,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return new LogPosition( logVersion, offset );
     }
 
-    private void migrateWithBatchImporter( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationDirectoryStructure, long lastTxId,
+    private void migrateWithBatchImporter( RecordDatabaseLayout sourceDirectoryStructure, RecordDatabaseLayout migrationDirectoryStructure, long lastTxId,
             int lastTxChecksum, long lastTxLogVersion, long lastTxLogByteOffset, ProgressReporter progressReporter,
             RecordFormats oldFormat, RecordFormats newFormat, boolean requiresDynamicStoreMigration, boolean requiresPropertyMigration,
             IndexImporterFactory indexImporterFactory ) throws IOException
@@ -477,27 +484,27 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             // anyways and cannot be avoided with the importer, but delete the store files that weren't written
             // (left empty) so that we don't overwrite those in the real store directory later.
             Collection<DatabaseFile> storesToDeleteFromMigratedDirectory = new ArrayList<>();
-            storesToDeleteFromMigratedDirectory.add( DatabaseFile.METADATA_STORE );
+            storesToDeleteFromMigratedDirectory.add( CommonDatabaseFile.METADATA_STORE );
             if ( !requiresPropertyMigration )
             {
                 // We didn't migrate properties, so the property stores in the migrated store are just empty/bogus
                 storesToDeleteFromMigratedDirectory.addAll( asList(
-                        DatabaseFile.PROPERTY_STORE,
-                        DatabaseFile.PROPERTY_STRING_STORE,
-                        DatabaseFile.PROPERTY_ARRAY_STORE ) );
+                        RecordDatabaseFile.PROPERTY_STORE,
+                        RecordDatabaseFile.PROPERTY_STRING_STORE,
+                        RecordDatabaseFile.PROPERTY_ARRAY_STORE ) );
             }
             if ( !requiresDynamicStoreMigration )
             {
                 // We didn't migrate labels (dynamic node labels) or any other dynamic store.
                 storesToDeleteFromMigratedDirectory.addAll( asList(
-                        DatabaseFile.NODE_LABEL_STORE,
-                        DatabaseFile.LABEL_TOKEN_STORE,
-                        DatabaseFile.LABEL_TOKEN_NAMES_STORE,
-                        DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE,
-                        DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
-                        DatabaseFile.PROPERTY_KEY_TOKEN_STORE,
-                        DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                        DatabaseFile.SCHEMA_STORE ) );
+                        RecordDatabaseFile.NODE_LABEL_STORE,
+                        RecordDatabaseFile.LABEL_TOKEN_STORE,
+                        RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE,
+                        RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE,
+                        RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
+                        RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE,
+                        RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                        RecordDatabaseFile.SCHEMA_STORE ) );
             }
 
             fileOperation( DELETE, fileSystem, migrationDirectoryStructure, migrationDirectoryStructure, storesToDeleteFromMigratedDirectory, true, true,
@@ -510,13 +517,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return store.getNumberOfIdsInUse() * store.getRecordSize();
     }
 
-    private NeoStores instantiateLegacyStore( RecordFormats format, DatabaseLayout directoryStructure )
+    private NeoStores instantiateLegacyStore( RecordFormats format, RecordDatabaseLayout directoryStructure )
     {
         return new StoreFactory( directoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
                 format, NullLogProvider.getInstance(), cacheTracer, readOnly(), Sets.immutable.empty() ).openAllNeoStores( true );
     }
 
-    private void prepareBatchImportMigration( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationStrcuture, RecordFormats oldFormat,
+    private void prepareBatchImportMigration( RecordDatabaseLayout sourceDirectoryStructure, RecordDatabaseLayout migrationStrcuture, RecordFormats oldFormat,
             RecordFormats newFormat ) throws IOException
     {
         createStore( migrationStrcuture, newFormat );
@@ -531,11 +538,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
         // The token stores also need to be migrated because we use those as-is and ask for their high ids
         // when using the importer in the store migration scenario.
-        DatabaseFile[] storesFilesToMigrate = {
-                DatabaseFile.LABEL_TOKEN_STORE, DatabaseFile.LABEL_TOKEN_NAMES_STORE,
-                DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
-                DatabaseFile.NODE_LABEL_STORE};
+        RecordDatabaseFile[] storesFilesToMigrate = {
+                RecordDatabaseFile.LABEL_TOKEN_STORE, RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE,
+                RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
+                RecordDatabaseFile.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
             fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStrcuture, Arrays.asList( storesFilesToMigrate ), true,
@@ -564,13 +571,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, migrationStrcuture.getDatabaseName() ) ).openAllNeoStores().close();
     }
 
-    private void createStore( DatabaseLayout migrationDirectoryStructure, RecordFormats newFormat )
+    private void createStore( RecordDatabaseLayout migrationDirectoryStructure, RecordFormats newFormat )
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), migrationDirectoryStructure.getDatabaseName() );
         createStoreFactory( migrationDirectoryStructure, newFormat, idGeneratorFactory ).openAllNeoStores( true ).close();
     }
 
-    private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
+    private StoreFactory createStoreFactory( RecordDatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
     {
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), cacheTracer,
                 writable(), immutable.empty() );
@@ -645,12 +652,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
+    public void moveMigratedFiles( DatabaseLayout migrationLayoutArg, DatabaseLayout directoryLayoutArg, String versionToUpgradeFrom,
             String versionToUpgradeTo ) throws IOException
     {
+        RecordDatabaseLayout directoryLayout = RecordDatabaseLayout.convert( directoryLayoutArg );
+        RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert( migrationLayoutArg );
         // Move the migrated ones into the store directory
         fileOperation( MOVE, fileSystem, migrationLayout, directoryLayout,
-                Iterables.iterable( DatabaseFile.values() ), true, // allow to skip non existent source files
+                Iterables.iterable( RecordDatabaseFile.allValues() ), true, // allow to skip non existent source files
                 true, ExistingTargetStrategy.OVERWRITE );
         RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
         RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
@@ -678,7 +687,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder createGroupDegreesRebuilder( DatabaseLayout directoryLayout ) throws IOException
+    private GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder createGroupDegreesRebuilder( RecordDatabaseLayout directoryLayout ) throws IOException
     {
         try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) ) )
         {
@@ -705,13 +714,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private void updateOrAddNeoStoreFieldsAsPartOfMigration( DatabaseLayout migrationStructure, DatabaseLayout sourceDirectoryStructure,
+    private void updateOrAddNeoStoreFieldsAsPartOfMigration( RecordDatabaseLayout migrationStructure, RecordDatabaseLayout sourceDirectoryStructure,
             String versionToMigrateTo, LogPosition lastClosedTxLogPosition, boolean requiresIdFilesMigration, CursorContext cursorContext ) throws IOException
     {
         final Path storeDirNeoStore = sourceDirectoryStructure.metadataStore();
         final Path migrationDirNeoStore = migrationStructure.metadataStore();
         String databaseName = sourceDirectoryStructure.getDatabaseName();
-        fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStructure, Iterables.iterable( DatabaseFile.METADATA_STORE ), true,
+        fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStructure, Iterables.iterable( CommonDatabaseFile.METADATA_STORE ), true,
                 !requiresIdFilesMigration, ExistingTargetStrategy.SKIP );
 
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_ID,
@@ -764,8 +773,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     /**
      * Migration of the schema store is invoked if the old and new formats differ in their {@link RecordStorageCapability#FLEXIBLE_SCHEMA_STORE} capability.
      */
-    private void migrateSchemaStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat,
-            CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException, KernelException
+    private void migrateSchemaStore( RecordDatabaseLayout directoryLayout, RecordDatabaseLayout migrationLayout, RecordFormats oldFormat,
+            RecordFormats newFormat, CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException, KernelException
     {
         IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, srcIdGeneratorFactory );
@@ -774,23 +783,22 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
         if ( newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) )
         {
-            SchemaStorageCreator schemaStorageCreator = oldFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) ?
-                                                        schemaStorageCreatorFlexible() :
-                                                        schemaStorageCreator35( directoryLayout, oldFormat, srcIdGeneratorFactory );
+            SchemaStorageCreator schemaStorageCreator =
+                    oldFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) ? schemaStorageCreatorFlexible()
+                                                                                             : schemaStorageCreator35( directoryLayout, oldFormat,
+                                                                                                     srcIdGeneratorFactory );
             // Token stores
-            StoreType[] sourceStoresToOpen = new StoreType[]{
-                    StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
-                    StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
-                    StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
+            StoreType[] sourceStoresToOpen =
+                    new StoreType[] {StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME, StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                            StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
             sourceStoresToOpen = ArrayUtil.concat( sourceStoresToOpen, schemaStorageCreator.additionalStoresToOpen() );
             try ( NeoStores srcStore = srcFactory.openNeoStores( sourceStoresToOpen );
-                 var srcCursors = new CachedStoreCursors( srcStore, cursorContext );
-                  NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
-                  schemaStorageCreator )
+                    var srcCursors = new CachedStoreCursors( srcStore, cursorContext );
+                    NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
+                    schemaStorageCreator )
             {
                 dstStore.start( cursorContext );
-                TokenHolders srcTokenHolders = new TokenHolders(
-                        StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
+                TokenHolders srcTokenHolders = new TokenHolders( StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
                 srcTokenHolders.setInitialTokens( allTokens( srcStore ), srcCursors );
@@ -1005,7 +1013,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         };
     }
 
-    private SchemaStorageCreator schemaStorageCreator35( DatabaseLayout directoryLayout, RecordFormats oldFormat,
+    private SchemaStorageCreator schemaStorageCreator35( RecordDatabaseLayout directoryLayout, RecordFormats oldFormat,
             IdGeneratorFactory srcIdGeneratorFactory )
     {
         return new SchemaStorageCreator()

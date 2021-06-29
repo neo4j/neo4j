@@ -38,7 +38,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -73,7 +73,7 @@ public class NeoStores implements AutoCloseable
     private static final StoreType[] STORE_TYPES = StoreType.values();
 
     private final FileSystemAbstraction fileSystem;
-    private final DatabaseLayout layout;
+    private final RecordDatabaseLayout layout;
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
     private final PageCache pageCache;
@@ -88,7 +88,7 @@ public class NeoStores implements AutoCloseable
 
     NeoStores(
             FileSystemAbstraction fileSystem,
-            DatabaseLayout layout,
+            RecordDatabaseLayout layout,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -581,7 +581,7 @@ public class NeoStores implements AutoCloseable
         return recordFormats;
     }
 
-    public static boolean isStorePresent( FileSystemAbstraction fs, DatabaseLayout databaseLayout )
+    public static boolean isStorePresent( FileSystemAbstraction fs, RecordDatabaseLayout databaseLayout )
     {
         return fs.fileExists( databaseLayout.metadataStore() );
     }

@@ -39,7 +39,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -64,7 +64,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
  * {@link PageCache}, which usually are managed by test rules themselves. That's why they are passed in
- * when {@link #getWith(FileSystemAbstraction, PageCache, DatabaseLayout) getting (constructing)} the engine. Further
+ * when {@link #getWith(FileSystemAbstraction, PageCache, RecordDatabaseLayout) getting (constructing)} the engine. Further
  * dependencies can be overridden in that returned builder as well.
  * <p>
  * Keep in mind that this rule must be created BEFORE page cache rule and any file system rule so that shutdown order gets correct.
@@ -80,13 +80,13 @@ public class RecordStorageEngineRule extends ExternalResource
         life.start();
     }
 
-    public Builder getWith( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
+    public Builder getWith( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout )
     {
         return new Builder( fs, pageCache, databaseLayout );
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, Health databaseHealth,
-            DatabaseLayout databaseLayout, Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer,
+            RecordDatabaseLayout databaseLayout, Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer,
             IndexUpdateListener indexUpdateListener, LockService lockService, TokenHolders tokenHolders,
             Config config, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter )
     {
@@ -112,7 +112,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
         private Health databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
-        private final DatabaseLayout databaseLayout;
+        private final RecordDatabaseLayout databaseLayout;
         private Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer =
                 applierFacade -> applierFacade;
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
@@ -147,7 +147,7 @@ public class RecordStorageEngineRule extends ExternalResource
         };
         private IndexConfigCompleter indexConfigCompleter = index -> index;
 
-        public Builder( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
+        public Builder( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout )
         {
             this.fs = fs;
             this.pageCache = pageCache;
@@ -215,7 +215,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private final Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain>
                 transactionApplierTransformer;
 
-        ExtendedRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
+        ExtendedRecordStorageEngine( RecordDatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
                 LogProvider internalLogProvider, LogProvider userLogProvider, TokenHolders tokenHolders, SchemaState schemaState,
                 ConstraintRuleAccessor constraintSemantics,
                 IndexConfigCompleter indexConfigCompleter,

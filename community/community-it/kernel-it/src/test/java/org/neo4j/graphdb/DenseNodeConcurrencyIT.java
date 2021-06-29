@@ -70,7 +70,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -152,7 +152,7 @@ class DenseNodeConcurrencyIT
         {
             DependencyResolver deps = database.getDependencyResolver();
             Config config = deps.resolveDependency( Config.class );
-            DatabaseLayout databaseLayout = database.databaseLayout();
+            RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.cast( database.databaseLayout() );
             dbms.shutdown();
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, config, NONE, nullLogProvider(),
                     deps.resolveDependency( FileSystemAbstraction.class ), false, ConsistencyFlags.DEFAULT );

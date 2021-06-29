@@ -28,6 +28,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
@@ -48,7 +49,7 @@ import org.neo4j.storageengine.api.LogFilesInitializer;
 public class ParallelBatchImporter implements BatchImporter
 {
     private static final String BATCH_IMPORTER_CHECKPOINT = "Batch importer checkpoint.";
-    private final DatabaseLayout databaseLayout;
+    private final RecordDatabaseLayout databaseLayout;
     private final FileSystemAbstraction fileSystem;
     private final PageCacheTracer pageCacheTracer;
     private final Configuration config;
@@ -70,7 +71,7 @@ public class ParallelBatchImporter implements BatchImporter
             JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
             IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker )
     {
-        this.databaseLayout = databaseLayout;
+        this.databaseLayout = RecordDatabaseLayout.convert( databaseLayout );
         this.fileSystem = fileSystem;
         this.pageCacheTracer = pageCacheTracer;
         this.config = config;

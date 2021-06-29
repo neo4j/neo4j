@@ -47,6 +47,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -117,8 +118,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private final FileSystemAbstraction fileSystem;
     private final LogProvider internalLogProvider;
     private final LogProvider userLogProvider;
-    private final DatabaseLayout databaseLayout;
-    private final DatabaseLayout temporaryDatabaseLayout;
+    private final RecordDatabaseLayout databaseLayout;
+    private final RecordDatabaseLayout temporaryDatabaseLayout;
     private final Config neo4jConfig;
     private final Configuration importConfiguration;
     private final PageCache pageCache;
@@ -145,7 +146,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private boolean successful;
 
-    private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, DatabaseLayout databaseLayout,
+    private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, RecordDatabaseLayout databaseLayout,
             RecordFormats recordFormats, Config neo4jConfig, Configuration importConfiguration, LogService logService,
             AdditionalInitialIds initialIds, boolean externalPageCache, IoTracer ioTracer, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
@@ -156,7 +157,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.internalLogProvider = logService.getInternalLogProvider();
         this.userLogProvider = logService.getUserLogProvider();
         this.databaseLayout = databaseLayout;
-        this.temporaryDatabaseLayout = DatabaseLayout.ofFlat( databaseLayout.file( TEMP_STORE_NAME ) );
+        this.temporaryDatabaseLayout = RecordDatabaseLayout.ofFlat( databaseLayout.file( TEMP_STORE_NAME ) );
         this.neo4jConfig = neo4jConfig;
         this.pageCache = pageCache;
         this.ioTracer = ioTracer;
@@ -286,7 +287,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 .openNeoStores( true, TEMP_STORE_TYPES );
     }
 
-    public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
+    public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout,
             RecordFormats recordFormats, Configuration config, LogService logService, AdditionalInitialIds initialIds,
             Config dbConfig, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
@@ -298,7 +299,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     public static BatchingNeoStores batchingNeoStoresWithExternalPageCache( FileSystemAbstraction fileSystem,
-            PageCache pageCache, PageCacheTracer tracer, DatabaseLayout databaseLayout, RecordFormats recordFormats,
+            PageCache pageCache, PageCacheTracer tracer, RecordDatabaseLayout databaseLayout, RecordFormats recordFormats,
             Configuration config, LogService logService, AdditionalInitialIds initialIds, Config dbConfig, MemoryTracker memoryTracker )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
@@ -328,7 +329,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return new MuninnPageCache( swapperFactory, jobScheduler, configuration );
     }
 
-    private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, IdGeneratorFactory idGeneratorFactory, PageCacheTracer cacheTracer,
+    private StoreFactory newStoreFactory( RecordDatabaseLayout databaseLayout, IdGeneratorFactory idGeneratorFactory, PageCacheTracer cacheTracer,
             ImmutableSet<OpenOption> openOptions )
     {
         return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, internalLogProvider, cacheTracer,

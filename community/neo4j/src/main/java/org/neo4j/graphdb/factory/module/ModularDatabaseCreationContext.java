@@ -35,6 +35,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -128,7 +129,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.idController = idContext.getIdController();
         this.transactionsMemoryPool = globalModule.getTransactionsMemoryPool();
         this.otherMemoryPool = globalModule.getOtherMemoryPool();
-        this.databaseLayout = globalModule.getNeo4jLayout().databaseLayout( namedDatabaseId.name() );
         this.databaseLogService = new DatabaseLogService( namedDatabaseId, globalModule.getLogService() );
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
@@ -155,7 +155,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.watcherServiceFactory = editionComponents.getWatcherServiceFactory();
         this.databaseAvailabilityGuardFactory =
                 databaseTimeoutMillis -> databaseAvailabilityGuardFactory( namedDatabaseId, globalModule, databaseTimeoutMillis );
-        this.storageEngineFactory = selectStorageEngine( fs, databaseLayout, pageCache, databaseConfig, namedDatabaseId );
+        Neo4jLayout neo4jLayout = globalModule.getNeo4jLayout();
+        this.storageEngineFactory = selectStorageEngine( fs, neo4jLayout, pageCache, databaseConfig, namedDatabaseId );
+        this.databaseLayout = storageEngineFactory.databaseLayout( neo4jLayout, namedDatabaseId.name() );
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
         this.leaseService = leaseService;

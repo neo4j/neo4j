@@ -37,7 +37,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
@@ -101,7 +101,7 @@ class LabelScanStoreTxApplyRaceIT
         race.go();
 
         // then
-        DatabaseLayout dbLayout = db.databaseLayout();
+        RecordDatabaseLayout dbLayout = (RecordDatabaseLayout) db.databaseLayout();
         managementService.shutdown();
 
         assertTrue( new ConsistencyCheckService().runFullConsistencyCheck( dbLayout, defaults( GraphDatabaseSettings.neo4j_home, testDirectory.homePath() ),

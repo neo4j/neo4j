@@ -29,7 +29,7 @@ import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -69,7 +69,7 @@ class DirectRecordStoreMigrator
         this.cacheTracer = cacheTracer;
     }
 
-    public void migrate( DatabaseLayout fromDirectoryStructure, RecordFormats fromFormat, DatabaseLayout toDirectoryStructure,
+    public void migrate( RecordDatabaseLayout fromDirectoryStructure, RecordFormats fromFormat, RecordDatabaseLayout toDirectoryStructure,
             RecordFormats toFormat, ProgressReporter progressReporter, StoreType[] types, StoreType... additionalTypesToOpen ) throws IOException
     {
         StoreType[] storesToOpen = ArrayUtil.concat( types, additionalTypesToOpen );

@@ -39,7 +39,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseFile;
+import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
@@ -142,7 +142,7 @@ class KernelDiagnosticsIT
                     manuallyCountTotalMappedFileSize( path, result, nativeIndexFilter );
                 }
                 else if ( storeFiles.contains( path.getFileName().toString() ) ||
-                        path.getFileName().toString().equals( DatabaseFile.LABEL_SCAN_STORE.getName() ) || nativeIndexFilter.test( path ) )
+                        path.getFileName().toString().equals( CommonDatabaseFile.LABEL_SCAN_STORE.getName() ) || nativeIndexFilter.test( path ) )
                 {
                     try
                     {

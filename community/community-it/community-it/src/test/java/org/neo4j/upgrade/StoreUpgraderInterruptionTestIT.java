@@ -42,6 +42,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -105,7 +106,7 @@ public class StoreUpgraderInterruptionTestIT
 
     private JobScheduler jobScheduler;
     private Neo4jLayout neo4jLayout;
-    private DatabaseLayout workingDatabaseLayout;
+    private RecordDatabaseLayout workingDatabaseLayout;
     private Path prepareDirectory;
     private LegacyTransactionLogsLocator legacyTransactionLogsLocator;
     private PageCache pageCache;
@@ -116,7 +117,7 @@ public class StoreUpgraderInterruptionTestIT
     {
         jobScheduler = new ThreadPoolJobScheduler();
         neo4jLayout = Neo4jLayout.of( directory.homePath() );
-        workingDatabaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
+        workingDatabaseLayout = RecordDatabaseLayout.of( neo4jLayout, DEFAULT_DATABASE_NAME );
         prepareDirectory = directory.directory( "prepare" );
         legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
         pageCache = pageCacheExtension.getPageCache( fs );

@@ -62,8 +62,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
@@ -189,7 +188,7 @@ class MultipleIndexPopulationStressIT
                               .set( GraphDatabaseSettings.pagecache_memory, "8m" )
                               .set( index_population_queue_threshold, concurrentUpdatesQueueFlushThreshold )
                               .build();
-        Result result = cc.runFullConsistencyCheck( DatabaseLayout.of( config ),
+        Result result = cc.runFullConsistencyCheck( RecordDatabaseLayout.of( config ),
                                                     config,
                                                     NONE, NullLogProvider.getInstance(), false );
         assertThat( result.isSuccessful() ).as( "Database consistency" )
@@ -400,7 +399,7 @@ class MultipleIndexPopulationStressIT
         try ( RandomDataInput input = new RandomDataInput( nodeCount, relCount );
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            DatabaseLayout layout = Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
+            RecordDatabaseLayout layout = RecordDatabaseLayout.of( config );
             IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl( config );
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemAbstraction, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),

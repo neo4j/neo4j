@@ -32,8 +32,8 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -71,7 +71,8 @@ class DefaultDatabaseManagerUpgradeIT
     private FileSystemAbstraction fs;
     @Inject
     private Neo4jLayout neo4jLayout;
-    private DatabaseLayout databaseLayout;
+    @Inject
+    private RecordDatabaseLayout databaseLayout;
     private DatabaseManagementService dbms;
     private LogProvider userLogProvider;
 
@@ -80,7 +81,6 @@ class DefaultDatabaseManagerUpgradeIT
     {
         // Create store with standard format. This will be upgraded to high_limit in tests.
         userLogProvider = mock( LogProvider.class, RETURNS_MOCKS );
-        databaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
         Path prepareDirectory = testDirectory.directory( "prepare" );
         Path workingDirectory = databaseLayout.databaseDirectory();
         MigrationTestUtils.prepareSampleLegacyDatabase( StandardV3_4.STORE_VERSION, fs, workingDirectory, prepareDirectory );

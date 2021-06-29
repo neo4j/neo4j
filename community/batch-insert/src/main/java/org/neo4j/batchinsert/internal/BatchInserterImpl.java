@@ -76,6 +76,7 @@ import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -185,7 +186,7 @@ public class BatchInserterImpl implements BatchInserter
     private static final String CHECKPOINT_REASON = "Batch inserter checkpoint.";
     private final LifeSupport life;
     private final NeoStores neoStores;
-    private final DatabaseLayout databaseLayout;
+    private final RecordDatabaseLayout databaseLayout;
     private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
     private final IndexProviderMap indexProviderMap;
@@ -228,9 +229,10 @@ public class BatchInserterImpl implements BatchInserter
     private final long maxNodeId;
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
-    public BatchInserterImpl( final DatabaseLayout databaseLayout, final FileSystemAbstraction fileSystem,
+    public BatchInserterImpl( DatabaseLayout layoutArg, final FileSystemAbstraction fileSystem,
                        Config fromConfig, Iterable<ExtensionFactory<?>> extensions, DatabaseTracers tracers ) throws IOException
     {
+        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.convert( layoutArg );
         rejectAutoUpgrade( fromConfig );
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         this.config = Config.newBuilder()

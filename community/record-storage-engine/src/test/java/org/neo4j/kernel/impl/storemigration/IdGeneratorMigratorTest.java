@@ -32,7 +32,7 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -70,8 +70,8 @@ class IdGeneratorMigratorTest
     void shouldFindAndStoreDeletedIds() throws IOException
     {
         // given
-        DatabaseLayout db = DatabaseLayout.ofFlat( directory.directory( "from" ) );
-        DatabaseLayout upgrade = DatabaseLayout.ofFlat( directory.directory( "to" ) );
+        RecordDatabaseLayout db = RecordDatabaseLayout.ofFlat( directory.directory( "from" ) );
+        RecordDatabaseLayout upgrade = RecordDatabaseLayout.ofFlat( directory.directory( "to" ) );
         long nodeStoreStartId;
         long stringStoreStartId;
         long relationshipStoreStartId;

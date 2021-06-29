@@ -40,7 +40,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -114,7 +114,7 @@ class IndexWorkSyncTransactionApplicationStressIT
                 Runtime.getRuntime().availableProcessors() );
         CollectingIndexUpdateListener index = new CollectingIndexUpdateListener();
         RecordStorageEngine storageEngine = storageEngineRule
-                .getWith( fileSystem, pageCache, DatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) ) )
+                .getWith( fileSystem, pageCache, RecordDatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) ) )
                 .indexUpdateListener( index )
                 .build();
         try ( var storageCursors = storageEngine.createStorageCursors( NULL ) )

@@ -49,6 +49,7 @@ import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -58,6 +59,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -65,7 +67,6 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
@@ -74,7 +75,6 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -219,11 +219,12 @@ public class ConsistencyCheckService
                 consistencyFlags, pageCacheTracer, memoryTracker );
     }
 
-    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
+    public Result runFullConsistencyCheck( DatabaseLayout layout, Config config,
             ProgressMonitorFactory progressFactory, final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
             DebugContext debugContext, Path reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
+        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.convert( layout ); //Right now we only support consistencychecker on record format
         assertRecovered( databaseLayout, config, fileSystem, memoryTracker );
         Log log = logProvider.getLog( getClass() );
         config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
@@ -412,12 +413,12 @@ public class ConsistencyCheckService
     {
         protected final PageCache pageCache;
         protected final FileSystemAbstraction fileSystem;
-        protected final DatabaseLayout databaseLayout;
+        protected final RecordDatabaseLayout databaseLayout;
         protected final PageCacheTracer pageCacheTracer;
         protected final MemoryTracker memoryTracker;
         private T store;
 
-        CountsStorageManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
+        CountsStorageManager( PageCache pageCache, FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
                 MemoryTracker memoryTracker )
         {
             this.pageCache = pageCache;
@@ -451,7 +452,7 @@ public class ConsistencyCheckService
     {
         private final LogProvider logProvider;
 
-        CountsStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
+        CountsStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
                 MemoryTracker memoryTracker, LogProvider logProvider )
         {
             super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );
@@ -471,7 +472,7 @@ public class ConsistencyCheckService
     {
         private final LogProvider logProvider;
 
-        RelationshipGroupDegreesStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
+        RelationshipGroupDegreesStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout,
                 PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, LogProvider logProvider )
         {
             super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );

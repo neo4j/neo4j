@@ -37,7 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -76,7 +76,7 @@ class RelationshipGroupStoreTest
     @Inject
     private FileSystemAbstraction fs;
     @Inject
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
     private int defaultThreshold;
     private GraphDatabaseAPI db;
     private DatabaseManagementService managementService;

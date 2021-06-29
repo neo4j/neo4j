@@ -57,6 +57,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -652,7 +653,7 @@ class RecoveryIT
     {
         GraphDatabaseAPI db = createDatabase();
         generateSomeData( db );
-        DatabaseLayout layout = db.databaseLayout();
+        RecordDatabaseLayout layout = RecordDatabaseLayout.cast( db.databaseLayout() );
         managementService.shutdown();
 
         fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
@@ -692,7 +693,7 @@ class RecoveryIT
     {
         GraphDatabaseAPI database = createDatabase();
         generateSomeData( database );
-        DatabaseLayout layout = database.databaseLayout();
+        RecordDatabaseLayout layout = RecordDatabaseLayout.cast( database.databaseLayout() );
         managementService.shutdown();
 
         fileSystem.deleteFileOrThrow( layout.nodeStore() );
@@ -718,7 +719,7 @@ class RecoveryIT
     {
         GraphDatabaseAPI database = createDatabase();
         generateSomeData( database );
-        DatabaseLayout layout = database.databaseLayout();
+        RecordDatabaseLayout layout = RecordDatabaseLayout.cast( database.databaseLayout() );
         managementService.shutdown();
 
         // Recovery should not be attempted on any store with missing store files, even if other recoverable files are missing as well.
@@ -808,7 +809,7 @@ class RecoveryIT
         // given
         GraphDatabaseAPI db = createDatabase();
         generateSomeData( db );
-        DatabaseLayout layout = db.databaseLayout();
+        RecordDatabaseLayout layout = RecordDatabaseLayout.cast( db.databaseLayout() );
         managementService.shutdown();
         assertFalse( isRecoveryRequired( layout ) );
         // Make an ID generator, say for the node store, dirty

@@ -34,9 +34,9 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.ImportLogic;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Distribution;
@@ -50,8 +50,8 @@ import org.neo4j.internal.batchimport.input.RandomEntityDataGenerator;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -216,10 +216,11 @@ class CsvInputEstimateCalculationIT
 
     private long propertyStorageSize() throws IOException
     {
-        return sizeOf( DatabaseFile.PROPERTY_STORE ) + sizeOf( DatabaseFile.PROPERTY_ARRAY_STORE ) + sizeOf( DatabaseFile.PROPERTY_STRING_STORE );
+        return sizeOf( RecordDatabaseFile.PROPERTY_STORE ) + sizeOf( RecordDatabaseFile.PROPERTY_ARRAY_STORE ) +
+                sizeOf( RecordDatabaseFile.PROPERTY_STRING_STORE );
     }
 
-    private long sizeOf( DatabaseFile file ) throws IOException
+    private long sizeOf( RecordDatabaseFile file ) throws IOException
     {
         return Files.size( databaseLayout.file( file ) );
     }

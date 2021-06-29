@@ -63,7 +63,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -166,7 +166,7 @@ class BatchInsertTest
     @Inject
     private PageCache pageCache;
     @Inject
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
 
     private DatabaseManagementService managementService;
 

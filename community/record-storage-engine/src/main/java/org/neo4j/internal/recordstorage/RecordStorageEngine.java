@@ -60,7 +60,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -125,7 +125,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private static final String SCHEMA_UPGRADE_TAG = "schemaUpgrade";
 
     private final NeoStores neoStores;
-    private final DatabaseLayout databaseLayout;
+    private final RecordDatabaseLayout databaseLayout;
     private final Config config;
     private final LogProvider internalLogProvider;
     private final TokenHolders tokenHolders;
@@ -153,7 +153,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     // installed later
     private IndexUpdateListener indexUpdateListener;
 
-    public RecordStorageEngine( DatabaseLayout databaseLayout,
+    public RecordStorageEngine( RecordDatabaseLayout databaseLayout,
             Config config,
             PageCache pageCache,
             FileSystemAbstraction fs,
@@ -258,7 +258,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         return new TransactionApplierFactoryChain( idUpdateListenerFunction, appliers.toArray( new TransactionApplierFactory[0] ) );
     }
 
-    private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, LogProvider internalLogProvider,
+    private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout, LogProvider internalLogProvider,
             LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config,
             PageCacheTracer pageCacheTracer )
     {
@@ -290,14 +290,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, LogProvider userLogProvider,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCacheTracer pageCacheTracer )
+    private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout,
+            LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config,
+            PageCacheTracer pageCacheTracer )
     {
         try
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
-                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer,
-                    GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(), config.get( counts_store_max_cached_entries ), userLogProvider );
+                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
+                    config.get( counts_store_max_cached_entries ), userLogProvider );
         }
         catch ( IOException e )
         {

@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.id.ReservedIdException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -48,7 +48,7 @@ public class BatchInsertionIT
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
     private DatabaseManagementService managementService;
 
     @AfterEach

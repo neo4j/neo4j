@@ -69,7 +69,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
@@ -462,7 +462,7 @@ public class DetectRandomSabotageIT
         dbms.shutdown();
         Config.Builder builder = Config.newBuilder().set( neo4j_home, directory.homePath() );
         Config config = addConfig( builder ).build();
-        return new ConsistencyCheckService().runFullConsistencyCheck( DatabaseLayout.of( config ), config, ProgressMonitorFactory.NONE,
+        return new ConsistencyCheckService().runFullConsistencyCheck( RecordDatabaseLayout.of( config ), config, ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false, DEFAULT );
     }
 

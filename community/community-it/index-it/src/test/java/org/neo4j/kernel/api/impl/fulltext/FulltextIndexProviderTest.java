@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.FulltextSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -70,8 +71,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
@@ -106,7 +106,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -525,7 +524,7 @@ class FulltextIndexProviderTest
         {
             var cacheTracer = NULL;
             FileSystemAbstraction fs = builder.getFileSystem();
-            DatabaseLayout databaseLayout = Neo4jLayout.of( builder.getHomeDirectory() ).databaseLayout( DEFAULT_DATABASE_NAME );
+            RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( Config.defaults( GraphDatabaseSettings.neo4j_home, builder.getHomeDirectory() ) );
             DefaultIdGeneratorFactory idGenFactory =
                     new DefaultIdGeneratorFactory( fs, RecoveryCleanupWorkCollector.ignore(), databaseLayout.getDatabaseName() );
             try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();

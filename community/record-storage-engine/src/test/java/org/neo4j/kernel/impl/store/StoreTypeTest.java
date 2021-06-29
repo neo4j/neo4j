@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.io.layout.DatabaseFile;
+import org.neo4j.io.layout.CommonDatabaseFile;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,20 +32,20 @@ class StoreTypeTest
     @Test
     void storeTypeOfValidStoreFile()
     {
-        StoreType matchedType = StoreType.typeOf( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
+        StoreType matchedType = StoreType.typeOf( RecordDatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
         assertEquals( StoreType.NODE, matchedType );
     }
 
     @Test
     void storeTypeOfMetaDataStoreFile()
     {
-        StoreType matchedType = StoreType.typeOf( DatabaseFile.METADATA_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
+        StoreType matchedType = StoreType.typeOf( CommonDatabaseFile.METADATA_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
         assertEquals( StoreType.META_DATA, matchedType );
     }
 
     @Test
     void storeTypeofSomeInvalidFile()
     {
-        assertThat( StoreType.typeOf( DatabaseFile.LABEL_SCAN_STORE ) ).isEmpty();
+        assertThat( StoreType.typeOf( CommonDatabaseFile.LABEL_SCAN_STORE ) ).isEmpty();
     }
 }

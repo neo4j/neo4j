@@ -48,6 +48,7 @@ import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -118,7 +119,7 @@ public class StoreUpgraderTest
     @Inject
     private FileSystemAbstraction fileSystem;
 
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
     private JobScheduler jobScheduler;
 
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, true );
@@ -144,7 +145,7 @@ public class StoreUpgraderTest
     private void init( RecordFormats formats ) throws IOException
     {
         String version = formats.storeVersion();
-        databaseLayout = neo4jLayout.databaseLayout( "db-" + version );
+        databaseLayout = RecordDatabaseLayout.of( neo4jLayout, "db-" + version );
         prepareDatabaseDirectory = testDirectory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, databaseLayout, prepareDatabaseDirectory );
     }

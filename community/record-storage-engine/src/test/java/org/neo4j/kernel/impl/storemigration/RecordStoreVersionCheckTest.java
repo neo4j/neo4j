@@ -27,7 +27,7 @@ import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -62,7 +62,7 @@ class RecordStoreVersionCheckTest
     @Inject
     protected PageCache pageCache;
     @Inject
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
 
     @Test
     void shouldFailIfFileDoesNotExist()
@@ -195,7 +195,7 @@ class RecordStoreVersionCheckTest
         return shortFile;
     }
 
-    private static void metaDataFileContaining( DatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
+    private static void metaDataFileContaining( RecordDatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
     {
         Path shortFile = layout.metadataStore();
         fs.deleteFile( shortFile );

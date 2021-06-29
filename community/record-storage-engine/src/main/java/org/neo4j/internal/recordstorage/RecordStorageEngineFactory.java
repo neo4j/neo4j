@@ -45,6 +45,8 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -59,6 +61,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -86,8 +89,6 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -103,8 +104,8 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
-import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_KEY_TOKEN;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
@@ -123,7 +124,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
             LogService logService, PageCacheTracer pageCacheTracer )
     {
-        return new RecordStoreVersionCheck( fs, pageCache, databaseLayout, logService.getInternalLogProvider(), config, pageCacheTracer );
+        return new RecordStoreVersionCheck( fs, pageCache, convert( databaseLayout ), logService.getInternalLogProvider(), config,
+                pageCacheTracer );
     }
 
     @Override
@@ -156,7 +158,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
             DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker )
     {
-        return new RecordStorageEngine( databaseLayout, config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState,
+        return new RecordStorageEngine( convert( databaseLayout ), config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState,
                 constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector,
                 cacheTracer, createStoreIfNotExists, memoryTracker, readOnlyChecker, new CommandLockVerification.Factory.RealFactory( config ),
                 LockVerificationMonitor.Factory.defaultFactory( config ) );
@@ -165,7 +167,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public List<Path> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
-        if ( !fileSystem.fileExists( databaseLayout.metadataStore() ) )
+        if ( !fileSystem.fileExists( convert( databaseLayout ).metadataStore() ) )
         {
             throw new IOException( "No storage present at " + databaseLayout + " on " + fileSystem );
         }
@@ -178,27 +180,28 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public boolean storageExists( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache )
     {
-        return NeoStores.isStorePresent( fileSystem, databaseLayout );
+        return NeoStores.isStorePresent( fileSystem, convert( databaseLayout ) );
     }
 
     @Override
     public TransactionIdStore readOnlyTransactionIdStore( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache,
             CursorContext cursorContext ) throws IOException
     {
-        return new ReadOnlyTransactionIdStore( fileSystem, pageCache, databaseLayout, cursorContext );
+        return new ReadOnlyTransactionIdStore( fileSystem, pageCache, convert( databaseLayout ), cursorContext );
     }
 
     @Override
     public LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext )
             throws IOException
     {
-        return new ReadOnlyLogVersionRepository( pageCache, databaseLayout, cursorContext );
+        return new ReadOnlyLogVersionRepository( pageCache, convert( databaseLayout ), cursorContext );
     }
 
     @Override
-    public MetadataProvider transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
+    public MetadataProvider transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache,
             PageCacheTracer cacheTracer )
     {
+        RecordDatabaseLayout databaseLayout = convert( layout );
         RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance(), cacheTracer );
         var readOnlyChecker = new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseLayout.getDatabaseName() );
         var idGeneratorFactory = readOnlyChecker.isReadOnly() ? new ScanOnOpenReadOnlyIdGeneratorFactory()
@@ -210,27 +213,28 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException
     {
-        return MetaDataStore.getStoreId( pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorContext );
+        return MetaDataStore.getStoreId( pageCache, convert( databaseLayout ).metadataStore(), databaseLayout.getDatabaseName(), cursorContext );
     }
 
     @Override
     public void setStoreId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext, StoreId storeId,
             long upgradeTxChecksum, long upgradeTxCommitTimestamp ) throws IOException
     {
-        MetaDataStore.setStoreId( pageCache, databaseLayout.metadataStore(), storeId, upgradeTxChecksum, upgradeTxCommitTimestamp,
+        MetaDataStore.setStoreId( pageCache, convert( databaseLayout ).metadataStore(), storeId, upgradeTxChecksum, upgradeTxCommitTimestamp,
                 databaseLayout.getDatabaseName(), cursorContext );
     }
 
     @Override
     public Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext )
     {
-        return MetaDataStore.getDatabaseIdUuid( pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorContext );
+        return MetaDataStore.getDatabaseIdUuid( pageCache, convert( databaseLayout ).metadataStore(), databaseLayout.getDatabaseName(), cursorContext );
     }
 
     @Override
-    public SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
+    public SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout layout,
             LogService logService, String recordFormats, PageCacheTracer cacheTracer, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
+        RecordDatabaseLayout databaseLayout = convert( layout );
         RecordFormats formats = selectForVersion( recordFormats );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
@@ -248,9 +252,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
+    public List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout layout,
             CursorContext cursorContext )
     {
+        RecordDatabaseLayout databaseLayout = convert( layout );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
                         NullLogProvider.nullLogProvider(), PageCacheTracer.NULL, readOnly() );
@@ -276,22 +281,29 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
+    public RecordDatabaseLayout databaseLayout( Neo4jLayout neo4jLayout, String databaseName )
+    {
+        return RecordDatabaseLayout.of( neo4jLayout, databaseName);
+    }
+
+    @Override
     public StorageFilesState checkStoreFileState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
     {
-        Set<Path> storeFiles = databaseLayout.storeFiles();
+        RecordDatabaseLayout recordLayout = convert( databaseLayout );
+        Set<Path> storeFiles = recordLayout.storeFiles();
         // count store, index statistics and label scan store are not mandatory stores to have since they can be automatically rebuilt
-        storeFiles.remove( databaseLayout.countStore() );
-        storeFiles.remove( databaseLayout.relationshipGroupDegreesStore() );
-        storeFiles.remove( databaseLayout.indexStatisticsStore() );
-        storeFiles.remove( databaseLayout.labelScanStore() );
-        storeFiles.remove( databaseLayout.relationshipTypeScanStore() );
+        storeFiles.remove( recordLayout.countStore() );
+        storeFiles.remove( recordLayout.relationshipGroupDegreesStore() );
+        storeFiles.remove( recordLayout.indexStatisticsStore() );
+        storeFiles.remove( recordLayout.labelScanStore() );
+        storeFiles.remove( recordLayout.relationshipTypeScanStore() );
         boolean allStoreFilesExist = storeFiles.stream().allMatch( fs::fileExists );
         if ( !allStoreFilesExist )
         {
             return StorageFilesState.unrecoverableState( storeFiles.stream().filter( file -> !fs.fileExists( file ) ).collect( toList() ) );
         }
 
-        boolean allIdFilesExist = databaseLayout.idFiles().stream().allMatch( fs::fileExists );
+        boolean allIdFilesExist = recordLayout.idFiles().stream().allMatch( fs::fileExists );
         if ( !allIdFilesExist )
         {
             return StorageFilesState.recoverableState();

@@ -17,18 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.layout;
+package org.neo4j.io.layout.recordstorage;
 
 /**
  * List of file names for a database.
  */
-final class DatabaseFileNames
+final class RecordDatabaseFileNames
 {
-    static final String METADATA_STORE = "neostore";
-
-    static final String LABEL_SCAN_STORE = "neostore.labelscanstore.db";
-    static final String RELATIONSHIP_TYPE_SCAN_STORE = "neostore.relationshiptypescanstore.db";
-
     static final String COUNTS_STORE = "neostore.counts.db";
 
     static final String NODE_STORE = "neostore.nodestore.db";

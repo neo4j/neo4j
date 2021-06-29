@@ -33,7 +33,7 @@ import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
@@ -65,13 +65,13 @@ public class FullCheckCountsStoreIT
         {
             Files.delete( path );
             return true;
-        }, DatabaseLayout::countStore, RecordType.COUNTS );
+        }, RecordDatabaseLayout::countStore, RecordType.COUNTS );
     }
 
     @Test
     void shouldReportBrokenCountsStore() throws Exception
     {
-        shouldReportBadCountsStore( FullCheckCountsStoreIT::corruptFileIfExists, DatabaseLayout::countStore, RecordType.COUNTS );
+        shouldReportBadCountsStore( FullCheckCountsStoreIT::corruptFileIfExists, RecordDatabaseLayout::countStore, RecordType.COUNTS );
     }
 
     @Test
@@ -81,20 +81,21 @@ public class FullCheckCountsStoreIT
         {
             Files.delete( path );
             return true;
-        }, DatabaseLayout::relationshipGroupDegreesStore, RecordType.RELATIONSHIP_GROUP );
+        }, RecordDatabaseLayout::relationshipGroupDegreesStore, RecordType.RELATIONSHIP_GROUP );
     }
 
     @Test
     void shouldReportBrokenGroupDegreesStore() throws Exception
     {
-        shouldReportBadCountsStore( FullCheckCountsStoreIT::corruptFileIfExists, DatabaseLayout::relationshipGroupDegreesStore, RecordType.RELATIONSHIP_GROUP );
+        shouldReportBadCountsStore( FullCheckCountsStoreIT::corruptFileIfExists, RecordDatabaseLayout::relationshipGroupDegreesStore,
+                RecordType.RELATIONSHIP_GROUP );
     }
 
-    private void shouldReportBadCountsStore( ThrowingFunction<Path,Boolean,IOException> fileAction, Function<DatabaseLayout,Path> store,
+    private void shouldReportBadCountsStore( ThrowingFunction<Path,Boolean,IOException> fileAction, Function<RecordDatabaseLayout,Path> store,
             RecordType recordType ) throws Exception
     {
         // given
-        DatabaseLayout databaseLayout = db.databaseLayout();
+        RecordDatabaseLayout databaseLayout = (RecordDatabaseLayout) db.databaseLayout();
         dbms.shutdown();
         boolean corrupted = fileAction.apply( store.apply( databaseLayout ));
         assertTrue( corrupted );

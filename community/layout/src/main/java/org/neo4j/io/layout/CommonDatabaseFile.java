@@ -19,9 +19,25 @@
  */
 package org.neo4j.io.layout;
 
-public interface DatabaseFile
+public enum CommonDatabaseFile implements DatabaseFile
 {
-    String getName();
+    LABEL_SCAN_STORE( "neostore.labelscanstore.db" ),
+    RELATIONSHIP_TYPE_SCAN_STORE( "neostore.relationshiptypescanstore.db" ),
+    INDEX_STATISTICS_STORE( "neostore.indexstats.db" ),
+    METADATA_STORE( "neostore" );
 
-    boolean hasIdFile();
+    private final String name;
+    CommonDatabaseFile( String name )
+    {
+        this.name = name;
+    }
+    public String getName()
+    {
+        return name;
+    }
+
+    public boolean hasIdFile()
+    {
+        return false;
+    }
 }

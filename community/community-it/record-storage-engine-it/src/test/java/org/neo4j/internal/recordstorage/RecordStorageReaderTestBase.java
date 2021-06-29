@@ -39,7 +39,7 @@ import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.lock.LockTracer;
@@ -82,7 +82,7 @@ public abstract class RecordStorageReaderTestBase
     @Inject
     private FileSystemAbstraction fs;
     @Inject
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
 
     protected final Label label1 = label( "FirstLabel" );
     protected final Label label2 = label( "SecondLabel" );

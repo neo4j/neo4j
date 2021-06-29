@@ -34,6 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -78,14 +79,14 @@ public class Neo4jLayoutSupportExtension implements BeforeAllCallback, BeforeEac
 
         Config config = Config.defaults( neo4j_home, testDir.homePath() );
         Neo4jLayout neo4jLayout = Neo4jLayout.of( config );
-        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( config.get( default_database ) );
+        DatabaseLayout databaseLayout = RecordDatabaseLayout.of( neo4jLayout, config.get( default_database ) ); //Record format is still default
 
         createDirectories( testDir.getFileSystem(), neo4jLayout, databaseLayout );
 
         for ( Object testInstance : testInstances.getAllInstances() )
         {
-            injectInstance( testInstance, neo4jLayout, Neo4jLayout.class );
-            injectInstance( testInstance, databaseLayout, DatabaseLayout.class );
+            injectInstance( testInstance, neo4jLayout );
+            injectInstance( testInstance, databaseLayout );
         }
     }
 
@@ -122,14 +123,14 @@ public class Neo4jLayoutSupportExtension implements BeforeAllCallback, BeforeEac
         return testDir;
     }
 
-    private static <T> void injectInstance( Object testInstance, T instance, Class<T> clazz )
+    private static <T> void injectInstance( Object testInstance, T instance )
     {
         Class<?> testClass = testInstance.getClass();
         do
         {
             stream( testClass.getDeclaredFields() )
                     .filter( field -> isAnnotated( field, Inject.class ) )
-                    .filter( field -> field.getType() == clazz )
+                    .filter( field -> field.getType().isAssignableFrom( instance.getClass() ) )
                     .forEach( field -> setField( testInstance, field, instance ) );
             testClass = testClass.getSuperclass();
         }

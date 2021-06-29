@@ -34,6 +34,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -146,11 +147,11 @@ public class RecordFormatSelector
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
      * @param pageCacheTracer underlying page cache operations tracer.
-     * @return record format of the given store or <code>null</code> if {@link DatabaseLayout#metadataStore()} file not
+     * @return record format of the given store or <code>null</code> if {@link RecordDatabaseLayout#metadataStore()} file not
      * found or can't be read
      */
     @Nullable
-    public static RecordFormats selectForStore( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider,
+    public static RecordFormats selectForStore( RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider,
             PageCacheTracer pageCacheTracer )
     {
         Path neoStoreFile = databaseLayout.metadataStore();
@@ -194,7 +195,7 @@ public class RecordFormatSelector
      * @throws IllegalArgumentException when configured format is different from the format present in the store
      */
     @Nonnull
-    public static RecordFormats selectForStoreOrConfig( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+    public static RecordFormats selectForStoreOrConfig( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
         RecordFormats configuredFormat = getConfiguredRecordFormat( config, databaseLayout );
@@ -273,7 +274,7 @@ public class RecordFormatSelector
      * @see RecordFormats#generation()
      */
     @Nonnull
-    public static RecordFormats selectNewestFormat( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+    public static RecordFormats selectNewestFormat( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
         boolean formatConfigured = StringUtils.isNotEmpty( configuredRecordFormat( config ) );

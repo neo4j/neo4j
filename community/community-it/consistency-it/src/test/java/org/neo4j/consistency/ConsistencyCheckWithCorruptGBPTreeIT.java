@@ -62,6 +62,7 @@ import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
@@ -101,7 +102,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     // Created in @BeforeAll, contain full dbms with schema index backed by native-bree-1.0 and token indexes
     private EphemeralFileSystemAbstraction sourceSnapshot;
     // Database layout for database created in @BeforeAll
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
     // Re-instantiated in @BeforeEach using sourceSnapshot
     private EphemeralFileSystemAbstraction fs;
 
@@ -115,7 +116,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     db ->
                     {
                         indexWithStringData( db, label );
-                        databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
+                        databaseLayout = RecordDatabaseLayout.cast( ((GraphDatabaseAPI) db).databaseLayout() );
                     },
                     // Config
                     builder -> {} );
@@ -674,7 +675,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                 indexWithNumberData( db, label );
             }, builder -> {} );
 
-            DatabaseLayout layout = DatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome ) );
+            RecordDatabaseLayout layout = RecordDatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome ) );
 
             final Path[] indexFiles = schemaIndexFiles( fs, layout.databaseDirectory(), NATIVE30 );
             final List<Path> files = corruptIndexes( fs, readOnly(), ( tree, inspection ) -> {

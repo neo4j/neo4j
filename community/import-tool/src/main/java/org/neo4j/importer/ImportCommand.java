@@ -47,6 +47,7 @@ import org.neo4j.internal.batchimport.IndexConfig;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.util.VisibleForTesting;
@@ -220,7 +221,8 @@ public class ImportCommand extends AbstractCommand
         try
         {
             final var databaseConfig = loadNeo4jConfig();
-            final var databaseLayout = Neo4jLayout.of( databaseConfig ).databaseLayout( database.name() );
+            Neo4jLayout neo4jLayout = Neo4jLayout.of( databaseConfig );
+            final var databaseLayout = RecordDatabaseLayout.of( neo4jLayout, database.name() ); //Right now we only support Record storage for import command
             final var csvConfig = csvConfiguration();
             final var importConfig = importConfiguration( databaseLayout );
 

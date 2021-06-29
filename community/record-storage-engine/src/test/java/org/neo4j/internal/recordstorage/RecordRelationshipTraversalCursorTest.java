@@ -37,7 +37,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -92,7 +92,7 @@ public class RecordRelationshipTraversalCursorTest
     @Inject
     protected FileSystemAbstraction fs;
     @Inject
-    protected DatabaseLayout databaseLayout;
+    protected RecordDatabaseLayout databaseLayout;
 
     protected NeoStores neoStores;
     private CachedStoreCursors storeCursors;

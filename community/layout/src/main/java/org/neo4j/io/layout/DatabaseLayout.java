@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -121,109 +120,30 @@ public class DatabaseLayout
         return databaseDirectory().resolve( BACKUP_TOOLS_FOLDER );
     }
 
-    public Path metadataStore()
-    {
-        return file( DatabaseFile.METADATA_STORE.getName() );
-    }
-
+    //Index files
     public Path labelScanStore()
     {
-        return file( DatabaseFile.LABEL_SCAN_STORE.getName() );
+        return file( CommonDatabaseFile.LABEL_SCAN_STORE.getName() );
     }
 
     public Path relationshipTypeScanStore()
     {
-        return file( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() );
-    }
-
-    public Path countStore()
-    {
-        return file( DatabaseFile.COUNTS_STORE.getName() );
-    }
-
-    public Path relationshipGroupDegreesStore()
-    {
-        return file( DatabaseFile.RELATIONSHIP_GROUP_DEGREES_STORE.getName() );
-    }
-
-    public Path propertyStringStore()
-    {
-        return file( DatabaseFile.PROPERTY_STRING_STORE.getName() );
-    }
-
-    public Path relationshipStore()
-    {
-        return file( DatabaseFile.RELATIONSHIP_STORE.getName() );
-    }
-
-    public Path propertyStore()
-    {
-        return file( DatabaseFile.PROPERTY_STORE.getName() );
-    }
-
-    public Path nodeStore()
-    {
-        return file( DatabaseFile.NODE_STORE.getName() );
-    }
-
-    public Path nodeLabelStore()
-    {
-        return file( DatabaseFile.NODE_LABEL_STORE.getName() );
-    }
-
-    public Path propertyArrayStore()
-    {
-        return file( DatabaseFile.PROPERTY_ARRAY_STORE.getName() );
-    }
-
-    public Path propertyKeyTokenStore()
-    {
-        return file( DatabaseFile.PROPERTY_KEY_TOKEN_STORE.getName() );
-    }
-
-    public Path propertyKeyTokenNamesStore()
-    {
-        return file( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE.getName() );
-    }
-
-    public Path relationshipTypeTokenStore()
-    {
-        return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE.getName() );
-    }
-
-    public Path relationshipTypeTokenNamesStore()
-    {
-        return file( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE.getName() );
-    }
-
-    public Path labelTokenStore()
-    {
-        return file( DatabaseFile.LABEL_TOKEN_STORE.getName() );
-    }
-
-    public Path schemaStore()
-    {
-        return file( DatabaseFile.SCHEMA_STORE.getName() );
-    }
-
-    public Path relationshipGroupStore()
-    {
-        return file( DatabaseFile.RELATIONSHIP_GROUP_STORE.getName() );
-    }
-
-    public Path labelTokenNamesStore()
-    {
-        return file( DatabaseFile.LABEL_TOKEN_NAMES_STORE.getName() );
+        return file( CommonDatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() );
     }
 
     public Path indexStatisticsStore()
     {
-        return file( DatabaseFile.INDEX_STATISTICS_STORE.getName() );
+        return file( CommonDatabaseFile.INDEX_STATISTICS_STORE.getName() );
+    }
+
+    public Path metadataStore()
+    {
+        return file( CommonDatabaseFile.METADATA_STORE.getName() );
     }
 
     public Set<Path> idFiles()
     {
-        return Arrays.stream( DatabaseFile.values() )
+        return databaseFiles()
                 .filter( DatabaseFile::hasIdFile )
                 .flatMap( value -> idFile( value ).stream() )
                 .collect( Collectors.toSet() );
@@ -231,9 +151,14 @@ public class DatabaseLayout
 
     public Set<Path> storeFiles()
     {
-        return Arrays.stream( DatabaseFile.values() )
+        return databaseFiles()
                 .map( this::file )
                 .collect( Collectors.toSet() );
+    }
+
+    protected Stream<DatabaseFile> databaseFiles()
+    {
+        throw new IllegalStateException( "Can not check database files for a plain DatabaseLayout." );
     }
 
     public Optional<Path> idFile( DatabaseFile file )
@@ -268,77 +193,7 @@ public class DatabaseLayout
         }
     }
 
-    public Path idNodeStore()
-    {
-        return idFile( DatabaseFile.NODE_STORE.getName() );
-    }
-
-    public Path idNodeLabelStore()
-    {
-        return idFile( DatabaseFile.NODE_LABEL_STORE.getName() );
-    }
-
-    public Path idPropertyStore()
-    {
-        return idFile( DatabaseFile.PROPERTY_STORE.getName() );
-    }
-
-    public Path idPropertyKeyTokenStore()
-    {
-        return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_STORE.getName() );
-    }
-
-    public Path idPropertyKeyTokenNamesStore()
-    {
-        return idFile( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE.getName() );
-    }
-
-    public Path idPropertyStringStore()
-    {
-        return idFile( DatabaseFile.PROPERTY_STRING_STORE.getName() );
-    }
-
-    public Path idPropertyArrayStore()
-    {
-        return idFile( DatabaseFile.PROPERTY_ARRAY_STORE.getName() );
-    }
-
-    public Path idRelationshipStore()
-    {
-        return idFile( DatabaseFile.RELATIONSHIP_STORE.getName() );
-    }
-
-    public Path idRelationshipGroupStore()
-    {
-        return idFile( DatabaseFile.RELATIONSHIP_GROUP_STORE.getName() );
-    }
-
-    public Path idRelationshipTypeTokenStore()
-    {
-        return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE.getName() );
-    }
-
-    public Path idRelationshipTypeTokenNamesStore()
-    {
-        return idFile( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE.getName() );
-    }
-
-    public Path idLabelTokenStore()
-    {
-        return idFile( DatabaseFile.LABEL_TOKEN_STORE.getName() );
-    }
-
-    public Path idLabelTokenNamesStore()
-    {
-        return idFile( DatabaseFile.LABEL_TOKEN_NAMES_STORE.getName() );
-    }
-
-    public Path idSchemaStore()
-    {
-        return idFile( DatabaseFile.SCHEMA_STORE.getName() );
-    }
-
-    private Path idFile( String name )
+    protected Path idFile( String name )
     {
         return file( idFileName( name ) );
     }

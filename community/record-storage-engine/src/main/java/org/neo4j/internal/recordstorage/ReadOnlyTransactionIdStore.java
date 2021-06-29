@@ -24,6 +24,7 @@ import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -50,7 +51,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
         int checksum = 0;
         long logVersion = 0;
         long byteOffset = 0;
-        if ( NeoStores.isStorePresent( fs, databaseLayout ) )
+        if ( NeoStores.isStorePresent( fs, RecordDatabaseLayout.convert( databaseLayout ) ) )
         {
             Path neoStore = databaseLayout.metadataStore();
             String databaseName = databaseLayout.getDatabaseName();

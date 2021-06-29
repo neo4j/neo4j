@@ -64,6 +64,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -145,7 +146,7 @@ class RecordStorageMigratorIT
     @Inject
     private PageCache pageCache;
     @Inject
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
     @Inject
     private RandomRule randomRule;
 
@@ -708,7 +709,7 @@ class RecordStorageMigratorIT
         return check.configuredVersion();
     }
 
-    private static RecordStoreVersionCheck getVersionCheck( PageCache pageCache, DatabaseLayout layout )
+    private static RecordStoreVersionCheck getVersionCheck( PageCache pageCache, RecordDatabaseLayout layout )
     {
         return new RecordStoreVersionCheck( pageCache, layout, selectFormat(), Config.defaults() );
     }

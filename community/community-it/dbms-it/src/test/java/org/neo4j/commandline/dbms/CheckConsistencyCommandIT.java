@@ -45,6 +45,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -60,7 +61,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @Neo4jLayoutExtension
 class CheckConsistencyCommandIT
@@ -162,8 +162,7 @@ class CheckConsistencyCommandIT
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
-        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
-
+        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( neo4jLayout, "mydb" );
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
@@ -190,7 +189,7 @@ class CheckConsistencyCommandIT
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath, out, System.err, new DefaultFileSystemAbstraction() ),
                         consistencyCheckService );
 
-        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
+        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( neo4jLayout, "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -220,7 +219,7 @@ class CheckConsistencyCommandIT
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
-        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
+        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( neo4jLayout, "mydb" );
 
         testDirectory.getFileSystem().mkdirs( databaseLayout.databaseDirectory() );
 
@@ -241,7 +240,7 @@ class CheckConsistencyCommandIT
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
-        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
+        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( neo4jLayout, "mydb" );
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
@@ -266,7 +265,7 @@ class CheckConsistencyCommandIT
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
         when( consistencyCheckService
-                .runFullConsistencyCheck( any( DatabaseLayout.class ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( any( RecordDatabaseLayout.class ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.failure( Path.of( "/the/report/path" ), new ConsistencySummaryStatistics() ) );
@@ -412,7 +411,7 @@ class CheckConsistencyCommandIT
     {
         ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
 
-        DatabaseLayout backupLayout = Neo4jLayout.ofFlat( testDirectory.directory( "backup" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
+        RecordDatabaseLayout backupLayout = RecordDatabaseLayout.ofFlat( testDirectory.directory( "backup" ) );
         prepareBackupDatabase( backupLayout );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );

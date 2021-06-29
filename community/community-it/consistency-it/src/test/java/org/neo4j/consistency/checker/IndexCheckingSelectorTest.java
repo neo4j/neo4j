@@ -48,7 +48,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -101,7 +101,7 @@ class IndexCheckingSelectorTest
     @Inject
     private GraphDatabaseService db;
     @Inject
-    private DatabaseLayout layout;
+    private RecordDatabaseLayout layout;
     @Inject
     private PageCache pageCache;
     @Inject

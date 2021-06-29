@@ -40,6 +40,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -189,6 +190,14 @@ public interface StorageEngineFactory
      * </ol>
      */
     CommandReaderFactory commandReaderFactory();
+
+    /**
+     * Create a layout representing a database using this storage engine
+     * @param neo4jLayout the layout of neo4j
+     * @param databaseName the name of the database
+     * @return the layout representing the database
+     */
+    DatabaseLayout databaseLayout( Neo4jLayout neo4jLayout, String databaseName );
 
     /**
      * @return the default {@link StorageEngineFactory}.

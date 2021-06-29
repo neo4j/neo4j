@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundExcepti
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -69,7 +69,7 @@ class SchemaStorageTest
     @Inject
     private PageCache pageCache;
     @Inject
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
     @Inject
     private EphemeralFileSystemAbstraction fs;
 

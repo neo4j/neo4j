@@ -34,7 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseFile;
+import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -62,7 +62,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     @Override
     IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor )
     {
-        return new IndexFiles.SingleFile( fs, directory.homePath().resolve( DatabaseFile.LABEL_SCAN_STORE.getName() ) );
+        return new IndexFiles.SingleFile( fs, directory.homePath().resolve( CommonDatabaseFile.LABEL_SCAN_STORE.getName() ) );
     }
 
     @Override

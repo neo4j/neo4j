@@ -31,7 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.recordstorage.FlatRelationshipModifications;
 import org.neo4j.internal.recordstorage.FlatRelationshipModifications.RelationshipData;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -79,7 +79,7 @@ class DegreesRebuildFromStoreTest
         // given a dataset containing mixed sparse and dense nodes with relationships in random directions,
         //       where some chains have been marked as having external degrees
         int denseThreshold = dense_node_threshold.defaultValue();
-        DatabaseLayout layout = DatabaseLayout.ofFlat( directory.homePath() );
+        RecordDatabaseLayout layout = RecordDatabaseLayout.ofFlat( directory.homePath() );
         int[] relationshipTypes;
         MutableLongLongMap expectedDegrees = LongLongMaps.mutable.empty();
         try ( Lifespan life = new Lifespan() )
@@ -136,7 +136,7 @@ class DegreesRebuildFromStoreTest
         // given a dataset containing mixed sparse and dense nodes with relationships in random directions,
         //       where some chains have been marked as having external degrees
         int denseThreshold = dense_node_threshold.defaultValue();
-        DatabaseLayout layout = DatabaseLayout.ofFlat( directory.homePath() );
+        RecordDatabaseLayout layout = RecordDatabaseLayout.ofFlat( directory.homePath() );
         int[] relationshipTypes;
         MutableLongLongMap expectedDegrees = LongLongMaps.mutable.empty();
         try ( Lifespan life = new Lifespan() )
@@ -212,7 +212,7 @@ class DegreesRebuildFromStoreTest
                 } );
     }
 
-    private RecordStorageEngine openStorageEngine( DatabaseLayout layout, int denseThreshold )
+    private RecordStorageEngine openStorageEngine( RecordDatabaseLayout layout, int denseThreshold )
     {
         Config config = Config.defaults( dense_node_threshold, denseThreshold );
         return openSimpleStorageEngine( directory.getFileSystem(), pageCache, layout, config );

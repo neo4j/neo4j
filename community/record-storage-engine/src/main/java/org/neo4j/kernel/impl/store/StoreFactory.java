@@ -31,6 +31,7 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
@@ -47,7 +48,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForS
  */
 public class StoreFactory
 {
-    private final DatabaseLayout databaseLayout;
+    private final RecordDatabaseLayout databaseLayout;
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
@@ -62,15 +63,15 @@ public class StoreFactory
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, PageCacheTracer cacheTracer, DatabaseReadOnlyChecker readOnlyChecker )
     {
         this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                selectForStoreOrConfig( config, directoryStructure, fileSystemAbstraction, pageCache, logProvider, cacheTracer ),
-                logProvider, cacheTracer, readOnlyChecker, immutable.empty() );
+                selectForStoreOrConfig( config, RecordDatabaseLayout.convert( directoryStructure ), fileSystemAbstraction, pageCache, logProvider,
+                        cacheTracer ), logProvider, cacheTracer, readOnlyChecker, immutable.empty() );
     }
 
     public StoreFactory( DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider, PageCacheTracer cacheTracer,
             DatabaseReadOnlyChecker readOnlyChecker, ImmutableSet<OpenOption> openOptions )
     {
-        this.databaseLayout = databaseLayout;
+        this.databaseLayout = RecordDatabaseLayout.convert( databaseLayout );
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;

@@ -28,7 +28,7 @@ import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -60,7 +60,7 @@ import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 
 public class RecordStorageEngineTestUtils
 {
-    public static RecordStorageEngine openSimpleStorageEngine( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout, Config config )
+    public static RecordStorageEngine openSimpleStorageEngine( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout layout, Config config )
     {
         TokenHolders tokenHolders = new TokenHolders(
                 createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),

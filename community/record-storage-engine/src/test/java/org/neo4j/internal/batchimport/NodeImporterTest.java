@@ -28,7 +28,7 @@ import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -66,7 +66,7 @@ class NodeImporterTest
     private FileSystemAbstraction fs;
 
     @Inject
-    private DatabaseLayout layout;
+    private RecordDatabaseLayout layout;
 
     @Test
     void shouldHandleLargeAmountsOfLabels() throws IOException

@@ -28,7 +28,7 @@ import java.util.Optional;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -51,13 +51,13 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     private final Config config;
     private final String databaseName;
 
-    public RecordStoreVersionCheck( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, LogProvider logProvider, Config config,
+    public RecordStoreVersionCheck( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout, LogProvider logProvider, Config config,
             PageCacheTracer pageCacheTracer )
     {
         this( pageCache, databaseLayout, configuredVersion( config, databaseLayout, fs, pageCache, logProvider, pageCacheTracer ), config );
     }
 
-    RecordStoreVersionCheck( PageCache pageCache, DatabaseLayout databaseLayout, RecordFormats configuredFormat, Config config )
+    RecordStoreVersionCheck( PageCache pageCache, RecordDatabaseLayout databaseLayout, RecordFormats configuredFormat, Config config )
     {
         this.pageCache = pageCache;
         this.metaDataFile = databaseLayout.metadataStore();
@@ -170,7 +170,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
         }
     }
 
-    private static RecordFormats configuredVersion( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+    private static RecordFormats configuredVersion( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
         return RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider, pageCacheTracer );

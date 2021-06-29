@@ -39,8 +39,8 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.NegativeIdException;
 import org.neo4j.internal.id.ReservedIdException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseFile;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -108,7 +108,7 @@ class CommonAbstractStoreTest
     private TestDirectory dir;
 
     @Inject
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
 
     @BeforeEach
     void setUpMocks() throws IOException
@@ -214,7 +214,7 @@ class CommonAbstractStoreTest
         // GIVEN
         Path nodeStore = databaseLayout.nodeStore();
         Path idFile =
-                databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
+                databaseLayout.idFile( RecordDatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
         TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType,
                 new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, NullLogProvider.getInstance(), recordFormat,
                 immutable.with( DELETE_ON_CLOSE ) );

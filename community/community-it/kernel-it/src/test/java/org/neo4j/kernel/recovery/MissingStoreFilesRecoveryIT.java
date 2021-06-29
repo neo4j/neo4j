@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -60,7 +60,7 @@ class MissingStoreFilesRecoveryIT
     @Inject
     private FileSystemAbstraction fileSystem;
     private DatabaseManagementService managementService;
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
     private DatabaseManagementServiceBuilder serviceBuilder;
     private NamedDatabaseId defaultNamedDatabaseId;
     private static final Label testNodes = Label.label( "testNodes" );
@@ -72,7 +72,7 @@ class MissingStoreFilesRecoveryIT
         managementService = serviceBuilder.build();
         var databaseApi = defaultDatabase( managementService );
         createSomeData( databaseApi );
-        databaseLayout = databaseApi.databaseLayout();
+        databaseLayout = RecordDatabaseLayout.cast( databaseApi.databaseLayout() );
 
         defaultNamedDatabaseId = getDatabaseManager().databaseIdRepository().getByName( DEFAULT_DATABASE_NAME ).get();
 

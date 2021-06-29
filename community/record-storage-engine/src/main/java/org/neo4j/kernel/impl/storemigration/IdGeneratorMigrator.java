@@ -42,8 +42,9 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -80,9 +81,11 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
+    public void migrate( DatabaseLayout directoryLayoutArg, DatabaseLayout migrationLayoutArg, ProgressReporter progress, String versionToMigrateFrom,
                          String versionToMigrateTo, IndexImporterFactory indexImporterFactory ) throws IOException
     {
+        RecordDatabaseLayout directoryLayout = RecordDatabaseLayout.convert( directoryLayoutArg );
+        RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert( migrationLayoutArg );
         RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );
         if ( requiresIdFilesMigration( oldFormat, newFormat ) )
@@ -94,7 +97,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private void migrateIdFiles( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat,
+    private void migrateIdFiles( RecordDatabaseLayout directoryLayout, RecordDatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat,
             ProgressReporter progress, CursorContext cursorContext ) throws IOException
     {
         // The store .id files needs to be migrated. At this point some of them have been sort-of-migrated, i.e. merely ported
@@ -152,7 +155,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private void startAndTriggerRebuild( DatabaseLayout layout, RecordFormats format, IdGeneratorFactory idGeneratorFactory, List<StoreType> storeTypes,
+    private void startAndTriggerRebuild( RecordDatabaseLayout layout, RecordFormats format, IdGeneratorFactory idGeneratorFactory, List<StoreType> storeTypes,
             ProgressReporter progress, CursorContext cursorContext ) throws IOException
     {
         try ( NeoStores stores = createStoreFactory( layout, format, idGeneratorFactory ).openNeoStores( storeTypes.toArray( StoreType[]::new ) ) )
@@ -162,7 +165,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private Set<Path> createEmptyPlaceHolderStoreFiles( DatabaseLayout layout, RecordFormats format )
+    private Set<Path> createEmptyPlaceHolderStoreFiles( RecordDatabaseLayout layout, RecordFormats format )
     {
         Set<Path> createdStores = new HashSet<>();
         StoreType[] storesToCreate = Stream.of( StoreType.values() ).filter( t ->
@@ -184,7 +187,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         return !oldFormat.hasCapability( GBPTREE_ID_FILES ) && newFormat.hasCapability( GBPTREE_ID_FILES );
     }
 
-    private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
+    private StoreFactory createStoreFactory( RecordDatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
     {
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), cacheTracer,
                 writable(), immutable.empty() );
@@ -195,7 +198,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             throws IOException
     {
         fileOperation( MOVE, fileSystem, migrationLayout, directoryLayout,
-                Iterables.iterable( DatabaseFile.values() ), true, // allow to skip non existent source files
+                Iterables.iterable( RecordDatabaseFile.allValues() ), true, // allow to skip non existent source files
                 true, ExistingTargetStrategy.OVERWRITE );
     }
 

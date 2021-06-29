@@ -33,6 +33,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -144,9 +145,10 @@ public interface DatabaseCreationContext
 
     DbmsReadOnlyChecker getDbmsReadOnlyChecker();
 
-    static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, Configuration config,
+    static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, Neo4jLayout neo4jLayout, PageCache pageCache, Configuration config,
             NamedDatabaseId namedDatabaseId )
     {
-        return StorageEngineFactory.selectStorageEngine( fs, databaseLayout, pageCache, namedDatabaseId.isSystemDatabase() ? null : config );
+        return StorageEngineFactory
+                .selectStorageEngine( fs, neo4jLayout.databaseLayout( namedDatabaseId.name() ), pageCache, namedDatabaseId.isSystemDatabase() ? null : config );
     }
 }

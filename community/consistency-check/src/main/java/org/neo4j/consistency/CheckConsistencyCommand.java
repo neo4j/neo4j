@@ -46,6 +46,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -124,9 +125,9 @@ public class CheckConsistencyCommand extends AbstractCommand
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
 
-            DatabaseLayout databaseLayout = Optional.ofNullable( target.backup )
-                    .map( DatabaseLayout::ofFlat )
-                    .orElseGet( () -> Neo4jLayout.of( config ).databaseLayout( target.database.name() ) );
+            RecordDatabaseLayout databaseLayout = Optional.ofNullable( target.backup ) //Consistency checker only supports Record format for now
+                    .map( RecordDatabaseLayout::ofFlat )
+                    .orElseGet( () -> RecordDatabaseLayout.of( Neo4jLayout.of( config ), target.database.name() ) );
 
             checkDatabaseExistence( databaseLayout );
             try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )

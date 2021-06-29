@@ -56,7 +56,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -141,7 +141,7 @@ public class NeoStoresTest
     @Inject
     private PageCache pageCache;
     @Inject
-    private DatabaseLayout databaseLayout;
+    private RecordDatabaseLayout databaseLayout;
 
     private TransactionState transactionState;
     private StorageReader storageReader;
@@ -703,7 +703,7 @@ public class NeoStoresTest
         return MetaDataStore.versionStringToLong( RecordFormatSelector.defaultFormat().storeVersion() );
     }
 
-    private static StoreFactory newStoreFactory( DatabaseLayout databaseLayout, PageCache pageCache, FileSystemAbstraction fs )
+    private static StoreFactory newStoreFactory( RecordDatabaseLayout databaseLayout, PageCache pageCache, FileSystemAbstraction fs )
     {
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
@@ -712,7 +712,7 @@ public class NeoStoresTest
                 immutable.empty() );
     }
 
-    private void reinitializeStores( DatabaseLayout databaseLayout )
+    private void reinitializeStores( RecordDatabaseLayout databaseLayout )
     {
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( GraphDatabaseSettings.fail_on_missing_files, false );
@@ -824,7 +824,7 @@ public class NeoStoresTest
         managementService.shutdown();
     }
 
-    private StoreFactory getStoreFactory( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs,
+    private StoreFactory getStoreFactory( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs,
             NullLogProvider logProvider )
     {
         return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
