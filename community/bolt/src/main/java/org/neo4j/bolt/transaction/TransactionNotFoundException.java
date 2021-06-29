@@ -17,9 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime.statemachine;
+package org.neo4j.bolt.transaction;
 
-public interface StatementProcessorReleaseManager
+public class TransactionNotFoundException extends Exception
 {
-    void releaseStatementProcessor( String transactionId );
+    public TransactionNotFoundException( String transactionId )
+    {
+        super( "Transaction with id " + transactionId + " was not found." );
+    }
 }

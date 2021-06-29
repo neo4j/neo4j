@@ -22,6 +22,7 @@ package org.neo4j.bolt.v41;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
@@ -40,9 +41,9 @@ public class BoltStateMachineV41 extends AbstractBoltStateMachine
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineV41.class );
 
     public BoltStateMachineV41( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
-                                MapValue connectionHints, MemoryTracker memoryTracker )
+                                MapValue connectionHints, MemoryTracker memoryTracker, TransactionManager transactionManager )
     {
-        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker );
+        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker, transactionManager );
     }
 
     @Override

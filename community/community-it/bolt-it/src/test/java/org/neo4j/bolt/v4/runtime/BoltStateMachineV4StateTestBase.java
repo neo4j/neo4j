@@ -60,6 +60,13 @@ public class BoltStateMachineV4StateTestBase
         return machine;
     }
 
+    protected BoltStateMachineV4 newStateMachineAfterAuth( String connectionId ) throws BoltConnectionFatality
+    {
+        var machine = (BoltStateMachineV4) env.newMachine( BoltProtocolV4.VERSION, BoltTestUtil.newTestBoltChannel( connectionId ), MEMORY_TRACKER );
+        machine.process( BoltV4Messages.hello(), nullResponseHandler() );
+        return machine;
+    }
+
     protected static RequestMessage newHelloMessage()
     {
         return BoltV4Messages.hello();

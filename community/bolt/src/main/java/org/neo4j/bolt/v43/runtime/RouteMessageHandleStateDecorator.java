@@ -19,18 +19,16 @@
  */
 package org.neo4j.bolt.v43.runtime;
 
+import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.routing.ProcedureRoutingTableGetter;
 import org.neo4j.bolt.routing.RoutingTableGetter;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
-import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.bolt.v43.messaging.request.RouteMessage;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -57,7 +55,6 @@ public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> i
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RouteMessageHandleStateDecorator.class );
 
     private static final String ROUTING_TABLE_KEY = "rt";
-    private static final String SYSTEM_DB_NAME = GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
     private final T state;
     private final BoltStateMachineState failedState;
     private final RoutingTableGetter routingTableGetter;
@@ -105,10 +102,12 @@ public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> i
 
     private BoltStateMachineState handleRouteMessage( RouteMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
+        var programId = UUID.randomUUID().toString();
+        context.connectionState().setCurrentTransactionId( programId );
         try
         {
-            var statementProcessor = getStatementProcessor( context );
-            routingTableGetter.get( statementProcessor, message.getRequestContext(), message.getBookmarks(), message.getDatabaseName() )
+            routingTableGetter.get( programId, context.getTransactionManager(), message.getRequestContext(),
+                                    message.getBookmarks(), message.getDatabaseName(), context.connectionId() )
                               .thenAccept( routingTable -> context.connectionState().onMetadata( ROUTING_TABLE_KEY, routingTable ) )
                               .join();
             return this;
@@ -123,12 +122,6 @@ public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> i
             context.handleFailure( e, false );
             return failedState;
         }
-    }
-
-    private StatementProcessor getStatementProcessor( StateMachineContext context )
-            throws BoltProtocolBreachFatality, BoltIOException
-    {
-        return context.setCurrentStatementProcessorForDatabase( SYSTEM_DB_NAME );
     }
 
     private BoltStateMachineState redirectToWrappedState( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
@@ -35,9 +36,7 @@ import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
-import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
-import org.neo4j.bolt.runtime.statemachine.impl.TransactionStateMachine.StatementOutcome;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v3.runtime.ConnectedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
@@ -69,8 +68,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.init;
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.newMachine;
+import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.newMachineWithMockedTxManager;
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.newMachineWithTransaction;
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.newMachineWithTransactionSPI;
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.reset;
@@ -294,15 +295,14 @@ class BoltStateMachineV4Test
     void testRollbackError() throws Throwable
     {
         // Given
-        BoltStateMachine machine = init( newMachine() );
+        BoltStateMachine machine = init( newMachineWithMockedTxManager() );
 
         // Given there is a running transaction
         machine.process( BoltV4Messages.begin(), nullResponseHandler() );
 
         // And given that transaction will fail to roll back
-        TransactionStateMachine txMachine = txStateMachine( machine );
         doThrow( new TransactionFailureException( "No Mr. Bond, I expect you to die." ) ).
-                when( txMachine.ctx.currentTransaction ).rollback();
+                when( ((AbstractBoltStateMachine) machine).transactionManager() ).rollback( any() );
 
         // When
         machine.process(BoltV4Messages.rollback(), nullResponseHandler() );
@@ -394,7 +394,9 @@ class BoltStateMachineV4Test
     {
         // Given
         TransactionStateMachineSPI transactionSPI = mock( TransactionStateMachineSPI.class );
-        doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( transactionSPI ).beginTransaction( any(), any(), any(), any(), any(), any() );
+        when( transactionSPI.isPeriodicCommit( any() )).thenReturn( false );
+        doThrow( new AuthorizationExpiredException( "Auth expired!" ) )
+                .when( transactionSPI ).beginTransaction( any(), any(), any(), any(), any(), any() );
 
         BoltStateMachine machine = newMachineWithTransactionSPI( transactionSPI );
 
@@ -419,8 +421,6 @@ class BoltStateMachineV4Test
                 .onPullRecords( any(), eq( STREAM_LIMIT_UNLIMITED ) );
         BoltStateMachine machine = init( newMachine() );
         machine.process( BoltV4Messages.run(), nullResponseHandler() ); // move to streaming state
-        // We assume the only implementation of statement processor is TransactionStateMachine
-        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_QUERY_ID, new StatementOutcome( BoltResult.EMPTY ) );
 
         // When & Then
         try
@@ -445,8 +445,6 @@ class BoltStateMachineV4Test
                 .onDiscardRecords( any(), eq( STREAM_LIMIT_UNLIMITED ) );
         BoltStateMachine machine = init( newMachine() );
         machine.process( BoltV4Messages.run(), nullResponseHandler() ); // move to streaming state
-        // We assume the only implementation of statement processor is TransactionStateMachine
-        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_QUERY_ID, new StatementOutcome( BoltResult.EMPTY ) );
 
         // When & Then
         try
@@ -467,7 +465,7 @@ class BoltStateMachineV4Test
         BoltChannel boltChannel = mock( BoltChannel.class );
         var memoryTracker = mock( MemoryTracker.class );
         BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class), MapValue.EMPTY,
-                                                           memoryTracker );
+                                                           memoryTracker, mock( TransactionManager.class ) );
 
         machine.close();
 
@@ -480,10 +478,9 @@ class BoltStateMachineV4Test
         BoltStateMachineSPIImpl spi = mock( BoltStateMachineSPIImpl.class );
         BoltChannel boltChannel = mock( BoltChannel.class );
         var memoryTracker = mock( MemoryTracker.class );
-
         BoltStateMachine machine =
                 new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(),
-                                        mock( DefaultDatabaseResolver.class ), MapValue.EMPTY, memoryTracker );
+                                        mock( DefaultDatabaseResolver.class ), MapValue.EMPTY, memoryTracker, mock( TransactionManager.class) );
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
 
         machine.markFailed( error );
@@ -641,7 +638,6 @@ class BoltStateMachineV4Test
         BoltStateMachineSPIImpl spi = mock( BoltStateMachineSPIImpl.class, RETURNS_MOCKS );
         BoltStateMachine machine = init( newMachine( spi ) );
         machine.process( BoltV4Messages.run(), nullResponseHandler() ); // move to streaming state
-        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_QUERY_ID, new StatementOutcome( BoltResult.EMPTY ) );
 
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
 
@@ -708,7 +704,8 @@ class BoltStateMachineV4Test
         var memoryTracker = mock( MemoryTracker.class );
 
         // state allocation is a side effect of construction
-        new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ), MapValue.EMPTY, memoryTracker );
+        new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ), MapValue.EMPTY,
+                                memoryTracker, mock( TransactionManager.class ) );
 
         verify( memoryTracker ).allocateHeap(
                 ConnectedState.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE
@@ -797,11 +794,6 @@ class BoltStateMachineV4Test
         assertThat( machine ).satisfies( inState( ReadyState.class ) );
         verify( responseHandler, never() ).markIgnored();
         verify( responseHandler, never() ).markFailed( any() );
-    }
-
-    private static TransactionStateMachine txStateMachine( BoltStateMachine machine )
-    {
-        return (TransactionStateMachine) ((AbstractBoltStateMachine) machine).statementProcessor();
     }
 
     private static Neo4jError pendingError( BoltStateMachine machine )

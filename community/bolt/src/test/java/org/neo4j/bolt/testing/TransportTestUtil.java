@@ -45,6 +45,7 @@ import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v42.BoltProtocolV42;
+import org.neo4j.bolt.v43.BoltProtocolV43;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.memory.ByteBuffers;

@@ -462,7 +462,7 @@ class TransactionStateMachineTest
 
     private static TransactionStateMachine newTransactionStateMachine( TransactionStateMachineSPI stateMachineSPI )
     {
-        return new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, new FakeClock(), null );
+        return new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, new FakeClock(), null, "123" );
     }
 
     private static MapValue map( Object... keyValues )

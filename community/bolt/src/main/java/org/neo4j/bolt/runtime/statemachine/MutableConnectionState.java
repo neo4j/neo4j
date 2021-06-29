@@ -21,10 +21,10 @@ package org.neo4j.bolt.runtime.statemachine;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.runtime.statemachine.impl.TransactionStateMachine;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
@@ -38,15 +38,12 @@ public class MutableConnectionState implements BoltResponseHandler
     private boolean pendingIgnore;
     private volatile boolean terminated;
     private boolean closed;
+    private String currentTransactionId;
 
     /**
      * Callback poised to receive the next response.
      */
     private BoltResponseHandler responseHandler;
-    /**
-     * Component responsible for transaction handling and statement execution.
-     */
-    private StatementProcessor statementProcessor = StatementProcessor.EMPTY;
     /**
      * This is incremented each time {@link BoltStateMachine#interrupt()} is called,
      * and decremented each time a {@code RESET} message
@@ -58,7 +55,6 @@ public class MutableConnectionState implements BoltResponseHandler
 
     /**
      * This will be set if the previous transaction (rolled back already) has left some error.
-     * The error shall be rethrow before setting {@link #statementProcessor} towards a new database {@link TransactionStateMachine}.
      */
     private Status pendingTerminationNotice;
 
@@ -168,23 +164,6 @@ public class MutableConnectionState implements BoltResponseHandler
         this.pendingTerminationNotice = terminationNotice;
     }
 
-    public StatementProcessor getStatementProcessor()
-    {
-        ensureNoPendingTerminationNotice();
-        return statementProcessor;
-    }
-
-    public void setStatementProcessor( StatementProcessor statementProcessor )
-    {
-        ensureNoPendingTerminationNotice();
-        this.statementProcessor = statementProcessor;
-    }
-
-    public void clearStatementProcessor()
-    {
-        statementProcessor = StatementProcessor.EMPTY;
-    }
-
     public boolean isInterrupted()
     {
         return interruptCounter.get() > 0;
@@ -220,7 +199,7 @@ public class MutableConnectionState implements BoltResponseHandler
         closed = true;
     }
 
-    private void ensureNoPendingTerminationNotice()
+    public void ensureNoPendingTerminationNotice()
     {
         if ( pendingTerminationNotice != null )
         {
@@ -230,5 +209,24 @@ public class MutableConnectionState implements BoltResponseHandler
 
             throw new TransactionTerminatedException( status );
         }
+    }
+
+    public void setCurrentTransactionId( String transactionId ) throws BoltProtocolBreachFatality
+    {
+        if ( this.currentTransactionId != null )
+        {
+            throw new BoltProtocolBreachFatality( "Cannot assign new transaction id without clearing the old id: " + currentTransactionId );
+        }
+        this.currentTransactionId = transactionId;
+    }
+
+    public void clearCurrentTransactionId()
+    {
+        this.currentTransactionId = null;
+    }
+
+    public String getCurrentTransactionId()
+    {
+        return currentTransactionId;
     }
 }

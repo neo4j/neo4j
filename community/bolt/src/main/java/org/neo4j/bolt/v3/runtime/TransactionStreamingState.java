@@ -39,7 +39,7 @@ public class TransactionStreamingState extends AbstractStreamingState
     protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
     {
         int statementId = StatementMetadata.ABSENT_QUERY_ID;
-        context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
+        context.getTransactionManager().pullData( context.connectionState().getCurrentTransactionId(), statementId, -1, resultConsumer );
         return readyState;
     }
 }

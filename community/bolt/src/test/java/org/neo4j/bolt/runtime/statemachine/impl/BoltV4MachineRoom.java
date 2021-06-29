@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
@@ -61,11 +62,23 @@ public class BoltV4MachineRoom
         return newMachine( Mockito.mock( BoltStateMachineSPIImpl.class, RETURNS_MOCKS ) );
     }
 
+    public static BoltStateMachine newMachineWithMockedTxManager()
+    {
+        return newMachineWithMockedTxManager( Mockito.mock( BoltStateMachineSPIImpl.class, RETURNS_MOCKS ) );
+    }
+
     public static BoltStateMachine newMachine( BoltStateMachineSPIImpl spi )
     {
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
         return new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ), MapValue.EMPTY,
-                                       mock( MemoryTracker.class ) );
+                                       mock( MemoryTracker.class ), new StatementProcessorTxManager() );
+    }
+
+    public static BoltStateMachine newMachineWithMockedTxManager( BoltStateMachineSPIImpl spi )
+    {
+        BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
+        return new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ), MapValue.EMPTY,
+                                       mock( MemoryTracker.class), mock( StatementProcessorTxManager.class ) );
     }
 
     public static BoltStateMachine newMachineWithTransaction() throws BoltConnectionFatality, BoltIOException
@@ -81,15 +94,16 @@ public class BoltV4MachineRoom
     {
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
         TransactionStateMachineSPIProvider transactionSPIProvider = mock( TransactionStateMachineSPIProvider.class );
+
         var memoryTracker = mock( MemoryTracker.class );
 
-        when( transactionSPIProvider.getTransactionStateMachineSPI( any( String.class ), any( StatementProcessorReleaseManager.class ) ) )
+        when( transactionSPIProvider.getTransactionStateMachineSPI( any( String.class ), any( StatementProcessorReleaseManager.class ), any( String.class ) ) )
                 .thenReturn( transactionSPI );
         when( spi.transactionStateMachineSPIProvider() ).thenReturn( transactionSPIProvider );
 
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
         BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ), MapValue.EMPTY,
-                                                           memoryTracker );
+                                                           memoryTracker, new StatementProcessorTxManager() );
         init( machine );
         return machine;
     }
@@ -106,7 +120,7 @@ public class BoltV4MachineRoom
         machine.process( BoltV4Messages.reset(), handler );
     }
 
-    private static void runBegin( BoltStateMachine machine ) throws BoltConnectionFatality, BoltIOException
+    private static void runBegin( BoltStateMachine machine ) throws BoltConnectionFatality
     {
         machine.process( BoltV4Messages.begin(), nullResponseHandler() );
         assertThat( machine ).satisfies( hasTransaction() );

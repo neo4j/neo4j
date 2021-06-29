@@ -57,7 +57,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         DatabaseManagementService managementService = managementServiceWithDatabase( "neo4j" );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
 
-        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( ABSENT_DB_NAME, mock( StatementProcessorReleaseManager.class ) );
+        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( ABSENT_DB_NAME, mock( StatementProcessorReleaseManager.class ), "123" );
         assertThat( spi ).isInstanceOf( TransactionStateMachineSPI.class );
     }
 
@@ -68,7 +68,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
 
         BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () ->
-                spiProvider.getTransactionStateMachineSPI( "database", mock( StatementProcessorReleaseManager.class ) ) );
+                spiProvider.getTransactionStateMachineSPI( "database", mock( StatementProcessorReleaseManager.class ), "123" ) );
         assertThat( error.getMessage() ).contains( "Database selection by name not supported by Bolt protocol version lower than BoltV4." );
     }
 
@@ -97,7 +97,8 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         {
             @Override
             protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
-                    StatementProcessorReleaseManager resourceReleaseManger )
+                                                                                StatementProcessorReleaseManager resourceReleaseManager,
+                                                                                String transactionId )
             {
                 return mock( TransactionStateMachineSPI.class );
             }

@@ -22,6 +22,8 @@ package org.neo4j.graphdb.factory.module;
 import java.util.function.Supplier;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
+import org.neo4j.bolt.transaction.StatementProcessorTxManager;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.buffer.CentralBufferMangerHolder;
 import org.neo4j.buffer.NettyMemoryManagerWrapper;
 import org.neo4j.capabilities.CapabilitiesService;
@@ -151,6 +153,7 @@ public class GlobalModule
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
     private final CentralBufferMangerHolder centralBufferMangerHolder;
+    private final TransactionManager transactionManager;
     private final IOControllerService ioControllerService;
     private final DbmsReadOnlyChecker dbmsReadOnlyChecker;
     private final CapabilitiesService capabilitiesService;
@@ -263,8 +266,10 @@ public class GlobalModule
 
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency( connectorPortRegister );
-
         dbmsReadOnlyChecker = new DbmsReadOnlyChecker.Default( globalConfig );
+
+        //transaction manager used for Bolt and HTTP interfaces
+        transactionManager = new StatementProcessorTxManager();
 
         capabilitiesService = loadCapabilities();
         globalDependencies.satisfyDependency( capabilitiesService );
@@ -590,6 +595,11 @@ public class GlobalModule
     public CentralBufferMangerHolder getCentralBufferMangerHolder()
     {
         return centralBufferMangerHolder;
+    }
+
+    public TransactionManager getTransactionManager()
+    {
+        return transactionManager;
     }
 
     public IOControllerService getIoControllerService()

@@ -182,6 +182,16 @@ public class MessageConditions
         };
     }
 
+    public static Consumer<ResponseMessage> msgFailure( final Status status )
+    {
+        return response ->
+        {
+            assertThat( response ).isInstanceOf( FailureMessage.class );
+            FailureMessage msg = (FailureMessage) response;
+            assertThat( msg.status() ).isEqualTo( status );
+        };
+    }
+
     public static Consumer<ResponseMessage> msgRecord( final Condition<AnyValue[]> condition )
     {
         return message ->

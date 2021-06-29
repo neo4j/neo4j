@@ -43,15 +43,18 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
     @Override
     protected BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
+        context.connectionState().ensureNoPendingTerminationNotice();
+
         if ( message instanceof PullMessage )
         {
             PullMessage pullMessage = (PullMessage) message;
-            return processStreamResultMessage( pullMessage.statementId(), new PullResultConsumer( context, pullMessage.n() ), context );
+            return processStreamPullResultMessage( pullMessage.statementId(), new PullResultConsumer( context, pullMessage.n() ), context, pullMessage.n() );
         }
         if ( message instanceof DiscardMessage )
         {
             DiscardMessage discardMessage = (DiscardMessage) message;
-            return processStreamResultMessage( discardMessage.statementId(), new DiscardResultConsumer( context, discardMessage.n() ), context );
+            return processStreamDiscardResultMessage( discardMessage.statementId(), new DiscardResultConsumer( context, discardMessage.n() ),
+                                                      context, discardMessage.n() );
         }
         return null;
     }
@@ -61,7 +64,12 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
         this.readyState = readyState;
     }
 
-    protected abstract BoltStateMachineState processStreamResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context )
+    protected abstract BoltStateMachineState processStreamPullResultMessage( int statementId, ResultConsumer resultConsumer,
+                                                                             StateMachineContext context, long numberToPull )
+            throws Throwable;
+
+    protected abstract BoltStateMachineState processStreamDiscardResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context,
+                                                                                long noToDiscard )
             throws Throwable;
 
     @Override

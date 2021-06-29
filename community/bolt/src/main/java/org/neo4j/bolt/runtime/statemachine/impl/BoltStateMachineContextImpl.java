@@ -22,24 +22,20 @@ package org.neo4j.bolt.runtime.statemachine.impl;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
-import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
-import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.transaction.CleanUpTransactionContext;
+import org.neo4j.bolt.transaction.InitializeContext;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
-
-import static java.lang.String.format;
-import static org.neo4j.bolt.runtime.statemachine.StatementProcessor.EMPTY;
 
 public class BoltStateMachineContextImpl implements StateMachineContext, StatementProcessorReleaseManager
 {
@@ -51,11 +47,12 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     private final MutableConnectionState connectionState;
     private final Clock clock;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
+    private final TransactionManager transactionManager;
     private final MemoryTracker memoryTracker;
-    private StatementProcessorProvider statementProcessorProvider;
 
     public BoltStateMachineContextImpl( BoltStateMachine machine, BoltChannel boltChannel, BoltStateMachineSPI spi, MutableConnectionState connectionState,
-                                        Clock clock, DefaultDatabaseResolver defaultDatabaseResolver, MemoryTracker memoryTracker )
+                                        Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
+                                        MemoryTracker memoryTracker, TransactionManager transactionManager )
     {
         this.machine = machine;
         this.boltChannel = boltChannel;
@@ -64,6 +61,7 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
         this.clock = clock;
         this.memoryTracker = memoryTracker;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
+        this.transactionManager = transactionManager;
     }
 
     @Override
@@ -117,67 +115,24 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     @Override
     public void initStatementProcessorProvider( AuthenticationResult authResult, RoutingContext routingContext )
     {
-        TransactionStateMachineSPIProvider transactionSpiProvider = spi.transactionStateMachineSPIProvider();
-        setStatementProcessorProvider( new StatementProcessorProvider( authResult, transactionSpiProvider, clock, this, routingContext, memoryTracker ) );
+        var transactionSpiProvider = spi.transactionStateMachineSPIProvider();
+        var statementProcessorProvider = new StatementProcessorProvider( authResult, transactionSpiProvider, clock,
+                                                                         this, routingContext, memoryTracker );
+        var initializeContext = new InitializeContext( connectionId(), statementProcessorProvider );
+
+        transactionManager.initialize( initializeContext );
     }
 
-    /**
-     * We select the {@link TransactionStateMachine} based on the database name provided here.
-     * This transaction state machine will be kept in {@link MutableConnectionState} until the transaction is closed.
-     * When closing, the transaction state machine will perform a callback to {@link #releaseStatementProcessor()} to release itself from {@link
-     * MutableConnectionState}.
-     * @param databaseName
-     */
     @Override
-    public StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException
+    public TransactionManager getTransactionManager()
     {
-        if ( isCurrentStatementProcessorNotSet( databaseName ) )
-        {
-            StatementProcessor statementProcessor = statementProcessorProvider.getStatementProcessor( databaseName );
-            connectionState().setStatementProcessor( statementProcessor );
-            return statementProcessor;
-        }
-        else
-        {
-            return connectionState().getStatementProcessor();
-        }
+        return transactionManager;
     }
 
-    /**
-     * This callback is expected to be invoked inside a {@link TransactionStateMachine} to release itself for GC when the transaction is closed.
-     * The reason that we have this callback is that the {@link TransactionStateMachine} has a better knowledge of when itself can be released.
-     */
     @Override
-    public void releaseStatementProcessor()
+    public void releaseStatementProcessor( String transactionId )
     {
-        if ( connectionState.getStatementProcessor() != EMPTY )
-        {
-            statementProcessorProvider.releaseStatementProcessor();
-        }
-
-        connectionState().clearStatementProcessor();
-    }
-
-    private boolean isCurrentStatementProcessorNotSet( String databaseName ) throws BoltProtocolBreachFatality
-    {
-        StatementProcessor currentProcessor = connectionState().getStatementProcessor();
-        if ( currentProcessor != EMPTY )
-        {
-            if ( currentProcessor.databaseName().equals( databaseName ) )
-            {
-                return false; // already set
-            }
-            else
-            {
-                throw new BoltProtocolBreachFatality( format( "Changing database without closing the previous is forbidden. " +
-                        "Current database name: '%s', new database name: '%s'.", currentProcessor.databaseName(), databaseName ) );
-            }
-        }
-        return true;
-    }
-
-    void setStatementProcessorProvider( StatementProcessorProvider statementProcessorProvider )
-    {
-        this.statementProcessorProvider = statementProcessorProvider;
+        transactionManager.cleanUp( new CleanUpTransactionContext( transactionId ) );
+        connectionState.clearCurrentTransactionId();
     }
 }
