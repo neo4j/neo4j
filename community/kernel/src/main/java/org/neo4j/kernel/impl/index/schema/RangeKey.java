@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
+import static java.lang.String.format;
+
 /**
  * RangeKey supports all the same value types as BtreeKey, but handles point values differently.
  */
@@ -68,6 +70,20 @@ public class RangeKey extends GenericKey<RangeKey>
     @Override
     public void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
-        throw new IllegalStateException( "Not implemented yet" );
+        if ( !isArray )
+        {
+            setType( Types.GEOMETRY_2 );
+            GeometryType2.write( this, crs.getTable().getTableId(), crs.getCode(), coordinate );
+        }
+        else
+        {
+            if ( currentArrayOffset != 0 && (this.long0 != crs.getTable().getTableId() || this.long1 != crs.getCode()) )
+            {
+                throw new IllegalStateException( format(
+                        "Tried to assign a geometry array containing different coordinate reference systems, first:%s, violating:%s at array position:%d",
+                        CoordinateReferenceSystem.get( (int) long0, (int) long1 ), crs, currentArrayOffset ) );
+            }
+            GeometryArrayType2.write( this, crs.getTable().getTableId(), crs.getCode(), currentArrayOffset++, coordinate );
+        }
     }
 }
