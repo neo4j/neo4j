@@ -47,7 +47,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
+import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createContexts;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
@@ -151,29 +155,20 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     void shouldScanAllRelationshipsFromMultipleThreads() throws InterruptedException, ExecutionException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         try
         {
-            // when
-            Future<LongList> future1 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32, NULL ) );
-            Future<LongList> future2 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32, NULL ) );
-            Future<LongList> future3 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32, NULL ) );
-            Future<LongList> future4 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, 32, NULL ) );
+            var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, numberOfWorkers );
+            var futures = service.invokeAll( createWorkers( 32, scan, numberOfWorkers, workerContexts, REL_GET ) );
 
-            // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
-            assertDistinct( ids1, ids2, ids3, ids4 );
-            LongList concat = concat( ids1, ids2, ids3, ids4 ).toSortedList();
+            assertDistinct( lists );
+            LongList concat = concat( lists ).toSortedList();
             assertEquals( RELATIONSHIPS, concat );
         }
         finally
@@ -187,27 +182,21 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     void shouldScanAllRelationshipsFromMultipleThreadWithBigSizeHints() throws InterruptedException, ExecutionException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
         try
         {
-            // when
-            Supplier<RelationshipScanCursor> allocateRelCursor = () -> cursors.allocateRelationshipScanCursor( NULL );
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100, NULL ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100, NULL ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100, NULL ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateRelCursor, REL_GET, 100, NULL ) );
+            var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, numberOfWorkers );
+            var futures = service.invokeAll( createWorkers( 100, scan, numberOfWorkers, workerContexts, REL_GET ) );
 
-            // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
-            assertDistinct( ids1, ids2, ids3, ids4 );
-            LongList concat = concat( ids1, ids2, ids3, ids4 ).toSortedList();
+            assertDistinct( lists );
+            LongList concat = concat( lists ).toSortedList();
             assertEquals( RELATIONSHIPS, concat );
         }
         finally
@@ -227,18 +216,15 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
 
         try
         {
-            // when
-            List<Future<LongList>> futures = new ArrayList<>();
-            for ( int i = 0; i < 11; i++ )
-            {
-                futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, NULL ) ) );
-            }
+            int numberOfWorkers = 11;
+            var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, numberOfWorkers );
+            var futures = service.invokeAll( createRandomWorkers( scan, numberOfWorkers, workerContexts, REL_GET ) );
 
             service.shutdown();
             service.awaitTermination( 1, TimeUnit.MINUTES );
 
-            // then
             List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
             assertDistinct( lists );
             LongList concat = concat( lists ).toSortedList();

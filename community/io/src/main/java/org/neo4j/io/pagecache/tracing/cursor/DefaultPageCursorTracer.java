@@ -20,8 +20,6 @@
 package org.neo4j.io.pagecache.tracing.cursor;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -234,12 +232,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         return MathUtil.portion( hits(), faults() );
     }
 
-    private final List<Exception> pinExceptions = new CopyOnWriteArrayList<>();
-
     @Override
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
-        pinExceptions.add( new Exception() );
         pins++;
         pinTracingEvent.eventHits = 1;
         return pinTracingEvent;
@@ -375,11 +370,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         @Override
         public void done()
         {
-            unpinExceptions.add( new Exception() );
             unpins++;
         }
     }
-
-    private final List<Exception> unpinExceptions = new CopyOnWriteArrayList<>();
-
 }

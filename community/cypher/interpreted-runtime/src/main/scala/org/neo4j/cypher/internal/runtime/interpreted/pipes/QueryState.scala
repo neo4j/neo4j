@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
 class QueryState(val query: QueryContext,
+                 val kernelQueryContext: org.neo4j.internal.kernel.api.QueryContext,
                  val resources: ExternalCSVResource,
                  val params: Array[AnyValue],
                  val cursors: ExpressionCursors,
@@ -85,19 +86,19 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
+    new QueryState(query, kernelQueryContext, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, memoryTracker, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContext(initialContext: CypherRow) =
-    new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
+    new QueryState(query, kernelQueryContext, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContextAndDecorator(initialContext: CypherRow, newDecorator: PipeDecorator) =
-    new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
+    new QueryState(query, kernelQueryContext, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, memoryTracker, newDecorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
+    new QueryState(query, kernelQueryContext, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, memoryTracker, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def setExecutionContextFactory(rowFactory: CypherRowFactory): Unit = {

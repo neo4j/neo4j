@@ -110,7 +110,7 @@ class KernelAPIParallelRelationshipValueIndexScanStressIT
                 },
                                                     ( read, workerContext ) -> indexSeek( read,
                                                             new WorkerQueryContext( workerContext.getTransaction().queryContext(),
-                                                                    workerContext.getContext().cursorContext() ), workerContext.getCursor(),
+                                                                    workerContext.getContext().cursorContext() ), workerContext,
                                                             indexes[random.nextInt( indexes.length )] ));
 
     }
@@ -137,13 +137,14 @@ class KernelAPIParallelRelationshipValueIndexScanStressIT
         }
     }
 
-    private static Runnable indexSeek( Read read, QueryContext queryContext, RelationshipValueIndexCursor cursor, IndexReadSession index )
+    private static Runnable indexSeek( Read read, QueryContext queryContext, WorkerContext<RelationshipValueIndexCursor> workerContext, IndexReadSession index )
     {
         return () ->
         {
             try
             {
                 var query = PropertyIndexQuery.exists( index.reference().schema().getPropertyIds()[0] );
+                var cursor = workerContext.getCursor();
                 read.relationshipIndexSeek( queryContext, index, cursor, unorderedValues(), query );
                 int n = 0;
                 while ( cursor.next() )
@@ -155,6 +156,10 @@ class KernelAPIParallelRelationshipValueIndexScanStressIT
             catch ( KernelException e )
             {
                 throw new RuntimeException( e );
+            }
+            finally
+            {
+                workerContext.complete();
             }
         };
     }

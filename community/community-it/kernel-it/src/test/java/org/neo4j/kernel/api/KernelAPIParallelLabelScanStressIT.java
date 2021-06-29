@@ -30,8 +30,6 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -86,9 +84,7 @@ class KernelAPIParallelLabelScanStressIT
                     return new WorkerContext<>( cursor, executionContext, tx );
                 },
                 ( read, workerContext ) -> labelScan( read,
-                        workerContext.getCursor(), workerContext.getContext().cursorContext(),
-                        nodeLabelIndex,
-                        labels[random.nextInt( labels.length )] ) );
+                        workerContext, nodeLabelIndex, labels[random.nextInt( labels.length )] ) );
     }
 
     private static int createLabeledNodes( KernelTransaction tx, int nNodes, String labelName ) throws KernelException
@@ -102,19 +98,28 @@ class KernelAPIParallelLabelScanStressIT
         return label;
     }
 
-    private static Runnable labelScan( Read read, NodeLabelIndexCursor cursor, CursorContext cursorContext, IndexDescriptor index, int label )
+    private static Runnable labelScan( Read read, WorkerContext<NodeLabelIndexCursor> workerContext, IndexDescriptor index, int label )
     {
         return throwing( () ->
         {
-            var tokenReadSession = read.tokenReadSession( index );
-            read.nodeLabelScan( tokenReadSession, cursor, unconstrained(), new TokenPredicate( label ), cursorContext );
-
-            int n = 0;
-            while ( cursor.next() )
+            try
             {
-                n++;
+                var tokenReadSession = read.tokenReadSession( index );
+                var cursor = workerContext.getCursor();
+                var cursorContext = workerContext.getContext().cursorContext();
+                read.nodeLabelScan( tokenReadSession, cursor, unconstrained(), new TokenPredicate( label ), cursorContext );
+
+                int n = 0;
+                while ( cursor.next() )
+                {
+                    n++;
+                }
+                assertEquals( N_NODES, n, "correct number of nodes" );
             }
-            assertEquals( N_NODES, n, "correct number of nodes" );
+            finally
+            {
+                workerContext.complete();
+            }
         } );
     }
 }

@@ -87,6 +87,7 @@ object StaticEvaluation {
   class StaticEvaluator(proceduresSupplier: Supplier[GlobalProcedures]) extends SimpleInternalExpressionEvaluator {
     override def queryState(nExpressionSlots: Int, slottedParams: Array[AnyValue]) = new QueryState(
       query = new StaticQueryContext(proceduresSupplier.get()),
+      kernelQueryContext = new StaticQueryContext(proceduresSupplier.get()).transactionalContext.transaction.queryContext(),
       resources = null,
       params = slottedParams,
       cursors = null,

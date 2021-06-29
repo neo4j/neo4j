@@ -148,7 +148,6 @@ public class Operations implements Write, SchemaWrite
     private final ConstraintIndexCreator constraintIndexCreator;
     private final ConstraintSemantics constraintSemantics;
     private final IndexingProvidersService indexProviders;
-    private final Config config;
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final KernelVersionRepository kernelVersionRepository;
@@ -176,7 +175,6 @@ public class Operations implements Write, SchemaWrite
         this.constraintIndexCreator = constraintIndexCreator;
         this.constraintSemantics = constraintSemantics;
         this.indexProviders = indexProviders;
-        this.config = config;
         this.memoryTracker = memoryTracker;
         this.kernelVersionRepository = kernelVersionRepository;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;

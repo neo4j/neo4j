@@ -480,11 +480,15 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
         void beforeApply();
     }
 
-    interface ExecutionContext
+    interface ExecutionContext extends AutoCloseable
     {
 
         CursorContext cursorContext();
 
         AccessMode accessMode();
+
+        void complete();
+
+        void close();
     }
 }

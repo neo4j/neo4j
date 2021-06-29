@@ -110,8 +110,7 @@ class KernelAPIParallelNodeValueIndexScanStressIT
                                                     },
                                                     ( read, workerContext ) -> indexSeek( read,
                                                                                    new WorkerQueryContext( workerContext.getTransaction().queryContext(),
-                                                                                           workerContext.getContext().cursorContext() ),
-                                                            workerContext.getCursor(),
+                                                                                           workerContext.getContext().cursorContext() ), workerContext,
                                                             indexes[random.nextInt( indexes.length )] ));
 
     }
@@ -136,13 +135,14 @@ class KernelAPIParallelNodeValueIndexScanStressIT
         }
     }
 
-    private static Runnable indexSeek( Read read, QueryContext queryContext, NodeValueIndexCursor cursor, IndexReadSession index )
+    private static Runnable indexSeek( Read read, QueryContext queryContext, WorkerContext<NodeValueIndexCursor> workerContext, IndexReadSession index )
     {
         return () ->
         {
             try
             {
                 PropertyIndexQuery.ExistsPredicate query = PropertyIndexQuery.exists( index.reference().schema().getPropertyIds()[0] );
+                var cursor = workerContext.getCursor();
                 read.nodeIndexSeek( queryContext, index, cursor, unorderedValues(), query );
                 int n = 0;
                 while ( cursor.next() )
@@ -154,6 +154,10 @@ class KernelAPIParallelNodeValueIndexScanStressIT
             catch ( KernelException e )
             {
                 throw new RuntimeException( e );
+            }
+            finally
+            {
+                workerContext.complete();
             }
         };
     }

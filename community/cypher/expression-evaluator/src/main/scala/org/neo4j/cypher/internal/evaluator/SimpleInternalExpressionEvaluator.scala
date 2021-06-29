@@ -78,6 +78,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
   def queryState(nExpressionSlots: Int, slottedParams: Array[AnyValue]) =
     new QueryState(
       query = null,
+      kernelQueryContext = null,
       resources = null,
       params = slottedParams,
       cursors = null,

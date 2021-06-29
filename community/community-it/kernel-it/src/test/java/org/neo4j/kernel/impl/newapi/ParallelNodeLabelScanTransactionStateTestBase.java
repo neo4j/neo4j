@@ -47,6 +47,7 @@ import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.WorkerContext;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,8 +55,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
+import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
 import static org.neo4j.kernel.impl.newapi.TestUtils.count;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createContexts;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
@@ -192,7 +197,8 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             throws InterruptedException, ExecutionException, KernelException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 1024;
 
@@ -204,25 +210,14 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             Read read = tx.dataRead();
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( label );
 
-            // when
-            Supplier<NodeLabelIndexCursor> allocateCursor = () -> cursors.allocateNodeLabelIndexCursor( tx.cursorContext() );
-            Future<LongList> future1 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4, NULL ) );
-            Future<LongList> future2 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4, NULL ) );
-            Future<LongList> future3 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4, NULL ) );
-            Future<LongList> future4 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4, NULL ) );
+            List<WorkerContext<NodeLabelIndexCursor>> workers = createContexts( tx, cursors::allocateNodeLabelIndexCursor, numberOfWorkers );
+            List<Future<LongList>> futures = service.invokeAll( createWorkers( size / numberOfWorkers, scan, numberOfWorkers, workers, NODE_GET ) );
 
-            // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workers );
 
-            assertDistinct( ids1, ids2, ids3, ids4 );
-            LongList concat = concat( ids1, ids2, ids3, ids4 );
+            assertDistinct( lists );
+            LongList concat = concat( lists );
             assertEquals( ids.toSortedList(), concat.toSortedList() );
             tx.rollback();
         }
@@ -250,12 +245,9 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             CursorFactory cursors = testSupport.kernelToTest().cursors();
 
             // when
-            List<Future<LongList>> futures = new ArrayList<>();
-            for ( int i = 0; i < 10; i++ )
-            {
-                futures.add(
-                        service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( tx.cursorContext() ), NODE_GET, NULL ) ) );
-            }
+            int numberOfWorkers = 10;
+            List<WorkerContext<NodeLabelIndexCursor>> workers = createContexts( tx, cursors::allocateNodeLabelIndexCursor, numberOfWorkers );
+            List<Future<LongList>> futures = service.invokeAll( createRandomWorkers( scan, numberOfWorkers, workers, NODE_GET ) );
 
             // then
             List<LongList> lists = getAllResults( futures );
@@ -277,9 +269,9 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         int label = label( "L" );
         MutableLongSet existingNodes = LongSets.mutable.withAll( createNodesWithLabel( label, 1000 ) );
 
-        int workers = Runtime.getRuntime().availableProcessors();
+        int numberOfWorkers = Runtime.getRuntime().availableProcessors();
 
-        ExecutorService threadPool = Executors.newFixedThreadPool( workers );
+        ExecutorService threadPool = Executors.newFixedThreadPool( numberOfWorkers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         ThreadLocalRandom random = ThreadLocalRandom.current();
         try
@@ -293,13 +285,8 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                     allNodes.addAll( createNodesWithLabel( tx.dataWrite(), label, nodeInTx ) );
                     Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
 
-                    List<Future<LongList>> futures = new ArrayList<>( workers );
-                    for ( int j = 0; j < workers; j++ )
-                    {
-                        futures.add(
-                                threadPool.submit(
-                                        randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( tx.cursorContext() ), NODE_GET, NULL ) ) );
-                    }
+                    List<WorkerContext<NodeLabelIndexCursor>> workers = createContexts( tx, cursors::allocateNodeLabelIndexCursor, numberOfWorkers );
+                    List<Future<LongList>> futures = threadPool.invokeAll( createRandomWorkers( scan, numberOfWorkers, workers, NODE_GET ) );
 
                     List<LongList> lists = getAllResults( futures );
 

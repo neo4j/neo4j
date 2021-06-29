@@ -27,12 +27,13 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.kernel.api.KernelAPIParallelStress.parallelStressInTx;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
@@ -53,7 +54,8 @@ class KernelAPIParallelTraversalStressIT
     {
         createRandomGraph( kernel );
 
-        KernelAPIParallelStress.parallelStressInTx( kernel, N_THREADS, NodeAndTraverseCursors::new, KernelAPIParallelTraversalStressIT::scanAndTraverse );
+        parallelStressInTx( kernel, N_THREADS, tx -> new NodeAndTraverseCursors( tx, kernel ),
+                KernelAPIParallelTraversalStressIT::scanAndTraverse );
     }
 
     private static void createRandomGraph( Kernel kernel ) throws Exception
@@ -97,20 +99,27 @@ class KernelAPIParallelTraversalStressIT
     {
         return () ->
         {
-            read.allNodesScan( cursors.nodeCursor );
-            int n = 0;
-            int r = 0;
-            while ( cursors.nodeCursor.next() )
+            try
             {
-                cursors.nodeCursor.relationships( cursors.traversalCursor, ALL_RELATIONSHIPS );
-                while ( cursors.traversalCursor.next() )
+                read.allNodesScan( cursors.nodeCursor );
+                int n = 0;
+                int r = 0;
+                while ( cursors.nodeCursor.next() )
                 {
-                    r++;
+                    cursors.nodeCursor.relationships( cursors.traversalCursor, ALL_RELATIONSHIPS );
+                    while ( cursors.traversalCursor.next() )
+                    {
+                        r++;
+                    }
+                    n++;
                 }
-                n++;
+                assertEquals( N_NODES, n, "correct number of nodes" );
+                assertEquals( 2 * N_RELATIONSHIPS, r, "correct number of traversals" );
             }
-            assertEquals( N_NODES, n, "correct number of nodes" );
-            assertEquals( 2 * N_RELATIONSHIPS, r, "correct number of traversals" );
+            finally
+            {
+                cursors.complete();
+            }
         };
     }
 
@@ -118,22 +127,25 @@ class KernelAPIParallelTraversalStressIT
     {
         final NodeCursor nodeCursor;
         final RelationshipTraversalCursor traversalCursor;
-        private final KernelTransaction tx;
         private final KernelTransaction.ExecutionContext executionContext;
 
-        NodeAndTraverseCursors( KernelTransaction tx )
+        NodeAndTraverseCursors( KernelTransaction tx, Kernel kernel )
         {
             executionContext = tx.createExecutionContext();
-            nodeCursor = tx.cursors().allocateNodeCursor( executionContext.cursorContext() );
-            traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( executionContext.cursorContext() );
-            this.tx = tx;
+            nodeCursor = kernel.cursors().allocateNodeCursor( executionContext.cursorContext() );
+            traversalCursor = kernel.cursors().allocateRelationshipTraversalCursor( executionContext.cursorContext() );
         }
 
         @Override
         public void close() throws Exception
         {
-            IOUtils.closeAll( nodeCursor, traversalCursor );
-            tx.mergeExecutionContext( executionContext );
+            closeAllUnchecked( executionContext );
+        }
+
+        public void complete()
+        {
+            closeAllUnchecked( nodeCursor, traversalCursor );
+            executionContext.complete();
         }
     }
 }

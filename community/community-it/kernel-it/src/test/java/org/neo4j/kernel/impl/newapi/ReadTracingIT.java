@@ -76,7 +76,7 @@ class ReadTracingIT
             try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.cursorContext(),
                                                                                          kernelTransaction.memoryTracker() ) )
             {
-                dataRead.nodeIndexSeek( transaction.kernelTransaction().queryContext(), indexSession, cursor, unconstrained(),
+                dataRead.nodeIndexSeek( kernelTransaction.queryContext(), indexSession, cursor, unconstrained(),
                         stringContains( propertyId, stringValue( testPropertyValue ) ) );
 
                 consumeCursor( cursor );

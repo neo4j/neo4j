@@ -52,7 +52,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.count;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createContexts;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
@@ -196,7 +200,8 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             InvalidTransactionTypeKernelException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
         LongArrayList ids = new LongArrayList();
@@ -211,24 +216,14 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             org.neo4j.internal.kernel.api.Read read = tx.dataRead();
             Scan<NodeCursor> scan = read.allNodesScan();
 
-            // when
-            Future<LongList> future1 =
-                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4, NULL ) );
-            Future<LongList> future2 =
-                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4, NULL ) );
-            Future<LongList> future3 =
-                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4, NULL ) );
-            Future<LongList> future4 =
-                    service.submit( singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, size / 4, NULL ) );
+            var workerContexts = createContexts( tx, cursors::allocateNodeCursor, numberOfWorkers );
+            var futures = service.invokeAll( createWorkers( size / numberOfWorkers, scan, numberOfWorkers, workerContexts, NodeCursor::nodeReference ) );
 
-            // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> idsLists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
-            TestUtils.assertDistinct( ids1, ids2, ids3, ids4 );
-            LongList concat = TestUtils.concat( ids1, ids2, ids3, ids4 );
+            TestUtils.assertDistinct( idsLists );
+            LongList concat = TestUtils.concat( idsLists );
             assertEquals( ids.toSortedList(), concat.toSortedList() );
             tx.rollback();
         }
@@ -245,7 +240,8 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             InvalidTransactionTypeKernelException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
         LongArrayList ids = new LongArrayList();
@@ -260,21 +256,14 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             org.neo4j.internal.kernel.api.Read read = tx.dataRead();
             Scan<NodeCursor> scan = read.allNodesScan();
 
-            // when
-            Supplier<NodeCursor> allocateCursor = () -> cursors.allocateNodeCursor( NULL );
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100, NULL ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100, NULL ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100, NULL ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100, NULL ) );
+            var workerContexts = createContexts( tx, cursors::allocateNodeCursor, numberOfWorkers );
+            var futures = service.invokeAll( createWorkers( 100, scan, numberOfWorkers, workerContexts, NODE_GET ) );
 
-            // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> idsLists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
-            TestUtils.assertDistinct( ids1, ids2, ids3, ids4 );
-            LongList concat = TestUtils.concat( ids1, ids2, ids3, ids4 );
+            TestUtils.assertDistinct( idsLists );
+            LongList concat = TestUtils.concat( idsLists );
             assertEquals( ids.toSortedList(), concat.toSortedList() );
         }
         finally
@@ -306,14 +295,13 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             CursorFactory cursors = testSupport.kernelToTest().cursors();
 
             // when
-            List<Future<LongList>> futures = new ArrayList<>();
-            for ( int i = 0; i < 10; i++ )
-            {
-                futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET, NULL ) ) );
-            }
+            int numberOfWorkers = 10;
+            var workerContexts = createContexts( tx, cursors::allocateNodeCursor, numberOfWorkers );
+            var futures = service.invokeAll( createRandomWorkers( scan, numberOfWorkers, workerContexts, NODE_GET ) );
 
             // then
             List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
             TestUtils.assertDistinct( lists );
             LongList concat = TestUtils.concat( lists );
@@ -351,13 +339,11 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
 
                     Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
 
-                    List<Future<LongList>> futures = new ArrayList<>( workers );
-                    for ( int j = 0; j < workers; j++ )
-                    {
-                        futures.add( threadPool.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET, NULL ) ) );
-                    }
+                    var workerContexts = createContexts( tx, cursors::allocateNodeCursor, workers );
+                    var futures = threadPool.invokeAll( createRandomWorkers( scan, workers, workerContexts, NODE_GET ) );
 
                     List<LongList> lists = getAllResults( futures );
+                    closeWorkContexts( workerContexts );
 
                     TestUtils.assertDistinct( lists );
                     LongList concat = TestUtils.concat( lists );

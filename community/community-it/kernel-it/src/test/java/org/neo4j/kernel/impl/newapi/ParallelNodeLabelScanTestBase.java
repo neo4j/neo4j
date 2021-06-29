@@ -27,25 +27,22 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.WorkerContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,9 +51,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
+import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
-import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
-import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createContexts;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
@@ -206,31 +205,23 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     void shouldScanAllNodesFromMultipleThreads() throws InterruptedException, ExecutionException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        int sizeHint = NUMBER_OF_NODES / numberOfWorkers;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( BAR_LABEL );
-        CursorFactory cursors = testSupport.kernelToTest().cursors();
-
         try
         {
             // when
-            Supplier<NodeLabelIndexCursor> allocateCursor = () -> cursors.allocateNodeLabelIndexCursor( NULL );
-            Future<LongList> future1 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES, NULL ) );
-            Future<LongList> future2 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES, NULL ) );
-            Future<LongList> future3 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES, NULL ) );
-            Future<LongList> future4 =
-                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES, NULL ) );
+            List<WorkerContext<NodeLabelIndexCursor>> workers = createContexts( tx, c -> cursors.allocateNodeLabelIndexCursor( c ), numberOfWorkers );
+            List<Future<LongList>> futures = service.invokeAll( createWorkers( sizeHint, scan, numberOfWorkers, workers, NODE_GET ) );
 
             // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> results = getAllResults( futures );
+            closeWorkContexts( workers );
 
-            assertDistinct( ids1, ids2, ids3, ids4 );
-            assertEquals( BAR_NODES, LongSets.immutable.withAll( concat( ids1, ids2, ids3, ids4 ) ) );
+            LongList[] longListsArray = results.toArray( LongList[]::new );
+            assertDistinct( longListsArray );
+            assertEquals( BAR_NODES, LongSets.immutable.withAll( concat( longListsArray ) ) );
         }
         finally
         {
@@ -243,22 +234,18 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException, ExecutionException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 10;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
-        CursorFactory cursors = testSupport.kernelToTest().cursors();
-
         try
         {
             // when
-            List<Future<LongList>> futures = new ArrayList<>();
-            for ( int i = 0; i < 10; i++ )
-            {
-                futures.add(
-                        service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( NULL ), NODE_GET, NULL ) ) );
-            }
+            List<WorkerContext<NodeLabelIndexCursor>> workers = createContexts( tx, c -> cursors.allocateNodeLabelIndexCursor( c ), numberOfWorkers );
+            List<Future<LongList>> futures = service.invokeAll( createRandomWorkers( scan, numberOfWorkers, workers, NODE_GET ) );
 
             // then
             List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workers );
 
             assertDistinct( lists );
             assertEquals( FOO_NODES, LongSets.immutable.withAll( concat( lists ) ) );

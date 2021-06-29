@@ -76,7 +76,7 @@ class TransactionTracingIT
             softly.assertThat( Iterables.count( transaction.getAllNodes() ) ).as( "Number of expected nodes" ).isEqualTo( ENTITY_COUNT );
 
             softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 2 );
-            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1 );
+            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 2 );
             softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 2 );
         }
     }

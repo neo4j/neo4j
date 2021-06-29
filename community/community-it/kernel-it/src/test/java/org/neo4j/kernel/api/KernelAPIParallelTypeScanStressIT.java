@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
@@ -102,9 +101,7 @@ class KernelAPIParallelTypeScanStressIT
                                                         var cursor = tx.cursors().allocateRelationshipTypeIndexCursor( executionContext.cursorContext() );
                                                         return new WorkerContext<>( cursor, executionContext, tx );
                                                     },
-                                                    ( read, workerContext ) -> typeScan( read,
-                                                                                  workerContext.getCursor(), workerContext.getContext().cursorContext(),
-                                                                                  types[random.nextInt( types.length )] ) );
+                                                    ( read, workerContext ) -> typeScan( read, workerContext, types[random.nextInt( types.length )] ) );
     }
 
     private static int createRelationships( KernelTransaction tx, int count, String typeName ) throws KernelException
@@ -119,26 +116,35 @@ class KernelAPIParallelTypeScanStressIT
         return type;
     }
 
-    private Runnable typeScan( Read read, RelationshipTypeIndexCursor cursor,  CursorContext cursorContext, int type )
+    private Runnable typeScan( Read read, WorkerContext<RelationshipTypeIndexCursor> workerContext, int type )
     {
         return () ->
         {
             try
             {
-                TokenReadSession readSession = read.tokenReadSession( rti );
-                read.relationshipTypeScan( readSession, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( type ), cursorContext );
-            }
-            catch ( KernelException e )
-            {
-                throw new RuntimeException( e );
-            }
+                var cursor = workerContext.getCursor();
+                var cursorContext = workerContext.getContext().cursorContext();
+                try
+                {
+                    TokenReadSession readSession = read.tokenReadSession( rti );
+                    read.relationshipTypeScan( readSession, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( type ), cursorContext );
+                }
+                catch ( KernelException e )
+                {
+                    throw new RuntimeException( e );
+                }
 
-            int n = 0;
-            while ( cursor.next() )
-            {
-                n++;
+                int n = 0;
+                while ( cursor.next() )
+                {
+                    n++;
+                }
+                assertThat( n ).as( "correct number of relationships" ).isEqualTo( N_RELS );
             }
-            assertThat( n ).as( "correct number of relationships" ).isEqualTo( N_RELS );
+            finally
+            {
+                workerContext.complete();
+            }
         };
     }
 }

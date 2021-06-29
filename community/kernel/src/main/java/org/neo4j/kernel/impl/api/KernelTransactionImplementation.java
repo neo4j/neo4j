@@ -68,9 +68,13 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -1428,14 +1432,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private class ThreadExecutionContext implements ExecutionContext
+    private class ThreadExecutionContext implements ExecutionContext, AutoCloseable
     {
         private final CursorContext context;
         private final AccessMode accessMode;
+        private final ExecutionContextCursorTracer cursorTracer;
 
         ThreadExecutionContext()
         {
-            this.context = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), cursorContext.getVersionContext() );
+            this.cursorTracer = new ExecutionContextCursorTracer( PageCacheTracer.NULL, TRANSACTION_TAG );
+            this.context = new CursorContext( cursorTracer, cursorContext.getVersionContext() );
             this.accessMode = securityContext.mode();
         }
 
@@ -1449,6 +1455,124 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public AccessMode accessMode()
         {
             return accessMode;
+        }
+
+        @Override
+        public void complete()
+        {
+            context.getCursorTracer().reportEvents();
+        }
+
+        @Override
+        public void close()
+        {
+            while ( !cursorTracer.isCompleted() )
+            {
+                Thread.onSpinWait();
+            }
+            mergeExecutionContext( this );
+        }
+
+    }
+
+    private static class ExecutionContextCursorTracer extends DefaultPageCursorTracer
+    {
+        private long pins;
+        private long unpins;
+        private long hits;
+        private long faults;
+        private long bytesRead;
+        private long bytesWritten;
+        private long evictions;
+        private long evictionExceptions;
+        private long flushes;
+        private long merges;
+        private volatile boolean completed;
+
+        ExecutionContextCursorTracer( PageCacheTracer pageCacheTracer, String tag )
+        {
+            super( pageCacheTracer, tag );
+        }
+
+        @Override
+        public void reportEvents()
+        {
+            pins = super.pins();
+            unpins = super.unpins();
+            hits = super.hits();
+            faults = super.faults();
+            bytesRead = super.bytesRead();
+            bytesWritten = super.bytesWritten();
+            evictions = super.evictions();
+            evictionExceptions = super.evictionExceptions();
+            flushes = super.flushes();
+            merges = super.merges();
+            completed = true;
+        }
+
+        public boolean isCompleted()
+        {
+            return completed;
+        }
+
+        @Override
+        public long faults()
+        {
+            return faults;
+        }
+
+        @Override
+        public long pins()
+        {
+            return pins;
+        }
+
+        @Override
+        public long unpins()
+        {
+            return unpins;
+        }
+
+        @Override
+        public long hits()
+        {
+            return hits;
+        }
+
+        @Override
+        public long bytesRead()
+        {
+            return bytesRead;
+        }
+
+        @Override
+        public long evictions()
+        {
+            return evictions;
+        }
+
+        @Override
+        public long evictionExceptions()
+        {
+            return evictionExceptions;
+        }
+
+        @Override
+        public long bytesWritten()
+        {
+            return bytesWritten;
+        }
+
+        @Override
+        public long flushes()
+        {
+            return flushes;
+        }
+
+        @Override
+        public long merges()
+        {
+            return merges;
         }
     }
 }

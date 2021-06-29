@@ -26,16 +26,19 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.function.ToLongFunction;
 
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.WorkerContext;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,45 +76,94 @@ final class TestUtils
         return concat;
     }
 
-    static <T extends Cursor> Callable<LongList> singleBatchWorker( Scan<T> scan, Supplier<T> supplier, ToLongFunction<T> producer, int sizeHint,
-            CursorContext cursorContext )
+    static <T extends Cursor> List<WorkerContext<T>> createContexts( KernelTransaction tx, Function<CursorContext,T> cursorFactory,
+            int numberOfWorkers )
     {
-        return () -> {
-            try ( T nodes = supplier.get() )
+        List<WorkerContext<T>> workers = new ArrayList<>( numberOfWorkers );
+        for ( int i = 0; i < numberOfWorkers; i++ )
+        {
+            var executionContext = tx.createExecutionContext();
+            WorkerContext<T> workerContext = new WorkerContext<T>( cursorFactory.apply( executionContext.cursorContext() ), executionContext, tx );
+            workers.add( workerContext );
+        }
+        return workers;
+    }
+
+    static <T extends Cursor> Callable<LongList> singleBatchWorker( Scan<T> scan, WorkerContext<T> workerContext, ToLongFunction<T> producer, int sizeHint )
+    {
+        return () ->
+        {
+            try
             {
                 LongArrayList batch = new LongArrayList();
-                scan.reserveBatch( nodes, sizeHint, cursorContext );
-                while ( nodes.next() )
+                T cursor = workerContext.getCursor();
+                scan.reserveBatch( cursor, sizeHint, workerContext.getContext().cursorContext() );
+                while ( cursor.next() )
                 {
-                    batch.add( producer.applyAsLong( nodes ) );
+                    batch.add( producer.applyAsLong( cursor ) );
                 }
-
                 return batch;
+            }
+            finally
+            {
+                workerContext.complete();
             }
         };
     }
 
-    static <T extends Cursor> Callable<LongList> randomBatchWorker( Scan<T> scan, Supplier<T> supplier, ToLongFunction<T> producer,
-            CursorContext cursorContext )
+    static  <T extends Cursor> List<Callable<LongList>> createWorkers( int sizeHint, Scan<T> scan, int numberOfWorkers, List<WorkerContext<T>> workerContexts,
+            ToLongFunction<T> toLongFunction )
+    {
+        ArrayList<Callable<LongList>> workers = new ArrayList<>( workerContexts.size() );
+        for ( int i = 0; i < numberOfWorkers; i++ )
+        {
+            workers.add( singleBatchWorker( scan, workerContexts.get( i ), toLongFunction, sizeHint ) );
+        }
+        return workers;
+    }
+
+    static <T extends Cursor> List<Callable<LongList>> createRandomWorkers( Scan<T> scan, int numberOfWorkers, List<WorkerContext<T>> workerContexts,
+            ToLongFunction<T> toLongFunction )
+    {
+        ArrayList<Callable<LongList>> workers = new ArrayList<>( workerContexts.size() );
+        for ( int i = 0; i < numberOfWorkers; i++ )
+        {
+            workers.add( randomBatchWorker( scan, workerContexts.get( i ), toLongFunction ) );
+        }
+        return workers;
+    }
+
+    static <T extends Cursor> Callable<LongList> randomBatchWorker( Scan<T> scan, WorkerContext<T> workerContext, ToLongFunction<T> producer )
     {
         return () -> {
-            ThreadLocalRandom random = ThreadLocalRandom.current();
-
-            try ( T nodes = supplier.get() )
+            try
             {
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+                T cursor = workerContext.getCursor();
                 int sizeHint = random.nextInt( 1, 5 );
                 LongArrayList batch = new LongArrayList();
-                while ( scan.reserveBatch( nodes, sizeHint, cursorContext ) )
+                while ( scan.reserveBatch( cursor, sizeHint, workerContext.getContext().cursorContext() ) )
                 {
-                    while ( nodes.next() )
+                    while ( cursor.next() )
                     {
-                        batch.add( producer.applyAsLong( nodes ) );
+                        batch.add( producer.applyAsLong( cursor ) );
                     }
                 }
-
                 return batch;
             }
+            finally
+            {
+                workerContext.complete();
+            }
         };
+    }
+
+    static <T extends AutoCloseable> void closeWorkContexts( List<WorkerContext<T>> workers )
+    {
+        for ( WorkerContext<T> worker : workers )
+        {
+            worker.close();
+        }
     }
 
     static int count( Cursor cursor )

@@ -101,6 +101,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
       queryContext.resources.trace(cursors)
 
       new QueryState(queryContext,
+                     queryContext.transactionalContext.transaction.queryContext(),
                      externalResource,
                      createParameterArray(params, parameterMapping),
                      cursors,

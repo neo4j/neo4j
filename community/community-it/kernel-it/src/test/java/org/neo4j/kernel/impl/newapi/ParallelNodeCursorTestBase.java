@@ -40,12 +40,19 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.WorkerContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
+import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
+import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createContexts;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
@@ -148,30 +155,20 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     void shouldScanAllNodesFromMultipleThreads() throws InterruptedException, ExecutionException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         Scan<NodeCursor> scan = read.allNodesScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         try
         {
-            // when
-            Future<LongList> future1 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, 32, NULL ) );
-            Future<LongList> future2 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, 32, NULL ) );
-            Future<LongList> future3 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, 32, NULL ) );
-            Future<LongList> future4 = service.submit(
-                    singleBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NodeCursor::nodeReference, 32, NULL ) );
+            var workerContexts = createContexts( tx, cursors::allocateNodeCursor, numberOfWorkers );
+            var futures = service.invokeAll( createWorkers( 32, scan, numberOfWorkers, workerContexts, NodeCursor::nodeReference ) );
 
-            // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> ids = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
-            TestUtils.assertDistinct( ids1, ids2, ids3, ids4 );
-            LongList concat = TestUtils.concat( ids1, ids2, ids3, ids4 ).toSortedList();
-            assertEquals( NODE_IDS, concat );
+            TestUtils.assertDistinct( ids );
+            assertEquals( NODE_IDS, TestUtils.concat( ids ).toSortedList() );
         }
         finally
         {
@@ -183,29 +180,21 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     @Test
     void shouldScanAllNodesFromMultipleThreadWithBigSizeHints() throws InterruptedException, ExecutionException
     {
-        // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         Scan<NodeCursor> scan = read.allNodesScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
         try
         {
-            // when
-            Supplier<NodeCursor> allocateNodeCursor = () -> cursors.allocateNodeCursor( NULL );
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100, NULL ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100, NULL ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100, NULL ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100, NULL ) );
+            List<WorkerContext<NodeCursor>> workerContexts = createContexts( tx, cursors::allocateNodeCursor, numberOfWorkers );
+            List<Future<LongList>> futures = service.invokeAll( createWorkers( 100, scan, numberOfWorkers, workerContexts, NODE_GET ) );
 
-            // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> ids = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
-            TestUtils.assertDistinct( ids1, ids2, ids3, ids4 );
-            LongList concat = TestUtils.concat( ids1, ids2, ids3, ids4 ).toSortedList();
-            assertEquals( NODE_IDS, concat );
+            TestUtils.assertDistinct( ids );
+            assertEquals( NODE_IDS, concat( ids ).toSortedList() );
         }
         finally
         {
@@ -218,27 +207,25 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException, ExecutionException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 10;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         Scan<NodeCursor> scan = read.allNodesScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
         try
         {
-            // when
-            List<Future<LongList>> futures = new ArrayList<>();
-            for ( int i = 0; i < 10; i++ )
-            {
-                futures.add( service.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET, NULL ) ) );
-            }
+            List<WorkerContext<NodeCursor>> workerContexts = createContexts( tx, cursors::allocateNodeCursor, numberOfWorkers );
+            List<Future<LongList>> futures = service.invokeAll( createRandomWorkers( scan, numberOfWorkers, workerContexts, NODE_GET ) );
 
             service.shutdown();
             service.awaitTermination( 1, TimeUnit.MINUTES );
 
             // then
             List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
-            TestUtils.assertDistinct( lists );
-            LongList concat = TestUtils.concat( lists ).toSortedList();
+            assertDistinct( lists );
+            LongList concat = concat( lists ).toSortedList();
             assertEquals( NODE_IDS, concat );
         }
         finally

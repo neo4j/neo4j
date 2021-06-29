@@ -52,7 +52,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.count;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createContexts;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
+import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
@@ -199,7 +203,8 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             throws InterruptedException, ExecutionException, KernelException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
         LongArrayList ids = new LongArrayList();
@@ -215,24 +220,14 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             org.neo4j.internal.kernel.api.Read read = tx.dataRead();
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
 
-            // when
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ),
-                    REL_GET, size / 4, NULL ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ),
-                    REL_GET, size / 4, NULL ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ),
-                    REL_GET, size / 4, NULL ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ),
-                    REL_GET, size / 4, NULL ) );
+            var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, numberOfWorkers );
+            var futures = service.invokeAll( createWorkers( size / numberOfWorkers, scan, numberOfWorkers, workerContexts, REL_GET ) );
 
-            // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
-            TestUtils.assertDistinct( ids1, ids2, ids3, ids4 );
-            LongList concat = TestUtils.concat( ids1, ids2, ids3, ids4 );
+            TestUtils.assertDistinct( lists );
+            LongList concat = TestUtils.concat( lists );
             assertEquals( ids.toSortedList(), concat.toSortedList() );
             tx.rollback();
         }
@@ -248,7 +243,8 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             throws InterruptedException, ExecutionException, KernelException
     {
         // given
-        ExecutorService service = Executors.newFixedThreadPool( 4 );
+        int numberOfWorkers = 4;
+        ExecutorService service = Executors.newFixedThreadPool( numberOfWorkers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
         LongArrayList ids = new LongArrayList();
@@ -264,21 +260,14 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             org.neo4j.internal.kernel.api.Read read = tx.dataRead();
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
 
-            // when
-            Supplier<RelationshipScanCursor> allocateCursor = () -> cursors.allocateRelationshipScanCursor( NULL );
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100, NULL ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100, NULL ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100, NULL ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateCursor, REL_GET, 100, NULL ) );
+            var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, numberOfWorkers );
+            var futures = service.invokeAll( createWorkers( 100, scan, numberOfWorkers, workerContexts, REL_GET ) );
 
-            // then
-            LongList ids1 = future1.get();
-            LongList ids2 = future2.get();
-            LongList ids3 = future3.get();
-            LongList ids4 = future4.get();
+            List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
-            TestUtils.assertDistinct( ids1, ids2, ids3, ids4 );
-            LongList concat = TestUtils.concat( ids1, ids2, ids3, ids4 );
+            TestUtils.assertDistinct( lists );
+            LongList concat = TestUtils.concat( lists );
             assertEquals( ids.toSortedList(), concat.toSortedList() );
         }
         finally
@@ -310,15 +299,12 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             CursorFactory cursors = testSupport.kernelToTest().cursors();
 
             // when
-            List<Future<LongList>> futures = new ArrayList<>();
-            for ( int i = 0; i < 10; i++ )
-            {
-                futures.add(
-                        service.submit( randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, NULL ) ) );
-            }
+            int numberOfWorkers = 10;
+            var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, numberOfWorkers );
+            var futures = service.invokeAll( createRandomWorkers( scan, numberOfWorkers, workerContexts, REL_GET ) );
 
-            // then
             List<LongList> lists = getAllResults( futures );
+            closeWorkContexts( workerContexts );
 
             TestUtils.assertDistinct( lists );
             LongList concat = TestUtils.concat( lists );
@@ -358,14 +344,11 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
 
                     Scan<RelationshipScanCursor> scan = tx.dataRead().allRelationshipsScan();
 
-                    List<Future<LongList>> futures = new ArrayList<>( workers );
-                    for ( int j = 0; j < workers; j++ )
-                    {
-                        futures.add( threadPool.submit(
-                                randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET, NULL ) ) );
-                    }
+                    var workerContexts = createContexts( tx, cursors::allocateRelationshipScanCursor, workers );
+                    var futures = threadPool.invokeAll( createRandomWorkers( scan, workers, workerContexts, REL_GET ) );
 
                     List<LongList> lists = getAllResults( futures );
+                    closeWorkContexts( workerContexts );
 
                     TestUtils.assertDistinct( lists );
                     LongList concat = TestUtils.concat( lists );
