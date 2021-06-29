@@ -106,7 +106,8 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    public PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
+                                                                QueryContext queryContext, PropertyIndexQuery... query )
             throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
@@ -133,7 +134,7 @@ abstract class Read implements TxStateHolder,
 //        }
 
         final var session = (DefaultIndexReadSession) index;
-        final var valueSeek = session.reader.valueSeek( desiredNumberOfPartitions, query );
+        final var valueSeek = session.reader.valueSeek( desiredNumberOfPartitions, queryContext, query );
         return new PartitionedValueIndexCursorSeek<>( this, descriptor, valueSeek, query );
     }
 
@@ -267,7 +268,8 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+    public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, int desiredNumberOfPartitions,
+                                                                      CursorContext cursorContext, TokenPredicate query )
             throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
@@ -276,7 +278,7 @@ abstract class Read implements TxStateHolder,
             throw new IndexNotApplicableKernelException( "Node label index scan can not be performed on index " +
                                                          session.reference().userDescription( ktx.tokenRead() ) );
         }
-        return tokenIndexScan( session, query, desiredNumberOfPartitions );
+        return tokenIndexScan( session, desiredNumberOfPartitions, cursorContext, query );
     }
 
     @Override
@@ -341,9 +343,8 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session,
-                                                                                    TokenPredicate query,
-                                                                                    int desiredNumberOfPartitions )
+    public final PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, int desiredNumberOfPartitions,
+                                                                                    CursorContext cursorContext, TokenPredicate query )
             throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
@@ -352,7 +353,7 @@ abstract class Read implements TxStateHolder,
             throw new IndexNotApplicableKernelException( "Relationship type index scan can not be performed on index " +
                                                          session.reference().userDescription( ktx.tokenRead() ) );
         }
-        return tokenIndexScan(session, query, desiredNumberOfPartitions);
+        return tokenIndexScan( session, desiredNumberOfPartitions, cursorContext, query );
     }
 
     @Override
@@ -393,11 +394,12 @@ abstract class Read implements TxStateHolder,
         ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
     }
 
-    private <C extends Cursor> PartitionedScan<C> tokenIndexScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+    private <C extends Cursor> PartitionedScan<C> tokenIndexScan( TokenReadSession session, int desiredNumberOfPartitions,
+                                                                  CursorContext context, TokenPredicate query )
     {
         ktx.assertOpen();
         DefaultTokenReadSession defaultSession = (DefaultTokenReadSession) session;
-        PartitionedTokenScan tokenScan = defaultSession.reader.entityTokenScan( query, desiredNumberOfPartitions );
+        PartitionedTokenScan tokenScan = defaultSession.reader.entityTokenScan( desiredNumberOfPartitions, context, query );
         return new PartitionedTokenIndexCursorScan<>( this, query, tokenScan );
     }
 

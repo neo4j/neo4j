@@ -193,11 +193,11 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     }
 
     @Override
-    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query )
     {
         try
         {
-            return new NativePartitionedValueSeek( desiredNumberOfPartitions, query );
+            return new NativePartitionedValueSeek( desiredNumberOfPartitions, queryContext, query );
         }
         catch ( IOException e )
         {
@@ -209,10 +209,10 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     {
         private final PropertyIndexQuery[] query;
         private final boolean filter;
-        private final Iterator<Seeker<KEY,VALUE>> partitions;
+        private final Iterator<Seeker.From<KEY,VALUE>> partitions;
         private final int numberOfPartitions;
 
-        NativePartitionedValueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query ) throws IOException
+        NativePartitionedValueSeek( int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query ) throws IOException
         {
             Preconditions.requirePositive( desiredNumberOfPartitions );
             validateQuery( IndexQueryConstraints.unorderedValues(), query );
@@ -225,7 +225,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             // todo: This works unless query contains GeometryRangePredicate
             filter = initializeRangeForQuery( fromInclusive, toExclusive, this.query );
 
-            final var partitions = tree.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, CursorContext.NULL );
+            final var partitions = tree.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, queryContext.cursorContext() );
             this.numberOfPartitions = partitions.size();
             this.partitions = partitions.iterator();
         }
@@ -237,17 +237,24 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
 
         @Override
-        public IndexProgressor reservePartition( IndexProgressor.EntityValueClient client )
+        public IndexProgressor reservePartition( IndexProgressor.EntityValueClient client, CursorContext cursorContext )
         {
             final var partition = getNextPotentialPartition();
             if ( partition.isEmpty() )
             {
                 return IndexProgressor.EMPTY;
             }
-            return getIndexProgressor( partition.get(), client, filter, query );
+            try
+            {
+                return getIndexProgressor( partition.get().from( cursorContext ), client, filter, query );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
 
-        private synchronized Optional<Seeker<KEY,VALUE>> getNextPotentialPartition()
+        private synchronized Optional<Seeker.From<KEY,VALUE>> getNextPotentialPartition()
         {
             return partitions.hasNext() ? Optional.of( partitions.next() ) : Optional.empty();
         }

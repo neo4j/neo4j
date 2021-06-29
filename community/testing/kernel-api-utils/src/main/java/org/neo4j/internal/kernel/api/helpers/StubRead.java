@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -36,6 +37,7 @@ import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 
@@ -60,7 +62,8 @@ public class StubRead implements Read
     }
 
     @Override
-    public PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    public PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
+                                                                QueryContext queryContext, PropertyIndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
@@ -99,7 +102,8 @@ public class StubRead implements Read
     }
 
     @Override
-    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, int desiredNumberOfPartitions,
+                                                                CursorContext cursorContext, TokenPredicate query )
     {
         throw new UnsupportedOperationException();
     }
@@ -195,7 +199,8 @@ public class StubRead implements Read
     }
 
     @Override
-    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, int desiredNumberOfPartitions,
+                                                                              CursorContext cursorContext, TokenPredicate query )
     {
         throw new UnsupportedOperationException();
     }

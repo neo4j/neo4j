@@ -91,7 +91,7 @@ class PartitionedSeekTest
             assertEquals( 1, visit.numberOfLevels );
 
             // when
-            Collection<Seeker<MutableLong,MutableLong>> seekers = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4, NULL );
+            Collection<Seeker.From<MutableLong,MutableLong>> seekers = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4, NULL );
 
             // then
             assertEquals( 1, seekers.size() );
@@ -137,7 +137,7 @@ class PartitionedSeekTest
             long to = random.nextLong( from, high );
 
             // when
-            Collection<Seeker<MutableLong,MutableLong>> seekers =
+            Collection<Seeker.From<MutableLong,MutableLong>> seekers =
                     tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
@@ -162,7 +162,7 @@ class PartitionedSeekTest
             long to = random.nextLong( from, high );
 
             // when
-            Collection<Seeker<MutableLong,MutableLong>> seekers =
+            Collection<Seeker.From<MutableLong,MutableLong>> seekers =
                     tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
@@ -187,7 +187,7 @@ class PartitionedSeekTest
             long from = random.nextLong( 0, to );
 
             // when
-            Collection<Seeker<MutableLong,MutableLong>> seekers =
+            Collection<Seeker.From<MutableLong,MutableLong>> seekers =
                     tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
@@ -218,7 +218,7 @@ class PartitionedSeekTest
             for ( int i = 0; i < stride - 1; i++ )
             {
                 int offset = i + 1;
-                AtomicReference<Collection<Seeker<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
+                AtomicReference<Collection<Seeker.From<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
                 Race race = new Race();
                 race.addContestant( throwing( () -> insertEntries( tree, offset, count, stride ) ) );
                 race.addContestant( throwing( () -> partitions.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ), NULL ) ) ) );
@@ -226,8 +226,9 @@ class PartitionedSeekTest
 
                 // then
                 long nextExpected = 0;
-                for ( Seeker<MutableLong,MutableLong> seeker : partitions.get() )
+                for ( Seeker.From<MutableLong,MutableLong> partition : partitions.get() )
                 {
+                    Seeker<MutableLong,MutableLong> seeker = partition.from( NULL );
                     while ( seeker.next() )
                     {
                         assertEquals( nextExpected, seeker.key().longValue() );
@@ -250,7 +251,7 @@ class PartitionedSeekTest
             for ( int i = stride - 2; i >= 0; i-- )
             {
                 int offset = i + 1;
-                AtomicReference<Collection<Seeker<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
+                AtomicReference<Collection<Seeker.From<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
                 Race race = new Race();
                 race.addContestant( throwing( () -> removeEntries( tree, offset, count, stride ) ) );
                 race.addContestant( throwing( () -> partitions.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ), NULL ) ) ) );
@@ -258,8 +259,9 @@ class PartitionedSeekTest
 
                 // then
                 long nextExpected = 0;
-                for ( Seeker<MutableLong,MutableLong> seeker : partitions.get() )
+                for ( Seeker.From<MutableLong,MutableLong> partition : partitions.get() )
                 {
+                    Seeker<MutableLong,MutableLong> seeker = partition.from( NULL );
                     while ( seeker.next() )
                     {
                         assertEquals( nextExpected, seeker.key().longValue() );
@@ -298,7 +300,7 @@ class PartitionedSeekTest
             int to = insertEntriesUntil( tree, numberOfDesiredLevels, numberOfDesiredRootChildren );
 
             // when
-            Collection<Seeker<MutableLong,MutableLong>> seekers =
+            Collection<Seeker.From<MutableLong,MutableLong>> seekers =
                     tree.partitionedSeek( layout.key( 0 ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
@@ -307,12 +309,13 @@ class PartitionedSeekTest
         }
     }
 
-    private static IntList assertEntries( long from, long to, Collection<Seeker<MutableLong,MutableLong>> seekers ) throws IOException
+    private static IntList assertEntries( long from, long to, Collection<Seeker.From<MutableLong,MutableLong>> seekersFrom ) throws IOException
     {
         long nextExpected = from;
         MutableIntList entryCountPerSeeker = IntLists.mutable.empty();
-        for ( Seeker<MutableLong,MutableLong> seeker : seekers )
+        for ( Seeker.From<MutableLong,MutableLong> seekerFrom : seekersFrom )
         {
+            Seeker<MutableLong,MutableLong> seeker = seekerFrom.from( NULL );
             int count = 0;
             while ( nextExpected < to && seeker.next() )
             {

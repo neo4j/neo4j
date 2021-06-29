@@ -50,6 +50,7 @@ import java.util.stream.LongStream;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -671,7 +672,11 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             KEY to = key( end() );
             if ( partitionedSeek )
             {
-                Collection<Seeker<KEY,VALUE>> partitions = tree.partitionedSeek( from, to, 10, NULL );
+                Collection<Seeker<KEY,VALUE>> partitions = new ArrayList<>();
+                for ( Seeker.From<KEY,VALUE> seeker : tree.partitionedSeek( from, to, 10, NULL ) )
+                {
+                    partitions.add( seeker.from( NULL ) );
+                }
                 return new PartitionBridgingSeeker<>( partitions );
             }
 

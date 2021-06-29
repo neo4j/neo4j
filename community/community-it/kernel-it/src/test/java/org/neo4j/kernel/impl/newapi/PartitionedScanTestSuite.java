@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
@@ -135,33 +136,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         }
     }
 
-    @Test
-    final void shouldThrowOnInitialReserveWithTransactionStateAfterConstruction() throws KernelException
-    {
-        try ( var tx = beginTx();
-              var entities = factory.getCursor( tx ) )
-        {
-            final var query = entityIdsMatchingScanQuery.iterator().next().getKey();
-
-            // given  no transaction state
-            // when   partitioned scan constructed
-            // then   should not throw
-            final var scan = factory.partitionedScan( tx, query, Integer.MAX_VALUE );
-
-            // given  transaction state
-            createState( tx );
-            softly.assertThat( tx.dataRead().transactionStateHasChanges() ).as( "transaction state" ).isTrue();
-
-            // when   partitioned reserved
-            // then   IllegalStateException should be thrown
-            softly.assertThatThrownBy( () -> scan.reservePartition( entities ),
-                                       "should throw on reserving partition, with transaction state" )
-                  .isInstanceOf( IllegalStateException.class )
-                  .hasMessage( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
-        }
-    }
-
-    protected static void createState( KernelTransaction tx ) throws InvalidTransactionTypeKernelException
+    private static void createState( KernelTransaction tx ) throws InvalidTransactionTypeKernelException
     {
         tx.dataWrite().nodeCreate();
     }
@@ -186,7 +161,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
                     // given  an empty database
                     // when   scanning
                     final var scan = factory.partitionedScan( tx, query, Integer.MAX_VALUE );
-                    while ( scan.reservePartition( entities ) )
+                    while ( scan.reservePartition( entities, tx.cursorContext() ) )
                     {
                         // then   no data should be found, and should not throw
                         softly.assertThat( entities.next() ).as( "no data should be found for %s", query ).isFalse();
@@ -216,49 +191,6 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         }
 
         @Test
-        final void shouldThrowOnReserveWithLaterTransactionStateAfterConstruction() throws KernelException
-        {
-            try ( var tx = beginTx();
-                  var entities = factory.getCursor( tx ) )
-            {
-                var query = entityIdsMatchingScanQuery.iterator().next().getKey();
-                for ( var entry : entityIdsMatchingScanQuery )
-                {
-                    if ( entry.getValue().size() > entityIdsMatchingScanQuery.getOrCreate( query ).size() )
-                    {
-                        query = entry.getKey();
-                    }
-                }
-
-                // given  no transaction state
-                // when   partitioned scan constructed
-                // then   should not throw
-                final var scan = factory.partitionedScan( tx, query, maxNumberOfPartitions );
-
-                // then   should have at least 2 partitions for test; if this fails, the tree isn't large enough
-                softly.assertThat( scan.getNumberOfPartitions() ).as( "number of partitions" )
-                      .isGreaterThanOrEqualTo( 2 );
-
-                // when   partition reserved
-                // then   should not throw
-                softly.assertThatCode( () -> scan.reservePartition( entities ) )
-                      .as( "should not throw on reserve partition, with no transaction state" )
-                      .doesNotThrowAnyException();
-
-                // given  transaction state
-                createState( tx );
-                softly.assertThat( tx.dataRead().transactionStateHasChanges() ).as( "transaction state" ).isTrue();
-
-                // when   partition reserved
-                // then   IllegalStateException should be thrown
-                softly.assertThatThrownBy( () -> scan.reservePartition( entities ),
-                                           "should throw on reserving partition, with transaction state" )
-                      .isInstanceOf( IllegalStateException.class )
-                      .hasMessage( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
-            }
-        }
-
-        @Test
         final void shouldScanSubsetOfEntriesWithSinglePartition() throws KernelException
         {
             try ( var tx = beginTx();
@@ -280,7 +212,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
 
                     // given  a partition
                     final var found = new HashSet<Long>();
-                    scan.reservePartition( entities );
+                    scan.reservePartition( entities, tx.cursorContext() );
                     while ( entities.next() )
                     {
                         // when   inspecting the found entities
@@ -345,7 +277,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
 
                     // given  each partition
                     final var found = new HashSet<Long>();
-                    while ( scan.reservePartition( entities ) )
+                    while ( scan.reservePartition( entities, tx.cursorContext() ) )
                     {
                         while ( entities.next() )
                         {
@@ -392,7 +324,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
                             try
                             {
                                 final var found = new HashSet<Long>();
-                                while ( scan.reservePartition( entities ) )
+                                while ( scan.reservePartition( entities, CursorContext.NULL ) )
                                 {
                                     while ( entities.next() )
                                     {

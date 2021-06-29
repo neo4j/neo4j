@@ -23,6 +23,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 
@@ -35,11 +36,14 @@ public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.k
 
     PartitionedValueIndexCursorSeek( Read read, IndexDescriptor descriptor, PartitionedValueSeek valueSeek, PropertyIndexQuery... query )
     {
+        if ( read.hasTxStateWithChanges() )
+        {
+            throw new IllegalStateException( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
+        }
         this.read = read;
         this.descriptor = descriptor;
         this.valueSeek = valueSeek;
         this.query = query;
-        throwIfTxState();
     }
 
     @Override
@@ -49,25 +53,16 @@ public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.k
     }
 
     @Override
-    public boolean reservePartition( Cursor cursor )
+    public boolean reservePartition( Cursor cursor, CursorContext cursorContext )
     {
-        throwIfTxState();
         final var indexCursor = (DefaultEntityValueIndexCursor<?>) cursor;
         indexCursor.setRead( read );
-        final var indexProgressor = valueSeek.reservePartition( indexCursor );
+        final var indexProgressor = valueSeek.reservePartition( indexCursor, cursorContext );
         if ( indexProgressor == IndexProgressor.EMPTY )
         {
             return false;
         }
         indexCursor.initialize( descriptor, indexProgressor, query, IndexQueryConstraints.unorderedValues(), false );
         return true;
-    }
-
-    protected void throwIfTxState()
-    {
-        if ( read.hasTxStateWithChanges() )
-        {
-            throw new IllegalStateException( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
-        }
     }
 }

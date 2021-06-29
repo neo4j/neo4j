@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 
@@ -33,10 +34,13 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
 
     PartitionedTokenIndexCursorScan( Read read, TokenPredicate query, PartitionedTokenScan tokenScan )
     {
+        if ( read.hasTxStateWithChanges() )
+        {
+            throw new IllegalStateException( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
+        }
         this.read = read;
         this.query = query;
         this.tokenScan = tokenScan;
-        throwIfTxState();
     }
 
     @Override
@@ -46,25 +50,16 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
     }
 
     @Override
-    public boolean reservePartition( Cursor cursor )
+    public boolean reservePartition( Cursor cursor, CursorContext cursorContext )
     {
-        throwIfTxState();
         var indexCursor = (DefaultEntityTokenIndexCursor<? extends DefaultEntityTokenIndexCursor<?>>) cursor;
         indexCursor.setRead( read );
-        var indexProgressor = tokenScan.reservePartition( indexCursor );
+        var indexProgressor = tokenScan.reservePartition( indexCursor, cursorContext );
         if ( indexProgressor == IndexProgressor.EMPTY )
         {
             return false;
         }
         indexCursor.initialize( indexProgressor, query.tokenId(), IndexOrder.NONE );
         return true;
-    }
-
-    protected void throwIfTxState()
-    {
-        if ( read.hasTxStateWithChanges() )
-        {
-            throw new IllegalStateException( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
-        }
     }
 }

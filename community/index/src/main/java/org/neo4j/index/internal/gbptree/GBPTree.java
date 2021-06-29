@@ -31,19 +31,17 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -1030,21 +1028,22 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     /**
      * Partitions the provided key range into {@code numberOfPartitions} partitions and instantiates a {@link Seeker} for each.
      * Caller can seek through the partitions in parallel. Caller is responsible for closing the returned {@link Seeker seekers}.
-     *
-     * See {@link #partitionedSeekInternal(Object, Object, int, Seeker.Factory, CursorContext)} for details on implementation.
+     * <p>
+     * See {@link #partitionedSeekInternal(Object, Object, int, CursorContext, Seeker.Factory)} for details on implementation.
      *
      * @param fromInclusive lower bound of the target range to seek (inclusive).
      * @param toExclusive higher bound of the target range to seek (exclusive).
-     * @param numberOfPartitions number of partitions desired by the caller. If the tree is small a lower number of partitions may be returned.
-     * The number of partitions will never be higher than the provided {@code numberOfPartitions}.
+     * @param desiredNumberOfPartitions number of partitions desired by the caller. If the tree is small a lower number of partitions may be returned.
+     * The number of partitions will never be higher than the provided {@code desiredNumberOfPartitions}.
+     * @param cursorContext underlying page cursor cursorContext for the thread doing the partitioning.
      * @return a {@link Collection} of {@link Seeker seekers}, each having their own distinct partition to seek. Collectively they
      * seek across the whole provided range.
      * @throws IOException on error reading from index.
      */
-    public Collection<Seeker<KEY,VALUE>> partitionedSeek( KEY fromInclusive, KEY toExclusive, int numberOfPartitions,
-            CursorContext cursorContext ) throws IOException
+    public Collection<Seeker.From<KEY,VALUE>> partitionedSeek( KEY fromInclusive, KEY toExclusive, int desiredNumberOfPartitions, CursorContext cursorContext )
+            throws IOException
     {
-        return partitionedSeekInternal( fromInclusive, toExclusive, numberOfPartitions, this, cursorContext );
+        return partitionedSeekInternal( fromInclusive, toExclusive, desiredNumberOfPartitions, cursorContext, this );
     }
 
     /**
@@ -1074,7 +1073,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * If we want a more fine grained partitioning we need to go to the lower parts of the tree.
      * This is what we do: We start at level 0 and collect all keys within our target range, let's say we find N keys [K1, K2,... KN].
      * In between each key and on both sides of the range is a subtree which means we now have a way to create N+1 partitions of
-     * estimated equal size. The outer boundaries will be given by fromInclusive and toExclusive. If <code>N+1 < numberOfPartitions</code>
+     * estimated equal size. The outer boundaries will be given by fromInclusive and toExclusive. If <code>N+1 < desiredNumberOfPartitions</code>
      * we need to go one level further down and include all of the keys within our range from that level as well. If we still don't
      * have enough splitter keys in our range we continue down the tree until we either have enough keys or we reach the leaf level.
      * If we reach the leaf level it means that each partition will be only a single leaf node and we do not partition any further.
@@ -1084,17 +1083,16 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      *
      * @param fromInclusive lower bound of the target range to seek (inclusive).
      * @param toExclusive higher bound of the target range to seek (exclusive).
-     * @param numberOfPartitions number of partitions desired by the caller. If the tree is small or the target range is narrow a lower
-     *                           number of partitions may be returned. The number of partitions will never be higher than the provided
-     *                           {@code numberOfPartitions}.
+     * @param desiredNumberOfPartitions number of partitions desired by the caller. If the tree is small a lower number of partitions may be returned.
+     * The number of partitions will never be higher than the provided {@code desiredNumberOfPartitions}.
+     * @param cursorContext underlying page cursor cursorContext for the thread doing the partitioning.
      * @param seekerFactory {@link Seeker.Factory} factory method that create the seekers for each partition.
-     * @param cursorContext underlying page cursor context
-     * @return {@link Collection} of {@link Seeker seekers} placed on each partition. The number of partitions is given by the size of
-     *         the collection.
+     * @return {@link Collection} of {@link Seeker.From wrappers} around {@link Seeker seekers} placed on each partition.
+     * The number of partitions is given by the size of the collection.
      * @throws IOException on error accessing the index.
      */
-    private Collection<Seeker<KEY,VALUE>> partitionedSeekInternal( KEY fromInclusive, KEY toExclusive, int numberOfPartitions,
-            Seeker.Factory<KEY,VALUE> seekerFactory, CursorContext cursorContext )
+    private Collection<Seeker.From<KEY,VALUE>> partitionedSeekInternal( KEY fromInclusive, KEY toExclusive, int desiredNumberOfPartitions,
+                                                                        CursorContext cursorContext, Seeker.Factory<KEY,VALUE> seekerFactory )
             throws IOException
     {
         Preconditions.checkArgument( layout.compare( fromInclusive, toExclusive ) <= 0, "Partitioned seek only supports forward seeking for the time being" );
@@ -1123,29 +1121,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             searchLevel++;
             numberOfSubtrees = splitterKeysInRange.size() + 1;
         }
-        while ( numberOfSubtrees < numberOfPartitions );
+        while ( numberOfSubtrees < desiredNumberOfPartitions );
 
         // From the set of splitter keys, create partitions
         KeyPartitioning<KEY> partitioning = new KeyPartitioning<>( layout );
-        List<Seeker<KEY,VALUE>> seekers = new ArrayList<>();
-        boolean success = false;
-        try
-        {
-            for ( Pair<KEY,KEY> partition : partitioning.partition( splitterKeysInRange, fromInclusive, toExclusive, numberOfPartitions ) )
-            {
-                seekers.add( seekerFactory.seek( partition.getLeft(), partition.getRight(), cursorContext ) );
-            }
-            success = true;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                IOUtils.closeAll( seekers );
-            }
-        }
-
-        return seekers;
+        return partitioning.partition( splitterKeysInRange, fromInclusive, toExclusive, desiredNumberOfPartitions ).stream()
+                           .map( partition -> (Seeker.From<KEY,VALUE>) context -> seekerFactory.seek( partition.getLeft(), partition.getRight(), context ) )
+                           .collect( Collectors.toUnmodifiableList() );
     }
 
     /**
@@ -1168,18 +1150,14 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             monitor.clear();
             Seeker.Factory<KEY,VALUE> monitoredSeeks =
                     ( fromInclusive, toExclusive, tracer ) -> seekInternal( fromInclusive, toExclusive, tracer, 1, monitor, LEAF_LEVEL );
-            Collection<Seeker<KEY,VALUE>> seekers = partitionedSeekInternal( low, high, sampleSize, monitoredSeeks, cursorContext );
-            try
+            Collection<Seeker.From<KEY,VALUE>> seekersFrom = partitionedSeekInternal( low, high, sampleSize, cursorContext, monitoredSeeks );
+            for ( Seeker.From<KEY,VALUE> seeker : seekersFrom )
             {
-                for ( Seeker<KEY,VALUE> partition : seekers )
+                // Simply make sure the first one is found so that the supplied monitor have been notified about the path down to it
+                try ( Seeker<KEY,VALUE> partition = seeker.from( cursorContext ) )
                 {
-                    // Simply make sure the first one is found so that the supplied monitor have been notified about the path down to it
                     partition.next();
                 }
-            }
-            finally
-            {
-                IOUtils.closeAll( seekers );
             }
         }
         while ( !monitor.isConsistent() );

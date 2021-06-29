@@ -90,11 +90,11 @@ public class DefaultTokenIndexReader implements TokenIndexReader
     }
 
     @Override
-    public PartitionedTokenScan entityTokenScan( TokenPredicate query, int desiredNumberOfPartitions )
+    public PartitionedTokenScan entityTokenScan( int desiredNumberOfPartitions, CursorContext context, TokenPredicate query )
     {
         try
         {
-            return new NativePartitionedTokenScan( query, desiredNumberOfPartitions, CursorContext.NULL );
+            return new NativePartitionedTokenScan( desiredNumberOfPartitions, context, query );
         }
         catch ( IOException e )
         {
@@ -197,10 +197,10 @@ public class DefaultTokenIndexReader implements TokenIndexReader
     private class NativePartitionedTokenScan implements PartitionedTokenScan
     {
         private final EntityRange range = EntityRange.FULL;
-        private final Iterator<Seeker<TokenScanKey,TokenScanValue>> partitions;
+        private final Iterator<Seeker.From<TokenScanKey,TokenScanValue>> partitions;
         private final int numberOfPartitions;
 
-        NativePartitionedTokenScan( TokenPredicate query, int desiredNumberOfPartitions, CursorContext cursorContext ) throws IOException
+        NativePartitionedTokenScan( int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query ) throws IOException
         {
             Preconditions.requirePositive( desiredNumberOfPartitions );
             int tokenId = query.tokenId();
@@ -218,17 +218,24 @@ public class DefaultTokenIndexReader implements TokenIndexReader
         }
 
         @Override
-        public IndexProgressor reservePartition( IndexProgressor.EntityTokenClient client )
+        public IndexProgressor reservePartition( IndexProgressor.EntityTokenClient client, CursorContext cursorContext )
         {
             final var partition = getNextPotentialPartition();
             if ( partition.isEmpty() )
             {
                 return IndexProgressor.EMPTY;
             }
-            return new TokenScanValueIndexProgressor( partition.get(), client, IndexOrder.NONE, range );
+            try
+            {
+                return new TokenScanValueIndexProgressor( partition.get().from( cursorContext ), client, IndexOrder.NONE, range );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
 
-        private synchronized Optional<Seeker<TokenScanKey,TokenScanValue>> getNextPotentialPartition()
+        private synchronized Optional<Seeker.From<TokenScanKey,TokenScanValue>> getNextPotentialPartition()
         {
             return partitions.hasNext() ? Optional.of( partitions.next() ) : Optional.empty();
         }

@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Initializer for spreading a scan operator over multiple cursors for use from different threads in parallel.
@@ -44,7 +45,7 @@ public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cu
      * There are two basic ways to make sure all partitions are processed:
      * <p>
      * Pattern one: Look at {@link #getNumberOfPartitions() number of partitions} and
-     * {@link #reservePartition(org.neo4j.internal.kernel.api.Cursor) reserve} this many partitions.
+     * {@link #reservePartition(org.neo4j.internal.kernel.api.Cursor, CursorContext) reserve} this many partitions.
      * If using a fixed number of threads it is recommended to try and create the same number of partitions
      * since each individual partition comes with the overhead of traversing the underlying {@link GBPTree tree}.
      * Note that it might not always be possible to create the desired number of partitions and so make sure to always
@@ -74,7 +75,7 @@ public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cu
      * }
      * </pre>
      * <p>
-     * Pattern two: It is also possible to {@link #reservePartition(org.neo4j.internal.kernel.api.Cursor) reserve partitions}
+     * Pattern two: It is also possible to {@link #reservePartition(org.neo4j.internal.kernel.api.Cursor, CursorContext) reserve partitions}
      * until there are no more partitions to reserve by checking the return value. This can be done from one or multiple threads
      * Example:
      * <pre>
@@ -93,8 +94,9 @@ public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cu
      * </pre>
      *
      * @param cursor The cursor to be used for reading.
+     * @param cursorContext The underlying page cursor context for the thread doing the seek.
      * @throws IllegalStateException if transaction contains changed state.
      * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
      */
-    boolean reservePartition( Cursor cursor );
+    boolean reservePartition( Cursor cursor, CursorContext cursorContext );
 }

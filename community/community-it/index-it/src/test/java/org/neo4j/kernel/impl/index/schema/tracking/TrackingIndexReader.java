@@ -63,9 +63,9 @@ public class TrackingIndexReader implements ValueIndexReader
     }
 
     @Override
-    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query )
     {
-        return delegate.valueSeek( desiredNumberOfPartitions, query );
+        return delegate.valueSeek( desiredNumberOfPartitions, context, query );
     }
 
     @Override

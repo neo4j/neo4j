@@ -53,10 +53,11 @@ public interface ValueIndexReader extends IndexReader
     /**
      * Create a partitioning over the result set for the given query. The partitions can be processed in parallel.
      * @param desiredNumberOfPartitions the number of desired partitions.
+     * @param queryContext underlying cursor contexts for the partitioning.
      * @param query the query to serve.
      * @return The {@link PartitionedValueSeek} from which partitions can be reserved.
      */
-    PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query );
+    PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query );
 
     ValueIndexReader EMPTY = new ValueIndexReader()
     {
@@ -81,7 +82,7 @@ public interface ValueIndexReader extends IndexReader
         }
 
         @Override
-        public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+        public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query )
         {
             throw new UnsupportedOperationException( "EMPTY implementation does not support this method." );
         }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 public interface PartitionedValueSeek
@@ -30,8 +31,9 @@ public interface PartitionedValueSeek
 
     /**
      * @param client the client used for consuming data
+     * @param cursorContext The underlying page cursor context for the thread doing the seek.
      * @return An {@link IndexProgressor} used for reading the data of one partition
      * or {@link IndexProgressor#EMPTY} if there are no more partitions.
      */
-    IndexProgressor reservePartition( IndexProgressor.EntityValueClient client );
+    IndexProgressor reservePartition( IndexProgressor.EntityValueClient client, CursorContext cursorContext );
 }

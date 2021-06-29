@@ -32,10 +32,12 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.ScanQuery;
 import org.neo4j.kernel.impl.newapi.PropertyIndexPartitionedScanTestSuite.PropertyKeyScanQuery;
@@ -82,7 +84,7 @@ class PartitionedScanFactories
         PartitionedScan<NodeLabelIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery scanQuery, int desiredNumberOfPartitions )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
-            return tx.dataRead().nodeLabelScan( getSession( tx, scanQuery ), scanQuery.get(), desiredNumberOfPartitions );
+            return tx.dataRead().nodeLabelScan( getSession( tx, scanQuery ), desiredNumberOfPartitions, CursorContext.NULL, scanQuery.get() );
         }
 
         @Override
@@ -110,7 +112,7 @@ class PartitionedScanFactories
         PartitionedScan<RelationshipTypeIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery scanQuery, int desiredNumberOfPartitions )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
-            return tx.dataRead().relationshipTypeScan( getSession( tx, scanQuery ), scanQuery.get(), desiredNumberOfPartitions );
+            return tx.dataRead().relationshipTypeScan( getSession( tx, scanQuery ), desiredNumberOfPartitions, CursorContext.NULL, scanQuery.get() );
         }
 
         @Override
@@ -149,7 +151,7 @@ class PartitionedScanFactories
         PartitionedScan<NodeValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery scanQuery, int desiredNumberOfPartitions )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
-            return tx.dataRead().nodeIndexSeek( getSession( tx, scanQuery ), desiredNumberOfPartitions, scanQuery.get() );
+            return tx.dataRead().nodeIndexSeek( getSession( tx, scanQuery ), desiredNumberOfPartitions, QueryContext.NULL_CONTEXT, scanQuery.get() );
         }
 
         @Override

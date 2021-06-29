@@ -69,7 +69,7 @@ public class StubTokenIndexReader implements TokenIndexReader
     }
 
     @Override
-    public PartitionedTokenScan entityTokenScan( TokenPredicate query, int desiredNumberOfPartitions )
+    public PartitionedTokenScan entityTokenScan( int desiredNumberOfPartitions, CursorContext context, TokenPredicate query )
     {
         throw new UnsupportedOperationException( "Stub implementation does not support this method." );
     }

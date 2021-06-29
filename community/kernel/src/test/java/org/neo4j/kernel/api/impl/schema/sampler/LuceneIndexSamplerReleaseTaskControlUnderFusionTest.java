@@ -230,7 +230,8 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
                     }
 
                     @Override
-                    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, PropertyIndexQuery... query )
+                    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context,
+                                                           PropertyIndexQuery... query )
                     {
                         throw new UnsupportedOperationException();
                     }

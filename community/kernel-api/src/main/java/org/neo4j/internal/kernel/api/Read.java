@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -64,7 +65,15 @@ public interface Read
     void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
             throws KernelException;
 
-    PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions, PropertyIndexQuery... query )
+    /**
+     * Seek all nodes matching the provided index query in an index. NOTE! This is not thread-safe for transaction state.
+     * @param index {@link IndexReadSession} referencing index to query. This must be an index of nodes.
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param queryContext the underlying contexts for the thread doing the partitioning.
+     * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
+     */
+    PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
+                                                         QueryContext queryContext, PropertyIndexQuery... query )
             throws IndexNotApplicableKernelException;
 
     /**
@@ -124,11 +133,13 @@ public interface Read
      * NOTE! This is not thread-safe for transaction state.
      *
      * @param session {@link TokenReadSession} token read session to query.
-     * @param query the query to run against index
      * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param cursorContext the underlying page cursor context for the thread doing the partitioning.
+     * @param query the query to run against index
      * @return {@link PartitionedScan} over the query
      */
-    PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+    PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, int desiredNumberOfPartitions,
+                                                         CursorContext cursorContext, TokenPredicate query )
             throws IndexNotApplicableKernelException;
 
     /**
@@ -327,11 +338,13 @@ public interface Read
      * NOTE! This is not thread-safe for transaction state.
      *
      * @param session {@link TokenReadSession} token read session to query.
-     * @param query the query to run against index
      * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param cursorContext the underlying page cursor context for the thread doing the partitioning.
+     * @param query the query to run against index
      * @return {@link PartitionedScan} over the query
      */
-    PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+    PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, int desiredNumberOfPartitions,
+                                                                       CursorContext cursorContext, TokenPredicate query )
             throws IndexNotApplicableKernelException;
 
     /**
