@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
+import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.procs.FieldSignature
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
@@ -51,7 +51,10 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
 
 object ShowProcFuncCommandHelper {
 
-  def getRolesForUser(securityContext: SecurityContext, securityHandler: SecurityAuthorizationHandler, systemGraph: Option[GraphDatabaseService], executableBy: Option[ExecutableBy], command: String): (Set[String], Boolean) = executableBy match {
+  private[showcommands] def systemGraph(queryState: QueryState): GraphDatabaseService =
+    queryState.query.graph().getDependencyResolver.resolveDependency(classOf[DatabaseManagementService]).database(SYSTEM_DATABASE_NAME)
+
+  def getRolesForExecutableByUser(securityContext: SecurityContext, securityHandler: SecurityAuthorizationHandler, systemGraph: => GraphDatabaseService, executableBy: Option[ExecutableBy], command: String): (Set[String], Boolean) = executableBy match {
     case Some(CurrentUser) if securityContext.subject().equals(AuthSubject.AUTH_DISABLED) => (Set.empty[String], true)
     case Some(User(name)) if !securityContext.subject().hasUsername(name) =>
       // EXECUTABLE BY not_current_user
@@ -68,8 +71,9 @@ object ShowProcFuncCommandHelper {
         }
         throw securityHandler.logAndGetAuthorizationException(securityContext, violationMessage)
       }
-      val stx = systemGraph.get.beginTx() // Will be Some(_: GraphDatabaseService) since executableBy.isDefined
-      val rolesResult = stx.execute(s"SHOW USERS YIELD user, roles WHERE user = '$name' RETURN roles").columnAs[util.List[String]]("roles")
+      val stx = systemGraph.beginTx()
+      val rolesResult = stx.execute("SHOW USERS YIELD user, roles WHERE user = $name RETURN roles",
+        Map[String, Object]("name" -> name).asJava).columnAs[util.List[String]]("roles")
       val rolesSet = if (rolesResult.hasNext) {
         // usernames are unique so we only get one result back
         rolesResult.next().asScala.toSet
@@ -108,9 +112,8 @@ object ShowProcFuncCommandHelper {
     VirtualValues.fromList(fieldMaps.asJava)
   }
 
-  def getPrivileges(state: QueryState, executeSegment: String): (Privileges, Option[GraphDatabaseService]) = {
-    val sg = state.query.graph().getDependencyResolver.resolveDependency(classOf[DatabaseManagementService]).database("system")
-    val stx = sg.beginTx()
+  def getPrivileges(systemGraph: GraphDatabaseService, executeSegment: String): Privileges = {
+    val stx = systemGraph.beginTx()
     val execQuery = "SHOW ALL PRIVILEGES YIELD * WHERE action='execute' AND segment STARTS WITH $seg RETURN access, segment, collect(role) as roles"
     val executePrivilegesRes = stx.execute(execQuery, Map[String, Object]("seg" -> executeSegment).asJava)
     val executePrivileges = executePrivilegesRes.asScala.map(_.asScala.toMap).toList
@@ -131,7 +134,7 @@ object ShowProcFuncCommandHelper {
     val allDbmsPrivileges = stx.execute(allDbmsQuery).asScala.map(_.asScala.toMap).toList
     stx.commit()
 
-    (Privileges(executePrivileges, boostedExecutePrivileges, allDbmsPrivileges, adminPrivileges), Some(sg))
+    Privileges(executePrivileges, boostedExecutePrivileges, allDbmsPrivileges, adminPrivileges)
   }
 
   def roles(name: String,

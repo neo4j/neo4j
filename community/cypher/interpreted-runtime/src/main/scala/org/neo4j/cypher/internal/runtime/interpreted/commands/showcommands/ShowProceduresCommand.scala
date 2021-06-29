@@ -43,16 +43,17 @@ import scala.collection.JavaConverters.asScalaSetConverter
 case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val isCommunity = state.rowFactory.isInstanceOf[CommunityCypherRowFactory]
-    val (privileges, systemGraph) =
-      if (!isCommunity && (verbose || executableBy.isDefined))
-        ShowProcFuncCommandHelper.getPrivileges(state, "PROCEDURE") // Always give Some(_: GraphDatabaseService)
-      else (ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty), None)
+    lazy val systemGraph = ShowProcFuncCommandHelper.systemGraph(state)
+
+    val privileges = 
+      if (!isCommunity && (verbose || executableBy.isDefined)) ShowProcFuncCommandHelper.getPrivileges(systemGraph, "PROCEDURE")
+      else ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty)
 
     val tx = state.query.transactionalContext.transaction
     val securityContext = tx.securityContext()
     val (userRoles, alwaysExecutable) =
       if (!isCommunity) {
-        ShowProcFuncCommandHelper.getRolesForUser(securityContext, tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW PROCEDURES")
+        ShowProcFuncCommandHelper.getRolesForExecutableByUser(securityContext, tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW PROCEDURES")
       } else {
         (Set.empty[String], true)
       }

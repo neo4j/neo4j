@@ -47,15 +47,17 @@ import scala.collection.JavaConverters.mapAsScalaMapConverter
 case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val isCommunity = state.rowFactory.isInstanceOf[CommunityCypherRowFactory]
-    val (privileges, systemGraph) =
-      if (!isCommunity && (verbose || executableBy.isDefined)) ShowProcFuncCommandHelper.getPrivileges(state, "FUNCTION")  // Always give Some(_: GraphDatabaseService)
-      else (ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty), None)
+    lazy val systemGraph = ShowProcFuncCommandHelper.systemGraph(state)
+
+    val privileges = 
+      if (!isCommunity && (verbose || executableBy.isDefined)) ShowProcFuncCommandHelper.getPrivileges(systemGraph, "FUNCTION")
+      else ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty)
 
     val tx = state.query.transactionalContext.transaction
     val securityContext = tx.securityContext()
     val (userRoles, allRoles, alwaysExecutable) =
       if (!isCommunity) {
-        val (userRoles, alwaysExecutable) = ShowProcFuncCommandHelper.getRolesForUser(securityContext, tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW FUNCTIONS")
+        val (userRoles, alwaysExecutable) = ShowProcFuncCommandHelper.getRolesForExecutableByUser(securityContext, tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW FUNCTIONS")
         val allRoles =
           if (functionType != UserDefinedFunctions && (verbose || executableBy.isDefined)) getAllRoles(systemGraph) // We will need roles column for built-in functions
           else Set.empty[String]
@@ -150,8 +152,8 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
     }
   }
 
-  private def getAllRoles(systemGraph: Option[GraphDatabaseService]): Set[String] = {
-    val stx = systemGraph.get.beginTx() // Will be Some(_: GraphDatabaseService) since either verbose or executableBy.isDefined
+  private def getAllRoles(systemGraph: GraphDatabaseService): Set[String] = {
+    val stx = systemGraph.beginTx()
     val roleNames = stx.execute("SHOW ALL ROLES YIELD role").columnAs[String]("role").asScala.toSet
     stx.commit()
     roleNames
