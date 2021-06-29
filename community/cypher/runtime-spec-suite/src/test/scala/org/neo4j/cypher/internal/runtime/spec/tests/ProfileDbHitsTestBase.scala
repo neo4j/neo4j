@@ -33,7 +33,9 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -58,7 +60,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  val costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
                                                                  val costOfCompositeUniqueIndexCursorRow: Long, // the reported dbHits for finding one row from a composite unique index
                                                                  cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
-                                                                 canFuseOverPipelines: Boolean,
+                                                                 val canFuseOverPipelines: Boolean,
                                                                  createsRelValueInExpand: Boolean,
                                                                  val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
@@ -972,8 +974,16 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val produceResultProfile = queryProfile.operatorProfile(0)
     val setPropertyProfile = queryProfile.operatorProfile(1)
 
+    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
+      val propertyTokenDbHits = 1 * sizeHint
+      val writeNodePropertyDbHits = 1 * sizeHint
+      propertyTokenDbHits + writeNodePropertyDbHits
+    } else {
+      3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ + sizeHint * costOfProperty
+    }
+
     setPropertyProfile.rows() shouldBe sizeHint
-    setPropertyProfile.dbHits() shouldBe 3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ + sizeHint * costOfProperty
+    setPropertyProfile.dbHits() shouldBe expectedDbHits
     produceResultProfile.rows() shouldBe sizeHint
     produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
   }
@@ -1207,10 +1217,84 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val produceResultProfile = queryProfile.operatorProfile(0)
     val foreachProfile = queryProfile.operatorProfile(1)
 
+    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
+      val propertyTokenDbHits = 3 * sizeHint
+      val writeNodePropertyDbHits = 3 * sizeHint
+      propertyTokenDbHits + writeNodePropertyDbHits
+    } else {
+      3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ + 3 * sizeHint * costOfProperty
+    }
+
     foreachProfile.rows() shouldBe sizeHint
-    foreachProfile.dbHits() shouldBe 3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ +  3 * sizeHint * costOfProperty
+    foreachProfile.dbHits() shouldBe expectedDbHits
     produceResultProfile.rows() shouldBe sizeHint
     produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
+  }
+
+  test("should profile rows and dbhits of foreach + set node properties from map") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("i", "[1, 2, 3]", Seq(setNodePropertiesFromMap("n", "{prop: 42, foo: i}", removeOtherProps = false)))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
+
+    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
+      val propertyTokenDbHits = sizeHint * 3 * 2
+      val writeNodePropertyDbHits = sizeHint * 3 * 2
+      propertyTokenDbHits + writeNodePropertyDbHits
+    } else {
+      val setPropertyDbHits = sizeHint * 3 * 2
+      val tokenDbHits = sizeHint * 2 * 3 * costOfPropertyToken
+      setPropertyDbHits + tokenDbHits
+    }
+
+    setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
+  }
+
+  test("should profile rows and dbhits of foreach + set relationship properties from map") {
+    // given
+    val relationship = given {
+      val (_, rels) = circleGraph(sizeHint)
+      rels
+    }
+
+    val relationshipCount = relationship.size
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("i", "[1,2,3]", Seq(setRelationshipPropertiesFromMap("r", "{prop: 42, foo: i}", removeOtherProps = false)))
+      .expandAll("(n)-[r]->()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
+
+    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
+      val setPropertyDbHits = relationshipCount * 3 * 2
+      val tokenDbHits = relationshipCount * 3 * 2
+      setPropertyDbHits + tokenDbHits
+    } else {
+      val setPropertyDbHits = relationshipCount * 3 * 2
+      val tokenDbHits = relationshipCount * 3 * 2 * costOfPropertyToken
+      setPropertyDbHits + tokenDbHits
+    }
+
+    setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
   }
 
   test("should profile rows and dbhits of foreach + create") {
@@ -1260,8 +1344,16 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     val foreachProfile = queryProfile.operatorProfile(1)
 
+    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
+      val tokenLookup = 2 * 3 * sizeHint
+      val setLabelToNode = 2 * sizeHint
+      tokenLookup + setLabelToNode
+    } else {
+      2 * costOfLabelLookup + 3 * sizeHint
+    }
+
     foreachProfile.rows() shouldBe sizeHint
-    foreachProfile.dbHits() shouldBe 2 * costOfLabelLookup + 3 * sizeHint
+    foreachProfile.dbHits() shouldBe expectedDbHits
   }
 
   test("should profile rows and dbhits of foreach + remove label correctly") {
@@ -1284,8 +1376,16 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     val foreachProfile = queryProfile.operatorProfile(1)
 
+    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
+      val tokenLookup = 1 * sizeHint
+      val setLabelToNode = 3 * sizeHint
+      tokenLookup + setLabelToNode
+    } else {
+      costOfLabelLookup + 3 * sizeHint
+    }
+
     foreachProfile.rows() shouldBe sizeHint
-    foreachProfile.dbHits() shouldBe costOfLabelLookup + 3 * sizeHint
+    foreachProfile.dbHits() shouldBe expectedDbHits
   }
 
   test("should profile rows and dbhits of foreach + delete correctly") {
@@ -1380,6 +1480,71 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     }
 
     removeLabelsProfile.dbHits() shouldBe labelsRemovedFromNodeDbHits + expectedLabelLookups
+  }
+
+  test("should profile db hits on set node properties from map") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .setPropertiesFromMap("n", "{prop: 42, foo: 1}", removeOtherProps = false)
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
+
+    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
+      val setPropertyDbHits = sizeHint * 2
+      val tokenDbHits = sizeHint * 2
+      setPropertyDbHits + tokenDbHits
+    } else {
+      val setPropertyDbHits = sizeHint * 2
+      val tokenDbHits = sizeHint * 2 * costOfPropertyToken
+      setPropertyDbHits + tokenDbHits
+    }
+
+    setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
+  }
+
+  test("should profile db hits on set relationship properties from map") {
+    // given
+    val relationships = given {
+      val (_, rels) = circleGraph(sizeHint)
+      rels
+    }
+    val relationshipCount = relationships.size
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .setRelationshipPropertiesFromMap("r","{prop: 42, foo: 1}", removeOtherProps = false)
+      .expandAll("(n)-[r]->()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
+
+    val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
+      val setPropertyDbHits = relationshipCount * 2
+      val tokenDbHits = relationshipCount * 2
+      setPropertyDbHits + tokenDbHits
+    } else {
+      val setPropertyDbHits = relationshipCount * 2
+      val tokenDbHits = relationshipCount * 2 * costOfPropertyToken
+      setPropertyDbHits + tokenDbHits
+    }
+
+    setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
   }
 
   protected def propertiesString(properties: Map[String, Any]): String = {

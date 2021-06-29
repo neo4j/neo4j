@@ -44,7 +44,8 @@ import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 abstract class MergeTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
+                                                               sizeHint: Int,
+                                                               useWritesWithProfiling: Boolean = false
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
   test("merge should create node with empty all node scan") {
     // given no nodes
@@ -1191,8 +1192,16 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val produceResultProfile = queryProfile.operatorProfile(0)
     val mergeProfile = queryProfile.operatorProfile(1)
 
+    val expectedDBHits = if (useWritesWithProfiling) {
+      val propertyTokenDbHits = sizeHint
+      val writeNodePropertyDbHits = sizeHint
+      propertyTokenDbHits + writeNodePropertyDbHits
+    } else {
+      3 + sizeHint
+    }
+
     mergeProfile.rows() shouldBe sizeHint
-    mergeProfile.dbHits() should (be (3 + sizeHint) or be (sizeHint))
+    mergeProfile.dbHits() shouldBe expectedDBHits
     produceResultProfile.rows() shouldBe sizeHint
     produceResultProfile.dbHits() shouldBe sizeHint * 2
   }
