@@ -22,26 +22,24 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 /**
- * {@link BtreeKey} which has an array of {@link BtreeKey} inside and can therefore hold composite key state.
- * For single-keys please instead use the more efficient {@link BtreeKey}.
+ * {@link RangeKey} which has an array of {@link RangeKey} inside and can therefore hold composite key state.
+ * For single-keys please instead use the more efficient {@link RangeKey}.
  */
-final class CompositeBtreeKey extends BtreeKey
+final class CompositeRangeKey extends RangeKey
 {
-    private BtreeKey[] states;
+    private RangeKey[] states;
 
-    CompositeBtreeKey( int slots, IndexSpecificSpaceFillingCurveSettings spatialSettings )
+    CompositeRangeKey( int slots )
     {
-        super( spatialSettings );
-        states = new BtreeKey[slots];
+        states = new RangeKey[slots];
         for ( int i = 0; i < slots; i++ )
         {
-            states[i] = new BtreeKey( spatialSettings );
+            states[i] = new RangeKey();
         }
     }
 
@@ -81,7 +79,7 @@ final class CompositeBtreeKey extends BtreeKey
     }
 
     @Override
-    int compareValueToInternal( BtreeKey other )
+    int compareValueToInternal( RangeKey other )
     {
         int slots = numberOfStateSlots();
         for ( int i = 0; i < slots; i++ )
@@ -167,7 +165,7 @@ final class CompositeBtreeKey extends BtreeKey
     public String toStringInternal()
     {
         StringJoiner joiner = new StringJoiner( "," );
-        for ( BtreeKey state : states )
+        for ( RangeKey state : states )
         {
             joiner.add( state.toStringInternal() );
         }
@@ -178,7 +176,7 @@ final class CompositeBtreeKey extends BtreeKey
     String toDetailedStringInternal()
     {
         StringJoiner joiner = new StringJoiner( "," );
-        for ( BtreeKey state : states )
+        for ( RangeKey state : states )
         {
             joiner.add( state.toDetailedStringInternal() );
         }
@@ -186,7 +184,7 @@ final class CompositeBtreeKey extends BtreeKey
     }
 
     @Override
-    void minimalSplitterInternal( BtreeKey left, BtreeKey right, BtreeKey into )
+    void minimalSplitterInternal( RangeKey left, RangeKey right, RangeKey into )
     {
         int firstStateToDiffer = 0;
         int compare = 0;
@@ -199,8 +197,8 @@ final class CompositeBtreeKey extends BtreeKey
 
         while ( compare == 0 && firstStateToDiffer < stateCount )
         {
-            BtreeKey leftState = left.stateSlot( firstStateToDiffer );
-            BtreeKey rightState = right.stateSlot( firstStateToDiffer );
+            RangeKey leftState = left.stateSlot( firstStateToDiffer );
+            RangeKey rightState = right.stateSlot( firstStateToDiffer );
             firstStateToDiffer++;
             compare = leftState.compareValueToInternal( rightState );
         }
@@ -211,14 +209,14 @@ final class CompositeBtreeKey extends BtreeKey
         }
         for ( int i = firstStateToDiffer; i < stateCount; i++ )
         {
-            BtreeKey leftState = left.stateSlot( i );
-            BtreeKey rightState = right.stateSlot( i );
+            RangeKey leftState = left.stateSlot( i );
+            RangeKey rightState = right.stateSlot( i );
             rightState.minimalSplitterInternal( leftState, rightState, into.stateSlot( i ) );
         }
     }
 
     @Override
-    BtreeKey stateSlot( int slot )
+    RangeKey stateSlot( int slot )
     {
         return states[slot];
     }
