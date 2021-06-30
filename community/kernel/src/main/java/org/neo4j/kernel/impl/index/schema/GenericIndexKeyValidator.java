@@ -34,17 +34,17 @@ import org.neo4j.values.storable.ValueCategory;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.BIGGEST_STATIC_SIZE;
 
 /**
- * Validates Value[] tuples, whether or not they fit inside a {@link GBPTree} with a layout using {@link CompositeBtreeKey}.
- * Most values won't even be serialized to {@link CompositeBtreeKey}, values that fit well within the margin.
+ * Validates Value[] tuples, whether or not they fit inside a {@link GBPTree} with a layout using {@link GenericKey}.
+ * Most values won't even be serialized to {@link GenericKey}, values that fit well within the margin.
  */
 class GenericIndexKeyValidator implements IndexValueValidator
 {
     private final IndexDescriptor descriptor;
     private final int maxLength;
-    private final Layout<BtreeKey,NativeIndexValue> layout;
+    private final Layout<? extends GenericKey<?>,NativeIndexValue> layout;
     private final TokenNameLookup tokenNameLookup;
 
-    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<BtreeKey,NativeIndexValue> layout,
+    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<? extends GenericKey<?>,NativeIndexValue> layout,
             TokenNameLookup tokenNameLookup )
     {
         this.maxLength = maxLength;
@@ -123,7 +123,7 @@ class GenericIndexKeyValidator implements IndexValueValidator
 
     private int actualLength( Value[] values )
     {
-        BtreeKey key = layout.newKey();
+        GenericKey<?> key = layout.newKey();
         key.initialize( 0 /*doesn't quite matter for size calculations, but an important method to call*/ );
         for ( int i = 0; i < values.length; i++ )
         {
