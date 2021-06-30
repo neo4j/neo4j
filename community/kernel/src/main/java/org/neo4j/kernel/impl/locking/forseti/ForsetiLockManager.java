@@ -22,25 +22,16 @@ package org.neo4j.kernel.impl.locking.forseti;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.WaitStrategy;
 import org.neo4j.time.SystemNanoClock;
-
-import static org.neo4j.kernel.impl.locking.forseti.LockingInternalSettings.forseti_deadlock_resolution_strategy;
 
 /**
  * <h1>Forseti, the Nordic god of justice</h1>
@@ -120,7 +111,7 @@ public class ForsetiLockManager implements Locks
          * For each client currently holding this lock, copy their wait list into the given bitset.
          * This is how information on who is waiting for whom is propagated.
          */
-        void copyHolderWaitListsInto( SimpleBitSet waitList );
+        void copyHolderWaitListsInto( Set<ForsetiClient> waitList );
 
         /**
          * Check if anyone holding this lock is currently waiting for the specified client. This
@@ -128,10 +119,10 @@ public class ForsetiLockManager implements Locks
          * comes back positive, it means we've deadlocked, because we are waiting for someone
          * (the holder of the lock) who in turn is waiting for us (so they won't release the lock).
          *
-         * @param client the client id that is waiting to grab this lock
-         * @return the id of a client we've deadlocked with, or -1 if there is not currently a deadlock
+         * @param client the client that is waiting to grab this lock
+         * @return the client we've deadlocked with, or {@code null} if there is not currently a deadlock
          */
-        int detectDeadlock( int client );
+        ForsetiClient detectDeadlock( ForsetiClient client );
 
         /**
          * For introspection and error messages, this gives a (somewhat) human-readable description of who is waiting
@@ -160,53 +151,14 @@ public class ForsetiLockManager implements Locks
         boolean isClosed();
     }
 
-    /**
-     * Deadlocks always involve at least two participants - and they can be resolved by either or both participants
-     * "aborting", meaning they release their locks and give up, perhaps to try again later. However, this is extremely
-     * expensive, since the client may be acting on behalf of a big expensive (or small but important) transaction.
-     * <p/>
-     * Hence, we want to minimize aborts, and we want to ensure that whichever client does abort is the most sensible
-     * one. This interface abstracts multiple different approaches for choosing who should abort.
-     */
-    interface DeadlockResolutionStrategy
-    {
-        /**
-         * This gets called when a deadlock has been detected by a client - it realizes it's in a deadlock
-         * situation with at least one other client. In many cases, both (or more!) clients involved in the
-         * deadlock will discover this fact at the same time, and thus this method will get called from different
-         * clients asking about the same deadlock.
-         * <p/>
-         * In fact, this method is guaranteed to keep getting called, eventually from every client involved in
-         * a deadlock, assuming the method keeps returning false.
-         * <p/>
-         * The goal of whoever implements this method should be that for each unique deadlock, independent of how
-         * many clients discover it, exactly one client should abort, and no more. Which client is chosen to abort
-         * is up to the strategy to decide, but should generally be based on something sensible relating to the
-         * value or importance of letting one client continue to the detriment of another.
-         * <p/>
-         * IMPORTANT: For every unique deadlock, this method MUST abort at least one client involved, eventually.
-         * If it does not guarantee this, the deadlock will not be resolved, and the database will
-         * actually deadlock, causing a fatal system outage.
-         *
-         * @param clientThatsAsking this is the client that has discovered a deadlock
-         * @param clientWereDeadlockedWith this is the client we've realized we are deadlocking with, meaning
-         * this method will eventually be invoked from this clients perspective
-         * as well (eg. with inverted arguments), assuming we return false here.
-         * @return true to make {@code clientThatsAsking} abort, false to take no action, but wait to be called again
-         * from the perspective of the other client.
-         */
-        boolean shouldAbort( ForsetiClient clientThatsAsking, ForsetiClient clientWereDeadlockedWith );
-    }
-
     /** Pointers to lock maps, one array per resource type. */
     private final ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps;
 
     /** Reverse lookup resource types by id, used for introspection */
     private final ResourceType[] resourceTypes;
 
-    /** Pool forseti clients. */
-    private final Pool<ForsetiClient> clientPool;
-
+    private final SystemNanoClock clock;
+    private final boolean verboseDeadlocks;
     private volatile boolean closed;
 
     @SuppressWarnings( "unchecked" )
@@ -216,21 +168,13 @@ public class ForsetiLockManager implements Locks
         this.lockMaps = new ConcurrentMap[maxResourceId];
         this.resourceTypes = new ResourceType[maxResourceId];
 
-        /* Wait strategies per resource type */
-        WaitStrategy[] waitStrategies = new WaitStrategy[maxResourceId];
-
         for ( ResourceType type : resourceTypes )
         {
             this.lockMaps[type.typeId()] = new ConcurrentHashMap<>( 16, 0.6f, 512 );
-            waitStrategies[type.typeId()] = type.waitStrategy();
             this.resourceTypes[type.typeId()] = type;
         }
-        // TODO Using a FlyweightPool here might still be more than what we actually need.
-        // TODO We should investigate if a simple concurrent stack (aka. free-list) would
-        // TODO be good enough. In fact, we could add the required fields for such a stack
-        // TODO to the ForsetiClient objects themselves, making the stack garbage-free in
-        // TODO the (presumably) common case of client re-use.
-        clientPool = new ForsetiClientFlyweightPool( config, clock, lockMaps, waitStrategies );
+        this.clock = clock;
+        this.verboseDeadlocks = config.get( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks );
     }
 
     /**
@@ -239,17 +183,12 @@ public class ForsetiLockManager implements Locks
     @Override
     public Client newClient()
     {
-        // We check this volatile closed flag here, which may seem like a contention overhead, but as the time
-        // of writing we apply pooling of transactions and in extension pooling of lock clients,
-        // so this method is called very rarely.
         if ( closed )
         {
             throw new IllegalStateException( this + " already closed" );
         }
 
-        ForsetiClient forsetiClient = clientPool.acquire();
-        forsetiClient.reset();
-        return forsetiClient;
+        return new ForsetiClient( lockMaps, clock, verboseDeadlocks );
     }
 
     @Override
@@ -286,59 +225,5 @@ public class ForsetiLockManager implements Locks
     public void close()
     {
         this.closed = true;
-    }
-
-    private static class ForsetiClientFlyweightPool extends LinkedQueuePool<ForsetiClient>
-    {
-        /** Client id counter **/
-        private final AtomicInteger clientIds = new AtomicInteger( 0 );
-
-        /** Re-use ids, forseti uses these in arrays, so we want to keep them low and not loose them. */
-        private final Queue<Integer> unusedIds = new ConcurrentLinkedQueue<>();
-        private final ConcurrentMap<Integer,ForsetiClient> clientsById = new ConcurrentHashMap<>();
-        private final Config config;
-        private final SystemNanoClock clock;
-        private final ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps;
-        private final WaitStrategy[] waitStrategies;
-        private final DeadlockResolutionStrategy deadlockResolutionStrategy;
-        private final boolean verboseDeadlocks;
-
-        ForsetiClientFlyweightPool( Config config, SystemNanoClock clock, ConcurrentMap<Long,Lock>[] lockMaps,
-                WaitStrategy[] waitStrategies )
-        {
-            super( 128, null );
-            this.config = config;
-            this.clock = clock;
-            this.lockMaps = lockMaps;
-            this.waitStrategies = waitStrategies;
-            this.deadlockResolutionStrategy = config.get( forseti_deadlock_resolution_strategy );
-            this.verboseDeadlocks = config.get( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks );
-        }
-
-        @Override
-        protected ForsetiClient create()
-        {
-            Integer id = unusedIds.poll();
-            if ( id == null )
-            {
-                id = clientIds.getAndIncrement();
-            }
-            ForsetiClient client = new ForsetiClient( id, lockMaps, waitStrategies, this,
-                    deadlockResolutionStrategy, clientsById::get, clock, verboseDeadlocks );
-            clientsById.put( id, client );
-            return client;
-        }
-
-        @Override
-        protected void dispose( ForsetiClient resource )
-        {
-            super.dispose( resource );
-            clientsById.remove( resource.id() );
-            if ( resource.id() < 1024 )
-            {
-                // Re-use all ids < 1024
-                unusedIds.offer( resource.id() );
-            }
-        }
     }
 }

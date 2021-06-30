@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.WaitStrategy;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -119,12 +118,6 @@ class ExecutingQueryStatusTest
 
             @Override
             public int typeId()
-            {
-                throw new UnsupportedOperationException( "not used" );
-            }
-
-            @Override
-            public WaitStrategy waitStrategy()
             {
                 throw new UnsupportedOperationException( "not used" );
             }

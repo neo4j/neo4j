@@ -34,7 +34,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.WaitStrategy;
 import org.neo4j.memory.OptionalMemoryTracker;
 import org.neo4j.test.FakeCpuClock;
 import org.neo4j.test.FakeMemoryTracker;
@@ -372,12 +371,6 @@ class ExecutingQueryTest
 
             @Override
             public int typeId()
-            {
-                throw new UnsupportedOperationException( "not used" );
-            }
-
-            @Override
-            public WaitStrategy waitStrategy()
             {
                 throw new UnsupportedOperationException( "not used" );
             }

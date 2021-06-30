@@ -83,8 +83,8 @@ public abstract class LockCompatibilityTestSupport
         clientB = locks.newClient();
         clientC = locks.newClient();
         clientA.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
-        clientB.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
-        clientC.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        clientB.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        clientC.initialize( NoLeaseClient.INSTANCE, 3, EmptyMemoryTracker.INSTANCE, Config.defaults() );
 
         clientToThreadMap.put( clientA, threadA );
         clientToThreadMap.put( clientB, threadB );

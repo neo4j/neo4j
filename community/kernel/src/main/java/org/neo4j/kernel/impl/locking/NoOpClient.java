@@ -84,7 +84,7 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
-    public int getLockSessionId()
+    public long getTransactionId()
     {
         return -1;
     }

@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -143,12 +142,7 @@ class KernelTransactionTestBase
 
     public KernelTransactionImplementation newTransaction( LoginContext loginContext )
     {
-        return newTransaction( 0, loginContext );
-    }
-
-    public KernelTransactionImplementation newTransaction( LoginContext loginContext, Locks.Client locks )
-    {
-        return newTransaction( 0, loginContext, locks, defaultTransactionTimeoutMillis );
+        return newTransaction( 0, loginContext, defaultTransactionTimeoutMillis );
     }
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext )
@@ -157,17 +151,11 @@ class KernelTransactionTestBase
     }
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext,
-            long transactionTimeoutMillis )
-    {
-        return newTransaction( lastTransactionIdWhenStarted, loginContext, new NoOpClient(), transactionTimeoutMillis );
-    }
-
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext,
-            Locks.Client locks, long transactionTimeout )
+            long transactionTimeout )
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         SecurityContext securityContext = loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG );
-        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, locks, KernelTransaction.Type.EXPLICIT,
+        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, KernelTransaction.Type.EXPLICIT,
                 securityContext, transactionTimeout, 1L, EMBEDDED_CONNECTION );
         return tx;
     }
@@ -185,6 +173,7 @@ class KernelTransactionTestBase
     KernelTransactionImplementation newNotInitializedTransaction( LeaseService leaseService, Config config, NamedDatabaseId databaseId )
     {
         Dependencies dependencies = new Dependencies();
+        Locks.Client locksClient = mock( Locks.Client.class );
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
         var memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, ByteUnit.mebiBytes( 4 ), null );
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
@@ -197,7 +186,7 @@ class KernelTransactionTestBase
                                                     leaseService, memoryPool,
                                                     new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseId.name() ),
                                                     TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST,
-                                                    mock( DbmsRuntimeRepository.class )
+                                                    mock( DbmsRuntimeRepository.class ), locksClient
         );
     }
 

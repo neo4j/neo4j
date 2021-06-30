@@ -29,10 +29,10 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public class FrozenLocksException extends RuntimeException implements Status.HasStatus
 {
-    public FrozenLocksException( int lockSessionId )
+    public FrozenLocksException( long transactionId )
     {
-        super( String.format( "A interaction with a frozen lock client has occurred on lock session %d, possibly by " +
-                              "concurrent access to the transaction.", lockSessionId ) );
+        super( String.format( "A interaction with a frozen lock client has occurred in transaction %d, possibly by " +
+                              "concurrent access to the transaction.", transactionId ) );
     }
 
     @Override

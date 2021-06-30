@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -179,6 +180,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport
         }
     }
 
+    static final AtomicLong TRANSACTION_ID = new AtomicLong();
     public class StressThread extends Thread
     {
         private final Random rand = new Random( currentTimeMillis() );
@@ -205,7 +207,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport
             this.depthCount = depthCount;
             this.readWriteRatio = readWriteRatio;
             this.startSignal = startSignal;
-            client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+            client.initialize( NoLeaseClient.INSTANCE, TRANSACTION_ID.getAndIncrement(), EmptyMemoryTracker.INSTANCE, Config.defaults() );
         }
 
         @Override

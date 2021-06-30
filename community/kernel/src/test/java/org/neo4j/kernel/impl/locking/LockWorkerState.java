@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
@@ -28,9 +29,9 @@ import org.neo4j.memory.EmptyMemoryTracker;
 
 class LockWorkerState
 {
+    private static final AtomicLong TRANSACTION_ID = new AtomicLong();
     final Locks grabber;
     final Locks.Client client;
-    volatile boolean deadlockOnLastWait;
     final List<String> completedOperations = new ArrayList<>();
     String doing;
 
@@ -38,7 +39,7 @@ class LockWorkerState
     {
         this.grabber = locks;
         this.client = locks.newClient();
-        this.client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        this.client.initialize( NoLeaseClient.INSTANCE, TRANSACTION_ID.getAndIncrement(), EmptyMemoryTracker.INSTANCE, Config.defaults() );
     }
 
     public void doing( String doing )

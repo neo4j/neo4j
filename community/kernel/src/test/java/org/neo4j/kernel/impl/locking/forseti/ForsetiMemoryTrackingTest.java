@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -47,6 +48,7 @@ import static org.neo4j.lock.ResourceTypes.NODE;
 
 class ForsetiMemoryTrackingTest
 {
+    private static final AtomicLong TRANSACTION_ID = new AtomicLong();
     private static final int ONE_LOCK_SIZE_ESTIMATE = 56;
     private GlobalMemoryGroupTracker memoryPool;
     private MemoryTracker memoryTracker;
@@ -334,7 +336,7 @@ class ForsetiMemoryTrackingTest
         {
             trackers[i] = new LocalMemoryTracker( memoryPool );
             Locks.Client client = forsetiLockManager.newClient();
-            client.initialize( LeaseService.NoLeaseClient.INSTANCE, 1, trackers[i], Config.defaults() );
+            client.initialize( LeaseService.NoLeaseClient.INSTANCE, i, trackers[i], Config.defaults() );
             race.addContestant( new SimulatedTransaction( client ) );
         }
         race.go();
@@ -440,7 +442,7 @@ class ForsetiMemoryTrackingTest
     private Locks.Client getClient()
     {
         Locks.Client client = forsetiLockManager.newClient();
-        client.initialize( LeaseService.NoLeaseClient.INSTANCE, 1, memoryTracker, Config.defaults() );
+        client.initialize( LeaseService.NoLeaseClient.INSTANCE, TRANSACTION_ID.getAndIncrement(), memoryTracker, Config.defaults() );
         return client;
     }
 }

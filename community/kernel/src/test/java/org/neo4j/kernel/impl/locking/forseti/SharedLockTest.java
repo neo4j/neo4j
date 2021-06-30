@@ -41,7 +41,7 @@ class SharedLockTest
         lock.acquire( clientB );
 
         // When
-        assertTrue( lock.tryAcquireUpdateLock( clientA ) );
+        assertTrue( lock.tryAcquireUpdateLock() );
 
         // Then
         assertThat( lock.numberOfHolders() ).isEqualTo( 2 );
@@ -71,7 +71,7 @@ class SharedLockTest
         SharedLock lock = new SharedLock( client );
         assertEquals( LockType.SHARED, lock.type() );
 
-        assertTrue( lock.tryAcquireUpdateLock( client ) );
+        assertTrue( lock.tryAcquireUpdateLock() );
 
         assertEquals( LockType.EXCLUSIVE, lock.type() );
     }

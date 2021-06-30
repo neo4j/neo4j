@@ -67,19 +67,19 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  */
 public enum ResourceTypes implements ResourceType
 {
-    NODE( 0, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    RELATIONSHIP( 1, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    NODE( 0 ),
+    RELATIONSHIP( 1 ),
     // GRAPH_PROPS( 2, LockWaitStrategies.INCREMENTAL_BACKOFF ) - skip it to avoid resource types conflicts
     // SCHEMA resource type had typeId 3 - skip it to avoid resource types conflicts
-    INDEX_ENTRY( 4, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    INDEX_ENTRY( 4 ),
     // EXPLICIT INDEX resource had type id 5 - skip it to avoid resource types conflicts
-    LABEL( 6, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    SCHEMA_NAME( 8, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    RELATIONSHIP_GROUP( 9, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    RELATIONSHIP_DELETE( 10, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    NODE_RELATIONSHIP_GROUP_DELETE( 11, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    DEGREES( 12, LockWaitStrategies.INCREMENTAL_BACKOFF );
+    LABEL( 6 ),
+    RELATIONSHIP_TYPE( 7 ),
+    SCHEMA_NAME( 8 ),
+    RELATIONSHIP_GROUP( 9 ),
+    RELATIONSHIP_DELETE( 10 ),
+    NODE_RELATIONSHIP_GROUP_DELETE( 11 ),
+    DEGREES( 12 );
 
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
 
@@ -93,24 +93,15 @@ public enum ResourceTypes implements ResourceType
 
     private final int typeId;
 
-    private final WaitStrategy waitStrategy;
-
-    ResourceTypes( int typeId, WaitStrategy waitStrategy )
+    ResourceTypes( int typeId )
     {
         this.typeId = typeId;
-        this.waitStrategy = waitStrategy;
     }
 
     @Override
     public int typeId()
     {
         return typeId;
-    }
-
-    @Override
-    public WaitStrategy waitStrategy()
-    {
-        return waitStrategy;
     }
 
     public static ResourceType fromId( int typeId )

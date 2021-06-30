@@ -234,7 +234,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor,
-            AbstractSecurityLog securityLog, KernelVersionRepository kernelVersionRepository, DbmsRuntimeRepository dbmsRuntimeRepository )
+            AbstractSecurityLog securityLog, KernelVersionRepository kernelVersionRepository, DbmsRuntimeRepository dbmsRuntimeRepository,
+            Locks.Client lockClient )
     {
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
@@ -287,12 +288,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         registerConfigChangeListeners( config );
         this.config = config;
         this.collectionsFactory = collectionsFactorySupplier.create();
+        this.lockClient = lockClient;
     }
 
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Locks.Client lockClient, Type type,
+    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Type type,
             SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
         this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), versionContextSupplier.createVersionContext() );
@@ -300,7 +302,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessCapability = accessCapabilityFactory.newAccessCapability( readOnlyDatabaseChecker );
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
         this.type = type;
-        this.lockClient = lockClient;
         this.userTransactionId = userTransactionId;
         this.leaseClient = leaseService.newClient();
         this.lockClient.initialize( leaseClient, userTransactionId, memoryTracker, config );
@@ -1040,7 +1041,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             forceThawLocks();
             lockClient.close();
-            lockClient = null;
             terminationReason = null;
             type = null;
             securityContext = null;

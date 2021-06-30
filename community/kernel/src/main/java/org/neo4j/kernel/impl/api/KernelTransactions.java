@@ -209,9 +209,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                 assertRunning();
                 TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
                 KernelTransactionImplementation tx = txPool.acquire();
-                Locks.Client lockClient = locks.newClient();
                 tx.initialize( lastCommittedTransaction.transactionId(), lastCommittedTransaction.commitTimestamp(),
-                        lockClient, type, securityContext, timeout, userTransactionIdCounter.incrementAndGet(), clientInfo );
+                        type, securityContext, timeout, userTransactionIdCounter.incrementAndGet(), clientInfo );
                 return tx;
             }
             finally
@@ -406,7 +405,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, indexStatisticsStore,
                             databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
-                            securityLog, kernelVersionRepository, dbmsRuntimeRepository );
+                            securityLog, kernelVersionRepository, dbmsRuntimeRepository, locks.newClient() );
             this.transactions.add( tx );
             return tx;
         }

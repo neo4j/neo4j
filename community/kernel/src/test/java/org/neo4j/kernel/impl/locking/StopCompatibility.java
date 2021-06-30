@@ -70,7 +70,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
     void setUp()
     {
         client = locks.newClient();
-        client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        client.initialize( NoLeaseClient.INSTANCE, 4, EmptyMemoryTracker.INSTANCE, Config.defaults() );
     }
 
     @AfterEach

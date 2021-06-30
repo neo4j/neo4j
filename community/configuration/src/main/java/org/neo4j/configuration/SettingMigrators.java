@@ -543,6 +543,20 @@ public final class SettingMigrators
         }
     }
 
+    @ServiceProvider
+    public static class ForsetiMigrator implements SettingMigrator
+    {
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            String value = values.remove( "unsupported.dbms.locks.forseti_deadlock_resolution_strategy" );
+            if ( isNotBlank( value ) )
+            {
+                log.warn( "unsupported.dbms.locks.forseti_deadlock_resolution_strategy no longer exists. Value have no effect." );
+            }
+        }
+    }
+
     public static void migrateSettingNameChange( Map<String,String> values, Log log, String oldSetting, Setting<?> newSetting )
     {
         String value = values.remove( oldSetting );

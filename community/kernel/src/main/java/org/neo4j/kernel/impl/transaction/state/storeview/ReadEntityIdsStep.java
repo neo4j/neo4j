@@ -31,9 +31,10 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.lock.LockWaitStrategies.INCREMENTAL_BACKOFF;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
 
 public class ReadEntityIdsStep extends PullingProducerStep
 {
@@ -100,10 +101,29 @@ public class ReadEntityIdsStep extends PullingProducerStep
             // control.isIdle returns true when all steps in this processing stage have processed all batches they have received
             for ( long i = 0; !control.isIdle(); i++ )
             {
-                INCREMENTAL_BACKOFF.apply( i );
+                incrementalBackoff( i );
             }
             externalUpdatesCheck.applyExternalUpdates( lastEntityId );
             entityIdIterator.invalidateCache();
+        }
+    }
+
+    private static void incrementalBackoff( long iteration ) throws AcquireLockTimeoutException
+    {
+        if ( iteration < 1000 )
+        {
+            Thread.onSpinWait();
+            return;
+        }
+
+        try
+        {
+            Thread.sleep( 1 );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new AcquireLockTimeoutException( "Interrupted while waiting.", e, Interrupted );
         }
     }
 

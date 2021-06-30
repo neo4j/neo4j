@@ -67,6 +67,7 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
+import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -96,7 +97,6 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.lock.ResourceTypes.SCHEMA_NAME;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
 @ExtendWith( OtherThreadExtension.class )
@@ -2438,7 +2438,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
             first.untilWaitingIn( BinaryLatch.class.getMethod( "await") );
             beforeSecondCreatesIndex.await();
-            second.untilWaitingIn( SCHEMA_NAME.waitStrategy().getClass().getMethod( "apply", long.class) );
+            second.untilWaitingIn( ForsetiClient.class.getMethod( "incrementalBackoffWait", long.class ) );
             second.untilWaiting();
             pauseFirst.release();
             firstFuture.get();

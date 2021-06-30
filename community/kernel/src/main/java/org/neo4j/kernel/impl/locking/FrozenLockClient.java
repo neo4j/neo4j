@@ -122,9 +122,9 @@ public class FrozenLockClient implements Locks.Client
     }
 
     @Override
-    public int getLockSessionId()
+    public long getTransactionId()
     {
-        return delegate.getLockSessionId();
+        return delegate.getTransactionId();
     }
 
     @Override
@@ -141,6 +141,6 @@ public class FrozenLockClient implements Locks.Client
 
     private FrozenLocksException frozenLockException()
     {
-        return new FrozenLocksException( delegate.getLockSessionId() );
+        return new FrozenLocksException( delegate.getTransactionId() );
     }
 }

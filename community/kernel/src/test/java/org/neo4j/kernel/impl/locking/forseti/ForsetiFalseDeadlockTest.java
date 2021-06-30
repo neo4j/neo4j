@@ -44,10 +44,8 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.LockWaitStrategies;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.lock.WaitStrategy;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -131,28 +129,20 @@ class ForsetiFalseDeadlockTest
         // running this test, I leave only iteration count 100 enabled.
         int iteration = 100;
         LockManager[] lockManagers = LockManager.values();
-        LockWaitStrategies[] lockWaitStrategies = LockWaitStrategies.values();
         LockType[] lockTypes = LockType.values();
         for ( LockManager lockManager : lockManagers )
         {
-            for ( LockWaitStrategies waitStrategy : lockWaitStrategies )
+            for ( LockType lockTypeAX : lockTypes )
             {
-                if ( waitStrategy == LockWaitStrategies.NO_WAIT )
+                for ( LockType lockTypeAY : lockTypes )
                 {
-                    continue; // Skip NO_WAIT.
-                }
-                for ( LockType lockTypeAX : lockTypes )
-                {
-                    for ( LockType lockTypeAY : lockTypes )
+                    for ( LockType lockTypeBX : lockTypes )
                     {
-                        for ( LockType lockTypeBX : lockTypes )
+                        for ( LockType lockTypeBY : lockTypes )
                         {
-                            for ( LockType lockTypeBY : lockTypes )
-                            {
-                                fixtures.add( new Fixture(
-                                        iteration, lockManager, waitStrategy,
-                                        lockTypeAX, lockTypeAY, lockTypeBX, lockTypeBY ) );
-                            }
+                            fixtures.add( new Fixture(
+                                    iteration, lockManager,
+                                    lockTypeAX, lockTypeAY, lockTypeBX, lockTypeBY ) );
                         }
                     }
                 }
@@ -296,7 +286,6 @@ class ForsetiFalseDeadlockTest
     {
         private final int iterations;
         private final LockManager lockManager;
-        private final WaitStrategy waitStrategy;
         private final LockType lockTypeAX;
         private final LockType lockTypeAY;
         private final LockType lockTypeBX;
@@ -304,7 +293,6 @@ class ForsetiFalseDeadlockTest
 
         Fixture( int iterations,
                 LockManager lockManager,
-                WaitStrategy waitStrategy,
                 LockType lockTypeAX,
                 LockType lockTypeAY,
                 LockType lockTypeBX,
@@ -312,7 +300,6 @@ class ForsetiFalseDeadlockTest
         {
             this.iterations = iterations;
             this.lockManager = lockManager;
-            this.waitStrategy = waitStrategy;
             this.lockTypeAX = lockTypeAX;
             this.lockTypeAY = lockTypeAY;
             this.lockTypeBX = lockTypeBX;
@@ -337,12 +324,6 @@ class ForsetiFalseDeadlockTest
                 public int typeId()
                 {
                     return 0;
-                }
-
-                @Override
-                public WaitStrategy waitStrategy()
-                {
-                    return waitStrategy;
                 }
 
                 @Override
@@ -398,7 +379,6 @@ class ForsetiFalseDeadlockTest
         {
             return "iterations=" + iterations +
                     ", lockManager=" + lockManager +
-                    ", waitStrategy=" + waitStrategy +
                     ", lockTypeAX=" + lockTypeAX +
                     ", lockTypeAY=" + lockTypeAY +
                     ", lockTypeBX=" + lockTypeBX +

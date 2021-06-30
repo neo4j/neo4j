@@ -25,9 +25,6 @@ public interface ResourceType
     /** Must be unique among all existing resource types, should preferably be a sequence starting at 0. */
     int typeId();
 
-    /** What to do if the lock cannot immediately be acquired. */
-    WaitStrategy waitStrategy();
-
     /** Must be unique among all existing resource types. */
     String name();
 }

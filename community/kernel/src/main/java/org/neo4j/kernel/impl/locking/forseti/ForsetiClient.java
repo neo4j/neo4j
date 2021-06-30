@@ -20,20 +20,18 @@
 package org.neo4j.kernel.impl.locking.forseti;
 
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
-import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.LongIntMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongIntHashMap;
 import org.neo4j.configuration.Config;
@@ -45,8 +43,6 @@ import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.forseti.ForsetiLockManager.DeadlockResolutionStrategy;
-import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
@@ -54,13 +50,14 @@ import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.lock.WaitStrategy;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 
@@ -78,24 +75,12 @@ import static org.neo4j.lock.LockType.SHARED;
  */
 public class ForsetiClient implements Locks.Client
 {
-    static final int NO_CLIENT_ID = -1;
-    /** Id for this client */
-    private final int clientId;
+    private static final int MAX_SPINS = 1000;
+    private static final long MULTIPLY_UNTIL_ITERATION = MAX_SPINS + 2;
+    private static final int NO_CLIENT_ID = -1;
 
     /** resourceType -> lock map. These are the global lock maps, shared across all clients. */
     private final ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps;
-
-    /** resourceType -> wait strategy */
-    private final WaitStrategy[] waitStrategies;
-
-    /** How to resolve deadlocks. */
-    private final DeadlockResolutionStrategy deadlockResolutionStrategy;
-
-    /** Handle to return client to pool when closed. */
-    private final Pool<ForsetiClient> clientPool;
-
-    /** Look up a client by id */
-    private final IntFunction<ForsetiClient> clientById;
 
     /**
      * The client uses this to track which locks it holds. It is solely an optimization to ensure we don't need to
@@ -120,8 +105,7 @@ public class ForsetiClient implements Locks.Client
     private final boolean verboseDeadlocks;
 
     /** List of other clients this client is waiting for. */
-    private final SimpleBitSet waitList = new SimpleBitSet( 64 );
-    private long waitListCheckPoint;
+    private final Set<ForsetiClient> waitList = ConcurrentHashMap.newKeySet();
 
     // To be able to close Locks.Client instance properly we should be able to do couple of things:
     //  - have a possibility to prevent new clients to come
@@ -150,40 +134,24 @@ public class ForsetiClient implements Locks.Client
      * secondary deadlock verification process, where we traverse the waiter/lock-owner dependency graph.
      */
     private volatile ForsetiLockManager.Lock waitingForLock;
-    private volatile long userTransactionId;
+    private volatile long transactionId;
     private volatile MemoryTracker memoryTracker;
     private static final long CONCURRENT_NODE_SIZE = HeapEstimator.LONG_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE;
 
-    public ForsetiClient( int id, ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps,
-                          WaitStrategy[] waitStrategies, Pool<ForsetiClient> clientPool,
-                          DeadlockResolutionStrategy deadlockResolutionStrategy, IntFunction<ForsetiClient> clientById,
-                          SystemNanoClock clock, boolean verboseDeadlocks )
+    public ForsetiClient( ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps, SystemNanoClock clock, boolean verboseDeadlocks )
     {
-        this.clientId = id;
         this.lockMaps = lockMaps;
-        this.waitStrategies = waitStrategies;
-        this.deadlockResolutionStrategy = deadlockResolutionStrategy;
-        this.clientPool = clientPool;
-        this.clientById = clientById;
         this.sharedLockCounts = new HeapTrackingLongIntHashMap[lockMaps.length];
         this.exclusiveLockCounts = new HeapTrackingLongIntHashMap[lockMaps.length];
         this.clock = clock;
         this.verboseDeadlocks = verboseDeadlocks;
     }
 
-    /**
-     * Reset current client state. Make it ready for next bunch of operations.
-     * Should be used before factory release client to public usage.
-     */
-    public void reset()
-    {
-        stateHolder.reset();
-    }
-
     @Override
     public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config )
     {
-        this.userTransactionId = transactionId;
+        stateHolder.reset();
+        this.transactionId = transactionId;
         this.memoryTracker = requireNonNull( memoryTracker );
         this.lockAcquisitionTimeoutNano = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toNanos();
         this.myExclusiveLock = new ExclusiveLock( this );
@@ -282,7 +250,7 @@ public class ForsetiClient implements Locks.Client
 
                     if ( waitEvent == null )
                     {
-                        waitEvent = tracer.waitForLock( SHARED, resourceType, userTransactionId, resourceId );
+                        waitEvent = tracer.waitForLock( SHARED, resourceType, transactionId, resourceId );
                     }
                     // And take note of who we are waiting for. This is used for deadlock detection.
                     waitFor( existingLock, resourceType, resourceId, tries++ );
@@ -377,7 +345,7 @@ public class ForsetiClient implements Locks.Client
 
                     if ( waitEvent == null )
                     {
-                        waitEvent = tracer.waitForLock( EXCLUSIVE, resourceType, userTransactionId, resourceId );
+                        waitEvent = tracer.waitForLock( EXCLUSIVE, resourceType, transactionId, resourceId );
                     }
                     waitFor( existingLock, resourceType, resourceId, tries++ );
                 }
@@ -427,7 +395,7 @@ public class ForsetiClient implements Locks.Client
                 if ( lock instanceof SharedLock && getSharedLockCount( resourceType ).containsKey( resourceId ) )
                 {
                     SharedLock sharedLock = (SharedLock) lock;
-                    if ( sharedLock.tryAcquireUpdateLock( this ) )
+                    if ( sharedLock.tryAcquireUpdateLock() )
                     {
                         if ( sharedLock.numberOfHolders() == 1 )
                         {
@@ -681,12 +649,11 @@ public class ForsetiClient implements Locks.Client
         stateHolder.closeClient();
         waitForAllClientsToLeave();
         releaseAllLocks();
-        userTransactionId = INVALID_TRANSACTION_ID;
+        transactionId = INVALID_TRANSACTION_ID;
         memoryTracker = null;
         // This exclusive lock instance has been used for all exclusive locks held by this client for this transaction.
         // Close it to mark it not participate in deadlock detection anymore
         myExclusiveLock.close();
-        clientPool.release( this );
     }
 
     private void releaseAllLocks()
@@ -700,17 +667,17 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public int getLockSessionId()
+    public long getTransactionId()
     {
-        return clientId;
+        return transactionId;
     }
 
     @Override
     public Stream<ActiveLock> activeLocks()
     {
         List<ActiveLock> locks = new ArrayList<>();
-        collectActiveLocks( exclusiveLockCounts, locks, EXCLUSIVE, userTransactionId );
-        collectActiveLocks( sharedLockCounts, locks, SHARED, userTransactionId );
+        collectActiveLocks( exclusiveLockCounts, locks, EXCLUSIVE, transactionId );
+        collectActiveLocks( sharedLockCounts, locks, SHARED, transactionId );
         return locks.stream();
     }
 
@@ -750,19 +717,14 @@ public class ForsetiClient implements Locks.Client
         return count;
     }
 
-    int waitListSize()
+    void copyWaitListTo( Set<ForsetiClient> other )
     {
-        return waitList.size();
+        other.addAll( waitList );
     }
 
-    void copyWaitListTo( SimpleBitSet other )
+    boolean isWaitingFor( ForsetiClient client )
     {
-        other.put( waitList );
-    }
-
-    boolean isWaitingFor( int clientId )
-    {
-        return clientId != this.clientId && waitList.contains( clientId );
+        return client.getTransactionId() != getTransactionId() && waitList.contains( client );
     }
 
     @Override
@@ -779,19 +741,19 @@ public class ForsetiClient implements Locks.Client
 
         ForsetiClient that = (ForsetiClient) o;
 
-        return clientId == that.clientId;
+        return transactionId == that.transactionId;
     }
 
     @Override
     public int hashCode()
     {
-        return clientId;
+        return Long.hashCode( transactionId );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "ForsetiClient[%d]", clientId );
+        return String.format( "ForsetiClient[transactionId=%d]", transactionId );
     }
 
     /** Release a lock from the global pool. */
@@ -805,9 +767,7 @@ public class ForsetiClient implements Locks.Client
         }
         else if ( lock instanceof SharedLock && ((SharedLock) lock).release( this ) )
         {
-            // We were the last to hold this lock, it is now dead and we should remove it.
-            // Also cleaning updater reference that can hold lock in memory
-            ((SharedLock) lock).cleanUpdateHolder();
+            // We were the last to hold this lock
             lockMap.remove( resourceId );
             memoryTracker.releaseHeap( CONCURRENT_NODE_SIZE );
         }
@@ -887,7 +847,7 @@ public class ForsetiClient implements Locks.Client
             LockTracer tracer, LockWaitEvent priorEvent, ResourceType resourceType, long resourceId,
             SharedLock sharedLock, int tries, long waitStartNano ) throws AcquireLockTimeoutException
     {
-        if ( sharedLock.tryAcquireUpdateLock( this ) )
+        if ( sharedLock.tryAcquireUpdateLock() )
         {
             LockWaitEvent waitEvent = null;
             try
@@ -898,7 +858,7 @@ public class ForsetiClient implements Locks.Client
                     assertValid( waitStartNano, resourceType, resourceId );
                     if ( waitEvent == null && priorEvent == null )
                     {
-                        waitEvent = tracer.waitForLock( EXCLUSIVE, resourceType, userTransactionId, resourceId );
+                        waitEvent = tracer.waitForLock( EXCLUSIVE, resourceType, transactionId, resourceId );
                     }
                     waitFor( sharedLock, resourceType, resourceId, tries++ );
                 }
@@ -929,17 +889,18 @@ public class ForsetiClient implements Locks.Client
 
     private void clearWaitList()
     {
-        waitListCheckPoint = waitList.checkPointAndPut( waitListCheckPoint, clientId );
+        waitList.clear();
+        waitList.add( this );
     }
 
     private void waitFor( ForsetiLockManager.Lock lock, ResourceType type, long resourceId, int tries )
     {
         waitingForLock = lock;
         clearAndCopyWaitList( lock );
-        waitStrategies[type.typeId()].apply( tries );
+        incrementalBackoffWait( tries );
 
-        int id = lock.detectDeadlock( id() );
-        if ( id != NO_CLIENT_ID && deadlockResolutionStrategy.shouldAbort( this, clientById.apply( id ) ) )
+        ForsetiClient clientId = lock.detectDeadlock( this );
+        if ( clientId != null && shouldAbort( clientId ) )
         {
             // If the deadlock is real, then an owner of this lock must be (transitively) waiting on a lock that
             // we own. So to verify the deadlock, we traverse the lock owners and their `waitingForLock` fields,
@@ -971,6 +932,67 @@ public class ForsetiClient implements Locks.Client
         }
     }
 
+    @VisibleForTesting
+    public static void incrementalBackoffWait( long iteration ) throws AcquireLockTimeoutException
+    {
+        if ( iteration < MAX_SPINS )
+        {
+            Thread.onSpinWait();
+            return;
+        }
+
+        try
+        {
+            if ( iteration < MULTIPLY_UNTIL_ITERATION )
+            {
+                LockSupport.parkNanos( 500 );
+            }
+            else
+            {
+                Thread.sleep( 1 );
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new AcquireLockTimeoutException( "Interrupted while waiting.", e, Interrupted );
+        }
+    }
+
+    /**
+     * When a deadlock occurs, the client with the fewest number of held locks is aborted. If both clients hold the same
+     * number of
+     * locks, the client with the lowest client id is aborted.
+     * <p/>
+     * This is one side of a long academic argument, where the other says to abort the one with the most locks held,
+     * since it's old and monolithic and holding up
+     * the line.
+     */
+    private boolean shouldAbort( ForsetiClient clientWereDeadlockedWith )
+    {
+        if ( getTransactionId() == clientWereDeadlockedWith.getTransactionId() )
+        {
+            return true; // same client
+        }
+
+        long ourCount = this.activeLockCount();
+        long otherCount = clientWereDeadlockedWith.activeLockCount();
+        if ( ourCount > otherCount )
+        {
+            // We hold more locks than the other client, we stay the course!
+            return false;
+        }
+        else if ( otherCount > ourCount )
+        {
+            // Other client holds more locks than us, yield to her seniority
+            return true;
+        }
+        else
+        {
+            return getTransactionId() > clientWereDeadlockedWith.getTransactionId(); // >= to guard against bugs where a client thinks its deadlocked itself
+        }
+    }
+
     private void clearAndCopyWaitList( ForsetiLockManager.Lock lock )
     {
         clearWaitList();
@@ -999,7 +1021,7 @@ public class ForsetiClient implements Locks.Client
         {
             waitedUpon.addAll( nextWaitedUpon );
             collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
-            if ( nextOwners.contains( this ) && lock.detectDeadlock( id() ) != NO_CLIENT_ID  )
+            if ( nextOwners.contains( this ) && lock.detectDeadlock( this ) != null  )
             {
                 return true;
             }
@@ -1033,12 +1055,12 @@ public class ForsetiClient implements Locks.Client
 
     String describeWaitList()
     {
-        StringBuilder sb = new StringBuilder( format( "%nClient[%d] waits for [", id() ) );
-        final IntIterator iter = waitList.iterator();
+        StringBuilder sb = new StringBuilder( format( "%nClient[%d] waits for [", getTransactionId() ) );
+        var iter = waitList.iterator();
         for ( boolean first = true; iter.hasNext(); )
         {
-            int next = iter.next();
-            if ( next == clientId )
+            ForsetiClient next = iter.next();
+            if ( next.getTransactionId() == getTransactionId() )
             {
                 // Skip our own id from the wait list, that's an implementation detail
                 continue;
@@ -1048,11 +1070,6 @@ public class ForsetiClient implements Locks.Client
         }
         sb.append( "]" );
         return sb.toString();
-    }
-
-    public int id()
-    {
-        return clientId;
     }
 
     private void assertValid( long waitStartNano, ResourceType resourceType, long resourceId )
@@ -1083,7 +1100,7 @@ public class ForsetiClient implements Locks.Client
 
     public long transactionId()
     {
-        return userTransactionId;
+        return transactionId;
     }
 
     // Visitors used for bulk ops on the lock maps (such as releasing all locks)

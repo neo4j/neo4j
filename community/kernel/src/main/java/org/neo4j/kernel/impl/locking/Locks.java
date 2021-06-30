@@ -103,7 +103,7 @@ public interface Locks
         @Override
         void close();
 
-        int getLockSessionId();
+        long getTransactionId();
 
         long activeLockCount();
     }

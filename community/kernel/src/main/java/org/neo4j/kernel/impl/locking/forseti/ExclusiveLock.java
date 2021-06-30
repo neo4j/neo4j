@@ -24,10 +24,8 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import java.util.Set;
 
-import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.lock.LockType;
 
-import static org.neo4j.kernel.impl.locking.forseti.ForsetiClient.NO_CLIENT_ID;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 class ExclusiveLock implements ForsetiLockManager.Lock
@@ -41,15 +39,15 @@ class ExclusiveLock implements ForsetiLockManager.Lock
     }
 
     @Override
-    public void copyHolderWaitListsInto( SimpleBitSet waitList )
+    public void copyHolderWaitListsInto( Set<ForsetiClient> waitList )
     {
         owner.copyWaitListTo( waitList );
     }
 
     @Override
-    public int detectDeadlock( int client )
+    public ForsetiClient detectDeadlock( ForsetiClient client )
     {
-        return !this.closed && owner.isWaitingFor( client ) ? owner.id() : NO_CLIENT_ID;
+        return !this.closed && owner.isWaitingFor( client ) ? owner : null;
     }
 
     @Override
