@@ -105,7 +105,7 @@ case class CompositeExpressionSelectivityCalculator(stats: GraphStatistics, comb
     // Construct a query graph that can be fed to leaf planners to search for index matches.
     val Some(queryGraph) = Some(QueryGraph(
       patternNodes = nodes.toSet,
-      patternRelationships = relationships.map(PatternRelationship(_, ("", ""), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)).toSet,
+      patternRelationships = relationships.map(PatternRelationship(_, ("  UNNAMED0", "  UNNAMED1"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)).toSet,
       selections = unwrappedSelections
     )).map(inlineLabelAndRelTypeInfo(_, labelInfo, relTypeInfo))
 

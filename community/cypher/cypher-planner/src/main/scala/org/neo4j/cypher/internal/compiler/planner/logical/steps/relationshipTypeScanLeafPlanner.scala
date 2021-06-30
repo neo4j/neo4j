@@ -37,11 +37,12 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
     def shouldIgnore(pattern: PatternRelationship) =
       !context.planContext.canLookupRelationshipsByType ||
       queryGraph.argumentIds.contains(pattern.name) ||
-      queryGraph.argumentIds.contains(pattern.nodes._1) ||
-      queryGraph.argumentIds.contains(pattern.nodes._2) ||
+      queryGraph.argumentIds.contains(pattern.left) ||
+      queryGraph.argumentIds.contains(pattern.right) ||
+      pattern.left == pattern.right ||
       skipIDs.contains(pattern.name) ||
-      skipIDs.contains(pattern.nodes._1) ||
-      skipIDs.contains(pattern.nodes._2)
+      skipIDs.contains(pattern.left) ||
+      skipIDs.contains(pattern.right)
 
     def providedOrderFor = ResultOrdering.providedOrderForRelationshipTypeScan(interestingOrderConfig.orderToSolve, _, context.providedOrderFactory)
 

@@ -349,6 +349,25 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     ))
   }
 
+  test("should not plan relationship type scan for self-loop") {
+    // given
+    val context = planningContext()
+    //(n)-[:R]->(n)
+    val qg = pattern("r", "n", "n", BOTH, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(
+          RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
+      context)
+
+    // then
+    resultPlans shouldBe empty
+  }
+
   private def pattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
     QueryGraph(
       patternNodes = Set(name, from, to),
