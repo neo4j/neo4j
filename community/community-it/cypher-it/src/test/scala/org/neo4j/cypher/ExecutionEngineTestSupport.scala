@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.util
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
@@ -39,7 +36,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result
-import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.DeadlockDetectedException
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
@@ -51,6 +47,8 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.LogProvider
 import org.neo4j.logging.NullLogProvider
 
+import java.util
+import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.asJavaIterable
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -134,7 +132,7 @@ protected class ScalarFailureException(msg: String) extends RuntimeException(msg
 
 trait ExecutionEngineHelper {
   self: GraphIcing =>
-  implicit val searchMonitor: IndexSearchMonitor = DummyIndexSearchMonitor
+  implicit val searchMonitor: IndexSearchMonitor = IndexSearchMonitor.NOOP
 
   private val converter = new RuntimeScalaValueConverter(_ => false)
   private val javaConverter = new RuntimeJavaValueConverter(_ => false)
@@ -210,13 +208,6 @@ trait ExecutionEngineHelper {
   }
 
   def asScalaResult(result: Result): Iterator[Map[String, Any]] = result.asScala.map(converter.asDeepScalaMap)
-}
-
-case object DummyIndexSearchMonitor extends IndexSearchMonitor {
-
-  override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Unit = {}
-
-  override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Unit = {}
 }
 
 case object DummyQueryExecutionMonitor extends QueryExecutionMonitor {
