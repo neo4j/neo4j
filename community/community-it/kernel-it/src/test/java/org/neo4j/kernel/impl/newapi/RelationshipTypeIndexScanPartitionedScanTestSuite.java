@@ -29,47 +29,47 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipType;
-import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipTypeIndex;
+import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipTypeIndexScan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RelationshipTypeIndexPartitionedScanTestSuite
-        extends TokenIndexPartitionedScanTestSuite<RelationshipTypeIndexCursor>
+class RelationshipTypeIndexScanPartitionedScanTestSuite
+        extends TokenIndexScanPartitionedScanTestSuite<RelationshipTypeIndexCursor>
 {
     @Override
-    public final RelationshipTypeIndex getFactory()
+    public final RelationshipTypeIndexScan getFactory()
     {
-        return RelationshipTypeIndex.FACTORY;
+        return RelationshipTypeIndexScan.FACTORY;
     }
 
     @Nested
-    class WithoutData extends TokenIndexPartitionedScanTestSuite.WithoutData<RelationshipTypeIndexCursor>
+    class WithoutData extends TokenIndexScanPartitionedScanTestSuite.WithoutData<RelationshipTypeIndexCursor>
     {
         WithoutData()
         {
-            super( RelationshipTypeIndexPartitionedScanTestSuite.this );
+            super( RelationshipTypeIndexScanPartitionedScanTestSuite.this );
         }
 
         @Override
-        EntityIdsMatchingScanQuery<TokenScanQuery> setupDatabase()
+        EntityIdsMatchingQuery<TokenScanQuery> setupDatabase()
         {
             final var numberOfRelTypes = 3;
 
             final var relTypeIds = createTags( numberOfRelTypes, RelationshipType.FACTORY );
-            return emptyScanQueries( EntityType.RELATIONSHIP, relTypeIds );
+            return emptyQueries( EntityType.RELATIONSHIP, relTypeIds );
         }
     }
 
     @Nested
-    class WithData extends TokenIndexPartitionedScanTestSuite.WithData<RelationshipTypeIndexCursor>
+    class WithData extends TokenIndexScanPartitionedScanTestSuite.WithData<RelationshipTypeIndexCursor>
     {
         WithData()
         {
-            super( RelationshipTypeIndexPartitionedScanTestSuite.this );
+            super( RelationshipTypeIndexScanPartitionedScanTestSuite.this );
         }
 
         @Override
-        EntityIdsMatchingScanQuery<TokenScanQuery> setupDatabase()
+        EntityIdsMatchingQuery<TokenScanQuery> setupDatabase()
         {
             final var numberOfRelTypes = 3;
             final var numberOfRelationships = 100_000;
@@ -79,10 +79,10 @@ class RelationshipTypeIndexPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingScanQuery<TokenScanQuery> createData( int numberOfRelationships, List<Integer> relTypeIds )
+        EntityIdsMatchingQuery<TokenScanQuery> createData( int numberOfRelationships, List<Integer> relTypeIds )
         {
             // given  a number of relationships to create
-            final var relsWithRelTypeId = new EntityIdsMatchingScanQuery<TokenScanQuery>();
+            final var relsWithRelTypeId = new EntityIdsMatchingQuery<TokenScanQuery>();
             final var indexName = getTokenIndexName( EntityType.RELATIONSHIP );
 
             final var numberOfNodes = numberOfRelationships / 10;
@@ -146,7 +146,7 @@ class RelationshipTypeIndexPartitionedScanTestSuite
             }
 
             // then   there should be some queries to match against
-            assertThat( relsWithRelTypeId.scanQueries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
+            assertThat( relsWithRelTypeId.queries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
 
             var numberOfCreatedRels = 0;
             for ( var entry : relsWithRelTypeId )

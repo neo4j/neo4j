@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.PartitionedScanFactory;
-import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.ScanQuery;
+import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -65,7 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith( {SoftAssertionsExtension.class, RandomExtension.class} )
 @ImpermanentDbmsExtension
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR extends Cursor>
+abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends Cursor>
 {
     @Inject
     private GraphDatabaseService db;
@@ -75,13 +75,13 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
     @InjectSoftAssertions
     protected SoftAssertions softly;
 
-    abstract EntityIdsMatchingScanQuery<SCAN_QUERY> setupDatabase();
+    abstract EntityIdsMatchingQuery<QUERY> setupDatabase();
 
-    protected EntityIdsMatchingScanQuery<SCAN_QUERY> entityIdsMatchingScanQuery;
+    protected EntityIdsMatchingQuery<QUERY> entityIdsMatchingQuery;
     protected int maxNumberOfPartitions;
-    protected PartitionedScanFactory<SCAN_QUERY,CURSOR> factory;
+    protected PartitionedScanFactory<QUERY,CURSOR> factory;
 
-    PartitionedScanTestSuite( TestSuite<SCAN_QUERY,CURSOR> testSuite )
+    PartitionedScanTestSuite( TestSuite<QUERY,CURSOR> testSuite )
     {
         factory = testSuite.getFactory();
     }
@@ -89,8 +89,8 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
     @BeforeAll
     protected void setup()
     {
-        entityIdsMatchingScanQuery = setupDatabase();
-        maxNumberOfPartitions = calculateMaxNumberOfPartitions( entityIdsMatchingScanQuery.scanQueries() );
+        entityIdsMatchingQuery = setupDatabase();
+        maxNumberOfPartitions = calculateMaxNumberOfPartitions( entityIdsMatchingQuery.queries() );
     }
 
     protected final KernelTransaction beginTx()
@@ -104,7 +104,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
     {
         try ( var tx = beginTx() )
         {
-            final var query = entityIdsMatchingScanQuery.iterator().next().getKey();
+            final var query = entityIdsMatchingQuery.iterator().next().getKey();
 
             // given  an invalid desiredNumberOfPartitions
             // when   partition scan constructed
@@ -125,7 +125,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
             createState( tx );
             softly.assertThat( tx.dataRead().transactionStateHasChanges() ).as( "transaction state" ).isTrue();
 
-            final var query = entityIdsMatchingScanQuery.iterator().next().getKey();
+            final var query = entityIdsMatchingQuery.iterator().next().getKey();
 
             // when   partitioned scan constructed
             // then   IllegalStateException should be thrown
@@ -141,10 +141,10 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         tx.dataWrite().nodeCreate();
     }
 
-    abstract static class WithoutData<SCAN_QUERY extends ScanQuery<?>, CURSOR extends Cursor>
-            extends PartitionedScanTestSuite<SCAN_QUERY,CURSOR>
+    abstract static class WithoutData<QUERY extends Query<?>, CURSOR extends Cursor>
+            extends PartitionedScanTestSuite<QUERY,CURSOR>
     {
-        WithoutData( TestSuite<SCAN_QUERY,CURSOR> testSuite )
+        WithoutData( TestSuite<QUERY,CURSOR> testSuite )
         {
             super( testSuite );
         }
@@ -155,7 +155,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx ) )
             {
-                for ( var entry : entityIdsMatchingScanQuery )
+                for ( var entry : entityIdsMatchingQuery )
                 {
                     final var query = entry.getKey();
                     // given  an empty database
@@ -171,10 +171,10 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         }
     }
 
-    abstract static class WithData<SCAN_QUERY extends ScanQuery<?>, CURSOR extends Cursor>
-            extends PartitionedScanTestSuite<SCAN_QUERY,CURSOR>
+    abstract static class WithData<QUERY extends Query<?>, CURSOR extends Cursor>
+            extends PartitionedScanTestSuite<QUERY,CURSOR>
     {
-        WithData( TestSuite<SCAN_QUERY,CURSOR> testSuite )
+        WithData( TestSuite<QUERY,CURSOR> testSuite )
         {
             super( testSuite );
         }
@@ -196,7 +196,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx ) )
             {
-                for ( var entry : entityIdsMatchingScanQuery )
+                for ( var entry : entityIdsMatchingQuery )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -260,7 +260,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx ) )
             {
-                for ( var entry : entityIdsMatchingScanQuery )
+                for ( var entry : entityIdsMatchingQuery )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -298,7 +298,7 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         {
             try ( var tx = beginTx() )
             {
-                for ( var entry : entityIdsMatchingScanQuery )
+                for ( var entry : entityIdsMatchingQuery )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -402,12 +402,12 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         }
     }
 
-    protected int calculateMaxNumberOfPartitions( Iterable<SCAN_QUERY> scanQueries )
+    protected int calculateMaxNumberOfPartitions( Iterable<QUERY> queries )
     {
         var maxNumberOfPartitions = 0;
         try ( var tx = beginTx() )
         {
-            for ( var query : scanQueries )
+            for ( var query : queries )
             {
                 maxNumberOfPartitions = Math.max( maxNumberOfPartitions, factory.partitionedScan( tx, query, Integer.MAX_VALUE ).getNumberOfPartitions() );
             }
@@ -420,28 +420,28 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         return maxNumberOfPartitions;
     }
 
-    protected static class EntityIdsMatchingScanQuery<SCAN_QUERY extends ScanQuery<?>>
-            implements Iterable<Map.Entry<SCAN_QUERY,Set<Long>>>
+    protected static class EntityIdsMatchingQuery<QUERY extends Query<?>>
+            implements Iterable<Map.Entry<QUERY,Set<Long>>>
     {
-        private final Map<SCAN_QUERY,Set<Long>> matches = new HashMap<>();
+        private final Map<QUERY,Set<Long>> matches = new HashMap<>();
 
-        final Set<Long> getOrCreate( SCAN_QUERY scanQuery )
+        final Set<Long> getOrCreate( QUERY query )
         {
-            return matches.computeIfAbsent( scanQuery, sq -> new HashSet<>() );
+            return matches.computeIfAbsent( query, q -> new HashSet<>() );
         }
 
-        final Set<Long> addOrReplace( SCAN_QUERY scanQuery, Set<Long> entityIds )
+        final Set<Long> addOrReplace( QUERY query, Set<Long> entityIds )
         {
-            return matches.put( scanQuery, entityIds );
+            return matches.put( query, entityIds );
         }
 
-        final Set<SCAN_QUERY> scanQueries()
+        final Set<QUERY> queries()
         {
             return matches.keySet();
         }
 
         @Override
-        public Iterator<Map.Entry<SCAN_QUERY,Set<Long>>> iterator()
+        public Iterator<Map.Entry<QUERY,Set<Long>>> iterator()
         {
             return matches.entrySet().iterator();
         }
@@ -462,15 +462,15 @@ abstract class PartitionedScanTestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR 
         return tagIds;
     }
 
-    protected interface ScanQuery<QUERY>
+    protected interface Query<QUERY>
     {
         String indexName();
 
         QUERY get();
     }
 
-    interface TestSuite<SCAN_QUERY extends ScanQuery<?>, CURSOR extends Cursor>
+    interface TestSuite<QUERY extends Query<?>, CURSOR extends Cursor>
     {
-        PartitionedScanFactory<SCAN_QUERY,CURSOR> getFactory();
+        PartitionedScanFactory<QUERY,CURSOR> getFactory();
     }
 }

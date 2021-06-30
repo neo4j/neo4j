@@ -24,17 +24,22 @@ import org.junit.jupiter.api.Nested;
 class PartitionedScanTest
 {
     @Nested
-    class NodeLabelIndex extends NodeLabelIndexPartitionedScanTestSuite
+    class NodeLabelIndexScan extends NodeLabelIndexScanPartitionedScanTestSuite
     {
     }
 
     @Nested
-    class RelationshipTypeIndex extends RelationshipTypeIndexPartitionedScanTestSuite
+    class RelationshipTypeIndexScan extends RelationshipTypeIndexScanPartitionedScanTestSuite
     {
     }
 
     @Nested
-    class NodePropertyIndex extends NodePropertyIndexPartitionedScanTestSuite
+    class NodePropertyIndexSeek extends NodePropertyIndexSeekPartitionedScanTestSuite
+    {
+    }
+
+    @Nested
+    class NodePropertyIndexScan extends NodePropertyIndexScanPartitionedScanTestSuite
     {
     }
 }

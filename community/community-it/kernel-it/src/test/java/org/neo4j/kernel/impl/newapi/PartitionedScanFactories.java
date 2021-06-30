@@ -39,16 +39,17 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.ScanQuery;
-import org.neo4j.kernel.impl.newapi.PropertyIndexPartitionedScanTestSuite.PropertyKeyScanQuery;
-import org.neo4j.kernel.impl.newapi.TokenIndexPartitionedScanTestSuite.TokenScanQuery;
+import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
+import org.neo4j.kernel.impl.newapi.PropertyIndexScanPartitionedScanTestSuite.PropertyKeyScanQuery;
+import org.neo4j.kernel.impl.newapi.PropertyIndexSeekPartitionedScanTestSuite.PropertyKeySeekQuery;
+import org.neo4j.kernel.impl.newapi.TokenIndexScanPartitionedScanTestSuite.TokenScanQuery;
 import org.neo4j.util.Id;
 
 class PartitionedScanFactories
 {
-    abstract static class PartitionedScanFactory<SCAN_QUERY extends ScanQuery<?>, CURSOR extends Cursor>
+    abstract static class PartitionedScanFactory<QUERY extends Query<?>, CURSOR extends Cursor>
     {
-        abstract PartitionedScan<CURSOR> partitionedScan( KernelTransaction tx, SCAN_QUERY query, int desiredNumberOfPartitions )
+        abstract PartitionedScan<CURSOR> partitionedScan( KernelTransaction tx, QUERY query, int desiredNumberOfPartitions )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
         abstract CURSOR getCursor( KernelTransaction tx );
@@ -72,19 +73,19 @@ class PartitionedScanFactories
         }
     }
 
-    static final class NodeLabelIndex extends TokenIndex<NodeLabelIndexCursor>
+    static final class NodeLabelIndexScan extends TokenIndex<NodeLabelIndexCursor>
     {
-        public static final NodeLabelIndex FACTORY = new NodeLabelIndex();
+        public static final NodeLabelIndexScan FACTORY = new NodeLabelIndexScan();
 
-        private NodeLabelIndex()
+        private NodeLabelIndexScan()
         {
         }
 
         @Override
-        PartitionedScan<NodeLabelIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery scanQuery, int desiredNumberOfPartitions )
+        PartitionedScan<NodeLabelIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery tokenScanQuery, int desiredNumberOfPartitions )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
-            return tx.dataRead().nodeLabelScan( getSession( tx, scanQuery ), desiredNumberOfPartitions, CursorContext.NULL, scanQuery.get() );
+            return tx.dataRead().nodeLabelScan( getSession( tx, tokenScanQuery ), desiredNumberOfPartitions, CursorContext.NULL, tokenScanQuery.get() );
         }
 
         @Override
@@ -100,19 +101,19 @@ class PartitionedScanFactories
         }
     }
 
-    static final class RelationshipTypeIndex extends TokenIndex<RelationshipTypeIndexCursor>
+    static final class RelationshipTypeIndexScan extends TokenIndex<RelationshipTypeIndexCursor>
     {
-        public static final RelationshipTypeIndex FACTORY = new RelationshipTypeIndex();
+        public static final RelationshipTypeIndexScan FACTORY = new RelationshipTypeIndexScan();
 
-        private RelationshipTypeIndex()
+        private RelationshipTypeIndexScan()
         {
         }
 
         @Override
-        PartitionedScan<RelationshipTypeIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery scanQuery, int desiredNumberOfPartitions )
+        PartitionedScan<RelationshipTypeIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery tokenScanQuery, int desiredNumberOfPartitions )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
-            return tx.dataRead().relationshipTypeScan( getSession( tx, scanQuery ), desiredNumberOfPartitions, CursorContext.NULL, scanQuery.get() );
+            return tx.dataRead().relationshipTypeScan( getSession( tx, tokenScanQuery ), desiredNumberOfPartitions, CursorContext.NULL, tokenScanQuery.get() );
         }
 
         @Override
@@ -128,10 +129,10 @@ class PartitionedScanFactories
         }
     }
 
-    abstract static class PropertyIndex<CURSOR extends Cursor>
-            extends PartitionedScanFactory<PropertyKeyScanQuery,CURSOR>
+    abstract static class PropertyIndex<QUERY extends Query<?>, CURSOR extends Cursor>
+            extends PartitionedScanFactory<QUERY,CURSOR>
     {
-        protected final IndexReadSession getSession( KernelTransaction tx, PropertyKeyScanQuery query )
+        protected final IndexReadSession getSession( KernelTransaction tx, QUERY query )
                 throws IndexNotFoundKernelException
         {
             final var index = tx.schemaRead().indexGetForName( query.indexName() );
@@ -139,19 +140,48 @@ class PartitionedScanFactories
         }
     }
 
-    static final class NodePropertyIndex extends PropertyIndex<NodeValueIndexCursor>
+    static final class NodePropertyIndexSeek extends PropertyIndex<PropertyKeySeekQuery,NodeValueIndexCursor>
     {
-        public static final NodePropertyIndex FACTORY = new NodePropertyIndex();
+        public static final NodePropertyIndexSeek FACTORY = new NodePropertyIndexSeek();
 
-        private NodePropertyIndex()
+        private NodePropertyIndexSeek()
         {
         }
 
         @Override
-        PartitionedScan<NodeValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery scanQuery, int desiredNumberOfPartitions )
+        PartitionedScan<NodeValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeySeekQuery propertyKeySeekQuery, int desiredNumberOfPartitions )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
-            return tx.dataRead().nodeIndexSeek( getSession( tx, scanQuery ), desiredNumberOfPartitions, QueryContext.NULL_CONTEXT, scanQuery.get() );
+            return tx.dataRead().nodeIndexSeek( getSession( tx, propertyKeySeekQuery ), desiredNumberOfPartitions,
+                                                QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get() );
+        }
+
+        @Override
+        NodeValueIndexCursor getCursor( KernelTransaction tx )
+        {
+            return tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
+        }
+
+        @Override
+        long getEntityReference( NodeValueIndexCursor cursor )
+        {
+            return cursor.nodeReference();
+        }
+    }
+
+    static final class NodePropertyIndexScan extends PropertyIndex<PropertyKeyScanQuery,NodeValueIndexCursor>
+    {
+        public static final NodePropertyIndexScan FACTORY = new NodePropertyIndexScan();
+
+        private NodePropertyIndexScan()
+        {
+        }
+
+        @Override
+        PartitionedScan<NodeValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery propertyKeyScanQuery, int desiredNumberOfPartitions )
+                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+        {
+            return tx.dataRead().nodeIndexScan( getSession( tx, propertyKeyScanQuery ), desiredNumberOfPartitions, QueryContext.NULL_CONTEXT );
         }
 
         @Override

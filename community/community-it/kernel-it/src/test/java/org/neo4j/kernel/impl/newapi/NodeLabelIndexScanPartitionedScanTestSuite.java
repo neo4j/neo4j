@@ -28,47 +28,47 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.Label;
-import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodeLabelIndex;
+import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodeLabelIndexScan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class NodeLabelIndexPartitionedScanTestSuite
-        extends TokenIndexPartitionedScanTestSuite<NodeLabelIndexCursor>
+class NodeLabelIndexScanPartitionedScanTestSuite
+        extends TokenIndexScanPartitionedScanTestSuite<NodeLabelIndexCursor>
 {
     @Override
-    public final NodeLabelIndex getFactory()
+    public final NodeLabelIndexScan getFactory()
     {
-        return NodeLabelIndex.FACTORY;
+        return NodeLabelIndexScan.FACTORY;
     }
 
     @Nested
-    class WithoutData extends TokenIndexPartitionedScanTestSuite.WithoutData<NodeLabelIndexCursor>
+    class WithoutData extends TokenIndexScanPartitionedScanTestSuite.WithoutData<NodeLabelIndexCursor>
     {
         WithoutData()
         {
-            super( NodeLabelIndexPartitionedScanTestSuite.this );
+            super( NodeLabelIndexScanPartitionedScanTestSuite.this );
         }
 
         @Override
-        EntityIdsMatchingScanQuery<TokenScanQuery> setupDatabase()
+        EntityIdsMatchingQuery<TokenScanQuery> setupDatabase()
         {
             final var numberOfLabels = 3;
 
             final var labelIds = createTags( numberOfLabels, Label.FACTORY );
-            return emptyScanQueries( EntityType.NODE, labelIds );
+            return emptyQueries( EntityType.NODE, labelIds );
         }
     }
 
     @Nested
-    class WithData extends TokenIndexPartitionedScanTestSuite.WithData<NodeLabelIndexCursor>
+    class WithData extends TokenIndexScanPartitionedScanTestSuite.WithData<NodeLabelIndexCursor>
     {
         WithData()
         {
-            super( NodeLabelIndexPartitionedScanTestSuite.this );
+            super( NodeLabelIndexScanPartitionedScanTestSuite.this );
         }
 
         @Override
-        EntityIdsMatchingScanQuery<TokenScanQuery> setupDatabase()
+        EntityIdsMatchingQuery<TokenScanQuery> setupDatabase()
         {
             final var numberOfLabels = 3;
             final var numberOfNodes = 100_000;
@@ -78,10 +78,10 @@ class NodeLabelIndexPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingScanQuery<TokenScanQuery> createData( int numberOfNodes, List<Integer> labelIds )
+        EntityIdsMatchingQuery<TokenScanQuery> createData( int numberOfNodes, List<Integer> labelIds )
         {
             // given  a number of nodes to create
-            final var nodesWithLabelId = new EntityIdsMatchingScanQuery<TokenScanQuery>();
+            final var nodesWithLabelId = new EntityIdsMatchingQuery<TokenScanQuery>();
             final var indexName = getTokenIndexName( EntityType.NODE );
             try ( var tx = beginTx() )
             {
@@ -106,7 +106,7 @@ class NodeLabelIndexPartitionedScanTestSuite
             }
 
             // then   there should be some queries to match against
-            assertThat( nodesWithLabelId.scanQueries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
+            assertThat( nodesWithLabelId.queries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
 
             var numberOfCreatedNodes = 0;
             for ( var entry : nodesWithLabelId )
