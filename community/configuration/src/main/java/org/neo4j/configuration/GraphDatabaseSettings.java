@@ -273,15 +273,17 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> query_cache_size =
             newBuilder( "dbms.query_cache_size", INT, 1000 ).addConstraint( min( 0 ) ).build();
 
-    @Description( "The threshold when a plan is considered stale. If any of the underlying " +
-            "statistics used to create the plan have changed more than this value, " +
-            "the plan will be considered stale and will be replanned. Change is calculated as " +
-            "abs(a-b)/max(a,b). This means that a value of 0.75 requires the database to approximately " +
-            "quadruple in size. A value of 0 means replan as soon as possible, with the soonest being " +
-            "defined by the cypher.min_replan_interval which defaults to 10s. After this interval the " +
-            "divergence threshold will slowly start to decline, reaching 10% after about 7h. This will " +
-            "ensure that long running databases will still get query replanning on even modest changes, " +
-            "while not replanning frequently unless the changes are very large." )
+    @Description( "The threshold for statistics above which a plan is considered stale.\n\n" +
+                  "If any of the underlying statistics used to create the plan have changed more than this value, " +
+                  "the plan will be considered stale and will be replanned. Change is calculated as " +
+                  "`abs(a-b)/max(a,b)`.\n\n" +
+                  "This means that a value of `0.75` requires the database to " +
+                  "quadruple in size before query replanning. A value of `0` means that the query will be " +
+                  "replanned as soon as there is any change in statistics and the replan interval has elapsed.\n\n" +
+                  "This interval is defined by `cypher.min_replan_interval` and defaults to 10s. After this interval, the " +
+                  "divergence threshold will slowly start to decline, reaching 10% after about 7h. This will " +
+                  "ensure that long running databases will still get query replanning on even modest changes, " +
+                  "while not replanning frequently unless the changes are very large." )
     public static final Setting<Double> query_statistics_divergence_threshold =
             newBuilder( "cypher.statistics_divergence_threshold", DOUBLE, 0.75 ).addConstraint( range( 0.0, 1.0 ) ).build();
 
@@ -669,11 +671,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> dense_node_threshold =
             newBuilder( "dbms.relationship_grouping_threshold", INT, 50 ).addConstraint( min( 1 ) ).build();
 
-    @Description( "Log executed queries. Valid values are 'OFF', 'INFO', or 'VERBOSE'.\n" +
-            "OFF:  no logging.\n" +
-            "INFO: log queries at the end of execution, that take longer than the configured threshold, dbms.logs.query.threshold.\n" +
-            "VERBOSE: log queries at the start and end of execution, regardless of dbms.logs.query.threshold.\n" +
-            "Log entries are written to the query log (dbms.logs.query.path).\n" +
+    @Description( "Log executed queries. Valid values are `OFF`, `INFO`, or `VERBOSE`.\n\n" +
+            "`OFF`::  no logging.\n" +
+            "`INFO`:: log queries at the end of execution, that take longer than the configured threshold, `dbms.logs.query.threshold`.\n" +
+            "`VERBOSE`:: log queries at the start and end of execution, regardless of `dbms.logs.query.threshold`.\n\n" +
+            "Log entries are written to the query log (dbms.logs.query.path).\n\n" +
             "This feature is available in the Neo4j Enterprise Edition." )
     public static final Setting<LogQueryLevel> log_queries =
             newBuilder( "dbms.logs.query.enabled", ofEnum( LogQueryLevel.class ), LogQueryLevel.VERBOSE ).dynamic().build();
