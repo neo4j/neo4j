@@ -31,6 +31,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import picocli.CommandLine;
+import sun.misc.Signal;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,6 +51,7 @@ import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.server.NeoBootstrapper;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.time.Stopwatch;
 
@@ -451,6 +453,8 @@ class Neo4jCommandTest
             }
         }
 
+        // Process.destroy()/destroyForcibly() on windows are the same and kills process instantly without invoking exit handler. Can't mimic CTRL+C in test.
+        @DisabledOnOs( OS.WINDOWS )
         @Test
         void shouldWaitForNeo4jToDieBeforeExitInConsole() throws Exception
         {
@@ -459,7 +463,7 @@ class Neo4jCommandTest
                 assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(),
                         s -> s.contains( TestEntryPoint.STARTUP_MSG ), 5, MINUTES );
                 p.toHandle().destroy();
-                return IS_OS_WINDOWS ? 1 : 143;
+                return 0;
             } ) )
             {
                 assertThat( out.toString() ).contains( TestEntryPoint.END_MSG );
@@ -538,6 +542,8 @@ class Neo4jCommandTest
         public static void main( String[] args ) throws InterruptedException
         {
             Runtime.getRuntime().addShutdownHook( new Thread( () -> System.out.println( END_MSG ) ) );
+            Signal.handle( new Signal( NeoBootstrapper.SIGINT ), s -> System.exit( 0 ) ); //mimic neo4j (NeoBootstrapper.installSignalHandlers)
+            Signal.handle( new Signal( NeoBootstrapper.SIGTERM ), s -> System.exit( 0 ) );
             System.out.println( STARTUP_MSG );
             Lists.mutable
                     .with( args )
