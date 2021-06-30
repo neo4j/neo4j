@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.neo4j.server.bind.ComponentsBinder;
+import org.neo4j.server.http.error.MediaTypeExceptionMapper;
 import org.neo4j.server.http.error.Neo4jHttpExceptionMapper;
 import org.neo4j.server.modules.ServerModule;
 
@@ -52,6 +53,7 @@ public class JaxRsServletHolderFactory
     {
         // add classes common to all mount points
         classes.add( Neo4jHttpExceptionMapper.class );
+        classes.add( MediaTypeExceptionMapper.class );
         classes.add( JacksonJsonProvider.class );
     }
 
