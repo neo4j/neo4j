@@ -67,6 +67,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   private val lit6 = literalInt(6)
 
   private val rPropExists = exists(rProp)
+  private val rPropIsNotNull = isNotNull(rProp)
   private val rPropInLit42 = in(rProp, listOf(lit42))
   private val rPropEndsWithLitText = endsWith(rProp, literalString("Text"))
   private val rPropContainsLitText = contains(rProp, literalString("Text"))
