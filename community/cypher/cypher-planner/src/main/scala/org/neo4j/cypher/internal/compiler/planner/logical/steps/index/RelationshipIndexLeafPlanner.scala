@@ -113,9 +113,13 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
                                      interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
                                      providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
                                    ): Set[RelationshipIndexMatch] = {
+    def shouldIgnore(pattern: PatternRelationship) =
+      pattern.left == pattern.right ||
+      pattern.coveredIds.intersect(qg.argumentIds).nonEmpty
+
     val predicates = qg.selections.flatPredicatesSet
     val patternRelationshipsMap: Map[String, PatternRelationship] = qg.patternRelationships.collect({
-      case pattern@PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if pattern.coveredIds.intersect(qg.argumentIds).isEmpty => name -> pattern
+      case pattern@PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if !shouldIgnore(pattern) => name -> pattern
     }).toMap
 
     // Find plans solving given property predicates together with any label predicates from QG

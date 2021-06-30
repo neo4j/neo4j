@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -478,5 +479,14 @@ test("scan on inexact predicate if argument ids not provided") {
         .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue)
         .build()
     )
+  }
+
+  test("should not plan relationship index scan for self-loops") {
+    val planner = plannerBuilder().build()
+
+    planner.plan(s"MATCH (a)-[r:REL]-(a) WHERE r.prop IS NOT NULL RETURN r").treeExists {
+      case _: UndirectedRelationshipIndexScan => true
+      case _: DirectedRelationshipIndexScan => true
+    } should be(false)
   }
 }
