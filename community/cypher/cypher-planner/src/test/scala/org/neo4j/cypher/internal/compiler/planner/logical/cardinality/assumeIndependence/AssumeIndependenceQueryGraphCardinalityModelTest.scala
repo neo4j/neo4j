@@ -644,6 +644,22 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     }, A)
   }
 
+  test("CALL { MATCH (b:B) CREATE (n:N) }") {
+    expectCardinality(1)
+  }
+
+  test("MATCH (a:A) CALL { CREATE (n:N) }") {
+    expectCardinality(A)
+  }
+
+  test("MATCH (a:A) CALL { MATCH (b:B) CREATE (n:N) }") {
+    expectCardinality(A)
+  }
+
+  test("MATCH (a:A) CALL { MATCH (:B) CALL { MATCH (:B) CREATE (:N) } CREATE (:N) }") {
+    expectCardinality(A)
+  }
+
   private val varLength0_0 = N * Asel * Bsel
   test("varlength 0..0 should be equal to non-varlength") {
     queryShouldHaveCardinality("MATCH (:A:B)", varLength0_0)
