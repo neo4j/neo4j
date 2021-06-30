@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.cursor;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -178,7 +180,8 @@ public class CachedStoreCursors implements StoreCursors
     {
         if ( pageCursor.getRawCurrentFile() == null )
         {
-            throw new IllegalStateException( "Read cursor " + pageCursor + " with type: " + type + " is closed outside of owning store cursors." );
+            throw new IllegalStateException(
+                    "Read cursor " + ReflectionToStringBuilder.toString( pageCursor ) + " with type: " + type + " is closed outside of owning store cursors." );
         }
     }
 
