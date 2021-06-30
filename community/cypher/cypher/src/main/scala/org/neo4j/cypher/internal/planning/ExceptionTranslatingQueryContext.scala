@@ -422,6 +422,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def graph(): GraphDatabaseQueryService = inner.graph()
 
+  override def contextWithNewTransaction(): QueryContext = new ExceptionTranslatingQueryContext(inner.contextWithNewTransaction())
+
+  override def close(): Unit = inner.close()
+
   class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
     extends Operations[T, CURSOR] {
     override def delete(id: Long): Boolean =
@@ -471,9 +475,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   }
 
   class ExceptionTranslatingTransactionalContext(inner: QueryTransactionalContext) extends DelegatingQueryTransactionalContext(inner) {
-    override def close() { translateException(tokenNameLookup, super.close()) }
+    override def close(): Unit = translateException(tokenNameLookup, super.close())
 
-    override def rollback() { translateException(tokenNameLookup, super.rollback()) }
+    override def rollback(): Unit = translateException(tokenNameLookup, super.rollback())
   }
 
 }

@@ -133,6 +133,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
@@ -258,6 +259,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ShortestPathPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SubqueryForeachPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
@@ -882,6 +884,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case SubqueryForeach(_, _) =>
         SubqueryForeachPipe(lhs, rhs)(id = id)
+
+      case TransactionForeach(_, _) =>
+        TransactionForeachPipe(lhs, rhs)(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")

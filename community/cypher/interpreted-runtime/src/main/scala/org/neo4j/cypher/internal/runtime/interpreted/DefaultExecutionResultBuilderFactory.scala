@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.config.MemoryTrackingController
-import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -91,9 +90,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                   input: InputDataStream,
                                   subscriber: QuerySubscriber,
                                   doProfile: Boolean): QueryState = {
-      val transactionMemoryTracker = queryContext.transactionalContext.transaction.memoryTracker()
-      val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors, queryContext.transactionalContext.transaction.cursorContext(), transactionMemoryTracker)
-      queryContext.resources.trace(cursors)
+      val cursors = queryContext.createExpressionCursors()
 
       QueryState(queryContext,
                  externalResource,
@@ -114,5 +111,4 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                  input = input)
     }
   }
-
 }

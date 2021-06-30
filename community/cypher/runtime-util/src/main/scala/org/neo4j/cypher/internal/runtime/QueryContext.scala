@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
@@ -77,7 +78,7 @@ import scala.collection.Iterator
  * The driver for this was clarifying who is responsible for ensuring query isolation. By exposing a query concept in
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
-trait QueryContext extends TokenContext with DbAccess {
+trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
 
@@ -103,7 +104,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator
 
-  def getRelationshipsByType(tokenReadSession: TokenReadSession,  relType: Int, indexOrder: IndexOrder): ClosingLongIterator
+  def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator
 
   def nodeCursor(): NodeCursor
 
@@ -125,13 +126,23 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
 
-  def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor
+  def addBtreeIndexRule(entityId: Int,
+                        entityType: EntityType,
+                        propertyKeyIds: Seq[Int],
+                        name: Option[String],
+                        provider: Option[String],
+                        indexConfig: IndexConfig): IndexDescriptor
 
   def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
 
   def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
 
-  def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor
+  def addFulltextIndexRule(entityIds: List[Int],
+                           entityType: EntityType,
+                           propertyKeyIds: Seq[Int],
+                           name: Option[String],
+                           provider: Option[IndexProviderDescriptor],
+                           indexConfig: IndexConfig): IndexDescriptor
 
   def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
 
@@ -214,22 +225,24 @@ trait QueryContext extends TokenContext with DbAccess {
   /* return true if the constraint was created, false if preexisting, throws if failed */
   def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit
 
-  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int)
+  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
   def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit
 
-  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int)
+  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit
 
-  def dropNamedConstraint(name: String)
+  def dropNamedConstraint(name: String): Unit
 
   def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo]
 
   def getOptStatistics: Option[QueryStatistics] = None
 
-  def getImportURL(url: URL): Either[String,URL]
+  def addStatistics(statistics: QueryStatistics): Unit = {}
 
-  def nodeGetDegreeWithMax(maxDegree:Int, node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = dir match {
+  def getImportURL(url: URL): Either[String, URL]
+
+  def nodeGetDegreeWithMax(maxDegree: Int, node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = dir match {
     case SemanticDirection.OUTGOING => nodeGetOutgoingDegreeWithMax(maxDegree, node, nodeCursor)
     case SemanticDirection.INCOMING => nodeGetIncomingDegreeWithMax(maxDegree, node, nodeCursor)
     case SemanticDirection.BOTH => nodeGetTotalDegreeWithMax(maxDegree, node, nodeCursor)
@@ -240,6 +253,7 @@ trait QueryContext extends TokenContext with DbAccess {
     case SemanticDirection.INCOMING => nodeGetIncomingDegreeWithMax(maxDegree, node, relTypeId, nodeCursor)
     case SemanticDirection.BOTH => nodeGetTotalDegreeWithMax(maxDegree, node, relTypeId, nodeCursor)
   }
+
   def nodeGetDegree(node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = dir match {
     case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node, nodeCursor)
     case SemanticDirection.INCOMING => nodeGetIncomingDegree(node, nodeCursor)
@@ -262,9 +276,9 @@ trait QueryContext extends TokenContext with DbAccess {
   def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                       filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE): ClosingIterator[Path]
 
-  def lockNodes(nodeIds: Long*)
+  def lockNodes(nodeIds: Long*): Unit
 
-  def lockRelationships(relIds: Long*)
+  def lockRelationships(relIds: Long*): Unit
 
   def callReadOnlyProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
 
@@ -351,10 +365,35 @@ trait QueryContext extends TokenContext with DbAccess {
   }
 
   override def hasTxStatePropertyForCachedRelationshipProperty(relId: Long, propertyKeyId: Int): Optional[java.lang.Boolean] = {
-    relationshipOps.hasTxStatePropertyForCachedProperty(relId, propertyKeyId)match {
+    relationshipOps.hasTxStatePropertyForCachedProperty(relId, propertyKeyId) match {
       case None => Optional.empty()
       case Some(bool) => Optional.of(bool)
     }
+  }
+
+  /**
+   * Opens a new transaction and create a new `QueryContext` bound to this new transaction.
+   * The new transaction is called an inner transaction that is connected to the transaction of this context, which we will call the outer transaction.
+   * The connection is as follows:
+   *
+   *   - An outer transaction cannot commit if it is connected to an open inner transaction.
+   *   - A termination or rollback of an outer transaction propagates to any open inner transactions.
+   *   - The outer transaction and all connected inner transactions are connected to the same `ExecutingQuery`.
+   *
+   * This context is still open and can continue to be used.
+   *
+   * @return the new context.
+   * @see org.neo4j.kernel.impl.query.TransactionalContext#contextWithNewTransaction()
+   */
+  def contextWithNewTransaction(): QueryContext
+
+  def close(): Unit
+
+  def createExpressionCursors(): ExpressionCursors = {
+    val transactionMemoryTracker = transactionalContext.transaction.memoryTracker()
+    val cursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.cursorContext(), transactionMemoryTracker)
+    resources.trace(cursors)
+    cursors
   }
 }
 
@@ -366,7 +405,7 @@ trait Operations[T, CURSOR] {
    */
   def delete(id: Long): Boolean
 
-  def setProperty(obj: Long, propertyKeyId: Int, value: Value)
+  def setProperty(obj: Long, propertyKeyId: Int, value: Value): Unit
 
   def removeProperty(obj: Long, propertyKeyId: Int): Boolean
 
@@ -416,9 +455,11 @@ trait RelationshipOperations extends Operations[RelationshipValue, RelationshipS
 
 trait QueryTransactionalContext extends CloseableResource {
 
-  def transaction : KernelTransaction
+  def transaction: KernelTransaction
 
-  def cursors : CursorFactory
+  def internalTransaction: InternalTransaction
+
+  def cursors: CursorFactory
 
   def dataRead: Read
 
@@ -430,11 +471,11 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def isTopLevelTx: Boolean
 
-  def close()
+  def close(): Unit
 
-  def rollback()
+  def rollback(): Unit
 
-  def commitAndRestartTx()
+  def commitAndRestartTx(): Unit
 
   def kernelStatisticProvider: KernelStatisticProvider
 

@@ -60,7 +60,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val nodekeyConstraintsRemoved = new Counter
   private val namedConstraintsRemoved = new Counter
 
-  def getStatistics = QueryStatistics(
+  def getStatistics: QueryStatistics = QueryStatistics(
     nodesCreated = nodesCreated.count,
     relationshipsCreated = relationshipsCreated.count,
     propertiesSet = propertiesSet.count,
@@ -78,15 +78,34 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     nodekeyConstraintsRemoved = nodekeyConstraintsRemoved.count,
     namedConstraintsRemoved = namedConstraintsRemoved.count)
 
-  override def getOptStatistics = Some(getStatistics)
+  override def getOptStatistics: Option[QueryStatistics] = Some(getStatistics)
 
-  override def createNode(labels: Array[Int]) = {
+  override def addStatistics(statistics: QueryStatistics): Unit = {
+    nodesCreated.increase(statistics.nodesCreated)
+    relationshipsCreated.increase(statistics.relationshipsCreated)
+    propertiesSet.increase(statistics.propertiesSet)
+    nodesDeleted.increase(statistics.nodesDeleted)
+    labelsAdded.increase(statistics.labelsAdded)
+    labelsRemoved.increase(statistics.labelsRemoved)
+    relationshipsDeleted.increase(statistics.relationshipsDeleted)
+    indexesAdded.increase(statistics.indexesAdded)
+    indexesRemoved.increase(statistics.indexesRemoved)
+    uniqueConstraintsAdded.increase(statistics.uniqueConstraintsAdded)
+    uniqueConstraintsRemoved.increase(statistics.uniqueConstraintsRemoved)
+    propertyExistenceConstraintsAdded.increase(statistics.existenceConstraintsAdded)
+    propertyExistenceConstraintsRemoved.increase(statistics.existenceConstraintsRemoved)
+    nodekeyConstraintsAdded.increase(statistics.nodekeyConstraintsAdded)
+    nodekeyConstraintsRemoved.increase(statistics.nodekeyConstraintsRemoved)
+    super.addStatistics(statistics)
+  }
+
+  override def createNode(labels: Array[Int]): NodeValue = {
     nodesCreated.increase()
     labelsAdded.increase(labels.length)
     inner.createNode(labels)
   }
 
-  override def createNodeId(labels: Array[Int]) = {
+  override def createNodeId(labels: Array[Int]): Long = {
     nodesCreated.increase()
     labelsAdded.increase(labels.length)
     inner.createNodeId(labels)
@@ -104,7 +123,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     added
   }
 
-  override def createRelationship(start: Long, end: Long, relType: Int) = {
+  override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = {
     relationshipsCreated.increase()
     inner.createRelationship(start, end, relType)
   }
@@ -206,12 +225,12 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     propertyExistenceConstraintsAdded.increase()
   }
 
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) {
+  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit = {
     inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId)
     propertyExistenceConstraintsRemoved.increase()
   }
 
-  override def dropNamedConstraint(name: String) {
+  override def dropNamedConstraint(name: String): Unit = {
     inner.dropNamedConstraint(name)
     namedConstraintsRemoved.increase()
   }
@@ -227,12 +246,14 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     count
   }
 
+  override def contextWithNewTransaction(): UpdateCountingQueryContext = new UpdateCountingQueryContext(inner.contextWithNewTransaction())
+
   class Counter {
     val counter: AtomicInteger = new AtomicInteger()
 
     def count: Int = counter.get()
 
-    def increase(amount: Int = 1) {
+    def increase(amount: Int = 1): Unit = {
       counter.addAndGet(amount)
     }
   }
@@ -257,7 +278,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
       wasRemoved
     }
 
-    override def setProperty(id: Long, propertyKeyId: Int, value: Value) {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Value): Unit = {
       propertiesSet.increase()
       inner.setProperty(id, propertyKeyId, value)
     }

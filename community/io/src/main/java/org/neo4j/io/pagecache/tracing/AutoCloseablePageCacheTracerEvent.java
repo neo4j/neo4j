@@ -20,7 +20,7 @@
 package org.neo4j.io.pagecache.tracing;
 
 /**
- * Some events are desirable to make AutoClosable, but monitoring is not
+ * Some events are desirable to make AutoCloseable, but monitoring is not
  * allowed to introduce new failure modes. Thus, this interface overrides
  * the AutoCloseable#close method to not throw any checked exceptions.
  */

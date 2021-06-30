@@ -80,7 +80,7 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
   def onSkip(ctx: T, subscriber: QuerySubscriber): RuntimeResult = {
     // When an operation in the chain switches the entire chain to ignore mode we still need to notify the outer most subscriber
     // This is a no-op for all elements of the chain except the last (outermost) which will be the BoltAdapterSubscriber
-    subscriber.onResultCompleted(ctx.getStatistics())
+    subscriber.onResultCompleted(ctx.getStatistics)
     IgnoredRuntimeResult
   }
 

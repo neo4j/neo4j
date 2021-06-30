@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.procs.SystemUpdateCountingQueryContext.Counter
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -30,6 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
+
+import java.util.concurrent.atomic.AtomicInteger
 
 class SystemUpdateCountingQueryContext(override val inner: QueryContext, val contextVars: MapValue, val systemUpdates: Counter)
   extends DelegatingQueryContext(inner) with CountingQueryContext {
@@ -42,14 +42,22 @@ class SystemUpdateCountingQueryContext(override val inner: QueryContext, val con
     case _ => throw new IllegalStateException("System updating query context can only contain an exception translating query context")
   }
 
-  def getStatistics = QueryStatistics(systemUpdates = systemUpdates.count)
+  def getStatistics: QueryStatistics = QueryStatistics(systemUpdates = systemUpdates.count)
 
-  override def getOptStatistics = Some(getStatistics)
+  override def getOptStatistics: Option[QueryStatistics] = Some(getStatistics)
+
+  override def addStatistics(statistics: QueryStatistics): Unit = {
+    // For implementing this method, look at UpdateCountingQueryContext.addStatistics
+    throw new IllegalStateException("We don't expect to add statistics to the system updating query context")
+  }
 
   def withContextVars(newVars: MapValue): SystemUpdateCountingQueryContext = {
     if(newVars.size() > 0) new SystemUpdateCountingQueryContext(inner, contextVars.updatedWith(newVars), systemUpdates)
     else this
   }
+
+  override def contextWithNewTransaction(): SystemUpdateCountingQueryContext =
+    new SystemUpdateCountingQueryContext(inner.contextWithNewTransaction(), contextVars, systemUpdates)
 }
 
 object SystemUpdateCountingQueryContext {
@@ -63,7 +71,7 @@ object SystemUpdateCountingQueryContext {
 
     def count: Int = counter.get()
 
-    def increase(amount: Int = 1) {
+    def increase(amount: Int = 1): Unit = {
       counter.addAndGet(amount)
     }
   }

@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.io.PrintStream
-import java.util.concurrent.ConcurrentLinkedQueue
-
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -76,6 +73,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
+import java.io.PrintStream
+import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -110,15 +109,17 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     lifeSupport.shutdown()
   }
 
+  protected def getTransactionType: Type = Type.EXPLICIT
+
   def startTx(): Unit = {
-    _tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
+    _tx = cypherGraphDb.beginTransaction(getTransactionType, LoginContext.AUTH_DISABLED)
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
   def restartTx(): Unit = {
     _txContext.close()
     _tx.commit()
-    _tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
+    _tx = cypherGraphDb.beginTransaction(getTransactionType, LoginContext.AUTH_DISABLED)
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
@@ -137,7 +138,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   }
 
   def startNewTx(): InternalTransaction = {
-    cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
+    cypherGraphDb.beginTransaction(getTransactionType, LoginContext.AUTH_DISABLED)
   }
 
   def getLastClosedTransactionId: Long = {
@@ -147,7 +148,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   def tx: InternalTransaction = _tx
   def txContext: TransactionalContext = _txContext
 
-  def locks = cypherGraphDb.getDependencyResolver.resolveDependency(classOf[Locks])
+  def locks: Locks = cypherGraphDb.getDependencyResolver.resolveDependency(classOf[Locks])
 
   override def buildPlan(logicalQuery: LogicalQuery,
                          runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {

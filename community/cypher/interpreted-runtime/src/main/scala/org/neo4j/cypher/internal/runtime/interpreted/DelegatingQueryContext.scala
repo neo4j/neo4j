@@ -62,6 +62,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
@@ -412,6 +413,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def graph(): GraphDatabaseQueryService = inner.graph()
 
+  override def contextWithNewTransaction(): QueryContext = inner.contextWithNewTransaction()
+
+  override def close(): Unit = inner.close()
 }
 
 class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]) extends Operations[T, CURSOR] {
@@ -459,11 +463,11 @@ class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
 
-  override def commitAndRestartTx() { inner.commitAndRestartTx() }
+  override def commitAndRestartTx(): Unit = inner.commitAndRestartTx()
 
   override def isTopLevelTx: Boolean = inner.isTopLevelTx
 
-  override def close() { inner.close() }
+  override def close(): Unit = inner.close()
 
   override def kernelStatisticProvider: KernelStatisticProvider = inner.kernelStatisticProvider
 
@@ -472,6 +476,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def databaseId: NamedDatabaseId = inner.databaseId
 
   override def transaction: KernelTransaction = inner.transaction
+
+  override def internalTransaction: InternalTransaction = inner.internalTransaction
 
   override def cursors: CursorFactory = inner.cursors
 

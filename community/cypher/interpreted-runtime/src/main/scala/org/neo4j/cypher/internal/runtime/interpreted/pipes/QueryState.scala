@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.config.MemoryTrackingController
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.InputDataStream
@@ -28,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheckContainer
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InLRUCache
@@ -35,8 +37,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleT
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
 import org.neo4j.cypher.internal.runtime.memory.MemoryTrackerForOperatorProvider
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
-import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel
+import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -88,21 +90,62 @@ class QueryState(val query: QueryContext,
 
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
-  def withDecorator(decorator: PipeDecorator) =
+  def withDecorator(decorator: PipeDecorator): QueryState  =
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, queryMemoryTracker, memoryTrackerForOperatorProvider, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
-  def withInitialContext(initialContext: CypherRow) =
+  def withInitialContext(initialContext: CypherRow): QueryState  =
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, queryMemoryTracker, memoryTrackerForOperatorProvider, decorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
-  def withInitialContextAndDecorator(initialContext: CypherRow, newDecorator: PipeDecorator) =
+  def withInitialContextAndDecorator(initialContext: CypherRow, newDecorator: PipeDecorator): QueryState  =
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, queryMemoryTracker, memoryTrackerForOperatorProvider, newDecorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
-  def withQueryContext(query: QueryContext) =
+  def withQueryContext(query: QueryContext): QueryState =
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, queryMemoryTracker, memoryTrackerForOperatorProvider, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
+
+  def withNewTransaction(): QueryState  = {
+    val newQuery = query.contextWithNewTransaction()
+
+    val newCursors = newQuery.createExpressionCursors()
+
+    // This method is not supported when we run with PERIODIC COMMIT, so we assert that we do not have such resources.
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(resources.isInstanceOf[CSVResources])
+    val newResources = new CSVResources(newQuery.resources)
+
+    val newQueryIndexes = queryIndexes
+    val newNodeLabelTokenReadSession = nodeLabelTokenReadSession
+    val newRelTypeTokenReadSession = relTypeTokenReadSession
+
+    // Reusing the expressionVariables should work as long as we do not implement parallelism
+    val newExpressionVariables = expressionVariables
+
+    // We want to PROFILE to include sub-transactions as well.
+    // TODO test that this works with all kinds of decorators
+    val newDecorator = decorator
+
+    // Reusing the IN cache should work as long as we do not implement parallelism
+    val newCachedIn = cachedIn
+
+    QueryState(newQuery,
+      newResources,
+      params,
+      newCursors,
+      newQueryIndexes,
+      newNodeLabelTokenReadSession,
+      newRelTypeTokenReadSession,
+      newExpressionVariables,
+      subscriber,
+      queryMemoryTracker,
+      newDecorator,
+      initialContext,
+      newCachedIn,
+      lenientCreateRelationship,
+      prePopulateResults,
+      input)
+  }
 
   def setExecutionContextFactory(rowFactory: CypherRowFactory): Unit = {
     _rowFactory = rowFactory
@@ -115,14 +158,15 @@ class QueryState(val query: QueryContext,
   override def close(): Unit = {
     cursors.close()
     cachedIn.cache.foreach {
-      case (f, g) => g.checker.close
+      case (f, g) => g.checker.close()
     }
+    query.close()
   }
 }
 
 object QueryState {
 
-  val defaultStatistics = QueryStatistics()
+  val defaultStatistics: QueryStatistics = QueryStatistics()
 
   val inCacheMaxSize: Int = 16
 
@@ -146,6 +190,43 @@ object QueryState {
             prePopulateResults: Boolean,
             input: InputDataStream): QueryState = {
     val queryHeapHighWatermarkTracker = QueryMemoryTracker(memoryTrackingController.memoryTracking(doProfile))
+    apply(
+      query,
+      resources,
+      params,
+      cursors,
+      queryIndexes,
+      nodeLabelTokenReadSession,
+      relTypeTokenReadSession,
+      expressionVariables,
+      subscriber,
+      queryHeapHighWatermarkTracker,
+      decorator,
+      initialContext,
+      cachedIn,
+      lenientCreateRelationship,
+      prePopulateResults,
+      input
+    )
+  }
+
+  def apply(query: QueryContext,
+            resources: ExternalCSVResource,
+            params: Array[AnyValue],
+            cursors: ExpressionCursors,
+            queryIndexes: Array[IndexReadSession],
+            nodeLabelTokenReadSession: Option[TokenReadSession],
+            relTypeTokenReadSession: Option[TokenReadSession],
+            expressionVariables: Array[AnyValue],
+            subscriber: QuerySubscriber,
+            queryHeapHighWatermarkTracker: QueryMemoryTracker,
+            decorator: PipeDecorator,
+            initialContext: Option[CypherRow],
+            cachedIn: InLRUCache[Any, InCheckContainer],
+            lenientCreateRelationship: Boolean,
+            prePopulateResults: Boolean,
+            input: InputDataStream): QueryState = {
+    val memoryTrackerForOperatorProvider = queryHeapHighWatermarkTracker.newMemoryTrackerForOperatorProvider(query.transactionalContext.transaction.memoryTracker())
     new QueryState(
       query,
       resources,
@@ -157,7 +238,7 @@ object QueryState {
       expressionVariables,
       subscriber,
       queryHeapHighWatermarkTracker,
-      queryHeapHighWatermarkTracker.newMemoryTrackerForOperatorProvider(query.transactionalContext.transaction.memoryTracker()),
+      memoryTrackerForOperatorProvider,
       decorator,
       initialContext,
       cachedIn,

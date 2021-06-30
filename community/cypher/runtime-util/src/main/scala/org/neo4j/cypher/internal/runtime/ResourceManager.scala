@@ -31,7 +31,7 @@ import org.neo4j.memory.MemoryTracker
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
-class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP, memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE) extends CloseableResource with CloseListener {
+class ResourceManager(val monitor: ResourceMonitor = ResourceMonitor.NOOP, memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE) extends CloseableResource with CloseListener {
   protected val resources: ResourcePool = new SingleThreadedResourcePool(INITIAL_CAPACITY, monitor, memoryTracker)
 
   /**

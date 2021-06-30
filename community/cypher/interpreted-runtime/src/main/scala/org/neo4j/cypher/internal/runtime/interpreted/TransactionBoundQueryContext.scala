@@ -129,7 +129,8 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
 
 sealed class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper,
-                                          val resources: ResourceManager)
+                                          val resources: ResourceManager,
+                                          val closeable: Option[AutoCloseable] = None)
                                          (implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.kernelTransaction) with QueryContext {
 
@@ -1247,6 +1248,25 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def graph(): GraphDatabaseQueryService = {
     transactionalContext.tc.graph()
+  }
+
+  override def contextWithNewTransaction(): TransactionBoundQueryContext = {
+    val newTransactionalContext = transactionalContext.contextWithNewTransaction
+    val newResourceManager = new ResourceManager(resources.monitor, newTransactionalContext.kernelTransaction.memoryTracker())
+
+    val statement = newTransactionalContext.tc.statement()
+    statement.registerCloseableResource(newResourceManager)
+    val closeable: AutoCloseable = () => statement.unregisterCloseableResource(newResourceManager)
+
+      new TransactionBoundQueryContext(
+        newTransactionalContext,
+        newResourceManager,
+        Some(closeable)
+      )(indexSearchMonitor)
+  }
+
+  def close(): Unit = {
+    closeable.foreach(_.close())
   }
 
   private def allocateAndTraceNodeCursor() = {

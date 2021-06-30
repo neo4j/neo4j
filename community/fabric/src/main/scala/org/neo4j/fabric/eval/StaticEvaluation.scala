@@ -413,6 +413,10 @@ object StaticEvaluation {
     override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value = notAvailable()
 
     override def graph(): GraphDatabaseQueryService = notAvailable()
+
+    override def contextWithNewTransaction(): QueryContext = notAvailable()
+
+    override def close(): Unit = notAvailable()
   }
 
 }

@@ -30,6 +30,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
@@ -44,6 +45,8 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
 
   override def transaction: KernelTransaction = tc.kernelTransaction
 
+  override def internalTransaction: InternalTransaction = tc.transaction
+
   override def cursors: CursorFactory = if (threadSafeCursors == null) tc.kernelTransaction.cursors() else threadSafeCursors
 
   override def dataRead: Read = tc.kernelTransaction().dataRead()
@@ -54,11 +57,11 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
 
   override def dataWrite: Write = tc.kernelTransaction().dataWrite()
 
-  override def commitAndRestartTx() { tc.commitAndRestartTx() }
+  override def commitAndRestartTx(): Unit = tc.commitAndRestartTx()
 
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
-  override def close() { tc.close() }
+  override def close(): Unit = tc.close()
 
   override def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 
@@ -68,10 +71,18 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
 
   def getOrCreateFromSchemaState[T](key: SchemaStateKey, f: => T): T = {
     val javaCreator = new java.util.function.Function[SchemaStateKey, T]() {
-      def apply(key: SchemaStateKey) = f
+      def apply(key: SchemaStateKey): T = f
     }
     schemaRead.schemaStateGetOrCreate(key, javaCreator)
   }
 
   override def rollback(): Unit = tc.rollback()
+
+  def contextWithNewTransaction: TransactionalContextWrapper = {
+    if (threadSafeCursors != null) {
+      throw new UnsupportedOperationException("Cypher transactions are not designed to work with parallel runtime, yet.")
+    }
+    val newTC = tc.contextWithNewTransaction()
+    TransactionalContextWrapper(newTC, threadSafeCursors)
+  }
 }
