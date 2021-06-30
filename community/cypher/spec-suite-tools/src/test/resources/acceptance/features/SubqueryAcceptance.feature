@@ -740,3 +740,50 @@ Feature: SubqueryAcceptance
     And the side effects should be:
       | +nodes  | 6 |
       | +labels | 1 |
+
+  Scenario: Side-effects from unit subquery are visible after subquery
+    When having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    And executing query:
+      """
+      MATCH (x)
+      CALL {
+        WITH x
+        SET x.prop = 1
+      }
+      RETURN x.prop AS prop
+      """
+    Then the result should be, in any order:
+      | prop |
+      | 1    |
+      | 1    |
+      | 1    |
+    And the side effects should be:
+      | +properties | 3 |
+
+  Scenario: Side-effects from unit subquery are visible after subquery, when previously read
+    When having executed:
+      """
+      CREATE (:Label {prop: 1}), (:Label {prop: 1}), (:Label {prop: 1})
+      """
+    And executing query:
+      """
+      MATCH (x)
+      WITH x, x.prop AS prop1
+      CALL {
+        WITH x
+        SET x.prop = 2
+      }
+      RETURN prop1, x.prop AS prop2
+      """
+    Then the result should be, in any order:
+      | prop1 | prop2 |
+      | 1     | 2     |
+      | 1     | 2     |
+      | 1     | 2     |
+    And the side effects should be:
+      | -properties | 3 |
+      | +properties | 3 |
+
