@@ -597,4 +597,24 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       ))
     }
   }
+
+  test("should not plan relationship index seek for self-loop") {
+    new given {
+      qg = QueryGraph(
+        selections = Selections(Set(Predicate(Set(relName), rPropIsNotNull))),
+        patternRelationships = Set(PatternRelationship(
+          relName,
+          (startNodeName, startNodeName),
+          BOTH,
+          Seq(relTypeName(relTypeName)),
+          SimplePatternLength)))
+      relationshipIndexOn(relTypeName, prop)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
 }

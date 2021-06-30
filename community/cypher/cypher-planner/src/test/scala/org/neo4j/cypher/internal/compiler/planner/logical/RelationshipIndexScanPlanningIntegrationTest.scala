@@ -502,4 +502,13 @@ test("scan on inexact predicate if argument ids not provided") {
         .build()
     )
   }
+
+  test("should not plan relationship index scan for self-loops") {
+    val planner = plannerBuilder().build()
+
+    planner.plan(s"MATCH (a)-[r:REL]-(a) WHERE r.prop IS NOT NULL RETURN r").treeExists {
+      case _: UndirectedRelationshipIndexScan => true
+      case _: DirectedRelationshipIndexScan => true
+    } should be(false)
+  }
 }

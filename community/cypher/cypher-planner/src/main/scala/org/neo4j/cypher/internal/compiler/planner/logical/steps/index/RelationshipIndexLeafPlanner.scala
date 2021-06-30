@@ -56,12 +56,15 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
                               qg: QueryGraph,
                               interestingOrderConfig: InterestingOrderConfig,
                               context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
+    def shouldIgnore(pattern: PatternRelationship) =
+      pattern.left == pattern.right ||
+        pattern.coveredIds.intersect(qg.argumentIds).nonEmpty
 
     if (!context.enablePlanningRelationshipIndexes)
       return Set.empty
 
     val patternRelationshipsMap: Map[String, PatternRelationship] = qg.patternRelationships.collect({
-      case pattern@PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if pattern.coveredIds.intersect(qg.argumentIds).isEmpty => name -> pattern
+      case pattern@PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if !shouldIgnore(pattern) => name -> pattern
     }).toMap
 
     // Find plans solving given property predicates together with any label predicates from QG

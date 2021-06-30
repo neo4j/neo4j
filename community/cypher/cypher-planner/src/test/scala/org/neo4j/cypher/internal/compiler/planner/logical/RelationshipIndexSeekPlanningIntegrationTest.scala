@@ -275,4 +275,12 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       .build()
   }
 
+  test("should not plan relationship index seek for self-loops") {
+    val planner = plannerBuilder().build()
+
+    planner.plan(s"MATCH (a)-[r:REL {prop: 1}]-(a) RETURN r").treeExists {
+      case _: UndirectedRelationshipIndexSeek => true
+      case _: DirectedRelationshipIndexSeek => true
+    } should be(false)
+  }
 }
