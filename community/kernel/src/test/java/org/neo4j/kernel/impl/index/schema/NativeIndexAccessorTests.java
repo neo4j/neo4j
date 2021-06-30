@@ -113,6 +113,8 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
     abstract IndexCapability indexCapability();
 
+    abstract boolean supportsGeometryRangeQueries();
+
     // UPDATER
 
     @Test
@@ -744,22 +746,6 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     }
 
     @Test
-    void throwForUnsupportedIndexOrder()
-    {
-        // given
-        // Unsupported index order for query
-        try ( var reader = accessor.newValueReader() )
-        {
-            IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
-            PropertyIndexQuery.ExactPredicate unsupportedQuery = PropertyIndexQuery.exact( 0, PointValue.MAX_VALUE ); // <- Any spatial value would do
-
-            var e = assertThrows( UnsupportedOperationException.class, () ->
-                reader.query( NULL_CONTEXT, new SimpleEntityValueClient(), constrained( unsupportedOrder, false ), unsupportedQuery ) );
-            assertThat( e.getMessage() ).contains( "unsupported order" ).contains( unsupportedOrder.toString() ).contains( unsupportedQuery.toString() );
-        }
-    }
-
-    @Test
     void getValues() throws IndexEntryConflictException, IndexNotApplicableKernelException
     {
         // given
@@ -775,7 +761,12 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         Value[] allValues = ValueCreatorUtil.extractValuesFromUpdates( someUpdates );
 
         // Pick one out of all added values and do a range query for the value group of that value
-        Value value = random.among( allValues );
+        Value value;
+        do
+        {
+            value = random.among( allValues );
+        }
+        while ( Values.isGeometryValue( value ) && !supportsGeometryRangeQueries() );
         ValueGroup valueGroup = value.valueGroup();
 
         IndexValueCapability valueCapability = indexCapability().valueCapability( valueGroup.category() );
@@ -997,7 +988,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     }
 
     @SafeVarargs
-    private void processAll( ValueIndexEntryUpdate<IndexDescriptor>... updates )
+    final void processAll( ValueIndexEntryUpdate<IndexDescriptor>... updates )
             throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )

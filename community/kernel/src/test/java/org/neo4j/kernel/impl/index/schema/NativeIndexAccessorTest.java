@@ -19,17 +19,27 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.junit.jupiter.api.Test;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
+import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.ValueType;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
@@ -61,6 +71,12 @@ class NativeIndexAccessorTest extends NativeIndexAccessorTests<BtreeKey,NativeIn
     }
 
     @Override
+    boolean supportsGeometryRangeQueries()
+    {
+        return true;
+    }
+
+    @Override
     ValueCreatorUtil<BtreeKey,NativeIndexValue> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( indexDescriptor, supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
@@ -76,5 +92,21 @@ class NativeIndexAccessorTest extends NativeIndexAccessorTests<BtreeKey,NativeIn
     IndexLayout<BtreeKey,NativeIndexValue> createLayout()
     {
         return indexLayoutFactory.create();
+    }
+
+    @Test
+    void throwForUnsupportedIndexOrder()
+    {
+        // given
+        // Unsupported index order for query
+        try ( var reader = accessor.newValueReader() )
+        {
+            IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
+            PropertyIndexQuery.ExactPredicate unsupportedQuery = PropertyIndexQuery.exact( 0, PointValue.MAX_VALUE ); // <- Any spatial value would do
+
+            var e = assertThrows( UnsupportedOperationException.class, () ->
+                    reader.query( NULL_CONTEXT, new SimpleEntityValueClient(), constrained( unsupportedOrder, false ), unsupportedQuery ) );
+            assertThat( e.getMessage() ).contains( "unsupported order" ).contains( unsupportedOrder.toString() ).contains( unsupportedQuery.toString() );
+        }
     }
 }
