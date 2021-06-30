@@ -56,12 +56,12 @@ import static java.lang.String.format;
 
 public abstract class NeoBootstrapper implements Bootstrapper
 {
+    public static final String SIGTERM = "TERM";
+    public static final String SIGINT = "INT";
     public static final int OK = 0;
     private static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
     private static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
     private static final int INVALID_CONFIGURATION_ERROR_CODE = 3;
-    private static final String SIGTERM = "TERM";
-    private static final String SIGINT = "INT";
 
     private volatile DatabaseManagementService databaseManagementService;
     private volatile Closeable userLogFileStream;

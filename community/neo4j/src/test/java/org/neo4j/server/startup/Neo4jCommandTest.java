@@ -32,6 +32,7 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import picocli.CommandLine;
 import picocli.CommandLine.ExitCode;
+import sun.misc.Signal;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +53,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.server.NeoBootstrapper;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.time.Stopwatch;
 
@@ -504,7 +506,7 @@ class Neo4jCommandTest
                 assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(), s -> s.contains( TestEntryPoint.STARTUP_MSG ),
                         5, MINUTES );
                 p.toHandle().destroy();
-                return 143;
+                return 0;
             } ) )
             {
                 assertThat( out.toString() ).contains( TestEntryPoint.EXIT_MSG );
@@ -585,6 +587,9 @@ class Neo4jCommandTest
         public static void main( String[] args ) throws InterruptedException
         {
             Runtime.getRuntime().addShutdownHook( new Thread( () -> System.out.println( EXIT_MSG ) ) );
+            Signal.handle( new Signal( NeoBootstrapper.SIGINT ), s -> System.exit( 0 ) ); //mimic neo4j (NeoBootstrapper.installSignalHandlers)
+            Signal.handle( new Signal( NeoBootstrapper.SIGTERM ), s -> System.exit( 0 ) );
+
             System.out.println( STARTUP_MSG );
             Lists.mutable
                     .with( args )

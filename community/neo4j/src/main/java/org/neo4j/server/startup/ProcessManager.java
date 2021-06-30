@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.startup;
 
+import sun.misc.Signal;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -38,6 +40,8 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.configuration.SettingValueParsers.INT;
+import static org.neo4j.server.NeoBootstrapper.SIGINT;
+import static org.neo4j.server.NeoBootstrapper.SIGTERM;
 import static org.neo4j.server.startup.Bootloader.ENV_NEO4J_START_WAIT;
 
 class ProcessManager
@@ -203,24 +207,42 @@ class ProcessManager
 
     private static void installShutdownHook( Process finalProcess )
     {
-        Runtime.getRuntime().addShutdownHook( new Thread( () -> {
-            if ( finalProcess.isAlive() )
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> killProcess( finalProcess ) ) );
+        Runnable onSignal = () -> System.exit( killProcess( finalProcess ) );
+        installSignal( SIGINT, onSignal );
+        installSignal( SIGTERM, onSignal );
+    }
+
+    private static void installSignal( String signal, Runnable onExit )
+    {
+        try
+        {
+            Signal.handle( new Signal( signal ), s -> onExit.run() );
+        }
+        catch ( Throwable ignored )
+        { //If we for some reason can't install this signal we may just return a different exit code than the actual neo4j-process. No big deal
+        }
+    }
+
+    private static synchronized int killProcess( Process finalProcess )
+    {
+        if ( finalProcess.isAlive() )
+        {
+            finalProcess.destroy();
+            while ( finalProcess.isAlive() )
             {
-                finalProcess.destroy();
-                while ( finalProcess.isAlive() )
+                try
                 {
-                    try
-                    {
-                        Thread.sleep( 10 );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
+                    Thread.sleep( 10 );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
-        } ) );
+        }
+        return finalProcess.exitValue();
     }
 
     Long getPidFromFile()
