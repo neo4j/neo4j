@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.config.MemoryTrackingController
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ParameterMapping
@@ -42,9 +41,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
-                                                 readOnly: Boolean,
                                                  columns: Seq[String],
-                                                 logicalPlan: LogicalPlan,
                                                  hasLoadCSV: Boolean) extends ExecutionResultBuilderFactory {
 
   abstract class BaseExecutionResultBuilder() extends ExecutionResultBuilder {
@@ -80,13 +77,11 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     queryIndexes: QueryIndexes,
                                                     nExpressionSlots: Int,
                                                     parameterMapping: ParameterMapping,
-                                                    readOnly: Boolean,
                                                     columns: Seq[String],
-                                                    logicalPlan: LogicalPlan,
                                                     lenientCreateRelationship: Boolean,
                                                     memoryTrackingController: MemoryTrackingController,
                                                     hasLoadCSV: Boolean = false)
-  extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, hasLoadCSV) {
+  extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV) {
 
   override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionResultBuilder(queryContext: QueryContext)
 

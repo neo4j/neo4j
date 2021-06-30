@@ -34,12 +34,10 @@ import org.neo4j.cypher.internal.logical.plans.SchemaIndexLookupUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaLabelIndexUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaRelationshipIndexUsage
 import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributesCacheKey
@@ -176,7 +174,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     new CypherExecutableQuery(
       logicalPlan,
       queryType == READ_ONLY,
-      attributes.cardinalities,
       attributes.effectiveCardinalities,
       logicalPlanResult.plannerContext.debugOptions.rawCardinalitiesEnabled,
       attributes.providedOrders,
@@ -295,7 +292,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
   protected class CypherExecutableQuery(logicalPlan: LogicalPlan,
                                         readOnly: Boolean,
-                                        cardinalities: Cardinalities,
                                         effectiveCardinalities: EffectiveCardinalities,
                                         rawCardinalitiesInPlanDescription: Boolean,
                                         providedOrders: ProvidedOrders,
@@ -328,7 +324,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         providedOrders,
         executionPlan)
 
-    private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: CypherDebugOptions, taskCloser: TaskCloser) = {
+    private def getQueryContext(transactionalContext: TransactionalContext, taskCloser: TaskCloser) = {
       val (threadSafeCursorFactory, resourceManager) = executionPlan.threadSafeExecutionResources() match {
         case Some((tFactory, rFactory)) => (tFactory, rFactory(resourceMonitor))
         case None => (null, new ResourceManager(resourceMonitor, transactionalContext.kernelTransaction().memoryTracker()))
@@ -354,7 +350,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                          subscriber: QuerySubscriber): QueryExecution = {
 
       val taskCloser = new TaskCloser
-      val queryContext = getQueryContext(transactionalContext, queryOptions.queryOptions.debugOptions, taskCloser)
+      val queryContext = getQueryContext(transactionalContext, taskCloser)
       if (isOutermostQuery) {
         taskCloser.addTask(success => {
           val context = queryContext.transactionalContext

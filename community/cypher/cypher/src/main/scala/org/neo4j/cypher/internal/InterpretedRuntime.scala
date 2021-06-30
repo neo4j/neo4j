@@ -66,9 +66,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       queryIndexRegistrator.result(),
       nExpressionSlots,
       parameterMapping,
-      query.readOnly,
       columns,
-      withSlottedParameters,
       context.config.lenientCreateRelationship,
       context.config.memoryTrackingController,
       query.hasLoadCSV)
