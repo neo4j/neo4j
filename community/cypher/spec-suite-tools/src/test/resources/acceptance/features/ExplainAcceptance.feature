@@ -54,3 +54,35 @@ Feature: ExplainAcceptance
     Then the result should be, in any order:
       | label |
     And no side effects
+
+  Scenario: Explanation of query with return columns
+    When executing query:
+    """
+    EXPLAIN
+    MATCH (a)-[r]->(b)
+    RETURN a, r, b
+    """
+    Then the result should be, in any order:
+      | a | r | b |
+    And no side effects
+
+  Scenario: Explanation of query without return columns
+    When executing query:
+    """
+    EXPLAIN
+    CREATE (a)
+    """
+    Then the result should be empty
+    And no side effects
+
+  Scenario: Explanation of query ending in unit subquery call
+    When executing query:
+    """
+    EXPLAIN
+    MATCH (n)
+    CALL {
+      CREATE (a)
+    }
+    """
+    Then the result should be empty
+    And no side effects

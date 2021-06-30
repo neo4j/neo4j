@@ -260,7 +260,7 @@ public class FabricExecutor
             {
                 lifecycle.endSuccess();
                 return StatementResults.create(
-                        Flux.empty(),
+                        Flux.fromIterable( asJavaIterable( query.outputColumns() ) ),
                         Flux.empty(),
                         Mono.just( new MergedSummary( Mono.just( plan.query().description() ), statistics, notifications ) ),
                         Mono.just( EffectiveQueryType.queryExecutionType( plan, accessMode ) )
