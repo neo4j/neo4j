@@ -58,26 +58,39 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
       idSeekPredicates flatMap {
         case (predicate, variable@Variable(id), idValues) if !queryGraph.argumentIds.contains(id) =>
-
           if (skipIDs.contains(id)) {
             None
           } else {
             queryGraph.patternRelationships.find(_.name == id) match {
-              case Some(relationship) if relationship.coveredIds.intersect(queryGraph.argumentIds).isEmpty =>
-                val types = relationship.types.toList
-                val seekPlan = planRelationshipByIdSeek(relationship, relationship.nodes, idValues, Seq(predicate), queryGraph.argumentIds, context)
-                Some(planRelTypeFilter(seekPlan, variable, types, context))
-
-              // if start/end node variables are already bound, generate new variable names and plan a Selection after the seek
               case Some(relationship) =>
                 val types = relationship.types.toList
-                val oldNodes = relationship.nodes
-                val newNodes = generateNewStartEndNodes(oldNodes, queryGraph.argumentIds, context)
-                val nodePredicates = buildNodePredicates(oldNodes, newNodes)
 
-                val seekPlan = planRelationshipByIdSeek(relationship, newNodes, idValues, Seq(predicate), queryGraph.argumentIds, context)
-                val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)
-                Some(context.logicalPlanProducer.planHiddenSelection(nodePredicates, relTypeSelectionPlan, context))
+                val startNodeAndEndNodeIsSame = relationship.left == relationship.right
+                val startOrEndNodeIsBound = relationship.coveredIds.intersect(queryGraph.argumentIds).nonEmpty
+                if (!startOrEndNodeIsBound && !startNodeAndEndNodeIsSame) {
+                  val seekPlan = planRelationshipByIdSeek(relationship, relationship.nodes, idValues, Seq(predicate), queryGraph.argumentIds, context)
+                  Some(planRelTypeFilter(seekPlan, variable, types, context))
+                } else if (startOrEndNodeIsBound) {
+                  // if start/end node variables are already bound, generate new variable names and plan a Selection after the seek
+                  val oldNodes = relationship.nodes
+                  val newNodes = generateNewStartEndNodes(oldNodes, queryGraph.argumentIds, context)
+                  // For a pattern (a)-[r]-(b), nodePredicates will be something like `a = new_a AND b = new_B`,
+                  // where `new_a` and `new_b` are the newly generated variable names.
+                  // This case covers the scenario where (a)-[r]-(a), because the nodePredicate `a = new_a1 AND a = new_a2` implies `new_a1 = new_a2`
+                  val nodePredicates = buildNodePredicates(oldNodes, newNodes)
+
+                  val seekPlan = planRelationshipByIdSeek(relationship, newNodes, idValues, Seq(predicate), queryGraph.argumentIds, context)
+                  val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)
+                  Some(context.logicalPlanProducer.planHiddenSelection(nodePredicates, relTypeSelectionPlan, context))
+                } else {
+                  // In the case where `startNodeAndEndNodeIsSame == true` we need to generate 1 new variable name for one side of the relationship
+                  // and plan a Selection after the seek so that both sides are the same
+                  val newRightNode = context.anonymousVariableNameGenerator.nextName
+                  val nodePredicate = equalsPredicate(relationship.right, newRightNode)
+                  val seekPlan = planRelationshipByIdSeek(relationship, (relationship.left, newRightNode), idValues, Seq(predicate), queryGraph.argumentIds, context)
+                  val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)
+                  Some(context.logicalPlanProducer.planHiddenSelection(Seq(nodePredicate), relTypeSelectionPlan, context))
+                }
 
               case None =>
                 Some(context.logicalPlanProducer.planNodeByIdSeek(variable, idValues, Seq(predicate), queryGraph.argumentIds, context))
@@ -109,7 +122,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
         val predicate = Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position)
         context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan, context)
 
-      case tpe :: _ =>
+      case _ :: _ =>
         val relTypeExprs = relTypes.map(relTypeAsStringLiteral)
         val invocation = typeOfRelExpr(idExpr)
         val idPos = idExpr.position
@@ -126,6 +139,10 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
   private def typeOfRelExpr(idExpr: Variable) =
     FunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)
 
+  /**
+   * Generate new variable names for start and end node, but only for those nodes that are arguments.
+   * Otherwise, return the same variable name.
+   */
   private def generateNewStartEndNodes(oldNodes: (String, String),
                                        argumentIds: Set[String],
                                        context: LogicalPlanningContext): (String, String) = {
@@ -138,18 +155,20 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
   private def buildNodePredicates(oldNodes: (String, String), newNodes: (String, String)): Seq[Equals] = {
     def pred(oldName: String, newName: String) = {
       if (oldName == newName) Seq.empty
-      else {
-        val pos = InputPosition.NONE
-        Seq(Equals(
-          Variable(oldName)(pos),
-          Variable(newName)(pos)
-        )(pos))
-      }
+      else Seq(equalsPredicate(oldName, newName))
     }
 
     val (oldLeft, oldRight) = oldNodes
     val (newLeft, newRight) = newNodes
 
     pred(oldLeft, newLeft) ++ pred(oldRight, newRight)
+  }
+
+  private def equalsPredicate(left: String, right: String): Equals = {
+    val pos = InputPosition.NONE
+    Equals(
+      Variable(left)(pos),
+      Variable(right)(pos)
+    )(pos)
   }
 }
