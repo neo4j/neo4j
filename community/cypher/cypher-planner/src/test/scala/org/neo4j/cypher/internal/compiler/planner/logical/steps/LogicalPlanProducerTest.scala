@@ -513,6 +513,30 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
+  test("uncorrelated unit Subquery should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = false, yielding = false)
+    )
+  }
+
+  test("uncorrelated unit Subquery should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = false, yielding = false)
+    )
+  }
+
+  test("correlated unit Subquery should eliminate provided order when rhs contains update") {
+    shouldEliminateProvidedOrder(ctx =>
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = true, yielding = false)
+    )
+  }
+
+  test("correlated unit Subquery should retain provided order when rhs contains no update") {
+    shouldRetainProvidedOrder(ctx =>
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = true, yielding = false)
+    )
+  }
+
   test("ForPatternExpressionSolver.planApply fail when rhs contains update") {
     shouldFailAssertion(ctx =>
       ctx.producer.ForPatternExpressionSolver.planApply(ctx.lhs, ctx.rhsWithUpdate, ctx.context)
