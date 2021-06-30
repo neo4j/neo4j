@@ -20,18 +20,23 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.v4_0.expressions.{PatternExpression, RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.ExpressionTypeInfo
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.expressions.RelTypeName
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{Cost, RelTypeId, symbols}
+import org.neo4j.cypher.internal.v4_0.util.Cost
+import org.neo4j.cypher.internal.v4_0.util.RelTypeId
+import org.neo4j.cypher.internal.v4_0.util.symbols
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
@@ -283,5 +288,82 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
         ),
         UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
     )))
+  }
+
+  test("self-loop directed relationship by id seek single relationship id, start and end node already bound") {
+    // given
+    val rel = varFor("r")
+    val expr = equals(id(varFor("r")), literalUnsignedInt(42))
+    val from = "n"
+    val to = from
+    val patternRel = PatternRelationship("r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(
+      selections = Selections(Set(Predicate(Set("r"), expr))),
+      patternNodes = Set(from, to),
+      patternRelationships = Set(patternRel)
+    )
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
+      case _: DirectedRelationshipByIdSeek => Cost(1)
+      case _                               => Cost(Double.MaxValue)
+    })
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
+    when(context.semanticTable.isRelationship(rel)).thenReturn(true)
+
+    // when
+    val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
+
+    val directedRelationshipByIdSeek = resultPlans.head.findByClass[DirectedRelationshipByIdSeek]
+    val newTo = directedRelationshipByIdSeek.endNode
+
+
+    // then
+    newTo shouldNot equal(to)
+
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .filter(s"$to = `$newTo``")
+      .directedRelationshipByIdSeek("r", from, newTo,42)
+      .build()
+
+    resultPlans shouldEqual Seq(expectedPlan)
+  }
+
+  test("self-loop directed relationship by id seek with a collections of relationship ids, start and end node already bound") {
+    // given
+    val rel = varFor("r")
+    val expr = in(id(rel), listOf(Seq(42, 43, 43).map(literalUnsignedInt):_*))
+    val from = "n"
+    val to = from
+    val patternRel = PatternRelationship("r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(
+      selections = Selections(Set(Predicate(Set("r"), expr))),
+      patternNodes = Set(from, to),
+      patternRelationships = Set(patternRel)
+    )
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
+      case _: DirectedRelationshipByIdSeek => Cost(1)
+      case _                               => Cost(Double.MaxValue)
+    })
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
+    when(context.semanticTable.isRelationship(rel)).thenReturn(true)
+
+    // when
+    val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
+
+    val directedRelationshipByIdSeek = resultPlans.head.findByClass[DirectedRelationshipByIdSeek]
+    val newTo = directedRelationshipByIdSeek.endNode
+
+    // then
+    newTo shouldNot equal(to)
+
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .filter(s"$to = `$newTo``")
+      .directedRelationshipByIdSeek("r", from, newTo, 42, 43, 43)
+      .build()
+
+    resultPlans shouldEqual Seq(expectedPlan)
   }
 }
