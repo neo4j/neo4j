@@ -46,7 +46,10 @@ import org.neo4j.cypher.internal.util.NodeNameGenerator
 
 object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
-  override def producePlanFor(e: Expression, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+  override def producePlanFor(e: Expression,
+                              qg: QueryGraph,
+                              interestingOrder: InterestingOrder,
+                              context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
     val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
       // MATCH (a)-[r]-(b) WHERE id(r) IN expr
@@ -56,29 +59,44 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       case _ => None
     }
 
-    idSeekPredicates map {
-      case (predicate, variable@Variable(id), idValues) if !qg.argumentIds.contains(id) =>
-        qg.patternRelationships.find(_.name == id) match {
-          case Some(relationship) if relationship.coveredIds.intersect(qg.argumentIds).isEmpty =>
-            val types = relationship.types.toList
-            val seekPlan = planRelationshipByIdSeek(relationship, relationship.nodes, idValues, Seq(predicate), qg.argumentIds, context)
-            LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, variable, types, context)))
+      idSeekPredicates flatMap {
+        case (predicate, variable@Variable(id), idValues) if !qg.argumentIds.contains(id) =>
+            qg.patternRelationships.find(_.name == id) match {
+              case Some(relationship) =>
+                val types = relationship.types.toList
 
-          // if start/end node variables are already bound, generate new variable names and plan a Selection after the seek
-          case Some(relationship) =>
-            val types = relationship.types.toList
-            val oldNodes = relationship.nodes
-            val newNodes = generateNewStartEndNodes(oldNodes, qg.argumentIds, variable.position)
-            val nodePredicates = buildNodePredicates(oldNodes, newNodes)
+                val startNodeAndEndNodeIsSame = relationship.left == relationship.right
+                val startOrEndNodeIsBound = relationship.coveredIds.intersect(qg.argumentIds).nonEmpty
+                if (!startOrEndNodeIsBound && !startNodeAndEndNodeIsSame) {
+                  val seekPlan = planRelationshipByIdSeek(relationship, relationship.nodes, idValues, Seq(predicate), qg.argumentIds, context)
+                  Some(LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, variable, types, context))))
+                } else if (startOrEndNodeIsBound) {
+                  // if start/end node variables are already bound, generate new variable names and plan a Selection after the seek
+                  val oldNodes = relationship.nodes
+                  val newNodes = generateNewStartEndNodes(oldNodes, qg.argumentIds, variable.position)
+                  // For a pattern (a)-[r]-(b), nodePredicates will be something like `a = new_a AND b = new_B`,
+                  // where `new_a` and `new_b` are the newly generated variable names.
+                  // This case covers the scenario where (a)-[r]-(a), because the nodePredicate `a = new_a1 AND a = new_a2` implies `new_a1 = new_a2`
+                  val nodePredicates = buildNodePredicates(oldNodes, newNodes)
 
-            val seekPlan = planRelationshipByIdSeek(relationship, newNodes, idValues, Seq(predicate), qg.argumentIds, context)
-            val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)
-            val nodesSelectionPlan = context.logicalPlanProducer.planHiddenSelection(nodePredicates, relTypeSelectionPlan, context)
-            LeafPlansForVariable(id, Set(nodesSelectionPlan))
+                  val seekPlan = planRelationshipByIdSeek(relationship, newNodes, idValues, Seq(predicate), qg.argumentIds, context)
+                  val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)
+                  val nodesSelectionPlan = context.logicalPlanProducer.planHiddenSelection(nodePredicates, relTypeSelectionPlan, context)
+                  Some(LeafPlansForVariable(id, Set(nodesSelectionPlan)))
+                } else {
+                  // In the case where `startNodeAndEndNodeIsSame == true` we need to generate 1 new variable name for one side of the relationship
+                  // and plan a Selection after the seek so that both sides are the same
+                  val newRightNode = NodeNameGenerator.name(variable.position.bumped())
+                  val nodePredicate = equalsPredicate(relationship.right, newRightNode)
+                  val seekPlan = planRelationshipByIdSeek(relationship, (relationship.left, newRightNode), idValues, Seq(predicate), qg.argumentIds, context)
+                  val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)
+                  val nodesSelectionPlan = context.logicalPlanProducer.planHiddenSelection(Seq(nodePredicate), relTypeSelectionPlan, context)
+                  Some(LeafPlansForVariable(id, Set(nodesSelectionPlan)))
+                }
 
           case None =>
             val plan = context.logicalPlanProducer.planNodeByIdSeek(variable, idValues, Seq(predicate), qg.argumentIds, context)
-            LeafPlansForVariable(id, Set(plan))
+            Some(LeafPlansForVariable(id, Set(plan)))
         }
     }
   }
@@ -108,7 +126,7 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         val predicate = Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position)
         context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan, context)
 
-      case tpe :: _ =>
+      case _ :: _ =>
         val relTypeExprs = relTypes.map(relTypeAsStringLiteral)
         val invocation = typeOfRelExpr(idExpr)
         val idPos = idExpr.position
@@ -125,6 +143,10 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   private def typeOfRelExpr(idExpr: Variable) =
     FunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)
 
+  /**
+   * Generate new variable names for start and end node, but only for those nodes that are arguments.
+   * Otherwise, return the same variable name.
+   */
   private def generateNewStartEndNodes(oldNodes: (String, String),
                                        argumentIds: Set[String],
                                        pos: InputPosition): (String, String) = {
@@ -137,18 +159,20 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   private def buildNodePredicates(oldNodes: (String, String), newNodes: (String, String)): Seq[Equals] = {
     def pred(oldName: String, newName: String) = {
       if (oldName == newName) Seq.empty
-      else {
-        val pos = InputPosition.NONE
-        Seq(Equals(
-          Variable(oldName)(pos),
-          Variable(newName)(pos)
-        )(pos))
-      }
+      else Seq(equalsPredicate(oldName, newName))
     }
 
     val (oldLeft, oldRight) = oldNodes
     val (newLeft, newRight) = newNodes
 
     pred(oldLeft, newLeft) ++ pred(oldRight, newRight)
+  }
+
+  private def equalsPredicate(left: String, right: String): Equals = {
+    val pos = InputPosition.NONE
+    Equals(
+      Variable(left)(pos),
+      Variable(right)(pos)
+    )(pos)
   }
 }
