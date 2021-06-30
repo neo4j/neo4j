@@ -103,12 +103,11 @@ class SamplingProfiler implements Profiler
             Sample root = samples.computeIfAbsent( threadToProfile, k -> new Sample( null ) );
             while ( !stopped.get() && threadToProfile.isAlive() )
             {
-                StackTraceElement[] frames = threadToProfile.getStackTrace();
-                if ( Thread.currentThread().isInterrupted() ) // Avoid recording samples that overlap with the end of the profiling interval.
+                record( root, threadToProfile.getStackTrace() );
+                if ( Thread.currentThread().isInterrupted() )
                 {
                     break;
                 }
-                record( root, frames );
                 nextSleepBaseline = sleep( nextSleepBaseline, capturedSampleIntervalNanos );
             }
         } );

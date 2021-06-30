@@ -27,13 +27,16 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.resources.Profiler;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
+import static org.neo4j.function.Predicates.await;
 
 @TestDirectoryExtension
 @ExtendWith( ProfilerExtension.class )
@@ -54,22 +57,22 @@ class ProfilerExtensionVerificationTest
     {
         ExecutionSharedContext.clear();
         ExecutionSharedContext.setValue( TEST_DIR, testDirectory.absolutePath() );
-        profiler.profile();
         someVeryExpensiveComputation();
     }
+
     @Test
     void testThatFails() throws Exception
     {
         ExecutionSharedContext.clear();
         ExecutionSharedContext.setValue( TEST_DIR, testDirectory.absolutePath() );
-        profiler.profile();
         someVeryExpensiveComputation();
         fail( "This is exactly like that 'worst movie death scene ever' from the Turkish film Kareteci Kiz." );
     }
 
-    private static void someVeryExpensiveComputation() throws InterruptedException
+    private void someVeryExpensiveComputation() throws TimeoutException
     {
-        Thread.sleep( 1000 );
+        profiler.profile();
+        await( () -> profiler.countSamples() > 0 );
     }
 
     static class ConfigurationParameterCondition implements ExecutionCondition
