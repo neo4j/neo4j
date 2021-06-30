@@ -34,6 +34,7 @@ import static org.neo4j.server.http.cypher.integration.TransactionConditions.con
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
+import static org.neo4j.test.server.HTTP.withHeaders;
 
 public class NeoWebServerIT extends AbstractRestFunctionalTestBase
 {
@@ -56,11 +57,21 @@ public class NeoWebServerIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
+    public void shouldRespondToUnknownContentTypeWithNotAcceptableStatus()
+    {
+        var response = withHeaders( "Accept", "application/badger" )
+                .POST( txCommitUri( "foo" ) );
+
+        assertThat( response.status() ).isEqualTo( 406 );
+        assertThat( response.rawContent() ).contains( "application/json", "application/vnd.neo4j.jolt" );
+    }
+
+    @Test
     public void shouldRedirectRootToBrowser()
     {
         assertFalse( container().getBaseUri()
-                .toString()
-                .contains( "browser" ) );
+                                .toString()
+                                .contains( "browser" ) );
 
         HTTP.Response res = HTTP.withHeaders( HttpHeaders.ACCEPT, MediaType.TEXT_HTML ).GET( container().getBaseUri().toString() );
         assertThat( res.header( "Location" ) ).contains( "browser" );
