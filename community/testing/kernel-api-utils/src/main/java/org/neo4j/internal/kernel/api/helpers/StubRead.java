@@ -90,6 +90,12 @@ public class StubRead implements Read
     }
 
     @Override
+    public PartitionedScan<NodeValueIndexCursor> nodeIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void relationshipIndexScan( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints )
     {
         throw new UnsupportedOperationException();

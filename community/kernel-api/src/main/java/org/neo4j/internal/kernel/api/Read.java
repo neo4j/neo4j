@@ -117,6 +117,15 @@ public interface Read
     void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException;
 
     /**
+     * Scan all values in an index. NOTE! This is not thread-safe for transaction state.
+     * @param index {@link IndexReadSession} referencing index to query. This must be an index of nodes.
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param queryContext the underlying contexts for the thread doing the partition.
+     */
+    PartitionedScan<NodeValueIndexCursor> nodeIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
+            throws IndexNotApplicableKernelException;
+
+    /**
      * Scan all values in an index.
      *
      * @param index {@link IndexReadSession} index read session to query.

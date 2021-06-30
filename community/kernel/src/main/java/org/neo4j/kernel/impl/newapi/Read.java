@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Arrays;
+
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -117,25 +119,7 @@ abstract class Read implements TxStateHolder,
             throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " +
                                                          descriptor.userDescription( ktx.tokenRead() ) );
         }
-        // todo: This is just an example to illustrate that we need to check what index we are targeting
-        //       because not all indexes will support partitioned scan
-//        if ( !descriptor.getCapability().supportPartitionedScan( query ) )
-//        {
-            // Ideally we only implement this functionality for RANGE type for now,
-            // because we will deprecate BTREE.
-            //
-            // Otherwise:
-            // Indexes that can support partitioned scan
-            // - RANGE
-            // - BTREE with native-btree-1.0, except for GeometryRangePredicate
-            // - BTREE with lucene+native-3.0, except for GeometryRangePredicate and single-property-string-queries
-//            throw new IndexNotApplicableKernelException( "This index does not support partitioned scan for this query: " +
-//                    descriptor.userDescription( ktx.tokenRead() ) );
-//        }
-
-        final var session = (DefaultIndexReadSession) index;
-        final var valueSeek = session.reader.valueSeek( desiredNumberOfPartitions, queryContext, query );
-        return new PartitionedValueIndexCursorSeek<>( this, descriptor, valueSeek, query );
+        return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext, query );
     }
 
     @Override
@@ -213,6 +197,21 @@ abstract class Read implements TxStateHolder,
         }
 
         scanIndex( indexSession, (EntityIndexSeekClient) cursor, constraints );
+    }
+
+    @Override
+    public PartitionedScan<NodeValueIndexCursor> nodeIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
+            throws IndexNotApplicableKernelException
+    {
+        ktx.assertOpen();
+        final var descriptor = index.reference();
+        if ( descriptor.schema().entityType() != EntityType.NODE )
+        {
+            throw new IndexNotApplicableKernelException( "Node index scan can only be performed on node indexes: " +
+                                                         descriptor.userDescription( ktx.tokenRead() ) );
+        }
+
+        return propertyIndexScan( index, desiredNumberOfPartitions, queryContext );
     }
 
     @Override
@@ -394,12 +393,48 @@ abstract class Read implements TxStateHolder,
         ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
     }
 
+    private <C extends Cursor> PartitionedScan<C> propertyIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
+    {
+        ktx.assertOpen();
+        return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext,
+                                  Arrays.stream( index.reference().schema().getPropertyIds() )
+                                        .mapToObj( PropertyIndexQuery::exists )
+                                        .toArray( PropertyIndexQuery[]::new ) );
+    }
+
+    private <C extends Cursor> PartitionedScan<C> propertyIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
+                                                                     QueryContext queryContext, PropertyIndexQuery... query )
+    {
+        ktx.assertOpen();
+        final var descriptor = index.reference();
+
+//        // todo: This is just an example to illustrate that we need to check what index we are targeting
+//        //       because not all indexes will support partitioned scan
+//        if ( !descriptor.getCapability().supportPartitionedScan( query ) )
+//        {
+//        // Ideally we only implement this functionality for RANGE type for now,
+//        // because we will deprecate BTREE.
+//        //
+//        // Otherwise:
+//        // Indexes that can support partitioned scan
+//        // - RANGE
+//        // - BTREE with native-btree-1.0, except for GeometryRangePredicate
+//        // - BTREE with lucene+native-3.0, except for GeometryRangePredicate and single-property-string-queries
+//            throw new IndexNotApplicableKernelException( "This index does not support partitioned scan for this query: " +
+//                    descriptor.userDescription( ktx.tokenRead() ) );
+//        }
+
+        final var session = (DefaultIndexReadSession) index;
+        final var valueSeek = session.reader.valueSeek( desiredNumberOfPartitions, queryContext, query );
+        return new PartitionedValueIndexCursorSeek<>( this, descriptor, valueSeek, query );
+    }
+
     private <C extends Cursor> PartitionedScan<C> tokenIndexScan( TokenReadSession session, int desiredNumberOfPartitions,
-                                                                  CursorContext context, TokenPredicate query )
+                                                                  CursorContext cursorContext, TokenPredicate query )
     {
         ktx.assertOpen();
         DefaultTokenReadSession defaultSession = (DefaultTokenReadSession) session;
-        PartitionedTokenScan tokenScan = defaultSession.reader.entityTokenScan( desiredNumberOfPartitions, context, query );
+        PartitionedTokenScan tokenScan = defaultSession.reader.entityTokenScan( desiredNumberOfPartitions, cursorContext, query );
         return new PartitionedTokenIndexCursorScan<>( this, query, tokenScan );
     }
 
