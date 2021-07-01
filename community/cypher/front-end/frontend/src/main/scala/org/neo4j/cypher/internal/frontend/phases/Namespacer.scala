@@ -59,7 +59,7 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     val table = from.semanticTable()
 
     val ambiguousNames = shadowedNames(from.semantics().scopeTree)
-    thrownOnAmbiguousAnonymousNames(ambiguousNames)
+
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics().scopeTree.allVariableDefinitions
     val renamings = variableRenamings(withProjectedUnions, variableDefinitions, ambiguousNames, from.anonymousVariableNameGenerator)
 
@@ -70,12 +70,6 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
       val newStatement = withProjectedUnions.endoRewrite(rewriter)
       val newSemanticTable = table.replaceExpressions(rewriter)
       from.withStatement(newStatement).withSemanticTable(newSemanticTable)
-    }
-  }
-
-  private def thrownOnAmbiguousAnonymousNames(ambiguousNames: Set[String]): Unit = {
-    ambiguousNames.filter(AnonymousVariableNameGenerator.notNamed).foreach { n =>
-      throw new IllegalStateException(s"Anonymous variable `$n` is ambiguous. This is a bug.")
     }
   }
 
@@ -96,9 +90,20 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     def createVariableRenaming(variable: Variable,
                                anonymousVariableNameGenerator: AnonymousVariableNameGenerator): (Ref[Variable], Variable) = {
       /**
-       * @return generate a unique anonymous name, but include the original variable name for easier debugging and better plan descriptions.
+       * Generate a unique anonymous name.
+       *
+       * If the original variable is anonymous, simply create a new anonymous variable.
+       * If the original variable is not anonymous,
+       * include the original variable name for easier debugging and better plan descriptions.
        */
-      def genName = anonymousVariableNameGenerator.nextName.replace(AnonymousVariableNameGenerator.generatorName, variable.name + "@")
+      def genName = {
+        val nextName = anonymousVariableNameGenerator.nextName
+        if (AnonymousVariableNameGenerator.isNamed(variable.name)) {
+          nextName.replace(AnonymousVariableNameGenerator.generatorName, variable.name + "@")
+        } else {
+          nextName
+        }
+      }
       val symbolDefinition = variableDefinitions(SymbolUse(variable))
       val name = newNames.getOrElseUpdate(symbolDefinition, genName)
       val newVariable = variable.renameId(name)
