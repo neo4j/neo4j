@@ -309,7 +309,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set[String]("a"))
     query.queryGraph.selections should equal(Selections(Set.empty))
     query.horizon should equal(RegularQueryProjection(Map[String, Expression](
-      "p" -> PathExpression(NodePathStep(varFor("a"), NilPathStep))_
+      "p" -> PathExpression(NodePathStep(varFor("a"), NilPathStep()(pos))(pos))_
     )))
   }
 

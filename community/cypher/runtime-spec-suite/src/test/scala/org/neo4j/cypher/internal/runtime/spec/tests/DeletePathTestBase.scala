@@ -51,7 +51,7 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .deletePath("p")
-      .projection(Map("p" -> PathExpression(NodePathStep(varFor("n"), NilPathStep))(InputPosition.NONE)))
+      .projection(Map("p" -> PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(InputPosition.NONE)))
       .nodeByLabelScan("n", "PleaseKillMe")
       .build(readOnly = false)
 
@@ -127,9 +127,9 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
           rel = varFor(relationships),
           direction = OUTGOING,
           toNode = Some(varFor(toNode)),
-          next = NilPathStep
-        )
-      )
+          next = NilPathStep()(pos)
+        )(pos)
+      )(pos)
     )(InputPosition.NONE)
   }
 }

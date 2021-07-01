@@ -165,7 +165,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
       case internal.expressions.MultiRelationshipPathStep(rel: LogicalVariable, SemanticDirection.BOTH, _, next) =>
         multiUndirectedRelationshipProjector(rel.name, project(next))
 
-      case internal.expressions.NilPathStep =>
+      case internal.expressions.NilPathStep() =>
         nilProjector
 
       case x =>

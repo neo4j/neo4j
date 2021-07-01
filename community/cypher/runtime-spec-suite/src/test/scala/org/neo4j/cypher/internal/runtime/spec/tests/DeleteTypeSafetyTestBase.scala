@@ -66,7 +66,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .deleteNode("p")
-      .projection(Map("p" -> PathExpression(NodePathStep(varFor("n"), NilPathStep))(InputPosition.NONE)))
+      .projection(Map("p" -> PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(InputPosition.NONE)))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -176,7 +176,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .detachDeleteNode("p")
-      .projection(Map("p" -> PathExpression(NodePathStep(varFor("n"), NilPathStep))(InputPosition.NONE)))
+      .projection(Map("p" -> PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(InputPosition.NONE)))
       .allNodeScan("n")
       .build(readOnly = false)
 

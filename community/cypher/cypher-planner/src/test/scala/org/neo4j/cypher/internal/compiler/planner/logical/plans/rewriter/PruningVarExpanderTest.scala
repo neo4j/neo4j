@@ -303,7 +303,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val relId = "r"
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val pathProjector = NodePathStep(varFor("from"), MultiRelationshipPathStep(varFor("r"), SemanticDirection.BOTH, Some(varFor("to")), NilPathStep))
+    val pathProjector = NodePathStep(varFor("from"), MultiRelationshipPathStep(varFor("r"), SemanticDirection.BOTH, Some(varFor("to")), NilPathStep()(pos))(pos))(pos)
 
     val func = function("nodes", PathExpression(pathProjector)(pos))
     val projection = Projection(originalExpand, Map("d" -> func))

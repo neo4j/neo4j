@@ -99,7 +99,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
       nodeGraph(nodeCount)
     }
 
-    val pathExpression = PathExpression(NodePathStep(varFor("n"), NilPathStep))(InputPosition.NONE)
+    val pathExpression = PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(InputPosition.NONE)
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("map")
       .deleteExpression("map.path")

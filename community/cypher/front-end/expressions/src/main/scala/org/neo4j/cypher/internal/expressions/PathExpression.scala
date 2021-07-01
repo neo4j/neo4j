@@ -16,43 +16,26 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.Rewritable
-import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 
-sealed trait PathStep extends Product with Foldable with Rewritable {
-
-  self =>
-
+sealed trait PathStep extends Expression {
   def dependencies: Set[LogicalVariable]
-
-  def dup(children: Seq[AnyRef]): this.type =
-    if (children.iterator eqElements this.treeChildren)
-      this
-    else {
-      val constructor = Rewritable.copyConstructor(this)
-      val args = children.toVector
-      val ctorArgs = args
-      val duped = constructor.invoke(this, ctorArgs: _*)
-      duped.asInstanceOf[self.type]
-    }
 }
 
-final case class NodePathStep(node: LogicalVariable, next: PathStep) extends PathStep {
-  val dependencies: Set[LogicalVariable] = next.dependencies + node
+final case class NodePathStep(node: LogicalVariable, next: PathStep)(val position: InputPosition) extends PathStep {
+  override val dependencies: Set[LogicalVariable] = next.dependencies + node
 }
 
-final case class SingleRelationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep) extends PathStep {
-  val dependencies: Set[LogicalVariable] = next.dependencies ++ toNode + rel
+final case class SingleRelationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep)(val position: InputPosition) extends PathStep {
+  override val dependencies: Set[LogicalVariable] = next.dependencies ++ toNode + rel
 }
 
-final case class MultiRelationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep) extends PathStep {
-  val dependencies: Set[LogicalVariable] = next.dependencies ++ toNode + rel
+final case class MultiRelationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep)(val position: InputPosition) extends PathStep {
+  override val dependencies: Set[LogicalVariable] = next.dependencies ++ toNode + rel
 }
 
-case object NilPathStep extends PathStep {
-  def dependencies = Set.empty[LogicalVariable]
+case class NilPathStep()(val position: InputPosition) extends PathStep {
+  override def dependencies = Set.empty[LogicalVariable]
 }
 
 case class PathExpression(step: PathStep)(val position: InputPosition) extends Expression

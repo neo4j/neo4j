@@ -66,7 +66,10 @@ import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.Modulo
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
@@ -88,6 +91,7 @@ import org.neo4j.cypher.internal.expressions.ReduceExpression.AccumulatorExpress
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
@@ -378,7 +382,25 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         specifyType(CTInteger, x)
 
       case x:PathExpression =>
-        specifyType(CTPath, x)
+        specifyType(CTPath, x) chain
+          check(ctx, x.step)
+
+      case x: NodePathStep =>
+        check(ctx, x.node) chain
+          check(ctx, x.next)
+
+      case x: SingleRelationshipPathStep =>
+        check(ctx, x.rel) chain
+          x.toNode.map(check(ctx, _)).getOrElse(SemanticCheckResult.success) chain
+          check(ctx, x.next)
+
+      case x: MultiRelationshipPathStep =>
+        check(ctx, x.rel) chain
+          x.toNode.map(check(ctx, _)).getOrElse(SemanticCheckResult.success) chain
+          check(ctx, x.next)
+
+      case _: NilPathStep =>
+        SemanticCheckResult.success
 
       case x:ShortestPathExpression =>
         SemanticPatternCheck.declareVariables(Pattern.SemanticContext.Expression)(x.pattern) chain

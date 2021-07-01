@@ -33,7 +33,7 @@ case class PathStepStringifier(expr: ExpressionStringifier) {
 
     case MultiRelationshipPathStep(rel, direction, toNode, next) => relationshipPathStep(rel, direction, toNode, next, isMultiRel = true)
 
-    case NilPathStep => ""
+    case NilPathStep() => ""
   }
 
   private def relationshipPathStep(rel: LogicalVariable, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep, isMultiRel: Boolean) = {

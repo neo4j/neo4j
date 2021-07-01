@@ -45,7 +45,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     PathExpression(
       NodePathStep(varFor("a"),
         SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")),
-          NilPathStep))
+          NilPathStep()(pos))(pos))(pos)
     )(pos)
 
   test("should build plans containing outgoing path projections") {

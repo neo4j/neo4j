@@ -1090,9 +1090,9 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
           rel = varFor("r"),
           direction = OUTGOING,
           toNode = Some(varFor("m")),
-          next = NilPathStep
-        )
-      )
+          next = NilPathStep()(pos)
+        )(pos)
+      )(pos)
     )(InputPosition.NONE)
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1125,7 +1125,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .deletePath("p")
-      .projection(Map("p" -> PathExpression(NodePathStep(varFor("n"), NilPathStep))(InputPosition.NONE)))
+      .projection(Map("p" -> PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(InputPosition.NONE)))
       .allNodeScan("n")
       .build(readOnly = false)
 

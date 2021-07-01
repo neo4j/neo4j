@@ -1210,7 +1210,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("Projection") {
-    val pathExpression = PathExpression(NodePathStep(varFor("c"),SingleRelationshipPathStep(varFor("  UNNAMED42"),OUTGOING,Some(varFor("  UNNAMED32")),NilPathStep)))(pos)
+    val pathExpression = PathExpression(NodePathStep(varFor("c"),SingleRelationshipPathStep(varFor("  UNNAMED42"),OUTGOING,Some(varFor("  UNNAMED32")),NilPathStep()(pos))(pos))(pos))(pos)
 
     assertGood(attach(Projection(lhsLP, Map("x" -> varFor("y"))), 2345.0),
       planDescription(id, "Projection", SingleChild(lhsPD), Seq(details("y AS x")), Set("a", "x")))

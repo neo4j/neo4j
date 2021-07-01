@@ -103,9 +103,9 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
     val pathExpression = PathExpression(
       NodePathStep(
         varFor("n"),
-        SingleRelationshipPathStep(varFor("r"), OUTGOING, None, NilPathStep)
-      )
-    )(InputPosition.NONE)
+        SingleRelationshipPathStep(varFor("r"), OUTGOING, None, NilPathStep()(pos))(pos)
+      )(pos)
+    )(pos)
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("map")
       .detachDeleteExpression("map.path")

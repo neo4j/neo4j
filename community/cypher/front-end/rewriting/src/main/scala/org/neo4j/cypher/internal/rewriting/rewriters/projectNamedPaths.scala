@@ -204,20 +204,20 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
     case x                  => throw new IllegalStateException(s"Unknown pattern part: $x")
   }
 
-  def patternPartPathExpression(element: PatternElement): PathStep = flip(element, NilPathStep)
+  def patternPartPathExpression(element: PatternElement): PathStep = flip(element, NilPathStep()(element.position))
 
   @tailrec
   private def flip(element: PatternElement, step: PathStep): PathStep  = {
     element match {
-      case NodePattern(node, _, _) =>
-        NodePathStep(node.get.copyId, step)
+      case np@NodePattern(node, _, _) =>
+        NodePathStep(node.get.copyId, step)(np.position)
 
-      case RelationshipChain(leftSide, RelationshipPattern(rel, _, length, _, direction, _), to) => length match {
+      case rc@RelationshipChain(leftSide, RelationshipPattern(rel, _, length, _, direction, _), to) => length match {
         case None =>
-          flip(leftSide, SingleRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step))
+          flip(leftSide, SingleRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step)(rc.position))
 
         case Some(_) =>
-          flip(leftSide, MultiRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step))
+          flip(leftSide, MultiRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step)(rc.position))
       }
     }
   }
