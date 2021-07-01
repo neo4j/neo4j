@@ -19,12 +19,14 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
@@ -40,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 @ImpermanentDbmsExtension
 public class GraphDatabaseShutdownTest
@@ -53,6 +56,12 @@ public class GraphDatabaseShutdownTest
     private GraphDatabaseAPI db;
     @Inject
     private Locks locks;
+
+    @AfterEach
+    void tearDown()
+    {
+        closeAllUnchecked( t2, t3 );
+    }
 
     @Test
     void transactionShouldReleaseLocksWhenGraphDbIsBeingShutdown()
