@@ -77,13 +77,6 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey,NativeInde
     }
 
     @Override
-    public void force( CursorContext cursorContext )
-    {
-        // This accessor needs to use the header writer here because coordinate reference systems may have changed since last checkpoint.
-        tree.checkpoint( headerWriter, cursorContext );
-    }
-
-    @Override
     public Map<String,Value> indexConfig()
     {
         Map<String,Value> map = new HashMap<>();
