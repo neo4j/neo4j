@@ -475,14 +475,16 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
  * This has two reasons:
  * a) We capture how variables are projected from the two final scopes of the parts of the union to the scope
  *    after the union, before the Namespacer changes the names so that the Variable inside and outside of the union have different names
- *    and we would not find them any longer. The namespacer will still change the name, but since we captured the Variable and not the
+ *    and we would not find them any longer. The Namespacer will still change the name, but since we captured the Variable and not the
  *    name, we still have the correct projecting information.
  * b) We need to disable `checkColumnNamesAgree` for ProjectingUnion, because the names will actually not agree any more after the namespacing.
  *    This is not a problem though, since we would have failed earlier if the names did not agree originally.
  */
 sealed trait UnmappedUnion extends Union {
 
-  override def unionMappings: List[UnionMapping] = {
+  // A value instead of a def prevents us from creating new variables every time this is used.
+  // This is helpful if the variable is used by reference from the semantic state.
+  private var _unionMappings = {
     for {
       partCol <- part.returnColumns
       queryCol <- query.returnColumns.find(_.name == partCol.name)
@@ -490,6 +492,27 @@ sealed trait UnmappedUnion extends Union {
       // This assumes that part.returnColumns and query.returnColumns agree
       UnionMapping(Variable(partCol.name)(this.position), partCol, queryCol)
     }
+  }
+
+  override def unionMappings: List[UnionMapping] = _unionMappings
+
+  override def dup(children: Seq[AnyRef]): UnmappedUnion.this.type = {
+    val res = super.dup(children)
+
+    val thisPartCols = part.returnColumns
+    val thisQueryCols = query.returnColumns
+    val resPartCols = res.part.returnColumns
+    val resQueryCols = res.query.returnColumns
+
+    def containTheSameInstances[X <: AnyRef](a: Seq[X], b: Seq[X]): Boolean = a.forall(elemA => b.exists(elemB => elemA eq elemB)) && a.size == b.size
+
+    // If we have not rewritten any return column (by reference equality), then we can simply reuse this.unionMappings.
+    // This is important because the variables are used by reference from the semantic state.
+    if (containTheSameInstances(thisPartCols, resPartCols) && containTheSameInstances(thisQueryCols, resQueryCols)) {
+      res._unionMappings = this.unionMappings
+    }
+
+    res
   }
 
   override def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {

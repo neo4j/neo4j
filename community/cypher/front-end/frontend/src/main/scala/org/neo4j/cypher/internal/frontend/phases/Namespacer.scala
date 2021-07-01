@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.inSequence
+import org.neo4j.cypher.internal.util.topDown
 
 case object AmbiguousNamesDisambiguated extends StepSequencer.Condition
 
@@ -106,11 +107,14 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     renaming
   }
 
-  private def projectUnions: Rewriter =
-    bottomUp(Rewriter.lift {
+  private def projectUnions: Rewriter = {
+    // This needs to be topDown so that Unions do net get copied before being replaced by a ProjectingUnion,
+    // otherwise we create new copies of the unionMapping variables which are then unknown to the semantic state.
+    topDown(Rewriter.lift {
       case u: UnionAll => ProjectingUnionAll(u.part, u.query, u.unionMappings)(u.position)
       case u: UnionDistinct => ProjectingUnionDistinct(u.part, u.query, u.unionMappings)(u.position)
     })
+  }
 
   private def renamingRewriter(renamings: VariableRenamings): Rewriter = inSequence(
     bottomUp(Rewriter.lift {
