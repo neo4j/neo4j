@@ -34,8 +34,8 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.Collections.emptyList;
 import static org.mockito.ArgumentMatchers.anyList;

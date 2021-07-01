@@ -35,7 +35,7 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.OtherThreadRule;
+import org.neo4j.test.extension.OtherThread;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,8 +53,8 @@ class StoreCopyCheckPointMutexTest
 {
     private static final ThrowingAction<IOException> ASSERT_NOT_CALLED = () -> fail( "Should not be called" );
 
-    private final OtherThreadRule t2 = new OtherThreadRule();
-    private final OtherThreadRule t3 = new OtherThreadRule();
+    private final OtherThread t2 = new OtherThread();
+    private final OtherThread t3 = new OtherThread();
 
     private final StoreCopyCheckPointMutex mutex = new StoreCopyCheckPointMutex();
 

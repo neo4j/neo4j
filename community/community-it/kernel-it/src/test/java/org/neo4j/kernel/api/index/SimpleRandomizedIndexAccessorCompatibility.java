@@ -20,9 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -40,26 +38,22 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
+abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    public SimpleRandomizedIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite )
+    SimpleRandomizedIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite )
     {
         super( testSuite, testSuite.indexPrototype() );
     }
 
     @Test
-    public void testExactMatchOnRandomValues() throws Exception
+    void testExactMatchOnRandomValues() throws Exception
     {
         // given
         ValueType[] types = randomSetOfSupportedTypes();
@@ -72,15 +66,15 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         {
             // then
             List<Long> hits = query( PropertyIndexQuery.exact( 0, update.values()[0] ) );
-            assertEquals( hits.toString(), 1, hits.size() );
+            assertEquals( 1, hits.size(), hits.toString() );
             assertThat( single( hits ) ).isEqualTo( update.getEntityId() );
         }
     }
 
     @Test
-    public void testRangeMatchInOrderOnRandomValues() throws Exception
+    void testRangeMatchInOrderOnRandomValues() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
         // given
         ValueType[] types = randomSetOfSupportedAndSortableTypes();
         Set<Value> uniqueValues = new HashSet<>();

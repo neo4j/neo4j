@@ -58,8 +58,8 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Threading;
 import org.neo4j.test.extension.ThreadingExtension;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.Arrays.asList;
@@ -82,7 +82,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
-import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
+import static org.neo4j.test.extension.Threading.waitingWhileIn;
 
 @ExtendWith( ThreadingExtension.class )
 public class DatabaseIndexAccessorTest
@@ -90,7 +90,7 @@ public class DatabaseIndexAccessorTest
     private static final int PROP_ID = 1;
 
     @Inject
-    private ThreadingRule threading;
+    private Threading threading;
 
     private static EphemeralFileSystemAbstraction fileSystem;
 

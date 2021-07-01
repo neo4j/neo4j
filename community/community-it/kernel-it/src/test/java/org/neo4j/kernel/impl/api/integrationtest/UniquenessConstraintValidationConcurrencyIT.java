@@ -31,8 +31,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,7 +45,7 @@ public class UniquenessConstraintValidationConcurrencyIT
     @Inject
     private GraphDatabaseService database;
     @Inject
-    private OtherThreadRule otherThread;
+    private OtherThread otherThread;
 
     @Test
     void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception

@@ -5,7 +5,7 @@
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-front-end-parent</artifactId>
         <version>4.4.0-SNAPSHOT</version>
-        <relativePath>../</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -50,8 +50,6 @@
 
     <dependencies>
 
-        <!-- shared versions are defined in the parent pom -->
-
         <!-- neo4j -->
         <dependency>
             <groupId>org.neo4j</groupId>
@@ -78,19 +76,20 @@
             <artifactId>scalatest_${scala.binary.version}</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.scalacheck</groupId>
             <artifactId>scalacheck_${scala.binary.version}</artifactId>
         </dependency>
 
-
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-util</artifactId>
+            <artifactId>neo4j-test-util</artifactId>
             <version>${project.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
 </project>

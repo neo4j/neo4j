@@ -19,11 +19,6 @@
  */
 package org.neo4j.test.rule;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.MultipleFailureException;
-import org.junit.runners.model.Statement;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -34,13 +29,10 @@ import java.util.function.Consumer;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
-
-import static java.lang.System.currentTimeMillis;
 
 /**
  * Like a {@link Random} but guarantees to include the seed with the test failure, which helps
@@ -48,7 +40,7 @@ import static java.lang.System.currentTimeMillis;
  *
  * Available methods directly on this class include those found in {@link RandomValues} and the basic ones in {@link Random}.
  */
-public class RandomRule implements TestRule
+public class RandomRule
 {
     private long globalSeed;
     private long seed;
@@ -69,59 +61,6 @@ public class RandomRule implements TestRule
         hasGlobalSeed = true;
         this.globalSeed = seed;
         return this;
-    }
-
-    @Override
-    public Statement apply( final Statement base, Description description )
-    {
-        return new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                if ( !hasGlobalSeed )
-                {
-                    Seed methodSeed = description.getAnnotation( Seed.class );
-                    if ( methodSeed != null )
-                    {
-                        setSeed( methodSeed.value() );
-                    }
-                    else
-                    {
-                        setSeed( currentTimeMillis() );
-                    }
-                }
-                else
-                {
-                    setSeed( globalSeed );
-                }
-                try
-                {
-                    base.evaluate();
-                }
-                catch ( Throwable t )
-                {
-                    if ( t instanceof MultipleFailureException )
-                    {
-                        MultipleFailureException multipleFailures = (MultipleFailureException) t;
-                        for ( Throwable failure : multipleFailures.getFailures() )
-                        {
-                            enhanceFailureWithSeed( failure );
-                        }
-                    }
-                    else
-                    {
-                        enhanceFailureWithSeed( t );
-                    }
-                    throw t;
-                }
-            }
-
-            private void enhanceFailureWithSeed( Throwable t )
-            {
-                Exceptions.withMessage( t, t.getMessage() + ": random seed used:" + seed + "L" );
-            }
-        };
     }
 
     // ============================

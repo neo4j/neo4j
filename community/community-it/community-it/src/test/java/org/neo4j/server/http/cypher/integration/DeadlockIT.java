@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +46,7 @@ class DeadlockIT extends AbstractRestFunctionalTestBase
     private final HTTP.Builder http = HTTP.withBaseUri( container().getBaseUri() );
 
     @Inject
-    private OtherThreadRule otherThread;
+    private OtherThread otherThread;
 
     @Test
     void shouldReturnCorrectStatusCodeOnDeadlock() throws Exception

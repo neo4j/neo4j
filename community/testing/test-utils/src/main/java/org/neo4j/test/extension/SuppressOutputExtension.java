@@ -30,8 +30,6 @@ import org.junit.platform.commons.util.AnnotationUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.test.rule.SuppressOutput;
-
 public class SuppressOutputExtension extends StatefulFieldExtension<SuppressOutput> implements BeforeEachCallback, AfterEachCallback
 {
     static final String SUPPRESS_OUTPUT = "suppressOutput";
@@ -77,7 +75,6 @@ public class SuppressOutputExtension extends StatefulFieldExtension<SuppressOutp
 
     private void assertHasResourceLock( ExtensionContext context )
     {
-
         List<ResourceLock> resourceLocks = new ArrayList<>();
         context.getTestMethod().ifPresent( method -> resourceLocks.addAll( AnnotationUtils.findRepeatableAnnotations( method, ResourceLock.class ) ) );
         context.getTestClass().ifPresent( testClass -> {

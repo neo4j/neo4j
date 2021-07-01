@@ -45,8 +45,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 
 @DbmsExtension( configurationCallback = "configure" )
 @ExtendWith( OtherThreadExtension.class )
@@ -55,7 +55,7 @@ public class TestStartTransactionDuringLogRotation
     @Inject
     public GraphDatabaseAPI database;
     @Inject
-    private OtherThreadRule t2;
+    private OtherThread t2;
     @Inject
     private Monitors monitors;
 

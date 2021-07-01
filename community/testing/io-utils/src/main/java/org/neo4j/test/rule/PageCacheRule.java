@@ -45,7 +45,7 @@ import static java.lang.Boolean.TRUE;
 import static org.neo4j.io.ByteUnit.parse;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public class PageCacheRule extends ExternalResource
+public class PageCacheRule
 {
     protected JobScheduler jobScheduler;
     protected SystemNanoClock clock;
@@ -148,7 +148,6 @@ public class PageCacheRule extends ExternalResource
         closeJobScheduler( "Failed to stop existing job scheduler prior to creating a new one." );
     }
 
-    @Override
     protected void after( boolean success )
     {
         closePageCache( "Failed to stop PageCache after test." );

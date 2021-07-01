@@ -44,8 +44,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -68,7 +68,7 @@ public class TransportWriteThrottleTest
     private static final int DEFAULT_TIMEOUT_IN_MILLIS = 3000;
 
     @Inject
-    public OtherThreadRule otherThread;
+    public OtherThread otherThread;
 
     private ChannelHandlerContext context;
     private Channel channel;

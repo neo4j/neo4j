@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.util
 
-import org.neo4j.cypher.internal.util.InputPosition.byOffset
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InputPositionTest extends CypherFunSuite {

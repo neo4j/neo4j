@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule.concurrent;
-
-import org.junit.rules.ExternalResource;
+package org.neo4j.test.extension;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +40,7 @@ import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
 import static org.neo4j.test.ReflectionUtil.verifyMethodExists;
 
-public class ThreadingRule extends ExternalResource
+public class Threading
 {
     private ExecutorService executor;
     private static final FailableConsumer<Thread> NULL_CONSUMER = new FailableConsumer<>()
@@ -58,13 +56,11 @@ public class ThreadingRule extends ExternalResource
         }
     };
 
-    @Override
     public void before()
     {
         executor = Executors.newCachedThreadPool();
     }
 
-    @Override
     public void after()
     {
         try

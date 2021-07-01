@@ -34,8 +34,8 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.apache.commons.lang3.ArrayUtils.toObject;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +49,7 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 class RelationshipIT extends KernelIntegrationTest
 {
     @Inject
-    private OtherThreadRule otherThread;
+    private OtherThread otherThread;
 
     @Test
     void shouldListRelationshipsInCurrentAndSubsequentTx() throws Exception

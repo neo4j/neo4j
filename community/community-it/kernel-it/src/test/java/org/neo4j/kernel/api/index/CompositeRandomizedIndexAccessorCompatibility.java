@@ -20,9 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,35 +45,30 @@ import org.neo4j.values.storable.Values;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
+abstract class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     CompositeRandomizedIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
     }
 
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class Exact extends CompositeRandomizedIndexAccessorCompatibility
+    abstract static class Exact extends CompositeRandomizedIndexAccessorCompatibility
     {
-        public Exact( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        Exact( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             // composite index of 4 properties
             super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 101, 102, 103 ) ) );
         }
 
         @Test
-        public void testExactMatchOnRandomCompositeValues() throws Exception
+        void testExactMatchOnRandomCompositeValues() throws Exception
         {
             // given
             ValueType[] types = randomSetOfSupportedTypes();
@@ -107,16 +100,15 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                         exact( 101, update.values()[1] ),
                         exact( 102, update.values()[2] ),
                         exact( 103, update.values()[3] ) );
-                assertEquals( update.describe( tokens ) + " " + hits, 1, hits.size() );
+                assertEquals( 1, hits.size(), update.describe( tokens ) + " " + hits );
                 assertThat( single( hits ), equalTo( update.getEntityId() ) );
             }
         }
     }
 
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class Range extends CompositeRandomizedIndexAccessorCompatibility
+    abstract static class Range extends CompositeRandomizedIndexAccessorCompatibility
     {
-        public Range( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        Range( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             // composite index of 2 properties
             super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 101 ) ) );
@@ -129,9 +121,9 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
          * on in second composite slot where the random values are.
          */
         @Test
-        public void testRangeMatchOnRandomValues() throws Exception
+        void testRangeMatchOnRandomValues() throws Exception
         {
-            Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+            assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
             // given
             ValueType[] types = randomSetOfSupportedAndSortableTypes();
             Set<ValueTuple> uniqueValues = new HashSet<>();

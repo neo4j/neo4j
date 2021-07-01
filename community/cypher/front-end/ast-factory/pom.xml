@@ -5,7 +5,7 @@
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-front-end-parent</artifactId>
         <version>4.4.0-SNAPSHOT</version>
-        <relativePath>../</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -49,8 +49,6 @@
     </licenses>
 
     <dependencies>
-
-        <!-- shared versions are defined in the parent pom -->
 
         <!-- scala -->
         <dependency>

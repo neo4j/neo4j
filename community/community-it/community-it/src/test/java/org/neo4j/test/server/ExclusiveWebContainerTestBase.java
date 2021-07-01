@@ -29,12 +29,12 @@ import org.junit.jupiter.api.parallel.Resources;
 import java.util.concurrent.Callable;
 
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.neo4j.test.rule.SuppressOutput.suppressAll;
+import static org.neo4j.test.extension.SuppressOutput.suppressAll;
 
 @TestDirectoryExtension
 @ExtendWith( SuppressOutputExtension.class )

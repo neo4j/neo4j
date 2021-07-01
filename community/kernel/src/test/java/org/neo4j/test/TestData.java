@@ -22,9 +22,6 @@ package org.neo4j.test;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -34,7 +31,7 @@ import java.util.Objects;
 
 import org.neo4j.annotations.documented.Documented;
 
-public class TestData<T> implements TestRule, BeforeEachCallback, AfterEachCallback
+public class TestData<T> implements BeforeEachCallback, AfterEachCallback
 {
     @Target( ElementType.METHOD )
     @Retention( RetentionPolicy.RUNTIME )
@@ -111,36 +108,6 @@ public class TestData<T> implements TestRule, BeforeEachCallback, AfterEachCallb
     private TestData( Producer<T> producer )
     {
         this.producer = producer;
-    }
-
-    @Override
-    public Statement apply( final Statement base, final Description description )
-    {
-        final Title title = description.getAnnotation( Title.class );
-        final Documented doc = description.getAnnotation( Documented.class );
-        GraphDescription.Graph g = description.getAnnotation( GraphDescription.Graph.class );
-        if ( g == null )
-        {
-            g = description.getTestClass().getAnnotation( GraphDescription.Graph.class );
-        }
-        final GraphDescription graph = GraphDescription.create( g );
-        return new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                product.set( create( graph, title == null ? null : title.value(), doc == null ? null : doc.value(),
-                        description.getMethodName() ) );
-                try
-                {
-                    base.evaluate();
-                }
-                finally
-                {
-                    product.set( null );
-                }
-            }
-        };
     }
 
     @Override

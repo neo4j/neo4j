@@ -35,9 +35,9 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.memory.MachineMemory;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -24,9 +24,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
-import org.neo4j.test.rule.OtherThreadRule;
-
-public class OtherThreadExtension extends StatefulFieldExtension<OtherThreadRule> implements BeforeEachCallback, AfterEachCallback
+public class OtherThreadExtension extends StatefulFieldExtension<OtherThread> implements BeforeEachCallback, AfterEachCallback
 {
     private static final String OTHER_THREAD = "otherThread";
     private static final Namespace OTHER_THREAD_NAMESPACE = Namespace.create( "org", "neo4j", OTHER_THREAD );
@@ -38,15 +36,15 @@ public class OtherThreadExtension extends StatefulFieldExtension<OtherThreadRule
     }
 
     @Override
-    protected Class<OtherThreadRule> getFieldType()
+    protected Class<OtherThread> getFieldType()
     {
-        return OtherThreadRule.class;
+        return OtherThread.class;
     }
 
     @Override
-    protected OtherThreadRule createField( ExtensionContext extensionContext )
+    protected OtherThread createField( ExtensionContext extensionContext )
     {
-        return new OtherThreadRule();
+        return new OtherThread();
     }
 
     @Override

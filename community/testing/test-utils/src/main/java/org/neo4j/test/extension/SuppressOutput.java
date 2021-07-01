@@ -17,11 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+package org.neo4j.test.extension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -44,12 +40,11 @@ import static java.util.Arrays.asList;
 
 /**
  * Suppresses outputs such as System.out, System.err and java.util.logging for example when running a test.
- * It's also a {@link TestRule} which makes it fit in nicely in JUnit.
  *
  * The suppressing occurs visitor-style and if there's an exception in the code executed when being muted
  * all the logging that was temporarily muted will be resent to the peers as if they weren't muted to begin with.
  */
-public final class SuppressOutput implements TestRule
+public final class SuppressOutput
 {
     private static final Suppressible java_util_logging = java_util_logging( new ByteArrayOutputStream(), null );
 
@@ -201,29 +196,6 @@ public final class SuppressOutput implements TestRule
             }
         }
         return null;
-    }
-
-    @Override
-    public Statement apply( final Statement base, Description description )
-    {
-        return new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                captureVoices();
-                boolean failure = true;
-                try
-                {
-                    base.evaluate();
-                    failure = false;
-                }
-                finally
-                {
-                    releaseVoices( voices, failure );
-                }
-            }
-        };
     }
 
     public interface Suppressible

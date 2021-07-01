@@ -19,15 +19,16 @@ package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQueries
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -198,12 +199,12 @@ object CNFNormalizerTest {
  */
 object TestStatement {
   def apply(e: Expression): Statement = {
-    val returnClause = Return(ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(e, "")(InputPosition.NONE)))(InputPosition.NONE))(InputPosition.NONE)
+    val returnClause = Return(ReturnItems(includeExisting = false, Seq(AliasedReturnItem(e, Variable("")(InputPosition.NONE))(InputPosition.NONE)))(InputPosition.NONE))(InputPosition.NONE)
     Query(None, SingleQuery(Seq(returnClause))(InputPosition.NONE))(InputPosition.NONE)
   }
 
   def unapply(s: Statement): Option[Expression] = s match {
-    case Query(_, SingleQuery(Seq(Return(_, ReturnItems(_, Seq(UnaliasedReturnItem(expression, _)), _), _, _, _, _)))) => Some(expression)
+    case Query(_, SingleQuery(Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(expression, _)), _), _, _, _, _)))) => Some(expression)
     case _ => None
   }
 }

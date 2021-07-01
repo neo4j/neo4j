@@ -69,14 +69,12 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
  * <p>
  * Keep in mind that this rule must be created BEFORE page cache rule and any file system rule so that shutdown order gets correct.
  */
-public class RecordStorageEngineRule extends ExternalResource
+public class RecordStorageEngineRule
 {
     private final LifeSupport life = new LifeSupport();
 
-    @Override
     public void before() throws Throwable
     {
-        super.before();
         life.start();
     }
 
@@ -100,11 +98,9 @@ public class RecordStorageEngineRule extends ExternalResource
         return engine;
     }
 
-    @Override
     public void after( boolean successful ) throws Throwable
     {
         life.shutdown();
-        super.after( successful );
     }
 
     public class Builder

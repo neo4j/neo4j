@@ -79,10 +79,10 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Threading;
 import org.neo4j.test.extension.ThreadingExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -104,7 +104,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
+import static org.neo4j.test.extension.Threading.waitingWhileIn;
 
 @EphemeralPageCacheExtension
 @ExtendWith( ThreadingExtension.class )
@@ -118,7 +118,7 @@ public class DatabaseCompositeIndexAccessorTest
     private static final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Inject
-    private ThreadingRule threading;
+    private Threading threading;
     @Inject
     private PageCache pageCache;
     @Inject

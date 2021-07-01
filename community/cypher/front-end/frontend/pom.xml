@@ -5,7 +5,7 @@
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-front-end-parent</artifactId>
         <version>4.4.0-SNAPSHOT</version>
-        <relativePath>../</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -46,8 +46,6 @@
     </licenses>
 
     <dependencies>
-
-        <!-- shared versions are defined in the parent pom -->
 
         <!-- neo4j -->
 
@@ -92,9 +90,8 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-util</artifactId>
+            <artifactId>neo4j-test-util</artifactId>
             <version>${project.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
@@ -129,29 +126,29 @@
             <scope>test</scope>
         </dependency>
 
-    <!-- scala -->
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-reflect</artifactId>
-    </dependency>
+        <!-- scala -->
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+        </dependency>
 
-    <!-- scala test dependencies -->
-    <dependency>
-      <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_${scala.binary.version}</artifactId>
-    </dependency>
+        <!-- scala test dependencies -->
+        <dependency>
+            <groupId>org.scalacheck</groupId>
+            <artifactId>scalacheck_${scala.binary.version}</artifactId>
+        </dependency>
 
-    <dependency>
-        <groupId>com.lihaoyi</groupId>
-        <artifactId>pprint_${scala.binary.version}</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>pprint_${scala.binary.version}</artifactId>
+        </dependency>
 
         <!-- other -->
 
-    <dependency>
-      <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.parboiled</groupId>
+            <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>

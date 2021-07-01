@@ -83,7 +83,6 @@ Apache Software License, Version 2.0
   mercator
   Netty/All-in-One
   Non-Blocking Reactive Foundation for the JVM
-  org.apiguardian:apiguardian-api
   parboiled-core
   parboiled-scala
   picocli - a mighty tiny Command Line Interface
@@ -145,7 +144,6 @@ Eclipse Public License v2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
-  JUnit Vintage Engine
   ServiceLocator Default Implementation
 
 GNU General Public License, version 2 with the Classpath Exception

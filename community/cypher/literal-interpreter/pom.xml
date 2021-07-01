@@ -5,7 +5,7 @@
         <groupId>org.neo4j</groupId>
         <artifactId>cypher-parent</artifactId>
         <version>4.4.0-SNAPSHOT</version>
-        <relativePath>../</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -50,8 +50,6 @@
 
     <dependencies>
 
-        <!-- shared versions are defined in the parent pom -->
-
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-values</artifactId>
@@ -68,6 +66,15 @@
             <groupId>org.neo4j</groupId>
             <artifactId>cypher-ast-factory</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
         </dependency>
     </dependencies>
 

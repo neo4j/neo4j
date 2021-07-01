@@ -50,8 +50,6 @@
 
     <dependencies>
 
-        <!-- shared versions are defined in the parent pom -->
-
         <!-- neo4j -->
 
         <dependency>
@@ -82,9 +80,8 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-util</artifactId>
+            <artifactId>neo4j-test-util</artifactId>
             <version>${project.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
@@ -105,6 +102,10 @@
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
         </dependency>
         <dependency>
             <groupId>org.scalacheck</groupId>

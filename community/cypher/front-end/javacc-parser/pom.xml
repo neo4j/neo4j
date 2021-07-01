@@ -5,7 +5,7 @@
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-front-end-parent</artifactId>
         <version>4.4.0-SNAPSHOT</version>
-        <relativePath>../</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -50,10 +50,6 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-            </plugin>
-
-            <plugin>
                 <groupId>com.helger.maven</groupId>
                 <artifactId>ph-javacc-maven-plugin</artifactId>
                 <version>4.1.3</version>
@@ -66,8 +62,6 @@
                         </goals>
                         <configuration>
                             <jdkVersion>1.8</jdkVersion>
-                            <javadocFriendlyComments>true</javadocFriendlyComments>
-                            <packageName>org.neo4j.cypher.internal.parser.javacc</packageName>
                             <sourceDirectory>src/main/java/org/neo4j/cypher/internal/parser/javacc</sourceDirectory>
                             <outputDirectory>${project.build.directory}/generated-sources/javacc</outputDirectory>
                         </configuration>
@@ -90,12 +84,14 @@
             <groupId>org.scala-lang</groupId>
         </dependency>
 
-        <!-- shared versions are defined in the parent pom -->
-
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>cypher-ast-factory</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
         </dependency>
     </dependencies>
 </project>

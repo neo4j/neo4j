@@ -36,8 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.SuppressOutput.Voice;
+import org.neo4j.test.extension.SuppressOutput.Voice;
 
 import static java.lang.String.format;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;

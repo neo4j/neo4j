@@ -34,9 +34,9 @@ import org.neo4j.index.internal.gbptree.RawBytes;
 import org.neo4j.index.internal.gbptree.SimpleByteArrayLayout;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +54,7 @@ class BlockEntryStreamMergerTest
     private RandomRule random;
 
     @Inject
-    private OtherThreadRule t2;
+    private OtherThread t2;
 
     private final Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout();
     private final List<BlockEntry<RawBytes,RawBytes>> allData = new ArrayList<>();

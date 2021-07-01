@@ -7,7 +7,7 @@
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
         <version>4.4.0-SNAPSHOT</version>
-        <relativePath>../..</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>cypher-parent</artifactId>
@@ -88,72 +88,8 @@
         </plugins>
     </build>
 
-    <!-- inherited dependencies, versions are set in dependencyManagement -->
-
-    <dependencies>
-
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>annotations</artifactId>
-        </dependency>
-
-        <!-- shared java test dependencies -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-        </dependency>
-
-    </dependencies>
-
-    <!-- Required versions for each dependency, inherited dependencies are set in dependencies -->
-
     <dependencyManagement>
         <dependencies>
-            <!-- neo4j -->
-            <dependency>
-                <groupId>org.neo4j</groupId>
-                <artifactId>neo4j-kernel</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j</groupId>
-                <artifactId>neo4j-kernel</artifactId>
-                <version>${project.version}</version>
-                <type>test-jar</type>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j</groupId>
-                <artifactId>test-utils</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j</groupId>
-                <artifactId>io-test-utils</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j</groupId>
-                <artifactId>neo4j-lucene-index</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j</groupId>
-                <artifactId>neo4j-graph-algo</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <!-- other -->
             <dependency>
                 <groupId>org.parboiled</groupId>
                 <artifactId>parboiled-scala_${scala.binary.version}</artifactId>

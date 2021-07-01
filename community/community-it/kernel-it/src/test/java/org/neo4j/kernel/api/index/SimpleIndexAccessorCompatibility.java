@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -70,8 +68,9 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
@@ -87,12 +86,7 @@ import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
+abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     SimpleIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
@@ -102,7 +96,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     // This behaviour is shared by General and Unique indexes
 
     @Test
-    public void testIndexSeekByPrefix() throws Exception
+    void testIndexSeekByPrefix() throws Exception
     {
         updateAndCommit( asList(
                 add( 1L, descriptor, "a" ),
@@ -118,7 +112,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void testIndexSeekByPrefixOnNonStrings() throws Exception
+    void testIndexSeekByPrefixOnNonStrings() throws Exception
     {
         updateAndCommit( asList(
                 add( 1L, descriptor, "2a" ),
@@ -128,7 +122,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void testIndexRangeSeekByDateTimeWithSneakyZones() throws Exception
+    void testIndexRangeSeekByDateTimeWithSneakyZones() throws Exception
     {
         DateTimeValue d1 = datetime( 9999, 100, ZoneId.of( "+18:00" ) );
         DateTimeValue d4 = datetime( 10000, 100, ZoneId.of( "UTC" ) );
@@ -150,7 +144,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void tracePageCacheAccessOnConsistencyCheck()
+    void tracePageCacheAccessOnConsistencyCheck()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) ) )
@@ -165,9 +159,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void testIndexRangeSeekWithSpatial() throws Exception
+    void testIndexRangeSeekWithSpatial() throws Exception
     {
-        Assume.assumeTrue( testSuite.supportsSpatial() );
+        assumeTrue( testSuite.supportsSpatial() );
 
         PointValue p1 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, -1 );
         PointValue p2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, 1 );
@@ -183,7 +177,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldUpdateWithAllValues() throws Exception
+    void shouldUpdateWithAllValues() throws Exception
     {
         // GIVEN
         List<ValueIndexEntryUpdate<?>> updates = updates( valueSet1 );
@@ -199,7 +193,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldScanAllValues() throws Exception
+    void shouldScanAllValues() throws Exception
     {
         // GIVEN
         List<ValueIndexEntryUpdate<?>> updates = updates( valueSet1 );
@@ -213,61 +207,61 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void testIndexRangeSeekByNumber() throws Exception
+    void testIndexRangeSeekByNumber() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextNumberValue() );
     }
 
     @Test
-    public void testIndexRangeSeekByText() throws Exception
+    void testIndexRangeSeekByText() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextTextValue() );
     }
 
     @Test
-    public void testIndexRangeSeekByChar() throws Exception
+    void testIndexRangeSeekByChar() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextCharValue() );
     }
 
     @Test
-    public void testIndexRangeSeekByDateTime() throws Exception
+    void testIndexRangeSeekByDateTime() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextDateTimeValue() );
     }
 
     @Test
-    public void testIndexRangeSeekByLocalDateTime() throws Exception
+    void testIndexRangeSeekByLocalDateTime() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextLocalDateTimeValue() );
     }
 
     @Test
-    public void testIndexRangeSeekByDate() throws Exception
+    void testIndexRangeSeekByDate() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextDateValue() );
     }
 
     @Test
-    public void testIndexRangeSeekByTime() throws Exception
+    void testIndexRangeSeekByTime() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextTimeValue() );
     }
 
     @Test
-    public void testIndexRangeSeekByLocalTime() throws Exception
+    void testIndexRangeSeekByLocalTime() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextLocalTimeValue() );
     }
 
     @Test
-    public void testIndexRangeSeekByDuration() throws Exception
+    void testIndexRangeSeekByDuration() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextDuration() );
     }
 
     @Test
-    public void testIndexRangeSeekByPeriod() throws Exception
+    void testIndexRangeSeekByPeriod() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextPeriod() );
     }
@@ -276,98 +270,98 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     // testIndexRangeSeekBoolean not present because test needs more than two possible values
 
     @Test
-    public void testIndexRangeSeekByZonedDateTimeArray() throws Exception
+    void testIndexRangeSeekByZonedDateTimeArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextDateTimeArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByLocalDateTimeArray() throws Exception
+    void testIndexRangeSeekByLocalDateTimeArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextLocalDateTimeArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByDateArray() throws Exception
+    void testIndexRangeSeekByDateArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextDateArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByZonedTimeArray() throws Exception
+    void testIndexRangeSeekByZonedTimeArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextTimeArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByLocalTimeArray() throws Exception
+    void testIndexRangeSeekByLocalTimeArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextLocalTimeArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByDurationArray() throws Exception
+    void testIndexRangeSeekByDurationArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextDurationArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByTextArray() throws Exception
+    void testIndexRangeSeekByTextArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextBasicMultilingualPlaneTextArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByCharArray() throws Exception
+    void testIndexRangeSeekByCharArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextCharArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByBooleanArray() throws Exception
+    void testIndexRangeSeekByBooleanArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextBooleanArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByByteArray() throws Exception
+    void testIndexRangeSeekByByteArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextByteArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByShortArray() throws Exception
+    void testIndexRangeSeekByShortArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextShortArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByIntArray() throws Exception
+    void testIndexRangeSeekByIntArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextIntArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByLongArray() throws Exception
+    void testIndexRangeSeekByLongArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextLongArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByFloatArray() throws Exception
+    void testIndexRangeSeekByFloatArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextFloatArray() );
     }
 
     @Test
-    public void testIndexRangeSeekByDoubleArray() throws Exception
+    void testIndexRangeSeekByDoubleArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextDoubleArray() );
     }
 
     private void testIndexRangeSeekArray( Supplier<ArrayValue> generator ) throws Exception
     {
-        Assume.assumeTrue( testSuite.supportsGranularCompositeQueries() );
+        assumeTrue( testSuite.supportsGranularCompositeQueries() );
         testIndexRangeSeek( generator );
     }
 
@@ -426,7 +420,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingNumber() throws Exception
+    void shouldRangeSeekInOrderAscendingNumber() throws Exception
     {
         Object o0 = 0;
         Object o1 = 1;
@@ -438,7 +432,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingNumber() throws Exception
+    void shouldRangeSeekInOrderDescendingNumber() throws Exception
     {
         Object o0 = 0;
         Object o1 = 1;
@@ -450,7 +444,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingString() throws Exception
+    void shouldRangeSeekInOrderAscendingString() throws Exception
     {
         Object o0 = "0";
         Object o1 = "1";
@@ -462,7 +456,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingString() throws Exception
+    void shouldRangeSeekInOrderDescendingString() throws Exception
     {
         Object o0 = "0";
         Object o1 = "1";
@@ -474,7 +468,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDate() throws Exception
+    void shouldRangeSeekInOrderAscendingDate() throws Exception
     {
         Object o0 = DateValue.epochDateRaw( 0 );
         Object o1 = DateValue.epochDateRaw( 1 );
@@ -486,7 +480,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDate() throws Exception
+    void shouldRangeSeekInOrderDescendingDate() throws Exception
     {
         Object o0 = DateValue.epochDateRaw( 0 );
         Object o1 = DateValue.epochDateRaw( 1 );
@@ -498,7 +492,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingLocalTime() throws Exception
+    void shouldRangeSeekInOrderAscendingLocalTime() throws Exception
     {
         Object o0 = LocalTimeValue.localTimeRaw( 0 );
         Object o1 = LocalTimeValue.localTimeRaw( 1 );
@@ -510,7 +504,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingLocalTime() throws Exception
+    void shouldRangeSeekInOrderDescendingLocalTime() throws Exception
     {
         Object o0 = LocalTimeValue.localTimeRaw( 0 );
         Object o1 = LocalTimeValue.localTimeRaw( 1 );
@@ -522,7 +516,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingTime() throws Exception
+    void shouldRangeSeekInOrderAscendingTime() throws Exception
     {
         Object o0 = TimeValue.timeRaw( 0, ZoneOffset.ofHours( 0 ) );
         Object o1 = TimeValue.timeRaw( 1, ZoneOffset.ofHours( 0 ) );
@@ -534,7 +528,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingTime() throws Exception
+    void shouldRangeSeekInOrderDescendingTime() throws Exception
     {
         Object o0 = TimeValue.timeRaw( 0, ZoneOffset.ofHours( 0 ) );
         Object o1 = TimeValue.timeRaw( 1, ZoneOffset.ofHours( 0 ) );
@@ -546,7 +540,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingLocalDateTime() throws Exception
+    void shouldRangeSeekInOrderAscendingLocalDateTime() throws Exception
     {
         Object o0 = LocalDateTimeValue.localDateTimeRaw( 10, 0 );
         Object o1 = LocalDateTimeValue.localDateTimeRaw( 10, 1 );
@@ -558,7 +552,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingLocalDateTime() throws Exception
+    void shouldRangeSeekInOrderDescendingLocalDateTime() throws Exception
     {
         Object o0 = LocalDateTimeValue.localDateTimeRaw( 10, 0 );
         Object o1 = LocalDateTimeValue.localDateTimeRaw( 10, 1 );
@@ -570,7 +564,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDateTime() throws Exception
+    void shouldRangeSeekInOrderAscendingDateTime() throws Exception
     {
         Object o0 = DateTimeValue.datetimeRaw( 1, 0, ZoneId.of( "UTC" ) );
         Object o1 = DateTimeValue.datetimeRaw( 1, 1, ZoneId.of( "UTC" ) );
@@ -582,7 +576,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDateTime() throws Exception
+    void shouldRangeSeekInOrderDescendingDateTime() throws Exception
     {
         Object o0 = DateTimeValue.datetimeRaw( 1, 0, ZoneId.of( "UTC" ) );
         Object o1 = DateTimeValue.datetimeRaw( 1, 1, ZoneId.of( "UTC" ) );
@@ -594,7 +588,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDuration() throws Exception
+    void shouldRangeSeekInOrderAscendingDuration() throws Exception
     {
         Object o0 = Duration.ofMillis( 0 );
         Object o1 = Duration.ofMillis( 1 );
@@ -606,7 +600,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDuration() throws Exception
+    void shouldRangeSeekInOrderDescendingDuration() throws Exception
     {
         Object o0 = Duration.ofMillis( 0 );
         Object o1 = Duration.ofMillis( 1 );
@@ -618,7 +612,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingNumberArray() throws Exception
+    void shouldRangeSeekInOrderAscendingNumberArray() throws Exception
     {
         Object o0 = new int[]{0};
         Object o1 = new int[]{1};
@@ -630,7 +624,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingNumberArray() throws Exception
+    void shouldRangeSeekInOrderDescendingNumberArray() throws Exception
     {
         Object o0 = new int[]{0};
         Object o1 = new int[]{1};
@@ -642,7 +636,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingStringArray() throws Exception
+    void shouldRangeSeekInOrderAscendingStringArray() throws Exception
     {
         Object o0 = new String[]{"0"};
         Object o1 = new String[]{"1"};
@@ -654,7 +648,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingStringArray() throws Exception
+    void shouldRangeSeekInOrderDescendingStringArray() throws Exception
     {
         Object o0 = new String[]{"0"};
         Object o1 = new String[]{"1"};
@@ -666,7 +660,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingBooleanArray() throws Exception
+    void shouldRangeSeekInOrderAscendingBooleanArray() throws Exception
     {
         Object o0 = new boolean[]{false};
         Object o1 = new boolean[]{false, false};
@@ -678,7 +672,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingBooleanArray() throws Exception
+    void shouldRangeSeekInOrderDescendingBooleanArray() throws Exception
     {
         Object o0 = new boolean[]{false};
         Object o1 = new boolean[]{false, false};
@@ -690,7 +684,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDateTimeArray() throws Exception
+    void shouldRangeSeekInOrderAscendingDateTimeArray() throws Exception
     {
         Object o0 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 0, ZoneId.of( "UTC" ) )};
         Object o1 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 1, ZoneId.of( "UTC" ) )};
@@ -702,7 +696,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDateTimeArray() throws Exception
+    void shouldRangeSeekInOrderDescendingDateTimeArray() throws Exception
     {
         Object o0 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 0, ZoneId.of( "UTC" ) )};
         Object o1 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 1, ZoneId.of( "UTC" ) )};
@@ -714,7 +708,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingLocalDateTimeArray() throws Exception
+    void shouldRangeSeekInOrderAscendingLocalDateTimeArray() throws Exception
     {
         Object o0 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 0 )};
         Object o1 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 1 )};
@@ -726,7 +720,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingLocalDateTimeArray() throws Exception
+    void shouldRangeSeekInOrderDescendingLocalDateTimeArray() throws Exception
     {
         Object o0 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 0 )};
         Object o1 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 1 )};
@@ -738,7 +732,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingTimeArray() throws Exception
+    void shouldRangeSeekInOrderAscendingTimeArray() throws Exception
     {
         Object o0 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 0, ZoneOffset.ofHours( 0 ) )};
         Object o1 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 1, ZoneOffset.ofHours( 0 ) )};
@@ -750,7 +744,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingTimeArray() throws Exception
+    void shouldRangeSeekInOrderDescendingTimeArray() throws Exception
     {
         Object o0 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 0, ZoneOffset.ofHours( 0 ) )};
         Object o1 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 1, ZoneOffset.ofHours( 0 ) )};
@@ -762,7 +756,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDateArray() throws Exception
+    void shouldRangeSeekInOrderAscendingDateArray() throws Exception
     {
         Object o0 = new LocalDate[]{LocalDate.of( 10, 10, 1 )};
         Object o1 = new LocalDate[]{LocalDate.of( 10, 10, 2 )};
@@ -774,7 +768,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDateArray() throws Exception
+    void shouldRangeSeekInOrderDescendingDateArray() throws Exception
     {
         Object o0 = new LocalDate[]{LocalDate.of( 10, 10, 1 )};
         Object o1 = new LocalDate[]{LocalDate.of( 10, 10, 2 )};
@@ -786,7 +780,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingLocalTimeArray() throws Exception
+    void shouldRangeSeekInOrderAscendingLocalTimeArray() throws Exception
     {
         Object o0 = new LocalTime[]{LocalTime.of( 10, 0 )};
         Object o1 = new LocalTime[]{LocalTime.of( 10, 1 )};
@@ -798,7 +792,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingLocalTimeArray() throws Exception
+    void shouldRangeSeekInOrderDescendingLocalTimeArray() throws Exception
     {
         Object o0 = new LocalTime[]{LocalTime.of( 10, 0 )};
         Object o1 = new LocalTime[]{LocalTime.of( 10, 1 )};
@@ -810,7 +804,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDurationArray() throws Exception
+    void shouldRangeSeekInOrderAscendingDurationArray() throws Exception
     {
         Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
         Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
@@ -822,7 +816,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDurationArray() throws Exception
+    void shouldRangeSeekInOrderDescendingDurationArray() throws Exception
     {
         Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
         Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
@@ -834,7 +828,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekAscendingWithoutFindingNanForOpenEnd() throws Exception
+    void shouldRangeSeekAscendingWithoutFindingNanForOpenEnd() throws Exception
     {
         Object o0 = 0;
         Object o1 = 1.0;
@@ -849,7 +843,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekDescendingWithoutFindingNanForOpenEnd() throws Exception
+    void shouldRangeSeekDescendingWithoutFindingNanForOpenEnd() throws Exception
     {
         Object o0 = 0;
         Object o1 = 1.0;
@@ -864,7 +858,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekAscendingWithoutFindingNanForOpenStart() throws Exception
+    void shouldRangeSeekAscendingWithoutFindingNanForOpenStart() throws Exception
     {
         Object o0 = Double.NaN;
         Object o1 = 1.0;
@@ -878,7 +872,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRangeSeekDescendingWithoutFindingNanForOpenStart() throws Exception
+    void shouldRangeSeekDescendingWithoutFindingNanForOpenStart() throws Exception
     {
         Object o0 = Double.NaN;
         Object o1 = 1.0;
@@ -917,11 +911,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         IndexOrderCapability indexOrders = orderCapability( range );
         if ( order == IndexOrder.ASCENDING )
         {
-            Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsAsc() );
+            assumeTrue( indexOrders.supportsAsc(), "Assume support for order " + order );
         }
         else if ( order == IndexOrder.DESCENDING )
         {
-            Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsDesc() );
+            assumeTrue( indexOrders.supportsDesc(), "Assume support for order " + order );
         }
 
         List<ValueIndexEntryUpdate<?>> additions = Arrays.stream( objects ).map( o -> add( 1, descriptor, o ) ).collect( Collectors.toList() );
@@ -937,7 +931,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldUpdateEntries() throws Exception
+    void shouldUpdateEntries() throws Exception
     {
         ValueType[] valueTypes = testSuite.supportedValueTypes();
         long entityId = random.nextLong( 1_000_000_000 );
@@ -964,7 +958,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     @Test
-    public void shouldRemoveEntries() throws Exception
+    void shouldRemoveEntries() throws Exception
     {
         ValueType[] valueTypes = testSuite.supportedValueTypes();
         long entityId = random.nextLong( 1_000_000_000 );
@@ -984,17 +978,15 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     // This behaviour is expected by General indexes
-
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class General extends SimpleIndexAccessorCompatibility
+    abstract static class General extends SimpleIndexAccessorCompatibility
     {
-        public General( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        General( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, testSuite.indexPrototype() );
         }
 
         @Test
-        public void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
+        void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
         {
             // The reason is that we use and close IndexUpdaters in commit - not in prepare - and therefor
             // we cannot have them go around and throw exceptions, because that could potentially break
@@ -1010,7 +1002,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexSeekAndScan() throws Exception
+        void testIndexSeekAndScan() throws Exception
         {
             updateAndCommit( asList(
                     add( 1L, descriptor, "a" ),
@@ -1022,7 +1014,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByNumberWithDuplicates() throws Exception
+        void testIndexRangeSeekByNumberWithDuplicates() throws Exception
         {
             updateAndCommit( asList(
                     add( 1L, descriptor, -5 ),
@@ -1039,7 +1031,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByStringWithDuplicates() throws Exception
+        void testIndexRangeSeekByStringWithDuplicates() throws Exception
         {
             updateAndCommit( asList(
                     add( 1L, descriptor, "Anna" ),
@@ -1056,7 +1048,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByDateWithDuplicates() throws Exception
+        void testIndexRangeSeekByDateWithDuplicates() throws Exception
         {
             testIndexRangeSeekWithDuplicates( epochDate( 100 ),
                                               epochDate( 101 ),
@@ -1065,7 +1057,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByLocalDateTimeWithDuplicates() throws Exception
+        void testIndexRangeSeekByLocalDateTimeWithDuplicates() throws Exception
         {
             testIndexRangeSeekWithDuplicates( localDateTime( 1000, 10 ),
                                               localDateTime( 1000, 11 ),
@@ -1074,7 +1066,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByDateTimeWithDuplicates() throws Exception
+        void testIndexRangeSeekByDateTimeWithDuplicates() throws Exception
         {
             testIndexRangeSeekWithDuplicates( datetime( 1000, 10, UTC ),
                                               datetime( 1000, 11, UTC ),
@@ -1083,7 +1075,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByLocalTimeWithDuplicates() throws Exception
+        void testIndexRangeSeekByLocalTimeWithDuplicates() throws Exception
         {
             testIndexRangeSeekWithDuplicates( localTime( 1000 ),
                                               localTime( 1001 ),
@@ -1092,7 +1084,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByTimeWithDuplicates() throws Exception
+        void testIndexRangeSeekByTimeWithDuplicates() throws Exception
         {
             testIndexRangeSeekWithDuplicates( time( 1000, UTC ),
                                               time( 1001, UTC ),
@@ -1101,7 +1093,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByTimeWithZonesAndDuplicates() throws Exception
+        void testIndexRangeSeekByTimeWithZonesAndDuplicates() throws Exception
         {
             testIndexRangeSeekWithDuplicates( time( 20, 31, 53, 4, ZoneOffset.of( "+17:02" ) ),
                                               time( 20, 31, 54, 3, ZoneOffset.of( "+17:02" ) ),
@@ -1110,7 +1102,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByDurationWithDuplicates() throws Exception
+        void testIndexRangeSeekByDurationWithDuplicates() throws Exception
         {
             testIndexRangeSeekWithDuplicates( duration( 1, 1, 1, 1 ),
                                               duration( 1, 1, 1, 2 ),
@@ -1138,7 +1130,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexRangeSeekByPrefixWithDuplicates() throws Exception
+        void testIndexRangeSeekByPrefixWithDuplicates() throws Exception
         {
             updateAndCommit( asList(
                     add( 1L, descriptor, "a" ),
@@ -1152,7 +1144,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexFullSearchWithDuplicates() throws Exception
+        void testIndexFullSearchWithDuplicates() throws Exception
         {
             updateAndCommit( asList(
                     add( 1L, descriptor, "a" ),
@@ -1170,7 +1162,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexEndsWithWithDuplicated() throws Exception
+        void testIndexEndsWithWithDuplicated() throws Exception
         {
             updateAndCommit( asList(
                     add( 1L, descriptor, "a" ),
@@ -1189,7 +1181,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexShouldHandleLargeAmountOfDuplicatesStringArray() throws Exception
+        void testIndexShouldHandleLargeAmountOfDuplicatesStringArray() throws Exception
         {
             Value arrayValue = nextRandomValidArrayValue();
             doTestShouldHandleLargeAmountOfDuplicates( arrayValue );
@@ -1223,17 +1215,15 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     }
 
     // This behaviour is expected by Unique indexes
-
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class Unique extends SimpleIndexAccessorCompatibility
+    abstract static class Unique extends SimpleIndexAccessorCompatibility
     {
-        public Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, PropertyIndexProviderCompatibilityTestSuite.uniqueIndexPrototype() );
         }
 
         @Test
-        public void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
+        void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
         {
             // The reason is that we use and close IndexUpdaters in commit - not in prepare - and therefor
             // we cannot have them go around and throw exceptions, because that could potentially break
@@ -1249,7 +1239,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
 
         @Test
-        public void testIndexSeekAndScan() throws Exception
+        void testIndexSeekAndScan() throws Exception
         {
             updateAndCommit( asList(
                     add( 1L, descriptor, "a" ),

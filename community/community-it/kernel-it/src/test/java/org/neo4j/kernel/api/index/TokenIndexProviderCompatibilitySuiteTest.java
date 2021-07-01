@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema;
+package org.neo4j.kernel.api.index;
 
 import java.nio.file.Path;
 
@@ -28,15 +28,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.TokenIndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.monitoring.Monitors;
 
-public class TokenIndexProviderCompatibilitySuiteTest extends TokenIndexProviderCompatibilityTestSuite
+class TokenIndexProviderCompatibilitySuiteTest extends TokenIndexProviderCompatibilityTestSuite
 {
     @Override
-    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
+    IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
     {
         Monitors monitors = new Monitors();
         String monitorTag = "";

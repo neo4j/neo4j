@@ -27,8 +27,6 @@ import org.junit.jupiter.api.parallel.Resources;
 import org.junit.platform.testkit.engine.EngineTestKit;
 import org.junit.platform.testkit.engine.Events;
 
-import org.neo4j.test.rule.SuppressOutput;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;

@@ -47,8 +47,8 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,7 +75,7 @@ class TransactionLogFileRotateAndReadRaceIT
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject
-    private OtherThreadRule t2;
+    private OtherThread t2;
 
     // If any of these limits are reached the test ends, that or if there's a failure of course
     private static final int LIMIT_ROTATIONS = 100;

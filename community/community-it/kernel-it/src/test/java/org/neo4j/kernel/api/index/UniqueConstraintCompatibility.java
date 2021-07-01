@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -53,20 +52,15 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
+abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
 {
-
     private DatabaseManagementService managementService;
 
-    public UniqueConstraintCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite )
+    UniqueConstraintCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite )
     {
         super( testSuite, PropertyIndexProviderCompatibilityTestSuite.uniqueIndexPrototype() );
     }
@@ -128,10 +122,10 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
      * There's a lot of work to be done here.
      */
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( graphDbDir )
+        managementService = new TestDatabaseManagementServiceBuilder( homePath )
                 .setExtensions( asList( new PredefinedIndexProviderFactory( indexProvider ), new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) )
                 .noOpSystemGraphInitializer()
                 .impermanent()
@@ -140,8 +134,8 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         managementService.shutdown();
     }
@@ -149,7 +143,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     // -- Tests:
 
     @Test
-    public void onlineConstraintShouldAcceptDistinctValuesInDifferentTransactions()
+    void onlineConstraintShouldAcceptDistinctValuesInDifferentTransactions()
     {
         // Given
         givenOnlineConstraint();
@@ -170,7 +164,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     }
 
     @Test
-    public void onlineConstraintShouldAcceptDistinctValuesInSameTransaction()
+    void onlineConstraintShouldAcceptDistinctValuesInSameTransaction()
     {
         // Given
         givenOnlineConstraint();
@@ -195,7 +189,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     }
 
     @Test
-    public void onlineConstraintShouldNotFalselyCollideOnFindNodesByLabelAndProperty()
+    void onlineConstraintShouldNotFalselyCollideOnFindNodesByLabelAndProperty()
     {
         // Given
         givenOnlineConstraint();
@@ -223,7 +217,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     }
 
     @Test
-    public void onlineConstraintShouldNotConflictOnIntermediateStatesInSameTransaction()
+    void onlineConstraintShouldNotConflictOnIntermediateStatesInSameTransaction()
     {
         // Given
         givenOnlineConstraint();
@@ -240,8 +234,8 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
                 assertLookupNode( "b", a ) );
     }
 
-    @Test( expected = ConstraintViolationException.class )
-    public void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValue()
+    @Test
+    void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValue()
     {
         // Given
         givenOnlineConstraint();
@@ -250,28 +244,29 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
                 success );
 
         // When
-        transaction(
+        assertThrows( ConstraintViolationException.class, () ->
+                transaction(
                 setProperty( b, "a" ),
                 success,
-                fail( "Changing a property to an already indexed value should have thrown" ) );
+                fail( "Changing a property to an already indexed value should have thrown" ) ) );
     }
 
-    @Test( expected = ConstraintViolationException.class )
-    public void onlineConstraintShouldRejectConflictsInTheSameTransaction()
+    @Test
+    void onlineConstraintShouldRejectConflictsInTheSameTransaction()
     {
         // Given
         givenOnlineConstraint();
 
         // Then
-        transaction(
+        assertThrows( ConstraintViolationException.class, () -> transaction(
                 setProperty( a, "x" ),
                 setProperty( b, "x" ),
                 success,
-                fail( "Should have rejected changes of two node/properties to the same index value" ) );
+                fail( "Should have rejected changes of two node/properties to the same index value" ) ) );
     }
 
     @Test
-    public void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValueThatOtherTransactionsAreRemoving()
+    void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValueThatOtherTransactionsAreRemoving()
     {
         // Given
         givenOnlineConstraint();
@@ -302,7 +297,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
 
     // Replaces UniqueIAC: shouldRemoveAndAddEntries
     @Test
-    public void onlineConstraintShouldAddAndRemoveFromIndexAsPropertiesAndLabelsChange()
+    void onlineConstraintShouldAddAndRemoveFromIndexAsPropertiesAndLabelsChange()
     {
         // Given
         givenOnlineConstraint();
@@ -327,35 +322,35 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     }
 
     // Replaces UniqueIAC: shouldRejectEntryWithAlreadyIndexedValue
-    @Test( expected = ConstraintViolationException.class )
-    public void onlineConstraintShouldRejectConflictingPropertyChange()
+    @Test
+    void onlineConstraintShouldRejectConflictingPropertyChange()
     {
         // Given
         givenOnlineConstraint();
 
         // Then
-        transaction(
+        assertThrows( ConstraintViolationException.class, () -> transaction(
                 setProperty( b, "a" ),
                 success,
-                fail( "Setting b.name = \"a\" should have caused a conflict" ) );
+                fail( "Setting b.name = \"a\" should have caused a conflict" ) ) );
     }
 
-    @Test( expected = ConstraintViolationException.class )
-    public void onlineConstraintShouldRejectConflictingLabelChange()
+    @Test
+    void onlineConstraintShouldRejectConflictingLabelChange()
     {
         // Given
         givenOnlineConstraint();
 
         // Then
-        transaction(
+        assertThrows( ConstraintViolationException.class, () -> transaction(
                 addLabel( c, label ),
                 success,
-                fail( "Setting c:Cybermen should have caused a conflict" ) );
+                fail( "Setting c:Cybermen should have caused a conflict" ) ) );
     }
 
     // Replaces UniqueIAC: shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange
-    @Test( expected = ConstraintViolationException.class )
-    public void onlineConstraintShouldRejectAddingEntryForValueAlreadyIndexedByPriorChange()
+    @Test
+    void onlineConstraintShouldRejectAddingEntryForValueAlreadyIndexedByPriorChange()
     {
         // Given
         givenOnlineConstraint();
@@ -364,16 +359,16 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
         transaction( setProperty( a, "a1" ), success ); // This is a CHANGE update
 
         // Then
-        transaction(
+        assertThrows( ConstraintViolationException.class, () -> transaction(
                 setProperty( b, "a1" ),
                 success,
-                fail( "Setting b.name = \"a1\" should have caused a conflict" ) );
+                fail( "Setting b.name = \"a1\" should have caused a conflict" ) ) );
     }
 
     // Replaces UniqueIAC: shouldAddUniqueEntries
     // Replaces UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedOnline
     @Test
-    public void onlineConstraintShouldAcceptUniqueEntries()
+    void onlineConstraintShouldAcceptUniqueEntries()
     {
         // Given
         givenOnlineConstraint();
@@ -392,7 +387,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
 
     // Replaces UniqueIAC: shouldUpdateUniqueEntries
     @Test
-    public void onlineConstraintShouldAcceptUniqueEntryChanges()
+    void onlineConstraintShouldAcceptUniqueEntryChanges()
     {
         // Given
         givenOnlineConstraint();
@@ -405,24 +400,24 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     }
 
     // Replaces UniqueIAC: shouldRejectEntriesInSameTransactionWithDuplicateIndexedValue\
-    @Test( expected = ConstraintViolationException.class )
-    public void onlineConstraintShouldRejectDuplicateEntriesAddedInSameTransaction()
+    @Test
+    void onlineConstraintShouldRejectDuplicateEntriesAddedInSameTransaction()
     {
         // Given
         givenOnlineConstraint();
 
         // Then
-        transaction(
+        assertThrows( ConstraintViolationException.class, () -> transaction(
                 setProperty( b, "d" ),
                 addLabel( d, label ),
                 success,
-                fail( "Setting b.name = \"d\" and d:Cybermen should have caused a conflict" ));
+                fail( "Setting b.name = \"d\" and d:Cybermen should have caused a conflict" ) ) );
     }
 
     // Replaces UniqueIPC: should*EnforceUniqueConstraints
     // Replaces UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedThroughPopulator
     @Test
-    public void populatingConstraintMustAcceptDatasetOfUniqueEntries()
+    void populatingConstraintMustAcceptDatasetOfUniqueEntries()
     {
         // Given
         givenUniqueDataset();
@@ -431,8 +426,8 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
         createUniqueConstraint();
     }
 
-    @Test( expected = ConstraintViolationException.class )
-    public void populatingConstraintMustRejectDatasetWithDuplicateEntries()
+    @Test
+    void populatingConstraintMustRejectDatasetWithDuplicateEntries()
     {
         // Given
         givenUniqueDataset();
@@ -441,11 +436,11 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
                 success );
 
         // Then this must throw:
-        createUniqueConstraint();
+        assertThrows( ConstraintViolationException.class, this::createUniqueConstraint );
     }
 
     @Test
-    public void populatingConstraintMustAcceptDatasetWithDalseIndexCollisions()
+    void populatingConstraintMustAcceptDatasetWithDalseIndexCollisions()
     {
         // Given
         givenUniqueDataset();
@@ -459,7 +454,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     }
 
     @Test
-    public void populatingConstraintMustAcceptDatasetThatGetsUpdatedWithUniqueEntries() throws Exception
+    void populatingConstraintMustAcceptDatasetThatGetsUpdatedWithUniqueEntries() throws Exception
     {
         // Given
         givenUniqueDataset();
@@ -475,7 +470,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
 
     // Replaces UniqueLucIAT: shouldRejectEntryWithAlreadyIndexedValue
     @Test
-    public void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicateAddition() throws Exception
+    void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicateAddition() throws Exception
     {
         // Given
         givenUniqueDataset();
@@ -488,7 +483,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
         try
         {
             createConstraintTransaction.get();
-            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+            Assertions.fail( "expected to throw when PopulatingUpdater got duplicates" );
         }
         catch ( ExecutionException ee )
         {
@@ -499,7 +494,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
 
     // Replaces UniqueLucIAT: shouldRejectChangingEntryToAlreadyIndexedValue
     @Test
-    public void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicates() throws Exception
+    void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicates() throws Exception
     {
         // Given
         givenUniqueDataset();
@@ -512,7 +507,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
         try
         {
             createConstraintTransaction.get();
-            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+            Assertions.fail( "expected to throw when PopulatingUpdater got duplicates" );
         }
         catch ( ExecutionException ee )
         {
@@ -522,7 +517,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     }
 
     @Test
-    public void populatingConstraintMustAcceptDatasetThatGestUpdatedWithFalseIndexCollisions() throws Exception
+    void populatingConstraintMustAcceptDatasetThatGestUpdatedWithFalseIndexCollisions() throws Exception
     {
         // Given
         givenUniqueDataset();
@@ -539,7 +534,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
 
     // Replaces UniqueLucIAT: shouldRejectEntriesInSameTransactionWithDuplicatedIndexedValues
     @Test
-    public void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicatesInSameTransaction() throws Exception
+    void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicatesInSameTransaction() throws Exception
     {
         // Given
         givenUniqueDataset();
@@ -552,7 +547,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
         try
         {
             createConstraintTransaction.get();
-            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+            Assertions.fail( "expected to throw when PopulatingUpdater got duplicates" );
         }
         catch ( ExecutionException ee )
         {
@@ -562,7 +557,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     }
 
     @Test
-    public void populatingConstraintMustAcceptDatasetThatGetsUpdatedWithDuplicatesThatAreLaterResolved() throws Exception
+    void populatingConstraintMustAcceptDatasetThatGetsUpdatedWithDuplicatesThatAreLaterResolved() throws Exception
     {
         // Given
         givenUniqueDataset();
@@ -582,7 +577,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
 
     // Replaces UniqueLucIAT: shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange
     @Test
-    public void populatingUpdaterMustRejectDatasetWhereAdditionsConflictsWithPriorChanges() throws Exception
+    void populatingUpdaterMustRejectDatasetWhereAdditionsConflictsWithPriorChanges() throws Exception
     {
         // Given
         givenUniqueDataset();
@@ -595,7 +590,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
         try
         {
             createConstraintTransaction.get();
-            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+            Assertions.fail( "expected to throw when PopulatingUpdater got duplicates" );
         }
         catch ( ExecutionException ee )
         {
@@ -804,7 +799,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
 
     // -- Set Up: Transaction handling
 
-    public void transaction( Action... actions )
+    void transaction( Action... actions )
     {
         int progress = 0;
         try ( Transaction tx = db.beginTx() )
@@ -910,7 +905,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
             @Override
             public void accept( Transaction transaction )
             {
-                Assert.fail( message );
+                Assertions.fail( message );
             }
         };
     }

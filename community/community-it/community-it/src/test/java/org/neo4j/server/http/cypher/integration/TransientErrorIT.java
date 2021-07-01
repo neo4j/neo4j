@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +44,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 public class TransientErrorIT extends AbstractRestFunctionalTestBase
 {
     @Inject
-    public OtherThreadRule otherThread;
+    public OtherThread otherThread;
 
     @Test
     @Timeout( 60 )

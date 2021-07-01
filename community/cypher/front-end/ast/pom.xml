@@ -5,7 +5,7 @@
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-front-end-parent</artifactId>
         <version>4.4.0-SNAPSHOT</version>
-        <relativePath>../</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -32,25 +32,7 @@
         </license>
     </licenses>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-
     <dependencies>
-
-        <!-- shared versions are defined in the parent pom -->
 
         <dependency>
             <groupId>org.neo4j</groupId>
@@ -60,7 +42,13 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-util</artifactId>
+            <artifactId>neo4j-expressions</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-expressions</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -68,19 +56,17 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-expressions</artifactId>
+            <artifactId>neo4j-test-util</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-expressions</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
         <!-- scala -->
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.scalacheck</groupId>
             <artifactId>scalacheck_${scala.binary.version}</artifactId>

@@ -20,10 +20,6 @@
 package org.neo4j.test.rule;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.junit.Rule;
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,16 +39,17 @@ import org.neo4j.util.VisibleForTesting;
 import static java.lang.String.format;
 
 /**
- * This class defines a JUnit rule which ensures that the test's working directory is cleaned up. The clean-up
+ * This class represents a temporary directory which ensures that the test's working directory is cleaned up. The clean-up
  * only happens if the test passes, to help diagnose test failures.  For example:
  * <pre>
- *   public class SomeTest
+ *  {@literal @}TestDirectoryExtension
+ *   class SomeTest
  *   {
- *    {@literal @}Rule
- *     public TestDirectory dir = TestDirectory.testDirectory();
+ *    {@literal @}Inject
+ *     private TestDirectory dir;
  *
  *    {@literal @}Test
- *     public void shouldDoSomething()
+ *     void shouldDoSomething()
  *     {
  *       File storeDir = dir.homeDir();
  *       // do stuff with home dir
@@ -60,9 +57,8 @@ import static java.lang.String.format;
  *   }
  * </pre>
  */
-public class TestDirectory extends ExternalResource
+public class TestDirectory
 {
-
     /**
      * This value is mixed into the hash string, along with the test name,
      * that we use for uniquely naming test directories.
@@ -112,38 +108,8 @@ public class TestDirectory extends ExternalResource
         return new TestDirectory( fs, owningTest );
     }
 
-    @Override
-    public Statement apply( final Statement base, final Description description )
-    {
-        return new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                directoryForDescription( description );
-                try
-                {
-                    base.evaluate();
-                    complete( true );
-                }
-                catch ( Throwable throwable )
-                {
-                    try
-                    {
-                        complete( false );
-                    }
-                    catch ( IOException e )
-                    {
-                        throwable.addSuppressed( e );
-                    }
-                    throw throwable;
-                }
-            }
-        };
-    }
-
     /**
-     * Tell this {@link Rule} to keep the store directory, even after a successful test.
+     * Keep the store directory, even after a successful test.
      * It's just a useful debug mechanism to have for analyzing store after a test.
      * by default directories aren't kept.
      */
@@ -294,11 +260,6 @@ public class TestDirectory extends ExternalResource
     public FileSystemAbstraction getFileSystem()
     {
         return fileSystem;
-    }
-
-    private void directoryForDescription( Description description ) throws IOException
-    {
-        prepareDirectory( description.getTestClass(), description.getMethodName() );
     }
 
     private void ensureFileExists( Path file )

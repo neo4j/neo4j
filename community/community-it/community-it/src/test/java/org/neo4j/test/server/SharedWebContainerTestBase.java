@@ -37,7 +37,7 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
-import static org.neo4j.test.rule.SuppressOutput.suppressAll;
+import static org.neo4j.test.extension.SuppressOutput.suppressAll;
 import static org.neo4j.test.server.WebContainerHolder.release;
 import static org.neo4j.test.server.WebContainerHolder.setWebContainerBuilderProperty;
 

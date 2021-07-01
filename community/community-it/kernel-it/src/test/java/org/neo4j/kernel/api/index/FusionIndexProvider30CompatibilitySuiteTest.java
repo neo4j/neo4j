@@ -17,70 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema;
+package org.neo4j.kernel.api.index;
 
 import java.nio.file.Path;
 
-import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.PropertyIndexProviderCompatibilityTestSuite;
-import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.monitoring.Monitors;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
-public class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
+class FusionIndexProvider30CompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
 {
     @Override
-    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
+    IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
     {
         Monitors monitors = new Monitors();
         String monitorTag = "";
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         var readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
-        return GenericNativeIndexProviderFactory.
-                create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, PageCacheTracer.NULL,
-                        DEFAULT_DATABASE_NAME );
+        return NativeLuceneFusionIndexProviderFactory30.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker,
+                recoveryCleanupWorkCollector, PageCacheTracer.NULL, DEFAULT_DATABASE_NAME );
     }
 
     @Override
-    public boolean supportsSpatial()
+    boolean supportsSpatial()
     {
         return true;
     }
 
     @Override
-    public boolean supportsGranularCompositeQueries()
+    void additionalConfig( Config.Builder configBuilder )
     {
-        return true;
-    }
-
-    @Override
-    public boolean supportsBooleanRangeQueries()
-    {
-        return true;
-    }
-
-    @Override
-    public void consistencyCheck( IndexPopulator populator )
-    {
-        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
-    }
-
-    @Override
-    public void additionalConfig( Config.Builder configBuilder )
-    {
-        configBuilder.set( default_schema_provider, NATIVE_BTREE10.providerName() );
+        configBuilder.set( default_schema_provider, NATIVE30.providerName() );
     }
 }

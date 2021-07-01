@@ -19,9 +19,11 @@
  */
 package org.neo4j.harness;
 
-import org.junit.ClassRule;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runners.model.Statement;
 
 import java.io.IOException;
@@ -44,8 +46,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
 import static java.time.ZoneOffset.UTC;
@@ -56,10 +57,9 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JUnitRuleTestIT
 {
-    @ClassRule
-    public static TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public TemporaryFolder folder = new TemporaryFolder();
+
     @Rule
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (u:User)" )
@@ -75,6 +75,21 @@ public class JUnitRuleTestIT
             } )
             .withUnmanagedExtension( "/test", MyUnmanagedExtension.class );
 
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    private boolean success;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        suppressOutput.captureVoices();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        suppressOutput.releaseVoices( !success );
+    }
+
     @Test
     public void shouldExtensionWork()
     {
@@ -84,6 +99,7 @@ public class JUnitRuleTestIT
 
         // Then
         assertThat( HTTP.GET( neo4j.httpURI().resolve( "test/myExtension" ).toString() ).status() ).isEqualTo( 234 );
+        success = true;
     }
 
     @Test
@@ -98,6 +114,7 @@ public class JUnitRuleTestIT
                 quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
         assertThat( response.get( "results" ).get( 0 ).get( "data" ).size() ).isEqualTo( 2 );
+        success = true;
     }
 
     @Test
@@ -113,13 +130,14 @@ public class JUnitRuleTestIT
             assertEquals( 2, Iterators.count( transaction.execute( "MATCH (n:User) RETURN n" ) ) );
             transaction.commit();
         }
+        success = true;
     }
 
     @Test
     public void shouldRuleWorkWithExistingDirectory() throws Throwable
     {
         // given a root folder, create /databases/neo4j folders.
-        Path oldLayout = testDirectory.homePath( "old" );
+        Path oldLayout = folder.newFolder( "old").toPath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( oldLayout ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
@@ -134,7 +152,7 @@ public class JUnitRuleTestIT
         }
 
         // When a rule with an pre-populated graph db directory is used
-        Path newLayout = testDirectory.homePath( "new" );
+        Path newLayout = folder.newFolder( "new").toPath();
         final Neo4jRule ruleWithDirectory = new Neo4jRule( newLayout ).copyFrom( oldLayout );
         Statement statement = ruleWithDirectory.apply( new Statement()
         {
@@ -157,6 +175,7 @@ public class JUnitRuleTestIT
 
         // Then
         statement.evaluate();
+        success = true;
     }
 
     @Test
@@ -166,6 +185,7 @@ public class JUnitRuleTestIT
 
         assertThat( contentOf( "neo4j.log" ) ).contains( currentOffset );
         assertThat( contentOf( "debug.log" ) ).contains( currentOffset );
+        success = true;
     }
 
     private String contentOf( String file ) throws IOException

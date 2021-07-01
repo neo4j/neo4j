@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
@@ -30,24 +29,19 @@ import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class IndexConfigurationCompletionCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCompatabilityTestBase
 {
-    public IndexConfigurationCompletionCompatibility( IndexProviderCompatibilityTestSuite testSuite )
+    IndexConfigurationCompletionCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
         super( testSuite, testSuite.indexPrototype() );
     }
 
     @Test
-    public void configurationCompletionMustNotOverwriteExistingConfiguration()
+    void configurationCompletionMustNotOverwriteExistingConfiguration()
     {
         IndexDescriptor index = descriptor;
         index = index.withIndexConfig( IndexConfig.with( "Bob", Values.stringValue( "Howard" ) ) );
@@ -56,7 +50,7 @@ public class IndexConfigurationCompletionCompatibility extends IndexProviderComp
     }
 
     @Test
-    public void configurationCompletionMustBeIdempotent()
+    void configurationCompletionMustBeIdempotent()
     {
         IndexDescriptor index = descriptor;
         IndexDescriptor onceCompleted = indexProvider.completeConfiguration( index );
@@ -65,7 +59,7 @@ public class IndexConfigurationCompletionCompatibility extends IndexProviderComp
     }
 
     @Test
-    public void mustAssignCapabilitiesToDescriptorsThatHaveNone()
+    void mustAssignCapabilitiesToDescriptorsThatHaveNone()
     {
         IndexDescriptor index = descriptor;
         IndexDescriptor completed = indexProvider.completeConfiguration( index );
@@ -76,7 +70,7 @@ public class IndexConfigurationCompletionCompatibility extends IndexProviderComp
     }
 
     @Test
-    public void mustNotOverwriteExistingCapabilities()
+    void mustNotOverwriteExistingCapabilities()
     {
         IndexCapability capability = new IndexCapability()
         {

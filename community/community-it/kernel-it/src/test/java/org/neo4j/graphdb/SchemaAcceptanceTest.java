@@ -75,10 +75,10 @@ import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -109,7 +109,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     @Inject
     private EphemeralFileSystemAbstraction fs;
     @Inject
-    private OtherThreadRule otherThreadRule;
+    private OtherThread otherThread;
 
     private final Label otherLabel = Label.label( "MY_OTHER_LABEL" );
     private final RelationshipType relType = RelationshipType.withName( "MY_REL_TYPE" );
@@ -2196,7 +2196,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         // Given
         trapPopulation.set( true );
-        otherThreadRule.execute( () ->
+        otherThread.execute( () ->
         {
             try ( Transaction tx = db.beginTx() )
             {

@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-front-end-parent</artifactId>
+        <version>4.4.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>neo4j-test-util</artifactId>
+    <packaging>jar</packaging>
+    <name>openCypher Test Utils</name>
+
+    <description>Cypher test utilities</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+    <properties>
+        <license-text.header>headers/ASL-2-header.txt</license-text.header>
+        <moduleName>org.neo4j.cypher.internal.test.util</moduleName>
+    </properties>
+
+    <scm>
+        <connection>scm:git:git://github.com/openCypher/front-end.git</connection>
+        <developerConnection>scm:git:git://github.com/openCypher/front-end.git</developerConnection>
+        <url>https://github.com/openCypher/front-end</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_${scala.binary.version}</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+</project>

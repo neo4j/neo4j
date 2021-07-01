@@ -22,8 +22,6 @@ package org.neo4j.test.extension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.test.rule.SuppressOutput;
-
 import static org.assertj.core.api.Assertions.fail;
 
 @ExtendWith( SuppressOutputExtension.class )

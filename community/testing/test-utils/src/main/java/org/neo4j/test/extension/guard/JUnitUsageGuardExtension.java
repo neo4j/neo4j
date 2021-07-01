@@ -49,6 +49,9 @@ public class JUnitUsageGuardExtension implements BeforeAllCallback
         testClasses.removeIf( s -> s.startsWith( "org.junit.platform" ) );
         testClasses.removeIf( s -> s.startsWith( "org.junit.runners.model" ) );
 
+        // Description is required while we still have some junit 4 dependencies
+        testClasses.removeIf( s -> s.equals( "org.junit.runner.Description" ) );
+
         Set<String> newJunitClasses = testClasses.stream().filter( s -> s.startsWith( "org.junit.jupiter" ) ).collect( toSet() );
         if ( newJunitClasses.isEmpty() || noOldJunitUsages( testClasses, newJunitClasses ) )
         {

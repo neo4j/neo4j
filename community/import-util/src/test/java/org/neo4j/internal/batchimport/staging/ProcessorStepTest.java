@@ -33,8 +33,8 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,7 +53,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 class ProcessorStepTest
 {
     @Inject
-    private OtherThreadRule t2;
+    private OtherThread t2;
 
     @Test
     void shouldUpholdProcessOrderingGuarantee() throws Exception

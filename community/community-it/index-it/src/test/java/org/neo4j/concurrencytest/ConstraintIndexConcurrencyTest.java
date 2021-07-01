@@ -38,8 +38,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Threading;
 import org.neo4j.test.extension.ThreadingExtension;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,7 +54,7 @@ class ConstraintIndexConcurrencyTest
     @Inject
     private GraphDatabaseAPI db;
     @Inject
-    private ThreadingRule threads;
+    private Threading threads;
 
     @Test
     void shouldNotAllowConcurrentViolationOfConstraint() throws Exception

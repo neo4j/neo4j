@@ -80,7 +80,6 @@ import org.neo4j.token.api.TokenHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.platform.commons.util.UnrecoverableExceptions.rethrowIfUnrecoverable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -280,7 +279,6 @@ abstract class OperationsTest
         }
         catch ( Throwable t )
         {
-            rethrowIfUnrecoverable( t );
             throw new AssertionFailedError( "Unexpected exception thrown: " + t.getMessage(), t );
         }
     }

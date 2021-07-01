@@ -41,9 +41,9 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
@@ -70,7 +70,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
     protected static final String COMPOSITE_PROPERTY_2 = "prop2";
 
     @Inject
-    private OtherThreadRule otherThreadRule;
+    private OtherThread otherThread;
     @Inject
     private RandomRule random;
 
@@ -621,7 +621,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
     private void concurrentInsert( Object value ) throws InterruptedException, java.util.concurrent.ExecutionException
     {
-        otherThreadRule.execute( () ->
+        otherThread.execute( () ->
         {
             try ( KernelTransaction otherTx = beginTransaction() )
             {

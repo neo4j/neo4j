@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,9 +49,9 @@ import org.neo4j.values.storable.Values;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
@@ -63,14 +62,9 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
+abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
 {
-    public SimpleIndexPopulatorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
+    SimpleIndexPopulatorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
     }
@@ -78,11 +72,11 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
     final IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
 
     @Test
-    public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
+    void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
         String failure = "The contrived failure";
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         // WHEN (this will attempt to call close)
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
                 p -> p.markAsFailed( failure ), false );
@@ -91,10 +85,10 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
     }
 
     @Test
-    public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
+    void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
     {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
         {
             String failure = "The contrived failure";
@@ -109,10 +103,10 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
     }
 
     @Test
-    public void shouldBeAbleToDropAClosedIndexPopulator()
+    void shouldBeAbleToDropAClosedIndexPopulator()
     {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         p.close( false, NULL );
 
@@ -123,10 +117,10 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
     }
 
     @Test
-    public void shouldApplyUpdatesIdempotently() throws Exception
+    void shouldApplyUpdatesIdempotently() throws Exception
     {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         final Value propertyValue = Values.of( "value1" );
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
         {
@@ -156,7 +150,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
     }
 
     @Test
-    public void shouldPopulateWithAllValues() throws Exception
+    void shouldPopulateWithAllValues() throws Exception
     {
         // GIVEN
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
@@ -167,7 +161,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
     }
 
     @Test
-    public void shouldUpdateWithAllValuesDuringPopulation() throws Exception
+    void shouldUpdateWithAllValuesDuringPopulation() throws Exception
     {
         // GIVEN
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
@@ -186,7 +180,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
     }
 
     @Test
-    public void shouldPopulateAndUpdate() throws Exception
+    void shouldPopulateAndUpdate() throws Exception
     {
         // GIVEN
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
@@ -242,7 +236,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
      * It's important that the secondBatch has ids that are lower than the first batch to align with example described above.
      */
     @Test
-    public void shouldPopulateAndRemoveEntriesWithSimilarMinimalSplitter() throws Exception
+    void shouldPopulateAndRemoveEntriesWithSimilarMinimalSplitter() throws Exception
     {
         String prefix = "Work out your own salvation. Do not depend on others. ";
         int nbrOfNodes = 200;
@@ -303,7 +297,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
                         anyHits = true;
                         nodesStillLeft.add( Long.toString( nodes.next() ) );
                     }
-                    assertFalse( "Expected this query to have zero hits but found " + nodesStillLeft, anyHits );
+                    assertFalse( anyHits, "Expected this query to have zero hits but found " + nodesStillLeft );
                 }
             }
         }
@@ -341,16 +335,15 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
         }
     }
 
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class General extends SimpleIndexPopulatorCompatibility
+    abstract static class General extends SimpleIndexPopulatorCompatibility
     {
-        public General( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        General( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, testSuite.indexPrototype() );
         }
 
         @Test
-        public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
+        void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
         {
             // when
             long offset = valueSet1.size();
@@ -363,7 +356,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
             {
-                try ( ValueIndexReader reader = (ValueIndexReader) accessor.newValueReader() )
+                try ( ValueIndexReader reader = accessor.newValueReader() )
                 {
                     int propertyKeyId = descriptor.schema().getPropertyId();
                     for ( NodeAndValue entry : valueSet1 )
@@ -371,7 +364,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
                         try ( NodeValueIterator nodes = new NodeValueIterator() )
                         {
                             reader.query( NULL_CONTEXT, nodes, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
-                            assertEquals( entry.value.toString(), asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
+                            assertEquals( asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ), entry.value.toString() );
                         }
                     }
                 }
@@ -379,10 +372,9 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
         }
     }
 
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class Unique extends SimpleIndexPopulatorCompatibility
+    abstract static class Unique extends SimpleIndexPopulatorCompatibility
     {
-        public Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, PropertyIndexProviderCompatibilityTestSuite.uniqueIndexPrototype() );
         }
@@ -391,7 +383,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
          * This is also checked by the UniqueConstraintCompatibility test, only not on this abstraction level.
          */
         @Test
-        public void shouldProvidePopulatorThatEnforcesUniqueConstraints() throws Exception
+        void shouldProvidePopulatorThatEnforcesUniqueConstraints() throws Exception
         {
             // when
             Value value = Values.of( "value1" );

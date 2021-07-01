@@ -26,8 +26,8 @@ import org.junit.jupiter.api.parallel.Resources;
 
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

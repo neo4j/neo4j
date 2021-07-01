@@ -45,8 +45,8 @@ import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;

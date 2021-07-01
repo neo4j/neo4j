@@ -27,6 +27,8 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
+  org.apiguardian:apiguardian-api
+  org.opentest4j:opentest4j
 
 BSD License
   asm
@@ -42,6 +44,12 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+Eclipse Public License v2.0
+  JUnit Jupiter (Aggregator)
+  JUnit Jupiter API
+  JUnit Jupiter Params
+  JUnit Platform Commons
 
 GNU Lesser General Public License, Version 2.1
   Java Native Access

@@ -27,8 +27,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport
 {
     @Inject
-    private OtherThreadRule otherThread;
+    private OtherThread otherThread;
 
     @MethodSource( "entityTypeProvider" )
     @ParameterizedTest

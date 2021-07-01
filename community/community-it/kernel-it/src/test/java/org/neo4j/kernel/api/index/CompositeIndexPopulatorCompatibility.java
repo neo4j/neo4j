@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -36,8 +34,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
@@ -47,31 +45,25 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class CompositeIndexPopulatorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
+abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
 {
     CompositeIndexPopulatorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
     }
 
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class General extends CompositeIndexPopulatorCompatibility
+    abstract static class General extends CompositeIndexPopulatorCompatibility
     {
-        public General( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        General( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 200 ) ) );
         }
 
         @Test
-        public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
+        void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
         {
             // when
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
                     p -> p.add( Arrays.asList(
                     add( 1, descriptor, Values.of( "v1" ), Values.of( "v2" ) ),
@@ -91,8 +83,7 @@ public class CompositeIndexPopulatorCompatibility extends PropertyIndexProviderC
         }
     }
 
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class Unique extends CompositeIndexPopulatorCompatibility
+    abstract static class Unique extends CompositeIndexPopulatorCompatibility
     {
         Value value1 = Values.of( "value1" );
         Value value2 = Values.of( "value2" );
@@ -100,16 +91,16 @@ public class CompositeIndexPopulatorCompatibility extends PropertyIndexProviderC
         int nodeId1 = 3;
         int nodeId2 = 4;
 
-        public Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, IndexPrototype.uniqueForSchema( forLabel( 1000, 100, 200 ) ) );
         }
 
         @Test
-        public void shouldEnforceUniqueConstraintsDirectly() throws Exception
+        void shouldEnforceUniqueConstraintsDirectly() throws Exception
         {
             // when
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
             {
                 try
@@ -136,10 +127,10 @@ public class CompositeIndexPopulatorCompatibility extends PropertyIndexProviderC
         }
 
         @Test
-        public void shouldNotRestrictUpdatesDifferingOnSecondProperty() throws Exception
+        void shouldNotRestrictUpdatesDifferingOnSecondProperty() throws Exception
         {
             // given
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
             {
                 // when

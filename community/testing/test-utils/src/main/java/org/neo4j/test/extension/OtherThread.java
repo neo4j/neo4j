@@ -17,12 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule;
+package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -32,19 +29,19 @@ import org.neo4j.test.OtherThreadExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class OtherThreadRule implements TestRule
+public class OtherThread
 {
     private String name;
     private long timeout;
     private TimeUnit unit;
     private volatile OtherThreadExecutor executor;
 
-    public OtherThreadRule()
+    public OtherThread()
     {
         this( null );
     }
 
-    private OtherThreadRule( String name )
+    private OtherThread( String name )
     {
         set( name, 60, SECONDS );
     }
@@ -119,37 +116,6 @@ public class OtherThreadRule implements TestRule
         {
             executor = null;
         }
-    }
-
-    @Override
-    public Statement apply( final Statement base, final Description description )
-    {
-        return new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                String threadName = name != null
-                        ? name + "-" + description.getDisplayName()
-                        : description.getDisplayName();
-                init( threadName );
-                try
-                {
-                    base.evaluate();
-                }
-                finally
-                {
-                    try
-                    {
-                        executor.close();
-                    }
-                    finally
-                    {
-                        executor = null;
-                    }
-                }
-            }
-        };
     }
 
     public void init( String threadName )

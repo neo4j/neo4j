@@ -19,37 +19,30 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending TokenIndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class TokenIndexPopulatorCompatibility extends TokenIndexProviderCompatibilityTestSuite.Compatibility
+abstract class TokenIndexPopulatorCompatibility extends TokenIndexProviderCompatibilityTestSuite.Compatibility
 {
-    public TokenIndexPopulatorCompatibility( TokenIndexProviderCompatibilityTestSuite testSuite )
+    TokenIndexPopulatorCompatibility( TokenIndexProviderCompatibilityTestSuite testSuite )
     {
         super( testSuite, testSuite.indexPrototype() );
     }
 
     @Test
-    public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
+    void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
         String failure = "The contrived failure";
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         // WHEN (this will attempt to call close)
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
                 p -> p.markAsFailed( failure ), false );
@@ -58,10 +51,10 @@ public class TokenIndexPopulatorCompatibility extends TokenIndexProviderCompatib
     }
 
     @Test
-    public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
+    void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
     {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
         {
             String failure = "The contrived failure";
@@ -76,10 +69,10 @@ public class TokenIndexPopulatorCompatibility extends TokenIndexProviderCompatib
     }
 
     @Test
-    public void shouldBeAbleToDropAClosedIndexPopulator()
+    void shouldBeAbleToDropAClosedIndexPopulator()
     {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         p.close( false, NULL );
 

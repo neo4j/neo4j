@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -74,8 +73,9 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Pair.of;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -101,12 +101,7 @@ import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
+abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     CompositeIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
@@ -116,49 +111,49 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     /* testIndexSeekAndScan */
 
     @Test
-    public void testIndexScanAndSeekExactWithExactByString() throws Exception
+    void testIndexScanAndSeekExactWithExactByString() throws Exception
     {
         testIndexScanAndSeekExactWithExact( "a", "b" );
     }
 
     @Test
-    public void testIndexScanAndSeekExactWithExactByNumber() throws Exception
+    void testIndexScanAndSeekExactWithExactByNumber() throws Exception
     {
         testIndexScanAndSeekExactWithExact( 333, 101 );
     }
 
     @Test
-    public void testIndexScanAndSeekExactWithExactByBoolean() throws Exception
+    void testIndexScanAndSeekExactWithExactByBoolean() throws Exception
     {
         testIndexScanAndSeekExactWithExact( true, false );
     }
 
     @Test
-    public void testIndexScanAndSeekExactWithExactByTemporal() throws Exception
+    void testIndexScanAndSeekExactWithExactByTemporal() throws Exception
     {
         testIndexScanAndSeekExactWithExact( epochDate( 303 ), epochDate( 101 ) );
     }
 
     @Test
-    public void testIndexScanAndSeekExactWithExactByStringArray() throws Exception
+    void testIndexScanAndSeekExactWithExactByStringArray() throws Exception
     {
         testIndexScanAndSeekExactWithExact( new String[]{"a", "c"}, new String[]{"b", "c"} );
     }
 
     @Test
-    public void testIndexScanAndSeekExactWithExactByNumberArray() throws Exception
+    void testIndexScanAndSeekExactWithExactByNumberArray() throws Exception
     {
         testIndexScanAndSeekExactWithExact( new int[]{333, 900}, new int[]{101, 900} );
     }
 
     @Test
-    public void testIndexScanAndSeekExactWithExactByBooleanArray() throws Exception
+    void testIndexScanAndSeekExactWithExactByBooleanArray() throws Exception
     {
         testIndexScanAndSeekExactWithExact( new boolean[]{true, true}, new boolean[]{false, true} );
     }
 
     @Test
-    public void testIndexScanAndSeekExactWithExactByTemporalArray() throws Exception
+    void testIndexScanAndSeekExactWithExactByTemporalArray() throws Exception
     {
         testIndexScanAndSeekExactWithExact( dateArray( 333, 900 ), dateArray( 101, 900 ) );
     }
@@ -182,9 +177,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexScanAndSeekExactWithExactByPoint() throws Exception
+    void testIndexScanAndSeekExactWithExactByPoint() throws Exception
     {
-        Assume.assumeTrue( "Assume support for spatial", testSuite.supportsSpatial() );
+        assumeTrue( testSuite.supportsSpatial(), "Assume support for spatial" );
 
         PointValue gps = pointValue( WGS84, 12.6, 56.7 );
         PointValue car = pointValue( Cartesian, 12.6, 56.7 );
@@ -212,7 +207,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     /* testIndexExactAndRangeExact_Range */
 
     @Test
-    public void testIndexSeekExactWithRangeByString() throws Exception
+    void testIndexSeekExactWithRangeByString() throws Exception
     {
         testIndexSeekExactWithRange( Values.of( "a" ), Values.of( "b" ),
                 Values.of( "Anabelle" ),
@@ -223,7 +218,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekExactWithRangeByNumber() throws Exception
+    void testIndexSeekExactWithRangeByNumber() throws Exception
     {
         testIndexSeekExactWithRange( Values.of( 303 ), Values.of( 101 ),
                 Values.of( 111 ),
@@ -234,7 +229,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekExactWithRangeByTemporal() throws Exception
+    void testIndexSeekExactWithRangeByTemporal() throws Exception
     {
         testIndexSeekExactWithRange( epochDate( 303 ), epochDate( 101 ),
                 epochDate( 111 ),
@@ -245,9 +240,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekExactWithRangeByBoolean() throws Exception
+    void testIndexSeekExactWithRangeByBoolean() throws Exception
     {
-        Assume.assumeTrue( "Assume support for boolean range queries", testSuite.supportsBooleanRangeQueries() );
+        assumeTrue( testSuite.supportsBooleanRangeQueries(), "Assume support for boolean range queries" );
 
         testIndexSeekExactWithRangeByBooleanType( BooleanValue.TRUE, BooleanValue.FALSE,
                 BooleanValue.FALSE,
@@ -255,7 +250,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekExactWithRangeByStringArray() throws Exception
+    void testIndexSeekExactWithRangeByStringArray() throws Exception
     {
         testIndexSeekExactWithRange( stringArray( "a", "c" ), stringArray( "b", "c" ),
                 stringArray( "Anabelle", "c" ),
@@ -267,7 +262,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekExactWithRangeByNumberArray() throws Exception
+    void testIndexSeekExactWithRangeByNumberArray() throws Exception
     {
         testIndexSeekExactWithRange( longArray( new long[]{333, 9000} ), longArray( new long[]{101, 900} ),
                 longArray( new long[]{111, 900} ),
@@ -279,7 +274,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekExactWithRangeByBooleanArray() throws Exception
+    void testIndexSeekExactWithRangeByBooleanArray() throws Exception
     {
         testIndexSeekExactWithRange( booleanArray( new boolean[]{true, true} ), booleanArray( new boolean[]{false, false} ),
                 booleanArray( new boolean[]{false, false} ),
@@ -291,7 +286,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekExactWithRangeByTemporalArray() throws Exception
+    void testIndexSeekExactWithRangeByTemporalArray() throws Exception
     {
         testIndexSeekExactWithRange( dateArray( 303, 900 ), dateArray( 101, 900 ),
                 dateArray( 111, 900 ),
@@ -302,7 +297,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekExactWithRangeBySpatial() throws Exception
+    void testIndexSeekExactWithRangeBySpatial() throws Exception
     {
         testIndexSeekExactWithRange( intValue( 100 ), intValue( 10 ),
                 pointValue( WGS84, -10D, -10D ),
@@ -315,7 +310,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     private void testIndexSeekExactWithRange( Value base1, Value base2, Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 )
             throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
 
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), base1, obj1 ),
@@ -403,9 +398,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     /* stringPrefix */
 
     @Test
-    public void testIndexSeekExactWithPrefixRangeByString() throws Exception
+    void testIndexSeekExactWithPrefixRangeByString() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
 
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), "a", "a" ),
@@ -430,9 +425,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekPrefixRangeWithExistsByString() throws Exception
+    void testIndexSeekPrefixRangeWithExistsByString() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
 
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), "a", 1 ),
@@ -457,61 +452,61 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     /* testIndexSeekExactWithExists */
 
     @Test
-    public void testIndexSeekExactWithExistsByString() throws Exception
+    void testIndexSeekExactWithExistsByString() throws Exception
     {
         testIndexSeekExactWithExists( "a", "b" );
     }
 
     @Test
-    public void testIndexSeekExactWithExistsByNumber() throws Exception
+    void testIndexSeekExactWithExistsByNumber() throws Exception
     {
         testIndexSeekExactWithExists( 303, 101 );
     }
 
     @Test
-    public void testIndexSeekExactWithExistsByTemporal() throws Exception
+    void testIndexSeekExactWithExistsByTemporal() throws Exception
     {
         testIndexSeekExactWithExists( epochDate( 303 ), epochDate( 101 ) );
     }
 
     @Test
-    public void testIndexSeekExactWithExistsByBoolean() throws Exception
+    void testIndexSeekExactWithExistsByBoolean() throws Exception
     {
         testIndexSeekExactWithExists( true, false );
     }
 
     @Test
-    public void testIndexSeekExactWithExistsByStringArray() throws Exception
+    void testIndexSeekExactWithExistsByStringArray() throws Exception
     {
         testIndexSeekExactWithExists( new String[]{"a", "c"}, new String[]{"b", "c"} );
     }
 
     @Test
-    public void testIndexSeekExactWithExistsByNumberArray() throws Exception
+    void testIndexSeekExactWithExistsByNumberArray() throws Exception
     {
         testIndexSeekExactWithExists( new long[]{303, 900}, new long[]{101, 900} );
     }
 
     @Test
-    public void testIndexSeekExactWithExistsByBooleanArray() throws Exception
+    void testIndexSeekExactWithExistsByBooleanArray() throws Exception
     {
         testIndexSeekExactWithExists( new boolean[]{true, true}, new boolean[]{false, true} );
     }
 
     @Test
-    public void testIndexSeekExactWithExistsByTemporalArray() throws Exception
+    void testIndexSeekExactWithExistsByTemporalArray() throws Exception
     {
         testIndexSeekExactWithExists( dateArray( 303, 900 ), dateArray( 101, 900 ) );
     }
 
     @Test
-    public void testIndexSeekExactWithExistsBySpatial() throws Exception
+    void testIndexSeekExactWithExistsBySpatial() throws Exception
     {
         testIndexSeekExactWithExists( pointValue( WGS84, 100D, 90D ), pointValue( WGS84, 0D, 0D ) );
     }
 
     @Test
-    public void testIndexSeekExactWithExistsBySpatialArray() throws Exception
+    void testIndexSeekExactWithExistsBySpatialArray() throws Exception
     {
         testIndexSeekExactWithExists(
                 pointArray( new PointValue[] {pointValue( Cartesian, 100D, 100D ), pointValue( Cartesian, 101D, 101D )} ),
@@ -525,7 +520,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
 
     private void testIndexSeekExactWithExists( Value a, Value b ) throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), a, Values.of( 1 ) ),
                 add( 2L, descriptor.schema(), b, Values.of( "abv" ) ),
@@ -538,19 +533,19 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     /* testIndexSeekRangeWithExists */
 
     @Test
-    public void testIndexSeekRangeWithExistsByString() throws Exception
+    void testIndexSeekRangeWithExistsByString() throws Exception
     {
         testIndexSeekRangeWithExists( "Anabelle", "Anna", "Bob", "Harriet", "William" );
     }
 
     @Test
-    public void testIndexSeekRangeWithExistsByNumber() throws Exception
+    void testIndexSeekRangeWithExistsByNumber() throws Exception
     {
         testIndexSeekRangeWithExists( -5, 0, 5.5, 10.0, 100.0 );
     }
 
     @Test
-    public void testIndexSeekRangeWithExistsByTemporal() throws Exception
+    void testIndexSeekRangeWithExistsByTemporal() throws Exception
     {
         DateTimeValue d1 = datetime( 9999, 100, ZoneId.of( "+18:00" ) );
         DateTimeValue d2 = datetime( 10000, 100, ZoneId.of( "UTC" ) );
@@ -561,10 +556,10 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekRangeWithExistsByBoolean() throws Exception
+    void testIndexSeekRangeWithExistsByBoolean() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
-        Assume.assumeTrue( "Assume support for boolean range queries", testSuite.supportsBooleanRangeQueries() );
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
+        assumeTrue( testSuite.supportsBooleanRangeQueries(), "Assume support for boolean range queries" );
 
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), false, "someString" ),
@@ -580,7 +575,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekRangeWithExistsByStringArray() throws Exception
+    void testIndexSeekRangeWithExistsByStringArray() throws Exception
     {
         testIndexSeekRangeWithExists(
                 new String[]{"Anabelle", "Anabelle"},
@@ -591,7 +586,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekRangeWithExistsByNumberArray() throws Exception
+    void testIndexSeekRangeWithExistsByNumberArray() throws Exception
     {
         testIndexSeekRangeWithExists(
                 new long[]{303, 303},
@@ -602,7 +597,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekRangeWithExistsByBooleanArray() throws Exception
+    void testIndexSeekRangeWithExistsByBooleanArray() throws Exception
     {
         testIndexSeekRangeWithExists(
                 new boolean[]{false, false},
@@ -613,7 +608,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekRangeWithExistsByTemporalArray() throws Exception
+    void testIndexSeekRangeWithExistsByTemporalArray() throws Exception
     {
         testIndexSeekRangeWithExists(
                 dateArray( 303, 303 ),
@@ -624,7 +619,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekRangeWithExistsBySpatial() throws Exception
+    void testIndexSeekRangeWithExistsBySpatial() throws Exception
     {
         testIndexSeekRangeWithExists(
                 pointValue( Cartesian, 0D, 0D ),
@@ -635,7 +630,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testIndexSeekRangeWithExistsBySpatialArray() throws Exception
+    void testIndexSeekRangeWithExistsBySpatialArray() throws Exception
     {
         testIndexSeekRangeWithExists(
                 pointArray( new PointValue[] {pointValue( Cartesian, 0D, 0D ), pointValue( Cartesian, 0D, 1D )} ),
@@ -646,7 +641,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void testExactMatchOnRandomCompositeValues() throws Exception
+    void testExactMatchOnRandomCompositeValues() throws Exception
     {
         // given
         ValueType[] types = randomSetOfSupportedTypes();
@@ -672,7 +667,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         {
             // then
             List<Long> hits = query( exact( 0, update.values()[0] ), exact( 1, update.values()[1] ) );
-            assertEquals( update.describe( tokenNameLookup ) + " " + hits, 1, hits.size() );
+            assertEquals( 1, hits.size(), update.describe( tokenNameLookup ) + " " + hits );
             assertThat( single( hits ) ).isEqualTo( update.getEntityId() );
         }
     }
@@ -684,7 +679,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
 
     private void testIndexSeekRangeWithExists( Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 ) throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), obj1, Values.of( 100 ) ),
                 add( 2L, descriptor.schema(), obj2, Values.of( "someString" ) ),
@@ -712,7 +707,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     /* IndexOrder */
 
     @Test
-    public void shouldRangeSeekInOrderNumberAscending() throws Exception
+    void shouldRangeSeekInOrderNumberAscending() throws Exception
     {
         Object o0 = 0;
         Object o1 = 1;
@@ -724,7 +719,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderNumberDescending() throws Exception
+    void shouldRangeSeekInOrderNumberDescending() throws Exception
     {
         Object o0 = 0;
         Object o1 = 1;
@@ -736,7 +731,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderStringAscending() throws Exception
+    void shouldRangeSeekInOrderStringAscending() throws Exception
     {
         Object o0 = "0";
         Object o1 = "1";
@@ -748,7 +743,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderStringDescending() throws Exception
+    void shouldRangeSeekInOrderStringDescending() throws Exception
     {
         Object o0 = "0";
         Object o1 = "1";
@@ -760,7 +755,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDate() throws Exception
+    void shouldRangeSeekInOrderAscendingDate() throws Exception
     {
         Object o0 = DateValue.epochDateRaw( 0 );
         Object o1 = DateValue.epochDateRaw( 1 );
@@ -772,7 +767,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDate() throws Exception
+    void shouldRangeSeekInOrderDescendingDate() throws Exception
     {
         Object o0 = DateValue.epochDateRaw( 0 );
         Object o1 = DateValue.epochDateRaw( 1 );
@@ -784,7 +779,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingLocalTime() throws Exception
+    void shouldRangeSeekInOrderAscendingLocalTime() throws Exception
     {
         Object o0 = LocalTimeValue.localTimeRaw( 0 );
         Object o1 = LocalTimeValue.localTimeRaw( 1 );
@@ -796,7 +791,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingLocalTime() throws Exception
+    void shouldRangeSeekInOrderDescendingLocalTime() throws Exception
     {
         Object o0 = LocalTimeValue.localTimeRaw( 0 );
         Object o1 = LocalTimeValue.localTimeRaw( 1 );
@@ -808,7 +803,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingTime() throws Exception
+    void shouldRangeSeekInOrderAscendingTime() throws Exception
     {
         Object o0 = TimeValue.timeRaw( 0, ZoneOffset.ofHours( 0 ) );
         Object o1 = TimeValue.timeRaw( 1, ZoneOffset.ofHours( 0 ) );
@@ -820,7 +815,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingTime() throws Exception
+    void shouldRangeSeekInOrderDescendingTime() throws Exception
     {
         Object o0 = TimeValue.timeRaw( 0, ZoneOffset.ofHours( 0 ) );
         Object o1 = TimeValue.timeRaw( 1, ZoneOffset.ofHours( 0 ) );
@@ -832,7 +827,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingLocalDateTime() throws Exception
+    void shouldRangeSeekInOrderAscendingLocalDateTime() throws Exception
     {
         Object o0 = LocalDateTimeValue.localDateTimeRaw( 10, 0 );
         Object o1 = LocalDateTimeValue.localDateTimeRaw( 10, 1 );
@@ -844,7 +839,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingLocalDateTime() throws Exception
+    void shouldRangeSeekInOrderDescendingLocalDateTime() throws Exception
     {
         Object o0 = LocalDateTimeValue.localDateTimeRaw( 10, 0 );
         Object o1 = LocalDateTimeValue.localDateTimeRaw( 10, 1 );
@@ -856,7 +851,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDateTime() throws Exception
+    void shouldRangeSeekInOrderAscendingDateTime() throws Exception
     {
         Object o0 = DateTimeValue.datetimeRaw( 1, 0, ZoneId.of( "UTC" ) );
         Object o1 = DateTimeValue.datetimeRaw( 1, 1, ZoneId.of( "UTC" ) );
@@ -868,7 +863,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDateTime() throws Exception
+    void shouldRangeSeekInOrderDescendingDateTime() throws Exception
     {
         Object o0 = DateTimeValue.datetimeRaw( 1, 0, ZoneId.of( "UTC" ) );
         Object o1 = DateTimeValue.datetimeRaw( 1, 1, ZoneId.of( "UTC" ) );
@@ -880,7 +875,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDuration() throws Exception
+    void shouldRangeSeekInOrderAscendingDuration() throws Exception
     {
         Object o0 = Duration.ofMillis( 0 );
         Object o1 = Duration.ofMillis( 1 );
@@ -892,7 +887,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDuration() throws Exception
+    void shouldRangeSeekInOrderDescendingDuration() throws Exception
     {
         Object o0 = Duration.ofMillis( 0 );
         Object o1 = Duration.ofMillis( 1 );
@@ -904,7 +899,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingNumberArray() throws Exception
+    void shouldRangeSeekInOrderAscendingNumberArray() throws Exception
     {
         Object o0 = new int[]{0};
         Object o1 = new int[]{1};
@@ -916,7 +911,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingNumberArray() throws Exception
+    void shouldRangeSeekInOrderDescendingNumberArray() throws Exception
     {
         Object o0 = new int[]{0};
         Object o1 = new int[]{1};
@@ -928,7 +923,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingStringArray() throws Exception
+    void shouldRangeSeekInOrderAscendingStringArray() throws Exception
     {
         Object o0 = new String[]{"0"};
         Object o1 = new String[]{"1"};
@@ -940,7 +935,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingStringArray() throws Exception
+    void shouldRangeSeekInOrderDescendingStringArray() throws Exception
     {
         Object o0 = new String[]{"0"};
         Object o1 = new String[]{"1"};
@@ -952,7 +947,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingBooleanArray() throws Exception
+    void shouldRangeSeekInOrderAscendingBooleanArray() throws Exception
     {
         Object o0 = new boolean[]{false};
         Object o1 = new boolean[]{false, false};
@@ -964,7 +959,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingBooleanArray() throws Exception
+    void shouldRangeSeekInOrderDescendingBooleanArray() throws Exception
     {
         Object o0 = new boolean[]{false};
         Object o1 = new boolean[]{false, false};
@@ -976,7 +971,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDateTimeArray() throws Exception
+    void shouldRangeSeekInOrderAscendingDateTimeArray() throws Exception
     {
         Object o0 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 0, ZoneId.of( "UTC" ) )};
         Object o1 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 1, ZoneId.of( "UTC" ) )};
@@ -988,7 +983,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDateTimeArray() throws Exception
+    void shouldRangeSeekInOrderDescendingDateTimeArray() throws Exception
     {
         Object o0 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 0, ZoneId.of( "UTC" ) )};
         Object o1 = new ZonedDateTime[]{ZonedDateTime.of( 10, 10, 10, 10, 10, 10, 1, ZoneId.of( "UTC" ) )};
@@ -1000,7 +995,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingLocalDateTimeArray() throws Exception
+    void shouldRangeSeekInOrderAscendingLocalDateTimeArray() throws Exception
     {
         Object o0 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 0 )};
         Object o1 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 1 )};
@@ -1012,7 +1007,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingLocalDateTimeArray() throws Exception
+    void shouldRangeSeekInOrderDescendingLocalDateTimeArray() throws Exception
     {
         Object o0 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 0 )};
         Object o1 = new LocalDateTime[]{LocalDateTime.of( 10, 10, 10, 10, 10, 10, 1 )};
@@ -1024,7 +1019,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingTimeArray() throws Exception
+    void shouldRangeSeekInOrderAscendingTimeArray() throws Exception
     {
         Object o0 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 0, ZoneOffset.ofHours( 0 ) )};
         Object o1 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 1, ZoneOffset.ofHours( 0 ) )};
@@ -1036,7 +1031,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingTimeArray() throws Exception
+    void shouldRangeSeekInOrderDescendingTimeArray() throws Exception
     {
         Object o0 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 0, ZoneOffset.ofHours( 0 ) )};
         Object o1 = new OffsetTime[]{OffsetTime.of( 10, 10, 10, 1, ZoneOffset.ofHours( 0 ) )};
@@ -1048,7 +1043,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDateArray() throws Exception
+    void shouldRangeSeekInOrderAscendingDateArray() throws Exception
     {
         Object o0 = new LocalDate[]{LocalDate.of( 10, 10, 1 )};
         Object o1 = new LocalDate[]{LocalDate.of( 10, 10, 2 )};
@@ -1060,7 +1055,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDateArray() throws Exception
+    void shouldRangeSeekInOrderDescendingDateArray() throws Exception
     {
         Object o0 = new LocalDate[]{LocalDate.of( 10, 10, 1 )};
         Object o1 = new LocalDate[]{LocalDate.of( 10, 10, 2 )};
@@ -1072,7 +1067,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingLocalTimeArray() throws Exception
+    void shouldRangeSeekInOrderAscendingLocalTimeArray() throws Exception
     {
         Object o0 = new LocalTime[]{LocalTime.of( 10, 0 )};
         Object o1 = new LocalTime[]{LocalTime.of( 10, 1 )};
@@ -1084,7 +1079,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingLocalTimeArray() throws Exception
+    void shouldRangeSeekInOrderDescendingLocalTimeArray() throws Exception
     {
         Object o0 = new LocalTime[]{LocalTime.of( 10, 0 )};
         Object o1 = new LocalTime[]{LocalTime.of( 10, 1 )};
@@ -1096,7 +1091,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderAscendingDurationArray() throws Exception
+    void shouldRangeSeekInOrderAscendingDurationArray() throws Exception
     {
         Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
         Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
@@ -1108,7 +1103,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRangeSeekInOrderDescendingDurationArray() throws Exception
+    void shouldRangeSeekInOrderDescendingDurationArray() throws Exception
     {
         Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
         Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
@@ -1127,11 +1122,11 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         IndexOrderCapability indexOrders = orderCapability( exact, range );
         if ( order == IndexOrder.ASCENDING )
         {
-            Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsAsc() );
+            assumeTrue( indexOrders.supportsAsc(), "Assume support for order " + order );
         }
         else if ( order == IndexOrder.DESCENDING )
         {
-            Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsDesc() );
+            assumeTrue( indexOrders.supportsDesc(), "Assume support for order " + order );
         }
 
         updateAndCommit( asList(
@@ -1179,9 +1174,9 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
      * ! ? not ok
      */
     @Test
-    public void mustThrowOnIllegalCompositeQueriesAndMustNotThrowOnLegalQueries() throws Exception
+    void mustThrowOnIllegalCompositeQueriesAndMustNotThrowOnLegalQueries() throws Exception
     {
-        Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
 
         // given
         Value someValue = Values.of( true );
@@ -1276,7 +1271,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldUpdateEntries() throws Exception
+    void shouldUpdateEntries() throws Exception
     {
         ValueType[] valueTypes = testSuite.supportedValueTypes();
         long entityId = random.nextLong( 1_000_000_000 );
@@ -1303,7 +1298,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     @Test
-    public void shouldRemoveEntries() throws Exception
+    void shouldRemoveEntries() throws Exception
     {
         ValueType[] valueTypes = testSuite.supportedValueTypes();
         long entityId = random.nextLong( 1_000_000_000 );
@@ -1328,75 +1323,73 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     // This behaviour is expected by General indexes
-
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class General extends CompositeIndexAccessorCompatibility
+    abstract static class General extends CompositeIndexAccessorCompatibility
     {
-        public General( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        General( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 200 ) ) );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByString() throws Exception
+        void testDuplicatesInIndexSeekByString() throws Exception
         {
             Object value = "a";
             testDuplicatesInIndexSeek( value );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByNumber() throws Exception
+        void testDuplicatesInIndexSeekByNumber() throws Exception
         {
             testDuplicatesInIndexSeek( 333 );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByPoint() throws Exception
+        void testDuplicatesInIndexSeekByPoint() throws Exception
         {
-            Assume.assumeTrue( "Assume support for spatial", testSuite.supportsSpatial() );
+            assumeTrue( testSuite.supportsSpatial(), "Assume support for spatial" );
             testDuplicatesInIndexSeek( pointValue( WGS84, 12.6, 56.7 ) );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByBoolean() throws Exception
+        void testDuplicatesInIndexSeekByBoolean() throws Exception
         {
             testDuplicatesInIndexSeek( true );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByTemporal() throws Exception
+        void testDuplicatesInIndexSeekByTemporal() throws Exception
         {
             testDuplicatesInIndexSeek( ofEpochDay( 303 ) );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByStringArray() throws Exception
+        void testDuplicatesInIndexSeekByStringArray() throws Exception
         {
             testDuplicatesInIndexSeek( new String[]{"anabelle", "anabollo"} );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByNumberArray() throws Exception
+        void testDuplicatesInIndexSeekByNumberArray() throws Exception
         {
             testDuplicatesInIndexSeek( new long[]{303, 606} );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByBooleanArray() throws Exception
+        void testDuplicatesInIndexSeekByBooleanArray() throws Exception
         {
             testDuplicatesInIndexSeek( new boolean[]{true, false} );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByTemporalArray() throws Exception
+        void testDuplicatesInIndexSeekByTemporalArray() throws Exception
         {
             testDuplicatesInIndexSeek( dateArray( 303, 606 ) );
         }
 
         @Test
-        public void testDuplicatesInIndexSeekByPointArray() throws Exception
+        void testDuplicatesInIndexSeekByPointArray() throws Exception
         {
-            Assume.assumeTrue( "Assume support for spatial", testSuite.supportsSpatial() );
+            assumeTrue( testSuite.supportsSpatial(), "Assume support for spatial" );
             testDuplicatesInIndexSeek( pointArray( new PointValue[]{
                     pointValue( WGS84, 12.6, 56.7 ),
                     pointValue( WGS84, 12.6, 56.7 )
@@ -1419,17 +1412,15 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     }
 
     // This behaviour is expected by Unique indexes
-
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class Unique extends CompositeIndexAccessorCompatibility
+    abstract static class Unique extends CompositeIndexAccessorCompatibility
     {
-        public Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
+        Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, IndexPrototype.uniqueForSchema( forLabel( 1000, 100, 200 ) ) );
         }
 
         @Test
-        public void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
+        void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
         {
             // The reason is that we use and close IndexUpdaters in commit - not in prepare - and therefor
             // we cannot have them go around and throw exceptions, because that could potentially break

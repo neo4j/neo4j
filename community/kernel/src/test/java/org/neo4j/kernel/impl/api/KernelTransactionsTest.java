@@ -98,8 +98,8 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
@@ -142,7 +142,7 @@ class KernelTransactionsTest
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private DatabaseAvailabilityGuard databaseAvailabilityGuard;
     @Inject
-    private OtherThreadRule t2;
+    private OtherThread t2;
 
     @BeforeEach
     void setUp() throws Exception

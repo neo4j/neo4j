@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.annotations.documented.ReporterFactories;
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -50,7 +49,7 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
@@ -58,7 +57,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-public abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
+abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
 {
     IndexAccessor accessor;
     // This map is for spatial values, so that the #query method can lookup the values for the results and filter properly
@@ -69,18 +68,18 @@ public abstract class IndexAccessorCompatibility extends PropertyIndexProviderCo
         super( testSuite, prototype );
     }
 
-    @Before
-    public void before() throws Exception
+    @BeforeEach
+    void before() throws Exception
     {
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
         populator.close( true, NULL );
         accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup );
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         try
         {

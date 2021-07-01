@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.Nested;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,7 +34,6 @@ import java.util.List;
 
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.test.runner.ParameterizedSuiteRunner;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -50,35 +48,20 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
-@RunWith( ParameterizedSuiteRunner.class )
-@Suite.SuiteClasses( {
-        SimpleIndexPopulatorCompatibility.General.class,
-        SimpleIndexPopulatorCompatibility.Unique.class,
-        CompositeIndexPopulatorCompatibility.General.class,
-        CompositeIndexPopulatorCompatibility.Unique.class,
-        SimpleIndexAccessorCompatibility.General.class,
-        SimpleIndexAccessorCompatibility.Unique.class,
-        CompositeIndexAccessorCompatibility.General.class,
-        CompositeIndexAccessorCompatibility.Unique.class,
-        UniqueConstraintCompatibility.class,
-        SimpleRandomizedIndexAccessorCompatibility.class,
-        CompositeRandomizedIndexAccessorCompatibility.Exact.class,
-        CompositeRandomizedIndexAccessorCompatibility.Range.class
-} )
-public abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProviderCompatibilityTestSuite
+abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected IndexPrototype indexPrototype()
+    IndexPrototype indexPrototype()
     {
         return IndexPrototype.forSchema( forLabel( 1000, 100 ) );
     }
 
-    protected static IndexPrototype uniqueIndexPrototype()
+    static IndexPrototype uniqueIndexPrototype()
     {
         return IndexPrototype.uniqueForSchema( forLabel( 1000, 100 ) );
     }
 
-    public abstract boolean supportsSpatial();
+    abstract boolean supportsSpatial();
 
     /**
      * Granular composite queries means queries against composite index that is made up of a mix of exact, range and exists queries.
@@ -86,22 +69,22 @@ public abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexP
      * See {@link org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider} for further details on supported combinations.
      * @return true if index provider have support granular composite queries.
      */
-    public boolean supportsGranularCompositeQueries()
+    boolean supportsGranularCompositeQueries()
     {
         return false;
     }
 
-    public boolean supportsBooleanRangeQueries()
+    boolean supportsBooleanRangeQueries()
     {
         return false;
     }
 
-    public boolean supportFullValuePrecisionForNumbers()
+    boolean supportFullValuePrecisionForNumbers()
     {
         return true;
     }
 
-    public ValueType[] supportedValueTypes()
+    ValueType[] supportedValueTypes()
     {
         if ( !supportsSpatial() )
         {
@@ -118,7 +101,115 @@ public abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexP
         return ValueType.values();
     }
 
-    public abstract static class Compatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+    @Nested
+    class GeneralSimpleIndexPopulator extends SimpleIndexPopulatorCompatibility.General
+    {
+        GeneralSimpleIndexPopulator()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class UniqueSimpleIndexPopulator extends SimpleIndexPopulatorCompatibility.Unique
+    {
+        UniqueSimpleIndexPopulator()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class GeneralCompositeIndexPopulator extends CompositeIndexPopulatorCompatibility.General
+    {
+        GeneralCompositeIndexPopulator()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class UniqueCompositeIndexPopulator extends CompositeIndexPopulatorCompatibility.Unique
+    {
+        UniqueCompositeIndexPopulator()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class GeneralSimpleIndexAccessor extends SimpleIndexAccessorCompatibility.General
+    {
+        GeneralSimpleIndexAccessor()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class UniqueSimpleIndexAccessor extends SimpleIndexAccessorCompatibility.Unique
+    {
+        UniqueSimpleIndexAccessor()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class GeneralCompositeIndexAccessor extends CompositeIndexAccessorCompatibility.General
+    {
+        GeneralCompositeIndexAccessor()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class UniqueCompositeIndexAccessor extends CompositeIndexAccessorCompatibility.Unique
+    {
+        UniqueCompositeIndexAccessor()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class UniqueConstraint extends UniqueConstraintCompatibility
+    {
+        UniqueConstraint()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class SimpleRandomizedIndexAccessor extends SimpleRandomizedIndexAccessorCompatibility
+    {
+        SimpleRandomizedIndexAccessor()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class ExactCompositeRandomizedIndexAccessor extends CompositeRandomizedIndexAccessorCompatibility.Exact
+    {
+        ExactCompositeRandomizedIndexAccessor()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    @Nested
+    class RangeCompositeRandomizedIndexAccessor extends CompositeRandomizedIndexAccessorCompatibility.Range
+    {
+        RangeCompositeRandomizedIndexAccessor()
+        {
+            super( PropertyIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
+    abstract static class Compatibility extends IndexProviderCompatabilityTestBase
     {
         final PropertyIndexProviderCompatibilityTestSuite testSuite;
         final List<NodeAndValue> valueSet1;

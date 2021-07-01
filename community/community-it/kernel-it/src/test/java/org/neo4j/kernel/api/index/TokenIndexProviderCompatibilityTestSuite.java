@@ -19,37 +19,41 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.Nested;
 
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
-import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
-@RunWith( ParameterizedSuiteRunner.class )
-@Suite.SuiteClasses( {
-        TokenIndexPopulatorCompatibility.class
-} )
-public abstract class TokenIndexProviderCompatibilityTestSuite extends IndexProviderCompatibilityTestSuite
+
+abstract class TokenIndexProviderCompatibilityTestSuite extends IndexProviderCompatibilityTestSuite
 {
+    @Nested
+    class TokenIndexPopulator extends TokenIndexPopulatorCompatibility
+    {
+        TokenIndexPopulator()
+        {
+            super( TokenIndexProviderCompatibilityTestSuite.this );
+        }
+    }
+
     @Override
-    protected IndexPrototype indexPrototype()
+    IndexPrototype indexPrototype()
     {
         return IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
     }
 
     @Override
-    public void consistencyCheck( IndexPopulator populator )
+    void consistencyCheck( IndexPopulator populator )
     {
         ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
     }
 
-    public abstract static class Compatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+    abstract static class Compatibility extends IndexProviderCompatabilityTestBase
     {
         final TokenIndexProviderCompatibilityTestSuite testSuite;
 

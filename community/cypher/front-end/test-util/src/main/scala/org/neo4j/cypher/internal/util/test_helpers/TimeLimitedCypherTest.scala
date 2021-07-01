@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.util.test_helpers
 
-import org.neo4j.cypher.internal.util.DumpUtils
+import org.neo4j.cypher.internal.test.util.DumpUtils
 import org.scalatest.Failed
 import org.scalatest.Outcome
 import org.scalatest.concurrent.Signaler

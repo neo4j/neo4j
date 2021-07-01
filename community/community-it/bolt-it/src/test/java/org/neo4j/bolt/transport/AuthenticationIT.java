@@ -86,7 +86,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     }
 
     @BeforeEach
-    public void setup( TestInfo testInfo ) throws IOException
+    void setup( TestInfo testInfo ) throws IOException
     {
         server.setGraphDatabaseFactory( getTestGraphDatabaseFactory() );
         server.setConfigure( getSettingsFunction() );
@@ -105,14 +105,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldRespondWithCredentialsExpiredOnFirstUse(
+    void shouldRespondWithCredentialsExpiredOnFirstUse(
             Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
@@ -134,14 +134,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldFailIfWrongCredentials(
+    void shouldFailIfWrongCredentials(
             Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) );
 
         // Then
@@ -169,14 +169,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldFailIfWrongCredentialsFollowingSuccessfulLogin(
+    void shouldFailIfWrongCredentialsFollowingSuccessfulLogin(
             Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
@@ -193,7 +193,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         // When login again with the new password
         reconnect();
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth(
                                 map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) );
 
@@ -204,7 +204,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         // When login again with the wrong password
         reconnect();
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth(
                                 map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) );
 
@@ -218,14 +218,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldFailIfMalformedAuthTokenWrongType(
+    void shouldFailIfMalformedAuthTokenWrongType(
             Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", singletonList( "neo4j" ), "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
@@ -239,14 +239,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldFailIfMalformedAuthTokenMissingKey(
+    void shouldFailIfMalformedAuthTokenMissingKey(
             Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "this-should-have-been-credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
@@ -259,14 +259,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldFailIfMalformedAuthTokenMissingScheme(
+    void shouldFailIfMalformedAuthTokenMissingScheme(
             Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j" ) ) );
 
         // Then
@@ -286,7 +286,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "unknown" ) ) );
 
         // Then
@@ -299,7 +299,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldFailDifferentlyIfTooManyFailedAuthAttempts(
+    void shouldFailDifferentlyIfTooManyFailedAuthAttempts(
             Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
@@ -360,14 +360,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldBeAbleToChangePasswordUsingSystemCommand(
+    void shouldBeAbleToChangePasswordUsingSystemCommand(
             Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
@@ -386,7 +386,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         // If I reconnect I cannot use the old password
         reconnect();
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
         assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
@@ -395,7 +395,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         // But the new password works fine
         reconnect();
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) );
         assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
@@ -403,13 +403,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldFailWhenReusingTheSamePassword( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
+    void shouldFailWhenReusingTheSamePassword( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
@@ -435,13 +435,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldFailWhenSubmittingEmptyPassword( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
+    void shouldFailWhenSubmittingEmptyPassword( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
@@ -467,14 +467,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
     @ParameterizedTest( name = "{displayName} {2}" )
     @MethodSource( "argumentsProvider" )
-    public void shouldNotBeAbleToReadWhenPasswordChangeRequired(
+    void shouldNotBeAbleToReadWhenPasswordChangeRequired(
             Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack, String name ) throws Exception
     {
         initParameters( connectionClass, neo4jPack, name );
 
         // When
         connection.connect( address )
-                .send( util.defaultAcceptedVersions() )
+                .send( TransportTestUtil.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
@@ -532,7 +532,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         {
             connection = newConnection();
 
-            connection.connect( address ).send( util.defaultAcceptedVersions() )
+            connection.connect( address ).send( TransportTestUtil.defaultAcceptedVersions() )
                     .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN", "scheme", "basic" ) ) );
 
             assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );

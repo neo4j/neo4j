@@ -45,9 +45,9 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.values.storable.TextArray;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,7 +67,7 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
     private Neo4jWithSocket server;
 
     @Inject
-    private OtherThreadRule otherThread;
+    private OtherThread otherThread;
 
     @BeforeEach
     public void setup( TestInfo testInfo ) throws IOException

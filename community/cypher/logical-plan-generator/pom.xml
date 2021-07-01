@@ -7,7 +7,7 @@
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
     <version>4.4.0-SNAPSHOT</version>
-    <relativePath>../</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -48,27 +48,25 @@
     </license>
   </licenses>
 
-    <!-- Since this is a test utility, we need to disable some enforcer rules -->
-    <build>
-        <plugins>
-            <!-- Override parent configuration to only allow "com.neo4j" packages -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <configuration combine.self="override">
-                    <rules>
-                        <bannedDependencies>
+  <!-- Since this is a test utility, we need to disable some enforcer rules -->
+  <build>
+    <plugins>
+      <!-- Override parent configuration to only allow "com.neo4j" packages -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <configuration combine.self="override">
+          <rules>
+            <bannedDependencies>
 
-                        </bannedDependencies>
-                    </rules>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+            </bannedDependencies>
+          </rules>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
-      <dependencies>
-
-        <!-- shared versions are defined in the parent pom -->
+  <dependencies>
 
     <!-- scala -->
 
@@ -80,8 +78,9 @@
     <!-- scala test dependencies -->
 
     <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.binary.version}</artifactId>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-test-util</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -110,12 +109,6 @@
 
     <!-- neo4j testing -->
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-util</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ast</artifactId>

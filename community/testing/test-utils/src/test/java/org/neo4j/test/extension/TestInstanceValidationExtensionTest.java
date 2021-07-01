@@ -33,7 +33,6 @@ import static org.junit.platform.testkit.engine.TestExecutionResultConditions.me
 
 class TestInstanceValidationExtensionTest
 {
-
     @Test
     void nonInjectedFieldVerified()
     {
@@ -45,5 +44,4 @@ class TestInstanceValidationExtensionTest
                 event( finishedWithFailure( instanceOf( ExtensionConfigurationException.class ),
                         message( message -> message.contains( "Field lifeSupport that is marked for injection" ) ) ) ) );
     }
-
 }

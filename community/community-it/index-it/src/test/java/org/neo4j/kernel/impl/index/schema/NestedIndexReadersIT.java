@@ -40,8 +40,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,7 +61,7 @@ public class NestedIndexReadersIT
     @Inject
     private GraphDatabaseAPI db;
     @Inject
-    private OtherThreadRule t2;
+    private OtherThread t2;
 
     @ParameterizedTest
     @MethodSource( "parameters" )

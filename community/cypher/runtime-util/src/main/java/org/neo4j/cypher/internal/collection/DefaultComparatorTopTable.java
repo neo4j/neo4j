@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.collection;
 import java.util.Comparator;
 import java.util.Iterator;
 
-import javax.annotation.Nonnull;
-
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
@@ -156,7 +154,6 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
      * Must call after calling <code>sort()</code>.
      */
     @Override
-    @Nonnull
     public Iterator<T> iterator()
     {
         if ( !isSorted )
@@ -172,7 +169,6 @@ public class DefaultComparatorTopTable<T> extends MemoryTrackingHeap<T> implemen
      * The caller can also provide an optional closeable of its own that will also be closed.
      * Must call after calling <code>sort()</code>.
      */
-    @Nonnull
     public Iterator<T> autoClosingIterator( AutoCloseable closeable )
     {
         if ( !isSorted )

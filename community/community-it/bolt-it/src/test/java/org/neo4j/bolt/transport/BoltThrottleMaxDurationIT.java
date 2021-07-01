@@ -50,9 +50,9 @@ import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
@@ -72,7 +72,7 @@ public class BoltThrottleMaxDurationIT
     @Inject
     private Neo4jWithSocket server;
     @Inject
-    private OtherThreadRule otherThread;
+    private OtherThread otherThread;
 
     private AssertableLogProvider logProvider;
 

@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,39 +33,34 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
-        " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
-        " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBase
 {
-    public MinimalIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype indexPrototype )
+    MinimalIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype indexPrototype )
     {
         super( testSuite, indexPrototype );
     }
 
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class General extends MinimalIndexAccessorCompatibility
+    abstract static class General extends MinimalIndexAccessorCompatibility
     {
         private MinimalIndexAccessor minimalIndexAccessor;
 
-        public General( IndexProviderCompatibilityTestSuite testSuite )
+        General( IndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, testSuite.indexPrototype() );
         }
 
-        @Before
-        public void before() throws IOException
+        @BeforeEach
+        void before() throws IOException
         {
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+            fs.mkdir( homePath );
             IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
             populator.create();
             populator.close( true, NULL );
@@ -74,7 +68,7 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
         }
 
         @Test
-        public void indexDropperMustDropIndex() throws IOException
+        void indexDropperMustDropIndex() throws IOException
         {
             // given
             Path rootDirectory = indexProvider.directoryStructure().rootDirectory();
@@ -90,7 +84,7 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
         }
 
         @Test
-        public void indexDropperMustProvideIndexConfiguration()
+        void indexDropperMustProvideIndexConfiguration()
         {
             // when
             Map<String,Value> dropperConfiguration = minimalIndexAccessor.indexConfig();
@@ -100,22 +94,21 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
         }
     }
 
-    @Ignore( "Not a test. This is a compatibility suite" )
-    public static class ReadOnly extends MinimalIndexAccessorCompatibility
+    abstract static class ReadOnly extends MinimalIndexAccessorCompatibility
     {
-        public ReadOnly( IndexProviderCompatibilityTestSuite testSuite )
+        ReadOnly( IndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, testSuite.indexPrototype() );
         }
 
         @Override
-        public void additionalConfig( Config.Builder configBuilder )
+        void additionalConfig( Config.Builder configBuilder )
         {
             configBuilder.set( GraphDatabaseSettings.read_only_database_default, true );
         }
 
         @Test
-        public void dropShouldBeBlockedIfReadOnly()
+        void dropShouldBeBlockedIfReadOnly()
         {
             MinimalIndexAccessor minimalIndexAccessor = indexProvider.getMinimalIndexAccessor( descriptor );
             IllegalStateException e = assertThrows( IllegalStateException.class, minimalIndexAccessor::drop );

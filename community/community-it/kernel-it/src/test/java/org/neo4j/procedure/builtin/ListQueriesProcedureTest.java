@@ -49,8 +49,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Threading;
 import org.neo4j.test.extension.ThreadingExtension;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.configuration.GraphDatabaseSettings.track_query_cpu_time;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
+import static org.neo4j.test.extension.Threading.waitingWhileIn;
 
 @DbmsExtension( configurationCallback = "configure" )
 @ExtendWith( ThreadingExtension.class )
@@ -68,7 +68,7 @@ public class ListQueriesProcedureTest
     @Inject
     private GraphDatabaseService db;
     @Inject
-    private ThreadingRule threads;
+    private Threading threads;
 
     private static final int SECONDS_TIMEOUT = 240;
     private static final Condition<Object> LONG_VALUE = new Condition<>( value -> value instanceof Long, "long value" );

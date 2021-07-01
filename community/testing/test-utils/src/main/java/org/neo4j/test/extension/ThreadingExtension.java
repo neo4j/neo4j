@@ -24,9 +24,7 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import org.neo4j.test.rule.concurrent.ThreadingRule;
-
-public class ThreadingExtension extends StatefulFieldExtension<ThreadingRule>
+public class ThreadingExtension extends StatefulFieldExtension<Threading>
         implements BeforeEachCallback, AfterEachCallback, AfterAllCallback
 {
     private static final String THREADING = "threading";
@@ -34,15 +32,15 @@ public class ThreadingExtension extends StatefulFieldExtension<ThreadingRule>
     @Override
     public void afterEach( ExtensionContext extensionContext )
     {
-        ThreadingRule threadingRule = getStoredValue( extensionContext );
-        threadingRule.after();
+        Threading threading = getStoredValue( extensionContext );
+        threading.after();
     }
 
     @Override
     public void beforeEach( ExtensionContext extensionContext )
     {
-        ThreadingRule threadingRule = getStoredValue( extensionContext );
-        threadingRule.before();
+        Threading threading = getStoredValue( extensionContext );
+        threading.before();
     }
 
     @Override
@@ -52,15 +50,15 @@ public class ThreadingExtension extends StatefulFieldExtension<ThreadingRule>
     }
 
     @Override
-    protected Class<ThreadingRule> getFieldType()
+    protected Class<Threading> getFieldType()
     {
-        return ThreadingRule.class;
+        return Threading.class;
     }
 
     @Override
-    protected ThreadingRule createField( ExtensionContext extensionContext )
+    protected Threading createField( ExtensionContext extensionContext )
     {
-        return new ThreadingRule();
+        return new Threading();
     }
 
     @Override

@@ -39,9 +39,9 @@ import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;

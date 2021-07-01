@@ -5,7 +5,6 @@
         <groupId>org.neo4j</groupId>
         <artifactId>cypher-parent</artifactId>
         <version>4.4.0-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -33,62 +32,11 @@
         <module>parser</module>
         <module>frontend</module>
         <module>util</module>
+        <module>test-util</module>
         <module>expressions</module>
         <module>cypher-macros</module>
         <module>ast-factory</module>
         <module>javacc-parser</module>
         <module>neo4j-ast-factory</module>
     </modules>
-
-    <dependencies>
-
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_${scala.binary.version}</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-    </dependencies>
-
-  <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <targetPath>META-INF</targetPath>
-        <includes>
-          <include>COPYRIGHT.txt</include>
-          <include>NOTICE.txt</include>
-          <include>LICENSE.txt</include>
-          <include>LICENSES.txt</include>
-          <include>README*</include>
-          <include>CHANGES.txt</include>
-        </includes>
-      </resource>
-    </resources>
-    <testResources>
-      <testResource>
-        <directory>src/test/resources</directory>
-      </testResource>
-      <testResource>
-        <directory>${basedir}</directory>
-        <targetPath>META-INF</targetPath>
-        <includes>
-          <include>COPYRIGHT.txt</include>
-          <include>NOTICE.txt</include>
-          <include>LICENSE.txt</include>
-          <include>LICENSES.txt</include>
-          <include>README*</include>
-          <include>CHANGES.txt</include>
-        </includes>
-      </testResource>
-    </testResources>
-  </build>
 </project>
