@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.semantics
-import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -27,37 +27,30 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 object ScopeTestHelper {
 
-  def symUse(name: String, offset: Int) =
-    SymbolUse(name, pos(offset))
-
   def scope(entries: semantics.Symbol*)(children: Scope*): Scope =
     Scope(entries.map { symbol => symbol.name -> symbol }.toMap, children.toSeq)
 
-  def nodeSymbol(name: String, offsets: Int*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTNode), offsets: _*)
+  def nodeSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTNode), definition, readingUses: _*)
 
-  def allSymbol(name: String, offsets: Int*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.all, offsets: _*)
+  def allSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.all, definition, readingUses: _*)
 
-  def intSymbol(name: String, offsets: Int*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTInteger), offsets: _*)
+  def intSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTInteger), definition, readingUses: _*)
 
-  def stringSymbol(name: String, offsets: Int*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTString), offsets: _*)
+  def stringSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTString), definition, readingUses: _*)
 
-  def intCollectionSymbol(name: String, offsets: Int*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTList(CTInteger)), offsets: _*)
+  def intCollectionSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTList(CTInteger)), definition, readingUses: _*)
 
-  def pathCollectionSymbol(name: String, offsets: Int*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTList(CTPath)), offsets: _*)
+  def pathCollectionSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTList(CTPath)), definition, readingUses: _*)
 
-  def intCollectionCollectionSymbol(name: String, offsets: Int*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTList(CTList(CTInteger))), offsets: _*)
+  def intCollectionCollectionSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTList(CTList(CTInteger))), definition, readingUses: _*)
 
-  def typedSymbol(name: String, typeSpec: TypeSpec, offsets: Int*) =
-    semantics.Symbol(name, offsets.map(offset => pos(offset)).toSet, typeSpec)
-
-  def pos(offset: Int): InputPosition = {
-    new InputPosition(offset, 1, offset + 1)
-  }
+  def typedSymbol(name: String, typeSpec: TypeSpec, definition: LogicalVariable, readingUses: LogicalVariable*): Symbol =
+    semantics.Symbol(name, typeSpec, SymbolUse(definition), readingUses.map(SymbolUse(_)).toSet)
 }

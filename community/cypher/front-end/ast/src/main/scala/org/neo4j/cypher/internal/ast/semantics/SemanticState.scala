@@ -33,40 +33,62 @@ import scala.collection.immutable.HashMap
 import scala.language.postfixOps
 
 object SymbolUse {
-  def apply(variable: LogicalVariable): SymbolUse = SymbolUse(variable.name, variable.position)
+  def apply(variable: LogicalVariable): SymbolUse = SymbolUse(Ref(variable))
 }
 
-// A symbol use represents the occurrence of a symbol at a position
-final case class SymbolUse(name: String, position: InputPosition) {
-  override def toString = s"SymbolUse($nameWithPosition)"
+/**
+ * One use of a variable. This compares variables using reference equality.
+ * Any copy of a variable will result in a different SymbolUse according to equals.
+ */
+final case class SymbolUse(use: Ref[LogicalVariable]) {
+  override def toString = s"SymbolUse($uniqueName)"
 
-  def asVariable: Variable = Variable(name)(position)
+  /**
+   * @return the variable
+   */
+  def asVariable: LogicalVariable = use.value
 
-  def nameWithPosition = s"$name@${position.toUniqueOffsetString}"
+  /**
+   * @return a name that is unique for this SymbolUse.
+   *         A use of a different variable by reference equality will get a different name.
+   *         The String includes the name and position of the variable.
+   */
+  private[semantics] def uniqueName: String = s"${asVariable.name}@${asVariable.position.offset}(${use.id})"
+
+  /**
+   * @return The position of the variable and a unique id.
+   */
+  private[semantics] def positionAndUniqueId: (Int, Int) = (asVariable.position.offset, use.id)
+
+  /**
+   * @return the name of the variable.
+   */
+  def name: String = asVariable.name
 }
 
-// A symbol collects all uses of a position within the current scope and
-// up to the originally defining scope together with type information
-//
-// (s1 n1 (s2 ... (s3 n2 (s4 ... n3)) =>
-//
-// s1.localSymbol(n) = Symbol(n, Seq(1), type(n))
-// s3.localSymbol(n) = Symbol(n, Seq(1, 2), type(n))
-// s4.localSymbol(n) = Symbol(n, Seq(1, 2, 3), type(n))
-//
-final case class Symbol(name: String, positions: Set[InputPosition],
+/**
+ * A symbol collects the definition and all reading uses of a variable.
+ * @param name the name
+ * @param definition the definition
+ * @param readingUses all reading uses of the symbol
+ * @param types the type specification
+ */
+final case class Symbol(name: String,
                         types: TypeSpec,
-                        generated: Boolean = false) {
-  if (positions.isEmpty)
-    throw new IllegalStateException(s"Cannot create empty symbol with name '$name'")
+                        definition: SymbolUse,
+                        readingUses: Set[SymbolUse]) {
+  /**
+   * All uses of this symbol. This includes the definition and the reading uses.
+   */
+  def uses: Set[SymbolUse] = readingUses + definition
 
-
-  val definition = SymbolUse(name, positions.toSeq.min(InputPosition.byOffset))
-
-  def asGenerated: Symbol = copy(generated = true)
+  /**
+   * @return the positions and unique IDs of all uses.
+   */
+  private[semantics] def positionsAndUniqueIds: Set[(Int, Int)] = uses.map(_.positionAndUniqueId)
 
   override def toString: String =
-    s"${definition.nameWithPosition}(${positions.map(_.offset).mkString(",")}): ${types.toShortString}"
+    s"${definition.uniqueName}(${readingUses.map(_.uniqueName).mkString(",")}): ${types.toShortString}"
 }
 
 final case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
@@ -78,7 +100,7 @@ final case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSp
 }
 
 object Scope {
-  val empty = Scope(symbolTable = HashMap.empty, children = Vector())
+  val empty: Scope = Scope(symbolTable = HashMap.empty, children = Vector())
 }
 
 final case class Scope(symbolTable: Map[String, Symbol],
@@ -99,16 +121,13 @@ final case class Scope(symbolTable: Map[String, Symbol],
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
 
-  def markAsGenerated(variable: String): Scope =
-    symbolTable
-      .get(variable)
-      .map(_.asGenerated)
-      .map(symbol => copy(symbolTable = symbolTable.updated(variable, symbol)))
-      .getOrElse(this)
+  def updateVariable(variable: String, types: TypeSpec, definition: SymbolUse, readingUses: Set[SymbolUse]): Scope =
+    copy(symbolTable = symbolTable.updated(variable, Symbol(variable, types, definition, readingUses)))
 
-  def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): Scope =
-    copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, types)))
-
+  /**
+   * All symbol definitions of this scope and its children,
+   * grouped by name.
+   */
   def allSymbolDefinitions: Map[String, Set[SymbolUse]] = {
     val allScopes1 = allScopes
     allScopes1.foldLeft(Map.empty[String, Set[SymbolUse]]) {
@@ -122,17 +141,42 @@ final case class Scope(symbolTable: Map[String, Symbol],
     }
   }
 
+  /**
+   * All symbols of this scope and its children,
+   * grouped by name.
+   */
+  def allSymbols: Map[String, Set[Symbol]] = {
+    val allScopes1 = allScopes
+    allScopes1.foldLeft(Map.empty[String, Set[Symbol]]) {
+      case (acc0, scope) =>
+        scope.symbolTable.foldLeft(acc0) {
+          case (acc, (str, symbol)) if acc.contains(str) =>
+            acc.updated(str, acc(str) + symbol)
+          case (acc, (str, symbol)) =>
+            acc.updated(str, Set(symbol))
+        }
+    }
+  }
+
+  /**
+   * All symbols of this scope.
+   */
   def symbolDefinitions: Set[SymbolUse] =
     symbolTable.values.map(_.definition).toSet
 
+  /**
+   * @return A map from any use (read or definition) of a variable to its definition, in the all scopes.
+   */
   def allVariableDefinitions: Map[SymbolUse, SymbolUse] =
     allScopes.map(_.variableDefinitions).reduce(_ ++ _)
 
+  /**
+   * @return A map from any use (read or definition) of a variable to its definition, in the current scope.
+   */
   def variableDefinitions: Map[SymbolUse, SymbolUse] =
     symbolTable.values.flatMap { symbol =>
-      val name = symbol.name
       val definition = symbol.definition
-      symbol.positions.map { pos => SymbolUse(name, pos) -> definition }
+      symbol.uses.map { use => use -> definition }
     }.toMap
 
   def allScopes: Seq[Scope] =
@@ -140,36 +184,27 @@ final case class Scope(symbolTable: Map[String, Symbol],
 
   def toIdString = s"#${Ref(self).toIdString}"
 
-  override def toString: String =
-    format(includeId = true)
-
-  def toStringWithoutId: String =
-    format(includeId = false)
-
-  private def format(includeId: Boolean): String = {
+  override def toString: String = {
     val builder = new StringBuilder()
-    self.dumpSingle("", includeId, builder)
+    self.dumpSingle("", builder)
     builder.toString()
   }
 
   import scala.compat.Platform.EOL
 
-  private def dumpSingle(indent: String, includeId: Boolean, builder: StringBuilder): Unit = {
-    if (includeId) builder.append(s"$indent${self.toIdString} {$EOL")
-    else builder.append(s"$indent{$EOL")
-    dumpTree(s"  $indent", includeId, builder)
+  private def dumpSingle(indent: String, builder: StringBuilder): Unit = {
+    builder.append(s"$indent${self.toIdString} {$EOL")
+    dumpTree(s"  $indent", builder)
     builder.append(s"$indent}$EOL")
   }
 
-  private def dumpTree(indent: String, includeId: Boolean, builder: StringBuilder): Unit = {
+  private def dumpTree(indent: String, builder: StringBuilder): Unit = {
     symbolTable.keys.toSeq.sorted.foreach { key =>
       val symbol = symbolTable(key)
-      val generatedText = if (symbol.generated) " (generated)" else ""
-      val keyText = s"$key$generatedText"
-      val symbolText = symbol.positions.map(_.toUniqueOffsetString).toSeq.sorted.mkString(" ")
-      builder.append(s"$indent$keyText: $symbolText$EOL")
+      val symbolText = symbol.positionsAndUniqueIds.toSeq.sorted.map(x => s"${x._1}(${x._2})").mkString(" ")
+      builder.append(s"$indent$key: $symbolText$EOL")
     }
-    children.foreach { child => child.dumpSingle(indent, includeId, builder) }
+    children.foreach { child => child.dumpSingle(indent, builder) }
   }
 }
 
@@ -212,11 +247,8 @@ object SemanticState {
     def importValuesFromScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
       location.replace(scope.importValuesFromScope(other, exclude))
 
-    def localMarkAsGenerated(name: String): ScopeLocation =
-      location.replace(scope.markAsGenerated(name))
-
-    def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
-      location.replace(scope.updateVariable(variable, types, positions))
+    def updateVariable(variable: String, types: TypeSpec, definition: SymbolUse, readingUses: Set[SymbolUse]): ScopeLocation =
+      location.replace(scope.updateVariable(variable, types, definition, readingUses))
   }
 
   def recordCurrentScope(node: ASTNode): SemanticCheck =
@@ -260,13 +292,17 @@ case class SemanticState(currentScope: ScopeLocation,
    */
   def declareVariable(variable: LogicalVariable,
                       possibleTypes: TypeSpec,
-                      positions: Set[InputPosition] = Set.empty,
+                      maybePreviousDeclaration: Option[Symbol] = None,
                       overriding: Boolean = false): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
       case Some(symbol) if !overriding =>
         Left(SemanticError(s"Variable `${variable.name}` already declared", variable.position))
       case _ =>
-        Right(updateVariable(variable, possibleTypes, positions + variable.position))
+        val (definition, uses) = maybePreviousDeclaration match {
+          case Some(previousDeclaration) => (previousDeclaration.definition, previousDeclaration.readingUses ++ Set(SymbolUse(variable)))
+          case None => (SymbolUse(variable), Set.empty[SymbolUse])
+        }
+        Right(updateVariable(variable, possibleTypes, definition, uses))
     }
 
 
@@ -276,11 +312,11 @@ case class SemanticState(currentScope: ScopeLocation,
   def implicitVariable(variable: LogicalVariable, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
       case None =>
-        Right(updateVariable(variable, possibleTypes, Set(variable.position)))
+        Right(updateVariable(variable, possibleTypes, SymbolUse(variable), Set.empty))
       case Some(symbol) =>
         val inferredTypes = symbol.types intersect possibleTypes
         if (inferredTypes.nonEmpty) {
-          Right(updateVariable(variable, inferredTypes, symbol.positions + variable.position))
+          Right(updateVariable(variable, inferredTypes, symbol.definition, symbol.readingUses + SymbolUse(variable)))
         } else {
           val existingTypes = symbol.types.mkString(", ", " or ")
           val expectedTypes = possibleTypes.mkString(", ", " or ")
@@ -295,7 +331,7 @@ case class SemanticState(currentScope: ScopeLocation,
       case None =>
         Left(SemanticError(s"Variable `${variable.name}` not defined", variable.position))
       case Some(symbol) =>
-        Right(updateVariable(variable, symbol.types, symbol.positions + variable.position))
+        Right(updateVariable(variable, symbol.types, symbol.definition, symbol.readingUses + SymbolUse(variable)))
     }
 
   def specifyType(expression: Expression, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
@@ -317,9 +353,9 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def expressionType(expression: Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
-  private def updateVariable(variable: LogicalVariable, types: TypeSpec, locations: Set[InputPosition]) =
+  private def updateVariable(variable: LogicalVariable, types: TypeSpec, definition: SymbolUse, readingUses: Set[SymbolUse]) =
     copy(
-      currentScope = currentScope.updateVariable(variable.name, types, locations),
+      currentScope = currentScope.updateVariable(variable.name, types, definition, readingUses),
       typeTable = typeTable.updated(variable, ExpressionTypeInfo(types))
     )
 

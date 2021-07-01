@@ -42,6 +42,8 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
 
+import scala.collection.mutable
+
 case object AmbiguousNamesDisambiguated extends StepSequencer.Condition
 
 /**
@@ -59,7 +61,7 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     val ambiguousNames = shadowedNames(from.semantics().scopeTree)
     thrownOnAmbiguousAnonymousNames(ambiguousNames)
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics().scopeTree.allVariableDefinitions
-    val renamings = variableRenamings(withProjectedUnions, variableDefinitions, ambiguousNames)
+    val renamings = variableRenamings(withProjectedUnions, variableDefinitions, ambiguousNames, from.anonymousVariableNameGenerator)
 
     if (renamings.isEmpty) {
       from.withStatement(withProjectedUnions).withSemanticTable(table)
@@ -85,29 +87,40 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     }.toSet
   }
 
-  private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
-                                ambiguousNames: Set[String]): VariableRenamings =
+  private def variableRenamings(statement: Statement,
+                                variableDefinitions: Map[SymbolUse, SymbolUse],
+                                ambiguousNames: Set[String],
+                                anonymousVariableNameGenerator: AnonymousVariableNameGenerator): VariableRenamings = {
+    val newNames = mutable.Map[SymbolUse, String]()
+
+    def createVariableRenaming(variable: Variable,
+                               anonymousVariableNameGenerator: AnonymousVariableNameGenerator): (Ref[Variable], Variable) = {
+      /**
+       * @return generate a unique anonymous name, but include the original variable name for easier debugging and better plan descriptions.
+       */
+      def genName = anonymousVariableNameGenerator.nextName.replace(AnonymousVariableNameGenerator.generatorName, variable.name + "@")
+      val symbolDefinition = variableDefinitions(SymbolUse(variable))
+      val name = newNames.getOrElseUpdate(symbolDefinition, genName)
+      val newVariable = variable.renameId(name)
+      val renaming = Ref(variable) -> newVariable
+      renaming
+    }
+
     statement.treeFold(Map.empty[Ref[Variable], Variable]) {
       case i: Variable if ambiguousNames(i.name) =>
-        val renaming = createVariableRenaming(variableDefinitions, i)
+        val renaming = createVariableRenaming(i, anonymousVariableNameGenerator)
         acc => TraverseChildren(acc + renaming)
       case e: ExpressionWithOuterScope =>
         val renamings = e.outerScope
           .filter(v => ambiguousNames(v.name))
           .foldLeft(Set[(Ref[Variable], Variable)]()) { (innerAcc, v) =>
-            innerAcc + createVariableRenaming(variableDefinitions, v)
+            innerAcc + createVariableRenaming(v, anonymousVariableNameGenerator)
           }
         acc => TraverseChildren(acc ++ renamings)
     }
-
-  private def createVariableRenaming(variableDefinitions: Map[SymbolUse, SymbolUse], v: Variable): (Ref[Variable], Variable) = {
-    val symbolDefinition = variableDefinitions(SymbolUse(v))
-    val newVariable = v.renameId(s"  ${symbolDefinition.nameWithPosition}")
-    val renaming = Ref(v) -> newVariable
-    renaming
   }
 
-  private def projectUnions: Rewriter = {
+  def projectUnions: Rewriter = {
     // This needs to be topDown so that Unions do net get copied before being replaced by a ProjectingUnion,
     // otherwise we create new copies of the unionMapping variables which are then unknown to the semantic state.
     topDown(Rewriter.lift {

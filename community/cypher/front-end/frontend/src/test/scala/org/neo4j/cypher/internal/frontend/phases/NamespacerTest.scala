@@ -42,20 +42,20 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "MATCH (n), (x) WITH n AS n MATCH (x) RETURN n AS n, x AS x",
-      "MATCH (n), (`  x@12`) WITH n AS n MATCH (`  x@34`) RETURN n AS n, `  x@34` AS `  x@34`",
-      List(varFor("  x@12"), varFor("  x@34"))
+      "MATCH (n), (`  x@0`) WITH n AS n MATCH (`  x@1`) RETURN n AS n, `  x@1` AS `  x@1`",
+      List(varFor("  x@0"), varFor("  x@1"))
     ),
     TestCase(
       "MATCH (n), (x) WHERE [x in n.prop WHERE x = 2] RETURN x AS x",
-      "MATCH (n), (`  x@12`) WHERE [`  x@22` IN n.prop WHERE `  x@22` = 2] RETURN `  x@12` AS `  x@12`",
+      "MATCH (n), (`  x@0`) WHERE [`  x@1` IN n.prop WHERE `  x@1` = 2] RETURN `  x@0` AS `  x@0`",
       List(
-        varFor("  x@12"),
-        varFor("  x@22"),
-        equals(varFor("  x@22"), literalInt(2)),
+        varFor("  x@0"),
+        varFor("  x@1"),
+        equals(varFor("  x@1"), literalInt(2)),
         listComprehension(
-          varFor("  x@22"),
+          varFor("  x@1"),
           prop("n", "prop"),
-          Some(equals(varFor("  x@22"), literalInt(2))),
+          Some(equals(varFor("  x@1"), literalInt(2))),
           None
         )
       )
@@ -72,16 +72,15 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "MATCH (me)-[r1]->(you) WITH 1 AS x MATCH (me)-[r1]->(food)<-[r2]-(you) RETURN r1.times AS `r1.times`",
-      "MATCH (`  me@7`)-[`  r1@12`]->(`  you@18`) WITH 1 AS x MATCH (`  me@42`)-[`  r1@47`]->(food)<-[r2]-(`  " +
-        "you@66`) " +
-        "RETURN `  r1@47`.times AS `r1.times`",
+      "MATCH (`  me@0`)-[`  r1@1`]->(`  you@2`) WITH 1 AS x MATCH (`  me@3`)-[`  r1@4`]->(food)<-[r2]-(`  you@5`) " +
+        "RETURN `  r1@4`.times AS `r1.times`",
       List(
-        varFor("  me@7"),
-        varFor("  r1@12"),
-        varFor("  you@18"),
-        varFor("  me@42"),
-        varFor("  r1@47"),
-        varFor("  you@66")
+        varFor("  me@0"),
+        varFor("  r1@1"),
+        varFor("  you@2"),
+        varFor("  me@3"),
+        varFor("  r1@4"),
+        varFor("  you@5")
       )
     ),
     TestCase(
@@ -93,15 +92,15 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       "MATCH (a:Party) RETURN a AS a UNION MATCH (a:Animal) RETURN a AS a",
       Query(None, ProjectingUnionDistinct(
         singleQuery(
-          match_(NodePattern(Some(varFor("  a@7")), Seq.empty, None)(pos), Some(Where(HasLabels(varFor("  a@7"), Seq(LabelName("Party")(pos)))(pos))(pos))),
-          return_(varFor("  a@7").as("  a@7"))
+          match_(NodePattern(Some(varFor("  a@0")), Seq.empty, None)(pos), Some(Where(HasLabels(varFor("  a@0"), Seq(LabelName("Party")(pos)))(pos))(pos))),
+          return_(varFor("  a@0").as("  a@0"))
         ),
         singleQuery(
-          match_(NodePattern(Some(varFor("  a@43")), Seq.empty, None)(pos), Some(Where(HasLabels(varFor("  a@43"), Seq(LabelName("Animal")(pos)))(pos))(pos))),
-          return_(varFor("  a@43").as("  a@43"))
+          match_(NodePattern(Some(varFor("  a@1")), Seq.empty, None)(pos), Some(Where(HasLabels(varFor("  a@1"), Seq(LabelName("Animal")(pos)))(pos))(pos))),
+          return_(varFor("  a@1").as("  a@1"))
         ),
-        List(UnionMapping(varFor("  a@30"), varFor("  a@7"), varFor("  a@43"))))(pos))(pos),
-      List(varFor("  a@7"), varFor("  a@43"))
+        List(UnionMapping(varFor("  a@2"), varFor("  a@0"), varFor("  a@1"))))(pos))(pos),
+      List(varFor("  a@0"), varFor("  a@1"))
     ),
     TestCase(
       "MATCH p=(a:Start)-[r]->(b) RETURN *",
@@ -110,9 +109,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "MATCH (n) RETURN n AS n, count(*) AS c order by c",
-      """MATCH (`  n@7`)
-        |RETURN `  n@7` AS `  n@22`, count(*) AS c ORDER BY c""".stripMargin,
-      List(varFor("  n@7"))
+      """MATCH (`  n@0`)
+        |RETURN `  n@0` AS `  n@1`, count(*) AS c ORDER BY c""".stripMargin,
+      List(varFor("  n@0"))
     ),
     TestCase(
       "WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng",
@@ -121,8 +120,8 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "CALL db.labels() YIELD label WITH count(*) AS c CALL db.labels() YIELD label RETURN *",
-      "CALL db.labels() YIELD label AS `  label@23` WITH count(*) AS c CALL db.labels() YIELD label AS `  label@71` RETURN c AS c, `  label@71` AS `  label@71`",
-      List(varFor("  label@23"), varFor("  label@71"))
+      "CALL db.labels() YIELD label AS `  label@0` WITH count(*) AS c CALL db.labels() YIELD label AS `  label@1` RETURN c AS c, `  label@1` AS `  label@1`",
+      List(varFor("  label@0"), varFor("  label@1"))
     ),
     TestCase(
       "MATCH (a),(b) WITH a AS a, a.prop AS AG1, collect(b.prop) AS AG2 RETURN a{prop: AG1, k: AG2} AS X",
@@ -133,13 +132,13 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       """MATCH (video)
         |WITH {key:video} AS video
         |RETURN video.key AS x""".stripMargin,
-      """MATCH (`  video@7`)
-        |WITH {key:`  video@7`} AS `  video@34`
-        |RETURN `  video@34`.key AS x""".stripMargin,
+      """MATCH (`  video@0`)
+        |WITH {key:`  video@0`} AS `  video@1`
+        |RETURN `  video@1`.key AS x""".stripMargin,
       List(
-        varFor("  video@7"),
-        varFor("  video@34"),
-        prop("  video@34", "key")
+        varFor("  video@0"),
+        varFor("  video@1"),
+        prop("  video@1", "key")
       )
     ),
     TestCase(
@@ -147,34 +146,34 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         |RETURN reduce(weight=0, num IN nums | weight + num) AS weight
         |ORDER BY weight DESC""".stripMargin,
       """WITH [1,2,3] AS nums
-        |RETURN reduce(`  weight@35`=0, num IN nums | `  weight@35` + num ) AS `  weight@76`
-        |ORDER BY `  weight@76` DESC""".stripMargin,
-      List(varFor("  weight@35"), varFor("  weight@76"))
+        |RETURN reduce(`  weight@0`=0, num IN nums | `  weight@0` + num ) AS `  weight@1`
+        |ORDER BY `  weight@1` DESC""".stripMargin,
+      List(varFor("  weight@0"), varFor("  weight@1"))
     ),
     TestCase(
       "WITH 1 AS foo FOREACH (foo IN [1,2,3] | CREATE (c)) RETURN foo as bar ORDER BY foo",
-      "WITH 1 AS `  foo@10` FOREACH (`  foo@23` IN [1,2,3] | CREATE (c)) RETURN `  foo@10` as bar ORDER BY `  foo@10`",
-      List(varFor("  foo@10"), varFor("  foo@23"))
+      "WITH 1 AS `  foo@0` FOREACH (`  foo@1` IN [1,2,3] | CREATE (c)) RETURN `  foo@0` as bar ORDER BY `  foo@0`",
+      List(varFor("  foo@0"), varFor("  foo@1"))
     ),
     TestCase(
       "WITH 1 AS foo FOREACH (bar IN [1,2,3] | CREATE (c)) RETURN foo as bar ORDER BY bar",
-      "WITH 1 AS foo FOREACH (`  bar@23` IN [1,2,3] | CREATE (c)) RETURN foo as `  bar@66` ORDER BY `  bar@66`",
-      List(varFor("  bar@23"), varFor("  bar@66"))
+      "WITH 1 AS foo FOREACH (`  bar@0` IN [1,2,3] | CREATE (c)) RETURN foo as `  bar@1` ORDER BY `  bar@1`",
+      List(varFor("  bar@0"), varFor("  bar@1"))
     ),
     TestCase(
       "WITH 1 AS foo FOREACH (bar IN [1,2,3] | CREATE (c)) RETURN foo as bar ORDER BY bar + 2",
-      "WITH 1 AS foo FOREACH (`  bar@23` IN [1,2,3] | CREATE (c)) RETURN foo as `  bar@66` ORDER BY `  bar@66` + 2",
-      List(varFor("  bar@23"), varFor("  bar@66"))
+      "WITH 1 AS foo FOREACH (`  bar@0` IN [1,2,3] | CREATE (c)) RETURN foo as `  bar@1` ORDER BY `  bar@1` + 2",
+      List(varFor("  bar@0"), varFor("  bar@1"))
     ),
     TestCase(
       "MATCH (a) WITH a.name AS n ORDER BY a.foo MATCH (a) RETURN a.age",
-      "MATCH (`  a@7`) WITH `  a@7`.name as n ORDER BY `  a@7`.foo MATCH (`  a@49`) RETURN `  a@49`.age AS `a.age`",
-      List(varFor("  a@7"), varFor("  a@49"))
+      "MATCH (`  a@0`) WITH `  a@0`.name as n ORDER BY `  a@0`.foo MATCH (`  a@1`) RETURN `  a@1`.age AS `a.age`",
+      List(varFor("  a@0"), varFor("  a@1"))
     ),
     TestCase(
       "MATCH (n) WHERE EXISTS { MATCH (n)-[r]->(p) } WITH n as m, 1 as n RETURN m, n",
-      "MATCH (`  n@7`) WHERE EXISTS { MATCH (`  n@7`)-[r]->(p) } WITH `  n@7` as m, 1 as `  n@64` RETURN m, `  n@64`",
-      List(varFor("  n@7"), varFor("  n@64"))
+      "MATCH (`  n@0`) WHERE EXISTS { MATCH (`  n@0`)-[r]->(p) } WITH `  n@0` as m, 1 as `  n@1` RETURN m, `  n@1`",
+      List(varFor("  n@0"), varFor("  n@1"))
     )
   )
 
@@ -188,7 +187,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         acc => TraverseChildren(acc ++ expr.outerScope)
     }
 
-    outerScope.map(_.name) should be(Set("  n@7"))
+    outerScope.map(_.name) should be(Set("  n@0"))
   }
 
   //noinspection ZeroIndexToHead

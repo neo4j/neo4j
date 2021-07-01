@@ -68,8 +68,8 @@ final case class ReturnItems(
       s => success(s.importValuesFromScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {
       case Some(variable) if item.expression == variable =>
-        val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)
-        declareVariable(variable, types(item.expression), positions, overriding = true)
+        val maybePreviousSymbol = previousScope.symbol(variable.name)
+        declareVariable(variable, types(item.expression), maybePreviousSymbol, overriding = true)
       case Some(variable) =>
         declareVariable(variable, types(item.expression), overriding = true)
       case None           => state => SemanticCheckResult(state, Seq.empty)

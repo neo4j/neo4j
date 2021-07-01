@@ -16,80 +16,140 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.nodeSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.stringSymbol
-import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.symUse
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ScopeTest extends CypherFunSuite {
+//noinspection ZeroIndexToHead
+class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  private case class SymbolUses(definition: SymbolUse, readingUses: Seq[SymbolUse]) {
+    def defVar: LogicalVariable = definition.asVariable
+    def useVars: Seq[LogicalVariable] = readingUses.map(_.asVariable)
+  }
+
+  private def symbolUses(name: String, readingUses: Int): SymbolUses = {
+    val v = varFor(name)
+    SymbolUses(SymbolUse(v), Seq.fill(readingUses)(v.copyId).map(SymbolUse(_)))
+  }
 
   test("Should retrieve local symbol definitions") {
+    val as = symbolUses("a", 1)
+    val bs = symbolUses("b", 1)
     val given = scope(
-      intSymbol("a", 9, 45),
-      intSymbol("b", 28, 49)
+      intSymbol("a", as.defVar, as.useVars: _*),
+      intSymbol("b", bs.defVar, bs.useVars: _*)
     )()
 
-    given.symbolDefinitions should equal(Set(symUse("a", 9), symUse("b", 28)))
+    given.symbolDefinitions should equal(Set(as.definition, bs.definition))
   }
 
   test("Should find all scopes") {
-    val child11 = scope(stringSymbol("name", 31, 93), nodeSymbol("root", 6, 69), nodeSymbol("tag", 83), nodeSymbol("book", 18, 111))()
-    val child1 = scope(nodeSymbol("root", 6), nodeSymbol("book", 18, 124))(child11)
-    val child2 = scope(nodeSymbol("book", 18, 124))()
+    val child11 = scope(
+      stringSymbol("name", varFor("name"), varFor("name")),
+      nodeSymbol("root", varFor("root"), varFor("root")),
+      nodeSymbol("tag", varFor("tag")),
+      nodeSymbol("book", varFor("book"), varFor("book"))
+    )()
+    val child1 = scope(
+      nodeSymbol("root", varFor("root")),
+      nodeSymbol("book", varFor("book"), varFor("book"))
+    )(child11)
+    val child2 = scope(
+      nodeSymbol("book", varFor("book"), varFor("book"))
+    )()
     val given = scope()(child1, child2)
 
     given.allScopes should equal(Seq(given, child1, child11, child2))
   }
 
   test("Should find all definitions") {
-    val child11 = scope(stringSymbol("name", 31, 93), nodeSymbol("root", 6, 69), nodeSymbol("tag", 83), nodeSymbol("book", 18, 111))()
-    val child1 = scope(nodeSymbol("root", 6), nodeSymbol("book", 24, 124))(child11)
-    val child2 = scope(nodeSymbol("book", 18, 124))()
+    val names = symbolUses("name", 1)
+    val roots = symbolUses("root", 0)
+    val tags = symbolUses("tag", 0)
+    val books1 = symbolUses("book", 2)
+    val books2 = symbolUses("book", 1)
+
+    val child11 = scope(
+      stringSymbol("name", names.defVar, names.useVars: _*),
+      nodeSymbol("root", roots.defVar, roots.useVars: _*),
+      nodeSymbol("tag", tags.defVar),
+      nodeSymbol("book", books1.defVar, books1.useVars(0))
+    )()
+    val child1 = scope(
+      nodeSymbol("root", roots.defVar),
+      nodeSymbol("book", books2.defVar, books2.useVars: _*)
+    )(child11)
+    val child2 = scope(
+      nodeSymbol("book", books1.defVar, books1.useVars(1))
+    )()
     val given = scope()(child1, child2)
 
     given.allSymbolDefinitions should equal(Map(
-      "name" -> Set(symUse("name", 31)),
-      "root" -> Set(symUse("root", 6)),
-      "tag" -> Set(symUse("tag", 83)),
-      "book" -> Set(symUse("book", 18), symUse("book", 24))
+      "name" -> Set(names.definition),
+      "root" -> Set(roots.definition),
+      "tag" -> Set(tags.definition),
+      "book" -> Set(books1.definition, books2.definition)
     ))
   }
 
   test("Should build variable map for simple scope tree") {
-    val given = scope(nodeSymbol("a", 1, 2), nodeSymbol("b", 2))()
+    val as = symbolUses("a", 1)
+    val bs = symbolUses("b", 0)
+    val given = scope(
+      intSymbol("a", as.defVar, as.useVars: _*),
+      intSymbol("b", bs.defVar, bs.useVars: _*)
+    )()
 
     val actual = given.variableDefinitions
 
     actual should equal(Map(
-      symUse("a", 1) -> symUse("a", 1),
-      symUse("a", 2) -> symUse("a", 1),
-      symUse("b", 2) -> symUse("b", 2)
+      as.definition -> as.definition,
+      bs.definition -> bs.definition,
+      as.readingUses(0) -> as.definition,
     ))
   }
 
   test("Should build variable map for complex scope tree with shadowing") {
+    val names = symbolUses("name", 1)
+    val roots = symbolUses("root", 1)
+    val tags = symbolUses("tag", 0)
+    val books1 = symbolUses("book", 2)
+    val books2 = symbolUses("book", 1)
+
     val given = scope()(
-      scope(nodeSymbol("root", 6), nodeSymbol("book", 18, 111))(
-        scope(stringSymbol("name", 31, 93), nodeSymbol("root", 6, 69), nodeSymbol("tag", 83), nodeSymbol("book", 18, 124))()
+      scope(
+        nodeSymbol("root", roots.defVar),
+        nodeSymbol("book", books1.defVar, books1.useVars(0)))(
+        scope(
+          stringSymbol("name", names.defVar, names.useVars: _*),
+          nodeSymbol("root", roots.defVar, roots.useVars: _*),
+          nodeSymbol("tag", tags.defVar),
+          nodeSymbol("book", books1.defVar, books1.useVars(1))
+        )()
       ),
-      scope(nodeSymbol("book", 200, 300))()
+      scope(
+        nodeSymbol("book", books2.defVar, books2.useVars: _*)
+      )()
     )
 
     val actual = given.allVariableDefinitions
 
     actual should equal(Map(
-      symUse("root", 6) -> symUse("root", 6),
-      symUse("root", 69) -> symUse("root", 6),
-      symUse("book", 18) -> symUse("book", 18),
-      symUse("book", 111) -> symUse("book", 18),
-      symUse("book", 124) -> symUse("book", 18),
-      symUse("book", 200) -> symUse("book", 200),
-      symUse("book", 300) -> symUse("book", 200),
-      symUse("name", 31) -> symUse("name", 31),
-      symUse("name", 93) -> symUse("name", 31),
-      symUse("tag", 83) -> symUse("tag", 83)
+      roots.definition -> roots.definition,
+      roots.readingUses(0) -> roots.definition,
+      books1.definition -> books1.definition,
+      books1.readingUses(0) -> books1.definition,
+      books1.readingUses(1) -> books1.definition,
+      books2.definition -> books2.definition,
+      books2.readingUses(0) -> books2.definition,
+      names.definition -> names.definition,
+      names.readingUses(0) -> names.definition,
+      tags.definition -> tags.definition
     ))
   }
 }

@@ -120,7 +120,7 @@ object extractPredicates {
     bottomUp(Rewriter.lift {
       case v: Variable if v == from => Variable(to)(v.position)
       case p:ExpressionWithOuterScope =>
-        p.withOuterScope(p.outerScope.map(v => if (v ==from) Variable(to)(v.position) else v))
+        p.withOuterScope(p.outerScope.map(v => if (v == from) Variable(to)(v.position) else v))
     })
 
   object AllRelationships {

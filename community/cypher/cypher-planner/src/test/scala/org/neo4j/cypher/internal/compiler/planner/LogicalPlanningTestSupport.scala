@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
 import org.neo4j.cypher.internal.compiler.phases.JavaccParsing
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.NameDeduplication
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -62,10 +63,12 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizerTest
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
@@ -331,12 +334,13 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     }
   }
 
-  val pipeLine =
+  val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     JavaccParsing andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries) andThen
       AstRewriting() andThen
       RewriteProcedureCalls andThen
+      SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries) andThen
       Namespacer andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizerTest.getTransformer andThen

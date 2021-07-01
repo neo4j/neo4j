@@ -336,15 +336,15 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   private def checkShadowedVariables(outer: SemanticState): SemanticCheck = { state =>
     val outerScopeSymbols: Map[String, Symbol] = outer.currentScope.scope.symbolTable
-    val subquerySymbolPositions: Map[String, Set[InputPosition]] = state.currentScope.scope.allSymbolDefinitions.mapValues(_.map(_.position))
+    val innerScopeSymbols: Map[String, Set[Symbol]] = state.currentScope.scope.allSymbols
 
     def isShadowed(s: Symbol): Boolean =
-      subquerySymbolPositions.contains(s.name) &&
-        subquerySymbolPositions(s.name).intersect(s.positions).isEmpty
+      innerScopeSymbols.contains(s.name) &&
+        !innerScopeSymbols(s.name).map(_.definition).contains(s.definition)
 
     val shadowedSymbols = outerScopeSymbols.collect {
       case (name, symbol) if isShadowed(symbol)  =>
-        name -> subquerySymbolPositions(name).min
+        name -> innerScopeSymbols(name).find(_.definition != symbol.definition).get.definition.asVariable.position
     }
     val stateWithNotifications = shadowedSymbols.foldLeft(state) {
       case (state, (varName, pos)) =>

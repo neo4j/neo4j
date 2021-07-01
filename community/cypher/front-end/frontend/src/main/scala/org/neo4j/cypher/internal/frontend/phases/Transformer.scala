@@ -85,6 +85,8 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
   }
 
   override def name: String = first.name + ", " + after.name
+
+  override def toString: String = name
 }
 
 

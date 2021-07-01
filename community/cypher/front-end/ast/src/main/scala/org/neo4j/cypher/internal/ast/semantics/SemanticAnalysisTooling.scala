@@ -207,11 +207,11 @@ trait SemanticAnalysisTooling {
    */
   def declareVariable(v: LogicalVariable,
                       typeGen: TypeGenerator,
-                      positions: Set[InputPosition] = Set.empty,
+                      maybePreviousDeclaration: Option[Symbol] = None,
                       overriding: Boolean = false
                      ): SemanticState => Either[SemanticError, SemanticState] =
     (s: SemanticState) =>
-      s.declareVariable(v, typeGen(s), positions, overriding)
+      s.declareVariable(v, typeGen(s), maybePreviousDeclaration, overriding)
 
   def implicitVariable(v:LogicalVariable, possibleType: CypherType): SemanticState => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitVariable(v, possibleType)

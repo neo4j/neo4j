@@ -16,22 +16,20 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ScopeTreeVerificationTest extends CypherFunSuite {
+class ScopeTreeVerifierTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should reject scopes mapping the wrong name to a symbol") {
-    val given = Scope(Map("a" -> intSymbol("a", 3), "b" -> intSymbol("x", 5)), Seq())
+    val x = intSymbol("x", varFor("x"))
+    val a = intSymbol("a", varFor("a"))
+    val given = Scope(Map("a" -> a, "b" -> x), Seq())
 
     val result = ScopeTreeVerifier.verify(given).map(_.fixNewLines)
 
-    result should equal(Seq(s"""'b' points to symbol with different name 'x@5(5): Integer' in scope ${given.toIdString}. Scope tree:
-                               |${given.toIdString} {
-                               |  a: 3
-                               |  b: 5
-                               |}
-                               |""".stripMargin.fixNewLines))
+    result.head should startWith(s"'b' points to symbol with different name '$x' in scope ${given.toIdString}. Scope tree:")
   }
 }

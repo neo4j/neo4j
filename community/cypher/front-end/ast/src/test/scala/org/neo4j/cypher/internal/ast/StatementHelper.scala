@@ -20,11 +20,14 @@ import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.Variable
 import org.scalatest.Assertions
 
 object StatementHelper extends Assertions {
 
   implicit class RichStatement(ast: Statement) {
+    private val allVariables = ast.findAllByClass[Variable]
+
     def semanticState(features: SemanticFeature*): SemanticState =
       ast.semanticCheck(SemanticState.clean.withFeatures(features: _*)) match {
         case SemanticCheckResult(state, errors) =>
@@ -35,5 +38,13 @@ object StatementHelper extends Assertions {
       }
 
     def scope: Scope = semanticState().scopeTree
+
+    def varAt(name: String)(offset: Int): Variable =
+      allVariables.find(v => v.name == name && v.position.offset == offset) match {
+        case Some(value) => value
+        case None =>
+          val foundOffsets = allVariables.filter(v => v.name == name).map(_.position.offset)
+          throw new IllegalStateException(s"Variable `$name` not found at position $offset. Found positions: $foundOffsets")
+      }
   }
 }

@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -55,8 +56,9 @@ class SemanticStateTest extends CypherFunSuite {
       ((_: SemanticState).implicitVariable(variable3, CTNode)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
-        val positions = state.currentScope.localSymbol("foo").map(_.positions).get
-        positions should equal(Set(variable1.position, variable2.position, variable3.position))
+        val symbol = state.currentScope.localSymbol("foo").get
+        symbol.definition.use should equal(Ref(variable1))
+        symbol.readingUses.map(_.use) should equal(Set(Ref(variable2), Ref(variable3)))
     }
   }
 
@@ -152,7 +154,7 @@ class SemanticStateTest extends CypherFunSuite {
         next <- SemanticState.clean.declareVariable(Variable("foo")(DummyPosition(0)), CTNode)
         next <- next.declareVariable(Variable("bar")(DummyPosition(0)), CTNode)
       } yield next
-    state.currentScope.availableSymbolDefinitions should equal(Set(SymbolUse("foo", DummyPosition(0)), SymbolUse("bar", DummyPosition(0))))
+    state.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(Variable("foo")(DummyPosition(0)), Variable("bar")(DummyPosition(0))))
   }
 
   test("should list all symbols from local scope but not from child scopes") {
@@ -163,7 +165,7 @@ class SemanticStateTest extends CypherFunSuite {
         child2 <- child.declareVariable(Variable("bar")(DummyPosition(0)), CTNode)
         parent = child2.popScope
       } yield parent
-    state.currentScope.availableSymbolDefinitions should equal(Set(SymbolUse("foo", DummyPosition(0))))
+    state.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(Variable("foo")(DummyPosition(0))))
   }
 
   test("should list all symbols from local scope and parent scope, but not sibling scope") {
@@ -175,8 +177,8 @@ class SemanticStateTest extends CypherFunSuite {
         child = sibling2.newSiblingScope
         child2 <- child.declareVariable(Variable("baz")(DummyPosition(0)), CTNode)
       } yield (child2, sibling2)
-    state1.currentScope.availableSymbolDefinitions should equal(Set(SymbolUse("foo", DummyPosition(0)), SymbolUse("baz", DummyPosition(0))))
-    state2.currentScope.availableSymbolDefinitions should equal(Set(SymbolUse("foo", DummyPosition(0)), SymbolUse("bar", DummyPosition(0))))
+    state1.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(Variable("foo")(DummyPosition(0)), Variable("baz")(DummyPosition(0))))
+    state2.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(Variable("foo")(DummyPosition(0)), Variable("bar")(DummyPosition(0))))
   }
 
   test("should override symbol in parent") {
@@ -228,47 +230,56 @@ class SemanticStateTest extends CypherFunSuite {
   }
 
   test("should be able to import scopes") {
+    val foo0 = Variable("foo")(DummyPosition(0))
+    val foo1 = Variable("foo")(DummyPosition(1))
+    val bar = Variable("bar")(DummyPosition(1))
+    val baz = Variable("baz")(DummyPosition(4))
+
     val s1 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-
+        .declareVariable(foo0, CTNode).right.get
+        .declareVariable(bar, CTNode).right.get
 
     val s2 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
+        .declareVariable(foo1, CTNode).right.get
+        .declareVariable(baz, CTNode).right.get
 
     val actual = s1.importValuesFromScope(s2.scopeTree)
     val expected =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
+        .declareVariable(foo1, CTNode).right.get
+        .declareVariable(bar, CTNode).right.get
+        .declareVariable(baz, CTNode).right.get
 
 
     actual.scopeTree should equal(expected.scopeTree)
   }
 
   test("should be able to import scopes and honor excludes") {
+    val foo0 = Variable("foo")(DummyPosition(0))
+    val foo1 = Variable("foo")(DummyPosition(1))
+    val bar = Variable("bar")(DummyPosition(1))
+    val baz = Variable("baz")(DummyPosition(4))
+    val frob = Variable("frob")(DummyPosition(5))
+
     val s1 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-
+        .declareVariable(foo0, CTNode).right.get
+        .declareVariable(bar, CTNode).right.get
 
     val s2 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
-        .declareVariable(Variable("frob")(DummyPosition(5)), CTNode).right.get
+        .declareVariable(foo1, CTNode).right.get
+        .declareVariable(baz, CTNode).right.get
+        .declareVariable(frob, CTNode).right.get
 
     val actual = s1.importValuesFromScope(s2.scopeTree, Set("foo", "frob"))
     val expected =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
+        .declareVariable(foo0, CTNode).right.get
+        .declareVariable(bar, CTNode).right.get
+        .declareVariable(baz, CTNode).right.get
 
 
     actual.scopeTree should equal(expected.scopeTree)

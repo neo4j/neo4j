@@ -24,13 +24,18 @@ final class Ref[+T <: AnyRef](val value: T) {
   if (value == null)
     throw new IllegalArgumentException("Attempt to instantiate Ref(null)")
 
-  def toIdString = Integer.toHexString(java.lang.System.identityHashCode(value))
+  /**
+   * A unique id of this ref, as given by System.identityHashCode.
+   */
+  def id: Int = java.lang.System.identityHashCode(value)
+
+  def toIdString: String = Integer.toHexString(id)
 
   override def toString = s"Ref@$toIdString($value)"
 
-  override def hashCode = java.lang.System.identityHashCode(value)
+  override def hashCode: Int = id
 
-  override def equals(that: Any) = that match {
+  override def equals(that: Any): Boolean = that match {
     case other: Ref[_] => value eq other.value
     case _ => false
   }

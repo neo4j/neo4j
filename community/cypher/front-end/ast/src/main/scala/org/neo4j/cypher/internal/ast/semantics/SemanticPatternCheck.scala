@@ -166,7 +166,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             x.element match {
               case RelationshipChain(_, rel, _) =>
                 rel.variable.flatMap(id => state.symbol(id.name)) match {
-                  case Some(symbol) if symbol.positions.size > 1 => {
+                  case Some(symbol) if symbol.uses.size > 1 => {
                     SemanticCheckResult.error(state, SemanticError(s"Bound relationships not allowed in ${
                       x.name
                     }(...)", rel.position))

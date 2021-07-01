@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
@@ -29,10 +30,10 @@ case class recordScopes(semanticState: SemanticState) extends Rewriter {
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     case x: PatternExpression =>
-      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
+      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable.asInstanceOf[Variable])) // FIXME fix casts
     case x: PatternComprehension =>
-      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
+      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable.asInstanceOf[Variable]))
     case x: ExistsSubClause =>
-      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
+      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable.asInstanceOf[Variable]))
   })
 }
