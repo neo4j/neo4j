@@ -29,7 +29,7 @@ import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
  * A stage of processing, mainly consisting of one or more {@link Step steps} that batches of data to
  * process flows through.
  */
-public class Stage
+public class Stage implements AutoCloseable
 {
     private final List<Step<?>> pipeline = new ArrayList<>();
     private final StageExecution execution;
@@ -76,6 +76,7 @@ public class Stage
         }
     }
 
+    @Override
     public void close()
     {
         Exception exception = null;

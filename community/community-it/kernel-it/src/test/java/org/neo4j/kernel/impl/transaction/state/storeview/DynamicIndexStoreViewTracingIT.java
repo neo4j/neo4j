@@ -55,13 +55,8 @@ class DynamicIndexStoreViewTracingIT
     private IndexingService indexingService;
     @Inject
     private RecordStorageEngine storageEngine;
-    private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-
-    @AfterEach
-    void closeJobScheduler() throws Exception
-    {
-        jobScheduler.close();
-    }
+    @Inject
+    private JobScheduler jobScheduler;
 
     @Test
     void tracePageCacheAccess()
@@ -88,8 +83,8 @@ class DynamicIndexStoreViewTracingIT
                 new TestTokenScanConsumer(), false, true, pageCacheTracer, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 5 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 5 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 5 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 104 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 104 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 104 );
     }
 }

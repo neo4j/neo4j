@@ -73,8 +73,8 @@ public class DynamicIndexStoreViewIT
     private RecordStorageEngine storageEngine;
     @Inject
     private TokenHolders tokenHolders;
-
-    private final JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
+    @Inject
+    private JobScheduler scheduler;
 
     private DynamicIndexStoreView storeView;
 
@@ -86,12 +86,6 @@ public class DynamicIndexStoreViewIT
                 new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), scheduler ),
                 locks, lockService, Config.defaults(), indexDescriptor -> indexingService.getIndexProxy( indexDescriptor ),
                 storageEngine::newReader, storageEngine::createStorageCursors, NullLogProvider.nullLogProvider() );
-    }
-
-    @AfterEach
-    void tearDown() throws Exception
-    {
-        scheduler.close();
     }
 
     @Disabled( "disabled until we have token indexes on by default" )

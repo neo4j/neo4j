@@ -216,9 +216,9 @@ public class StoreUpgraderInterruptionTestIT
         assertEquals( 125, idMigratorTracer.unpins() );
 
         assertEquals( 60, recordMigratorTracer.faults() );
-        assertEquals( 166, recordMigratorTracer.hits() );
-        assertEquals( 226, recordMigratorTracer.pins() );
-        assertEquals( 226, recordMigratorTracer.unpins() );
+        assertEquals( 170, recordMigratorTracer.hits() );
+        assertEquals( 230, recordMigratorTracer.pins() );
+        assertEquals( 230, recordMigratorTracer.unpins() );
     }
 
     @ParameterizedTest

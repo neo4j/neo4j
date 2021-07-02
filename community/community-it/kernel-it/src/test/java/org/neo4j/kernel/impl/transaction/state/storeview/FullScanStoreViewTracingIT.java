@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
@@ -27,7 +26,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
@@ -49,16 +47,11 @@ class FullScanStoreViewTracingIT
     private LockService lockService;
     @Inject
     private RecordStorageEngine storageEngine;
-    private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-
-    @AfterEach
-    void tearDown() throws Exception
-    {
-        jobScheduler.close();
-    }
+    @Inject
+    private JobScheduler jobScheduler;
 
     @Test
-    void tracePageCacheAccess() throws Exception
+    void tracePageCacheAccess()
     {
         int nodeCount = 1000;
         var label = Label.label( "marker" );
@@ -79,8 +72,8 @@ class FullScanStoreViewTracingIT
                 new TestTokenScanConsumer(), true, true, pageCacheTracer, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 4 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 4 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 4 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 103 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 103 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 103 );
     }
 }

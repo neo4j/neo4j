@@ -41,6 +41,7 @@ import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
+import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -99,8 +100,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         try
         {
             continueScanning.set( true );
-            Configuration config = Configuration.DEFAULT;
-            stage = new StoreScanStage<>( dbConfig, config, this::getEntityIdIterator, externalUpdatesCheck, continueScanning, storageReader,
+            stage = new StoreScanStage<>( dbConfig, Configuration.DEFAULT, this::getEntityIdIterator, externalUpdatesCheck, continueScanning, storageReader,
                     storeCursorsFactory, entityTokenIdFilter, propertyKeyIdFilter, propertyScanConsumer, tokenScanConsumer, cursorBehaviour, lockFunction,
                     parallelWrite, scheduler, cacheTracer, memoryTracker );
             superviseDynamicExecution( INVISIBLE, stage );

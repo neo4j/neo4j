@@ -330,7 +330,7 @@ class ForkedProcessorStepTest
         {
             super( "Stress", null, config, orderingGuarantees );
 
-            add( new PullingProducerStep( control(), config )
+            add( new PullingProducerStep<>( control(), config )
             {
                 @Override
                 protected long position()
@@ -339,7 +339,7 @@ class ForkedProcessorStepTest
                 }
 
                 @Override
-                protected Object nextBatchOrNull( long ticket, int batchSize )
+                protected Object nextBatchOrNull( long ticket, int batchSize, ProcessContext processContext )
                 {
                     return ticket < batches ? ticket : null;
                 }

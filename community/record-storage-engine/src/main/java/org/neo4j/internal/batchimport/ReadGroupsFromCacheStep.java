@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import org.neo4j.internal.batchimport.staging.ProcessContext;
 import org.neo4j.internal.batchimport.staging.PullingProducerStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
@@ -33,7 +34,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.prefetching;
  * Reads {@link RelationshipGroupRecord group records} from {@link RelationshipGroupCache}, sending
  * them downstream in batches.
  */
-public class ReadGroupsFromCacheStep extends PullingProducerStep
+public class ReadGroupsFromCacheStep extends PullingProducerStep<ProcessContext>
 {
     private final int itemSize;
     private final PrefetchingIterator<RelationshipGroupRecord> data;
@@ -50,7 +51,7 @@ public class ReadGroupsFromCacheStep extends PullingProducerStep
     }
 
     @Override
-    protected Object nextBatchOrNull( long ticket, int batchSize )
+    protected Object nextBatchOrNull( long ticket, int batchSize, ProcessContext processContext )
     {
         if ( !data.hasNext() )
         {

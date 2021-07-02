@@ -21,10 +21,12 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.staging.ProcessContext;
 import org.neo4j.internal.batchimport.staging.PullingProducerStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.IOUtils;
@@ -36,7 +38,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
 
-public class ReadEntityIdsStep extends PullingProducerStep
+public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.ReadEntityProcessContext>
 {
     private static final String CURSOR_TRACER_TAG = "indexPopulationReadEntityIds";
 
@@ -45,11 +47,8 @@ public class ReadEntityIdsStep extends PullingProducerStep
     private final BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier;
     private final Function<CursorContext,StoreCursors> storeCursorsFactory;
     private final PageCacheTracer pageCacheTracer;
-    private volatile long position;
-    private CursorContext cursorContext;
-    private StoreCursors storeCursors;
-    private EntityIdIterator entityIdIterator;
-    private long lastEntityId;
+    private final AtomicLong position = new AtomicLong();
+    private volatile long lastEntityId;
 
     public ReadEntityIdsStep( StageControl control, Configuration configuration,
             BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier, Function<CursorContext,StoreCursors> storeCursorsFactory,
@@ -64,36 +63,33 @@ public class ReadEntityIdsStep extends PullingProducerStep
     }
 
     @Override
-    protected void process()
+    protected ReadEntityProcessContext processContext()
     {
-        cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CURSOR_TRACER_TAG ) );
-        storeCursors = storeCursorsFactory.apply( cursorContext );
-        entityIdIterator = entityIdIteratorSupplier.apply( cursorContext, storeCursors );
-        super.process();
+        return new ReadEntityProcessContext( pageCacheTracer, storeCursorsFactory, entityIdIteratorSupplier );
     }
 
     @Override
-    protected Object nextBatchOrNull( long ticket, int batchSize )
+    protected Object nextBatchOrNull( long ticket, int batchSize, ReadEntityProcessContext processContext )
     {
-        if ( !continueScanning.get() || !entityIdIterator.hasNext() )
+        if ( !continueScanning.get() || !processContext.entityIdIterator.hasNext() )
         {
             return null;
         }
 
-        checkAndApplyExternalUpdates();
+        checkAndApplyExternalUpdates( processContext.entityIdIterator );
 
         long[] entityIds = new long[batchSize];
         int cursor = 0;
-        while ( cursor < batchSize && entityIdIterator.hasNext() )
+        while ( cursor < batchSize && processContext.entityIdIterator.hasNext() )
         {
-            entityIds[cursor++] = entityIdIterator.next();
+            entityIds[cursor++] = processContext.entityIdIterator.next();
         }
-        position += cursor;
+        position.getAndAdd( cursor );
         lastEntityId = entityIds[cursor - 1];
         return cursor == entityIds.length ? entityIds : Arrays.copyOf( entityIds, cursor );
     }
 
-    private void checkAndApplyExternalUpdates()
+    private void checkAndApplyExternalUpdates( EntityIdIterator entityIdIterator )
     {
         if ( externalUpdatesCheck.needToApplyExternalUpdates() )
         {
@@ -128,15 +124,29 @@ public class ReadEntityIdsStep extends PullingProducerStep
     }
 
     @Override
-    protected void done()
-    {
-        super.done();
-        IOUtils.closeAllUnchecked( entityIdIterator, storeCursors, cursorContext );
-    }
-
-    @Override
     protected long position()
     {
-        return position;
+        return position.get();
+    }
+
+    static class ReadEntityProcessContext implements ProcessContext
+    {
+        private final CursorContext cursorContext;
+        private final StoreCursors storeCursors;
+        private final EntityIdIterator entityIdIterator;
+
+        ReadEntityProcessContext( PageCacheTracer cacheTracer, Function<CursorContext,StoreCursors> storeCursorsFactory,
+                BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier )
+        {
+            cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( CURSOR_TRACER_TAG ) );
+            storeCursors = storeCursorsFactory.apply( cursorContext );
+            entityIdIterator = entityIdIteratorSupplier.apply( cursorContext, storeCursors );
+        }
+
+        @Override
+        public void close()
+        {
+            IOUtils.closeAllUnchecked( entityIdIterator, storeCursors, cursorContext );
+        }
     }
 }

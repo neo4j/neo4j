@@ -19,17 +19,19 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.RecordIdIterator;
 
 /**
  * Releases batches of record ids to be read, potentially in parallel, by downstream batches.
  */
-public class BatchFeedStep extends PullingProducerStep
+public class BatchFeedStep extends PullingProducerStep<ProcessContext>
 {
     private final RecordIdIterator ids;
     private final int recordSize;
-    private volatile long count;
+    private final AtomicLong count = new AtomicLong();
 
     public BatchFeedStep( StageControl control, Configuration config, RecordIdIterator ids, int recordSize )
     {
@@ -39,15 +41,15 @@ public class BatchFeedStep extends PullingProducerStep
     }
 
     @Override
-    protected Object nextBatchOrNull( long ticket, int batchSize )
+    protected Object nextBatchOrNull( long ticket, int batchSize, ProcessContext processContext )
     {
-        count += batchSize;
+        count.getAndAdd( batchSize );
         return ids.nextBatch();
     }
 
     @Override
     protected long position()
     {
-        return count * recordSize;
+        return count.get() * recordSize;
     }
 }

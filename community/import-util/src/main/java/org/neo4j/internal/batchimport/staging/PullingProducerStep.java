@@ -23,8 +23,9 @@ import org.neo4j.internal.batchimport.Configuration;
 
 import static java.lang.System.nanoTime;
 
-public abstract class PullingProducerStep extends ProducerStep
+public abstract class PullingProducerStep<T extends ProcessContext> extends ProducerStep
 {
+
     public PullingProducerStep( StageControl control, Configuration config )
     {
         super( control, config );
@@ -37,25 +38,34 @@ public abstract class PullingProducerStep extends ProducerStep
     protected void process()
     {
         Object batch;
-        while ( true )
+        try ( T batchContext = processContext() )
         {
-            long startTime = nanoTime();
-            batch = nextBatchOrNull( doneBatches.get(), batchSize );
-            if ( batch == null )
+            while ( true )
             {
-                break;
-            }
+                long startTime = nanoTime();
+                batch = nextBatchOrNull( doneBatches.get(), batchSize, batchContext );
+                if ( batch == null )
+                {
+                    break;
+                }
 
-            totalProcessingTime.add( nanoTime() - startTime );
-            sendDownstream( batch );
-            assertHealthy();
+                totalProcessingTime.add( nanoTime() - startTime );
+                sendDownstream( batch );
+                assertHealthy();
+            }
         }
+    }
+
+    protected T processContext()
+    {
+        return (T) ProcessContext.EMPTY_CONTEXT;
     }
 
     /**
      * Generates next batch object with a target size of {@code batchSize} items from its data stream in it.
      * @param batchSize number of items to grab from its data stream (whatever a subclass defines as a data stream).
+     * @param processContext process context with potentially processing specific resources
      * @return the batch object to send downstream, or null if the data stream came to an end.
      */
-    protected abstract Object nextBatchOrNull( long ticket, int batchSize );
+    protected abstract Object nextBatchOrNull( long ticket, int batchSize, T processContext );
 }

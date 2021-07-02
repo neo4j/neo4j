@@ -31,12 +31,15 @@ import static java.lang.Math.round;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.upgrade_processors;
 import static org.neo4j.io.ByteUnit.gibiBytes;
+import static org.neo4j.util.FeatureToggles.getInteger;
 
 /**
  * Configuration for a an importer, mostly how and how much resources are used.
  */
 public interface Configuration
 {
+    int DEFAULT_BATCH_SIZE = getInteger( Configuration.class, "DEFAULT_BATCH_SIZE", 10_000 );
+
     /**
      * File name in which bad entries from the import will end up. This file will be created in the
      * database directory of the imported database, i.e. <into>/bad.log.
@@ -49,7 +52,7 @@ public interface Configuration
      */
     default int batchSize()
     {
-        return 10_000;
+        return DEFAULT_BATCH_SIZE;
     }
 
     /**
