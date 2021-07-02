@@ -20,6 +20,8 @@
 package org.neo4j.configuration;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -309,8 +311,9 @@ class GraphDatabaseSettingsTest
                 .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 3 ) ).build() );
     }
 
-    @Test
-    void shouldNotLimitTxSizeIfSingle()
+    @ParameterizedTest
+    @EnumSource( value = GraphDatabaseSettings.Mode.class, mode = EnumSource.Mode.EXCLUDE, names = {"CORE"} )
+    void shouldNotLimitTxSizeIfNotCore()
     {
         Config.newBuilder()
                 .set( GraphDatabaseSettings.mode, GraphDatabaseSettings.Mode.SINGLE )

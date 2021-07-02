@@ -50,6 +50,7 @@ import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.ifCluster;
+import static org.neo4j.configuration.SettingConstraints.ifMode;
 import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
@@ -929,7 +930,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Long> memory_transaction_max_size =
             newBuilder( "dbms.memory.transaction.max_size", BYTES, 0L )
                     .addConstraint( any( min( mebiBytes( 1 ) ), is( 0L ) ) )
-                    .addConstraint( ifCluster( max( gibiBytes( 2 ) ) ) )
+                    .addConstraint( SettingConstraints.ifMode( max( gibiBytes( 2  ) ), SettingConstraints.unconstrained(), Mode.CORE ) )
                     .dynamic().build();
 
     @Description( "Enable off heap and on heap memory tracking. Should not be set to `false` for clusters." )

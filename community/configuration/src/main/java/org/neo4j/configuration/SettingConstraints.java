@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Configuration;
@@ -39,6 +38,8 @@ import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Numbers;
 
 import static java.lang.String.format;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
 
 public final class SettingConstraints
 {
@@ -230,14 +231,14 @@ public final class SettingConstraints
             @Override
             public String getDescription()
             {
-                return Arrays.stream( constraints ).map( SettingConstraint::getDescription ).collect( Collectors.joining( " or " ));
+                return stream( constraints ).map( SettingConstraint::getDescription ).collect( joining( " or " ) );
             }
 
             @Override
             void setParser( SettingValueParser<T> parser )
             {
                 super.setParser( parser );
-                Arrays.stream( constraints ).forEach( constraint -> constraint.setParser( parser ) );
+                stream( constraints ).forEach( constraint -> constraint.setParser( parser ) );
             }
         };
     }
@@ -487,8 +488,40 @@ public final class SettingConstraints
 
     public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> clusterConstraint, SettingConstraint<T> nonClusterConstraint )
     {
-        return dependency( clusterConstraint, nonClusterConstraint,
-                GraphDatabaseSettings.mode, any( is( GraphDatabaseSettings.Mode.CORE ), is( GraphDatabaseSettings.Mode.READ_REPLICA ) ) );
+        return ifMode( clusterConstraint, nonClusterConstraint, GraphDatabaseSettings.Mode.CORE, GraphDatabaseSettings.Mode.READ_REPLICA );
+    }
+
+    public static <T> SettingConstraint<T> ifMode( SettingConstraint<T> clusterConstraint, SettingConstraint<T> nonClusterConstraint,
+            GraphDatabaseSettings.Mode... modes )
+    {
+        return dependency( clusterConstraint, nonClusterConstraint, GraphDatabaseSettings.mode, isOneOf( modes ) );
+    }
+
+    public static <T> SettingConstraint<T> isOneOf( T[] acceptedValues )
+    {
+        if ( acceptedValues == null || acceptedValues.length == 0 )
+        {
+            throw new IllegalArgumentException( "Accepted values must contain at least one object" );
+        }
+        return new SettingConstraint<>()
+        {
+            @Override
+            public void validate( T value, Configuration config )
+            {
+
+                if ( !ArrayUtil.contains( acceptedValues, value ) )
+                {
+                    throw new IllegalArgumentException( "is not " + getDescription() );
+                }
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return String.format( "one of `%s`", stream( acceptedValues )
+                        .map( this::valueToString ).collect( joining( ", ", "[", "]" ) ) );
+            }
+        };
     }
 
     public static <T, C extends Collection<T>> SettingConstraint<C> shouldNotContain( T value, String collectionDescription )
