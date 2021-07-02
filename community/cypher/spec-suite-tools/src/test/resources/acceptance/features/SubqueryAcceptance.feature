@@ -664,6 +664,24 @@ Feature: SubqueryAcceptance
       | +nodes      | 6 |
       | +labels     | 1 |
 
+  Scenario: Unit subquery under limit
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL {
+        CREATE (:Label)
+      }
+      RETURN x LIMIT 0
+      """
+    Then the result should be, in order:
+      | x |
+    And the side effects should be:
+      | +nodes  | 3 |
+
   Scenario: Embedded nested unit subquery call
     And having executed:
       """

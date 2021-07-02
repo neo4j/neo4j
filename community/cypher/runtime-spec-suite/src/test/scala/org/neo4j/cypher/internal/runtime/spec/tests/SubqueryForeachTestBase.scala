@@ -288,4 +288,31 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
         .withStatistics(nodesCreated = sizeHint * 3, labelsAdded = sizeHint * 3, propertiesSet = sizeHint * 6)
       )
   }
+
+  test("subqueryForeach under exhaustive limit should execute side-effects") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .exhaustiveLimit(0)
+      .subqueryForeach()
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .unwind(s"range(1, $sizeHint) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+
+    // then
+    val nodes = tx.getAllNodes.asScala.toList
+    nodes.size
+         .shouldBe(sizeHint)
+
+    runtimeResult
+      .should(beColumns("x")
+        .withNoRows()
+        .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint)
+      )
+  }
 }

@@ -118,7 +118,11 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         val limited = skipAndLimit(sorted, query, context)
         val projected =
           if (regularProjection.projections.isEmpty && query.tail.isEmpty) {
-            context.logicalPlanProducer.planEmptyProjection(plan, context)
+            if (context.isInSubquery) {
+              plan
+            } else {
+              context.logicalPlanProducer.planEmptyProjection(plan, context)
+            }
           } else {
             projection(limited, regularProjection.projections, Some(regularProjection.projections), context)
           }

@@ -315,14 +315,13 @@ class SubQueryPlanningIntegrationTest
     )
   }
 
-  test("CALL ending with CREATE") {
+  test("Query containing unit subquery CALL ending with CREATE") {
     val query = "UNWIND [1, 2] AS x CALL { CREATE (n:N) } RETURN x"
 
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("x")
         .subqueryForeach()
-        .|.emptyResult()
         .|.create(createNode("n", "N"))
         .|.argument()
         .unwind("[1, 2] AS x")
@@ -331,7 +330,64 @@ class SubQueryPlanningIntegrationTest
     )
   }
 
-  test("CALL ending with void procedure call") {
+  test("Query containing unit subquery CALL under LIMIT") {
+    val query = "UNWIND [1, 2] AS x CALL { CREATE (n:N) } RETURN x LIMIT 0"
+
+    planFor(query) should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .exhaustiveLimit(0)
+        .subqueryForeach()
+        .|.create(createNode("n", "N"))
+        .|.argument()
+        .unwind("[1, 2] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Query containing unit union subquery CALL") {
+    val query = "UNWIND [1, 2] AS x CALL { CREATE (n:N) UNION CREATE (n:N) } RETURN x"
+
+    planFor(query) should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .subqueryForeach()
+        .|.union()
+        .|.|.projection()
+        .|.|.create(createNode("n", "N"))
+        .|.|.argument()
+        .|.projection()
+        .|.create(createNode("n", "N"))
+        .|.argument()
+        .unwind("[1, 2] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Query containing unit union subquery CALL under LIMIT") {
+    val query = "UNWIND [1, 2] AS x CALL { CREATE (n:N) UNION CREATE (n:N) } RETURN x LIMIT 0"
+
+    planFor(query) should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .exhaustiveLimit(0)
+        .subqueryForeach()
+        .|.union()
+        .|.|.projection()
+        .|.|.create(createNode("n", "N"))
+        .|.|.argument()
+        .|.projection()
+        .|.create(createNode("n", "N"))
+        .|.argument()
+        .unwind("[1, 2] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Query containing unit subquery CALL ending with void procedure CALL") {
     val query = "WITH 1 AS x CALL { WITH 2 AS y CALL my.println(y) } RETURN x"
 
     val planner = plannerBuilder()
@@ -350,7 +406,6 @@ class SubQueryPlanningIntegrationTest
         .planBuilder()
         .produceResults("x")
         .subqueryForeach()
-        .|.emptyResult()
         .|.procedureCall("my.println(y)")
         .|.projection("2 AS y")
         .|.argument()
@@ -368,7 +423,27 @@ class SubQueryPlanningIntegrationTest
         .produceResults()
         .emptyResult()
         .subqueryForeach()
-        .|.emptyResult()
+        .|.create(createNode("n", "N"))
+        .|.argument()
+        .unwind("[1, 2] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Query ending with unit union subquery CALL") {
+    val query = "UNWIND [1, 2] AS x CALL { CREATE (n:N) UNION CREATE (n:N) }"
+
+    planFor(query) should equal(
+      new LogicalPlanBuilder()
+        .produceResults()
+        .emptyResult()
+        .subqueryForeach()
+        .|.union()
+        .|.|.projection()
+        .|.|.create(createNode("n", "N"))
+        .|.|.argument()
+        .|.projection()
         .|.create(createNode("n", "N"))
         .|.argument()
         .unwind("[1, 2] AS x")
@@ -385,9 +460,7 @@ class SubQueryPlanningIntegrationTest
         .produceResults()
         .emptyResult()
         .subqueryForeach()
-        .|.emptyResult()
         .|.subqueryForeach()
-        .|.|.emptyResult()
         .|.|.create(createNode("n", "N"))
         .|.|.argument()
         .|.argument()
@@ -405,8 +478,7 @@ class SubQueryPlanningIntegrationTest
 
     val expected = new LogicalPlanBuilder()
       .produceResults("x").withCardinality(2)
-      .subqueryForeach().withCardinality(2) // <-- here we take the cardinality from unwind and ignore the one from emptyResult.
-      .|.emptyResult().withCardinality(3)
+      .subqueryForeach().withCardinality(2) // <-- here we take the cardinality from unwind and ignore the one from RHS
       .|.create(createNode("n", "N")).withCardinality(3)
       .|.unwind("[1, 2, 3] AS x").withCardinality(3)
       .|.argument().withCardinality(1)
