@@ -27,6 +27,14 @@
         <url>https://github.com/neo4j/neo4j</url>
     </scm>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <profiles>
         <profile>
             <id>include-cypher</id>
