@@ -124,7 +124,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               prePopulate: Boolean,
               subscriber: QuerySubscriber): QueryExecution = {
     defaultQueryExecutionMonitor.startProcessing(context.executingQuery())
-    executeSubQuery(query, params, context, isOutermostQuery = true, profile, prePopulate, subscriber)
+    executeSubquery(query, params, context, isOutermostQuery = true, profile, prePopulate, subscriber)
   }
 
   /**
@@ -166,7 +166,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
    * @param subscriber the subscriber where results will be streamed
    * @return a `QueryExecution` that controls the demand to the subscriber
    */
-  def executeSubQuery(query: String,
+  def executeSubquery(query: String,
                       params: MapValue,
                       context: TransactionalContext,
                       isOutermostQuery: Boolean,

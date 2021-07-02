@@ -402,11 +402,11 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def unionDistinct(qs: SingleQuery*): QueryPart =
     qs.reduceLeft[QueryPart](UnionDistinct(_, _)(pos))
 
-  def subQuery(cs: Clause*): SubQuery =
-    SubQuery(SingleQuery(cs)(pos))(pos)
+  def subqueryCall(cs: Clause*): SubqueryCall =
+    SubqueryCall(SingleQuery(cs)(pos))(pos)
 
-  def subQuery(part: QueryPart): SubQuery =
-    SubQuery(part)(pos)
+  def subqueryCall(part: QueryPart): SubqueryCall =
+    SubqueryCall(part)(pos)
 
   def create(pattern: PatternElement): Create =
     Create(Pattern(Seq(EveryPath(pattern)))(pos))(pos)

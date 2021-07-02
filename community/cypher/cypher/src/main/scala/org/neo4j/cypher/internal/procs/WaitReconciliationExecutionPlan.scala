@@ -93,7 +93,7 @@ case class WaitReconciliationExecutionPlan(
       val paramsWithTxId = updatedParams.updatedWith(txParams)
 
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, params)
-      val execution = normalExecutionEngine.executeSubQuery(query, paramsWithTxId, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubquery(query, paramsWithTxId, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
       SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullAccess, tc.kernelTransaction())

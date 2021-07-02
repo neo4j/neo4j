@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SubQueryPlanningIntegrationTest
+class SubqueryCallPlanningIntegrationTest
   extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport

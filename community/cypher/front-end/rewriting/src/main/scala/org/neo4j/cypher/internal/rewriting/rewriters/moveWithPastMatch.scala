@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -65,7 +65,7 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
   )
 
   private val subqueryRewriter: Rewriter = topDown(Rewriter.lift {
-    case s: SubQuery =>
+    case s: SubqueryCall =>
       s.copy(part = s.part.endoRewrite(innerRewriter(insideSubquery = true)))(s.position)
   })
 
@@ -127,7 +127,7 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
       // Extract individual clauses again
       val newClauses = newSections.flatMap(_.clauses)
       q.copy(clauses = newClauses)(q.position)
-  }, stopper = _.isInstanceOf[SubQuery]))
+  }, stopper = _.isInstanceOf[SubqueryCall]))
 
 
   private def isMovableWith(w: With): Boolean = {

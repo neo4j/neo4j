@@ -129,8 +129,8 @@ class FabricFragmenter(
    */
   private def partitioned(clauses: Seq[ast.Clause]) =
     partition(clauses) {
-      case s: ast.SubQuery => Left(s)
-      case c               => Right(c)
+      case s: ast.SubqueryCall => Left(s)
+      case c                   => Right(c)
     }
 
   /**

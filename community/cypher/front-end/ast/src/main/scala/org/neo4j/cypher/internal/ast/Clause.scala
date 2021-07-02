@@ -983,7 +983,7 @@ case class Yield(returnItems: ReturnItems,
                                                                (error: SemanticErrorDef): SemanticErrorDef = error
 }
 
-case class SubQuery(part: QueryPart)(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {
+case class SubqueryCall(part: QueryPart)(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {
 
   override def name: String = "CALL"
 

@@ -89,7 +89,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
       systemSubscriber.assertNotFailed()
       try {
         if (initFunction(updatedParams)) {
-          val execution = normalExecutionEngine.executeSubQuery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+          val execution = normalExecutionEngine.executeSubquery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
           try {
             execution.consumeAll()
           } catch {

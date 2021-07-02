@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
@@ -140,7 +140,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos)
           ))(pos), None, None, None)(pos)
 
-      SubQuery(SingleQuery(List(MATCH, RETURN))(pos))(pos)
+      SubqueryCall(SingleQuery(List(MATCH, RETURN))(pos))(pos)
     }
 
     val RETURN =
@@ -187,7 +187,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             AliasedReturnItem(literalInt(1), one)(pos)
           ))(pos), None, None, None)(pos)
 
-      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+      SubqueryCall(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
     }
 
     val RETURN =
@@ -242,7 +242,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             AliasedReturnItem(literalInt(1), one)(pos)
           ))(pos), None, None, None)(pos)
 
-      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+      SubqueryCall(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
     }
 
     val RETURN =
@@ -308,7 +308,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             AliasedReturnItem(literalInt(1), one)(pos)
           ))(pos), None, None, None)(pos)
 
-      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+      SubqueryCall(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
     }
 
     val RETURN =
@@ -373,7 +373,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             AliasedReturnItem(literalInt(1), one)(pos)
           ))(pos), None, None, None)(pos)
 
-      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+      SubqueryCall(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
     }
 
     val RETURN =
@@ -424,7 +424,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             AliasedReturnItem(literalInt(1), one)(pos)
           ))(pos), None, None, None)(pos)
 
-      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+      SubqueryCall(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
     }
 
     val RETURN =
@@ -473,7 +473,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             AliasedReturnItem(literalInt(1), one)(pos)
           ))(pos), None, None, None)(pos)
 
-      SubQuery(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
+      SubqueryCall(SingleQuery(List(WITH1, WITH2, RETURN))(pos))(pos)
     }
 
     val RETURN =
@@ -544,7 +544,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
         SingleQuery(List(WITH1, WITH2, RETURN))(pos)
       }
-      SubQuery(UnionDistinct(LEFT, RIGHT)(pos))(pos)
+      SubqueryCall(UnionDistinct(LEFT, RIGHT)(pos))(pos)
     }
 
     val RETURN =

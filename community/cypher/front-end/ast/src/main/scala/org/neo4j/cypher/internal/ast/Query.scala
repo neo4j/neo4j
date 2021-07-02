@@ -90,8 +90,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def containsUpdates: Boolean =
     clauses.exists {
-      case sub: SubQuery    => sub.part.containsUpdates
-      case call: CallClause => !call.containsNoUpdates
+      case sub: SubqueryCall => sub.part.containsUpdates
+      case call: CallClause  => !call.containsNoUpdates
       case _: UpdateClause  => true
       case _                => false
     }
@@ -274,7 +274,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       // otherwise
       case seq => seq.last match {
         case _: UpdateClause | _: Return | _: CommandClause                   => None
-        case subquery: SubQuery if !subquery.part.isYielding                  => None
+        case subquery: SubqueryCall if !subquery.part.isYielding              => None
         case call: CallClause if call.returnColumns.isEmpty && !call.yieldAll => None
         case call: CallClause                                                 =>
           Some(SemanticError(s"Query cannot conclude with ${call.name} together with YIELD", call.position))

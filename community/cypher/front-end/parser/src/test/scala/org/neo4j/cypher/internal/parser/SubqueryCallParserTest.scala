@@ -18,27 +18,27 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.parboiled.scala.Rule1
 
-class SubQueriesTest
-  extends ParserAstTest[ast.SubQuery]
+class SubqueryCallParserTest
+  extends ParserAstTest[ast.SubqueryCall]
     with Query
     with Clauses
     with AstConstructionTestSupport {
 
-  implicit val parser: Rule1[SubQuery] = SubQuery
+  implicit val parser: Rule1[SubqueryCall] = SubqueryCall
 
   test("CALL { RETURN 1 }") {
-    gives(subQuery(return_(literalInt(1).unaliased)))
+    gives(subqueryCall(return_(literalInt(1).unaliased)))
   }
 
   test("CALL { CALL { RETURN 1 as a } }") {
-    gives(subQuery(subQuery(return_(literalInt(1).as("a")))))
+    gives(subqueryCall(subqueryCall(return_(literalInt(1).as("a")))))
   }
 
   test("CALL { RETURN 1 AS a UNION RETURN 2 AS a }") {
-    gives(subQuery(unionDistinct(
+    gives(subqueryCall(unionDistinct(
       singleQuery(return_(literalInt(1).as("a"))),
       singleQuery(return_(literalInt(2).as("a")))
     )))
@@ -49,7 +49,7 @@ class SubQueriesTest
   }
 
   test("CALL { CREATE (n:N) }") {
-    gives(subQuery(create(nodePat("n", "N"))))
+    gives(subqueryCall(create(nodePat("n", "N"))))
   }
 
 }

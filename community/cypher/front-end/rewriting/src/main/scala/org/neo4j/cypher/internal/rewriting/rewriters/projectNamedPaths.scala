@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions
@@ -147,7 +147,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
         // After this projection, we remove all named paths. They have either been projected here, or they are not available in the rest of the query.
         TraverseChildrenNewAccForSiblings(projectedAcc, _.withoutNamedPaths)
 
-    case subquery: SubQuery =>
+    case subquery: SubqueryCall =>
       acc =>
         // Collect importing WITH clauses to insert into subqueries.
         // Importing with clauses cannot contain PathExpressions, so we need to add an extra WITH clause before those with all the variables from the path.

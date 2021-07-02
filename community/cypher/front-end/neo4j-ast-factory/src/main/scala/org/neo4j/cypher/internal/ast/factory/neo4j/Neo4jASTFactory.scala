@@ -219,7 +219,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StatementWithGraph
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
-import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.TraverseAction
@@ -579,7 +579,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     Foreach(v, list, clauses.asScala.toList)(p)
 
   override def subqueryClause(p: InputPosition, subquery: Query): Clause =
-    SubQuery(subquery.part)(p)
+    SubqueryCall(subquery.part)(p)
 
   // PATTERNS
 

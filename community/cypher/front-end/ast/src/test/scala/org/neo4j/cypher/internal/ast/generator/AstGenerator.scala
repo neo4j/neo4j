@@ -236,7 +236,7 @@ import org.neo4j.cypher.internal.ast.StartItem
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
-import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.TransactionManagementAction
@@ -1127,9 +1127,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     expression <- _expression
   } yield UseGraph(expression)(pos)
 
-  def _subQuery: Gen[SubQuery] = for {
+  def _subqueryCall: Gen[SubqueryCall] = for {
     part <- _queryPart
-  } yield SubQuery(part)(pos)
+  } yield SubqueryCall(part)(pos)
 
   def _clause: Gen[Clause] = oneOf(
     lzy(_use),
@@ -1146,7 +1146,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     lzy(_foreach),
     lzy(_loadCsv),
     lzy(_start),
-    lzy(_subQuery),
+    lzy(_subqueryCall),
   )
 
   def _singleQuery: Gen[SingleQuery] = for {

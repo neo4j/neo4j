@@ -160,7 +160,7 @@ import org.neo4j.cypher.internal.ast.Start
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
-import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
@@ -545,9 +545,9 @@ case class Prettifier(
     def dispatch(clause: Clause): String = clause match {
       case u: UseGraph              => asString(u)
       case e: Return                => asString(e)
-      case m: Match                 => asString(m)
-      case c: SubQuery              => asString(c)
-      case w: With                  => asString(w)
+      case m: Match        => asString(m)
+      case c: SubqueryCall => asString(c)
+      case w: With         => asString(w)
       case y: Yield                 => asString(y)
       case c: Create                => asString(c)
       case u: Unwind                => asString(u)
@@ -583,7 +583,7 @@ case class Prettifier(
       s"$INDENT${o}MATCH $p$h$w"
     }
 
-    def asString(c: SubQuery): String = {
+    def asString(c: SubqueryCall): String = {
       s"""${INDENT}CALL {
          |${indented().queryPart(c.part)}
          |$INDENT}""".stripMargin

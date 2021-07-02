@@ -199,7 +199,7 @@ trait Clauses extends Parser
     group(keyword("LIMIT") ~~ Expression) ~~>> (ast.Limit(_))
   }
 
-  def SubQuery: Rule1[ast.SubQuery] = rule("CALL") {
-    group(keyword("CALL") ~~ group("{" ~~ QueryPart ~~ "}")) ~~>> (part => ast.SubQuery(part))
+  def SubqueryCall: Rule1[ast.SubqueryCall] = rule("CALL") {
+    group(keyword("CALL") ~~ group("{" ~~ QueryPart ~~ "}")) ~~>> (part => ast.SubqueryCall(part))
   }
 }

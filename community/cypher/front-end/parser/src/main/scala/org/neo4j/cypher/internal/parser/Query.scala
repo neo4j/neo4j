@@ -67,7 +67,7 @@ trait Query extends Parser
       | With
       | Call
       | Return
-      | SubQuery
+      | SubqueryCall
   )
 
   def Union: ReductionRule1[ast.QueryPart, ast.QueryPart] = rule("UNION")(

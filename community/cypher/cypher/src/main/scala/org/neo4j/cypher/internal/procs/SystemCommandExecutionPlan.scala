@@ -75,7 +75,7 @@ case class SystemCommandExecutionPlan(name: String,
       val tx = tc.transaction()
       val updatedParams = parameterConverter(tx, safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext)))
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, updatedParams)
-      val execution = normalExecutionEngine.executeSubQuery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+      val execution = normalExecutionEngine.executeSubquery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
       SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())

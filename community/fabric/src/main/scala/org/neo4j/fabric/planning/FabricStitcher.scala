@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
@@ -285,7 +285,7 @@ case class FabricStitcher(
           val before = stitchChain(apply.input, outermost, outerUse)
           val inner = stitch(apply.inner, outermost = false, Some(before.lastUse))
           before.copy(
-            clauses = before.clauses :+ SubQuery(inner.queryPart)(apply.pos),
+            clauses = before.clauses :+ SubqueryCall(inner.queryPart)(apply.pos),
             useAppearances = before.useAppearances ++ inner.useAppearances)
 
       }

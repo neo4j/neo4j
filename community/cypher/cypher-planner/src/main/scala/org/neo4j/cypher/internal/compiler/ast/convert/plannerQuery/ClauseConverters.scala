@@ -47,7 +47,7 @@ import org.neo4j.cypher.internal.ast.SetItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SortItem
-import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.Where
@@ -146,8 +146,8 @@ object ClauseConverters {
     case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
     case c: Foreach => addForeachToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
     case c: InputDataStream => addInputDataStreamToLogicalPlanInput(acc, c)
-    case c: SubQuery => addCallSubqueryToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
-    case c: CommandClause => addCommandClauseToLogicalPlanInput(acc, c)
+    case c: SubqueryCall    => addCallSubqueryToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
+    case c: CommandClause   => addCommandClauseToLogicalPlanInput(acc, c)
     case c: Yield => addYieldToLogicalPlanInput(acc, c)
 
     case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
@@ -439,7 +439,7 @@ object ClauseConverters {
     }
   }
 
-  private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubQuery, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
+  private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubqueryCall, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
     val subquery = clause.part
     val callSubquery = StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable, anonymousVariableNameGenerator)
     acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isYielding)
