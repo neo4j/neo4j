@@ -109,7 +109,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * {@link MultipleIndexPopulator#flipAfterStoreScan(boolean, CursorContext)}.
  * <p>
  */
-public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
+public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, AutoCloseable
 {
     private static final String MULTIPLE_INDEX_POPULATOR_TAG = "multipleIndexPopulator";
     private static final String POPULATION_WORK_FLUSH_TAG = "populationWorkFlush";

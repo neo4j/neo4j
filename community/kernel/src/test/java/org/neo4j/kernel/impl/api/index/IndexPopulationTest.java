@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -70,20 +71,20 @@ class IndexPopulationTest
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( () -> onlineProxy );
 
-        MultipleIndexPopulator multipleIndexPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ),
-                        JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
+        try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
+                MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ),
+                        scheduler, tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() ) )
+        {
+            MultipleIndexPopulator.IndexPopulation indexPopulation = multipleIndexPopulator.addPopulator( populator, dummyIndex(), flipper, t -> failedProxy );
+            multipleIndexPopulator.queueConcurrentUpdate( someUpdate() );
+            multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL ).run( StoreScan.NO_EXTERNAL_UPDATES );
 
-        MultipleIndexPopulator.IndexPopulation indexPopulation =
-                multipleIndexPopulator.addPopulator( populator, dummyIndex(), flipper, t -> failedProxy );
-        multipleIndexPopulator.queueConcurrentUpdate( someUpdate() );
-        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL ).run( StoreScan.NO_EXTERNAL_UPDATES );
+            // when
+            indexPopulation.flip( false, CursorContext.NULL );
 
-        // when
-        indexPopulation.flip( false, CursorContext.NULL );
-
-        // then
-        assertSame( InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy" );
+            // then
+            assertSame( InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy" );
+        }
     }
 
     private OnlineIndexProxy onlineIndexProxy()
