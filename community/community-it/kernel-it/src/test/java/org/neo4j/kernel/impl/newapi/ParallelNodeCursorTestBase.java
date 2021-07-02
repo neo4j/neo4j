@@ -85,7 +85,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
-            assertTrue( scan.reserveBatch( nodes, 3, NULL ) );
+            assertTrue( scan.reserveBatch( nodes, 3, NULL, tx.securityContext().mode() ) );
 
             assertTrue( nodes.next() );
             assertEquals( NODE_IDS.get( 0 ), nodes.nodeReference() );
@@ -104,7 +104,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
-            assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2, NULL ) );
+            assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2, NULL, tx.securityContext().mode() ) );
 
             LongArrayList ids = new LongArrayList();
             while ( nodes.next() )
@@ -125,7 +125,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
             Scan<NodeCursor> scan = read.allNodesScan();
 
             // when
-            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( nodes, 0, NULL ) );
+            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( nodes, 0, NULL, tx.securityContext().mode() ) );
         }
     }
 
@@ -138,7 +138,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
-            while ( scan.reserveBatch( nodes, 3, NULL ) )
+            while ( scan.reserveBatch( nodes, 3, NULL, tx.securityContext().mode() ) )
             {
                 while ( nodes.next() )
                 {

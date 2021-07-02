@@ -76,13 +76,14 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = true;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
+        this.accessMode = read.ktx.securityContext().mode();
         if ( tracer != null )
         {
             tracer.onAllNodesScan();
         }
     }
 
-    boolean scanBatch( Read read, AllNodeScan scan, int sizeHint, LongIterator addedNodes, boolean hasChanges )
+    boolean scanBatch( Read read, AllNodeScan scan, int sizeHint, LongIterator addedNodes, boolean hasChanges, AccessMode accessMode )
     {
         this.read = read;
         this.isSingle = false;
@@ -90,6 +91,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         this.checkHasChanges = false;
         this.hasChanges = hasChanges;
         this.addedNodes = addedNodes;
+        this.accessMode = accessMode;
         boolean scanBatch = storeCursor.scanBatch( scan, sizeHint );
         return addedNodes.hasNext() || scanBatch;
     }
@@ -102,6 +104,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         this.isSingle = true;
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = true;
+        this.accessMode = read.ktx.securityContext().mode();
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
 
@@ -337,19 +340,11 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
 
     boolean allowsTraverse()
     {
-        if ( accessMode == null )
-        {
-            accessMode = read.ktx.securityContext().mode();
-        }
         return accessMode.allowsTraverseAllLabels() || accessMode.allowsTraverseNode( storeCursor.labels() );
     }
 
     boolean allowsTraverseAll()
     {
-        if ( accessMode == null )
-        {
-            accessMode = read.ktx.securityContext().mode();
-        }
         return accessMode.allowsTraverseAllRelTypes() && accessMode.allowsTraverseAllLabels();
     }
 

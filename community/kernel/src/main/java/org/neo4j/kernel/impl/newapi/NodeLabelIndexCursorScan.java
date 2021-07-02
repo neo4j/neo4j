@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -53,7 +54,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Token
     }
 
     @Override
-    protected boolean scanStore( NodeLabelIndexCursor cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext )
+    protected boolean scanStore( NodeLabelIndexCursor cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext, AccessMode accessMode )
     {
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );
@@ -65,7 +66,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Token
         }
         else
         {
-            indexCursor.initialize( indexProgressor, label, addedItems, removed );
+            indexCursor.initialize( indexProgressor, label, addedItems, removed, accessMode );
             return true;
         }
     }

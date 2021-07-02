@@ -45,6 +45,8 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.WorkerContext;
@@ -76,10 +78,11 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         try ( KernelTransaction tx = beginTransaction() )
         {
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
+            CursorContext cursorContext = tx.cursorContext();
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
-                while ( scan.reserveBatch( cursor, 23, NULL ) )
+                while ( scan.reserveBatch( cursor, 23, cursorContext, tx.securityContext().mode() ) )
                 {
                     assertFalse( cursor.next() );
                 }
@@ -116,11 +119,12 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                 tx.dataWrite().nodeDelete( delete );
             }
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
+            CursorContext cursorContext = tx.cursorContext();
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
                 Set<Long> seen = new HashSet<>();
-                while ( scan.reserveBatch( cursor, 128, NULL ) )
+                while ( scan.reserveBatch( cursor, 128, cursorContext, tx.securityContext().mode() ) )
                 {
                     while ( cursor.next() )
                     {
@@ -145,11 +149,12 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         {
             MutableLongSet added = LongSets.mutable.withAll( createNodesWithLabel( tx.dataWrite(), label, size ) );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
+            CursorContext cursorContext = tx.cursorContext();
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
                 Set<Long> seen = new HashSet<>();
-                while ( scan.reserveBatch( cursor, 64, NULL ) )
+                while ( scan.reserveBatch( cursor, 64, cursorContext, tx.securityContext().mode() ) )
                 {
                     while ( cursor.next() )
                     {
@@ -174,17 +179,19 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
             createNodesWithLabel( tx.dataWrite(), label, 11 );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
+            CursorContext cursorContext = tx.cursorContext();
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
             {
                 Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
-                assertTrue( scan.reserveBatch( cursor, 5, NULL ) );
+                AccessMode accessMode = tx.securityContext().mode();
+                assertTrue( scan.reserveBatch( cursor, 5, cursorContext, accessMode ) );
                 assertEquals( 5, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 4, NULL ) );
+                assertTrue( scan.reserveBatch( cursor, 4, cursorContext, accessMode ) );
                 assertEquals( 4, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 6, NULL ) );
+                assertTrue( scan.reserveBatch( cursor, 6, cursorContext, accessMode ) );
                 assertEquals( 2, count( cursor ) );
                 //now we should have fetched all nodes
-                while ( scan.reserveBatch( cursor, 3, NULL ) )
+                while ( scan.reserveBatch( cursor, 3, cursorContext, accessMode ) )
                 {
                     assertFalse( cursor.next() );
                 }

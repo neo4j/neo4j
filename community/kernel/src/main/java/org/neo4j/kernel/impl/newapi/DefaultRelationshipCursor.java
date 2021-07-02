@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
@@ -32,6 +33,7 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
 {
     protected boolean hasChanges;
     boolean checkHasChanges;
+    AccessMode accessMode;
     Read read;
 
     final STORECURSOR storeCursor;
@@ -53,6 +55,7 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
         this.currentAddedInTx = NO_ID;
         this.read = read;
         this.checkHasChanges = true;
+        this.accessMode = read.ktx.securityContext().mode();
     }
 
     @Override

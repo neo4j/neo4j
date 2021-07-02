@@ -45,6 +45,8 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import static java.lang.String.format;
@@ -71,10 +73,11 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
     {
         try ( KernelTransaction tx = beginTransaction() )
         {
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( NULL ) )
+            CursorContext cursorContext = tx.cursorContext();
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( cursorContext ) )
             {
                 Scan<RelationshipScanCursor> scan = tx.dataRead().allRelationshipsScan();
-                while ( scan.reserveBatch( cursor, 23, NULL ) )
+                while ( scan.reserveBatch( cursor, 23, cursorContext, tx.securityContext().mode() ) )
                 {
                     assertFalse( cursor.next() );
                 }
@@ -111,11 +114,12 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
                 }
             } );
 
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( NULL ) )
+            CursorContext cursorContext = tx.cursorContext();
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( cursorContext ) )
             {
                 Scan<RelationshipScanCursor> scan = tx.dataRead().allRelationshipsScan();
                 MutableLongSet seen =  LongSets.mutable.empty();
-                while ( scan.reserveBatch( cursor, 17, NULL ) )
+                while ( scan.reserveBatch( cursor, 17, cursorContext, tx.createExecutionContext().accessMode() ) )
                 {
                     while ( cursor.next() )
                     {
@@ -147,11 +151,12 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
                 added.add( write.relationshipCreate( write.nodeCreate(), type, write.nodeCreate() ) );
             }
 
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( NULL ) )
+            CursorContext cursorContext = tx.cursorContext();
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( cursorContext ) )
             {
                 Scan<RelationshipScanCursor> scan = tx.dataRead().allRelationshipsScan();
                 MutableLongSet seen = LongSets.mutable.empty();
-                while ( scan.reserveBatch( cursor, 17, NULL ) )
+                while ( scan.reserveBatch( cursor, 17, cursorContext, tx.securityContext().mode() ) )
                 {
                     while ( cursor.next() )
                     {
@@ -180,17 +185,19 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
                 write.relationshipCreate( write.nodeCreate(), type, write.nodeCreate() );
             }
 
-            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( NULL ) )
+            CursorContext cursorContext = tx.cursorContext();
+            AccessMode accessMode = tx.securityContext().mode();
+            try ( RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( cursorContext ) )
             {
                 Scan<RelationshipScanCursor> scan = tx.dataRead().allRelationshipsScan();
-                assertTrue( scan.reserveBatch( cursor, 5, NULL ) );
+                assertTrue( scan.reserveBatch( cursor, 5, cursorContext, accessMode ) );
                 assertEquals( 5, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 4, NULL ) );
+                assertTrue( scan.reserveBatch( cursor, 4, cursorContext, accessMode ) );
                 assertEquals( 4, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 6, NULL ) );
+                assertTrue( scan.reserveBatch( cursor, 6, cursorContext, accessMode ) );
                 assertEquals( 2, count( cursor ) );
                 //now we should have fetched all relationships
-                while ( scan.reserveBatch( cursor, 3, NULL ) )
+                while ( scan.reserveBatch( cursor, 3, cursorContext, accessMode ) )
                 {
                     assertFalse( cursor.next() );
                 }

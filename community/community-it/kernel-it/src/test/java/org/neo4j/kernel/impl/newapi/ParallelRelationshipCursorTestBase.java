@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -81,11 +82,12 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     @Test
     void shouldScanASubsetOfRelationships()
     {
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
+        CursorContext cursorContext = tx.cursorContext();
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( cursorContext ) )
         {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
-            assertTrue( scan.reserveBatch( relationships, 3, NULL ) );
+            assertTrue( scan.reserveBatch( relationships, 3, cursorContext, tx.securityContext().mode() ) );
 
             assertTrue( relationships.next() );
             assertEquals( RELATIONSHIPS.get( 0 ), relationships.relationshipReference() );
@@ -100,11 +102,12 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     @Test
     void shouldHandleSizeHintOverflow()
     {
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
+        CursorContext cursorContext = tx.cursorContext();
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( cursorContext ) )
         {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
-            assertTrue( scan.reserveBatch( relationships, NUMBER_OF_RELATIONSHIPS * 2, NULL ) );
+            assertTrue( scan.reserveBatch( relationships, NUMBER_OF_RELATIONSHIPS * 2, cursorContext, tx.securityContext().mode() ) );
 
             LongArrayList ids = new LongArrayList();
             while ( relationships.next() )
@@ -119,13 +122,14 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     @Test
     void shouldFailForSizeHintZero()
     {
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
+        CursorContext cursorContext = tx.cursorContext();
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( cursorContext ) )
         {
             // given
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
 
             // when
-            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( relationships, 0, NULL ) );
+            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( relationships, 0, cursorContext, tx.securityContext().mode() ) );
         }
     }
 
@@ -134,11 +138,12 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     {
         // given
         LongArrayList ids = new LongArrayList();
-        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( NULL ) )
+        CursorContext cursorContext = tx.cursorContext();
+        try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor( cursorContext ) )
         {
             // when
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
-            while ( scan.reserveBatch( relationships, 3, NULL ) )
+            while ( scan.reserveBatch( relationships, 3, cursorContext, tx.securityContext().mode() ) )
             {
                 while ( relationships.next() )
                 {

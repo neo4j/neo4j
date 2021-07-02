@@ -53,7 +53,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
     }
 
-    boolean scanBatch( Read read, AllRelationshipsScan scan, int sizeHint, LongIterator addedRelationships, boolean hasChanges )
+    boolean scanBatch( Read read, AllRelationshipsScan scan, int sizeHint, LongIterator addedRelationships, boolean hasChanges, AccessMode accessMode )
     {
         this.read = read;
         this.single = NO_ID;
@@ -61,6 +61,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         this.addedRelationships = addedRelationships;
         this.hasChanges = hasChanges;
         this.checkHasChanges = false;
+        this.accessMode = accessMode;
         boolean scanBatch = storeCursor.scanBatch( scan, sizeHint );
         return addedRelationships.hasNext() || scanBatch;
     }
@@ -113,8 +114,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
 
     boolean allowed()
     {
-        AccessMode mode = read.ktx.securityContext().mode();
-        return mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode );
+        return accessMode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( accessMode );
     }
 
     private boolean allowedToSeeEndNode( AccessMode mode )
@@ -138,6 +138,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         if ( !isClosed() )
         {
             read = null;
+            accessMode = null;
             storeCursor.close();
         }
         super.closeInternal();

@@ -83,7 +83,7 @@ final class TestUtils
         for ( int i = 0; i < numberOfWorkers; i++ )
         {
             var executionContext = tx.createExecutionContext();
-            WorkerContext<T> workerContext = new WorkerContext<T>( cursorFactory.apply( executionContext.cursorContext() ), executionContext, tx );
+            WorkerContext<T> workerContext = new WorkerContext<>( cursorFactory.apply( executionContext.cursorContext() ), executionContext, tx );
             workers.add( workerContext );
         }
         return workers;
@@ -97,7 +97,8 @@ final class TestUtils
             {
                 LongArrayList batch = new LongArrayList();
                 T cursor = workerContext.getCursor();
-                scan.reserveBatch( cursor, sizeHint, workerContext.getContext().cursorContext() );
+                var executionContext = workerContext.getContext();
+                scan.reserveBatch( cursor, sizeHint, executionContext.cursorContext(), executionContext.accessMode() );
                 while ( cursor.next() )
                 {
                     batch.add( producer.applyAsLong( cursor ) );
@@ -142,7 +143,8 @@ final class TestUtils
                 T cursor = workerContext.getCursor();
                 int sizeHint = random.nextInt( 1, 5 );
                 LongArrayList batch = new LongArrayList();
-                while ( scan.reserveBatch( cursor, sizeHint, workerContext.getContext().cursorContext() ) )
+                var executionContext = workerContext.getContext();
+                while ( scan.reserveBatch( cursor, sizeHint, executionContext.cursorContext(), executionContext.accessMode() ) )
                 {
                     while ( cursor.next() )
                     {

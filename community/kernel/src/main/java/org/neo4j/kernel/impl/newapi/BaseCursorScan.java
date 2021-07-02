@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.RangeLongIterator;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.lang.Math.min;
@@ -53,7 +54,7 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
     }
 
     @Override
-    public boolean reserveBatch( C cursor, int sizeHint, CursorContext cursorContext )
+    public boolean reserveBatch( C cursor, int sizeHint, CursorContext cursorContext, AccessMode accessMode )
     {
         requirePositive( sizeHint );
 
@@ -74,8 +75,8 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
                 addedItemsConsumed = true;
             }
         }
-        return scanStore( cursor, sizeHint, addedItems, cursorContext );
+        return scanStore( cursor, sizeHint, addedItems, cursorContext, accessMode );
     }
 
-    abstract boolean scanStore( C cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext );
+    abstract boolean scanStore( C cursor, int sizeHint, LongIterator addedItems, CursorContext cursorContext, AccessMode accessMode );
 }

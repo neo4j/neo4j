@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
@@ -60,7 +61,8 @@ public interface Scan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
      * @param cursor The cursor to be used for reading.
      * @param sizeHint The approximate size the batch, the provided size must be greater than 0.
      * @param cursorContext underlying page cache cursor context used for reserve batch underlying calls
+     * @param accessMode security store access mode
      * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
      */
-    boolean reserveBatch( Cursor cursor, int sizeHint, CursorContext cursorContext );
+    boolean reserveBatch( Cursor cursor, int sizeHint, CursorContext cursorContext, AccessMode accessMode );
 }

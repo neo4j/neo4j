@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.WorkerContext;
 
@@ -109,12 +110,13 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     @Test
     void shouldScanASubsetOfNodes()
     {
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
+        CursorContext cursorContext = tx.cursorContext();
+        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( cursorContext ) )
         {
             for ( int label : ALL_LABELS )
             {
                 Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( label );
-                assertTrue( scan.reserveBatch( nodes, 11, NULL ) );
+                assertTrue( scan.reserveBatch( nodes, 11, cursorContext, tx.securityContext().mode() ) );
 
                MutableLongList found = LongLists.mutable.empty();
                 while ( nodes.next() )
@@ -146,11 +148,12 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     @Test
     void shouldHandleSizeHintOverflow()
     {
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
+        CursorContext cursorContext = tx.cursorContext();
+        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( tx.cursorContext() ) )
         {
             // when
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
-            assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2, NULL ) );
+            assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2, cursorContext, tx.securityContext().mode() ) );
 
             MutableLongList ids = LongLists.mutable.empty();
             while ( nodes.next() )
@@ -167,13 +170,14 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     @Test
     void shouldFailForSizeHintZero()
     {
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
+        CursorContext cursorContext = tx.cursorContext();
+        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( cursorContext ) )
         {
             // given
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
 
             // when
-            assertThrows( IllegalArgumentException.class , () -> scan.reserveBatch( nodes, 0, NULL ) );
+            assertThrows( IllegalArgumentException.class , () -> scan.reserveBatch( nodes, 0, cursorContext, tx.securityContext().mode() ) );
         }
     }
 
@@ -181,12 +185,13 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     void shouldScanAllNodesInBatches()
     {
         // given
-        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
+        CursorContext cursorContext = tx.cursorContext();
+        try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor( cursorContext ) )
         {
             // when
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
             MutableLongList ids = LongLists.mutable.empty();
-            while ( scan.reserveBatch( nodes, 3, NULL ) )
+            while ( scan.reserveBatch( nodes, 3, cursorContext, tx.securityContext().mode() ) )
             {
                 while ( nodes.next() )
                 {

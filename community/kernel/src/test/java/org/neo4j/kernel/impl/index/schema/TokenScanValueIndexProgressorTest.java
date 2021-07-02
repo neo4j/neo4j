@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.stream.LongStream;
 
 import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -128,7 +129,7 @@ public class TokenScanValueIndexProgressorTest
         }
 
         @Override
-        public void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed )
+        public void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode )
         {
         }
 

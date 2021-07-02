@@ -105,16 +105,18 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         {
             traceScan( tracer, token );
         }
+        accessMode = read.ktx.securityContext().mode();
         initSecurity( token );
     }
 
     @Override
-    public void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed )
+    public void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode )
     {
         initialize( progressor );
         useMergeSort = false;
         this.added = added;
         this.removed = removed;
+        this.accessMode = accessMode;
         initSecurity( token );
     }
 
@@ -133,10 +135,6 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
 
     private void initSecurity( int token )
     {
-        if ( accessMode == null )
-        {
-            accessMode = read.ktx.securityContext().mode();
-        }
         shortcutSecurity = allowedToSeeAllEntitiesWithToken( accessMode, token );
     }
 
@@ -145,10 +143,6 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         if ( shortcutSecurity )
         {
             return true;
-        }
-        if ( accessMode == null )
-        {
-            accessMode = read.ktx.securityContext().mode();
         }
         return allowedToSeeEntity( accessMode, reference, tokens );
     }

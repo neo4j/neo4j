@@ -25,6 +25,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
@@ -126,8 +127,9 @@ public interface IndexProgressor extends AutoCloseable
          * @param token The token id to query
          * @param added Added entities that should be included in the results.
          * @param removed Removed entities that should be excluded from the results.
+         * @param accessMode security access mode
          */
-        void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed );
+        void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode );
 
         /**
          * Accept the entity id and (some) tokens of a candidate index entry. Return true if the entry
