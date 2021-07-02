@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -31,7 +32,6 @@ import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 object QgWithLeafInfo {
@@ -96,39 +96,27 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
     }
   }
 
-  // We expect that the semanticTable will always be the same for these calls, so if we computed it once we can reuse the result for the following calls.
-  // Ultimately we'd like to use something like CachedFunction, however, using the SemanticTable as cache-key is surprisingly expensive and ultimately unnecessary.
-  private var entityArgumentsCached: Option[Set[String]] = None
-  private def entityArguments(semanticTable: SemanticTable): Set[String] = {
-    if (entityArgumentsCached.isEmpty) {
-      entityArgumentsCached = Some(queryGraph.argumentIds.filter(couldBeEntity(semanticTable, _)))
-    }
-    entityArgumentsCached.get
-  }
+  val entityArguments: SemanticTable => Set[String] = CachedFunction((semanticTable: SemanticTable) => {
+    val nonEntityArguments = queryGraph.selections.predicates
+      .flatMap(_.expr.dependencies)
+      // find expressions that we know for certain are not entities
+      .filterNot(couldBeEntity(semanticTable, _)).map(_.name)
 
-  private var nonArgumentPatternNodesCached: Option[Set[Identifier]] = None
-  def nonArgumentPatternNodes(semanticTable: SemanticTable): Set[Identifier] = {
-    if (nonArgumentPatternNodesCached.isEmpty) {
-      nonArgumentPatternNodesCached = Some(patternNodes.filterNot(node => entityArguments(semanticTable).contains(node.name)))
-    }
-    nonArgumentPatternNodesCached.get
-  }
+    // Remove nonEntityArguments from argumentIds to avoid being eager on simple projections like `WITH a.prop AS prop`,
+    queryGraph.argumentIds -- nonEntityArguments
+  })
 
-  private var patternNodesAndArgumentsCached: Option[Set[Identifier]] = None
-  def patternNodesAndArguments(semanticTable: SemanticTable): Set[Identifier] = {
-    if (patternNodesAndArgumentsCached.isEmpty) {
-      patternNodesAndArgumentsCached = Some(patternNodes ++ entityArguments(semanticTable).map(UnstableIdentifier))
-    }
-    patternNodesAndArgumentsCached.get
-  }
+  val nonArgumentPatternNodes: SemanticTable => Set[Identifier] = CachedFunction((semanticTable: SemanticTable) => {
+    patternNodes.filterNot(node => entityArguments(semanticTable).contains(node.name))
+  })
 
-  private var patternRelationshipsAndArgumentsCached: Option[Set[Identifier]] = None
-  def patternRelationshipsAndArguments(semanticTable: SemanticTable): Set[Identifier] = {
-    if (patternRelationshipsAndArgumentsCached.isEmpty) {
-      patternRelationshipsAndArgumentsCached = Some(patternRelationships ++ entityArguments(semanticTable).map(UnstableIdentifier))
-    }
-    patternRelationshipsAndArgumentsCached.get
-  }
+  val patternNodesAndArguments: SemanticTable => Set[Identifier] = CachedFunction((semanticTable: SemanticTable) => {
+    patternNodes ++ entityArguments(semanticTable).map(UnstableIdentifier)
+  })
+
+  val patternRelationshipsAndArguments: SemanticTable => Set[Identifier] = CachedFunction((semanticTable: SemanticTable) => {
+    patternRelationships ++ entityArguments(semanticTable).map(UnstableIdentifier)
+  })
 
   lazy val patternRelationships: Set[Identifier] = {
     val unstableIdentifiers: Set[Identifier] = unstablePatternRelationships.map(rel => UnstableIdentifier(rel.name))
@@ -136,44 +124,32 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
     unstableIdentifiers ++ maybeStableIdentifier
   }
 
-  def allKnownUnstableNodeLabelsFor(identifier: Identifier): Set[LabelName] = CachedFunction((identifier:Identifier) => {
+  val allKnownUnstableNodeLabelsFor: Identifier => Set[LabelName] = CachedFunction((identifier:Identifier) => {
     if (identifier.isIdStable) Set.empty[LabelName]
     else queryGraph.allPossibleLabelsOnNode(identifier.name)
-  })(identifier)
+  })
 
-  def allPossibleUnstableRelTypesFor(identifier: Identifier): Set[RelTypeName] = CachedFunction((identifier:Identifier) => {
+  val allPossibleUnstableRelTypesFor: Identifier => Set[RelTypeName] = CachedFunction((identifier:Identifier) => {
     if (identifier.isIdStable) Set.empty[RelTypeName]
     else queryGraph.allPossibleTypesOnRel(identifier.name)
-  })(identifier)
+  })
 
-  def allKnownUnstablePropertiesFor(identifier: Identifier): Set[PropertyKeyName] = CachedFunction((identifier:Identifier) => {
+  val allKnownUnstablePropertiesFor: Identifier => Set[PropertyKeyName] = CachedFunction((identifier:Identifier) => {
     if (identifier.isIdStable) Set.empty[PropertyKeyName]
     else queryGraph.allKnownPropertiesOnIdentifier(identifier.name)
-  })(identifier)
+  })
 
-  private var allKnownUnstableNodeLabelsCached: Option[Set[LabelName]] = None
-  def allKnownUnstableNodeLabels(semanticTable: SemanticTable): Set[LabelName] = {
-    if (allKnownUnstableNodeLabelsCached.isEmpty) {
-      allKnownUnstableNodeLabelsCached = Some(patternNodesAndArguments(semanticTable).flatMap(allKnownUnstableNodeLabelsFor))
-    }
-    allKnownUnstableNodeLabelsCached.get
-  }
+  val allKnownUnstableNodeLabels: SemanticTable => Set[LabelName] = CachedFunction((semanticTable: SemanticTable) => {
+    patternNodesAndArguments(semanticTable).flatMap(allKnownUnstableNodeLabelsFor)
+  })
 
-  private var allKnownUnstableNodePropertiesCached: Option[Set[PropertyKeyName]] = None
-  def allKnownUnstableNodeProperties(semanticTable: SemanticTable): Set[PropertyKeyName] = {
-    if (allKnownUnstableNodePropertiesCached.isEmpty) {
-      allKnownUnstableNodePropertiesCached = Some(patternNodesAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties)
-    }
-    allKnownUnstableNodePropertiesCached.get
-  }
+  val allKnownUnstableNodeProperties: SemanticTable => Set[PropertyKeyName] = CachedFunction((semanticTable: SemanticTable) => {
+    patternNodesAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
+  })
 
-  private var allKnownUnstableRelPropertiesCached: Option[Set[PropertyKeyName]] = None
-  def allKnownUnstableRelProperties(semanticTable: SemanticTable): Set[PropertyKeyName] = {
-    if (allKnownUnstableRelPropertiesCached.isEmpty) {
-      allKnownUnstableRelPropertiesCached = Some(patternRelationshipsAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties)
-    }
-    allKnownUnstableRelPropertiesCached.get
-  }
+  val allKnownUnstableRelProperties: SemanticTable => Set[PropertyKeyName] = CachedFunction((semanticTable: SemanticTable) => {
+    patternRelationshipsAndArguments(semanticTable).flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
+  })
 
   private lazy val patternExpressionProperties: Set[PropertyKeyName] = {
     (queryGraph.findByAllClass[PatternComprehension] ++ queryGraph.findByAllClass[PatternExpression]).flatMap {
@@ -184,13 +160,14 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
   /**
    * Checks whether the given expression could be of type `CTNode` or `CTRelationship`.
    */
-  private def couldBeEntity(semanticTable: SemanticTable, variable: String): Boolean = {
-    semanticTable.getOptionalActualTypeFor(variable) match {
-      case Some(actualType) =>
-        actualType.contains(CTNode) || actualType.contains(CTRelationship) || actualType.contains(CTPath)
+  private def couldBeEntity(semanticTable: SemanticTable, exp: Expression): Boolean =
+    semanticTable.types.get(exp) match {
+      case Some(expressionTypeInfo) =>
+        val actualType = expressionTypeInfo.actual
+        actualType.contains(CTNode) || actualType.contains(CTRelationship)
+
       case None =>
         // No type information available, we have to be conservative
         true
     }
-  }
 }

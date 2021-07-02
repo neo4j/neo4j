@@ -71,7 +71,7 @@ object EagerAnalyzer {
     private val instance: Rewriter = fixedPoint(bottomUp(Rewriter.lift {
 
       // L Ax (E R) => E Ax (L R), don't unnest when coming from a subquery
-      case apply@Apply(lhs, eager: Eager, fromSubquery) if !fromSubquery =>
+      case apply@Apply(lhs, eager: Eager, false) =>
         unnestRightUnary(apply, lhs, eager)
 
       //MERGE is an updating plan that cannot be moved on top of apply since
