@@ -164,6 +164,7 @@ org.neo4j.configuration.GraphDatabaseSettings::procedure_roles org.neo4j.graphdb
 org.neo4j.configuration.GraphDatabaseSettings::procedure_unrestricted org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::procedure_whitelist org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::query_execution_plan_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_log_max_parameter_length org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_statistics_divergence_threshold org.neo4j.graphdb.config.Setting<java.lang.Double> public static final
 org.neo4j.configuration.GraphDatabaseSettings::read_only org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
