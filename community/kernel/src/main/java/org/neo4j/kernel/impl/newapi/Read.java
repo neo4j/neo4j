@@ -140,6 +140,21 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
+    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
+                                                                                QueryContext queryContext, PropertyIndexQuery... query )
+            throws IndexNotApplicableKernelException
+    {
+        ktx.assertOpen();
+        final var descriptor = index.reference();
+        if ( descriptor.schema().entityType() != EntityType.RELATIONSHIP )
+        {
+            throw new IndexNotApplicableKernelException( "Relationship index seek can only be performed on relationship indexes: " +
+                                                         descriptor.userDescription( ktx.tokenRead() ) );
+        }
+        return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext, query );
+    }
+
+    @Override
     public org.neo4j.internal.kernel.api.Read getRead()
     {
         return this;
@@ -229,6 +244,21 @@ abstract class Read implements TxStateHolder,
         }
 
         scanIndex( indexSession, (EntityIndexSeekClient) cursor, constraints );
+    }
+
+    @Override
+    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
+            throws IndexNotApplicableKernelException
+    {
+        ktx.assertOpen();
+        final var descriptor = index.reference();
+        if ( descriptor.schema().entityType() != EntityType.RELATIONSHIP )
+        {
+            throw new IndexNotApplicableKernelException( "Relationship index scan can only be performed on relationship indexes: " +
+                                                         descriptor.userDescription( ktx.tokenRead() ) );
+        }
+
+        return propertyIndexScan( index, desiredNumberOfPartitions, queryContext );
     }
 
     private void scanIndex( DefaultIndexReadSession indexSession,

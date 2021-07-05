@@ -88,6 +88,17 @@ public interface Read
             throws KernelException;
 
     /**
+     * Seek all relationships matching the provided index query in an index. NOTE! This is not thread-safe for transaction state.
+     * @param index {@link IndexReadSession} referencing index to query. This must be an index of relationships.
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param queryContext the underlying contexts for the thread doing the partitioning.
+     * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
+     */
+    PartitionedScan<RelationshipValueIndexCursor> relationshipIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
+                                                                         QueryContext queryContext, PropertyIndexQuery... query )
+            throws IndexNotApplicableKernelException;
+
+    /**
      * Returns node id of node found in the unique index, or -1 if no node was found.
      *
      * Note that this is a very special method and should be use with caution. It has special locking semantics in
@@ -134,6 +145,15 @@ public interface Read
      * together with relationship ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      */
     void relationshipIndexScan( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException;
+
+    /**
+     * Scan all values in an index. NOTE! This is not thread-safe for transaction state.
+     * @param index {@link IndexReadSession} referencing index to query. This must be an index of relationships.
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param queryContext the underlying contexts for the thread doing the partitioning.
+     */
+    PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
+            throws IndexNotApplicableKernelException;
 
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
 
