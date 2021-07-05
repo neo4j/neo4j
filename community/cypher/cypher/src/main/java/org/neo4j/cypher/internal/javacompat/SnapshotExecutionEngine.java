@@ -114,8 +114,14 @@ public class SnapshotExecutionEngine extends ExecutionEngine
             QueryExecution queryExecution = executor.execute( materialisedResult );
             materialisedResult.consumeAll( queryExecution );
 
+            // we always allow indexes/constraints to be created since their population/verification should see the latest data and uniqueness of those schema
+            // objects is guaranteed by schema and not by execution engine
+            if ( context.transaction().kernelTransaction().isSchemaTransaction() )
+            {
+                return materialisedResult;
+            }
             dirtySnapshot = versionContext.isDirty();
-            if ( dirtySnapshot && materialisedResult.getQueryStatistics().containsUpdates() )
+            if ( isUnstableSnapshot( materialisedResult, dirtySnapshot ) )
             {
                 throw new QueryExecutionKernelException( new UnstableSnapshotException(
                         "Unable to get clean data snapshot for query '%s' that performs updates.", query, attempt ) );
@@ -124,6 +130,11 @@ public class SnapshotExecutionEngine extends ExecutionEngine
         while ( dirtySnapshot );
 
         return materialisedResult;
+    }
+
+    private boolean isUnstableSnapshot( MaterialisedResult materialisedResult, boolean dirtySnapshot )
+    {
+        return dirtySnapshot && materialisedResult.getQueryStatistics().containsUpdates();
     }
 
     private static VersionContext getCursorContext( TransactionalContext context )
