@@ -374,12 +374,6 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public void mergeExecutionContext( ExecutionContext executionContext )
-    {
-
-    }
-
-    @Override
     public QueryContext queryContext()
     {
         return null;

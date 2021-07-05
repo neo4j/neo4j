@@ -1071,12 +1071,6 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public void mergeExecutionContext( ExecutionContext executionContext )
-        {
-            internal.mergeExecutionContext( executionContext );
-        }
-
-        @Override
         public QueryContext queryContext()
         {
             return internal.queryContext();

@@ -449,8 +449,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return new ThreadExecutionContext();
     }
 
-    @Override
-    public void mergeExecutionContext( ExecutionContext executionContext )
+    private void mergeExecutionContext( ExecutionContext executionContext )
     {
         cursorContext.merge( executionContext.cursorContext() );
     }

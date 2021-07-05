@@ -434,11 +434,19 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      */
     CursorContext cursorContext();
 
-    //TODO
+    /**
+     * Create transaction execution context to be use in threads, separate to one where transaction is executed.
+     * Resources that are passed over context should be safe to access from other thread.
+     * Each separate execution thread should request its own independent execution context.
+     * In the end of execution separate thread should call {@link ExecutionContext#complete()} to mark context as completed and prepare any execution statistic
+     * After that transaction thread should call {@link ExecutionContext#close()}}
+     * @return separate thread execution context
+     */
     ExecutionContext createExecutionContext();
 
-    void mergeExecutionContext( ExecutionContext executionContext );
-
+    /**
+     * @return current transaction query execution context
+     */
     QueryContext queryContext();
 
     /**
@@ -480,15 +488,37 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
         void beforeApply();
     }
 
+    /**
+     * Execution context that should be passed to workers in other threads but that are still belong to the transaction and need to have access to some
+     * transactional resources.
+     * Creation of context should be done in a transaction execution thread. Every other worker thread should have its own execution context.
+     * In the end of evaluation worker thread should call {@link ExecutionContext#complete()} to mark context as completed and prepare data that needs
+     * to be transferred back to owning transaction.
+     * After that transaction executor thread should call {@link ExecutionContext#close()}
+     */
     interface ExecutionContext extends AutoCloseable
     {
-
+        /**
+         * Execution context cursor tracer. Page cache statistic recorded during execution reported back to owning transaction only when context is closed.
+         * @return execution context cursor tracer.
+         */
         CursorContext cursorContext();
 
+        /**
+         * @return execution context security access mode
+         */
         AccessMode accessMode();
 
+        /**
+         * Mark execution context as completed and prepare any data that needs to be reported back to owning transaction.
+         * Should be called by thread were work was executed.
+         */
         void complete();
 
+        /**
+         * Close execution context and merge back any data to the owning transaction if such exists.
+         * Should be called by transaction thread.
+         */
         void close();
     }
 }
