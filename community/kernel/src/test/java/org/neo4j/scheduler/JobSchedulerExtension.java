@@ -33,11 +33,8 @@ public class JobSchedulerExtension extends StatefulFieldExtension<JobScheduler> 
     @Override
     public void afterEach( ExtensionContext context ) throws Exception
     {
-        JobScheduler jobScheduler = removeStoredValue( context );
-        if ( jobScheduler != null )
-        {
-            jobScheduler.close();
-        }
+        JobScheduler jobScheduler = deepRemoveStoredValue( context );
+        jobScheduler.close();
     }
 
     @Override
