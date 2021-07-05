@@ -45,6 +45,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
@@ -52,6 +53,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -179,7 +181,7 @@ class KernelTransactionTestBase
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                                                     null, null,
                                                     commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                                                    mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
+                                                    new DatabaseTracers( new DefaultTracer(), LockTracer.NONE, new DefaultPageCacheTracer() ), storageEngine,
                                                     any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                                                     new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                                                     mock( IndexingService.class ), mock( IndexStatisticsStore.class ), dependencies, databaseId,

@@ -287,6 +287,40 @@ class DefaultPageCursorTracerTest
         assertEquals( TEST_TRACER, pageCursorTracer.getTag() );
     }
 
+    @Test
+    void mergePageCursors()
+    {
+        var tracer = createTracer();
+        for ( int i = 0; i < 5; i++ )
+        {
+            DummyPageSwapper dummyPageSwapper = new DummyPageSwapper( "a", 4 );
+            PinEvent pinEvent = tracer.beginPin( false, 1, dummyPageSwapper );
+            pinEvent.hit();
+            try ( PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, 3 ) )
+            {
+                pageFaultEvent.addBytesRead( 16 );
+                try ( EvictionEvent evictionEvent = pageFaultEvent.beginEviction( 3 ) )
+                {
+                    FlushEvent flushEvent = evictionEvent.beginFlush( 1, dummyPageSwapper, pageRef -> (int) pageRef );
+                    flushEvent.addPagesMerged( 7 );
+                    flushEvent.addBytesWritten( 17 );
+                    flushEvent.done();
+                }
+                pageFaultEvent.done();
+            }
+            pinEvent.done();
+        }
+        pageCursorTracer.merge( tracer );
+
+        assertEquals( 5, pageCursorTracer.pins() );
+        assertEquals( 5, pageCursorTracer.unpins() );
+        assertEquals( 5, pageCursorTracer.evictions() );
+        assertEquals( 35, pageCursorTracer.merges() );
+        assertEquals( 10, pageCursorTracer.faults() );
+        assertEquals( 80, pageCursorTracer.bytesRead() );
+        assertEquals( 85, pageCursorTracer.bytesWritten() );
+    }
+
     private void generateEventSet()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( false, 0, swapper );

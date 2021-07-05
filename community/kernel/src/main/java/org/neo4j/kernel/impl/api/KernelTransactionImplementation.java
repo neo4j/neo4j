@@ -68,13 +68,10 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -449,11 +446,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return new ThreadExecutionContext();
     }
 
-    private void mergeExecutionContext( ExecutionContext executionContext )
-    {
-        cursorContext.merge( executionContext.cursorContext() );
-    }
-
     @Override
     public QueryContext queryContext()
     {
@@ -470,6 +462,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public MemoryTracker memoryTracker()
     {
         return memoryTracker;
+    }
+
+    private void mergeExecutionContext( ExecutionContext executionContext )
+    {
+        cursorContext.merge( executionContext.cursorContext() );
     }
 
     private boolean markForTerminationIfPossible( Status reason )

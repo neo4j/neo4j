@@ -356,7 +356,6 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
             read = null;
             checkHasChanges = true;
             addedNodes = ImmutableEmptyLongIterator.INSTANCE;
-            // TODO: check
             storeCursor.close();
             storeCursor.reset();
             if ( securityStoreCursor != null )

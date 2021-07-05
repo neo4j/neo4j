@@ -24,10 +24,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -43,9 +47,13 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -67,8 +75,10 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.util.concurrent.Futures;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -92,6 +102,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionValidationFailed;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
@@ -813,6 +824,60 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
                     SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION );
 
             transaction.memoryTracker().allocateHeap( mebiBytes( 3 ) );
+        }
+    }
+
+    @Test
+    void transactionExecutionContexts() throws TransactionFailureException, ExecutionException, InterruptedException
+    {
+        int workerCount = 4;
+        ExecutorService executorService = Executors.newFixedThreadPool( workerCount );
+
+        try ( var transaction = newTransaction( AUTH_DISABLED ) )
+        {
+            List<KernelTransaction.ExecutionContext> executionContexts = new ArrayList<>( workerCount );
+            List<Future<?>> futures = new ArrayList<>( workerCount );
+            for ( int i = 0; i < workerCount; i++ )
+            {
+                executionContexts.add( transaction.createExecutionContext() );
+            }
+            for ( int i = 0; i < workerCount; i++ )
+            {
+                KernelTransaction.ExecutionContext executionContext = executionContexts.get( i );
+                int iterations = i;
+                futures.add( executorService.submit( () ->
+                {
+                    try
+                    {
+                        PageCursorTracer cursorTracer = executionContext.cursorContext().getCursorTracer();
+                        for ( int j = 0; j <= iterations; j++ )
+                        {
+                            PinEvent pinEvent = cursorTracer.beginPin( false, 1, mock( PageSwapper.class ) );
+                            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, 1 );
+                            pageFaultEvent.addBytesRead( 42 );
+                            pageFaultEvent.done();
+                            pinEvent.done();
+                        }
+                    }
+                    finally
+                    {
+                        executionContext.complete();
+                    }
+                } ) );
+            }
+            Futures.getAll( futures );
+            closeAllUnchecked( executionContexts );
+
+            PageCursorTracer transactionCursor = transaction.cursorContext().getCursorTracer();
+
+            assertEquals( 10, transactionCursor.pins() );
+            assertEquals( 10, transactionCursor.unpins() );
+            assertEquals( 420, transactionCursor.bytesRead() );
+        }
+        finally
+        {
+            executorService.shutdown();
+            assertTrue( executorService.awaitTermination( 1, MINUTES ) );
         }
     }
 
