@@ -40,6 +40,13 @@ final class Unchangeable[A]() {
     _value = Some(newValue)
   }
 
+  override def clone(): Unchangeable[A] = {
+    val unchangeable = new Unchangeable[A]()
+    unchangeable._value = _value
+    unchangeable._seen = _seen
+    unchangeable
+  }
+
   // Copy from another Unchangeable[A] iff set
   def copyFrom(other: Unchangeable[A]): Unit = if(other.hasValue)
     value_=(other.value)

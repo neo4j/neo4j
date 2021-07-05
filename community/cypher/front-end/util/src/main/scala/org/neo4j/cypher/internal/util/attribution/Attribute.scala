@@ -31,7 +31,15 @@ trait Attribute[KEY, VALUE] {
    */
   def clone[T <: Attribute[KEY, VALUE]](implicit tag: ClassTag[T]): T = {
     val to = tag.runtimeClass.getConstructor().newInstance().asInstanceOf[T]
-    array.copyToBuffer(to.array)
+    var i = 0
+    while (i < array.size) {
+      if (array(i) != null) {
+        to.array += array(i).clone()
+      } else {
+        to.array += null
+      }
+      i += 1;
+    }
     to
   }
 
