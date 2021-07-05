@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributesCacheKey
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.planning.LogicalPlanResult
@@ -87,7 +88,7 @@ import org.neo4j.values.virtual.MapValue
 import java.util.function.Supplier
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
-case class ExecutionPlanCacheKey(runtimeKey: String, logicalPlan: LogicalPlan, planningAttributesCacheKey: Int)
+case class ExecutionPlanCacheKey(runtimeKey: String, logicalPlan: LogicalPlan, planningAttributesCacheKey: PlanningAttributesCacheKey)
 
 trait ExecutionPlanCacheTracer {
   def cacheHit(key: ExecutionPlanCacheKey): Unit

@@ -63,7 +63,9 @@ case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, ef
     fullAttributes.tail.forall(_.size == fullAttributes.head.size)
   }
 
-  def cacheKey: Int = {
-    Seq(cardinalities, effectiveCardinalities, providedOrders, leveragedOrders).hashCode()
+  def cacheKey: PlanningAttributesCacheKey = {
+    PlanningAttributesCacheKey(cardinalities, effectiveCardinalities, providedOrders, leveragedOrders)
   }
 }
+
+case class PlanningAttributesCacheKey(cardinalities: Cardinalities, effectiveCardinalities: EffectiveCardinalities, providedOrders: ProvidedOrders, leveragedOrders: LeveragedOrders)
