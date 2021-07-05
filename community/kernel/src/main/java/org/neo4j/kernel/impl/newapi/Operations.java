@@ -954,11 +954,10 @@ public class Operations implements Write, SchemaWrite
         {
             assertTokenAndRelationshipPropertyIndexesSupported( "Failed to create btree relationship property index." );
         }
-        if ( prototype.getIndexType() == IndexType.TEXT && !textIndexesEnabled )
+        if ( prototype.getIndexType() == IndexType.TEXT )
         {
-            throw new UnsupportedOperationException( "Text indexes are not supported." );
+            assertTextIndexSupport( prototype );
         }
-
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();
         assertValidDescriptor( prototype.schema(), INDEX_CREATION );
@@ -971,6 +970,18 @@ public class Operations implements Write, SchemaWrite
         assertNoBlockingSchemaRulesExists( prototype );
 
         return indexDoCreate( prototype );
+    }
+
+    private void assertTextIndexSupport( IndexPrototype prototype )
+    {
+        if ( !textIndexesEnabled )
+        {
+            throw new UnsupportedOperationException( "Text index is not supported." );
+        }
+        if ( prototype.schema().getPropertyIds().length > 1 )
+        {
+            throw new UnsupportedOperationException( "Composite indexes are not supported for TEXT index type." );
+        }
     }
 
     private void assertTokenAndRelationshipPropertyIndexesSupported( String message )

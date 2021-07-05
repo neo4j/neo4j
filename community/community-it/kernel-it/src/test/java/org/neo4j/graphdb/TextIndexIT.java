@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -87,6 +88,28 @@ public class TextIndexIT
             assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( relations ).on( "name" ).withIndexType( IndexType.TEXT ).create() );
         }
         dbms.shutdown();
+    }
+
+    @Test
+    void shouldRejectIndexCreationWithCompositeKeys()
+    {
+        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).setConfig( text_indexes_enabled, true ).build();
+        var db = dbms.database( DEFAULT_DATABASE_NAME );
+        var rel = RelationshipType.withName( "FRIEND" );
+        var label = label( "PERSON" );
+
+        try ( var tx = db.beginTx() )
+        {
+            assertUnsupported( () -> tx.schema().indexFor( label ).on( "key1" ).on( "key2" ).withIndexType( IndexType.TEXT ).create() );
+            assertUnsupported( () -> tx.schema().indexFor( rel ).on( "key1" ).on( "key2" ).withIndexType( IndexType.TEXT ).create() );
+        }
+        dbms.shutdown();
+    }
+
+    private void assertUnsupported( Executable executable )
+    {
+        var message = assertThrows( UnsupportedOperationException.class, executable ).getMessage();
+        assertThat( message ).isEqualTo( "Composite indexes are not supported for TEXT index type." );
     }
 
     @Test

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import java.util.Set;
 
@@ -46,6 +47,7 @@ import static java.util.Arrays.stream;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.schema.IndexOrderCapability.NONE;
@@ -59,6 +61,7 @@ public class TextIndexCreationTest
     private int labelId;
     private int relTypeId;
     private int[] propertyIds;
+    private int[] compositeKey;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -76,8 +79,23 @@ public class TextIndexCreationTest
             labelId = tokenWrite.labelGetOrCreateForName( label( "PERSON" ).name() );
             relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( RelationshipType.withName( "FRIEND" ).name() );
             propertyIds = new int[]{tokenWrite.propertyKeyGetOrCreateForName( "name" )};
+            compositeKey = new int[]{
+                    tokenWrite.propertyKeyGetOrCreateForName( "address" ), tokenWrite.propertyKeyGetOrCreateForName( "age" )};
             tx.commit();
         }
+    }
+
+    @Test
+    void shouldRejectCompositeKeys()
+    {
+        assertUnsupported( () -> createTextIndex( "nti", SchemaDescriptors.forLabel( labelId, compositeKey ) ) );
+        assertUnsupported( () -> createTextIndex( "rti", SchemaDescriptors.forRelType( relTypeId, compositeKey ) ) );
+    }
+
+    private void assertUnsupported( Executable executable )
+    {
+        var message = assertThrows( UnsupportedOperationException.class, executable ).getMessage();
+        assertThat( message ).isEqualTo( "Composite indexes are not supported for TEXT index type." );
     }
 
     @Test
