@@ -125,7 +125,12 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       NO_TRACING
     }
 
-  private val executionPlanCache = new LFUCache[ExecutionPlanCacheKey, (ExecutionPlan, PlanningAttributes)](planner.cacheFactory, contextManager.config.executionPlanCacheSize)
+  private val executionPlanCache = if (contextManager.config.executionPlanCacheSize > 0) {
+    Some(
+      new LFUCache[ExecutionPlanCacheKey, (ExecutionPlan, PlanningAttributes)](planner.cacheFactory, contextManager.config.executionPlanCacheSize))
+  } else {
+    None
+  }
 
   /**
    * Compile [[InputQuery]] into [[ExecutableQuery]].
@@ -156,10 +161,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan = planState.logicalPlan
     val queryType = getQueryType(planState)
-    val (executionPlan, attributes) = if (logicalPlanResult.shouldBeCached) {
+    val (executionPlan, attributes) = if (executionPlanCache.nonEmpty && logicalPlanResult.shouldBeCached) {
       val cacheKey = ExecutionPlanCacheKey(query.options.runtimeCacheKey, logicalPlan, planState.planningAttributes.cacheKey)
       var hit = true
-      val result = executionPlanCache.computeIfAbsent(cacheKey, {
+      val result = executionPlanCache.get.computeIfAbsent(cacheKey, {
         hit = false
         computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
       })
@@ -454,8 +459,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
    * @return the number of entries that were cleared in any cache
    */
   def clearCaches(): Long = {
-    Math.max(planner.clearCaches(), executionPlanCache.clear())
+    Math.max(planner.clearCaches(), executionPlanCache.map(_.clear()).getOrElse(0L))
   }
 
-  def clearExecutionPlanCache(): Unit = executionPlanCache.clear()
+  def clearExecutionPlanCache(): Unit = executionPlanCache.foreach(_.clear())
 }

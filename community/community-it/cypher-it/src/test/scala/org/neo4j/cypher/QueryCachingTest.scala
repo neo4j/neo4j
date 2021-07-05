@@ -37,12 +37,13 @@ import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.mutable
 
-class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
+abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInternalSettings.query_execution_plan_cache_size.defaultValue()) extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(
     // String cache JIT compiles on the first hit
     GraphDatabaseInternalSettings.cypher_expression_recompilation_limit -> Integer.valueOf(2),
-    GraphDatabaseInternalSettings.cypher_enable_runtime_monitors -> java.lang.Boolean.TRUE
+    GraphDatabaseInternalSettings.cypher_enable_runtime_monitors -> java.lang.Boolean.TRUE,
+    GraphDatabaseInternalSettings.query_execution_plan_cache_size -> Integer.valueOf(executionPlanCacheSize)
   )
 
   private val empty_parameters = "Map()"
@@ -160,12 +161,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // query
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
       s"String: cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
       // profileQuery
       s"AST:    cacheHit", // no logical planning
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
       s"String: cacheCompile: (CYPHER 4.3 PROFILE $query, $empty_parameters)", // physical planning
     ))
@@ -189,12 +190,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // profileQuery
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
       s"String: cacheCompile: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
       // query
       s"AST:    cacheHit", // no logical planning
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
       s"String: cacheCompile: (CYPHER 4.3 $query, $empty_parameters)", // physical planning
     ))
@@ -218,12 +219,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // query1
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query1, $empty_parameters)",
       s"String: cacheCompile: (CYPHER 4.3 $query1, $empty_parameters)",
       // query2
       s"AST:    cacheHit", // Same AST, we should hit the cache,
-      "ExecutionPlanCacheKey: cacheHit",//same plan should hit the cache
+      executionPlanCacheKeyHit,//same plan should hit the cache
       s"String: cacheMiss: (CYPHER 4.3 $query2, $empty_parameters)", // Different string, we should miss the cache
       s"String: cacheCompile: (CYPHER 4.3 $query2, $empty_parameters)",
     ))
@@ -251,7 +252,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // first
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       // second
@@ -259,7 +260,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // third
       s"String: cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"AST:    cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))", // String cache JIT compiles on the first hit
     ))
   }
@@ -285,19 +286,19 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
       s"String: cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
       // 2nd run
       s"AST:    cacheMiss",
       s"AST:    cacheCompileWithExpressionCodeGen", // replan=force calls into a method for immediate recompilation, even though recompilation is doing the same steps in the AST cache, but the tracer calls are unaware of that.
-      "ExecutionPlanCacheKey: cacheMiss",// we will miss here since we need to have reached the recompilation limit
+      executionPlanCacheKeyMiss,// we will miss here since we need to have reached the recompilation limit
       s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)",
       // 3rd run
       s"AST:    cacheMiss",
       s"AST:    cacheCompileWithExpressionCodeGen",
-      "ExecutionPlanCacheKey: cacheHit",//since we get the same plan we will have a hit here
+      executionPlanCacheKeyHit,//since we get the same plan we will have a hit here
       s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)",
     ))
@@ -320,7 +321,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // params1
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       // params2
@@ -328,7 +329,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // params3
       s"String: cacheHit: (CYPHER $currentVersion $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"AST:    cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss", // recompilation limit reached
+      executionPlanCacheKeyMiss, // recompilation limit reached
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",  // String cache JIT compiles on the first hit
     ))
   }
@@ -349,13 +350,13 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // params1
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       // params2
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))",
       s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))",
     ))
@@ -435,7 +436,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
       s"String: cacheCompile: (CYPHER 4.3 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
       // 2nd run
@@ -443,7 +444,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 3rd run
       s"String: cacheHit: (CYPHER $currentVersion $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
       s"AST:    cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))", // String cache JIT compiles on the first hit
     ))
   }
@@ -462,12 +463,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       "AST: cacheMiss",
       "AST: cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion expressionEngine=interpreted RETURN 42 AS a, Map())",
       s"String: cacheCompile: (CYPHER $currentVersion expressionEngine=interpreted RETURN 42 AS a, Map())",
       // 2nd run
       "AST: cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion expressionEngine=compiled RETURN 42 AS a, Map())",
       s"String: cacheCompile: (CYPHER $currentVersion expressionEngine=compiled RETURN 42 AS a, Map())",
     ))
@@ -488,17 +489,17 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       "AST: cacheMiss",
       "AST: cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion operatorEngine=interpreted RETURN 42 AS a, Map())",
       s"String: cacheCompile: (CYPHER $currentVersion operatorEngine=interpreted RETURN 42 AS a, Map())",
       // 2nd run
       "AST: cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion operatorEngine=compiled RETURN 42 AS a, Map())",
       s"String: cacheCompile: (CYPHER $currentVersion operatorEngine=compiled RETURN 42 AS a, Map())",
       // 3rd run
       "AST: cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion RETURN 42 AS a, Map())",
       s"String: cacheCompile: (CYPHER $currentVersion RETURN 42 AS a, Map())",
     ))
@@ -518,14 +519,14 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       "AST:    cacheMiss",
       "AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion runtime=interpreted RETURN 42 AS a, Map())",
       s"String: cacheCompile: (CYPHER $currentVersion runtime=interpreted RETURN 42 AS a, Map())",
       // 2nd run
       "AST:    cacheFlushDetected", // Different runtimes actually use different compilers (thus different AST caches), but they write to the same monitor
       "AST:    cacheMiss",
       "AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion runtime=slotted RETURN 42 AS a, Map())",
       s"String: cacheCompile: (CYPHER $currentVersion runtime=slotted RETURN 42 AS a, Map())",
     ))
@@ -545,7 +546,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       // 2nd run
@@ -553,7 +554,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 3rd run
       s"String: cacheHit: (CYPHER $currentVersion $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"AST:    cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",//JIT compilation forces us to miss here
+      executionPlanCacheKeyMiss,//JIT compilation forces us to miss here
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))", // String cache JIT compiles on the first hit
     ))
   }
@@ -571,7 +572,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"AST:    cacheFlushDetected",
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
     ))
@@ -597,7 +598,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       // 2nd run
@@ -605,7 +606,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 3rd run
       s"String: cacheHit: (CYPHER $currentVersion $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"AST:    cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER $currentVersion $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       // 4th run
       s"String: cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
@@ -648,21 +649,21 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"AST:    cacheFlushDetected",
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion $query, Map())",
       s"String: cacheCompile: (CYPHER $currentVersion $query, Map())",
       // CYPHER $previousMinor $query
       s"AST:    cacheFlushDetected", // Different cypher versions actually use different compilers (thus different AST caches), but they write to the same monitor
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $previousMinor $query, Map())",
       s"String: cacheCompile: (CYPHER $previousMinor $query, Map())",
       // CYPHER $previousMajor $query
       s"AST:    cacheFlushDetected", // Different cypher versions actually use different compilers (thus different AST caches), but they write to the same monitor
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $previousMajor $query, Map())",
       s"String: cacheCompile: (CYPHER $previousMajor $query, Map())",
       // CYPHER $currentVersion $query
@@ -673,7 +674,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // CYPHER $query
       s"String: cacheHit: (CYPHER $currentVersion $query, Map())",
       s"AST: cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER $currentVersion RETURN 1, Map())",
       // CYPHER $previousMinor $query
       s"String: cacheHit: (CYPHER $previousMinor $query, Map())",
@@ -689,12 +690,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // CYPHER $previousMinor $query
       s"String: cacheHit: (CYPHER $previousMinor $query, Map())",
       s"AST: cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER $previousMinor RETURN 1, Map())",
       // CYPHER $previousMajor $query
       s"String: cacheHit: (CYPHER $previousMajor $query, Map())",
       s"AST: cacheHit",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER $previousMajor RETURN 1, Map())",
       // CYPHER $currentVersion $query
       s"String: cacheHit: (CYPHER $currentVersion $query, Map())",
@@ -727,12 +728,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion RETURN 42 AS n, ${empty_parameters})",
       s"String: cacheCompile: (CYPHER $currentVersion RETURN 42 AS n, ${empty_parameters})",
       // 2nd run
       s"AST:    cacheHit", // no logical planning
-      "ExecutionPlanCacheKey: cacheHit",
+      executionPlanCacheKeyHit,
       s"String: cacheMiss: (CYPHER $currentVersion RETURN 43 AS n, ${empty_parameters})",
       s"String: cacheCompile: (CYPHER $currentVersion RETURN 43 AS n, ${empty_parameters})",
     ))
@@ -753,12 +754,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion RETURN 42 AS n, ${empty_parameters})",
       s"String: cacheCompile: (CYPHER $currentVersion RETURN 42 AS n, ${empty_parameters})",
       // 2nd run
       s"AST:    cacheHit", // no logical planning
-      "ExecutionPlanCacheKey: cacheHit",
+      executionPlanCacheKeyHit,
       s"String: cacheMiss: (CYPHER $currentVersion RETURN 43 AS n, ${empty_parameters})",
       s"String: cacheCompile: (CYPHER $currentVersion RETURN 43 AS n, ${empty_parameters})",
     ))
@@ -785,7 +786,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 1st run
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion $query, $empty_parameters)",
       s"String: cacheCompile: (CYPHER $currentVersion $query, $empty_parameters)",
       // 2nd run
@@ -793,14 +794,14 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 3rd run
       s"String: cacheHit: (CYPHER $currentVersion $query, $empty_parameters)",
       s"AST:    cacheHit", // no logical planning
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheCompileWithExpressionCodeGen: (CYPHER $currentVersion $query, $empty_parameters)", // physical planning
       // 4th run now everything is cached
       s"String: cacheHit: (CYPHER $currentVersion $query, $empty_parameters)",
       // CALL db.clearQueryCaches()
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion $clearCacheQuery, $empty_parameters)",
       s"String: cacheCompile: (CYPHER $currentVersion $clearCacheQuery, $empty_parameters)",
       s"AST:    cacheFlushDetected",
@@ -808,11 +809,14 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       // 4th run
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      "ExecutionPlanCacheKey: cacheMiss",
+      executionPlanCacheKeyMiss,
       s"String: cacheMiss: (CYPHER $currentVersion $query, $empty_parameters)",
       s"String: cacheCompile: (CYPHER $currentVersion $query, $empty_parameters)",
     ))
   }
+
+  def executionPlanCacheKeyHit: String
+  def executionPlanCacheKeyMiss: String
 
   private class LoggingTracer(traceAstLogicalPlanCache: Boolean = true, traceExecutionEngineQueryCache: Boolean = true, traceExecutionPlanCache: Boolean = true)
     extends CacheTracer[Pair[Pair[String, Statement], ParameterTypeMap]] with ExecutionEngineQueryCacheMonitor with ExecutionPlanCacheTracer {
@@ -828,7 +832,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
     def expectTrace(expected: List[String]): Unit = {
       val actual = trace.map(str => str.replaceAll("\\s+", " "))
-      val expectedFormatted = expected.map(str => str.replaceAll("\\s+", " "))
+      val expectedFormatted = expected.filterNot(_.isEmpty).map(str => str.replaceAll("\\s+", " "))
       actual should equal(expectedFormatted)
     }
 
@@ -885,11 +889,23 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     }
 
     override def cacheHit(key: ExecutionPlanCacheKey): Unit = {
-      if (traceExecutionPlanCache) log += s"ExecutionPlanCacheKey: cacheHit"
+      if (traceExecutionPlanCache) log += "ExecutionPlanCacheKey: cacheHit"
     }
 
     override def cacheMiss(key: ExecutionPlanCacheKey): Unit = {
-      if (traceExecutionPlanCache) log += s"ExecutionPlanCacheKey: cacheMiss"
+      if (traceExecutionPlanCache) log += "ExecutionPlanCacheKey: cacheMiss"
     }
   }
+}
+
+class ExecutablePlanQueryCachingTest extends QueryCachingTest(1000) {
+  override def executionPlanCacheKeyHit: String = "ExecutionPlanCacheKey: cacheHit"
+
+  override def executionPlanCacheKeyMiss: String = "ExecutionPlanCacheKey: cacheMiss"
+}
+
+class DefaultQueryCachingTest extends QueryCachingTest() {
+  override def executionPlanCacheKeyHit: String = "" // The default is to have query_execution_plan_cache_size=0 (no caching)
+
+  override def executionPlanCacheKeyMiss: String = "" // The default is to have query_execution_plan_cache_size=0 (no caching)
 }
