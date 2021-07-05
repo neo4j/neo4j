@@ -23,14 +23,10 @@ import org.junit.jupiter.api.Nested;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.Label;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodePropertyIndexScan;
-import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.PropertyKey;
 import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,8 +54,8 @@ class NodePropertyIndexScanPartitionedScanTestSuite
             final var numberOfLabels = 1;
             final var numberOfPropKeys = 2;
 
-            final var labelId = createTags( numberOfLabels, Label.FACTORY ).get( 0 );
-            final var propKeyIds = createTags( numberOfPropKeys, PropertyKey.FACTORY ).stream().mapToInt( i -> i ).toArray();
+            final var labelId = createTags( numberOfLabels, factory.getTokenFactory() ).get( 0 );
+            final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
             final var labelAndPropKeyCombination = Pair.of( labelId, propKeyIds );
 
             final var data = emptyQueries( labelAndPropKeyCombination );
@@ -83,8 +79,8 @@ class NodePropertyIndexScanPartitionedScanTestSuite
             final var numberOfPropKeys = 2;
             final var numberOfProperties = 1 << 12;
 
-            final var labelId = createTags( numberOfLabels, Label.FACTORY ).get( 0 );
-            final var propKeyIds = createTags( numberOfPropKeys, PropertyKey.FACTORY ).stream().mapToInt( i -> i ).toArray();
+            final var labelId = createTags( numberOfLabels, factory.getTokenFactory() ).get( 0 );
+            final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
             final var labelAndPropKeyCombination = Pair.of( labelId, propKeyIds );
 
             final var data = createData( numberOfProperties, labelAndPropKeyCombination );
@@ -125,12 +121,12 @@ class NodePropertyIndexScanPartitionedScanTestSuite
                                 numberOfCreatedProperties++;
                                 assignedPropValues[i] = value;
                                 // when   and tracked against queries
-                                nodesInIndex.getOrCreate( new PropertyKeyScanQuery( generateIndexName( labelId, propKeyId ) ) ).add( nodeId );
+                                nodesInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( labelId, propKeyId ) ) ).add( nodeId );
                             }
                         }
                         if ( Arrays.stream( assignedPropValues ).allMatch( Objects::nonNull ) )
                         {
-                            nodesInIndex.getOrCreate( new PropertyKeyScanQuery( generateIndexName( labelId, propKeyIds ) ) ).add( nodeId );
+                            nodesInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( labelId, propKeyIds ) ) ).add( nodeId );
                         }
                     }
                 }
@@ -150,12 +146,5 @@ class NodePropertyIndexScanPartitionedScanTestSuite
 
             return nodesInIndex;
         }
-    }
-
-    @Override
-    final String generateIndexName( int tokenId, int[] propKeyIds )
-    {
-        return String.format( "%s[%s[%d] {%s}]", NodePropertyIndexScan.FACTORY.name(), Label.FACTORY.name(), tokenId,
-                              Arrays.stream( propKeyIds ).mapToObj( String::valueOf ).collect( Collectors.joining( "," ) ) );
     }
 }

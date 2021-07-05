@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -34,9 +35,12 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
@@ -132,6 +136,20 @@ class PartitionedScanFactories
     abstract static class PropertyIndex<QUERY extends Query<?>, CURSOR extends Cursor>
             extends PartitionedScanFactory<QUERY,CURSOR>
     {
+        abstract SchemaDescriptor getSchemaDescriptor( int tokenId, int... propKeyIds );
+
+        abstract Tag<?> getTokenFactory();
+
+        final PropertyKey getPropKeyFactory()
+        {
+            return PropertyKey.FACTORY;
+        }
+
+        final String getIndexName( int tokenId, int... propKeyIds ) {
+            return String.format( "%s[%s[%d] {%s}]", name(), getTokenFactory().name(), tokenId,
+                                  Arrays.stream( propKeyIds ).mapToObj( String::valueOf ).collect( Collectors.joining( "," ) ) );
+        }
+
         protected final IndexReadSession getSession( KernelTransaction tx, QUERY query )
                 throws IndexNotFoundKernelException
         {
@@ -167,6 +185,18 @@ class PartitionedScanFactories
         {
             return cursor.nodeReference();
         }
+
+        @Override
+        Label getTokenFactory()
+        {
+            return Label.FACTORY;
+        }
+
+        @Override
+        SchemaDescriptor getSchemaDescriptor( int labelId, int... propKeyIds )
+        {
+            return SchemaDescriptors.forLabel( labelId, propKeyIds );
+        }
     }
 
     static final class NodePropertyIndexScan extends PropertyIndex<PropertyKeyScanQuery,NodeValueIndexCursor>
@@ -194,6 +224,99 @@ class PartitionedScanFactories
         long getEntityReference( NodeValueIndexCursor cursor )
         {
             return cursor.nodeReference();
+        }
+
+        @Override
+        Label getTokenFactory()
+        {
+            return Label.FACTORY;
+        }
+
+        @Override
+        SchemaDescriptor getSchemaDescriptor( int labelId, int... propKeyIds )
+        {
+            return SchemaDescriptors.forLabel( labelId, propKeyIds );
+        }
+    }
+
+    static final class RelationshipPropertyIndexSeek extends PropertyIndex<PropertyKeySeekQuery,RelationshipValueIndexCursor>
+    {
+        public static final RelationshipPropertyIndexSeek FACTORY = new RelationshipPropertyIndexSeek();
+
+        private RelationshipPropertyIndexSeek()
+        {
+        }
+
+        @Override
+        PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeySeekQuery propertyKeySeekQuery, int desiredNumberOfPartitions )
+                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+        {
+            return tx.dataRead().relationshipIndexSeek( getSession( tx, propertyKeySeekQuery ), desiredNumberOfPartitions,
+                                                        QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get());
+        }
+
+        @Override
+        RelationshipValueIndexCursor getCursor( KernelTransaction tx )
+        {
+            return tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
+        }
+
+        @Override
+        long getEntityReference( RelationshipValueIndexCursor cursor )
+        {
+            return cursor.relationshipReference();
+        }
+
+        @Override
+        RelationshipType getTokenFactory()
+        {
+            return RelationshipType.FACTORY;
+        }
+
+        @Override
+        SchemaDescriptor getSchemaDescriptor( int relTypeId, int... propKeyIds )
+        {
+            return SchemaDescriptors.forRelType( relTypeId, propKeyIds );
+        }
+    }
+
+    static final class RelationshipPropertyIndexScan extends PropertyIndex<PropertyKeyScanQuery,RelationshipValueIndexCursor>
+    {
+        public static final RelationshipPropertyIndexScan FACTORY = new RelationshipPropertyIndexScan();
+
+        private RelationshipPropertyIndexScan()
+        {
+        }
+
+        @Override
+        PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery propertyKeyScanQuery, int desiredNumberOfPartitions )
+                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+        {
+            return tx.dataRead().relationshipIndexScan( getSession( tx, propertyKeyScanQuery ), desiredNumberOfPartitions, QueryContext.NULL_CONTEXT );
+        }
+
+        @Override
+        RelationshipValueIndexCursor getCursor( KernelTransaction tx )
+        {
+            return tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
+        }
+
+        @Override
+        long getEntityReference( RelationshipValueIndexCursor cursor )
+        {
+            return cursor.relationshipReference();
+        }
+
+        @Override
+        RelationshipType getTokenFactory()
+        {
+            return RelationshipType.FACTORY;
+        }
+
+        @Override
+        SchemaDescriptor getSchemaDescriptor( int relTypeId, int... propKeyIds )
+        {
+            return SchemaDescriptors.forRelType( relTypeId, propKeyIds );
         }
     }
 

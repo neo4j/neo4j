@@ -24,20 +24,13 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.EntityIdsMatchingQuery;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
-import org.neo4j.kernel.impl.newapi.PropertyIndexSeekPartitionedScanTestSuite.PropertyKeySeekQuery;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
@@ -46,25 +39,19 @@ import org.neo4j.values.storable.Values;
 abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends Cursor>
         implements PartitionedScanTestSuite.TestSuite<QUERY,CURSOR>
 {
-    abstract String generateIndexName( int tokenId, int[] propKeyIds );
-
-    final String generateIndexName( int tokenId, int propKeyId )
-    {
-        return generateIndexName( tokenId, new int[]{propKeyId} );
-    }
-
     protected final Iterable<IndexPrototype> createIndexPrototypes( Pair<Integer,int[]> tokenAndPropKeyCombination )
     {
         // IndexPrototype isn't hashable, and do not wish to alter production code for test;
         // therefore using Pair as a hashable wrapper
         final var indexesFrom = new HashSet<Pair<SchemaDescriptor,String>>();
+        final var factory = (PartitionedScanFactories.PropertyIndex<QUERY,CURSOR>) getFactory();
         final var tokenId = tokenAndPropKeyCombination.first();
         final var propKeyIds = tokenAndPropKeyCombination.other();
         for ( final var propKeyId : propKeyIds )
         {
-            indexesFrom.add( Pair.of( SchemaDescriptors.forLabel( tokenId, propKeyId ), generateIndexName( tokenId, propKeyId ) ) );
+            indexesFrom.add( Pair.of( factory.getSchemaDescriptor( tokenId, propKeyId ), factory.getIndexName( tokenId, propKeyId ) ) );
         }
-        indexesFrom.add( Pair.of( SchemaDescriptors.forLabel( tokenId, propKeyIds ), generateIndexName( tokenId, propKeyIds ) ) );
+        indexesFrom.add( Pair.of( factory.getSchemaDescriptor( tokenId, propKeyIds ), factory.getIndexName( tokenId, propKeyIds ) ) );
 
         return indexesFrom.stream()
                 .map( indexFrom -> IndexPrototype.forSchema( indexFrom.first() ).withName( indexFrom.other() ) )
@@ -74,24 +61,27 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
     abstract static class WithoutData<QUERY extends Query<?>, CURSOR extends Cursor>
             extends PartitionedScanTestSuite.WithoutData<QUERY,CURSOR>
     {
-        final PropertyIndexPartitionedScanTestSuite<QUERY,CURSOR> testSuite;
+        protected final PartitionedScanFactories.PropertyIndex<QUERY,CURSOR> factory;
 
         WithoutData( PropertyIndexPartitionedScanTestSuite<QUERY,CURSOR> testSuite )
         {
             super( testSuite );
-            this.testSuite = testSuite;
+            this.factory = (PartitionedScanFactories.PropertyIndex<QUERY,CURSOR>) testSuite.getFactory();
         }
     }
 
     abstract static class WithData<QUERY extends Query<?>, CURSOR extends Cursor>
             extends PartitionedScanTestSuite.WithData<QUERY,CURSOR>
     {
+        protected final PartitionedScanFactories.PropertyIndex<QUERY,CURSOR> factory;
+
         protected abstract EntityIdsMatchingQuery<QUERY> createData( int numberOfProperties,
                                                                      Pair<Integer,int[]> tokenAndPropKeyCombination );
 
         WithData( PropertyIndexPartitionedScanTestSuite<QUERY,CURSOR> testSuite )
         {
             super( testSuite );
+            this.factory = (PartitionedScanFactories.PropertyIndex<QUERY,CURSOR>) testSuite.getFactory();
         }
 
         protected Value createValue( int value )

@@ -52,10 +52,10 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
             final var propKeyIds = tokenAndPropKeyCombination.other();
             for ( final var propKeyId : propKeyIds )
             {
-                empty.getOrCreate( new PropertyKeySeekQuery( testSuite.generateIndexName( tokenId, propKeyId ),
+                empty.getOrCreate( new PropertyKeySeekQuery( factory.getIndexName( tokenId, propKeyId ),
                                                              PropertyIndexQuery.exists( propKeyId ) ) );
             }
-            empty.getOrCreate( new PropertyKeySeekQuery( testSuite.generateIndexName( tokenId, propKeyIds ),
+            empty.getOrCreate( new PropertyKeySeekQuery( factory.getIndexName( tokenId, propKeyIds ),
                                                          Arrays.stream( propKeyIds )
                                                                .mapToObj( PropertyIndexQuery::exists )
                                                                .toArray( PropertyIndexQuery[]::new ) ) );
@@ -66,9 +66,16 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
     abstract static class WithData<CURSOR extends Cursor>
             extends PropertyIndexPartitionedScanTestSuite.WithData<PropertyKeySeekQuery,CURSOR>
     {
+        protected double ratioForExactQuery;
+
         WithData( PropertyIndexSeekPartitionedScanTestSuite<CURSOR> testSuite )
         {
             super( testSuite );
+        }
+
+        protected boolean shouldIncludeExactQuery()
+        {
+            return random.nextDouble() < ratioForExactQuery;
         }
     }
 

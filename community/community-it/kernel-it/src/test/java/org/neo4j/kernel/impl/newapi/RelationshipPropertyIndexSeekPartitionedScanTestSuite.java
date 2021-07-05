@@ -21,74 +21,75 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Nested;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodePropertyIndexSeek;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipPropertyIndexSeek;
 import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class NodePropertyIndexSeekPartitionedScanTestSuite
-        extends PropertyIndexSeekPartitionedScanTestSuite<NodeValueIndexCursor>
+class RelationshipPropertyIndexSeekPartitionedScanTestSuite
+        extends PropertyIndexSeekPartitionedScanTestSuite<RelationshipValueIndexCursor>
 {
     @Override
-    public final NodePropertyIndexSeek getFactory()
+    public final RelationshipPropertyIndexSeek getFactory()
     {
-        return NodePropertyIndexSeek.FACTORY;
+        return RelationshipPropertyIndexSeek.FACTORY;
     }
 
     @Nested
-    class WithoutData extends PropertyIndexSeekPartitionedScanTestSuite.WithoutData<NodeValueIndexCursor>
+    class WithoutData extends PropertyIndexSeekPartitionedScanTestSuite.WithoutData<RelationshipValueIndexCursor>
     {
         WithoutData()
         {
-            super( NodePropertyIndexSeekPartitionedScanTestSuite.this );
+            super( RelationshipPropertyIndexSeekPartitionedScanTestSuite.this );
         }
 
         @Override
         EntityIdsMatchingQuery<PropertyKeySeekQuery> setupDatabase()
         {
-            final var numberOfLabels = 1;
+            final var numberOfRelTypes = 1;
             final var numberOfPropKeys = 2;
 
-            final var labelId = createTags( numberOfLabels, factory.getTokenFactory() ).get( 0 );
+            final var relTypeId = createTags( numberOfRelTypes, factory.getTokenFactory() ).get( 0 );
             final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
-            final var labelAndPropKeyCombination = Pair.of( labelId, propKeyIds );
+            final var relTypeAndPropKeyCombination = Pair.of( relTypeId, propKeyIds );
 
-            final var data = emptyQueries( labelAndPropKeyCombination );
-            createIndexes( createIndexPrototypes( labelAndPropKeyCombination ) );
+            final var data = emptyQueries( relTypeAndPropKeyCombination );
+            createIndexes( createIndexPrototypes( relTypeAndPropKeyCombination ) );
             return data;
         }
     }
 
     @Nested
-    class WithData extends PropertyIndexSeekPartitionedScanTestSuite.WithData<NodeValueIndexCursor>
+    class WithData extends PropertyIndexSeekPartitionedScanTestSuite.WithData<RelationshipValueIndexCursor>
     {
         WithData()
         {
-            super( NodePropertyIndexSeekPartitionedScanTestSuite.this );
+            super( RelationshipPropertyIndexSeekPartitionedScanTestSuite.this );
         }
 
         @Override
         EntityIdsMatchingQuery<PropertyKeySeekQuery> setupDatabase()
         {
-            final var numberOfLabels = 1;
+            final var numberOfRelTypes = 1;
             final var numberOfPropKeys = 2;
             final var numberOfProperties = 1 << 12;
             ratioForExactQuery = 0.002;
 
-            final var labelId = createTags( numberOfLabels, factory.getTokenFactory() ).get( 0 );
+            final var relTypeId = createTags( numberOfRelTypes, factory.getTokenFactory() ).get( 0 );
             final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
-            final var labelAndPropKeyCombination = Pair.of( labelId, propKeyIds );
+            final var relTypeAndPropKeyCombination = Pair.of( relTypeId, propKeyIds );
 
-            final var data = createData( numberOfProperties, labelAndPropKeyCombination );
-            createIndexes( createIndexPrototypes( labelAndPropKeyCombination ) );
+            final var data = createData( numberOfProperties, relTypeAndPropKeyCombination );
+            createIndexes( createIndexPrototypes( relTypeAndPropKeyCombination ) );
             return data;
         }
 
         @Override
         protected EntityIdsMatchingQuery<PropertyKeySeekQuery> createData( int numberOfProperties,
-                                                                           Pair<Integer,int[]> labelAndPropKeyCombination )
+                                                                           Pair<Integer,int[]> relTypeAndPropKeyCombination )
         {
             // given  a set of queries
             final var tracking = new TrackEntityIdsMatchingQuery();
@@ -101,36 +102,33 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
                 final var write = tx.dataWrite();
                 while ( propValues.hasNext() )
                 {
-                    final var labelId = labelAndPropKeyCombination.first();
-                    final var propKeyIds = labelAndPropKeyCombination.other();
+                    final var relTypeId = relTypeAndPropKeyCombination.first();
+                    final var propKeyIds = relTypeAndPropKeyCombination.other();
                     final var assignedPropValues = new Value[propKeyIds.length];
 
-                    final var nodeId = write.nodeCreate();
-                    if ( write.nodeAddLabel( nodeId, labelId ) )
+                    final var relId = write.relationshipCreate( write.nodeCreate(), relTypeId, write.nodeCreate() );
+                    for ( int i = 0; i < propKeyIds.length; i++ )
                     {
-                        for ( int i = 0; i < propKeyIds.length; i++ )
+                        if ( propValues.hasNext() )
                         {
-                            if ( propValues.hasNext() )
-                            {
-                                // when   properties are created
-                                final var propKeyId = propKeyIds[i];
-                                final var value = createValue( propValues.next() );
-                                write.nodeSetProperty( nodeId, propKeyId, value );
-                                numberOfCreatedProperties++;
-                                assignedPropValues[i] = value;
-                                // when   and tracked against queries
-                                tracking.generateAndTrack( nodeId, factory.getIndexName( labelId, propKeyId ),
-                                                           propKeyId, value, shouldIncludeExactQuery() );
-                            }
+                            // when   properties are created
+                            final var propKeyId = propKeyIds[i];
+                            final var value = createValue( propValues.next() );
+                            write.relationshipSetProperty( relId, propKeyId, value );
+                            numberOfCreatedProperties++;
+                            assignedPropValues[i] = value;
+                            // when   and tracked against queries
+                            tracking.generateAndTrack( relId, factory.getIndexName( relTypeId, propKeyId ),
+                                                       propKeyId, value, shouldIncludeExactQuery() );
                         }
-                        tracking.generateAndTrack( nodeId, factory.getIndexName( labelId, propKeyIds ),
-                                                   propKeyIds, assignedPropValues, shouldIncludeExactQuery() );
                     }
+                    tracking.generateAndTrack( relId, factory.getIndexName( relTypeId, propKeyIds ),
+                                               propKeyIds, assignedPropValues, shouldIncludeExactQuery() );
                 }
 
                 tx.commit();
             }
-            catch ( Exception e )
+            catch ( KernelException e )
             {
                 throw new AssertionError( "failed to create database", e );
             }

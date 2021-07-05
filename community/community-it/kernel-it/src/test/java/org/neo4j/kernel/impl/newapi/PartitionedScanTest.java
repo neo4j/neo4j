@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Nested;
 
 class PartitionedScanTest
 {
+    // Token Indexes
+
     @Nested
     class NodeLabelIndexScan extends NodeLabelIndexScanPartitionedScanTestSuite
     {
@@ -33,6 +35,8 @@ class PartitionedScanTest
     {
     }
 
+    // Property Indexes
+
     @Nested
     class NodePropertyIndexSeek extends NodePropertyIndexSeekPartitionedScanTestSuite
     {
@@ -40,6 +44,16 @@ class PartitionedScanTest
 
     @Nested
     class NodePropertyIndexScan extends NodePropertyIndexScanPartitionedScanTestSuite
+    {
+    }
+
+    @Nested
+    class RelationshipPropertyIndexSeek extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
+    {
+    }
+
+    @Nested
+    class RelationshipPropertyIndexScan extends RelationshipPropertyIndexScanPartitionedScanTestSuite
     {
     }
 }
