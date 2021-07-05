@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -115,9 +114,9 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
 
     int relationshipTypeCount();
 
-    boolean nodeExists( long id, PageCursor pageCursor );
+    boolean nodeExists( long id, StoreCursors storeCursors );
 
-    boolean relationshipExists( long id, PageCursor pageCursor );
+    boolean relationshipExists( long id, StoreCursors storeCursors );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 

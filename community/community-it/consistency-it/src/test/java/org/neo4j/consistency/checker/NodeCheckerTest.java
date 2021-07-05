@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,8 +49,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 class NodeCheckerTest extends CheckerTestBase
 {

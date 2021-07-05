@@ -51,9 +51,9 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @PageCacheExtension
 @Neo4jLayoutExtension

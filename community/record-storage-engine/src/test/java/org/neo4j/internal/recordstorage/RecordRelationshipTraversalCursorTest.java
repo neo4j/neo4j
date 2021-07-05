@@ -65,6 +65,8 @@ import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.concatArrays;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordNodeCursor.relationshipsReferenceWithDenseMarker;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -73,8 +75,6 @@ import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 @PageCacheExtension
 @Neo4jLayoutExtension

@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
@@ -45,13 +46,13 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     private final Loader<RECORD, ADDITIONAL> loader;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
-    private final short cursorType;
+    private final CursorType cursorType;
     private final Map<Long,DirectRecordProxy> batch = new HashMap<>();
 
     private final MutableInt changeCounter = new MutableInt();
 
     public DirectRecordAccess( RecordStore<RECORD> store, Loader<RECORD,ADDITIONAL> loader, CursorContext cursorContext,
-            short cursorType, StoreCursors storeCursors )
+            CursorType cursorType, StoreCursors storeCursors )
     {
         this.store = store;
         this.loader = loader;

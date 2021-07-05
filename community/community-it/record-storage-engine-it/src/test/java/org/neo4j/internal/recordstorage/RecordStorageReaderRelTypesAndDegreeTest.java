@@ -59,6 +59,9 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.internal.recordstorage.TestRelType.IN;
 import static org.neo4j.internal.recordstorage.TestRelType.LOOP;
 import static org.neo4j.internal.recordstorage.TestRelType.OUT;
@@ -66,9 +69,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 @ExtendWith( RandomExtension.class )
 public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBase

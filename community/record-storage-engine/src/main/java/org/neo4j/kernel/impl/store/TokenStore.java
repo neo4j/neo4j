@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.token.api.NamedToken;
@@ -57,8 +58,8 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
     private final DynamicStringStore nameStore;
-    private final short cursorType;
-    private final short dynamicCursorType;
+    private final CursorType cursorType;
+    private final CursorType dynamicCursorType;
 
     public TokenStore(
             Path path,
@@ -74,8 +75,8 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             String storeVersion,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
-            short cursorType,
-            short dynamicCursorType,
+            CursorType cursorType,
+            CursorType dynamicCursorType,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,

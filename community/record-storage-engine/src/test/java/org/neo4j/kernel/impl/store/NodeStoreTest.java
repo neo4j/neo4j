@@ -78,6 +78,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
@@ -87,8 +89,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @EphemeralNeo4jLayoutExtension
 class NodeStoreTest

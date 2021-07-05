@@ -63,13 +63,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_STRING_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension

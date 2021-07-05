@@ -55,10 +55,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combinedKeyOnGroupAndDirection;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.applyLogicalChanges;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.openSimpleStorageEngine;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
 
 @ExtendWith( RandomExtension.class )
 @EphemeralPageCacheExtension

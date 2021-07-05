@@ -42,9 +42,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @PageCacheExtension
 @Neo4jLayoutExtension

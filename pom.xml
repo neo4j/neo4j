@@ -88,7 +88,7 @@
       -Dorg.neo4j.test.extension.ThreadLeakageGuardExtension.PRINT_ONLY=${ThreadLeakageGuardExtension.PRINT_ONLY}
       -Dorg.neo4j.test.extension.ThreadLeakageGuardExtension.MAXIMUM_WAIT_TIME_MILLIS=${ThreadLeakageGuardExtension.MAXIMUM_WAIT_TIME_MILLIS}
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
-      -Dorg.neo4j.kernel.impl.store.cursor.CachedStoreCursors.CHECK_READ_CURSORS=true
+      -Dorg.neo4j.kernel.impl.store.cursor.AbstractCachedStoreCursors.CHECK_READ_CURSORS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
       -Dorg.neo4j.codegen.bytecode.ByteCodeExpressionVisitor.checkByteCode=false
       -Dorg.neo4j.kernel.impl.scheduler.ThreadPool.shutdownTimeout=2

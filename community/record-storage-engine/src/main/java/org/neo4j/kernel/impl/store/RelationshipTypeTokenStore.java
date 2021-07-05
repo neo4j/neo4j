@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
 
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store

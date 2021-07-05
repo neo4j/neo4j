@@ -34,17 +34,18 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.storageengine.api.CommandVersion;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
@@ -206,7 +207,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         }
     }
 
-    private <RECORD extends AbstractBaseRecord> void updateStore( CommonAbstractStore<RECORD,?> store, BaseCommand<RECORD> command, short cursorType )
+    private <RECORD extends AbstractBaseRecord> void updateStore( CommonAbstractStore<RECORD,?> store, BaseCommand<RECORD> command, CursorType cursorType )
     {
         try ( var cursor = storeCursors.writeCursor( cursorType ) )
         {

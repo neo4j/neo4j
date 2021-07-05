@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -56,12 +55,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGroupMonitor.EMPTY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension

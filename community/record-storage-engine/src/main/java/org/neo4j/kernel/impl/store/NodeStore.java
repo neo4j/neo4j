@@ -43,8 +43,8 @@ import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.util.Bits;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 
 /**
  * Implementation of the node store.

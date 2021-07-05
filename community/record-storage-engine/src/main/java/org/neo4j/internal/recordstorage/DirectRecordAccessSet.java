@@ -37,15 +37,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
 
 public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable
 {

@@ -32,6 +32,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -268,7 +268,7 @@ class SchemaStore35Test
     private void storeBrokenRule( SchemaRule rule )
     {
         Collection<DynamicRecord> records = allocateFrom( rule, NULL );
-        try ( var cursor = storeCursors.writeCursor( CursorTypes.SCHEMA_CURSOR ) )
+        try ( var cursor = storeCursors.writeCursor( RecordCursorTypes.SCHEMA_CURSOR ) )
         {
             for ( DynamicRecord record : records )
             {
@@ -281,7 +281,7 @@ class SchemaStore35Test
     private void storeRule( SchemaRule rule )
     {
         Collection<DynamicRecord> records = allocateFrom( rule, NULL );
-        try ( var cursor = storeCursors.writeCursor( CursorTypes.SCHEMA_CURSOR ) )
+        try ( var cursor = storeCursors.writeCursor( RecordCursorTypes.SCHEMA_CURSOR ) )
         {
             for ( DynamicRecord record : records )
             {
@@ -316,7 +316,7 @@ class SchemaStore35Test
     {
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = store.newRecord();
-        var cursor = storeCursors.readCursor( CursorTypes.SCHEMA_CURSOR );
+        var cursor = storeCursors.readCursor( RecordCursorTypes.SCHEMA_CURSOR );
         store.getRecordByCursor( rule.getId(), record, CHECK, cursor );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), store );
         allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorContext, INSTANCE );

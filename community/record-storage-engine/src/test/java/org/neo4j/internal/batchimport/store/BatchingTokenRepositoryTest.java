@@ -28,11 +28,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -42,8 +42,6 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -144,14 +142,14 @@ class BatchingTokenRepositoryTest
                     assertEquals( expectedId + i, tokenId );
                 }
                 assertEquals( expectedId, tokenStore.getHighId() );
-                try ( PageCursor pageCursor = storeCursors.writeCursor( CursorTypes.PROPERTY_KEY_TOKEN_CURSOR ) )
+                try ( PageCursor pageCursor = storeCursors.writeCursor( RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR ) )
                 {
                     repo.flush( NULL, pageCursor, storeCursors );
                 }
                 assertEquals( expectedId + tokensPerRound, tokenStore.getHighId() );
                 expectedId += tokensPerRound;
             }
-            try ( PageCursor pageCursor = storeCursors.writeCursor( CursorTypes.PROPERTY_KEY_TOKEN_CURSOR ) )
+            try ( PageCursor pageCursor = storeCursors.writeCursor( RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR ) )
             {
                 repo.flush( NULL, pageCursor, storeCursors );
             }

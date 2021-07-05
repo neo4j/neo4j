@@ -35,9 +35,9 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {

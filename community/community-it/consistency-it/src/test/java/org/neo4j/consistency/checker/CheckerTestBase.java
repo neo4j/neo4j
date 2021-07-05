@@ -105,13 +105,13 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.consistency.checker.RecordStorageConsistencyChecker.DEFAULT_SLOT_SIZES;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_BYTES;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.stringValue;
 

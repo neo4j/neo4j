@@ -36,7 +36,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.DbmsExtension;
@@ -45,12 +44,12 @@ import org.neo4j.test.extension.Inject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
 
 @DbmsExtension
 class DropBrokenUniquenessConstraintIT

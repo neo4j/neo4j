@@ -57,8 +57,8 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 
 public class SchemaStorage implements SchemaRuleAccess
 {

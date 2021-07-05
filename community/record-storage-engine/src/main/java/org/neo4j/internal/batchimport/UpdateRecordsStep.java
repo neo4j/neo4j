@@ -34,11 +34,11 @@ import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
@@ -53,12 +53,12 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     protected final RecordStore<RECORD> store;
     private final int recordSize;
     private final Function<CursorContext,StoreCursors> storeCursorsCreator;
-    private final short cursorType;
+    private final CursorType cursorType;
     private final PrepareIdSequence prepareIdSequence;
     private final LongAdder recordsUpdated = new LongAdder();
 
-    public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
-            PrepareIdSequence prepareIdSequence, PageCacheTracer pageCacheTracer, Function<CursorContext,StoreCursors> storeCursorsCreator, short cursorType )
+    public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store, PrepareIdSequence prepareIdSequence,
+            PageCacheTracer pageCacheTracer, Function<CursorContext,StoreCursors> storeCursorsCreator, CursorType cursorType )
     {
         super( control, "v", config, config.parallelRecordWrites() ? 0 : 1, pageCacheTracer );
         this.store = store;

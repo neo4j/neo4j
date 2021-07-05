@@ -19,86 +19,28 @@
  */
 package org.neo4j.kernel.impl.store.cursor;
 
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-
+import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.cursor.CursorType;
 
-import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_STRING_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.MAX_TYPE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
-import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.MAX_TYPE;
 
-public class CachedStoreCursors implements StoreCursors
+public class CachedStoreCursors extends AbstractCachedStoreCursors
 {
-    private static final boolean CHECK_READ_CURSORS = flag( CachedStoreCursors.class, "CHECK_READ_CURSORS", false );
-
     private final NeoStores neoStores;
-    private CursorContext cursorContext;
-
-    private PageCursor[] cursorsByType;
 
     public CachedStoreCursors( NeoStores neoStores, CursorContext cursorContext )
     {
+        super( cursorContext, MAX_TYPE + 1 );
         this.neoStores = neoStores;
-        this.cursorContext = cursorContext;
-        this.cursorsByType = createEmptyCursorArray();
-    }
-
-    public void reset( CursorContext cursorContext )
-    {
-        this.cursorContext = cursorContext;
-        resetCursors();
-    }
-
-    private void resetCursors()
-    {
-        for ( int i = 0; i < cursorsByType.length; i++ )
-        {
-            PageCursor pageCursor = cursorsByType[i];
-            if ( pageCursor != null )
-            {
-                if ( CHECK_READ_CURSORS )
-                {
-                    checkReadCursor( pageCursor, safeCastIntToShort( i ) );
-                }
-                pageCursor.close();
-            }
-        }
-        cursorsByType = createEmptyCursorArray();
     }
 
     @Override
-    public PageCursor readCursor( short type )
+    public PageCursor writeCursor( CursorType type )
     {
-        var cursor = cursorsByType[type];
-        if ( cursor == null )
-        {
-            cursor = createReadCursor( type );
-            cursorsByType[type] = cursor;
-        }
-        return cursor;
-    }
-
-    @Override
-    public PageCursor writeCursor( short type )
-    {
-        switch ( type )
+        switch ( cast( type ) )
         {
         case NODE_CURSOR:
             return neoStores.getNodeStore().openPageCursorForWriting( 0, cursorContext );
@@ -133,9 +75,10 @@ public class CachedStoreCursors implements StoreCursors
         }
     }
 
-    private PageCursor createReadCursor( short type )
+    @Override
+    protected PageCursor createReadCursor( CursorType type )
     {
-        switch ( type )
+        switch ( cast( type ) )
         {
         case NODE_CURSOR:
             return neoStores.getNodeStore().openPageCursorForReading( 0, cursorContext );
@@ -170,23 +113,13 @@ public class CachedStoreCursors implements StoreCursors
         }
     }
 
-    @Override
-    public void close()
+    private static RecordCursorTypes cast( CursorType type )
     {
-        resetCursors();
-    }
-
-    private static void checkReadCursor( PageCursor pageCursor, short type )
-    {
-        if ( pageCursor.getRawCurrentFile() == null )
+        if ( type instanceof RecordCursorTypes )
         {
-            throw new IllegalStateException(
-                    "Read cursor " + ReflectionToStringBuilder.toString( pageCursor ) + " with type: " + type + " is closed outside of owning store cursors." );
+            return (RecordCursorTypes) type;
         }
-    }
-
-    private static PageCursor[] createEmptyCursorArray()
-    {
-        return new PageCursor[MAX_TYPE + 1];
+        throw new IllegalArgumentException(
+                String.format( "%s(%s) is of incorrect type. Expected %s.", type, type.getClass().getSimpleName(), RecordCursorTypes.class.getSimpleName() ) );
     }
 }

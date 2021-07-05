@@ -32,11 +32,10 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 
 /**
  * Updates dense nodes with which will be the {@link NodeRecord#setNextRel(long) first group} to point to,

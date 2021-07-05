@@ -30,10 +30,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 
 /**
  * Takes information about relationship groups in the {@link NodeRelationshipCache}, which is produced

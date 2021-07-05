@@ -24,19 +24,20 @@ import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
 
 class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<RelationshipTypeTokenRecord>
 {
@@ -74,9 +75,9 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
         }
 
         @Override
-        public PageCursor readCursor( short type )
+        public PageCursor readCursor( CursorType type )
         {
-            switch ( type )
+            switch ( (RecordCursorTypes) type )
             {
             case REL_TYPE_TOKEN_CURSOR:
                 if ( storeCursor == null )
@@ -96,9 +97,9 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
         }
 
         @Override
-        public PageCursor writeCursor( short type )
+        public PageCursor writeCursor( CursorType type )
         {
-            switch ( type )
+            switch ( (RecordCursorTypes) type )
             {
             case REL_TYPE_TOKEN_CURSOR:
                 return store.openPageCursorForWriting( 0, CursorContext.NULL );

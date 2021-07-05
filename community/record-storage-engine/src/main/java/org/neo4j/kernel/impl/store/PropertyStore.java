@@ -39,7 +39,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.InconsistentDataReadException;
 import org.neo4j.internal.recordstorage.RecordPropertyCursor;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -65,13 +64,13 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.TemporalValueWriterAdapter;
 
 import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 
 /**
  * Implementation of the property store. This implementation has two dynamic

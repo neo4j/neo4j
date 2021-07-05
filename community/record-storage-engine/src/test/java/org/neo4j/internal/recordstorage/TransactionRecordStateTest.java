@@ -92,8 +92,8 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -129,6 +129,10 @@ import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.rel
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.relationships;
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleCreate;
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleDelete;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
@@ -146,10 +150,6 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 @EphemeralNeo4jLayoutExtension
 @EphemeralPageCacheExtension

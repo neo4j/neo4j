@@ -20,8 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
-import org.mockito.MockSettings;
 
 import java.util.Arrays;
 import java.util.function.Function;
@@ -39,7 +37,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,8 +48,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 class UpdateRecordsStepTest
 {

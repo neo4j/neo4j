@@ -27,11 +27,10 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.batchimport.RelationshipGroupCache.GROUP_ENTRY_SIZE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 
 /**
  * Writes cached {@link RelationshipGroupRecord} from {@link ScanAndCacheGroupsStage} to store. This is done

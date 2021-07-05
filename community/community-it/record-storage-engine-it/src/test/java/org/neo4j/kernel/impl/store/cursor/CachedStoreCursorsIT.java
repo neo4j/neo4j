@@ -21,14 +21,16 @@ package org.neo4j.kernel.impl.store.cursor;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.pagecache.context.EmptyVersionContext.EMPTY;
@@ -45,7 +47,7 @@ class CachedStoreCursorsIT
         try ( var cursorContext = new CursorContext( PageCursorTracer.NULL, EMPTY ) )
         {
             var storageCursors = storageEngine.createStorageCursors( cursorContext );
-            storageCursors.readCursor( CursorTypes.NODE_CURSOR ).close();
+            storageCursors.readCursor( RecordCursorTypes.NODE_CURSOR ).close();
             assertThrows( IllegalStateException.class, storageCursors::close );
         }
     }
@@ -58,19 +60,31 @@ class CachedStoreCursorsIT
         try ( var cursorContext = new CursorContext( cursorTracer, EMPTY );
               var storageCursors = storageEngine.createStorageCursors( cursorContext ) )
         {
-            Object[] cursors = new Object[CursorTypes.MAX_TYPE + 1];
-            for ( short i = 0; i <= CursorTypes.MAX_TYPE; i++ )
+            Object[] cursors = new Object[RecordCursorTypes.MAX_TYPE + 1];
+            for ( RecordCursorTypes type : RecordCursorTypes.values() )
             {
-                cursors[i] = storageCursors.readCursor( i );
+                cursors[type.value()] = storageCursors.readCursor( type );
             }
 
             for ( int i = 0; i < 10; i++ )
             {
-                for ( short j = 0; j <= CursorTypes.MAX_TYPE; j++ )
+                for ( RecordCursorTypes type : RecordCursorTypes.values() )
                 {
-                    assertEquals( cursors[j], storageCursors.readCursor( j ) );
+                    assertEquals( cursors[type.value()], storageCursors.readCursor( type ) );
                 }
             }
+        }
+    }
+
+    @Test
+    void shouldOnlyAcceptRecordStorageTypes()
+    {
+        CursorType anotherType = () -> (short) 1;
+        try ( var cursorContext = new CursorContext( PageCursorTracer.NULL, EMPTY );
+                var storageCursors = storageEngine.createStorageCursors( cursorContext ) )
+        {
+            assertThatThrownBy( () -> storageCursors.readCursor( anotherType ) ).isInstanceOf( IllegalArgumentException.class );
+            assertThatThrownBy( () -> storageCursors.writeCursor( anotherType ) ).isInstanceOf( IllegalArgumentException.class );
         }
     }
 }

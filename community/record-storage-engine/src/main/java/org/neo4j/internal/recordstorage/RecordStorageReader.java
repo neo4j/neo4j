@@ -34,8 +34,8 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.StorageSchemaReaderSnapshot;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -49,7 +49,6 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.internal.schema.StorageSchemaReaderSnapshot;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -294,15 +293,15 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public boolean nodeExists( long id, PageCursor pageCursor )
+    public boolean nodeExists( long id, StoreCursors storeCursors )
     {
-        return nodeStore.isInUse( id, pageCursor );
+        return nodeStore.isInUse( id, storeCursors.readCursor( RecordCursorTypes.NODE_CURSOR ) );
     }
 
     @Override
-    public boolean relationshipExists( long id, PageCursor pageCursor )
+    public boolean relationshipExists( long id, StoreCursors storeCursors )
     {
-        return relationshipStore.isInUse( id, pageCursor );
+        return relationshipStore.isInUse( id, storeCursors.readCursor( RecordCursorTypes.RELATIONSHIP_CURSOR ) );
     }
 
     @Override

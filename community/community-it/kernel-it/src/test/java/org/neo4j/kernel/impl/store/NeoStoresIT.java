@@ -49,9 +49,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 @DbmsExtension( configurationCallback = "configure" )
 class NeoStoresIT

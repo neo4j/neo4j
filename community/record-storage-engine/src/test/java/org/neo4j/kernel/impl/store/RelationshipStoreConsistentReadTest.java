@@ -25,7 +25,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<RelationshipRecord, RelationshipStore>

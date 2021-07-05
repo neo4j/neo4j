@@ -19,32 +19,10 @@
  */
 package org.neo4j.storageengine.api.cursor;
 
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.context.CursorContext;
-
-public class StoreCursorsAdapter implements StoreCursors
+public interface CursorType
 {
-    @Override
-    public void reset( CursorContext cursorContext )
-    {
-
-    }
-
-    @Override
-    public PageCursor readCursor( CursorType type )
-    {
-        return null;
-    }
-
-    @Override
-    public PageCursor writeCursor( CursorType type )
-    {
-        return null;
-    }
-
-    @Override
-    public void close()
-    {
-
-    }
+    /**
+     * @return A storage-engine unique value for this specific cursor type
+     */
+    short value();
 }

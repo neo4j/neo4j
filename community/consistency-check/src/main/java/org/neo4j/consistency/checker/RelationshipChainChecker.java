@@ -31,8 +31,8 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Stopwatch;
 
@@ -54,9 +54,9 @@ import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.S
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.TARGET;
 import static org.neo4j.consistency.checking.cache.CacheSlots.longOf;
 import static org.neo4j.internal.helpers.Format.duration;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 /**
  * Checks relationship chains, i.e. their internal pointers between relationship records.

@@ -104,12 +104,12 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 
 @ServiceProvider
 public class RecordStorageEngineFactory implements StorageEngineFactory

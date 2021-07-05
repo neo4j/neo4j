@@ -47,11 +47,11 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.lock.ResourceTypes.NODE;

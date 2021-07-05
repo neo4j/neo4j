@@ -35,6 +35,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
@@ -43,7 +44,6 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 import static org.neo4j.kernel.impl.store.NodeLabelsField.firstDynamicLabelRecordId;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 
 public class DynamicNodeLabels implements NodeLabels
 {

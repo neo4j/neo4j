@@ -21,9 +21,7 @@ package org.neo4j.kernel.impl.storemigration.legacy;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.function.Predicate;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -38,7 +36,7 @@ import org.neo4j.kernel.impl.storemigration.SchemaStorage;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 
 /**
  * A stripped down 3.5.x version of SchemaStorage, used for schema store migration.

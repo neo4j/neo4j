@@ -66,6 +66,7 @@ import org.neo4j.internal.recordstorage.PropertyDeleter;
 import org.neo4j.internal.recordstorage.PropertyTraverser;
 import org.neo4j.internal.recordstorage.RecordAccess;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.RelationshipCreator;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter;
@@ -143,7 +144,6 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -170,15 +170,15 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
 import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -675,7 +675,7 @@ public class BatchInserterImpl implements BatchInserter
     public void createNode( long id, Map<String, Object> properties, Label... labels )
     {
         IdValidator.assertValidId( IdType.NODE, id, maxNodeId );
-        var nodeCursor = storeCursors.readCursor( CursorTypes.NODE_CURSOR );
+        var nodeCursor = storeCursors.readCursor( RecordCursorTypes.NODE_CURSOR );
         if ( nodeStore.isInUse( id, nodeCursor ) )
         {
             throw new IllegalArgumentException( "id=" + id + " already in use" );
@@ -775,7 +775,7 @@ public class BatchInserterImpl implements BatchInserter
     public boolean nodeExists( long nodeId )
     {
         flushStrategy.forceFlush();
-        return nodeStore.isInUse( nodeId, storeCursors.readCursor( CursorTypes.NODE_CURSOR ) );
+        return nodeStore.isInUse( nodeId, storeCursors.readCursor( RecordCursorTypes.NODE_CURSOR ) );
     }
 
     @Override

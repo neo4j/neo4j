@@ -24,8 +24,8 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 /**
  * Looks up "input id" from a node. This is used when importing nodes and where the input data specifies ids

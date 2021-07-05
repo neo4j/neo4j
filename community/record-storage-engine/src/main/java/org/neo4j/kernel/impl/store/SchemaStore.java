@@ -53,11 +53,11 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.schema.SchemaRuleMapifier.PROP_OWNING_CONSTRAINT;
 import static org.neo4j.internal.schema.SchemaRuleMapifier.mapifySchemaRule;
 import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 /**
  * In this schema store implementation, each schema record is really just a pointer to a property chain in the property store.

@@ -21,9 +21,10 @@ package org.neo4j.kernel.impl.storemigration.legacy;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
 
-import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 
 public class SchemaStore35StoreCursors extends StoreCursorsAdapter
 {
@@ -39,7 +40,7 @@ public class SchemaStore35StoreCursors extends StoreCursorsAdapter
     }
 
     @Override
-    public PageCursor readCursor( short type )
+    public PageCursor readCursor( CursorType type )
     {
         if ( SCHEMA_CURSOR == type )
         {
@@ -56,7 +57,7 @@ public class SchemaStore35StoreCursors extends StoreCursorsAdapter
     }
 
     @Override
-    public PageCursor writeCursor( short type )
+    public PageCursor writeCursor( CursorType type )
     {
         if ( SCHEMA_CURSOR == type )
         {

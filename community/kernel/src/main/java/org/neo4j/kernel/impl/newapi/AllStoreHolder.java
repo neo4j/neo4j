@@ -92,8 +92,6 @@ import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class AllStoreHolder extends Read
@@ -142,7 +140,7 @@ public class AllStoreHolder extends Read
         }
 
         AccessMode mode = ktx.securityContext().mode();
-        boolean existsInNodeStore = storageReader.nodeExists( reference, ktx.storeCursors().readCursor( NODE_CURSOR ) );
+        boolean existsInNodeStore = storageReader.nodeExists( reference, ktx.storeCursors() );
 
         if ( mode.allowsTraverseAllLabels() )
         {
@@ -405,7 +403,7 @@ public class AllStoreHolder extends Read
         }
         AccessMode mode = ktx.securityContext().mode();
         CursorContext cursorContext = ktx.cursorContext();
-        boolean existsInRelStore = storageReader.relationshipExists( reference, ktx.storeCursors().readCursor( RELATIONSHIP_CURSOR ) );
+        boolean existsInRelStore = storageReader.relationshipExists( reference, ktx.storeCursors() );
 
         if ( mode.allowsTraverseAllRelTypes() )
         {

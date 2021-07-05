@@ -67,6 +67,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -104,7 +105,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -123,17 +124,17 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.internal.schema.IndexType.BTREE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_STRING_STORE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.values.storable.Values.intValue;
 
 @ExtendWith( {TestDirectorySupportExtension.class, RandomExtension.class} )
@@ -242,11 +243,11 @@ public class DetectRandomSabotageIT
         PropertyStore propertyStore = schemaStore.propertyStore();
         long indexId = resolver.resolveDependency( IndexingService.class ).getIndexIds().longIterator().next();
         SchemaRecord schemaRecord = schemaStore.newRecord();
-        var cursor = storageCursors.readCursor( CursorTypes.SCHEMA_CURSOR );
+        var cursor = storageCursors.readCursor( RecordCursorTypes.SCHEMA_CURSOR );
         schemaStore.getRecordByCursor( indexId, schemaRecord, RecordLoad.FORCE, cursor );
 
         PropertyRecord indexConfigPropertyRecord = propertyStore.newRecord();
-        var propertyCursor = storageCursors.readCursor( CursorTypes.PROPERTY_CURSOR );
+        var propertyCursor = storageCursors.readCursor( RecordCursorTypes.PROPERTY_CURSOR );
         propertyStore.getRecordByCursor( schemaRecord.getNextProp(), indexConfigPropertyRecord, RecordLoad.FORCE, propertyCursor );
         propertyStore.ensureHeavy( indexConfigPropertyRecord, storageCursors );
 
@@ -1070,7 +1071,7 @@ public class DetectRandomSabotageIT
                 };
 
         protected static <T extends AbstractBaseRecord> Sabotage setRandomRecordNotInUse( RandomRule random, RecordStore<T> store, StoreCursors storeCursors,
-                short cursorType )
+                CursorType cursorType )
         {
             PageCursor readCursor = storeCursors.readCursor( cursorType );
             T before = randomRecord( random, store, usedRecord(), readCursor );
@@ -1090,14 +1091,14 @@ public class DetectRandomSabotageIT
         }
 
         protected static <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
-                ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, StoreCursors storeCursors, short cursorType )
+                ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, StoreCursors storeCursors, CursorType cursorType )
         {
             return loadChangeUpdate( random, store, filter, idGetter, idSetter,
                     () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true ), storeCursors, cursorType );
         }
 
         protected static <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
-                ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, LongSupplier rng, StoreCursors storeCursors, short cursorType )
+                ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, LongSupplier rng, StoreCursors storeCursors, CursorType cursorType )
         {
             PageCursor readCursor = storeCursors.readCursor( cursorType );
             T before = randomRecord( random, store, filter, readCursor );
@@ -1127,10 +1128,10 @@ public class DetectRandomSabotageIT
 
         private static Sabotage loadChangeUpdateDynamicChain( RandomRule random, PropertyStore propertyStore, AbstractDynamicStore dynamicStore,
                 PropertyType valueType, Consumer<DynamicRecord> vandal, Predicate<Value> checkability, StoreCursors storeCursors,
-                short dynamicCursorType )
+                CursorType dynamicCursorType )
         {
             PropertyRecord propertyRecord = propertyStore.newRecord();
-            var propertyCursor = storeCursors.readCursor( CursorTypes.PROPERTY_CURSOR );
+            var propertyCursor = storeCursors.readCursor( RecordCursorTypes.PROPERTY_CURSOR );
             while ( true )
             {
                 propertyStore.getRecordByCursor( random.nextLong( propertyStore.getHighId() ), propertyRecord, RecordLoad.CHECK, propertyCursor );

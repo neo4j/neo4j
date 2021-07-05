@@ -50,8 +50,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -62,9 +60,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 
 /**
  * Tests for handling many property keys (even after restart of database)

@@ -45,13 +45,13 @@ public interface StoreCursors extends AutoCloseable
         }
 
         @Override
-        public PageCursor readCursor( short type )
+        public PageCursor readCursor( CursorType type )
         {
             return null;
         }
 
         @Override
-        public PageCursor writeCursor( short type )
+        public PageCursor writeCursor( CursorType type )
         {
             return null;
         }
@@ -59,9 +59,9 @@ public interface StoreCursors extends AutoCloseable
 
     void reset( CursorContext cursorContext );
 
-    PageCursor readCursor( short type );
+    PageCursor readCursor( CursorType type );
 
-    PageCursor writeCursor( short type );
+    PageCursor writeCursor( CursorType type );
 
     void close();
 }
