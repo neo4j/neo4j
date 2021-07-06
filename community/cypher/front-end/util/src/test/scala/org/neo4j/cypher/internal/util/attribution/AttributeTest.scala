@@ -100,7 +100,7 @@ class AttributeTest extends CypherFunSuite {
     attr.equals(differentValue) shouldBe false
     attr.equals(differentId) shouldBe false
 
-    // create copy and update add value
+    // modify an attribute that was equal to `attr`
     val attrModify = new TestAttribute
     attrModify.set(Id(4), 27)
     attrModify.shouldEqual(attr)

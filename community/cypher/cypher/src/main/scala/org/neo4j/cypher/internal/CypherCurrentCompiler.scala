@@ -161,17 +161,17 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan = planState.logicalPlan
     val queryType = getQueryType(planState)
-    val (executionPlan, attributes) = if (executionPlanCache.nonEmpty && logicalPlanResult.shouldBeCached) {
-      val cacheKey = ExecutionPlanCacheKey(query.options.runtimeCacheKey, logicalPlan, planState.planningAttributes.cacheKey)
-      var hit = true
-      val result = executionPlanCache.get.computeIfAbsent(cacheKey, {
-        hit = false
-        computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
-      })
-      if (hit) cacheTracer.cacheHit(cacheKey) else cacheTracer.cacheMiss(cacheKey)
-      result
-    } else {
-      computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
+    val (executionPlan, attributes) = executionPlanCache match {
+      case Some(ePlanCache) if logicalPlanResult.shouldBeCached =>
+        val cacheKey = ExecutionPlanCacheKey(query.options.runtimeCacheKey, logicalPlan, planState.planningAttributes.cacheKey)
+        var hit = true
+        val result = ePlanCache.computeIfAbsent(cacheKey, {
+          hit = false
+          computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
+        })
+        if (hit) cacheTracer.cacheHit(cacheKey) else cacheTracer.cacheMiss(cacheKey)
+        result
+      case _ => computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
     }
 
     new CypherExecutableQuery(
