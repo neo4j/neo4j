@@ -27,6 +27,7 @@ import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
+import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -92,8 +93,15 @@ public class NodeImporter extends EntityImporter
     @Override
     public boolean id( Object id, Group group )
     {
-        long nodeId = nodeIds.nextId( cursorContext );
+        return id( id, group, nodeIds );
+    }
+
+    @Override
+    public boolean id( Object id, Group group, IdSequence idSequence )
+    {
+        long nodeId = idSequence.nextId( cursorContext );
         nodeRecord.setId( nodeId );
+        highestId = max( highestId, nodeId );
         idMapper.put( id, nodeId, group );
 
         // also store this id as property in temp property store
