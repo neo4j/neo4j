@@ -841,7 +841,6 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
     val estimatedRowsBefore = resBefore.getExecutionPlanDescription.getArguments.get("EstimatedRows")
     val estimatedRowsAfter = resAfter.getExecutionPlanDescription.getArguments.get("EstimatedRows")
     estimatedRowsBefore should not be estimatedRowsAfter
-    println(estimatedRowsAfter)
   }
 
   def executionPlanCacheKeyHit: String
