@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
 import org.neo4j.cypher.internal.ExecutionPlanCacheKey
@@ -29,10 +30,12 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.helpers.collection.Pair
 import org.scalatest.prop.TableDrivenPropertyChecks
 
+import java.time.Duration
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.mutable
@@ -43,7 +46,8 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
     // String cache JIT compiles on the first hit
     GraphDatabaseInternalSettings.cypher_expression_recompilation_limit -> Integer.valueOf(2),
     GraphDatabaseInternalSettings.cypher_enable_runtime_monitors -> java.lang.Boolean.TRUE,
-    GraphDatabaseInternalSettings.query_execution_plan_cache_size -> Integer.valueOf(executionPlanCacheSize)
+    GraphDatabaseInternalSettings.query_execution_plan_cache_size -> Integer.valueOf(executionPlanCacheSize),
+    GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ofSeconds(0)
   )
 
   private val empty_parameters = "Map()"
@@ -813,6 +817,31 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"String: cacheMiss: (CYPHER $currentVersion $query, $empty_parameters)",
       s"String: cacheCompile: (CYPHER $currentVersion $query, $empty_parameters)",
     ))
+  }
+
+  test("Cardinality change should change cache-key") {
+    val q = "EXPLAIN MATCH (n) RETURN n"
+    var resBefore: Result = null
+    var resAfter: Result = null
+
+    graph.withTx( tx => {
+      resBefore = tx.execute(q)
+      resBefore.resultAsString()
+    })
+
+    graph.withTx( tx => {
+      for (_ <- 0 to 10000) tx.createNode()
+    })
+
+    graph.withTx( tx => {
+      resAfter = tx.execute(q)
+      resAfter.resultAsString()
+    })
+
+    val estimatedRowsBefore = resBefore.getExecutionPlanDescription.getArguments.get("EstimatedRows")
+    val estimatedRowsAfter = resAfter.getExecutionPlanDescription.getArguments.get("EstimatedRows")
+    estimatedRowsBefore should not be estimatedRowsAfter
+    println(estimatedRowsAfter)
   }
 
   def executionPlanCacheKeyHit: String
