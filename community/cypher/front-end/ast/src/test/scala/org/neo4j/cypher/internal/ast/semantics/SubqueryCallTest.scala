@@ -172,6 +172,43 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       )))
   }
 
+  test("subquery without return does not export variables to enclosing query") {
+    // CALL {
+    //   CREATE (a)
+    // }
+    // RETURN a
+    singleQuery(
+      subqueryCall(
+        create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)),
+      ),
+      return_(varFor("a").as("a"))
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.shouldEqual("Variable `a` not defined"))
+  }
+
+  test("subquery with union without return does not export variables to enclosing query") {
+    // CALL {
+    //   CREATE (a)
+    //     UNION
+    //   CREATE (a)
+    // }
+    // RETURN a
+    singleQuery(
+      subqueryCall(
+        union(
+          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos))),
+          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None)(pos)))
+        )
+      ),
+      return_(varFor("a").as("a"))
+    )
+      .semanticCheck(clean)
+      .tap(_.errors.size.shouldEqual(1))
+      .tap(_.errors.head.msg.shouldEqual("Variable `a` not defined"))
+  }
+
   test("subquery allows union with valid return statements at the end") {
     // CALL {
     //   RETURN 2 AS x
