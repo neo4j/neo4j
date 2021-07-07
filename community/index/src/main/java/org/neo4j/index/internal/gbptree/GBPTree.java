@@ -1049,8 +1049,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     /**
      * We want to create a given number of partitions of the range given by <code>fromInclusive</code> and <code>toExclusive</code>.
-     * We want the number of entries in each partition to be as equal as possible. We let the number of subtrees in each partition
-     * be an estimate for the number of entries, assuming that one subtree will contain a comparable number of entries as another.
+     * We want the number of entries in each partition to be as equal as possible. We let the number of leaves in each partition
+     * be an estimate for the number of entries, assuming that one leaf will contain a comparable number of entries as another.
      * Each subtree on level X is divided by splitter keys on the same level or on any of the levels above. Example:
      * <pre>
      * Level 0:                  [10,                           50]
@@ -1064,10 +1064,14 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * subtree is a single leaf node) is separated from the others by a splitter key in one of the levels above. Noting that,
      * we can begin to form a strategy for how to create our partitions.
      * <p>
-     * We want to create our partitions as high up in the tree as possible, simply to terminate the partioning step as soon as possible.
-     * If we want to create three partitions in the tree above for the range [0,300) we can use the tree subtrees seen from the root
-     * and be done, but if we want a more fine grained partitioning we need to go to the lower parts of the tree.
+     * We want to create our partitions as high up in the tree as possible, simply to terminate the partitioning step as soon as possible.
+     * If we want to create three partitions in the tree above for the range [0,300) we can use the three subtrees seen from the root
+     * and be done, we would the form the three key-ranges [0,10), [10,50) and [50,300) and that is our partitioning. Note that we don't
+     * strictly rely on those key-ranges to correspond perfectly to separate sub-trees since concurrent updates might change the structure of
+     * the tree while we are reading. We have simply used the structure of the tree, at the time of forming the partitions, as a way to
+     * construct key-ranges that are estimated to contain a similar number of entries.
      * <p>
+     * If we want a more fine grained partitioning we need to go to the lower parts of the tree.
      * This is what we do: We start at level 0 and collect all keys within our target range, let's say we find N keys [K1, K2,... KN].
      * In between each key and on both sides of the range is a subtree which means we now have a way to create N+1 partitions of
      * estimated equal size. The outer boundaries will be given by fromInclusive and toExclusive. If <code>N+1 < numberOfPartitions</code>
