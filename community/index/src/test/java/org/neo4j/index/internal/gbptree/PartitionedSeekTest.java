@@ -21,19 +21,30 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.list.primitive.IntList;
-import org.eclipse.collections.api.list.primitive.MutableIntList;
-import org.eclipse.collections.impl.factory.primitive.IntLists;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -80,8 +91,9 @@ class PartitionedSeekTest
         treeFile = testDirectory.file( "tree" );
     }
 
-    @Test
-    void shouldPartitionTreeWithLeafRoot() throws IOException
+    @ParameterizedTest
+    @MethodSource( "assertEntries" )
+    void shouldPartitionTreeWithLeafRoot( String name, AssertEntries assertEntries ) throws IOException
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
@@ -95,36 +107,41 @@ class PartitionedSeekTest
 
             // then
             assertEquals( 1, seekers.size() );
-            assertEntries( 0, 5, seekers );
+            assertEntries.of( seekers, 0, 5 );
         }
     }
 
-    @Test
-    void shouldPartitionTreeWithFewerNumberOfRootKeys() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "assertEntries" )
+    void shouldPartitionTreeWithFewerNumberOfRootKeys( String name, AssertEntries assertEntries ) throws IOException
     {
-        shouldPartitionTree( 2, 3, 4, 3 );
+        shouldPartitionTree( 2, 3, 4, 3, assertEntries );
     }
 
-    @Test
-    void shouldPartitionTreeWithPreciseNumberOfRootKeys() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "assertEntries" )
+    void shouldPartitionTreeWithPreciseNumberOfRootKeys( String name, AssertEntries assertEntries ) throws IOException
     {
-        shouldPartitionTree( 2, 5, 5, 5 );
+        shouldPartitionTree( 2, 5, 5, 5, assertEntries );
     }
 
-    @Test
-    void shouldPartitionTreeWithMoreNumberOfRootKeys() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "assertEntries" )
+    void shouldPartitionTreeWithMoreNumberOfRootKeys( String name, AssertEntries assertEntries ) throws IOException
     {
-        shouldPartitionTree( 2, 12, 6, 6 );
+        shouldPartitionTree( 2, 12, 6, 6, assertEntries );
     }
 
-    @Test
-    void shouldPartitionTreeOnLevel1() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "assertEntries" )
+    void shouldPartitionTreeOnLevel1( String name, AssertEntries assertEntries ) throws IOException
     {
-        shouldPartitionTree( 3, 3, 4, 4 );
+        shouldPartitionTree( 3, 3, 4, 4, assertEntries );
     }
 
-    @Test
-    void shouldPartitionTreeWithRandomKeysAndFindAll() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "assertEntries" )
+    void shouldPartitionTreeWithRandomKeysAndFindAll( String name, AssertEntries assertEntries ) throws IOException
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
@@ -141,13 +158,14 @@ class PartitionedSeekTest
                     tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
-            IntList entryCountPerPartition = assertEntries( from, to, seekers );
+            IntList entryCountPerPartition = assertEntries.of( seekers, from, to );
             verifyEntryCountPerPartition( entryCountPerPartition );
         }
     }
 
-    @Test
-    void shouldCreateReasonablePartitionsWhenFromInclusiveMatchKeyInRoot() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "assertEntries" )
+    void shouldCreateReasonablePartitionsWhenFromInclusiveMatchKeyInRoot( String name, AssertEntries assertEntries ) throws IOException
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
@@ -166,13 +184,14 @@ class PartitionedSeekTest
                     tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
-            IntList entryCountPerPartition = assertEntries( from, to, seekers );
+            IntList entryCountPerPartition = assertEntries.of( seekers, from, to );
             verifyEntryCountPerPartition( entryCountPerPartition );
         }
     }
 
-    @Test
-    void shouldCreateReasonablePartitionsWhenToExclusiveMatchKeyInRoot() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "assertEntries" )
+    void shouldCreateReasonablePartitionsWhenToExclusiveMatchKeyInRoot( String name, AssertEntries assertEntries ) throws IOException
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
@@ -191,7 +210,7 @@ class PartitionedSeekTest
                     tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
-            IntList entryCountPerSeeker = assertEntries( from, to, seekers );
+            IntList entryCountPerSeeker = assertEntries.of( seekers, from, to );
             verifyEntryCountPerPartition( entryCountPerSeeker );
         }
     }
@@ -291,8 +310,8 @@ class PartitionedSeekTest
         return new GBPTreeBuilder<>( pageCache, treeFile, layout ).build();
     }
 
-    private void shouldPartitionTree( int numberOfDesiredLevels, int numberOfDesiredRootChildren, int numberOfDesiredPartitions,
-            int expectedNumberOfPartitions ) throws IOException
+    private void shouldPartitionTree( int numberOfDesiredLevels, int numberOfDesiredRootChildren,
+                                      int numberOfDesiredPartitions, int expectedNumberOfPartitions, AssertEntries assertEntries ) throws IOException
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
@@ -305,28 +324,82 @@ class PartitionedSeekTest
 
             // then
             assertEquals( expectedNumberOfPartitions, seekers.size() );
-            assertEntries( 0, to, seekers );
+            assertEntries.of( seekers, 0, to );
         }
     }
 
-    private static IntList assertEntries( long from, long to, Collection<Seeker.From<MutableLong,MutableLong>> seekersFrom ) throws IOException
+    private static IntList assertEntriesSingleThreaded( Collection<Seeker.From<MutableLong,MutableLong>> seekersFrom, long from, long to )
     {
-        long nextExpected = from;
-        MutableIntList entryCountPerSeeker = IntLists.mutable.empty();
-        for ( Seeker.From<MutableLong,MutableLong> seekerFrom : seekersFrom )
+        List<LongList> collectedEntryKeysPerPartition = seekersFrom.stream().map( seekerFrom -> collectAndCheckEntryKeysInPartition( seekerFrom, from, to ) )
+                                                                   .collect( Collectors.toUnmodifiableList() );
+        long closedTo = from == to ? to : (to - 1);
+        assertAllExpectedKeysInOrderWithinAClosedRange( collectedEntryKeysPerPartition.stream().flatMapToLong( LongList::primitiveStream ), from, closedTo );
+        return getEntryCountsPerPartition( collectedEntryKeysPerPartition.stream() );
+    }
+
+    private static IntList assertEntriesMultiThreaded( Collection<Seeker.From<MutableLong,MutableLong>> seekersFrom, long from, long to )
+    {
+        LongList[] collectedEntryKeysPerPartition = new LongList[seekersFrom.size()];
+        Iterator<Seeker.From<MutableLong,MutableLong>> seekers = seekersFrom.iterator();
+        Race race = new Race();
+        for ( int i = 0; seekers.hasNext(); i++ )
         {
-            Seeker<MutableLong,MutableLong> seeker = seekerFrom.from( NULL );
-            int count = 0;
-            while ( nextExpected < to && seeker.next() )
-            {
-                assertEquals( nextExpected, seeker.key().longValue() );
-                nextExpected++;
-                count++;
-            }
-            entryCountPerSeeker.add( count );
+            int index = i;
+            Seeker.From<MutableLong,MutableLong> seeker = seekers.next();
+            race.addContestant( () -> collectedEntryKeysPerPartition[index] = collectAndCheckEntryKeysInPartition( seeker, from, to ) );
         }
-        assertEquals( to, nextExpected );
-        return entryCountPerSeeker;
+        race.goUnchecked();
+        long closedTo = from == to ? to : (to - 1);
+        assertAllExpectedKeysInOrderWithinAClosedRange( Arrays.stream( collectedEntryKeysPerPartition )
+                                                              .flatMapToLong( LongList::primitiveStream ), from, closedTo );
+        return getEntryCountsPerPartition( Arrays.stream( collectedEntryKeysPerPartition ) );
+    }
+
+    private static LongList collectAndCheckEntryKeysInPartition( Seeker.From<MutableLong,MutableLong> seeker, long from, long to )
+    {
+        try ( Seeker<MutableLong,MutableLong> partition = seeker.from( NULL ) )
+        {
+            LongList keys = collectEntryKeysInPartition( partition );
+            assertAllExpectedKeysInOrderWithinAClosedRange( keys.primitiveStream(), keys.getFirst(), keys.getLast() );
+            if ( from == to )
+            {
+                assertThat( keys.getFirst() ).isEqualTo( from );
+                assertThat( keys.getLast() ).isEqualTo( to );
+            }
+            else
+            {
+                assertThat( keys.getFirst() ).isGreaterThanOrEqualTo( from );
+                assertThat( keys.getLast() ).isLessThan( to );
+            }
+            return keys;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private static LongList collectEntryKeysInPartition( Seeker<MutableLong,MutableLong> partition ) throws IOException
+    {
+        MutableLongList keys = LongLists.mutable.empty();
+        while ( partition.next() )
+        {
+            long key = partition.key().longValue();
+            keys.add( key );
+        }
+        return keys;
+    }
+
+    private static void assertAllExpectedKeysInOrderWithinAClosedRange( LongStream keys, long from, long to )
+    {
+        List<Long> seenKeys = keys.boxed().collect( Collectors.toUnmodifiableList() );
+        List<Long> expectedKeys = LongStream.rangeClosed( from, to ).boxed().collect( Collectors.toUnmodifiableList() );
+        assertThat( seenKeys ).containsExactlyElementsOf( expectedKeys );
+    }
+
+    private static IntList getEntryCountsPerPartition( Stream<LongList> collectedEntryKeysPerPartition )
+    {
+        return new IntArrayList( collectedEntryKeysPerPartition.mapToInt( LongList::size ).toArray() );
     }
 
     private static void verifyEntryCountPerPartition( IntList entryCountPerSeeker )
@@ -446,5 +519,18 @@ class PartitionedSeekTest
                 rootChildCount = keyCount + 1;
             }
         }
+    }
+
+    private static Stream<Arguments> assertEntries()
+    {
+        return Stream.of( Arguments.of( "single-threaded", (AssertEntries) PartitionedSeekTest::assertEntriesSingleThreaded ),
+                          Arguments.of( "multi-threaded",  (AssertEntries) PartitionedSeekTest::assertEntriesMultiThreaded ) );
+    }
+
+    @FunctionalInterface
+    private interface AssertEntries
+    {
+        IntList of( Collection<Seeker.From<MutableLong,MutableLong>> seekersFrom, long from, long to )
+                throws IOException;
     }
 }
