@@ -31,7 +31,7 @@ public interface LogExtended extends Log
      */
     default void debug( Neo4jLogMessage message )
     {
-        debug( message.toString() );
+        debug( message.getFormattedMessage() );
     }
 
     /**
@@ -47,7 +47,7 @@ public interface LogExtended extends Log
      */
     default void info( Neo4jLogMessage message )
     {
-        info( message.toString() );
+        info( message.getFormattedMessage() );
     }
 
     /**
@@ -63,7 +63,7 @@ public interface LogExtended extends Log
      */
     default void warn( Neo4jLogMessage message )
     {
-        warn( message.toString() );
+        warn( message.getFormattedMessage());
     }
 
     /**
@@ -79,7 +79,7 @@ public interface LogExtended extends Log
      */
     default void error( Neo4jLogMessage message )
     {
-        error( message.toString() );
+        error( message.getFormattedMessage() );
     }
 
     /**
@@ -96,6 +96,6 @@ public interface LogExtended extends Log
      */
     default void error( Neo4jLogMessage message, Throwable throwable )
     {
-        error( message.toString(), throwable );
+        error( message.getFormattedMessage(), throwable );
     }
 }
