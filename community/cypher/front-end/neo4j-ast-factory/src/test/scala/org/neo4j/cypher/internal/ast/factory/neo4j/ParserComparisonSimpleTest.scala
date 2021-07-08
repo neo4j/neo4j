@@ -301,7 +301,8 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   }
 
   test("RETURN - 1.4 as double") {
-    assertSameAST(testName)
+    //java cc is whitespace ignorant
+    assertSameAST(testName, "RETURN -1.4 as double" )
   }
 
   test("RETURN Ox as literal") {
@@ -357,6 +358,30 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   }
 
   test("RETURN $1gibberish") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 2*(2.0-1.5)") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN +1.5") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN +1") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 2*(2.0 - +1.5)") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0-1") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0-0.1") {
     assertSameAST(testName)
   }
 }
