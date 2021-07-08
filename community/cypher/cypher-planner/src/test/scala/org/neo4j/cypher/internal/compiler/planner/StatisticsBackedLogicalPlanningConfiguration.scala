@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
@@ -61,6 +60,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
     debug: Set[String] = Set(),
     connectComponentsPlanner: Boolean = false,
+    txStateHasChanges: Boolean = false,
   )
 }
 
@@ -148,6 +148,12 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     this
   }
 
+  def addNodeExistenceConstraint(label: String, property: String): this.type = {
+    addLabel(label)
+    indexes.existenceOrNodeKeyConstraintOn(label, Set(property))
+    this
+  }
+
   def addProcedure(signature: ProcedureSignature): this.type = {
     indexes.procedure(signature)
     this
@@ -200,6 +206,11 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
 
   def enableConnectComponentsPlanner(enable: Boolean = true): this.type = {
     options = options.copy(connectComponentsPlanner = enable)
+    this
+  }
+
+  def setTxStateHasChanges(hasChanges: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    options = options.copy(txStateHasChanges = hasChanges)
     this
   }
 
@@ -299,6 +310,8 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
 
       override def getOptRelTypeId(relType: String): Option[Int] =
         tokens.getOptRelTypeId(relType)
+
+      override def txStateHasChanges(): Boolean = options.txStateHasChanges
 
       private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType): IndexDescriptor = {
         // Our fake index either can always or never return property values

@@ -63,7 +63,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
           (projectedPlan, projectedContext)
       }
 
-    planWithTail(completePlan, in, ctx)
+    planWithTail(completePlan, in, ctx.withLastSolvedQueryPart(in))
   }
 
   val renamings: mutable.Map[String, Expression] = mutable.Map.empty
