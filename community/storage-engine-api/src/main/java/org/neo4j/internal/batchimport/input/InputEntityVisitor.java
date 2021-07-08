@@ -22,6 +22,8 @@ package org.neo4j.internal.batchimport.input;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.internal.id.IdSequence;
+
 /**
  * Receives calls for extracted data from {@link InputChunk}. This callback design allows for specific methods
  * using primitives and other optimizations, to avoid garbage.
@@ -38,6 +40,8 @@ public interface InputEntityVisitor extends Closeable
     boolean id( long id );
 
     boolean id( Object id, Group group );
+
+    boolean id( Object id, Group group, IdSequence idSequence );
 
     boolean labels( String[] labels );
 
@@ -86,6 +90,12 @@ public interface InputEntityVisitor extends Closeable
 
         @Override
         public boolean id( Object id, Group group )
+        {
+            return true;
+        }
+
+        @Override
+        public boolean id( Object id, Group group, IdSequence idSequence )
         {
             return true;
         }
@@ -186,6 +196,12 @@ public interface InputEntityVisitor extends Closeable
         public boolean id( Object id, Group group )
         {
             return actual.id( id, group );
+        }
+
+        @Override
+        public boolean id( Object id, Group group, IdSequence idSequence )
+        {
+            return actual.id( id, group, idSequence );
         }
 
         @Override
