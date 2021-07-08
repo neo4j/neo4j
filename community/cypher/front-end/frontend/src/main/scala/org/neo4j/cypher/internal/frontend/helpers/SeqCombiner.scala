@@ -57,60 +57,60 @@ object SeqCombiner {
       (x, y) => for (a <- x; b <- y) yield a :+ b
     }
 
-    /**
-     * As above but for arrays.
-     *
-     * Works by first making on pass over the outer array to figure out the size and in the next pass
-     * if fills in the array,
-     */
-    def combine[A: ClassTag](xs: Array[Array[A]]): Array[Array[A]] = {
-        val ncols = xs.length
+  /**
+   * As above but for arrays.
+   *
+   * Works by first making on pass over the outer array to figure out the size and in the next pass
+   * if fills in the array,
+   */
+  def combine[A: ClassTag](xs: Array[Array[A]]): Array[Array[A]] = {
+    val ncols = xs.length
 
-        //figure out nrows by multiplying all lengths
-        var nrows = 1
-        var col = 0
-        while (col < ncols) {
-            nrows *= xs(col).length
-            col += 1
-        }
-
-        //array to return
-        val array = Array.ofDim[A](nrows, ncols)
-
-        //keep track of index per column, note that indices will be set to zero
-        val indices = new Array[Int](ncols)
-
-        //start with the innermost column,
-        col = ncols - 1
-        var row = 0
-        while (row < nrows) {
-            var i = 0
-            while (i < ncols) {
-                val x = xs(i)
-                val index = indices(i)
-                array(row)(i) = x(index)
-                i += 1
-            }
-
-            //increase all index from col to last column
-            var j = ncols - 1
-            while (j >= 0 && j < ncols) {
-                val x = xs(j)
-                indices(j) += 1
-                //check if we exhausted column
-                if (indices(j) >= x.length) {
-                    indices(j) = 0
-                    if (j == col) {
-                        col -= 1
-                    }
-                    j -= 1
-                } else {
-                    //instead of break
-                    j = -1
-                }
-            }
-            row += 1
-        }
-        array
+    //figure out nrows by multiplying all lengths
+    var nrows = 1
+    var col = 0
+    while (col < ncols) {
+      nrows *= xs(col).length
+      col += 1
     }
+
+    //array to return
+    val array = Array.ofDim[A](nrows, ncols)
+
+    //keep track of index per column, note that indices will be set to zero
+    val indices = new Array[Int](ncols)
+
+    //start with the innermost column,
+    col = ncols - 1
+    var row = 0
+    while (row < nrows) {
+      var i = 0
+      while (i < ncols) {
+        val x = xs(i)
+        val index = indices(i)
+        array(row)(i) = x(index)
+        i += 1
+      }
+
+      //increase all index from col to last column
+      var j = ncols - 1
+      while (j >= 0 && j < ncols) {
+        val x = xs(j)
+        indices(j) += 1
+        //check if we exhausted column
+        if (indices(j) >= x.length) {
+          indices(j) = 0
+          if (j == col) {
+            col -= 1
+          }
+          j -= 1
+        } else {
+          //instead of break
+          j = -1
+        }
+      }
+      row += 1
+    }
+    array
+  }
 }
