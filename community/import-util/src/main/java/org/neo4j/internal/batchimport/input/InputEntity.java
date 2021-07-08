@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.internal.id.IdSequence;
+
 /**
  * Simple utility for gathering all information about an {@link InputEntityVisitor} and exposing getters
  * for that data. Easier to work with than purely visitor-based implementation in tests.
@@ -120,6 +122,15 @@ public class InputEntity implements InputEntityVisitor
         objectId = id;
         idGroup = group;
         return delegate.id( id, group );
+    }
+
+    @Override
+    public boolean id( Object id, Group group, IdSequence idSequence )
+    {
+        checkClear();
+        objectId = id;
+        idGroup = group;
+        return delegate.id( id, group, idSequence );
     }
 
     @Override
