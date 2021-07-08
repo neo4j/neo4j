@@ -198,7 +198,7 @@
         <dependency>
             <groupId>org.junit-pioneer</groupId>
             <artifactId>junit-pioneer</artifactId>
-            <version>1.4.1</version>
+            <version>1.4.2</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
