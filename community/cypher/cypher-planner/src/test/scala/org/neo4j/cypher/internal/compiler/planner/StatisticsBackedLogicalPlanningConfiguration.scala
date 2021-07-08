@@ -59,6 +59,7 @@ trait StatisticsBackedLogicalPlanningSupport {
 object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
     debug: Set[String] = Set(),
+    txStateHasChanges: Boolean = false,
   )
 }
 
@@ -146,6 +147,12 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     this
   }
 
+  def addNodeExistenceConstraint(label: String, property: String): this.type = {
+    addLabel(label)
+    indexes.existenceOrNodeKeyConstraintOn(label, Set(property))
+    this
+  }
+
   def addProcedure(signature: ProcedureSignature): this.type = {
     indexes.procedure(signature)
     this
@@ -195,6 +202,11 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
   }
 
   def enablePrintCostComparisons(enable: Boolean = true): this.type = enableDebugOption("printCostComparisons", enable)
+
+  def setTxStateHasChanges(hasChanges: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    options = options.copy(txStateHasChanges = hasChanges)
+    this
+  }
 
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
@@ -292,6 +304,8 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
 
       override def getOptRelTypeId(relType: String): Option[Int] =
         tokens.getOptRelTypeId(relType)
+
+      override def txStateHasChanges(): Boolean = options.txStateHasChanges
 
       private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType): IndexDescriptor = {
         // Our fake index either can always or never return property values

@@ -905,4 +905,7 @@ object AbstractLogicalPlanBuilder {
 
   def createNode(node: String, labels: String*): CreateNode =
     CreateNode(node, labels.map(LabelName(_)(pos)), None)
+
+  def createNodeWithProperties(node: String, labels: Seq[String], properties: String): CreateNode =
+    CreateNode(node, labels.map(LabelName(_)(pos)), Some(Parser.parseExpression(properties)))
 }

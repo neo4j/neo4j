@@ -43,13 +43,13 @@ import org.neo4j.cypher.internal.spi.procsHelpers.asCypherValue
 import org.neo4j.cypher.internal.spi.procsHelpers.asOption
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
-import org.neo4j.internal.schema.IndexBehaviour
 import org.neo4j.internal.schema.IndexOrder
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.IndexValueCapability
@@ -57,11 +57,10 @@ import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.Log
 import org.neo4j.values.storable.ValueCategory
-import org.neo4j.cypher.internal.util.symbols
 
 import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.seqAsJavaListConverter
 
 object TransactionBoundPlanContext {
   def apply(tc: TransactionalContextWrapper,
@@ -238,4 +237,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
 
   override def notificationLogger(): InternalNotificationLogger = logger
+
+  override def txStateHasChanges(): Boolean = tc.kernelTransaction.dataRead().transactionStateHasChanges()
 }

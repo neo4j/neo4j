@@ -46,7 +46,7 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan, Some(in.interestingOrder), applyContext)
         val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan)
 
-        this.apply(projectedPlan, plannerQuery, projectedContext)
+        this.apply(projectedPlan, plannerQuery, projectedContext.withLastSolvedQueryPart(plannerQuery))
 
       case None =>
         val attributes = Attributes(context.idGen, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)
