@@ -91,7 +91,6 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
                       anonymousVariableNameGenerator: AnonymousVariableNameGenerator): RegularSinglePlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
     val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
-    val gen = new PositionGenerator
 
     val optionalMatches = graph.optionalMatches.flatMapWithTail {
       (original: QueryGraph, tail: Seq[QueryGraph]) =>
@@ -121,7 +120,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
           val (patternsToKeep, patternsToFilter) = original.patternRelationships.partition(r => elementsToKeep(r.name))
           val patternNodes = original.patternNodes.filter(elementsToKeep.apply)
 
-          val patternPredicates = patternsToFilter.map(toAst(elementsToKeep, predicatesForPatterns, gen, _, anonymousVariableNameGenerator))
+          val patternPredicates = patternsToFilter.map(toAst(elementsToKeep, predicatesForPatterns, _, anonymousVariableNameGenerator))
 
           val newOptionalGraph = original.
             withPatternRelationships(patternsToKeep).
@@ -206,39 +205,26 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         case _ => false
       }
 
-  private class PositionGenerator {
-    private var pos: InputPosition = InputPosition.NONE
-
-    def nextPosition(): InputPosition = {
-      val current = pos
-      pos = pos.newUniquePos()
-      current
-    }
-  }
-
-  private def toAst(elementsToKeep: Set[String], predicates: Map[String, LabelsAndEquality], gen: PositionGenerator, pattern: PatternRelationship, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = {
+  private def toAst(elementsToKeep: Set[String], predicates: Map[String, LabelsAndEquality], pattern: PatternRelationship, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = {
     def createVariable(name: String): Some[Variable] =
       if (!elementsToKeep(name)) {
-        val pos = gen.nextPosition()
-        Some(Variable(anonymousVariableNameGenerator.nextName)(pos))
+        Some(Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE))
       } else {
-        Some(Variable(name)(gen.nextPosition()))
+        Some(Variable(name)(InputPosition.NONE))
       }
 
     def createNode(name: String): NodePattern = {
       val labelsAndProps = predicates.getOrElse(name, LabelsAndEquality.empty)
-      val props = if (labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(
-        gen.nextPosition()))
-      NodePattern(createVariable(name), labels = labelsAndProps.labels, properties = props)(gen.nextPosition())
+      val props = if (labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(InputPosition.NONE))
+      NodePattern(createVariable(name), labels = labelsAndProps.labels, properties = props)(InputPosition.NONE)
     }
 
     val relName = createVariable(pattern.name)
     val leftNode = createNode(pattern.nodes._1)
     val rightNode = createNode(pattern.nodes._2)
-    val relPattern = RelationshipPattern(relName, pattern.types, length = None, properties = None, pattern.dir)(
-      gen.nextPosition())
-    val chain = RelationshipChain(leftNode, relPattern, rightNode)(gen.nextPosition())
-    PatternExpression(RelationshipsPattern(chain)(gen.nextPosition()))(Set.empty, anonymousVariableNameGenerator.nextName, anonymousVariableNameGenerator.nextName)
+    val relPattern = RelationshipPattern(relName, pattern.types, length = None, properties = None, pattern.dir)(InputPosition.NONE)
+    val chain = RelationshipChain(leftNode, relPattern, rightNode)(InputPosition.NONE)
+    PatternExpression(RelationshipsPattern(chain)(InputPosition.NONE))(Set.empty, anonymousVariableNameGenerator.nextName, anonymousVariableNameGenerator.nextName)
   }
 
   implicit class FlatMapWithTailable(in: IndexedSeq[QueryGraph]) {

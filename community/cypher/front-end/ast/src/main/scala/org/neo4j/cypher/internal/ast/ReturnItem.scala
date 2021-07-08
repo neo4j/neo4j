@@ -105,8 +105,8 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
 
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {
   val alias: Option[LogicalVariable] = expression match {
-    case i: LogicalVariable => Some(i.newUniqueVariable)
-    case x: MapProjection => Some(x.name.newUniqueVariable)
+    case i: LogicalVariable => Some(i.copyId)
+    case x: MapProjection => Some(x.name.copyId)
     case _ => None
   }
   val name: String = alias.map(_.name) getOrElse { inputText.trim }

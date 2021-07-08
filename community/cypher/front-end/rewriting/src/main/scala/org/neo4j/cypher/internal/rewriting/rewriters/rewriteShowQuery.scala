@@ -94,12 +94,13 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
   private def rewriteWithYieldAndReturn(commandClause: CommandClause, where: Option[Where]): List[Clause] = {
     List(
       commandClause.moveWhereToYield,
-      Yield(ReturnItems(includeExisting = true, Seq())(commandClause.position), None, None, None, where)(commandClause.position.newUniquePos()),
+      Yield(ReturnItems(includeExisting = true, Seq())(commandClause.position), None, None, None, where)(commandClause.position),
       returnClause(commandClause.position, commandClause.unfilteredColumns.columns.map(_.name))
     )
   }
 
-  private def returnClause(position: InputPosition, defaultOrderOnColumns: List[String]): Return = Return(ReturnItems(includeExisting = true, Seq(), Some(defaultOrderOnColumns))(position))(position.newUniquePos())
+  private def returnClause(position: InputPosition, defaultOrderOnColumns: List[String]): Return =
+    Return(ReturnItems(includeExisting = true, Seq(), Some(defaultOrderOnColumns))(position))(position)
 
   private def lastPosition(y: Yield): InputPosition = {
     y.treeFold(InputPosition.NONE) {

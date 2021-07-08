@@ -78,11 +78,11 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   private val foo = PropertyKeyName("foo")(InputPosition.NONE)
   // Same property in different positions
   private val nProp1 = Property(n, prop)(InputPosition.NONE)
-  private val nProp2 = Property(n, prop)(InputPosition.NONE.newUniquePos())
-  private val nProp3 = Property(n, prop)(InputPosition.NONE.newUniquePos())
+  private val nProp2 = Property(n, prop)(InputPosition(1, 2, 3))
+  private val nProp3 = Property(n, prop)(InputPosition(4, 5, 6))
   private val rProp1 = Property(r, prop)(InputPosition.NONE)
-  private val rProp2 = Property(r, prop)(InputPosition.NONE.newUniquePos())
-  private val rProp3 = Property(r, prop)(InputPosition.NONE.newUniquePos())
+  private val rProp2 = Property(r, prop)(InputPosition(7, 8, 9))
+  private val rProp3 = Property(r, prop)(InputPosition(10, 11, 12))
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
   private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(nProp1.position)

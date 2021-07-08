@@ -154,8 +154,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
           val alias = i.alias match {
             case Some(value) => value
             case None =>
-              val newPosition = i.expression.position.newUniquePos()
-              Variable(i.name)(newPosition)
+              Variable(i.name)(i.expression.position)
           }
 
           AliasedReturnItem(i.expression, alias)(i.position)
