@@ -25,6 +25,7 @@ import java.util.Arrays;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
+import org.neo4j.internal.id.IdSequence;
 
 /**
  * An array of {@link InputEntity} looking like an {@link InputEntityVisitor} to be able to fit into thinks like {@link Decorator}.
@@ -72,6 +73,12 @@ public class InputEntityArray implements InputEntityVisitor
     public boolean id( Object id, Group group )
     {
         return currentEntity().id( id, group );
+    }
+
+    @Override
+    public boolean id( Object id, Group group, IdSequence idSequence )
+    {
+        return currentEntity().id( id, group, idSequence );
     }
 
     @Override
