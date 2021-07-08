@@ -19,11 +19,6 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.time.Clock
-import java.time.Duration
-import java.time.Instant
-import java.time.ZoneOffset
-
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher
@@ -46,7 +41,7 @@ import org.neo4j.cypher.internal.CompilerLibrary
 import org.neo4j.cypher.internal.CypherConfiguration
 import org.neo4j.cypher.internal.CypherCurrentCompiler
 import org.neo4j.cypher.internal.PreParser
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
@@ -57,7 +52,6 @@ import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WI
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.AssertableLogProvider.Level
@@ -65,6 +59,11 @@ import org.neo4j.logging.Log
 import org.neo4j.logging.LogAssertions.assertThat
 import org.neo4j.logging.NullLog
 import org.neo4j.logging.NullLogProvider
+
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneOffset
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
@@ -111,23 +110,23 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   }
 
-  class ASTCacheCounter() extends CacheTracer[Pair[AnyRef, ParameterTypeMap]] {
+  private class ASTCacheCounter() extends CacheTracer[CacheKey[AnyRef]] {
     var counts: CacheCounts = CacheCounts()
-    override def queryCacheHit(key: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit = counts = counts.copy(hits = counts.hits + 1)
-    override def queryCacheMiss(key: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit = counts = counts.copy(misses = counts.misses + 1)
+    override def queryCacheHit(key: CacheKey[AnyRef], metaData: String): Unit = counts = counts.copy(hits = counts.hits + 1)
+    override def queryCacheMiss(key: CacheKey[AnyRef], metaData: String): Unit = counts = counts.copy(misses = counts.misses + 1)
     override def queryCacheFlush(sizeBeforeFlush: Long): Unit = counts = counts.copy(flushes = counts.flushes + 1)
-    override def queryCacheStale(key: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
+    override def queryCacheStale(key: CacheKey[AnyRef], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
       counts = counts.copy(evicted = counts.evicted + 1)
-    override def queryCompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit = counts = counts.copy(compilations = counts.compilations + 1)
-    override def queryCompileWithExpressionCodeGen(queryKey: Pair[AnyRef, ParameterTypeMap],
+    override def queryCompile(queryKey: CacheKey[AnyRef], metaData: String): Unit = counts = counts.copy(compilations = counts.compilations + 1)
+    override def queryCompileWithExpressionCodeGen(queryKey: CacheKey[AnyRef],
                                                    metaData: String): Unit = {counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
     }
   }
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
 
-  var counter: ASTCacheCounter = _
-  var compiler: CypherCurrentCompiler[RuntimeContext] = _
+  private var counter: ASTCacheCounter = _
+  private var compiler: CypherCurrentCompiler[RuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

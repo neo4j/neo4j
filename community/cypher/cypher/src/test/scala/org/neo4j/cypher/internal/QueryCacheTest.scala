@@ -23,6 +23,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.neo4j.cypher.CypherReplanOption
+import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.QueryCacheTest.TC
 import org.neo4j.cypher.internal.QueryCacheTest.alwaysStale
@@ -34,7 +35,6 @@ import org.neo4j.cypher.internal.QueryCacheTest.newTracer
 import org.neo4j.cypher.internal.QueryCacheTest.staleAfterNTimes
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
@@ -329,8 +329,8 @@ class QueryCacheTest extends CypherFunSuite {
   }
 
   test("parameterTypeMap should equal if same types but different values") {
-    val params1 = VirtualValues.map(Array("a"), Array(Values.of("a")));
-    val params2 = VirtualValues.map(Array("a"), Array(Values.of("b")));
+    val params1 = VirtualValues.map(Array("a"), Array(Values.of("a")))
+    val params2 = VirtualValues.map(Array("a"), Array(Values.of("b")))
     val typeMap1 = QueryCache.extractParameterTypeMap(params1)
     val typeMap2 = QueryCache.extractParameterTypeMap(params2)
     typeMap1.hashCode() shouldBe typeMap2.hashCode()
@@ -371,8 +371,8 @@ object QueryCacheTest extends MockitoSugar {
   }
 
   val TC: TransactionalContext = mock[TransactionalContext]
-  type Tracer = CacheTracer[Pair[String, ParameterTypeMap]]
-  type Key = Pair[String, ParameterTypeMap]
+  type Key = CacheKey[String]
+  type Tracer = CacheTracer[Key]
 
   private val RECOMPILE_LIMIT = 2
   def compilerWithExpressionCodeGenOption(key: Key): CompilerWithExpressionCodeGenOption[MyValue] = new CompilerWithExpressionCodeGenOption[MyValue] {
@@ -385,10 +385,10 @@ object QueryCacheTest extends MockitoSugar {
       else None
   }
 
-  def newKey(string: String): Key = Pair.of(string, ParameterTypeMap.empty)
+  def newKey(string: String): Key = CacheKey(string, ParameterTypeMap.empty, txStateHasChanges = false)
 
-  def newCache(tracer: Tracer = newTracer(), stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(), size: Int = 10): QueryCache[String, Pair[String, ParameterTypeMap], MyValue] = {
-    new QueryCache[String, Pair[String, ParameterTypeMap], MyValue](size, stalenessCaller, tracer)
+  def newCache(tracer: Tracer = newTracer(), stalenessCaller: PlanStalenessCaller[MyValue] = neverStale(), size: Int = 10): QueryCache[CacheKey[String], MyValue] = {
+    new QueryCache[CacheKey[String], MyValue](size, stalenessCaller, tracer)
   }
 
   def newTracer(): Tracer = mock[Tracer]
@@ -407,6 +407,6 @@ object QueryCacheTest extends MockitoSugar {
     }
   }
 
-  private def compiled(key: Key): MyValue = MyValue(key.first())(compiledWithExpressionCodeGen = false)
-  private def compiledWithExpressionCodeGen(key: Key): MyValue = MyValue(key.first())(compiledWithExpressionCodeGen = true)
+  private def compiled(key: Key): MyValue = MyValue(key.queryRep)(compiledWithExpressionCodeGen = false)
+  private def compiledWithExpressionCodeGen(key: Key): MyValue = MyValue(key.queryRep)(compiledWithExpressionCodeGen = true)
 }
