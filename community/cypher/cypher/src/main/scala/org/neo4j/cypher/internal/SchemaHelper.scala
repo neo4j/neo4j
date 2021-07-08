@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 case class SchemaToken(x: Long) extends AnyVal
 
-class SchemaHelper(val queryCache: QueryCache[_,_,_], val masterCompiler: MasterCompiler) {
+class SchemaHelper(val queryCache: QueryCache[_,_], val masterCompiler: MasterCompiler) {
 
   private val schemaToken = new AtomicLong()
   private val schemaStateKey = SchemaStateKey.newKey()

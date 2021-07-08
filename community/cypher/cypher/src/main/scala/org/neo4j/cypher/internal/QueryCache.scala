@@ -21,14 +21,12 @@ package org.neo4j.cypher.internal
 
 import com.github.benmanes.caffeine.cache.Cache
 import org.neo4j.cypher.internal.QueryCache.NOT_PRESENT
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
 import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
 import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
@@ -123,13 +121,13 @@ trait PlanStalenessCaller[EXECUTABLE_QUERY] {
  * @param stalenessCaller Decided whether CachedExecutionPlans are stale
  * @param tracer Traces cache activity
  */
-class QueryCache[QUERY_REP <: AnyRef,
-                 QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap],
+class QueryCache[QUERY_KEY <: AnyRef,
                  EXECUTABLE_QUERY <: CacheabilityInfo](
                                                        val cacheFactory: CaffeineCacheFactory,
                                                        val maximumSize: Int,
                                                        val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
-                                                       val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
+                                                       val tracer: CacheTracer[QUERY_KEY]) {
+
 
   private val inner: Cache[QUERY_KEY, CachedValue] = cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize)
 
@@ -344,6 +342,11 @@ class QueryCache[QUERY_REP <: AnyRef,
 }
 
 object QueryCache {
+
+  final case class CacheKey[QUERY_REP](queryRep: QUERY_REP,
+                                       parameterTypeMap: ParameterTypeMap,
+                                       txStateHasChanges: Boolean)
+
   val NOT_PRESENT: ExecutableQuery = null
 
   /**
