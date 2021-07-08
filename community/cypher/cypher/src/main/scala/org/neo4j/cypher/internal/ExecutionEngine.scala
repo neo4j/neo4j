@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.exceptions.ParameterNotFoundException
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.FunctionInformation
@@ -52,7 +51,7 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
 /**
  * See comment in MonitoringCacheTracer for justification of the existence of this type.
  */
-trait ExecutionEngineQueryCacheMonitor extends CypherCacheMonitor[Pair[String, ParameterTypeMap]]
+trait ExecutionEngineQueryCacheMonitor extends CypherCacheMonitor[CacheKey[String]]
 
 /**
  * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
@@ -61,7 +60,7 @@ trait ExecutionEngineQueryCacheMonitor extends CypherCacheMonitor[Pair[String, P
 class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val kernelMonitors: Monitors,
                       val tracer: CompilationTracer,
-                      val cacheTracer: CacheTracer[Pair[String, ParameterTypeMap]],
+                      val cacheTracer: CacheTracer[CacheKey[String]],
                       val config: CypherConfiguration,
                       val compilerLibrary: CompilerLibrary,
                       val cacheFactory: CaffeineCacheFactory,
@@ -82,7 +81,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // Log on stale query discard from query cache
   private val log = logProvider.getLog( getClass )
   kernelMonitors.addMonitorListener( new ExecutionEngineQueryCacheMonitor {
-    override def cacheDiscard(ignored: Pair[String, ParameterTypeMap], queryId: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
+    override def cacheDiscard(ignored: CacheKey[String], queryId: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
       log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds${maybeReason.fold("")(r => s". Reason: $r")}. Query id: $queryId")
     }
   })
@@ -94,8 +93,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       planReusabilitiy,
       log)
 
-  private val queryCache: QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery] =
-    new QueryCache[String, Pair[String, ParameterTypeMap], ExecutableQuery](cacheFactory, config.queryCacheSize, planStalenessCaller, cacheTracer)
+  private val queryCache: QueryCache[CacheKey[String], ExecutableQuery] =
+    new QueryCache[CacheKey[String], ExecutableQuery](cacheFactory, config.queryCacheSize, planStalenessCaller, cacheTracer)
 
   private val masterCompiler: MasterCompiler = new MasterCompiler(compilerLibrary)
 
@@ -258,13 +257,18 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                            tracer: QueryCompilationEvent,
                            params: MapValue,
                           ): ExecutableQuery = {
-    val cacheKey = Pair.of(initialInputQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
 
     // create transaction and query context
     val tc = context.getOrBeginNewIfClosed()
     val compilerAuthorization = tc.restrictCurrentTransaction(tc.securityContext.withMode(AccessMode.Static.READ))
     var forceReplan = false
     var inputQuery = initialInputQuery
+
+    val cacheKey = CacheKey(
+      initialInputQuery.cacheKey,
+      QueryCache.extractParameterTypeMap(params),
+      tc.kernelTransaction().dataRead().transactionStateHasChanges()
+    )
 
     try {
       var n = 0

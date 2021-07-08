@@ -30,11 +30,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.cypher.internal.QueryCache.CacheKey;
 import org.neo4j.cypher.internal.planning.CypherCacheHitMonitor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -258,7 +258,7 @@ public class QueryInvalidationIT
         return ThreadLocalRandom.current().nextInt( max );
     }
 
-    private static class TestMonitor implements CypherCacheHitMonitor<Pair<String,scala.collection.immutable.Map<String,Class<?>>>>
+    private static class TestMonitor implements CypherCacheHitMonitor<CacheKey<String>>
     {
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
@@ -267,19 +267,19 @@ public class QueryInvalidationIT
         private final AtomicLong waitTime = new AtomicLong();
 
         @Override
-        public void cacheHit( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheHit( CacheKey<String> key )
         {
             hits.incrementAndGet();
         }
 
         @Override
-        public void cacheMiss( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheMiss( CacheKey<String> key )
         {
             misses.incrementAndGet();
         }
 
         @Override
-        public void cacheDiscard( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key, String ignored, int secondsSinceReplan,
+        public void cacheDiscard( CacheKey<String> key, String ignored, int secondsSinceReplan,
                                   Option<String> maybeReason )
         {
             discards.incrementAndGet();
@@ -287,13 +287,13 @@ public class QueryInvalidationIT
         }
 
         @Override
-        public void cacheCompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheCompile( CacheKey<String> key )
         {
             compilations.incrementAndGet();
         }
 
         @Override
-        public void cacheCompileWithExpressionCodeGen( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheCompileWithExpressionCodeGen( CacheKey<String> key )
         {
             compilations.incrementAndGet();
         }

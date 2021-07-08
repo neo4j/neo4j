@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
-import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 case class SchemaToken(x: Long) extends AnyVal
 
-class SchemaHelper(val queryCache: QueryCache[_,_,_], val masterCompiler: MasterCompiler) {
+class SchemaHelper(val queryCache: QueryCache[_,_], val masterCompiler: MasterCompiler) {
 
   private val schemaToken = new AtomicLong()
   private val schemaStateKey = SchemaStateKey.newKey()
