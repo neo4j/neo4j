@@ -29,6 +29,7 @@ import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SkipThreadLeakageGuard;
@@ -36,6 +37,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -77,16 +79,16 @@ class DatabaseManagementServiceFactoryTest
     void shouldThrowAppropriateExceptionIfBothStartAndShutdownFail()
     {
         Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath() );
-        RuntimeException startupError = new RuntimeException();
-        RuntimeException shutdownError = new RuntimeException();
+        RuntimeException startupException = new RuntimeException();
+        RuntimeException shutdownException = new RuntimeException();
 
-        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupError, shutdownError );
+        DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory( startupException, shutdownException );
         RuntimeException initException =
                 assertThrows( RuntimeException.class, () -> factory.build( config, deps ) );
 
         assertTrue( initException.getMessage().startsWith( "Error starting " ) );
-        assertEquals( startupError, initException.getCause() );
-        assertEquals( shutdownError, initException.getSuppressed()[0].getCause() );
+        assertThat( initException ).hasRootCause( startupException );
+        assertThat( initException.getSuppressed()[0] ).hasRootCause( shutdownException );
     }
 
     private static DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError,
@@ -97,23 +99,45 @@ class DatabaseManagementServiceFactoryTest
             @Override
             protected GlobalModule createGlobalModule( Config config, ExternalDependencies dependencies )
             {
-                final LifeSupport lifeMock = mock( LifeSupport.class );
-                doThrow( startupError ).when( lifeMock ).start();
-                if ( shutdownError != null )
-                {
-                    doThrow( shutdownError ).when( lifeMock ).shutdown();
-                }
-                doAnswer( invocation -> invocation.getArgument( 0 ) ).when( lifeMock ).add( any( Lifecycle.class ) );
+                LifeSupport lifeSupport = new LifeSupport();
+                lifeSupport.add( new PoisonedLifecycleMember( startupError, shutdownError ) );
 
                 return new GlobalModule( config, dbmsInfo, dependencies )
                 {
                     @Override
                     public LifeSupport createLife()
                     {
-                        return lifeMock;
+                        return lifeSupport;
                     }
                 };
             }
         };
+    }
+
+    private static class PoisonedLifecycleMember extends LifecycleAdapter
+    {
+        private final RuntimeException startupException;
+        private final RuntimeException shutdownException;
+
+        private PoisonedLifecycleMember( RuntimeException startupException, RuntimeException shutdownException )
+        {
+            this.startupException = startupException;
+            this.shutdownException = shutdownException;
+        }
+
+        @Override
+        public void start()
+        {
+            throw startupException;
+        }
+
+        @Override
+        public void shutdown()
+        {
+            if ( shutdownException != null )
+            {
+                throw shutdownException;
+            }
+        }
     }
 }
