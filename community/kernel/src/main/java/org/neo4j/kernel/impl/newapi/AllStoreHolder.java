@@ -953,7 +953,7 @@ public class AllStoreHolder extends Read
     @Override
     public boolean transactionStateHasChanges()
     {
-        return txState().hasChanges();
+        return ktx.hasTxStateWithChanges();
     }
 
     private RawIterator<AnyValue[],ProcedureException> callProcedure(
