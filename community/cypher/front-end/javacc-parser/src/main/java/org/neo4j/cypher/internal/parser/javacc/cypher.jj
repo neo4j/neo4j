@@ -261,10 +261,9 @@ MORE :
 
 TOKEN :
 {
-    < DECIMAL_DOUBLE: (["+","-"])? (
-                        ( ["0"-"9"] )+ "." ( ["0"-"9"] )+ ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
-                        | "." ( ["0"-"9"] )+ ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
-                        | ( ["0"-"9"] )+ <DECIMAL_EXPONENT> ( <IDENTIFIER> )? ) >
+    < DECIMAL_DOUBLE: ( ["0"-"9"] )+ "." ( ["0"-"9"] )+ ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
+                      | "." ( ["0"-"9"] )+ ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
+                      | ( ["0"-"9"] )+ <DECIMAL_EXPONENT> ( <IDENTIFIER> )? >
     | < UNSIGNED_DECIMAL_INTEGER: ( ( ["1"-"9"] ( ["0"-"9"] )* ( <PART_LETTER> )* ) | "0" ) > //0 with part letter -> Octal integer?
     | < #DECIMAL_EXPONENT: ["e","E"] ( ["+","-"] )? ( ["0"-"9"] )+ ( <PART_LETTER> )* >
     | < UNSIGNED_HEX_INTEGER: "0" ["x","X"] ( <PART_LETTER> )* >
@@ -2574,10 +2573,10 @@ EXPRESSION NumberLiteral() :
     boolean negated = false;
 }
 {
-    t=<DECIMAL_DOUBLE> { return astFactory.newDouble( pos( t ), token.image ); }
-    | ( sign=<MINUS> { negated = true; })?
+    ( sign=<MINUS> { negated = true; } )?
     (
-        t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger( pos( sign != null ? sign : t ), token.image, negated ); }
+        t=<DECIMAL_DOUBLE> { return astFactory.newDouble(  pos( sign != null ? sign : t ) , sign != null ? sign.image + token.image : token.image ); }
+        | t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger( pos( sign != null ? sign : t ), token.image, negated ); }
         | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger( pos( sign != null ? sign : t ), token.image, negated ); }
         | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger( pos( sign != null ? sign : t ), token.image, negated ); }
     )
