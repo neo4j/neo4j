@@ -66,6 +66,8 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def notificationLogger(): InternalNotificationLogger = ???
 
+  override def txStateHasChanges(): Boolean = ???
+
   override def procedureSignature(name: QualifiedName): ProcedureSignature = ???
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???

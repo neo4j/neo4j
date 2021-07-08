@@ -122,4 +122,7 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def notificationLogger(): InternalNotificationLogger =
     translateException(tokenNameLookup, inner.notificationLogger())
+
+  override def txStateHasChanges(): Boolean =
+    translateException(tokenNameLookup, inner.txStateHasChanges())
 }

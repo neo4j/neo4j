@@ -103,7 +103,12 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
 
     generalCompatiblePredicates ++ patterns.flatMap {
       case PatternRelationship(name, _, _, Seq(RelTypeName(relTypeName)), _) if valid(relTypeName) =>
-        val constrainedPropNames = context.planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName)
+        val constrainedPropNames =
+          if (context.indexCompatiblePredicatesProviderContext.outerPlanHasUpdates || context.planContext.txStateHasChanges()) // non-committed changes may not conform to the existence constraint, so we cannot rely on it
+            Set.empty[String]
+          else
+            context.planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName)
+
         implicitExistsPredicates(variable(name), context, constrainedPropNames, generalCompatiblePredicates)
 
       case _ => Set.empty[IndexCompatiblePredicate]

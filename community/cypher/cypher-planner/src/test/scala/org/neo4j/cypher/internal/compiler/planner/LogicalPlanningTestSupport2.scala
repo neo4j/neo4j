@@ -320,6 +320,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def getOptRelTypeId(relType: String): Option[Int] =
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
+
+      override def txStateHasChanges(): Boolean = false
     }
 
     def getLogicalPlanFor(queryString: String,

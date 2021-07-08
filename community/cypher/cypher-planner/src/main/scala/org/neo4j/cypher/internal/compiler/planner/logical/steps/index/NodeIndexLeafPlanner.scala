@@ -104,7 +104,12 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
       // or
       // n:User with CREATE CONSTRAINT ON (n:User) ASSERT EXISTS (n.prop)
       case HasLabels(variable: Variable, labels) if valid(variable, Set.empty) =>
-        val constrainedPropNames = context.planContext.getNodePropertiesWithExistenceConstraint(labels.head.name)
+        val constrainedPropNames =
+          if (context.indexCompatiblePredicatesProviderContext.outerPlanHasUpdates || context.planContext.txStateHasChanges()) // non-committed changes may not conform to the existence constraint, so we cannot rely on it
+            Set.empty[String]
+          else
+            context.planContext.getNodePropertiesWithExistenceConstraint(labels.head.name) // HasLabels has been normalized in normalizeComparisons to only have one label each, which is why we can look only at the head here.
+
         implicitExistsPredicates(variable, context, constrainedPropNames, explicitCompatiblePredicates)
 
       case _ =>

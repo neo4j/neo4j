@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -171,8 +172,8 @@ object EntityIndexLeafPlanner {
                                               explicitCompatiblePredicates: Set[IndexCompatiblePredicate]): Set[IndexCompatiblePredicate] = {
     // Can't currently handle aggregation on more than one variable
     val aggregatedPropNames: Set[String] =
-      if (context.aggregatingProperties.forall(prop => prop.variableName.equals(variable.name))) {
-        context.aggregatingProperties.map { prop => prop.propertyName }
+      if (context.indexCompatiblePredicatesProviderContext.aggregatingProperties.forall(prop => prop.variableName.equals(variable.name))) {
+        context.indexCompatiblePredicatesProviderContext.aggregatingProperties.map { prop => prop.propertyName }
       } else {
         Set.empty
       }
@@ -329,4 +330,17 @@ object EntityIndexLeafPlanner {
   case object MultipleExactPredicate extends PredicateExactness(true, true)
   case object NotExactPredicate extends PredicateExactness(false, true)
   case object NonSeekablePredicate extends PredicateExactness(false, false)
+}
+
+/**
+ * @param aggregatingProperties A set of all properties over which aggregation is performed,
+ *                              where we potentially could use an IndexScan.
+ *                              E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
+ * @param outerPlanHasUpdates   A flag indicating whether we have planned updates earlier in the query
+ */
+final case class IndexCompatiblePredicatesProviderContext(aggregatingProperties: Set[PropertyAccess], outerPlanHasUpdates: Boolean)
+
+object IndexCompatiblePredicatesProviderContext {
+  val default: IndexCompatiblePredicatesProviderContext =
+    IndexCompatiblePredicatesProviderContext(aggregatingProperties = Set.empty, outerPlanHasUpdates = false)
 }

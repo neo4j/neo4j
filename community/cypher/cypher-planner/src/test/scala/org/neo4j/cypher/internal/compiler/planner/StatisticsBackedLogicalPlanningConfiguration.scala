@@ -79,6 +79,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       executionModel: ExecutionModel = ExecutionModel.default,
                       relationshipByTypeLookupEnabled: Boolean = false,
                       enablePlanningRelationshipIndexes: Boolean = false,
+                      txStateHasChanges: Boolean = false,
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
@@ -302,6 +303,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(options = options.copy(enablePlanningRelationshipIndexes = enable))
   }
 
+  def setTxStateHasChanges(hasChanges: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(txStateHasChanges = hasChanges))
+  }
 
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
@@ -471,6 +475,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def getOptRelTypeId(relType: String): Option[Int] =
         resolver.getOptRelTypeId(relType)
+
+      override def txStateHasChanges(): Boolean = options.txStateHasChanges
 
       private def newIndexDescriptor(indexDef: IndexDefinition): IndexDescriptor = {
         // Our fake index either can always or never return property values

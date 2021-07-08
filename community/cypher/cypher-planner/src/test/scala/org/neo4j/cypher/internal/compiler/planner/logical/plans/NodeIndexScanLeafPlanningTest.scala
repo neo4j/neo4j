@@ -1014,7 +1014,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val ctxWithAggregation = ctx.copy(aggregatingProperties = Set(PropertyAccess(idName, "prop")))
+      val ctxWithAggregation = ctx.withAggregationProperties(Set(PropertyAccess(idName, "prop")))
       val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctxWithAggregation)
 
       // then
