@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.factory.neo4j.OpenCypherJavaCCParserWithFallback
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
@@ -43,7 +43,7 @@ trait RewriteTest {
 
   protected def parseForRewriting(queryText: String): Statement = {
     val preparedQuery = queryText.replace("\r\n", "\n")
-    JavaCCParser.parseWithFallback(preparedQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+    OpenCypherJavaCCParserWithFallback.parse(preparedQuery, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
   }
 
   protected def rewrite(original: Statement): AnyRef =
@@ -53,7 +53,7 @@ trait RewriteTest {
     original.endoRewrite(rewriterUnderTest)
 
   protected def assertIsNotRewritten(query: String) {
-    val original = JavaCCParser.parseWithFallback(query, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+    val original = OpenCypherJavaCCParserWithFallback.parse(query, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
     val result = original.rewrite(rewriterUnderTest)
     assert(result === original, s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
   }

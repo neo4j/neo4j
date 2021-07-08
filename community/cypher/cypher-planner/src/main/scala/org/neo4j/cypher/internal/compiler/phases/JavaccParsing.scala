@@ -20,20 +20,27 @@
 package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.factory.neo4j.OpenCypherJavaCCParserWithFallback
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.compiler.helpers.Neo4jJavaCCParserWithFallback
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
 import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 
 /**
  * Parse text into an AST object.
  */
 case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
 
-  override def process(in: BaseState, context: BaseContext): BaseState =
-    in.withStatement(JavaCCParser.parseWithFallback(in.queryText, context.cypherExceptionFactory, in.anonymousVariableNameGenerator, in.startPosition))
+  override def process(in: BaseState, context: BaseContext): BaseState = {
+    context.cypherExceptionFactory match {
+      case exceptionFactory: Neo4jCypherExceptionFactory => in.withStatement(Neo4jJavaCCParserWithFallback.parse(in.queryText, exceptionFactory, in.anonymousVariableNameGenerator, in.startPosition))
+      case exceptionFactory: OpenCypherExceptionFactory => in.withStatement(OpenCypherJavaCCParserWithFallback.parse(in.queryText, exceptionFactory, in.anonymousVariableNameGenerator, in.startPosition))
+    }
+  }
 
   override val phase = PARSING
 
