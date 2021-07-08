@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.functions.Rand
 import org.neo4j.cypher.internal.expressions.functions.RandomUUID
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -104,7 +105,7 @@ object Metrics {
      * This metric estimates how many rows of data a query produces
      * (e.g. by asking the database for statistics)
      *
-     * @param queryPart the query to estimate cardinality
+     * @param queryPart             the query part to estimate cardinality for
      * @return the cardinality of the query
      */
     def apply(queryPart: PlannerQueryPart,
@@ -123,7 +124,18 @@ object Metrics {
               input: QueryGraphSolverInput,
               semanticTable: SemanticTable,
               indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality
-    def compositeExpressionSelectivityCalculator: CompositeExpressionSelectivityCalculator
+  }
+
+  trait SelectivityCalculator {
+    /**
+     * Calculate a selectivity for the given selections.
+     */
+    def apply(selections: Selections,
+              labelInfo: LabelInfo,
+              relTypeInfo: RelTypeInfo,
+              semanticTable: SemanticTable,
+              indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+             ): Selectivity
   }
 
   /**
@@ -168,18 +180,22 @@ object simpleExpressionEvaluator extends ExpressionEvaluator {
 }
 
 case class Metrics(cost: CostModel,
-                   cardinality: CardinalityModel,
-                   queryGraphCardinalityModel: QueryGraphCardinalityModel)
+                   cardinality: CardinalityModel)
 
 trait MetricsFactory {
-  def newCardinalityEstimator(planContext: PlanContext, queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
-  def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel
-  def newQueryGraphCardinalityModel(planContext: PlanContext): QueryGraphCardinalityModel
+  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                              calculator: SelectivityCalculator,
+                              expressionEvaluator: ExpressionEvaluator): CardinalityModel
+  def newCostModel(executionModel: ExecutionModel): CostModel
+  def newQueryGraphCardinalityModel(planContext: PlanContext, calculator: SelectivityCalculator): QueryGraphCardinalityModel
+  def newSelectivityCalculator(planContext: PlanContext): SelectivityCalculator =
+    CompositeExpressionSelectivityCalculator(planContext)
 
-  def newMetrics(planContext: PlanContext, expressionEvaluator: ExpressionEvaluator, config: CypherPlannerConfiguration, executionModel: ExecutionModel): Metrics = {
-    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext)
-    val cardinality = newCardinalityEstimator(planContext, queryGraphCardinalityModel, expressionEvaluator)
-    Metrics(newCostModel(config, executionModel), cardinality, queryGraphCardinalityModel)
+  def newMetrics(planContext: PlanContext, expressionEvaluator: ExpressionEvaluator, executionModel: ExecutionModel): Metrics = {
+    val selectivityCalculator = newSelectivityCalculator(planContext)
+    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator)
+    val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
+    Metrics(newCostModel(executionModel), cardinality)
   }
 }
 

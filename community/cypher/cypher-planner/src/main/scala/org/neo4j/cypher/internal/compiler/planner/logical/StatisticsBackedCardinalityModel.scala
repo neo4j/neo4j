@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_DISTINCT_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_LIMIT_ROW_COUNT
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_MULTIPLIER
@@ -52,16 +53,13 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
-import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.values.storable.NumberValue
 
-class StatisticsBackedCardinalityModel(planContext: PlanContext,
-                                       queryGraphCardinalityModel: QueryGraphCardinalityModel,
+class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                       selectivityCalculator: SelectivityCalculator,
                                        simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
-
-  private val compositeExpressionSelectivityCalculator = queryGraphCardinalityModel.compositeExpressionSelectivityCalculator
 
   override def apply(queryPart: PlannerQueryPart,
                      input: QueryGraphSolverInput,
@@ -212,7 +210,7 @@ class StatisticsBackedCardinalityModel(planContext: PlanContext,
                                                        indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): CardinalityAndInput = {
     val inboundCardinality = inputBeforeSelection.cardinality
     val fusedInput = inputBeforeSelection.input.withFusedLabelInfo(where.labelInfo)
-    val whereSelectivity = compositeExpressionSelectivityCalculator(where, fusedInput.labelInfo, fusedInput.relTypeInfo, semanticTable, planContext, indexPredicateProviderContext)
+    val whereSelectivity = selectivityCalculator(where, fusedInput.labelInfo, fusedInput.relTypeInfo, semanticTable, indexPredicateProviderContext)
     val cardinality =  inboundCardinality * whereSelectivity
     CardinalityAndInput(cardinality, fusedInput)
   }

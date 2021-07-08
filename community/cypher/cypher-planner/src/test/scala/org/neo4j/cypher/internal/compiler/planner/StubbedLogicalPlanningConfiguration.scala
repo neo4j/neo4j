@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -37,7 +38,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -166,7 +166,10 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
       }
   }
 
-  override def cardinalityModel(planContext: PlanContext, queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                selectivityCalculator: SelectivityCalculator,
+                                evaluator: ExpressionEvaluator): CardinalityModel = {
+    //noinspection ConvertExpressionToSAM
     new CardinalityModel {
       override def apply(pq: PlannerQueryPart,
                          input: QueryGraphSolverInput,
@@ -183,7 +186,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
         }
 
         val r: PartialFunction[PlannerQueryPart, Cardinality] = labelScanCardinality.orElse(cardinality)
-        if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(planContext, queryGraphCardinalityModel, evaluator)(pq, input, semanticTable, indexPredicateProviderContext)
+        if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(queryGraphCardinalityModel, selectivityCalculator, evaluator)(pq, input, semanticTable, indexPredicateProviderContext)
       }
     }
   }

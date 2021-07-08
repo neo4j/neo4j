@@ -19,21 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 
 object SimpleMetricsFactory extends MetricsFactory {
-  override def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel = CardinalityCostModel(executionModel)
+  override def newCostModel(executionModel: ExecutionModel): CostModel = CardinalityCostModel(executionModel)
 
-  override def newCardinalityEstimator(planContext: PlanContext,
-                                       queryGraphCardinalityModel: QueryGraphCardinalityModel,
+  override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                       selectivityCalculator: SelectivityCalculator,
                                        expressionEvaluator: ExpressionEvaluator): StatisticsBackedCardinalityModel =
-    new StatisticsBackedCardinalityModel(planContext, queryGraphCardinalityModel, expressionEvaluator)
+    new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
 
-  override def newQueryGraphCardinalityModel(planContext: PlanContext): QueryGraphCardinalityModel =
-    QueryGraphCardinalityModel.default(planContext)
+  override def newQueryGraphCardinalityModel(planContext: PlanContext,
+                                             selectivityCalculator: SelectivityCalculator
+                                            ): QueryGraphCardinalityModel =
+    QueryGraphCardinalityModel.default(planContext, selectivityCalculator)
 }

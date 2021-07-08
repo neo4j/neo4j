@@ -660,7 +660,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
     val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-    val metrics = SimpleMetricsFactory.newMetrics(planContext, simpleExpressionEvaluator, plannerConfiguration, options.executionModel)
+    val metrics = SimpleMetricsFactory.newMetrics(planContext, simpleExpressionEvaluator, options.executionModel)
 
     val iDPSolverConfig = new ConfigurableIDPSolverConfig(plannerConfiguration.idpMaxTableSize, plannerConfiguration.idpIterationDuration)
 

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SEEK_FACTOR
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator.SelectivitiesForPredicates
@@ -52,7 +53,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
@@ -81,18 +81,19 @@ import scala.annotation.tailrec
  *
  * @see #selectivityForCompositeIndexPredicates(SelectivitiesForPredicates, SelectivityCombiner)
  */
-case class CompositeExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) {
+case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) extends SelectivityCalculator {
 
-  val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(stats, combiner)
+  private val combiner: SelectivityCombiner = IndependenceCombiner
 
-  def apply(
-             selections: Selections,
-             labelInfo: LabelInfo,
-             relTypeInfo: RelTypeInfo,
-             semanticTable: SemanticTable,
-             planContext: PlanContext,
-             indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-           ): Selectivity = {
+  val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(planContext.statistics, combiner)
+
+  override def apply(
+                      selections: Selections,
+                      labelInfo: LabelInfo,
+                      relTypeInfo: RelTypeInfo,
+                      semanticTable: SemanticTable,
+                      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+                    ): Selectivity = {
 
     val variables = selections.findAllByClass[Variable].map(_.name)
     val nodes = variables.filter(labelInfo.contains)
@@ -119,8 +120,8 @@ case class CompositeExpressionSelectivityCalculator(stats: GraphStatistics, comb
         // If we have multiple index matches for the same index, let's pick the match solving the most predicates.
         val indexMatch = indexMatches.maxBy(_.propertyPredicates.flatMap(_.solvedPredicate).size)
         val predicates = indexMatch.propertyPredicates.flatMap(_.solvedPredicate)
-        val maybeExistsSelectivity = stats.indexPropertyIsNotNullSelectivity(indexMatch.indexDescriptor)
-        val maybeUniqueSelectivity = stats.uniqueValueSelectivity(indexMatch.indexDescriptor)
+        val maybeExistsSelectivity = planContext.statistics.indexPropertyIsNotNullSelectivity(indexMatch.indexDescriptor)
+        val maybeUniqueSelectivity = planContext.statistics.uniqueValueSelectivity(indexMatch.indexDescriptor)
         (maybeExistsSelectivity, maybeUniqueSelectivity) match {
           case (Some(existsSelectivity), Some(uniqueSelectivity)) =>
             Some(SelectivitiesForPredicates(

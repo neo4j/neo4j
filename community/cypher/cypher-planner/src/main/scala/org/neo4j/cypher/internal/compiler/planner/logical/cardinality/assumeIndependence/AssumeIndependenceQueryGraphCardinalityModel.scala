@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel.CardinalityAndInput
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -35,12 +35,13 @@ import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
 
-case class AssumeIndependenceQueryGraphCardinalityModel(planContext: PlanContext, combiner: SelectivityCombiner) extends QueryGraphCardinalityModel {
+case class AssumeIndependenceQueryGraphCardinalityModel(planContext: PlanContext,
+                                                        selectivityCalculator: SelectivityCalculator,
+                                                        combiner: SelectivityCombiner) extends QueryGraphCardinalityModel {
 
   private implicit val numericCardinality: NumericCardinality.type = NumericCardinality
   private implicit val numericMultiplier: NumericMultiplier.type = NumericMultiplier
 
-  override val compositeExpressionSelectivityCalculator: CompositeExpressionSelectivityCalculator = CompositeExpressionSelectivityCalculator(planContext.statistics, combiner)
   private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(planContext.statistics, combiner)
 
   def apply(queryGraph: QueryGraph,
@@ -104,7 +105,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(planContext: PlanContext
                                   relTypes: RelTypeInfo,
                                   semanticTable: SemanticTable,
                                   indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Multiplier = {
-    val expressionSelectivity = compositeExpressionSelectivityCalculator(qg.selections, labels, relTypes, semanticTable, planContext, indexPredicateProviderContext)
+    val expressionSelectivity = selectivityCalculator(qg.selections, labels, relTypes, semanticTable, indexPredicateProviderContext)
 
     val patternRelationships = qg.patternRelationships.toIndexedSeq
     val patternMultipliers = patternRelationships.map(r =>

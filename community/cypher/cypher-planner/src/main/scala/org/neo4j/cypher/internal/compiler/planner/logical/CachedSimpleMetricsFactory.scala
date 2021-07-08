@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
@@ -38,10 +37,10 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Ref
 
 object CachedSimpleMetricsFactory extends MetricsFactory {
-  override def newCardinalityEstimator(planContext: PlanContext,
-                                       queryGraphCardinalityModel: QueryGraphCardinalityModel,
+  override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                       selectivityCalculator: SelectivityCalculator,
                                        evaluator: ExpressionEvaluator): CardinalityModel = {
-    val wrapped: StatisticsBackedCardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(planContext, queryGraphCardinalityModel, evaluator)
+    val wrapped: StatisticsBackedCardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, evaluator)
     new CachedStatisticsBackedCardinalityModel(wrapped)
   }
 
@@ -52,33 +51,31 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
    * the Cardinalities/ProvidedOrders object.
    * The reason for this is that the objects are mutable and during planning we modify them instead of creating new ones.
    */
-  override def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel = {
-    val cached = CachedFunction(
-      (plan: LogicalPlan,
+  override def newCostModel(executionModel: ExecutionModel): CostModel = {
+    val cached = CachedFunction((plan: LogicalPlan,
        input: QueryGraphSolverInput,
        semanticTable: SemanticTable,
        cardinalities: Ref[Cardinalities],
        providedOrders: Ref[ProvidedOrders],
        monitor: CostModelMonitor) => {
-        SimpleMetricsFactory.newCostModel(config: CypherPlannerConfiguration, executionModel).costFor(plan, input, semanticTable, cardinalities.value,
+        SimpleMetricsFactory.newCostModel(executionModel).costFor (plan, input, semanticTable, cardinalities.value,
           providedOrders.value, monitor)
       })
-    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders, monitor: CostModelMonitor) =>
+    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders, monitor: CostModelMonitor) => {
       cached(plan, input, semanticTable, Ref(cardinalities), Ref(providedOrders), monitor)
+    }
   }
 
-  override def newQueryGraphCardinalityModel(planContext: PlanContext): QueryGraphCardinalityModel = {
-    val wrapped: QueryGraphCardinalityModel = SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext)
-    val cached = CachedFunction[QueryGraph, Metrics.QueryGraphSolverInput, SemanticTable, IndexCompatiblePredicatesProviderContext, Cardinality] { (a, b, c, d) => wrapped(a, b, c, d) }
-    new QueryGraphCardinalityModel {
-      override def apply(queryGraph: QueryGraph,
+  override def newQueryGraphCardinalityModel(planContext: PlanContext, selectivityCalculator: SelectivityCalculator): QueryGraphCardinalityModel = {
+    val wrapped: QueryGraphCardinalityModel = SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator)
+    val cached = CachedFunction[QueryGraph, Metrics.QueryGraphSolverInput, SemanticTable, IndexCompatiblePredicatesProviderContext, Cardinality] {
+      (a, b, c, d) => wrapped(a, b, c, d)
+    }
+    (queryGraph: QueryGraph,
                          input: Metrics.QueryGraphSolverInput,
                          semanticTable: SemanticTable,
-                         indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality = {
-        cached.apply(queryGraph, input, semanticTable, indexPredicateProviderContext)
-      }
-
-      override val compositeExpressionSelectivityCalculator: CompositeExpressionSelectivityCalculator = wrapped.compositeExpressionSelectivityCalculator
+                         indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext) => {
+      cached.apply(queryGraph, input, semanticTable, indexPredicateProviderContext)
     }
   }
 

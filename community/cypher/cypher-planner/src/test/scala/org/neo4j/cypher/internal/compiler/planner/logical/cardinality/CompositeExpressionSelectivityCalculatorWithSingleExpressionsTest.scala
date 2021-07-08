@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType.Node
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType.Relationship
+import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Selectivity
 
@@ -38,10 +40,9 @@ import org.neo4j.cypher.internal.util.Selectivity
 class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends ExpressionSelectivityCalculatorTest {
   override protected def setUpCalculator(labelInfo: LabelInfo = Map.empty, relTypeInfo: RelTypeInfo = Map.empty, stats: GraphStatistics = mockStats()): Expression => Selectivity = {
     val semanticTable = setupSemanticTable()
-    val combiner = IndependenceCombiner
-    val compositeCalculator = CompositeExpressionSelectivityCalculator(stats, combiner)
+    val compositeCalculator = CompositeExpressionSelectivityCalculator(mockPlanContext(stats))
     exp: Expression => {
-      compositeCalculator(Selections.from(exp), labelInfo, relTypeInfo, semanticTable, mockPlanContext(stats), IndexCompatiblePredicatesProviderContext.default)
+      compositeCalculator(Selections.from(exp), labelInfo, relTypeInfo, semanticTable, IndexCompatiblePredicatesProviderContext.default)
     }
   }
 
@@ -62,6 +63,8 @@ class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends 
     override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = indexMap.get(relTypeId).iterator
 
     override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
+
+    override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(stats, new MutableGraphStatisticsSnapshot())
 
     override def txStateHasChanges(): Boolean = false
   }

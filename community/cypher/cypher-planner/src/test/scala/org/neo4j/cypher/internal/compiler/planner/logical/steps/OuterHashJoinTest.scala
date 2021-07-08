@@ -65,7 +65,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(config, ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
+    when(factory.newCostModel(ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -74,7 +74,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], config, ExecutionModel.default),
+      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
@@ -97,7 +97,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
+    when(factory.newCostModel(ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -106,7 +106,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], config, ExecutionModel.default),
+      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
@@ -132,7 +132,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config, ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
+    when(factory.newCostModel(ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -142,7 +142,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], config, ExecutionModel.default),
+      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default),
       strategy = newMockedStrategyWithSortedPlan(unorderedPlan, orderedPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val io = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode))))

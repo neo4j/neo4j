@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -42,10 +42,10 @@ import org.neo4j.cypher.internal.util.Cost
 case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
 
-  override def cardinalityModel(planContext: PlanContext,
-                                queryGraphCardinalityModel: QueryGraphCardinalityModel,
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                selectivityCalculator: SelectivityCalculator,
                                 evaluator: ExpressionEvaluator): CardinalityModel = {
-    new StatisticsBackedCardinalityModel(planContext, queryGraphCardinalityModel, evaluator)
+    new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, selectivityCalculator, evaluator)
   }
 
   //noinspection ScalaUnnecessaryParentheses

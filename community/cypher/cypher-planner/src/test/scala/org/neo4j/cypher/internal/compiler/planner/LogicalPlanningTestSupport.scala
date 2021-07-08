@@ -46,8 +46,10 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Na
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
@@ -119,15 +121,21 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     PatternRelationship(rel, (start, end), dir, types, length)
   }
 
-  class SpyableMetricsFactory extends MetricsFactory {
-    def newCardinalityEstimator(planContext: PlanContext,
-                                queryGraphCardinalityModel: QueryGraphCardinalityModel,
-                                evaluator: ExpressionEvaluator) =
-      SimpleMetricsFactory.newCardinalityEstimator(planContext, queryGraphCardinalityModel, evaluator)
-    def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel) =
-      SimpleMetricsFactory.newCostModel(config, executionModel)
-    def newQueryGraphCardinalityModel(planContext: PlanContext): QueryGraphCardinalityModel =
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext)
+  /**
+   * For Mockito to work, we need a class that it can inherit from. This is not possible for SimpleMetricsFactory. Thus, we have use for this class here.
+   */
+  class SpyableSimpleMetricsFactory extends MetricsFactory {
+    override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                         selectivityCalculator: SelectivityCalculator,
+                                         evaluator: ExpressionEvaluator): CardinalityModel =
+      SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, evaluator)
+
+    override def newCostModel(executionModel: ExecutionModel): Metrics.CostModel =
+      SimpleMetricsFactory.newCostModel(executionModel)
+
+    override def newQueryGraphCardinalityModel(planContext: PlanContext, selectivityCalculator: SelectivityCalculator): QueryGraphCardinalityModel = {
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator)
+    }
   }
 
   def newMockedQueryGraph = mock[QueryGraph]
@@ -140,7 +148,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics): Metrics = {
     val planContext = notImplementedPlanContext(stats)
-    newMetricsFactory.newMetrics(planContext, newExpressionEvaluator, config, ExecutionModel.default)
+    newMetricsFactory.newMetrics(planContext, newExpressionEvaluator, ExecutionModel.default)
   }
 
   def notImplementedPlanContext(stats: GraphStatistics) = {
@@ -171,7 +179,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     m
   }
 
-  def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
+  def newMockedMetricsFactory: MetricsFactory = spy(new SpyableSimpleMetricsFactory)
 
   def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
