@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -182,7 +183,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
 
     val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
-    val outerScope = statement.treeFold(Set.empty[Variable]) {
+    val outerScope = statement.treeFold(Set.empty[LogicalVariable]) {
       case expr: ExistsSubClause =>
         acc => TraverseChildren(acc ++ expr.outerScope)
     }

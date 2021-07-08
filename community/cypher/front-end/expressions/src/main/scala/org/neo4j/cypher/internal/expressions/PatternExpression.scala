@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class PatternExpression(pattern: RelationshipsPattern)
-                            (override val outerScope: Set[Variable],
+                            (override val outerScope: Set[LogicalVariable],
                              override val variableToCollectName: String,
                              override val collectionName: String)
 extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable {
@@ -28,7 +28,7 @@ extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable {
 
   override def introducedVariables: Set[LogicalVariable] = pattern.element.allVariables -- outerScope
 
-  override def withOuterScope(outerScope: Set[Variable]): PatternExpression = copy()(outerScope, variableToCollectName, collectionName)
+  override def withOuterScope(outerScope: Set[LogicalVariable]): PatternExpression = copy()(outerScope, variableToCollectName, collectionName)
 
   override def dup(children: Seq[AnyRef]): this.type = {
     PatternExpression(

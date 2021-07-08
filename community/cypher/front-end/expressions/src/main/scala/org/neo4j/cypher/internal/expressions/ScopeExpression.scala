@@ -49,6 +49,6 @@ case class ReduceScope(accumulator: LogicalVariable, variable: LogicalVariable, 
 trait ExpressionWithOuterScope extends Expression {
   self: ScopeExpression =>
 
-  def outerScope: Set[Variable]
-  def withOuterScope(outerScope: Set[Variable]): Expression
+  def outerScope: Set[LogicalVariable]
+  def withOuterScope(outerScope: Set[LogicalVariable]): Expression
 }

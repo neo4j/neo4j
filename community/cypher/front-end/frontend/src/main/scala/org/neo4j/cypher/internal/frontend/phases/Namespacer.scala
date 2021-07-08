@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SymbolUse
 import org.neo4j.cypher.internal.expressions.ExpressionWithOuterScope
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
@@ -50,7 +51,7 @@ case object AmbiguousNamesDisambiguated extends StepSequencer.Condition
  * Rename variables so they are all unique.
  */
 case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
-  type VariableRenamings = Map[Ref[Variable], Variable]
+  type VariableRenamings = Map[Ref[LogicalVariable], LogicalVariable]
 
   override def phase: CompilationPhase = AST_REWRITE
 
@@ -87,8 +88,8 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
                                 anonymousVariableNameGenerator: AnonymousVariableNameGenerator): VariableRenamings = {
     val newNames = mutable.Map[SymbolUse, String]()
 
-    def createVariableRenaming(variable: Variable,
-                               anonymousVariableNameGenerator: AnonymousVariableNameGenerator): (Ref[Variable], Variable) = {
+    def createVariableRenaming(variable: LogicalVariable,
+                               anonymousVariableNameGenerator: AnonymousVariableNameGenerator): (Ref[LogicalVariable], LogicalVariable) = {
       /**
        * Generate a unique anonymous name.
        *
@@ -111,14 +112,14 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
       renaming
     }
 
-    statement.treeFold(Map.empty[Ref[Variable], Variable]) {
-      case i: Variable if ambiguousNames(i.name) =>
+    statement.treeFold(Map.empty[Ref[LogicalVariable], LogicalVariable]) {
+      case i: LogicalVariable if ambiguousNames(i.name) =>
         val renaming = createVariableRenaming(i, anonymousVariableNameGenerator)
         acc => TraverseChildren(acc + renaming)
       case e: ExpressionWithOuterScope =>
         val renamings = e.outerScope
           .filter(v => ambiguousNames(v.name))
-          .foldLeft(Set[(Ref[Variable], Variable)]()) { (innerAcc, v) =>
+          .foldLeft(Set[(Ref[LogicalVariable], LogicalVariable)]()) { (innerAcc, v) =>
             innerAcc + createVariableRenaming(v, anonymousVariableNameGenerator)
           }
         acc => TraverseChildren(acc ++ renamings)

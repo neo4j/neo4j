@@ -30,10 +30,10 @@ case class recordScopes(semanticState: SemanticState) extends Rewriter {
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     case x: PatternExpression =>
-      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable.asInstanceOf[Variable])) // FIXME fix casts
+      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
     case x: PatternComprehension =>
-      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable.asInstanceOf[Variable]))
+      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
     case x: ExistsSubClause =>
-      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable.asInstanceOf[Variable]))
+      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
   })
 }
