@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
-import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -104,31 +104,25 @@ object Metrics {
      * This metric estimates how many rows of data a query produces
      * (e.g. by asking the database for statistics)
      *
-     * @param query                 the query to estimate cardinality
-     * @param aggregatingProperties A set of all properties over which aggregation is performed,
-     *                              where we potentially could use an IndexScan.
-     *                              E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
+     * @param queryPart the query to estimate cardinality
      * @return the cardinality of the query
      */
     def apply(queryPart: PlannerQueryPart,
               input: QueryGraphSolverInput,
               semanticTable: SemanticTable,
-              aggregatingProperties: Set[PropertyAccess]): Cardinality
+              indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality
   }
 
   trait QueryGraphCardinalityModel {
     /**
      *
-     * @param queryGraph            the query graph to estimate cardinality
-     * @param aggregatingProperties A set of all properties over which aggregation is performed,
-     *                              where we potentially could use an IndexScan.
-     *                              E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
+     * @param queryGraph the query graph to estimate cardinality
      * @return the cardinality of the query graph
      */
     def apply(queryGraph: QueryGraph,
               input: QueryGraphSolverInput,
               semanticTable: SemanticTable,
-              aggregatingProperties: Set[PropertyAccess]): Cardinality
+              indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality
     def compositeExpressionSelectivityCalculator: CompositeExpressionSelectivityCalculator
   }
 

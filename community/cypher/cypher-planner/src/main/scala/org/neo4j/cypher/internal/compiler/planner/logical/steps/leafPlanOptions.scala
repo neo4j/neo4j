@@ -88,7 +88,7 @@ object leafPlanOptions extends LeafPlanFinder {
   }
 
   private def hasAggregatingProperties(varName: String, properties: Seq[IndexedProperty], context: LogicalPlanningContext): Boolean =
-    properties.exists(prop => context.aggregatingProperties.contains(PropertyAccess(varName, prop.propertyKeyToken.name)))
+    properties.exists(prop => context.indexCompatiblePredicatesProviderContext.aggregatingProperties.contains(PropertyAccess(varName, prop.propertyKeyToken.name)))
 
   private def hasAccessedProperties(varName: String, properties: Seq[IndexedProperty], context: LogicalPlanningContext): Boolean =
     properties.exists(prop => context.accessedProperties.contains(PropertyAccess(varName, prop.propertyKeyToken.name)))

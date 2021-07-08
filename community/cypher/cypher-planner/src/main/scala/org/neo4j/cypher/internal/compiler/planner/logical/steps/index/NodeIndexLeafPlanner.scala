@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.IndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -60,10 +59,14 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
   override def apply(qg: QueryGraph,
                      interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val predicates = qg.selections.flatPredicatesSet
-    val allLabelPredicatesMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
+    val indexMatches = findIndexMatchesForQueryGraph(
+      qg,
+      context.semanticTable,
+      context.planContext,
+      context.indexCompatiblePredicatesProviderContext,
+      interestingOrderConfig,
+      context.providedOrderFactory)
 
-    val indexMatches = findIndexMatchesForQueryGraph(qg, context.semanticTable, context.planContext, context.aggregatingProperties, interestingOrderConfig, context.providedOrderFactory)
     // Find plans solving given property predicates together with any label predicates from QG
     val result: Set[LogicalPlan] = if (indexMatches.isEmpty) {
       Set.empty[LogicalPlan]
@@ -152,7 +155,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
                                      qg: QueryGraph,
                                      semanticTable: SemanticTable,
                                      planContext: PlanContext,
-                                     aggregatingProperties: Set[PropertyAccess],
+                                     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                                      interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
                                      providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
                                    ): Set[NodeIndexMatch] = {
@@ -167,7 +170,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
         qg.argumentIds,
         semanticTable,
         planContext,
-        aggregatingProperties
+        indexPredicateProviderContext
       )
 
       val matches = for {
@@ -206,7 +209,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
   } yield indexMatch
 
   override protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
-                                                           aggregatingProperties: Set[PropertyAccess],
+                                                           indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                                                            predicates: Set[Expression],
                                                            explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
                                                            valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[IndexCompatiblePredicate] = {
@@ -215,9 +218,13 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       // or
       // n:User with CREATE CONSTRAINT ON (n:User) ASSERT n.prop IS NOT NULL
       case HasLabels(variable: Variable, labels) if valid(variable, Set.empty) =>
-        // HasLabels has been normalized in normalizeComparisons to only have one label each, which is why we can look only at the head here.
-        val constrainedPropNames = planContext.getNodePropertiesWithExistenceConstraint(labels.head.name)
-        implicitIsNotNullPredicates(variable, aggregatingProperties, constrainedPropNames, explicitCompatiblePredicates)
+        val constrainedPropNames =
+          if (indexPredicateProviderContext.outerPlanHasUpdates || planContext.txStateHasChanges()) // non-committed changes may not conform to the existence constraint, so we cannot rely on it
+            Set.empty[String]
+          else
+            planContext.getNodePropertiesWithExistenceConstraint(labels.head.name) // HasLabels has been normalized in normalizeComparisons to only have one label each, which is why we can look only at the head here.
+
+        implicitIsNotNullPredicates(variable, indexPredicateProviderContext.aggregatingProperties, constrainedPropNames, explicitCompatiblePredicates)
 
       case _ =>
         Set.empty[IndexCompatiblePredicate]

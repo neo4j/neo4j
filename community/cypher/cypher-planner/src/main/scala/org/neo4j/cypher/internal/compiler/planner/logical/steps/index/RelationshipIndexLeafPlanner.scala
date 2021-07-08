@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -55,7 +54,12 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
   override def apply(qg: QueryGraph,
                      interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val indexMatches = findIndexMatchesForQueryGraph(qg, context.semanticTable, context.planContext, context.aggregatingProperties, interestingOrderConfig, context.providedOrderFactory)
+    val indexMatches = findIndexMatchesForQueryGraph(qg,
+      context.semanticTable,
+      context.planContext,
+      context.indexCompatiblePredicatesProviderContext,
+      interestingOrderConfig,
+      context.providedOrderFactory)
     if (indexMatches.isEmpty) {
       Set.empty[LogicalPlan]
     } else {
@@ -109,7 +113,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
                                      qg: QueryGraph,
                                      semanticTable: SemanticTable,
                                      planContext: PlanContext,
-                                     aggregatingProperties: Set[PropertyAccess],
+                                     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                                      interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
                                      providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
                                    ): Set[RelationshipIndexMatch] = {
@@ -131,7 +135,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
         qg.argumentIds,
         semanticTable,
         planContext,
-        aggregatingProperties,
+        indexPredicateProviderContext,
         patternRelationshipsMap.values
       )
 
@@ -149,22 +153,27 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
                                             argumentIds: Set[String],
                                             semanticTable: SemanticTable,
                                             planContext: PlanContext,
-                                            aggregatingProperties: Set[PropertyAccess],
+                                            indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                                             patterns: Iterable[PatternRelationship]): Set[IndexCompatiblePredicate] = {
     val generalCompatiblePredicates = findIndexCompatiblePredicates(
       predicates,
       argumentIds,
       semanticTable,
       planContext,
-      aggregatingProperties
+      indexPredicateProviderContext
     )
 
     def valid(variableName: String): Boolean = !argumentIds.contains(variableName)
 
     generalCompatiblePredicates ++ patterns.flatMap {
       case PatternRelationship(name, _, _, Seq(RelTypeName(relTypeName)), _) if valid(relTypeName) =>
-        val constrainedPropNames = planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName)
-        implicitIsNotNullPredicates(variable(name), aggregatingProperties, constrainedPropNames, generalCompatiblePredicates)
+        val constrainedPropNames =
+          if (indexPredicateProviderContext.outerPlanHasUpdates || planContext.txStateHasChanges()) // non-committed changes may not conform to the existence constraint, so we cannot rely on it
+            Set.empty[String]
+          else
+            planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName)
+
+        implicitIsNotNullPredicates(variable(name), indexPredicateProviderContext.aggregatingProperties, constrainedPropNames, generalCompatiblePredicates)
 
       case _ => Set.empty[IndexCompatiblePredicate]
     }
@@ -199,16 +208,13 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
    * Find any implicit index compatible predicates.
    *
    * @param planContext                  planContext to ask for indexes
-   * @param aggregatingProperties        A set of all properties over which aggregation is performed,
-   *                                     where we potentially could use an IndexScan.
-   *                                     E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
    * @param predicates                   the predicates in the query
    * @param explicitCompatiblePredicates the explicit index compatible predicates that were extracted from predicates
    * @param valid                        a test that can be applied to check if an implicit predicate is valid
    *                                     based on its variable and dependencies as arguments to the lambda function.
    */
   override protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
-                                                           aggregatingProperties: Set[PropertyAccess],
+                                                           indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                                                            predicates: Set[Expression],
                                                            explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
                                                            valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[IndexCompatiblePredicate] = {

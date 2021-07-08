@@ -165,7 +165,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
-      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator())
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+    )
     pickBestPlanUsingHintsAndCost(context)(candidates, heuristic, "").get shouldBe theSameInstanceAs(winner)
     pickBestPlanUsingHintsAndCost(context)(candidates.reverse, heuristic, "").get shouldBe theSameInstanceAs(winner)
   }

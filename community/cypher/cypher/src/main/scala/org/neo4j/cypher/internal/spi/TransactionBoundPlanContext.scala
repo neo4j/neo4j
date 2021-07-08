@@ -320,4 +320,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
 
   override def notificationLogger(): InternalNotificationLogger = logger
+
+  override def txStateHasChanges(): Boolean = tc.kernelTransaction.dataRead().transactionStateHasChanges()
 }

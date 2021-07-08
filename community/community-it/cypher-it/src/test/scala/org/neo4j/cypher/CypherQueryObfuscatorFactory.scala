@@ -122,6 +122,7 @@ class CypherQueryObfuscatorFactory {
     override def getRelTypeName(id: Int): Nothing = fail()
     override def getOptRelTypeId(relType: String): Nothing = fail()
     override def getRelTypeId(relType: String): Nothing = fail()
+    override def txStateHasChanges(): Nothing = fail()
 
     private def fail() = throw new IllegalStateException("Should not have been called in this test.")
   }

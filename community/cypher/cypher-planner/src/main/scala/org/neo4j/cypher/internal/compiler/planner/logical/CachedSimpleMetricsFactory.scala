@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
-import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -69,10 +69,13 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
 
   override def newQueryGraphCardinalityModel(planContext: PlanContext): QueryGraphCardinalityModel = {
     val wrapped: QueryGraphCardinalityModel = SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext)
-    val cached = CachedFunction[QueryGraph, Metrics.QueryGraphSolverInput, SemanticTable, Set[PropertyAccess], Cardinality] { (a, b, c, d) => wrapped(a, b, c, d) }
+    val cached = CachedFunction[QueryGraph, Metrics.QueryGraphSolverInput, SemanticTable, IndexCompatiblePredicatesProviderContext, Cardinality] { (a, b, c, d) => wrapped(a, b, c, d) }
     new QueryGraphCardinalityModel {
-      override def apply(queryGraph: QueryGraph, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable, aggregatingProperties: Set[PropertyAccess]): Cardinality = {
-        cached.apply(queryGraph, input, semanticTable, aggregatingProperties)
+      override def apply(queryGraph: QueryGraph,
+                         input: Metrics.QueryGraphSolverInput,
+                         semanticTable: SemanticTable,
+                         indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality = {
+        cached.apply(queryGraph, input, semanticTable, indexPredicateProviderContext)
       }
 
       override val compositeExpressionSelectivityCalculator: CompositeExpressionSelectivityCalculator = wrapped.compositeExpressionSelectivityCalculator

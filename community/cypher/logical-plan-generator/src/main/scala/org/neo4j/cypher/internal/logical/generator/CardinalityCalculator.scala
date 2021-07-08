@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -117,7 +118,7 @@ object CardinalityCalculator {
       )
       val qgsi = QueryGraphSolverInput(labelInfo = state.labelInfo, state.relTypeInfo)
       val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(planContext, IndependenceCombiner)
-      val expandCardinality = qgCardinalityModel(qg, qgsi, state.semanticTable, Set.empty)
+      val expandCardinality = qgCardinalityModel(qg, qgsi, state.semanticTable, IndexCompatiblePredicatesProviderContext.default)
       expandCardinality * inboundCardinality
   }
 

@@ -152,6 +152,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
 
       override def getRelationshipPropertiesWithExistenceConstraint(relationshipTypeName: String): Set[String] = Set.empty
+
+      override def txStateHasChanges(): Boolean = false
     }
   }
 
@@ -234,7 +236,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
-      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
     )
   }
 
@@ -260,7 +262,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
-      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator())
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+    )
   }
 
   def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]

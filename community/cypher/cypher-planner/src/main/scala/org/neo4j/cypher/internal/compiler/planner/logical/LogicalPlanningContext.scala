@@ -30,7 +30,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrderFactory
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
@@ -63,12 +65,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   leafPlanUpdater: LeafPlanUpdater = EmptyUpdater,
                                   costComparisonListener: CostComparisonListener,
                                   planningAttributes: PlanningAttributes,
-                                  /*
-                                   * A set of all properties over which aggregation is performed,
-                                   * where we potentially could use an IndexScan.
-                                   * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
-                                   */
-                                  aggregatingProperties: Set[PropertyAccess] = Set.empty,
+                                  indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext = IndexCompatiblePredicatesProviderContext.default,
                                   /*
                                    * All properties that are referenced (in the head planner query)
                                    * Used to break potential ties between index leaf plans
@@ -84,7 +81,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
     copy(input = input.withLimitSelectivityConfig(cfg))
 
   def withAggregationProperties(properties: Set[PropertyAccess]): LogicalPlanningContext =
-    copy(aggregatingProperties = properties)
+    copy(indexCompatiblePredicatesProviderContext = indexCompatiblePredicatesProviderContext.copy(aggregatingProperties = properties))
 
   def withAccessedProperties(properties: Set[PropertyAccess]): LogicalPlanningContext =
     copy(accessedProperties = properties)
@@ -134,6 +131,11 @@ case class LogicalPlanningContext(planContext: PlanContext,
     } else {
       NoProvidedOrderFactory
     }
+  }
+
+  def withLastSolvedQueryPart(queryPart: SinglePlannerQuery): LogicalPlanningContext = {
+    val hasUpdates = indexCompatiblePredicatesProviderContext.outerPlanHasUpdates || !queryPart.readOnlySelf
+    copy(indexCompatiblePredicatesProviderContext = indexCompatiblePredicatesProviderContext.copy(outerPlanHasUpdates = hasUpdates))
   }
 }
 

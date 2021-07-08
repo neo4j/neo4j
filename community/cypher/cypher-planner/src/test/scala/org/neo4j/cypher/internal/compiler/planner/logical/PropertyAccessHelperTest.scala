@@ -199,14 +199,14 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   private def assertContextNotUpdated(newContext: LogicalPlanningContext): Unit = {
-    newContext.aggregatingProperties should be(empty)
+    newContext.indexCompatiblePredicatesProviderContext.aggregatingProperties should be(empty)
     newContext should equal(context)
   }
 
   private def assertContextUpdated(newContext: LogicalPlanningContext,
                                    expectedAggregatingProperties: Set[PropertyAccess],
                                    expectedAccessedProperties: Set[PropertyAccess] = Set()): Unit = {
-    newContext.aggregatingProperties should equal(expectedAggregatingProperties)
+    newContext.indexCompatiblePredicatesProviderContext.aggregatingProperties should equal(expectedAggregatingProperties)
     newContext.accessedProperties should equal(expectedAccessedProperties)
     newContext should not equal context
   }

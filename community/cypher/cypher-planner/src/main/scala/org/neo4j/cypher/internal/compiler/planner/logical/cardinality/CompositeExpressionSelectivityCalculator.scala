@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY
@@ -35,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSee
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.WhereClausePredicate
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner
 import org.neo4j.cypher.internal.expressions.Contains
@@ -91,7 +91,7 @@ case class CompositeExpressionSelectivityCalculator(stats: GraphStatistics, comb
              relTypeInfo: RelTypeInfo,
              semanticTable: SemanticTable,
              planContext: PlanContext,
-             aggregatingProperties: Set[PropertyAccess],
+             indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
            ): Selectivity = {
 
     val variables = selections.findAllByClass[Variable].map(_.name)
@@ -109,8 +109,8 @@ case class CompositeExpressionSelectivityCalculator(stats: GraphStatistics, comb
       selections = unwrappedSelections
     )).map(inlineLabelAndRelTypeInfo(_, labelInfo, relTypeInfo))
 
-    val indexMatches = NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, aggregatingProperties) ++
-      RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, aggregatingProperties)
+    val indexMatches = NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext) ++
+      RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext)
 
     val selectivitiesForPredicates = indexMatches
       .groupBy(_.indexDescriptor)

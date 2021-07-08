@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -45,7 +44,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
   private val leafPlanner = new IndexCompatiblePredicatesProvider {
 
     override protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
-                                                             aggregatingProperties: Set[PropertyAccess],
+                                                             indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                                                              predicates: Set[Expression],
                                                              explicitCompatiblePredicates: Set[EntityIndexLeafPlanner.IndexCompatiblePredicate],
                                                              valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[EntityIndexLeafPlanner.IndexCompatiblePredicate] = Set.empty
@@ -118,7 +117,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
         nodeConstraints = Set(("ConstraintLabel", Set("prop1")))
       }.withLogicalPlanningContext { (_, context) =>
           val compatiblePredicates = leafPlanner.findIndexCompatiblePredicates(
-            predicates, argumentIds, context.semanticTable, context.planContext, context.aggregatingProperties)
+            predicates, argumentIds, context.semanticTable, context.planContext, context.indexCompatiblePredicatesProviderContext)
           if (expectToExist) {
             withClue(s"$name should be recognized as index compatible predicate with the right parameters") {
               compatiblePredicates.size shouldBe 1
@@ -149,7 +148,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     } withLogicalPlanningContext {
       (_, context) =>
         val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(
-          varFor("varName"), context.aggregatingProperties, Set("prop1", "prop2"), Set.empty)
+          varFor("varName"), context.indexCompatiblePredicatesProviderContext.aggregatingProperties, Set("prop1", "prop2"), Set.empty)
         implicitPredicates.size should be(2)
         implicitPredicates.foreach(predicate =>
           predicate.predicate should matchPattern {
@@ -166,7 +165,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     } withLogicalPlanningContext {
       (_, context) =>
         val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(
-          varFor("varName"), context.aggregatingProperties, Set.empty, Set.empty)
+          varFor("varName"), context.indexCompatiblePredicatesProviderContext.aggregatingProperties, Set.empty, Set.empty)
         implicitPredicates.size should be(0)
     }
   }

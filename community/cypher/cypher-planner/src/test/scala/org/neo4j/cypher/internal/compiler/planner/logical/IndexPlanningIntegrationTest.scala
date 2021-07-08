@@ -22,6 +22,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -535,4 +539,266 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
                             .build()
   }
 
+  test("should not plan node index scan with existence constraint if query has updates before the match") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val query =
+      """CREATE (a:Label)
+        |WITH count(*) AS c
+        |MATCH (n:Label)
+        |WHERE n.prop IS NULL
+        |SET n.prop = 123""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .setNodeProperty("n", "prop", "123")
+      .eager()
+      .filter("n.prop IS NULL")
+      .apply()
+      .|.nodeByLabelScan("n", "Label", "c")
+      .aggregation(Seq(), Seq("count(*) AS c"))
+      .create(createNode("a", "Label"))
+      .argument()
+      .build()
+  }
+
+  test("should not plan node index scan with existence constraint if query has updates before the match in a subquery") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val query =
+      """CREATE (a:Label)
+        |WITH count(*) AS c
+        |CALL {
+        |  WITH c
+        |  WITH c LIMIT 1
+        |  MATCH (n:Label)
+        |  WHERE n.prop IS NULL
+        |  SET n.prop = c
+        |  RETURN n
+        |}
+        |RETURN *""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .apply(fromSubquery = true)
+      .|.setNodeProperty("n", "prop", "c")
+      .|.eager()
+      .|.filter("n.prop IS NULL")
+      .|.apply()
+      .|.|.nodeByLabelScan("n", "Label", "c")
+      .|.limit(1)
+      .|.argument("c")
+      .aggregation(Seq(), Seq("count(*) AS c"))
+      .create(createNode("a", "Label"))
+      .argument()
+      .build()
+  }
+
+  test("should not plan node index scan with existence constraint if transaction state has changes") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .setTxStateHasChanges()
+      .build()
+
+    val query =
+      """MATCH (n:Label)
+        |WHERE n.prop IS NULL
+        |SET n.prop = 123""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .setNodeProperty("n", "prop", "123")
+      .eager()
+      .filter("n.prop IS NULL")
+      .nodeByLabelScan("n", "Label")
+      .build()
+  }
+
+  test("should plan node index scan with existence constraint if query has updates after the match") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0, withValues = true)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val query =
+      """MATCH (n:Label)
+        |CREATE (a:Label {prop: n.prop * 2})""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .create(createNodeWithProperties("a", Seq("Label"), "{prop: cacheN[n.prop] * 2}"))
+      .nodeIndexOperator("n:Label(prop)", getValue = Map("prop" -> GetValue))
+      .build()
+  }
+
+  test("should plan node index scan with existence constraint for aggregation if transaction state has changes") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .setTxStateHasChanges()
+      .build()
+
+    val query =
+      """MATCH (n:Label)
+        |RETURN sum(n.prop) AS result""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .aggregation(Seq.empty, Seq("sum(n.prop) AS result"))
+      .nodeIndexOperator("n:Label(prop)")
+      .build()
+  }
+
+  test("should not plan relationship index scan with existence constraint if query has updates before the match") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .build()
+
+    val query =
+      """CREATE (a)-[r:REL]->(b)
+        |WITH count(*) AS c
+        |MATCH (a)-[r:REL]->(b)
+        |WHERE r.prop IS NULL
+        |SET r.prop = 123""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .setRelationshipProperty("r", "prop", "123")
+      .eager()
+      .filter("r.prop IS NULL")
+      .apply()
+      .|.relationshipTypeScan("(a)-[r:REL]->(b)", "c")
+      .aggregation(Seq(), Seq("count(*) AS c"))
+      .create(
+        nodes = Seq(createNode("a"), createNode("b")),
+        relationships = Seq(createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING)))
+      .argument()
+      .build()
+  }
+
+  test("should not plan relationship index scan with existence constraint if query has updates before the match in a subquery") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .build()
+
+    val query =
+      """CREATE (a)-[r:REL]->(b)
+        |WITH count(*) AS c
+        |CALL {
+        |  WITH c
+        |  MATCH (a)-[r:REL]->(b)
+        |  WHERE r.prop IS NULL
+        |  SET r.prop = c
+        |  RETURN r
+        |}
+        |RETURN *""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .apply(fromSubquery = true)
+      .|.setRelationshipProperty("r", "prop", "c")
+      .|.eager()
+      .|.filter("r.prop IS NULL")
+      .|.relationshipTypeScan("(a)-[r:REL]->(b)", "c")
+      .aggregation(Seq(), Seq("count(*) AS c"))
+      .create(
+        nodes = Seq(createNode("a"), createNode("b")),
+        relationships = Seq(createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING)))
+      .argument()
+      .build()
+  }
+
+  test("should not plan relationship index scan with existence constraint if transaction state has changes") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .setTxStateHasChanges()
+      .build()
+
+    val query =
+      """MATCH (a)-[r:REL]->(b)
+        |WHERE r.prop IS NULL
+        |SET r.prop = 123""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .setRelationshipProperty("r", "prop", "123")
+      .eager()
+      .filter("r.prop IS NULL")
+      .relationshipTypeScan("(a)-[r:REL]->(b)")
+      .build()
+  }
+
+  test("should plan relationship index scan with existence constraint if query has updates after the match") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0, withValues = true)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .build()
+
+    val query =
+      """MATCH (a)-[r1:REL]->(b)
+        |CREATE (c)-[r2:REL {prop: r1.prop * 2}]->(d)""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .create(
+        nodes = Seq(createNode("c"), createNode("d")),
+        relationships = Seq(createRelationship("r2", "c", "REL", "d", SemanticDirection.OUTGOING, Some("{prop: cacheR[r1.prop] * 2}"))))
+      .eager()
+      .relationshipIndexOperator("(a)-[r1:REL(prop)]->(b)", getValue = Map("prop" -> GetValue))
+      .build()
+  }
+
+  test("should plan relationship index scan with existence constraint for aggregation if transaction state has changes") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .setTxStateHasChanges()
+      .build()
+
+    val query =
+      """MATCH (a)-[r:REL]->(b)
+        |RETURN sum(r.prop) AS result""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .aggregation(Seq.empty, Seq("sum(r.prop) AS result"))
+      .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)")
+      .build()
+  }
 }

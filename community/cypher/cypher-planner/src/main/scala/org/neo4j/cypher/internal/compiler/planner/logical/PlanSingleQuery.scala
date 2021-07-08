@@ -65,12 +65,16 @@ case class PlanSingleQuery(planHead: HeadPlanner = PlanHead(),
     val remainingPartsWithExtras = {
       val allParts = query.allPlannerQueries
       assert(allParts.length == limitSelectivityConfigs.length, "We should have limit selectivities for all query parts.")
-      (allParts.tail, limitSelectivityConfigs.tail, allParts.map(_.interestingOrder)).zipped
+      (allParts.tail, limitSelectivityConfigs.tail, allParts).zipped
     }
 
     remainingPartsWithExtras.foldLeft((plans, context)) {
-      case ((plans, context), (queryPart, limitSelectivityConfig, previousInterestingOrder)) =>
-        planWithTail(plans, queryPart, previousInterestingOrder, context.withLimitSelectivityConfig(limitSelectivityConfig))
+      case ((plans, context), (queryPart, limitSelectivityConfig, prevQueryPart)) =>
+        planWithTail(plans, queryPart, prevQueryPart.interestingOrder,
+          context
+            .withLimitSelectivityConfig(limitSelectivityConfig)
+            .withLastSolvedQueryPart(prevQueryPart)
+        )
     }
   }
 

@@ -89,7 +89,8 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
                       connectComponentsPlanner: Boolean = true,
                       executionModel: ExecutionModel = ExecutionModel.default,
-                      useMinimumGraphStatistics: Boolean = false
+                      useMinimumGraphStatistics: Boolean = false,
+                      txStateHasChanges: Boolean = false,
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
@@ -426,6 +427,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       andThen withIndexes)(bare)
   }
 
+  def setTxStateHasChanges(hasChanges: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(txStateHasChanges = hasChanges))
+  }
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -599,6 +604,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def getOptRelTypeId(relType: String): Option[Int] =
         resolver.getOptRelTypeId(relType)
+
+      override def txStateHasChanges(): Boolean = options.txStateHasChanges
 
       private def newIndexDescriptor(indexDef: IndexDefinition): IndexDescriptor = {
         // Our fake index either can always or never return property values

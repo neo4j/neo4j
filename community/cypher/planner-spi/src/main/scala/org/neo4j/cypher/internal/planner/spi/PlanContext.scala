@@ -105,6 +105,11 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def statistics: InstrumentedGraphStatistics
 
   def notificationLogger(): InternalNotificationLogger
+
+  /**
+   * Checks if there are uncommitted changes in the transaction state.
+   */
+  def txStateHasChanges(): Boolean
 }
 
 trait ProcedureSignatureResolver {

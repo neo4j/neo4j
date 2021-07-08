@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -40,7 +41,7 @@ class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends 
     val combiner = IndependenceCombiner
     val compositeCalculator = CompositeExpressionSelectivityCalculator(stats, combiner)
     exp: Expression => {
-      compositeCalculator(Selections.from(exp), labelInfo, relTypeInfo, semanticTable, mockPlanContext(stats), Set.empty)
+      compositeCalculator(Selections.from(exp), labelInfo, relTypeInfo, semanticTable, mockPlanContext(stats), IndexCompatiblePredicatesProviderContext.default)
     }
   }
 
@@ -61,5 +62,7 @@ class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends 
     override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = indexMap.get(relTypeId).iterator
 
     override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
+
+    override def txStateHasChanges(): Boolean = false
   }
 }

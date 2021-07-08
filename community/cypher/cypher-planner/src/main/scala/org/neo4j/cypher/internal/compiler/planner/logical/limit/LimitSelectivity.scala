@@ -56,7 +56,7 @@ object LimitSelectivity {
 
         case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
           val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
-          val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable, context.aggregatingProperties)
+          val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable, context.indexCompatiblePredicatesProviderContext)
 
           val cardinalityWithoutLimit = cardinalityModel(queryWithoutLimit)
           val cardinalityWithLimit = cardinalityModel(query)

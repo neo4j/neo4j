@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanUsesEffectiveOutputCardinality
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.EntityType
@@ -346,7 +347,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
       s.predicate.exprs,
       QueryGraphSolverInput.empty,
       from.semanticTable(),
-      Set.empty,
+      IndexCompatiblePredicatesProviderContext.default,
       from.planningAttributes.solveds,
       // These do not include effective cardinalities, which is important since this methods assumes "original" cardinalities.
       from.planningAttributes.cardinalities,

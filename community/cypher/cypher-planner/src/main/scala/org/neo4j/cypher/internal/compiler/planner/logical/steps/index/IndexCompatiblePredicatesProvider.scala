@@ -57,14 +57,13 @@ trait IndexCompatiblePredicatesProvider {
    * @param argumentIds           argument ids provided to this sub-plan
    * @param semanticTable         semantic table
    * @param planContext           planContext to ask for indexes
-   * @param aggregatingProperties properties used in query aggregations, which are implicitly assumed to not be null
    */
   private[index] def findIndexCompatiblePredicates(
                                                     predicates: Set[Expression],
                                                     argumentIds: Set[String],
                                                     semanticTable: SemanticTable,
                                                     planContext: PlanContext,
-                                                    aggregatingProperties: Set[PropertyAccess],
+                                                    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                                                   ): Set[IndexCompatiblePredicate] = {
     val arguments: Set[LogicalVariable] = argumentIds.map(variable)
 
@@ -127,7 +126,7 @@ trait IndexCompatiblePredicatesProvider {
         Set.empty[IndexCompatiblePredicate]
     }
 
-    val implicitCompatiblePredicates = implicitIndexCompatiblePredicates(planContext, aggregatingProperties, predicates, explicitCompatiblePredicates, valid)
+    val implicitCompatiblePredicates = implicitIndexCompatiblePredicates(planContext, indexPredicateProviderContext, predicates, explicitCompatiblePredicates, valid)
 
     explicitCompatiblePredicates ++ implicitCompatiblePredicates
   }
@@ -136,17 +135,27 @@ trait IndexCompatiblePredicatesProvider {
    * Find any implicit index compatible predicates.
    *
    * @param planContext                  planContext to ask for indexes
-   * @param aggregatingProperties        A set of all properties over which aggregation is performed,
-   *                                     where we potentially could use an IndexScan.
-   *                                     E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
    * @param predicates                   the predicates in the query
    * @param explicitCompatiblePredicates the explicit index compatible predicates that were extracted from predicates
    * @param valid                        a test that can be applied to check if an implicit predicate is valid
    *                                     based on its variable and dependencies as arguments to the lambda function.
    */
   protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
-                                                  aggregatingProperties: Set[PropertyAccess],
+                                                  indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                                                   predicates: Set[Expression],
                                                   explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
                                                   valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[IndexCompatiblePredicate]
+}
+
+/**
+ * @param aggregatingProperties A set of all properties over which aggregation is performed,
+ *                              where we potentially could use an IndexScan.
+ *                              E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
+ * @param outerPlanHasUpdates   A flag indicating whether we have planned updates earlier in the query
+ */
+final case class IndexCompatiblePredicatesProviderContext(aggregatingProperties: Set[PropertyAccess], outerPlanHasUpdates: Boolean)
+
+object IndexCompatiblePredicatesProviderContext {
+  val default: IndexCompatiblePredicatesProviderContext =
+    IndexCompatiblePredicatesProviderContext(aggregatingProperties = Set.empty, outerPlanHasUpdates = false)
 }

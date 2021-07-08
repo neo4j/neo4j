@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
-import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
@@ -171,7 +171,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
       override def apply(pq: PlannerQueryPart,
                          input: QueryGraphSolverInput,
                          semanticTable: SemanticTable,
-                         aggregatingProperties: Set[PropertyAccess]): Cardinality = {
+                         indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Cardinality = {
         val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
           case (name: String, cardinality: Cardinality) =>
             semanticTable.resolvedLabelNames(name) -> cardinality
@@ -183,7 +183,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
         }
 
         val r: PartialFunction[PlannerQueryPart, Cardinality] = labelScanCardinality.orElse(cardinality)
-        if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(planContext, queryGraphCardinalityModel, evaluator)(pq, input, semanticTable, aggregatingProperties)
+        if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(planContext, queryGraphCardinalityModel, evaluator)(pq, input, semanticTable, indexPredicateProviderContext)
       }
     }
   }
