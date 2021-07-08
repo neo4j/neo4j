@@ -181,11 +181,9 @@ MORE :
 
 TOKEN :
 {
-  < DECIMAL_DOUBLE: (["+","-"])? (
-                                    (["0"-"9"])+ "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)? (<IDENTIFIER>)?
-                                  | "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)? (<IDENTIFIER>)?
-                                  | (["0"-"9"])+ <DECIMAL_EXPONENT> (<IDENTIFIER>)?
-                                  ) >
+  < DECIMAL_DOUBLE: ( ["0"-"9"])+ "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)? (<IDENTIFIER>)?
+                    | "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)? (<IDENTIFIER>)?
+                    | (["0"-"9"])+ <DECIMAL_EXPONENT> (<IDENTIFIER>)? >
 |
   < #DECIMAL_EXPONENT: ["e","E"] ( ["+","-"] )? ( ["0"-"9"] )+ ( <PART_LETTER> )* >
 |
@@ -2118,13 +2116,14 @@ EXPRESSION StringLiteral() :
 }
 
 EXPRESSION NumberLiteral() :
-{Token t; boolean negated = false;}
+{Token t; boolean negated = false; Token sign = null;}
 {
-  t=<DECIMAL_DOUBLE> { return astFactory.newDouble(pos(t), token.image); }
-| ( <MINUS> {negated = true;})?
-  ( t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger(pos(t), token.image, negated); }
-  | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger(pos(t), token.image, negated); }
-  | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger(pos(t), token.image, negated); }
+  ( sign=<MINUS> { negated = true; } )?
+  (
+     t=<DECIMAL_DOUBLE> { return astFactory.newDouble(  pos( sign != null ? sign : t ) , sign != null ? sign.image + token.image : token.image ); }
+    | t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger(pos(t), token.image, negated); }
+    | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger(pos(t), token.image, negated); }
+    | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger(pos(t), token.image, negated); }
   )
 }
 
