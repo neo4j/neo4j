@@ -19,29 +19,27 @@
  */
 package org.neo4j.cypher.internal
 
-import java.time.Clock
-import java.{lang, util}
-
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.{InputDataStream, NoInput}
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.v4_0.expressions.functions.FunctionInfo
 import org.neo4j.exceptions.ParameterNotFoundException
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.{FunctionInformation, QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query._
 import org.neo4j.logging.LogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
+import java.time.Clock
+import java.{lang, util}
 import scala.collection.JavaConverters._
 
-trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, ParameterTypeMap]]
+trait StringCacheMonitor extends CypherCacheMonitor[CacheKey[String]]
 
 /**
   * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
@@ -50,7 +48,7 @@ trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, ParameterTypeMa
 class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val kernelMonitors: Monitors,
                       val tracer: CompilationTracer,
-                      val cacheTracer: CacheTracer[Pair[String, ParameterTypeMap]],
+                      val cacheTracer: CacheTracer[CacheKey[String]],
                       val config: CypherConfiguration,
                       val compilerLibrary: CompilerLibrary,
                       val logProvider: LogProvider,
@@ -76,7 +74,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // Log on stale query discard from query cache
   private val log = logProvider.getLog( getClass )
   kernelMonitors.addMonitorListener( new StringCacheMonitor {
-    override def cacheDiscard(ignored: Pair[String, ParameterTypeMap], query: String, secondsSinceReplan: Int) {
+    override def cacheDiscard(ignored: CacheKey[String], query: String, secondsSinceReplan: Int) {
       log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds: $query")
     }
   })
@@ -87,28 +85,28 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                                              lastCommittedTxIdProvider,
                                              planReusabilitiy)
 
-  private val toStringCacheTracer: CacheTracer[Pair[AnyRef, ParameterTypeMap]] = new CacheTracer[Pair[AnyRef, ParameterTypeMap]] {
-    private def str(p: Pair[AnyRef, ParameterTypeMap]): Pair[String, ParameterTypeMap] =
-      Pair.of(p.first().toString, p.other())
+  private val toStringCacheTracer: CacheTracer[CacheKey[AnyRef]] = new CacheTracer[CacheKey[AnyRef]] {
+    private def str(p: CacheKey[AnyRef]): CacheKey[String] =
+      CacheKey(p.queryRep.toString, p.parameterTypeMap, p.txStateHasChanges)
 
-    override def queryCacheHit(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
+    override def queryCacheHit(queryKey: CacheKey[AnyRef], metaData: String): Unit =
       cacheTracer.queryCacheHit(str(queryKey), metaData)
 
-    override def queryCacheMiss(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
+    override def queryCacheMiss(queryKey: CacheKey[AnyRef], metaData: String): Unit =
       cacheTracer.queryCacheMiss(str(queryKey), metaData)
 
-    override def queryCacheRecompile(queryKey: Pair[AnyRef, ParameterTypeMap], metaData: String): Unit =
+    override def queryCacheRecompile(queryKey: CacheKey[AnyRef], metaData: String): Unit =
       cacheTracer.queryCacheRecompile(str(queryKey), metaData)
 
-    override def queryCacheStale(queryKey: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String): Unit =
+    override def queryCacheStale(queryKey: CacheKey[AnyRef], secondsSincePlan: Int, metaData: String): Unit =
       cacheTracer.queryCacheStale(str(queryKey), secondsSincePlan, metaData)
 
     override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit =
       cacheTracer.queryCacheFlush(sizeOfCacheBeforeFlush)
   }
 
-  private val queryCache: QueryCache[AnyRef, Pair[AnyRef, ParameterTypeMap], ExecutableQuery] =
-    new QueryCache[AnyRef, Pair[AnyRef, ParameterTypeMap], ExecutableQuery](config.queryCacheSize, planStalenessCaller, toStringCacheTracer)
+  private val queryCache: QueryCache[CacheKey[AnyRef], ExecutableQuery] =
+    new QueryCache[CacheKey[AnyRef], ExecutableQuery](config.queryCacheSize, planStalenessCaller, toStringCacheTracer)
 
   private val masterCompiler: MasterCompiler = new MasterCompiler(config, compilerLibrary)
 
@@ -261,11 +259,16 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                            tracer: QueryCompilationEvent,
                            params: MapValue
                           ): ExecutableQuery = {
-    val cacheKey = Pair.of(inputQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
 
     // create transaction and query context
     val tc = context.getOrBeginNewIfClosed()
     val compilerAuthorization = tc.restrictCurrentTransaction(tc.securityContext.withMode(AccessMode.Static.READ))
+
+    val cacheKey = CacheKey(
+      inputQuery.cacheKey,
+      QueryCache.extractParameterTypeMap(params),
+      tc.kernelTransaction().dataRead().transactionStateHasChanges()
+    )
 
     try {
       var n = 0

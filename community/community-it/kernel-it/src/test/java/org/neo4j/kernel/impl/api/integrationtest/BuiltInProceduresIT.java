@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -34,14 +33,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.cypher.internal.QueryCache.CacheKey;
 import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -56,7 +54,6 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -64,14 +61,11 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItemInArray;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -556,23 +550,23 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         }
 
         @Override
-        public void cacheHit( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheHit( CacheKey<String> key )
         {
         }
 
         @Override
-        public void cacheMiss( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheMiss( CacheKey<String> key )
         {
         }
 
         @Override
-        public void cacheDiscard( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key, String userKey,
+        public void cacheDiscard( CacheKey<String> key, String userKey,
                 int secondsSinceReplan )
         {
         }
 
         @Override
-        public void cacheRecompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheRecompile( CacheKey<String> key )
         {
         }
     }

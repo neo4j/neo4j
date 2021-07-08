@@ -21,16 +21,15 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.CypherExpressionEngine.ONLY_WHEN_HOT
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.{Label, QueryExecutionException}
-import org.neo4j.internal.helpers.collection.Pair
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.JavaConversions._
-import scala.collection.{Map, mutable}
+import scala.collection.{Map, immutable, mutable}
 
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
@@ -83,9 +82,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
         val expected = List(
           s"cacheFlushDetected",
-          s"cacheMiss: (CYPHER 4.0 $query, $empty_parameters)",
-          s"cacheRecompile: (CYPHER 4.0 $query, $empty_parameters)",
-          s"cacheHit: (CYPHER 4.0 $query, $empty_parameters)")
+          s"cacheMiss: CacheKey(CYPHER 4.0 $query,$empty_parameters,false)",
+          s"cacheRecompile: CacheKey(CYPHER 4.0 $query,$empty_parameters,false)",
+          s"cacheHit: CacheKey(CYPHER 4.0 $query,$empty_parameters,false)")
 
         actual should equal(expected)
     }
@@ -109,9 +108,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheRecompile: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+      s"cacheMiss: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheRecompile: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheHit: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)")
 
     actual should equal(expected)
   }
@@ -130,9 +129,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheRecompile: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+      s"cacheMiss: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheRecompile: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheHit: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)")
 
     actual should equal(expected)
   }
@@ -152,8 +151,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheMiss: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.StringWrappingStringValue))")
+      s"cacheMiss: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheMiss: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.StringWrappingStringValue),false)")
 
     actual should equal(expected)
   }
@@ -175,7 +174,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+      s"cacheMiss: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)")
 
     actual should equal(expected)
   }
@@ -203,7 +202,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.0 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))")
+      s"cacheMiss: CacheKey(CYPHER 4.0 $actualQuery,Map(n -> class org.neo4j.values.storable.LongValue),false)")
 
     actual should equal(expected)
   }
@@ -222,7 +221,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.0 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheMiss: CacheKey(CYPHER 4.0 $actualQuery,Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue),false)",
     )
 
     actual should equal(expected)
@@ -240,8 +239,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      "cacheMiss: (CYPHER 4.0 expressionEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.0 expressionEngine=compiled RETURN 42 AS a, Map())"
+      "cacheMiss: CacheKey(CYPHER 4.0 expressionEngine=interpreted RETURN 42 AS a,Map(),false)",
+      "cacheMiss: CacheKey(CYPHER 4.0 expressionEngine=compiled RETURN 42 AS a,Map(),false)"
     )
 
     actual should equal(expected)
@@ -259,8 +258,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      "cacheMiss: (CYPHER 4.0 operatorEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.0 RETURN 42 AS a, Map())"
+      "cacheMiss: CacheKey(CYPHER 4.0 operatorEngine=interpreted RETURN 42 AS a,Map(),false)",
+      "cacheMiss: CacheKey(CYPHER 4.0 RETURN 42 AS a,Map(),false)"
     )
 
     actual should equal(expected)
@@ -278,8 +277,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      "cacheMiss: (CYPHER 4.0 runtime=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.0 runtime=slotted RETURN 42 AS a, Map())"
+      "cacheMiss: CacheKey(CYPHER 4.0 runtime=interpreted RETURN 42 AS a,Map(),false)",
+      "cacheMiss: CacheKey(CYPHER 4.0 runtime=slotted RETURN 42 AS a,Map(),false)"
     )
 
     actual should equal(expected)
@@ -298,7 +297,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheMiss: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
     )
 
     actual should equal(expected)
@@ -317,7 +316,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheMiss: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
     )
 
     actual should equal(expected)
@@ -342,12 +341,44 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(
       s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheRecompile: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.0 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+      s"cacheMiss: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheRecompile: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheHit: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheHit: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheHit: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"cacheHit: CacheKey(CYPHER 4.0 $query,Map(n -> class org.neo4j.values.storable.LongValue),false)")
+
+    actual should equal(expected)
+  }
+
+  test("Changes in transaction state result in cache miss") {
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val query = "RETURN 1"
+    val createNodeQuery = "CREATE ()"
+
+    graph.withTx { tx =>
+      tx.execute(query).resultAsString()
+      tx.execute(createNodeQuery).resultAsString()
+      tx.execute(query).resultAsString()
+      tx.execute(query).resultAsString()
+    }
+
+    val currentVersion = "4.0"
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      // RETURN 1
+      s"cacheFlushDetected",
+      s"cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(),false)",
+      // CREATE ()
+      s"cacheMiss: CacheKey(CYPHER $currentVersion $createNodeQuery,Map(),false)",
+      // RETURN 1
+      s"cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(),true)",
+      s"cacheRecompile: CacheKey(CYPHER $currentVersion $query,Map(),true)",
+      // RETURN 1
+      s"cacheHit: CacheKey(CYPHER $currentVersion $query,Map(),true)",
+    )
 
     actual should equal(expected)
   }
@@ -365,19 +396,19 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log += s"cacheFlushDetected"
     }
 
-    override def cacheHit(key: Pair[String, ParameterTypeMap]): Unit = {
+    override def cacheHit(key: CacheKey[String]): Unit = {
       log += s"cacheHit: $key"
     }
 
-    override def cacheMiss(key: Pair[String, ParameterTypeMap]): Unit = {
+    override def cacheMiss(key: CacheKey[String]): Unit = {
       log += s"cacheMiss: $key"
     }
 
-    override def cacheDiscard(key: Pair[String, ParameterTypeMap], ignored: String, secondsSinceReplan: Int): Unit = {
+    override def cacheDiscard(key: CacheKey[String], ignored: String, secondsSinceReplan: Int): Unit = {
       log += s"cacheDiscard: $key"
     }
 
-    override def cacheRecompile(key: Pair[String, ParameterTypeMap]): Unit = {
+    override def cacheRecompile(key: CacheKey[String]): Unit = {
       log += s"cacheRecompile: $key"
     }
   }

@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal
 
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compiler.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
   * The result of one cache lookup.
@@ -65,8 +63,8 @@ trait CacheTracer[QUERY_KEY] {
   * @param stalenessCaller Decided whether CachedExecutionPlans are stale
   * @param tracer Traces cache activity
   */
-class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: CacheabilityInfo](
-    val maximumSize: Int, val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY], val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
+class QueryCache[QUERY_KEY <: AnyRef,  EXECUTABLE_QUERY <: CacheabilityInfo](
+    val maximumSize: Int, val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY], val tracer: CacheTracer[QUERY_KEY]) {
 
   private val inner: Cache[QUERY_KEY, CachedValue] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, CachedValue]()
 
@@ -226,6 +224,11 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
 }
 
 object QueryCache {
+
+  final case class CacheKey[QUERY_REP](queryRep: QUERY_REP,
+                                       parameterTypeMap: ParameterTypeMap,
+                                       txStateHasChanges: Boolean)
+
   val NOT_PRESENT: ExecutableQuery = null
   type ParameterTypeMap = Map[String, Class[_]]
 
@@ -234,7 +237,7 @@ object QueryCache {
     */
   def extractParameterTypeMap(value: MapValue): ParameterTypeMap = {
     val resultMap = Map.newBuilder[String, Class[_]]
-    for(key <- value.keySet().iterator()) {
+    for(key <- value.keySet().iterator().asScala) {
       resultMap += ((key, value.get(key).getClass))
     }
     resultMap.result()

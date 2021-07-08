@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions, when}
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.scalatest.mock.MockitoSugar
 
@@ -146,29 +145,29 @@ class QueryCacheTest extends CypherFunSuite {
   }
 }
 
-  object QueryCacheTest extends MockitoSugar {
-    case class MyValue(key: String)(val recompiled: Boolean) extends CacheabilityInfo {
-      override def shouldBeCached: Boolean = true
+object QueryCacheTest extends MockitoSugar {
+  case class MyValue(key: String)(val recompiled: Boolean) extends CacheabilityInfo {
+    override def shouldBeCached: Boolean = true
 
-      override def notifications: Set[InternalNotification] = Set.empty
-    }
+    override def notifications: Set[InternalNotification] = Set.empty
+  }
 
-    private val RECOMPILE_LIMIT = 2
-    def recompile(key: Key): Int => Option[MyValue] = (count: Int) => {
-      if (count > RECOMPILE_LIMIT) Some(MyValue(key.first())(recompiled = true))
-      else None
-    }
+  private val RECOMPILE_LIMIT = 2
+  def recompile(key: Key): Int => Option[MyValue] = (count: Int) => {
+    if (count > RECOMPILE_LIMIT) Some(MyValue(key.queryRep)(recompiled = true))
+    else None
+  }
 
-    val TC: TransactionalContext = mock[TransactionalContext]
-    type Tracer = CacheTracer[Pair[String, ParameterTypeMap]]
-    type Key = Pair[String, Map[String, Class[_]]]
+  val TC: TransactionalContext = mock[TransactionalContext]
+  type Key = CacheKey[String]
+  type Tracer = CacheTracer[Key]
 
-    def compileKey(key: Key): () => MyValue = () => valueFromKey(key)
+  def compileKey(key: Key): () => MyValue = () => valueFromKey(key)
 
-    def newKey(string: String): Key = Pair.of(string, Map.empty[String, Class[_]])
+  def newKey(string: String): Key = CacheKey(string, Map.empty, txStateHasChanges = false)
 
-   def newCache(tracer: Tracer = newTracer(), stalenessCaller:PlanStalenessCaller[MyValue] = neverStale()): QueryCache[String, Pair[String, ParameterTypeMap], MyValue] = {
-    new QueryCache[String, Pair[String, ParameterTypeMap], MyValue](10, stalenessCaller, tracer)
+  def newCache(tracer: Tracer = newTracer(), stalenessCaller: PlanStalenessCaller[MyValue] = neverStale()): QueryCache[CacheKey[String], MyValue] = {
+    new QueryCache[CacheKey[String], MyValue](10, stalenessCaller, tracer)
   }
 
    def newTracer(): Tracer = mock[Tracer]
@@ -185,5 +184,5 @@ class QueryCacheTest extends CypherFunSuite {
     stalenessCaller
   }
 
-  private def valueFromKey(key: Key): MyValue = MyValue(key.first())(recompiled = false)
+  private def valueFromKey(key: Key): MyValue = MyValue(key.queryRep)(recompiled = false)
 }

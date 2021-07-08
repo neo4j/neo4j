@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.time.{Clock, Duration, Instant, ZoneOffset}
-
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.{MIN_NODES_ALL, MIN_NODES_WITH_LABEL}
@@ -33,11 +31,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.AssertableLogProvider.inLog
 import org.neo4j.logging.{AssertableLogProvider, Log, NullLog, NullLogProvider}
 
+import java.time.{Clock, Duration, Instant, ZoneOffset}
 import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -82,37 +80,28 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   }
 
-  case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0, recompiled: Int = 0) {
+  private case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0, recompiled: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
   }
 
-  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends CacheTracer[Pair[AnyRef, ParameterTypeMap]] {
-    override def queryCacheHit(key: Pair[AnyRef, ParameterTypeMap], metaData: String) {
+  private class CacheCounter extends CacheTracer[CacheKey[AnyRef]] {
+    var counts: CacheCounts = CacheCounts()
+    override def queryCacheHit(key: CacheKey[AnyRef], metaData: String): Unit =
       counts = counts.copy(hits = counts.hits + 1)
-    }
-
-    override def queryCacheMiss(key: Pair[AnyRef, ParameterTypeMap], metaData: String) {
+    override def queryCacheMiss(key: CacheKey[AnyRef], metaData: String): Unit =
       counts = counts.copy(misses = counts.misses + 1)
-    }
-
-    override def queryCacheFlush(sizeBeforeFlush: Long) {
+    override def queryCacheFlush(sizeBeforeFlush: Long): Unit =
       counts = counts.copy(flushes = counts.flushes + 1)
-    }
-
-    override def queryCacheStale(key: Pair[AnyRef, ParameterTypeMap], secondsSincePlan: Int, metaData: String): Unit = {
-      counts = counts.copy(evicted = counts.evicted + 1)
-    }
-
-    override def queryCacheRecompile(queryKey: Pair[AnyRef, ParameterTypeMap],
-                                     metaData: String): Unit = {
+    override def queryCacheRecompile(queryKey: CacheKey[AnyRef], metaData: String): Unit =
       counts = counts.copy(recompiled = counts.recompiled + 1)
-    }
+    override def queryCacheStale(key: CacheKey[AnyRef], secondsSincePlan: Int, metaData: String): Unit =
+      counts = counts.copy(evicted = counts.evicted + 1)
   }
 
   override def databaseConfig(): Map[Setting[_], Object] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
 
-  var counter: CacheCounter = _
-  var compiler: CypherCurrentCompiler[RuntimeContext] = _
+  private var counter: CacheCounter = _
+  private var compiler: CypherCurrentCompiler[RuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

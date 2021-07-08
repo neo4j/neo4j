@@ -31,11 +31,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.cypher.internal.QueryCache.CacheKey;
 import org.neo4j.cypher.internal.planning.CypherCacheHitMonitor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
@@ -194,7 +194,7 @@ public class QueryInvalidationIT
         return ThreadLocalRandom.current().nextInt( max );
     }
 
-    private static class TestMonitor implements CypherCacheHitMonitor<Pair<String,scala.collection.immutable.Map<String, Class<?>>>>
+    private static class TestMonitor implements CypherCacheHitMonitor<CacheKey<String>>
     {
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
@@ -203,26 +203,26 @@ public class QueryInvalidationIT
         private final AtomicLong waitTime = new AtomicLong();
 
         @Override
-        public void cacheHit( Pair<String,scala.collection.immutable.Map<String, Class<?>>> key )
+        public void cacheHit( CacheKey<String> key )
         {
             hits.incrementAndGet();
         }
 
         @Override
-        public void cacheMiss( Pair<String,scala.collection.immutable.Map<String, Class<?>>> key )
+        public void cacheMiss( CacheKey<String> key )
         {
             misses.incrementAndGet();
         }
 
         @Override
-        public void cacheDiscard( Pair<String,scala.collection.immutable.Map<String, Class<?>>> key, String ignored, int secondsSinceReplan )
+        public void cacheDiscard( CacheKey<String> key, String ignored, int secondsSinceReplan )
         {
             discards.incrementAndGet();
             waitTime.addAndGet( secondsSinceReplan );
         }
 
         @Override
-        public void cacheRecompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        public void cacheRecompile( CacheKey<String> key )
         {
             recompilations.incrementAndGet();
         }

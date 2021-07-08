@@ -19,36 +19,37 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.time.Clock
-import java.util.function.BiFunction
-
-import org.neo4j.cypher._
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.Assertion.assertionsEnabled
+import org.neo4j.cypher.internal.QueryCache.{CacheKey, ParameterTypeMap}
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext, PlannerContextCreator}
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
-import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan, ProcedureCall, ResolvedCall, _}
 import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
-import org.neo4j.cypher.internal.runtime.interpreted._
+import org.neo4j.cypher.internal.runtime.interpreted.{TransactionalContextWrapper, ValueConversion}
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
-import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{InternalNotificationLogger, _}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.{newPlain, newValidating}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalNotification}
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalNotification}
 import org.neo4j.cypher.internal.{compiler, _}
+import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
 import org.neo4j.exceptions.{DatabaseAdministrationException, Neo4jException, SyntaxException}
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
 import org.neo4j.monitoring
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
+
+import java.time.Clock
+import java.util.function.BiFunction
 
 object CypherPlanner {
   /**
@@ -81,7 +82,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
 
-  private val cacheTracer: CacheTracer[Pair[Statement, ParameterTypeMap]] = monitors.newMonitor[CacheTracer[Pair[Statement, ParameterTypeMap]]]("cypher")
+  private val cacheTracer: CacheTracer[CacheKey[Statement]] = monitors.newMonitor[CacheTracer[CacheKey[Statement]]]("cypher")
 
   private val planCache: AstLogicalPlanCache[Statement] =
     new AstLogicalPlanCache(config.queryCacheSize,
@@ -100,8 +101,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
   }
 
   private val rewriterSequencer: String => RewriterStepSequencer = {
-    import Assertion._
-    import RewriterStepSequencer._
 
     if (assertionsEnabled()) newValidating else newPlain
   }
@@ -298,7 +297,12 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val cacheableLogicalPlan =
     // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
       if (options.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
-        planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
+        val cacheKey = CacheKey(
+          syntacticQuery.statement(),
+          QueryCache.extractParameterTypeMap(filteredParams),
+          transactionalContext.kernelTransaction().dataRead().transactionStateHasChanges()
+        )
+        planCache.computeIfAbsentOrStale(cacheKey,
           transactionalContext,
           () => createPlan(shouldBeCached = true),
           _ => None,

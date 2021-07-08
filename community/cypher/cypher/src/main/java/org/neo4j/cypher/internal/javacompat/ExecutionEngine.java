@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
 import org.neo4j.cypher.internal.CypherConfiguration;
@@ -33,13 +32,9 @@ import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
-import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.exceptions.Neo4jException;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -92,7 +87,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         DependencyResolver resolver = queryService.getDependencyResolver();
         Monitors monitors = resolver.resolveDependency( Monitors.class );
-        CacheTracer cacheTracer = new MonitoringCacheTracer( monitors.newMonitor( StringCacheMonitor.class ) );
+        MonitoringCacheTracer cacheTracer = new MonitoringCacheTracer( monitors.newMonitor( StringCacheMonitor.class ) );
         Config config = resolver.resolveDependency( Config.class );
         CypherConfiguration cypherConfiguration = CypherConfiguration.fromConfig( config );
         CompilationTracer tracer =
