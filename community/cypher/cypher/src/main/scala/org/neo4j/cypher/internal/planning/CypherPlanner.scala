@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.time.Clock
-
 import org.neo4j.cypher.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherUpdateStrategy
@@ -37,6 +35,7 @@ import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.PlanFingerprintReference
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryCache
+import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ReusabilityState
@@ -98,7 +97,6 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
-import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -107,6 +105,7 @@ import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 
+import java.time.Clock
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -143,7 +142,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
 
-  private val cacheTracer: CacheTracer[Pair[Statement, ParameterTypeMap]] = monitors.newMonitor[CacheTracer[Pair[Statement, ParameterTypeMap]]]("cypher")
+  private val cacheTracer: CacheTracer[CacheKey[Statement]] = monitors.newMonitor[CacheTracer[CacheKey[Statement]]]("cypher")
 
   private val planCache: AstLogicalPlanCache[Statement] =
     new AstLogicalPlanCache(cacheFactory,
@@ -332,7 +331,13 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val cacheableLogicalPlan =
     // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
       if (options.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
-        planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
+        val cacheKey = CacheKey(
+          syntacticQuery.statement(),
+          QueryCache.extractParameterTypeMap(filteredParams),
+          transactionalContext.kernelTransaction().dataRead().transactionStateHasChanges()
+        )
+
+        planCache.computeIfAbsentOrStale(cacheKey,
           transactionalContext,
           compilerWithExpressionCodeGenOption,
           options.replan,
