@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, symbols => t
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.{InternalIndexState, procs}
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.{ConstraintDescriptor, IndexLimitation, IndexOrder, IndexType, IndexValueCapability, SchemaDescriptor}
+import org.neo4j.internal.schema.{ConstraintDescriptor, IndexOrder, IndexType, IndexValueCapability, SchemaDescriptor}
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.values.storable.ValueCategory
 
@@ -221,4 +221,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
 
   override def notificationLogger(): InternalNotificationLogger = logger
+
+  override def txStateHasChanges(): Boolean = tc.kernelTransaction.dataRead().transactionStateHasChanges()
 }

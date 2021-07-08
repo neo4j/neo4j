@@ -66,12 +66,17 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       case predicate@HasLabels(expr@Variable(name), labels) if !qg.argumentIds.contains(name) =>
         val label = labels.head
         val labelName = label.name
-        val constrainedProps = context.planContext.getPropertiesWithExistenceConstraint(labelName)
+
+        val constrainedProps =
+          if (context.indexCompatiblePredicatesProviderContext.outerPlanHasUpdates || context.planContext.txStateHasChanges()) // non-committed changes may not conform to the existence constraint, so we cannot rely on it
+            Set.empty[String]
+          else
+            context.planContext.getPropertiesWithExistenceConstraint(labelName)
 
         // Can't currently handle aggregation on more than one variable
         val aggregatedProps: Set[String] =
-          if (context.aggregatingProperties.forall(prop => prop._1.equals(name)))
-            context.aggregatingProperties.map { prop => prop._2 }
+          if (context.indexCompatiblePredicatesProviderContext.aggregatingProperties.forall(prop => prop._1.equals(name)))
+            context.indexCompatiblePredicatesProviderContext.aggregatingProperties.map { prop => prop._2 }
           else Set.empty
 
         // Can't currently handle aggregation on more than one property
@@ -185,4 +190,17 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     val predicates = Seq(predicate, labelPredicate)
     planProducer(variableName, labelToken, Seq(indexProperty), predicates, hint, qg.argumentIds, providedOrder)
   }
+}
+
+/**
+ * @param aggregatingProperties A set of all properties over which aggregation is performed,
+ *                              where we potentially could use an IndexScan.
+ *                              E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
+ * @param outerPlanHasUpdates   A flag indicating whether we have planned updates earlier in the query
+ */
+final case class IndexCompatiblePredicatesProviderContext(aggregatingProperties: Set[(String, String)], outerPlanHasUpdates: Boolean)
+
+object IndexCompatiblePredicatesProviderContext {
+  val default: IndexCompatiblePredicatesProviderContext =
+    IndexCompatiblePredicatesProviderContext(aggregatingProperties = Set.empty, outerPlanHasUpdates = false)
 }

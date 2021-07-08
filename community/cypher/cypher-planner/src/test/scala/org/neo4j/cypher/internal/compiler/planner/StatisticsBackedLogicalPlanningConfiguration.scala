@@ -19,35 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
-import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
+import org.neo4j.cypher.internal.compiler.helpers.{LogicalPlanBuilder, LogicalPlanResolver}
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
-import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.{ExpressionEvaluator, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.logical.plans.CanGetValue
-import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.logical.plans.QualifiedName
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
-import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
-import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.{Neo4jCypherExceptionFactory, NotImplementedPlanContext}
+import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
+import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InitialState
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.LabelId
-import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
-import org.neo4j.cypher.internal.v4_0.util.RelTypeId
-import org.neo4j.cypher.internal.v4_0.util.Selectivity
+import org.neo4j.cypher.internal.v4_0.util._
 import org.scalatest.mockito.MockitoSugar
 
 import scala.collection.mutable
@@ -59,6 +41,7 @@ trait StatisticsBackedLogicalPlanningSupport {
 object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
     debug: Set[String] = Set(),
+    txStateHasChanges: Boolean = false,
   )
 }
 
@@ -146,6 +129,12 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
     this
   }
 
+  def addNodeExistenceConstraint(label: String, property: String): this.type = {
+    addLabel(label)
+    indexes.existenceOrNodeKeyConstraintOn(label, Set(property))
+    this
+  }
+
   def addProcedure(signature: ProcedureSignature): this.type = {
     indexes.procedure(signature)
     this
@@ -195,6 +184,11 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
   }
 
   def enablePrintCostComparisons(enable: Boolean = true): this.type = enableDebugOption("printCostComparisons", enable)
+
+  def setTxStateHasChanges(hasChanges: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    options = options.copy(txStateHasChanges = hasChanges)
+    this
+  }
 
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
@@ -293,6 +287,8 @@ class StatisticsBackedLogicalPlanningConfigurationBuilder() {
       override def getOptRelTypeId(relType: String): Option[Int] =
         tokens.getOptRelTypeId(relType)
 
+      override def txStateHasChanges(): Boolean = options.txStateHasChanges
+
       private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType): IndexDescriptor = {
         // Our fake index either can always or never return property values
         val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
@@ -344,5 +340,6 @@ class StatisticsBackedLogicalPlanningConfiguration(
     LogicalPlanningTestSupport2.pipeLine().transform(state, context).logicalPlan
   }
 
-  def planBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(resolver)
+  def planBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = true, resolver =  resolver)
+  def subPlanBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = false, resolver = resolver)
 }

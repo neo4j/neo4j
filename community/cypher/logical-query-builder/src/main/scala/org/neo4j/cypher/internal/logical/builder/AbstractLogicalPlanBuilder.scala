@@ -19,22 +19,14 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
+import org.neo4j.cypher.internal.ir.{CreateNode, SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{Predicate, pos}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
-import org.neo4j.cypher.internal.v4_0.util.LabelId
-import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
-import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId, SequentialIdGen}
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, LabelId, PropertyKeyId}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -683,4 +675,7 @@ object AbstractLogicalPlanBuilder {
 
   def createNode(node: String, labels: String*): CreateNode =
     CreateNode(node, labels.map(LabelName(_)(pos)), None)
+
+  def createNodeWithProperties(node: String, labels: Seq[String], properties: String): CreateNode =
+    CreateNode(node, labels.map(LabelName(_)(pos)), Some(Parser.parseExpression(properties)))
 }

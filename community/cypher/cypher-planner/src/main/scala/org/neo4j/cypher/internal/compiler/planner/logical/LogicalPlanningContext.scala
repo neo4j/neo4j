@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{CostComparisonListener, LogicalPlanProducer}
-import org.neo4j.cypher.internal.ir.StrictnessMode
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.{CostComparisonListener, IndexCompatiblePredicatesProviderContext, LogicalPlanProducer}
+import org.neo4j.cypher.internal.ir.{SinglePlannerQuery, StrictnessMode}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
@@ -49,18 +49,13 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   costComparisonListener: CostComparisonListener,
                                   planningAttributes: PlanningAttributes,
                                   innerVariableNamer: InnerVariableNamer,
-                                  /*
-                                   * A set of all properties over which aggregation is performed,
-                                   * where we potentially could use a NodeIndexScan.
-                                   * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(("n", "prop1"), ("m", "prop2"))
-                                   */
-                                  aggregatingProperties: Set[(String, String)] = Set.empty,
+                                  indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext = IndexCompatiblePredicatesProviderContext.default,
                                   idGen: IdGen) {
   def withStrictness(strictness: StrictnessMode): LogicalPlanningContext =
     copy(input = input.withPreferredStrictness(strictness))
 
   def withAggregationProperties(properties: Set[(String, String)]): LogicalPlanningContext =
-    copy(aggregatingProperties = properties)
+    copy(indexCompatiblePredicatesProviderContext = indexCompatiblePredicatesProviderContext.copy(aggregatingProperties = properties))
 
   def withUpdatedCardinalityInformation(plan: LogicalPlan): LogicalPlanningContext =
     copy(input = input.recurse(plan, planningAttributes.solveds, planningAttributes.cardinalities))
@@ -90,6 +85,11 @@ case class LogicalPlanningContext(planContext: PlanContext,
   def cost: CostModel = metrics.cost
 
   def cardinality: CardinalityModel = metrics.cardinality
+
+  def withLastSolvedQueryPart(queryPart: SinglePlannerQuery): LogicalPlanningContext = {
+    val hasUpdates = indexCompatiblePredicatesProviderContext.outerPlanHasUpdates || !queryPart.readOnlySelf
+    copy(indexCompatiblePredicatesProviderContext = indexCompatiblePredicatesProviderContext.copy(outerPlanHasUpdates = hasUpdates))
+  }
 }
 
 object NodeIdName {

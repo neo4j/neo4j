@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher._
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.{LogicalPlanningIntegrationTestSupport, LogicalPlanningTestSupport2}
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.{createNode, createNodeWithProperties}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport {
 
   override val pushdownPropertyReads: Boolean = false
 
@@ -215,4 +216,134 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     }
   }
 
+  test("should not plan node index scan with existence constraint if query has updates before the match") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val query =
+      """CREATE (a:Label)
+        |WITH count(*) AS c
+        |MATCH (n:Label)
+        |WHERE n.prop IS NULL
+        |SET n.prop = 123""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .setNodeProperty("n", "prop", "123")
+      .eager()
+      .filter("n.prop IS NULL")
+      .apply()
+      .|.nodeByLabelScan("n", "Label", "c")
+      .aggregation(Seq(), Seq("count(*) AS c"))
+      .create(createNode("a", "Label"))
+      .argument()
+      .build()
+  }
+
+  test("should not plan node index scan with existence constraint if query has updates before the match in a subquery") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val query =
+      """CREATE (a:Label)
+        |WITH count(*) AS c
+        |CALL {
+        |  WITH 1 AS x
+        |  WITH x LIMIT 1
+        |  MATCH (n:Label)
+        |  WHERE n.prop IS NULL
+        |  SET n.prop = x
+        |  RETURN n
+        |}
+        |RETURN *""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .cartesianProduct()
+      .|.setNodeProperty("n", "prop", "x")
+      .|.eager()
+      .|.filter("n.prop IS NULL")
+      .|.apply()
+      .|.|.nodeByLabelScan("n", "Label", "x")
+      .|.limit(1)
+      .|.projection("1 AS x")
+      .|.argument()
+      .aggregation(Seq(), Seq("count(*) AS c"))
+      .create(createNode("a", "Label"))
+      .argument()
+      .build()
+  }
+
+  test("should not plan node index scan with existence constraint if transaction state has changes") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .setTxStateHasChanges()
+      .build()
+
+    val query =
+      """MATCH (n:Label)
+        |WHERE n.prop IS NULL
+        |SET n.prop = 123""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .setNodeProperty("n", "prop", "123")
+      .eager()
+      .filter("n.prop IS NULL")
+      .nodeByLabelScan("n", "Label")
+      .build()
+  }
+
+  test("should plan node index scan with existence constraint if query has updates after the match") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addIndex("Label", Seq("prop"), 1.0, 1.0, withValues = true)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val query =
+      """MATCH (n:Label)
+        |CREATE (a:Label {prop: n.prop * 2})""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .create(createNodeWithProperties("a", Seq("Label"), "{prop: cache[n.prop] * 2}"))
+      .nodeIndexOperator("n:Label(prop)", getValue = GetValue)
+      .build()
+  }
+
+  test("should plan node index scan with existence constraint for aggregation if transaction state has changes") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .setTxStateHasChanges()
+      .build()
+
+    val query =
+      """MATCH (n:Label)
+        |RETURN sum(n.prop) AS result""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .aggregation(Seq.empty, Seq("sum(n.prop) AS result"))
+      .nodeIndexOperator("n:Label(prop)")
+      .build()
+  }
 }

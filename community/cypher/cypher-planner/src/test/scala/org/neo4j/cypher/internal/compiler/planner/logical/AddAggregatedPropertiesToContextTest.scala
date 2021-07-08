@@ -118,12 +118,12 @@ class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPl
   }
 
   private def assertContextNotUpdated(newContext: LogicalPlanningContext): Unit = {
-    newContext.aggregatingProperties should be(empty)
+    newContext.indexCompatiblePredicatesProviderContext.aggregatingProperties should be(empty)
     newContext should equal(context)
   }
 
   private def assertContextUpdated(newContext: LogicalPlanningContext, expected: Set[(String, String)]): Unit = {
-    newContext.aggregatingProperties should equal(expected)
+    newContext.indexCompatiblePredicatesProviderContext.aggregatingProperties should equal(expected)
     newContext should not equal context
   }
 }

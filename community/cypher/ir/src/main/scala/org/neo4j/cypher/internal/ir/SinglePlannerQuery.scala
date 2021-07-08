@@ -55,7 +55,8 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
   def dependencies: Set[String]
 
-  override def readOnly: Boolean = (queryGraph.readOnly && horizon.readOnly) && tail.forall(_.readOnly)
+  def readOnlySelf: Boolean = queryGraph.readOnly && horizon.readOnly
+  override def readOnly: Boolean = readOnlySelf && tail.forall(_.readOnly)
 
   def preferredStrictness: Option[StrictnessMode] =
     horizon.preferredStrictness(interestingOrder.requiredOrderCandidate.nonEmpty) orElse tail.flatMap(_.preferredStrictness)
@@ -229,7 +230,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 }
 
 object SinglePlannerQuery {
-  val empty = RegularSinglePlannerQuery()
+  val empty: RegularSinglePlannerQuery = RegularSinglePlannerQuery()
 
   def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]): Set[String] = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)

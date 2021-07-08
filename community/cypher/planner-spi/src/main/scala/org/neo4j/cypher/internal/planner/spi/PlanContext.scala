@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building
@@ -65,6 +65,11 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def statistics: InstrumentedGraphStatistics
 
   def notificationLogger(): InternalNotificationLogger
+
+  /**
+   * Checks if there are uncommitted changes in the transaction state.
+   */
+  def txStateHasChanges(): Boolean
 }
 
 trait ProcedureSignatureResolver {
