@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.ast.factory.ActionType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
+import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 
 /** Simple brace matcher. */
 public class Cypher<STATEMENT,
@@ -2825,52 +2826,52 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
 {
     start=<SHOW>
     (
-        showCommandType=<ALL> statement=ShowAllCommand( start, useClause, showCommandType.image )
+        showCommandType=<ALL> statement=ShowAllCommand( start, useClause )
         | <POPULATED> statement=ShowRoles( start, useClause, false )
-        | showCommandType=<BTREE> statement = ShowIndexesAllowBrief( start, useClause, showCommandType.image )
-        | showCommandType=<FULLTEXT> statement = ShowIndexesNoBrief( start, useClause, showCommandType.image )
-        | showCommandType=<LOOKUP> statement = ShowIndexesNoBrief( start, useClause, showCommandType.image )
-        | showCommandType=<UNIQUE> statement = ShowConstraintsAllowBriefAndYield( start, useClause, showCommandType.image )
-        | showCommandType=<NODE> statement = ShowNodeCommand( start, useClause, showCommandType.image )
-        | showCommandType=<PROPERTY> statement = ShowPropertyCommand( start, useClause, showCommandType.image )
-        | showCommandType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, showCommandType.image )
-        | showCommandType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, showCommandType.image )
-        | showCommandType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, showCommandType.image )
-        | showCommandType=<RELATIONSHIP> statement=ShowRelationshipCommand( start, useClause, showCommandType.image )
-        | showCommandType=<REL> statement=ShowRelCommand( start, useClause, showCommandType.image )
-        | showCommandType=<BUILT> <IN> statement=ShowFunctions( start, useClause, showCommandType.image )
-        | showCommandType=<USER> <DEFINED> statement=ShowFunctions( start, useClause, showCommandType.image )
+        | showCommandType=<BTREE> statement = ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.BTREE )
+        | showCommandType=<FULLTEXT> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.FULLTEXT )
+        | showCommandType=<LOOKUP> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.LOOKUP )
+        | showCommandType=<UNIQUE> statement = ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.UNIQUE )
+        | showCommandType=<NODE> statement = ShowNodeCommand( start, useClause )
+        | showCommandType=<PROPERTY> statement = ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.EXIST )
+        | showCommandType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.EXIST )
+        | showCommandType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.OLD_EXISTS )
+        | showCommandType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.OLD_EXIST )
+        | showCommandType=<RELATIONSHIP> statement=ShowRelationshipCommand( start, useClause )
+        | showCommandType=<REL> statement=ShowRelCommand( start, useClause )
+        | showCommandType=<BUILT> <IN> statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.BUILT_IN )
+        | showCommandType=<USER> <DEFINED> statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.USER_DEFINED )
         | statement=ShowRoles( start, useClause, true )
-        | statement=ShowIndexesAllowBrief( start, useClause, "ALL" ) // <ALL>.image
+        | statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowDatabase( start, useClause )
         | statement=ShowUsers( start, useClause )
         | statement=ShowCurrentUser( start, useClause )
-        | statement=ShowConstraintsAllowBriefAndYield( start, useClause, "ALL" ) // <ALL>.image
+        | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowProcedures( start, useClause )
-        | statement=ShowFunctions( start, useClause, "ALL" ) // <ALL>.image
+        | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
     )
     {
         return statement;
     }
 }
 
-STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause, String showCommandType ) :
+STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) :
 {
     STATEMENT statement = null;
 }
 {
     (
         statement = ShowRoles( start, useClause, true )
-        | statement = ShowIndexesAllowBrief( start, useClause, showCommandType )
-        | statement = ShowConstraintsAllowBriefAndYield( start, useClause, showCommandType )
-        | statement = ShowFunctions( start, useClause, showCommandType )
+        | statement = ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.ALL )
+        | statement = ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
+        | statement = ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
     )
     {
         return statement;
     }
 }
 
-STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause, String initialConstraintType ) :
+STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause ) :
 {
     Token constraintType = null;
     STATEMENT statement = null;
@@ -2878,50 +2879,50 @@ STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause, String initialCons
 {
     // Needs to add <NODE> to the type
     (
-        constraintType=<KEY> statement = ShowConstraintsAllowBriefAndYield( start, useClause, initialConstraintType + " " + constraintType )
-        | constraintType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, initialConstraintType + " " + constraintType )
-        | constraintType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, initialConstraintType + " " + constraintType )
-        | constraintType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, initialConstraintType + " " + constraintType )
-        | constraintType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, initialConstraintType + " " + constraintType )
+        constraintType=<KEY> statement = ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.NODE_KEY )
+        | constraintType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.NODE_EXIST )
+        | constraintType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.NODE_EXIST )
+        | constraintType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.NODE_OLD_EXISTS )
+        | constraintType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.NODE_OLD_EXIST )
     )
     {
         return statement;
     }
 }
 
-STATEMENT ShowRelationshipCommand( Token start, USE_CLAUSE useClause, String initialConstraintType ) :
+STATEMENT ShowRelationshipCommand( Token start, USE_CLAUSE useClause ) :
 {
     Token constraintType = null;
     STATEMENT statement = null;
 }
 {
     (
-        constraintType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, initialConstraintType + " " + constraintType )
-        | constraintType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, initialConstraintType + " " + constraintType )
-        | constraintType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, initialConstraintType + " " + constraintType )
-        | constraintType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, initialConstraintType + " " + constraintType )
+        constraintType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | constraintType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | constraintType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS )
+        | constraintType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST )
     )
     {
         return statement;
     }
 }
 
-STATEMENT ShowRelCommand( Token start, USE_CLAUSE useClause, String constraintType ) :
+STATEMENT ShowRelCommand( Token start, USE_CLAUSE useClause ) :
 {
     STATEMENT statement = null;
 }
 {
     (
-        <PROPERTY> statement=ShowPropertyCommand( start, useClause, constraintType )
-        | <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, constraintType )
-        | <EXIST> statement=ShowConstraintsAllowYield( start, useClause, constraintType )
+        <PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | <EXIST> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
     )
     {
         return statement;
     }
 }
 
-STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, String constraintType ) :
+STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) :
 {
     STATEMENT statement = null;
 }
@@ -2955,7 +2956,7 @@ YIELD YieldClause():
     }
 }
 
-STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, String indexType ):
+STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes indexType ):
 {
     // all and btree indexes
     List<CLAUSE> clauses = new ArrayList<>();
@@ -2994,7 +2995,7 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, String index
     }
 }
 
-STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String indexType):
+STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, ShowCommandFilterTypes indexType):
 {
   // fulltext and lookup indexes
   List<CLAUSE> clauses = new ArrayList<>();
@@ -3026,7 +3027,7 @@ STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String indexType
     }
 }
 
-STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, String constraintType ):
+STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ):
 {
     // all, node key, uniqueness and old valid existence constraints
     List<CLAUSE> clauses = new ArrayList<>();
@@ -3065,7 +3066,7 @@ STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, 
     }
 }
 
-STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, String constraintType ):
+STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ):
 {
     // old deprecated existence constraints
     List<CLAUSE> clauses = new ArrayList<>();
@@ -3085,7 +3086,7 @@ STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, String c
     }
 }
 
-STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, String constraintType ):
+STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ):
 {
     // new existence constraints
     List<CLAUSE> clauses = new ArrayList<>();
@@ -3166,7 +3167,7 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
     }
 }
 
-STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, String functionType ):
+STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes functionType ):
 {
     List<CLAUSE> clauses = new ArrayList<>();
     if (useClause != null)

@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ast.factory.ActionType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
+import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
@@ -330,13 +331,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL showIndexClause( NULL p, String indexType, boolean brief, boolean verbose, Object where, boolean hasYield )
+    public NULL showIndexClause( NULL p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, Object where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showIndexClause is not a literal" );
     }
 
     @Override
-    public NULL showConstraintClause( NULL p, String constraintType, boolean brief, boolean verbose, Object where, boolean hasYield )
+    public NULL showConstraintClause( NULL p, ShowCommandFilterTypes constraintType, boolean brief, boolean verbose, Object where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showConstraintClause is not a literal" );
     }
@@ -348,7 +349,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL showFunctionClause( NULL p, String functionType, boolean currentUser, String user, Object where, boolean hasYield )
+    public NULL showFunctionClause( NULL p, ShowCommandFilterTypes functionType, boolean currentUser, String user, Object where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showFunctionClause is not a literal" );
     }

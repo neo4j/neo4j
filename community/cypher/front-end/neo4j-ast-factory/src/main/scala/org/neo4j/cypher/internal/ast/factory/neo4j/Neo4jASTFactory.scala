@@ -252,6 +252,7 @@ import org.neo4j.cypher.internal.ast.factory.ActionType
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.ScopeType
+import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -1000,39 +1001,41 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   }
 
   override def showIndexClause(p: InputPosition,
-                               indexTypeString: String,
+                               initialIndexType: ShowCommandFilterTypes,
                                brief: Boolean,
                                verbose: Boolean,
                                where: Expression,
                                hasYield: Boolean): Clause = {
-    val indexType = indexTypeString.toUpperCase match {
-      case "ALL" => AllIndexes
-      case "BTREE" => BtreeIndexes
-      case "FULLTEXT" => FulltextIndexes
-      case "LOOKUP" => LookupIndexes
+    val indexType = initialIndexType match {
+      case ShowCommandFilterTypes.ALL => AllIndexes
+      case ShowCommandFilterTypes.BTREE => BtreeIndexes
+      case ShowCommandFilterTypes.FULLTEXT => FulltextIndexes
+      case ShowCommandFilterTypes.LOOKUP => LookupIndexes
+      case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("indexes", t))
     }
     ShowIndexesClause(indexType, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
   }
 
   override def showConstraintClause(p: InputPosition,
-                                    constraintTypeString: String,
+                                    initialConstraintType: ShowCommandFilterTypes,
                                     brief: Boolean,
                                     verbose: Boolean,
                                     where: Expression,
                                     hasYield: Boolean): Clause = {
-    val constraintType: ShowConstraintType = constraintTypeString.toUpperCase match {
-      case "ALL" => AllConstraints
-      case "UNIQUE" => UniqueConstraints
-      case "NODE KEY" => NodeKeyConstraints
-      case "PROPERTY" | "EXISTENCE" => ExistsConstraints(NewSyntax)
-      case "EXISTS" => ExistsConstraints(DeprecatedSyntax)
-      case "EXIST" => ExistsConstraints(OldValidSyntax)
-      case "NODE PROPERTY" | "NODE EXISTENCE" => NodeExistsConstraints(NewSyntax)
-      case "NODE EXISTS" => NodeExistsConstraints(DeprecatedSyntax)
-      case "NODE EXIST" => NodeExistsConstraints(OldValidSyntax)
-      case "RELATIONSHIP PROPERTY" | "RELATIONSHIP EXISTENCE" | "REL" => RelExistsConstraints(NewSyntax)
-      case "RELATIONSHIP EXISTS" => RelExistsConstraints(DeprecatedSyntax)
-      case "RELATIONSHIP EXIST" => RelExistsConstraints(OldValidSyntax)
+    val constraintType: ShowConstraintType = initialConstraintType match {
+      case ShowCommandFilterTypes.ALL => AllConstraints
+      case ShowCommandFilterTypes.UNIQUE => UniqueConstraints
+      case ShowCommandFilterTypes.NODE_KEY => NodeKeyConstraints
+      case ShowCommandFilterTypes.EXIST  => ExistsConstraints(NewSyntax)
+      case ShowCommandFilterTypes.OLD_EXISTS => ExistsConstraints(DeprecatedSyntax)
+      case ShowCommandFilterTypes.OLD_EXIST => ExistsConstraints(OldValidSyntax)
+      case ShowCommandFilterTypes.NODE_EXIST => NodeExistsConstraints(NewSyntax)
+      case ShowCommandFilterTypes.NODE_OLD_EXISTS => NodeExistsConstraints(DeprecatedSyntax)
+      case ShowCommandFilterTypes.NODE_OLD_EXIST => NodeExistsConstraints(OldValidSyntax)
+      case ShowCommandFilterTypes.RELATIONSHIP_EXIST => RelExistsConstraints(NewSyntax)
+      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS => RelExistsConstraints(DeprecatedSyntax)
+      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST => RelExistsConstraints(OldValidSyntax)
+      case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("constraints", t))
     }
     ShowConstraintsClause(constraintType, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
   }
@@ -1048,15 +1051,16 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   }
 
   override def showFunctionClause(p: InputPosition,
-                                  functionTypeString: String,
+                                  initialFunctionType: ShowCommandFilterTypes,
                                   currentUser: Boolean,
                                   user: String,
                                   where: Expression,
                                   hasYield: Boolean): Clause = {
-    val functionType = functionTypeString.toUpperCase match {
-      case "ALL"   => AllFunctions
-      case "BUILT" => BuiltInFunctions
-      case "USER"  => UserDefinedFunctions
+    val functionType = initialFunctionType match {
+      case ShowCommandFilterTypes.ALL   => AllFunctions
+      case ShowCommandFilterTypes.BUILT_IN => BuiltInFunctions
+      case ShowCommandFilterTypes.USER_DEFINED  => UserDefinedFunctions
+      case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("functions", t))
     }
 
     // either we have 'EXECUTABLE BY user', 'EXECUTABLE [BY CURRENT USER]' or nothing

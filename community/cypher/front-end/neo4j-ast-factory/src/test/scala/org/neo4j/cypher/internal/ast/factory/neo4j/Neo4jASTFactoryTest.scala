@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
+import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class Neo4jASTFactoryTest extends CypherFunSuite {
@@ -47,5 +48,9 @@ class Neo4jASTFactoryTest extends CypherFunSuite {
 
   test("constraintTypeNotAllowed") {
     ASTExceptionFactory.constraintTypeNotAllowed(ConstraintType.NODE_EXISTS, ConstraintType.UNIQUE) shouldBe "Invalid input 'EXISTS': conflicting with 'IS UNIQUE'"
+  }
+
+  test("invalidShowFilterType") {
+    ASTExceptionFactory.invalidShowFilterType("indexes", ShowCommandFilterTypes.INVALID) shouldBe "Filter type INVALID is not defined for show indexes command."
   }
 }
