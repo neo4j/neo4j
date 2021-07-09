@@ -19,7 +19,6 @@
  */
 package org.neo4j.security;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;

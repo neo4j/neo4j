@@ -21,7 +21,6 @@ package org.neo4j.server.security.systemgraph.versions;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
-import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 
 import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_43D4;
