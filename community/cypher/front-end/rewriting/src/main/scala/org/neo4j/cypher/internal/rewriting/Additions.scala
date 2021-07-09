@@ -16,10 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
@@ -27,36 +25,16 @@ import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
-import org.neo4j.cypher.internal.ast.CreateUser
-import org.neo4j.cypher.internal.ast.DatabasePrivilege
-import org.neo4j.cypher.internal.ast.DbmsPrivilege
-import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
-import org.neo4j.cypher.internal.ast.ExistsConstraints
-import org.neo4j.cypher.internal.ast.FulltextIndexes
-import org.neo4j.cypher.internal.ast.GrantPrivilege
-import org.neo4j.cypher.internal.ast.GraphPrivilege
-import org.neo4j.cypher.internal.ast.HomeDatabaseScope
-import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
-import org.neo4j.cypher.internal.ast.LookupIndexes
-import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NoOptions
-import org.neo4j.cypher.internal.ast.NodeExistsConstraints
-import org.neo4j.cypher.internal.ast.OptionsMap
-import org.neo4j.cypher.internal.ast.OptionsParam
-import org.neo4j.cypher.internal.ast.RelExistsConstraints
-import org.neo4j.cypher.internal.ast.RenameRole
-import org.neo4j.cypher.internal.ast.RenameUser
-import org.neo4j.cypher.internal.ast.RevokePrivilege
-import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
-import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UniquePropertyConstraintCommand
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
@@ -178,7 +156,7 @@ object Additions {
 
     override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
 
-      case c: CreateUniquePropertyConstraint if c.properties.size > 1 =>
+      case c: UniquePropertyConstraintCommand if c.properties.size > 1 =>
         throw cypherExceptionFactory.syntaxException("Multi-property uniqueness constraints are not supported in this Cypher version.", c.position)
 
     }
