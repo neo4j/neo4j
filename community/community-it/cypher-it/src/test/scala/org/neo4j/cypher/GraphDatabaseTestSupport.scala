@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.nio.file.Files
-import java.nio.file.Path
-
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -56,6 +53,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
+import java.nio.file.Files
+import java.nio.file.Path
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
@@ -225,7 +224,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def createLabeledNode(props: Map[String, Any], labels: String*): Node = {
     inTestTx( tx => {
-      val n = tx.createNode();
+      val n = tx.createNode()
       labels.foreach {
         name => n.addLabel(Label.label(name))
       }
