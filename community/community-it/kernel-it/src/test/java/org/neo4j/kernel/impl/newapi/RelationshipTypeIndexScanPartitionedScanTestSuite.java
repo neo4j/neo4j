@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipType;
@@ -140,7 +139,7 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
 
                 tx.commit();
             }
-            catch ( KernelException e )
+            catch ( Exception e )
             {
                 throw new AssertionError( "failed to create database", e );
             }
@@ -149,7 +148,7 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
             assertThat( relsWithRelTypeId.queries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
 
             var numberOfCreatedRels = 0;
-            for ( var entry : relsWithRelTypeId )
+            for ( final var entry : relsWithRelTypeId )
             {
                 numberOfCreatedRels += entry.getValue().size();
             }

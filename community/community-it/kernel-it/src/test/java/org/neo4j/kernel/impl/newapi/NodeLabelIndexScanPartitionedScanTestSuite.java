@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Nested;
 import java.util.List;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.Label;
@@ -100,7 +99,7 @@ class NodeLabelIndexScanPartitionedScanTestSuite
 
                 tx.commit();
             }
-            catch ( KernelException e )
+            catch ( Exception e )
             {
                 throw new AssertionError( "failed to create database", e );
             }
@@ -109,7 +108,7 @@ class NodeLabelIndexScanPartitionedScanTestSuite
             assertThat( nodesWithLabelId.queries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
 
             var numberOfCreatedNodes = 0;
-            for ( var entry : nodesWithLabelId )
+            for ( final var entry : nodesWithLabelId )
             {
                 numberOfCreatedNodes += entry.getValue().size();
             }

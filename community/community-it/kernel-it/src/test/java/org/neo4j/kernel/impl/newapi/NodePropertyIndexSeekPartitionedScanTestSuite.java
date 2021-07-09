@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Nested;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.Label;
@@ -138,7 +137,7 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
 
                 tx.commit();
             }
-            catch ( KernelException e )
+            catch ( Exception e )
             {
                 throw new AssertionError( "failed to create database", e );
             }

@@ -223,7 +223,7 @@ class PartitionedScanFactories
         final List<Integer> createIds( KernelTransaction tx, Iterable<TAG> tags ) throws KernelException
         {
             final var ids = new ArrayList<Integer>();
-            for ( var tag : tags )
+            for ( final var tag : tags )
             {
                 ids.add( createId( tx, tag ) );
             }

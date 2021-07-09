@@ -137,7 +137,7 @@ class NodePropertyIndexScanPartitionedScanTestSuite
 
                 tx.commit();
             }
-            catch ( KernelException e )
+            catch ( Exception e )
             {
                 throw new AssertionError( "failed to create database", e );
             }

@@ -45,7 +45,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -155,7 +154,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx ) )
             {
-                for ( var entry : entityIdsMatchingQuery )
+                for ( final var entry : entityIdsMatchingQuery )
                 {
                     final var query = entry.getKey();
                     // given  an empty database
@@ -196,7 +195,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx ) )
             {
-                for ( var entry : entityIdsMatchingQuery )
+                for ( final var entry : entityIdsMatchingQuery )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -260,7 +259,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx ) )
             {
-                for ( var entry : entityIdsMatchingQuery )
+                for ( final var entry : entityIdsMatchingQuery )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -298,7 +297,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         {
             try ( var tx = beginTx() )
             {
-                for ( var entry : entityIdsMatchingQuery )
+                for ( final var entry : entityIdsMatchingQuery )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -370,7 +369,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
             assertThat( indexes.hasNext() ).as( "only one %s based token index exists", entityType ).isFalse();
             return index.getName();
         }
-        catch ( TransactionFailureException e )
+        catch ( Exception e )
         {
             throw new AssertionError( String.format( "failed to get %s based token index", entityType ), e );
         }
@@ -381,13 +380,13 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         try ( var tx = beginTx() )
         {
             final var schemaWrite = tx.schemaWrite();
-            for ( var indexPrototype : indexPrototypes )
+            for ( final var indexPrototype : indexPrototypes )
             {
                 schemaWrite.indexCreate( indexPrototype );
             }
             tx.commit();
         }
-        catch ( KernelException e )
+        catch ( Exception e )
         {
             throw new AssertionError( "failed to create indexes", e );
         }
@@ -396,7 +395,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         {
             new SchemaImpl( tx ).awaitIndexesOnline( 1, TimeUnit.HOURS );
         }
-        catch ( TransactionFailureException e )
+        catch ( Exception e )
         {
             throw new AssertionError( "failed waiting for indexes to come online", e );
         }
@@ -407,12 +406,12 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         var maxNumberOfPartitions = 0;
         try ( var tx = beginTx() )
         {
-            for ( var query : queries )
+            for ( final var query : queries )
             {
                 maxNumberOfPartitions = Math.max( maxNumberOfPartitions, factory.partitionedScan( tx, query, Integer.MAX_VALUE ).getNumberOfPartitions() );
             }
         }
-        catch ( KernelException e )
+        catch ( Exception e )
         {
             throw new AssertionError( "failed to calculated max number of partitions", e );
         }

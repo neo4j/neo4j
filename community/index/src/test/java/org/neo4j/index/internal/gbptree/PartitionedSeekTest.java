@@ -60,8 +60,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.test.Race.throwing;
 
@@ -100,13 +99,13 @@ class PartitionedSeekTest
             // given
             int to = insertEntries( tree, 0, 5, 1 );
             DepthAndRootVisitor visit = visit( tree );
-            assertEquals( 1, visit.numberOfLevels );
+            assertThat( visit.numberOfLevels ).as( "depth of tree" ).isEqualTo( 1 );
 
             // when
             Collection<Seeker.From<MutableLong,MutableLong>> seekers = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4, NULL );
 
             // then
-            assertEquals( 1, seekers.size() );
+            assertThat( seekers.size() ).as( "number of partitions" ).isEqualTo( 1 );
             assertEntries.of( seekers, 0, 5 );
         }
     }
@@ -198,7 +197,7 @@ class PartitionedSeekTest
             // given
             int numberOfRootChildren = random.nextInt( 1, 10 );
             int numberOfDesiredLevels = numberOfRootChildren == 0 ? 1 : random.nextInt( 2, 4 );
-            int high = insertEntriesUntil( tree, numberOfDesiredLevels, numberOfRootChildren );
+            insertEntriesUntil( tree, numberOfDesiredLevels, numberOfRootChildren );
 
             List<MutableLong> rootKeys = getKeysOnLevel( tree, 0 );
             int numberOfDesiredPartitions = random.nextInt( 1, rootKeys.size() );
@@ -250,15 +249,14 @@ class PartitionedSeekTest
                     Seeker<MutableLong,MutableLong> seeker = partition.from( NULL );
                     while ( seeker.next() )
                     {
-                        assertEquals( nextExpected, seeker.key().longValue() );
-                        nextExpected++;
+                        assertThat( nextExpected++ ).as( "current key is next in the expected sequence" ).isEqualTo( seeker.key().longValue() );
                         if ( nextExpected % stride > offset )
                         {
                             nextExpected += stride - nextExpected % stride;
                         }
                     }
                 }
-                assertEquals( high, nextExpected );
+                assertThat( nextExpected ).as( "expected end of seek range" ).isEqualTo( high );
             }
 
             // when calling partitionedSeek while concurrently removing
@@ -283,15 +281,14 @@ class PartitionedSeekTest
                     Seeker<MutableLong,MutableLong> seeker = partition.from( NULL );
                     while ( seeker.next() )
                     {
-                        assertEquals( nextExpected, seeker.key().longValue() );
-                        nextExpected++;
+                        assertThat( nextExpected++ ).as( "current key is next in the expected sequence" ).isEqualTo( seeker.key().longValue() );
                         if ( nextExpected % stride >= offset )
                         {
                             nextExpected += stride - nextExpected % stride;
                         }
                     }
                 }
-                assertEquals( high, nextExpected );
+                assertThat( nextExpected ).as( "expected end of seek range" ).isEqualTo( high );
             }
         }
     }
@@ -301,7 +298,10 @@ class PartitionedSeekTest
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
-            assertThrows( IllegalArgumentException.class, () -> tree.partitionedSeek( layout.key( 10 ), layout.key( 0 ), 5, NULL ) );
+            assertThatThrownBy( () -> tree.partitionedSeek( layout.key( 10 ), layout.key( 0 ), 5, NULL ),
+                                "should only seek forward" )
+                    .isInstanceOf( IllegalArgumentException.class )
+                    .hasMessage( "Partitioned seek only supports forward seeking for the time being" );
         }
     }
 
@@ -323,7 +323,7 @@ class PartitionedSeekTest
                     tree.partitionedSeek( layout.key( 0 ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
-            assertEquals( expectedNumberOfPartitions, seekers.size() );
+            assertThat( seekers.size() ).as( "number of partitions" ).isEqualTo( expectedNumberOfPartitions );
             assertEntries.of( seekers, 0, to );
         }
     }
@@ -363,13 +363,12 @@ class PartitionedSeekTest
             assertAllExpectedKeysInOrderWithinAClosedRange( keys.primitiveStream(), keys.getFirst(), keys.getLast() );
             if ( from == to )
             {
-                assertThat( keys.getFirst() ).isEqualTo( from );
-                assertThat( keys.getLast() ).isEqualTo( to );
+                assertThat( keys.size() ).as( "exact match has singular key" ).isEqualTo( 1 );
             }
             else
             {
-                assertThat( keys.getFirst() ).isGreaterThanOrEqualTo( from );
-                assertThat( keys.getLast() ).isLessThan( to );
+                assertThat( keys.getFirst() ).as( "first key of partition is not before start of range" ).isGreaterThanOrEqualTo( from );
+                assertThat( keys.getLast() ).as( "last key of partition is before the excluded end of the range" ).isLessThan( to );
             }
             return keys;
         }
@@ -394,7 +393,7 @@ class PartitionedSeekTest
     {
         List<Long> seenKeys = keys.boxed().collect( Collectors.toUnmodifiableList() );
         List<Long> expectedKeys = LongStream.rangeClosed( from, to ).boxed().collect( Collectors.toUnmodifiableList() );
-        assertThat( seenKeys ).containsExactlyElementsOf( expectedKeys );
+        assertThat( seenKeys ).as( "keys seen are exactly the range [%d,%d]", from, to ).containsExactlyElementsOf( expectedKeys );
     }
 
     private static IntList getEntryCountsPerPartition( Stream<LongList> collectedEntryKeysPerPartition )
@@ -413,7 +412,7 @@ class PartitionedSeekTest
             for ( int i = 2; i < entryCountPerSeeker.size() - 1; i++ )
             {
                 int difference = abs( reference - entryCountPerSeeker.get( i ) );
-                assertThat( difference ).isLessThanOrEqualTo( reference );
+                assertThat( difference ).as( "absolute difference between middle partition sizes" ).isLessThanOrEqualTo( reference );
             }
         }
     }

@@ -43,7 +43,7 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
         {
             final var tokenIndexName = getTokenIndexName( entityType );
             final var empty = new EntityIdsMatchingQuery<TokenScanQuery>();
-            for ( var tokenId : tokenIds )
+            for ( final var tokenId : tokenIds )
             {
                 empty.getOrCreate( new TokenScanQuery( tokenIndexName, new TokenPredicate( tokenId ) ) );
             }

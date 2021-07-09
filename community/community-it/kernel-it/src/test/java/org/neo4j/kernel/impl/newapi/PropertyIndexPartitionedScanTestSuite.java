@@ -60,7 +60,7 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
         final var indexesFrom = new HashSet<Pair<SchemaDescriptor,String>>();
         final var tokenId = tokenAndPropKeyCombination.first();
         final var propKeyIds = tokenAndPropKeyCombination.other();
-        for ( var propKeyId : propKeyIds )
+        for ( final var propKeyId : propKeyIds )
         {
             indexesFrom.add( Pair.of( SchemaDescriptors.forLabel( tokenId, propKeyId ), generateIndexName( tokenId, propKeyId ) ) );
         }

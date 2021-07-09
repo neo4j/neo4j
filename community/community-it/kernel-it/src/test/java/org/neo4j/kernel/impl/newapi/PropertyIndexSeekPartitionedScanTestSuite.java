@@ -50,7 +50,7 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
             final var empty = new EntityIdsMatchingQuery<PropertyKeySeekQuery>();
             final var tokenId = tokenAndPropKeyCombination.first();
             final var propKeyIds = tokenAndPropKeyCombination.other();
-            for ( var propKeyId : propKeyIds )
+            for ( final var propKeyId : propKeyIds )
             {
                 empty.getOrCreate( new PropertyKeySeekQuery( testSuite.generateIndexName( tokenId, propKeyId ),
                                                              PropertyIndexQuery.exists( propKeyId ) ) );
