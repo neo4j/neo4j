@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSee
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.WhereClausePredicate
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexMatch
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner
@@ -52,6 +53,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -85,7 +87,11 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
 
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
-  val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(planContext.statistics, combiner)
+  private val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(planContext.statistics, combiner)
+
+  private val indexMatchCache = CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch with Product with Serializable]] {
+    (a, b, c) => findIndexMatches(a, b, c)
+  }
 
   override def apply(
                       selections: Selections,
@@ -98,23 +104,13 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     // Shortcutting a possibly expensive calculation: If there is nothing to select, we have no change in selectivity.
     if (selections.isEmpty) return Selectivity.ONE
 
-    val variables = selections.findAllByClass[Variable].map(_.name)
-    val nodes = variables.filter(labelInfo.contains)
-    val relationships = variables.filter(relTypeInfo.contains)
-
     // The selections we get for cardinality estimation might contain partial predicates.
     // These are not recognized by the Leaf planners, so let's unwrap them.
     val unwrappedSelections = selections.endoRewrite(unwrapPartialPredicates)
 
-    // Construct a query graph that can be fed to leaf planners to search for index matches.
-    val Some(queryGraph) = Some(QueryGraph(
-      patternNodes = nodes.toSet,
-      patternRelationships = relationships.map(PatternRelationship(_, ("  UNNAMED0", "  UNNAMED1"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)).toSet,
-      selections = unwrappedSelections
-    )).map(inlineLabelAndRelTypeInfo(_, labelInfo, relTypeInfo))
+    val queryGraph = getQueryGraph(labelInfo, relTypeInfo, unwrappedSelections)
 
-    val indexMatches = NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext) ++
-      RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext)
+    val indexMatches = indexMatchCache(queryGraph, semanticTable, indexPredicateProviderContext)
 
     val selectivitiesForPredicates = indexMatches
       .groupBy(_.indexDescriptor)
@@ -158,6 +154,29 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     val coveredPredicatesSelectivities = compositeDisjointPredicatesWithSelectivities.map(selectivityForCompositeIndexPredicates(_, combiner))
 
     combiner.andTogetherSelectivities(notCoveredPredicatesSelectivities ++ coveredPredicatesSelectivities).getOrElse(Selectivity.ONE)
+  }
+
+  private def findIndexMatches(queryGraph: QueryGraph,
+                               semanticTable: SemanticTable,
+                               indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Set[IndexMatch with Product with Serializable] = {
+    NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext) ++
+      RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext)
+  }
+
+  private def getQueryGraph(labelInfo: LabelInfo,
+                            relTypeInfo: RelTypeInfo,
+                            unwrappedSelections: Selections) = {
+    val variables = unwrappedSelections.findAllByClass[Variable].map(_.name)
+    val nodes = variables.filter(labelInfo.contains)
+    val relationships = variables.filter(relTypeInfo.contains)
+
+    // Construct a query graph that can be fed to leaf planners to search for index matches.
+    val Some(queryGraph) = Some(QueryGraph(
+      patternNodes = nodes.toSet,
+      patternRelationships = relationships.map(PatternRelationship(_, ("  UNNAMED0", "  UNNAMED1"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)).toSet,
+      selections = unwrappedSelections
+    )).map(inlineLabelAndRelTypeInfo(_, labelInfo, relTypeInfo))
+    queryGraph
   }
 
   private def inlineLabelAndRelTypeInfo(qg: QueryGraph, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo): QueryGraph = {
