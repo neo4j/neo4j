@@ -89,7 +89,7 @@ class NodeLabelIndexScanPartitionedScanTestSuite
                 {
                     // when   nodes are created
                     final var nodeId = write.nodeCreate();
-                    final var labelId = labelIds.get( i % labelIds.size() );
+                    final var labelId = random.among( labelIds );
                     if ( write.nodeAddLabel( nodeId, labelId ) )
                     {
                         // when   and tracked against a query

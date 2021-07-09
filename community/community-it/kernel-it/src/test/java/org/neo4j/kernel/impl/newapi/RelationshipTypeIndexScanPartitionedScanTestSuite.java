@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Nested;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.LongStream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
@@ -84,9 +84,8 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
             final var relsWithRelTypeId = new EntityIdsMatchingQuery<TokenScanQuery>();
             final var indexName = getTokenIndexName( EntityType.RELATIONSHIP );
 
+            final var selfRelRatio = 0.1f;
             final var numberOfNodes = numberOfRelationships / 10;
-            // at least 0.1% self relationships
-            final var numberOfSelfRels = numberOfRelationships / 1_000;
             // dense node threshold ~50; pick 64 to be safe
             final var denseNodeNumberOfRels = 64;
             // at least 1% dense nodes
@@ -95,33 +94,25 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
             try ( var tx = beginTx() )
             {
                 final var write = tx.dataWrite();
-                final var nodeIds = new ArrayList<Long>( numberOfNodes );
-                for ( int i = 0; i < numberOfNodes; i++ )
-                {
-                    nodeIds.add( write.nodeCreate() );
-                }
+                // create finite nodes to create graph from
+                // to ensure a connected network of relationships
+                final var nodeIds = LongStream.generate( write::nodeCreate ).limit( numberOfNodes ).toArray();
 
                 var relationshipsToCreate = numberOfRelationships;
                 // when   relationships are created
                 // when   and tracked against a query
 
-                // self relationships
-                for ( int i = 0; relationshipsToCreate > 0 && i < numberOfSelfRels; relationshipsToCreate--, i++ )
-                {
-                    final var relTypeId = relTypeIds.get( relationshipsToCreate % relTypeIds.size() );
-                    final var nodeId = nodeIds.get( relationshipsToCreate % nodeIds.size() );
-                    final var relId = write.relationshipCreate( nodeId, relTypeId, nodeId );
-                    relsWithRelTypeId.getOrCreate( new TokenScanQuery( indexName, new TokenPredicate( relTypeId ) ) ).add( relId );
-                }
-
                 // dense nodes
                 for ( int i = 0; relationshipsToCreate > 0 && i < numberOfDenseNodes; i++ )
                 {
-                    final var sourceNodeId = nodeIds.get( relationshipsToCreate % nodeIds.size() );
+                    final var denseNodeId = random.among( nodeIds );
                     for ( int j = 0; relationshipsToCreate > 0 && j < denseNodeNumberOfRels; relationshipsToCreate--, j++ )
                     {
-                        final var relTypeId = relTypeIds.get( relationshipsToCreate % relTypeIds.size() );
-                        final var targetNodeId = nodeIds.get( relationshipsToCreate % nodeIds.size() );
+                        final var otherNodeId = random.nextFloat() < selfRelRatio ? denseNodeId : random.among( nodeIds );
+                        final var forward = random.nextBoolean();
+                        final var sourceNodeId = forward ? denseNodeId : otherNodeId;
+                        final var targetNodeId = forward ? otherNodeId : denseNodeId;
+                        final var relTypeId = random.among( relTypeIds );
                         final var relId = write.relationshipCreate( sourceNodeId, relTypeId, targetNodeId );
                         relsWithRelTypeId.getOrCreate( new TokenScanQuery( indexName, new TokenPredicate( relTypeId ) ) ).add( relId );
                     }
@@ -130,9 +121,9 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
                 // rest regular singular relationships
                 for ( ; relationshipsToCreate > 0; relationshipsToCreate-- )
                 {
-                    final var relTypeId = relTypeIds.get( relationshipsToCreate % relTypeIds.size() );
-                    final var sourceNodeId = nodeIds.get( (2 * relationshipsToCreate) % nodeIds.size() );
-                    final var targetNodeId = nodeIds.get( (2 * relationshipsToCreate + 1) % nodeIds.size() );
+                    final var relTypeId = random.among( relTypeIds );
+                    final var sourceNodeId = random.among( nodeIds );
+                    final var targetNodeId = random.nextFloat() < selfRelRatio ? sourceNodeId : random.among( nodeIds );
                     final var relId = write.relationshipCreate( sourceNodeId, relTypeId, targetNodeId );
                     relsWithRelTypeId.getOrCreate( new TokenScanQuery( indexName, new TokenPredicate( relTypeId ) ) ).add( relId );
                 }
