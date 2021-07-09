@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
+import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
+import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
@@ -140,6 +142,30 @@ trait DBHitsMatcher extends NumericArgumentMatcher {
   override def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long] =
     plan.arguments.collectFirst {
       case DbHits(value) => value
+    }
+}
+
+/**
+ * Matches the Page cache hits from profiling
+ */
+trait PageCacheHitsMatcher extends NumericArgumentMatcher {
+  override val argString: String = "Page Cache Hits"
+
+  override def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long] =
+    plan.arguments.collectFirst {
+      case PageCacheHits(value) => value
+    }
+}
+
+/**
+ * Matches the Page cache misses from profiling
+ */
+trait PageCacheMissesMatcher extends NumericArgumentMatcher {
+  override val argString: String = "Page Cache Misses"
+
+  override def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long] =
+    plan.arguments.collectFirst {
+      case PageCacheMisses(value) => value
     }
 }
 

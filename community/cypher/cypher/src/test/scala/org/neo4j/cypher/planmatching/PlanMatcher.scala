@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
+import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
+import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
@@ -75,6 +77,10 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
   def withDBHits(): PlanMatcher
 
   def withDBHitsBetween(min: Long, max: Long): PlanMatcher
+
+  def withPageCacheHits(): PlanMatcher
+
+  def withPageCacheMisses(): PlanMatcher
 
   def withExactVariables(variables: String*): PlanMatcher
 
@@ -193,6 +199,10 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
 
   override def withDBHitsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withDBHitsBetween(min, max))
 
+  override def withPageCacheHits(): PlanMatcher = copy(inner = inner.withPageCacheHits())
+
+  override def withPageCacheMisses(): PlanMatcher = copy(inner = inner.withPageCacheMisses())
+
   override def withExactVariables(variables: String*): PlanMatcher = copy(inner = inner.withExactVariables(variables: _*))
 
   override def containingVariables(variables: String*): PlanMatcher = copy(inner = inner.containingVariables(variables: _*))
@@ -262,6 +272,10 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
 
   override def withDBHitsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withDBHitsBetween(min, max))
 
+  override def withPageCacheHits(): PlanMatcher = copy(inner = inner.withPageCacheHits())
+
+  override def withPageCacheMisses(): PlanMatcher = copy(inner = inner.withPageCacheMisses())
+
   override def withExactVariables(variables: String*): PlanMatcher = copy(inner = inner.withExactVariables(variables: _*))
 
   override def containingVariables(variables: String*): PlanMatcher = copy(inner = inner.containingVariables(variables: _*))
@@ -292,6 +306,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
                      memory: Option[MemoryMatcher] = None,
                      globalMemory: Option[GlobalMemoryMatcher] = None,
                      dbHits: Option[DBHitsMatcher] = None,
+                     pageCacheHits: Option[PageCacheHitsMatcher] = None,
+                     pageCacheMisses: Option[PageCacheMissesMatcher] = None,
                      order: Option[OrderArgumentMatcher] = None,
                      variables: Option[VariablesMatcher] = None,
                      other: Option[StringArgumentsMatcher] = None,
@@ -305,6 +321,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     val estimatedRowsResult = estimatedRows.map(_ (plan))
     val rowsResult = rows.map(_ (plan))
     val dbHitsResult = dbHits.map(_ (plan))
+    val pageCacheHitsResult = pageCacheHits.map(_ (plan))
+    val pageCacheMissesResult = pageCacheMisses.map(_ (plan))
     val timeResult = time.map(_ (plan))
     val memoryResult = memory.map(_ (plan))
     val globalMemoryResult = globalMemory.map(_ (plan))
@@ -376,6 +394,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
       estimatedRowsResult,
       rowsResult,
       dbHitsResult,
+      pageCacheHitsResult,
+      pageCacheMissesResult,
       timeResult,
       memoryResult,
       globalMemoryResult,
@@ -413,6 +433,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     val memoryArg = memory.map(m => Memory(m.expectedValue)).toSeq
     val globalMemoryArg = memory.map(m => GlobalMemory(m.expectedValue)).toSeq
     val dbHitsArg = dbHits.map(m => DbHits(m.expectedValue)).toSeq
+    val pageCacheHitsArg = pageCacheHits.map(m => PageCacheHits(m.expectedValue)).toSeq
+    val pageCacheMissesArg = pageCacheMisses.map(m => PageCacheMisses(m.expectedValue)).toSeq
     val orderArg = order.map(m => asPrettyString.order(m.expected)).toSeq
     val otherArgs = other
       .map(_.expected.toSeq.map(str => Details(asPrettyString(JustForToStringExpression(str)))))
@@ -425,7 +447,7 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
       case (None, Some(r)) => TwoChildren(PlanDescriptionImpl(Id(0), "???", NoChildren, Seq.empty, Set.empty), r)
     }
 
-    PlanDescriptionImpl(Id(0), nameDesc, children, otherArgs ++ rowArg ++ estRowArg ++ dbHitsArg ++ orderArg ++ timeArg ++ memoryArg ++ globalMemoryArg, variablesDesc)
+    PlanDescriptionImpl(Id(0), nameDesc, children, otherArgs ++ rowArg ++ estRowArg ++ dbHitsArg ++ pageCacheHitsArg ++ pageCacheMissesArg ++ orderArg ++ timeArg ++ memoryArg ++ globalMemoryArg, variablesDesc)
   }
 
   override def withName(name: String): PlanMatcher = this.name.fold(copy(name = Some(PlanExactNameMatcher(name))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on name"))
@@ -451,6 +473,10 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
   override def withDBHits(): PlanMatcher = this.dbHits.fold(copy(dbHits = Some(new RangeArgumentMatcher(1, Long.MaxValue) with DBHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on dbHits"))
 
   override def withDBHitsBetween(min: Long, max: Long): PlanMatcher = this.dbHits.fold(copy(dbHits = Some(new RangeArgumentMatcher(min, max) with DBHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on dbHits"))
+
+  override def withPageCacheHits(): PlanMatcher = this.pageCacheHits.fold(copy(pageCacheHits = Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheHitsMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on page cache hits"))
+
+  override def withPageCacheMisses(): PlanMatcher = this.pageCacheMisses.fold(copy(pageCacheMisses = Some(new RangeArgumentMatcher(1, Long.MaxValue) with PageCacheMissesMatcher)))(_ => throw new IllegalArgumentException("cannot have more than one assertion on page cache misses"))
 
   override def withExactVariables(variables: String*): PlanMatcher = this.variables.fold(copy(variables = Some(ExactVariablesMatcher(variables.toSet))))(_ => throw new IllegalArgumentException("cannot have more than one assertion on variables"))
 
