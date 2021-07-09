@@ -88,6 +88,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         super( layout.homeDirectory() );
         setConfig( GraphDatabaseInternalSettings.databases_root_path, layout.databasesDirectory().toPath() );
         setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.transactionLogsRootDirectory().toPath() );
+        setConfig( BoltConnector.thread_pool_max_size, 2000 );
     }
 
     public TestDatabaseManagementServiceBuilder( DatabaseLayout layout )
