@@ -145,7 +145,8 @@ class PartitionedScanFactories
             return PropertyKey.FACTORY;
         }
 
-        final String getIndexName( int tokenId, int... propKeyIds ) {
+        final String getIndexName( int tokenId, int... propKeyIds )
+        {
             return String.format( "%s[%s[%d] {%s}]", name(), getTokenFactory().name(), tokenId,
                                   Arrays.stream( propKeyIds ).mapToObj( String::valueOf ).collect( Collectors.joining( "," ) ) );
         }
@@ -248,11 +249,12 @@ class PartitionedScanFactories
         }
 
         @Override
-        PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeySeekQuery propertyKeySeekQuery, int desiredNumberOfPartitions )
+        PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeySeekQuery propertyKeySeekQuery,
+                                                                       int desiredNumberOfPartitions )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
             return tx.dataRead().relationshipIndexSeek( getSession( tx, propertyKeySeekQuery ), desiredNumberOfPartitions,
-                                                        QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get());
+                                                        QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get() );
         }
 
         @Override
@@ -289,7 +291,8 @@ class PartitionedScanFactories
         }
 
         @Override
-        PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery propertyKeyScanQuery, int desiredNumberOfPartitions )
+        PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery propertyKeyScanQuery,
+                                                                       int desiredNumberOfPartitions )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
             return tx.dataRead().relationshipIndexScan( getSession( tx, propertyKeyScanQuery ), desiredNumberOfPartitions, QueryContext.NULL_CONTEXT );

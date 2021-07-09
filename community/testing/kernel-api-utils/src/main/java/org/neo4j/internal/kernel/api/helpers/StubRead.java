@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -110,7 +109,8 @@ public class StubRead implements Read
     }
 
     @Override
-    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
+    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions,
+                                                                                QueryContext queryContext )
     {
         throw new UnsupportedOperationException();
     }

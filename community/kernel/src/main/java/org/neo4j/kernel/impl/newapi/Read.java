@@ -247,7 +247,8 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
+    public PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions,
+                                                                                QueryContext queryContext )
             throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
