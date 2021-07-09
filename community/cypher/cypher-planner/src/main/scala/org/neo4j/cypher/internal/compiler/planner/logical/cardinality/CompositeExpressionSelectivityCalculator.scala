@@ -95,6 +95,9 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
                       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                     ): Selectivity = {
 
+    // Shortcutting a possibly expensive calculation: If there is nothing to select, we have no change in selectivity.
+    if (selections.isEmpty) return Selectivity.ONE
+
     val variables = selections.findAllByClass[Variable].map(_.name)
     val nodes = variables.filter(labelInfo.contains)
     val relationships = variables.filter(relTypeInfo.contains)
