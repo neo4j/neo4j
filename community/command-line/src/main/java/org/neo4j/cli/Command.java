@@ -44,6 +44,7 @@ public interface Command extends Callable<Integer>
         PREPARE_RESTORE,
         UNBIND,
         GET_SERVER_ID,
-        PUSH_TO_CLOUD
+        PUSH_TO_CLOUD,
+        TEST //Used by test commands. Don't use this for any real command
     }
 }

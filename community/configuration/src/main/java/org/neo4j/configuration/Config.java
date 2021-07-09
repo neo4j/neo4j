@@ -793,7 +793,8 @@ public class Config implements Configuration
     {
         if ( isCommand( entry ) )
         {
-            Preconditions.checkArgument( expandCommands, format( "%s is a command, but config is not explicitly told to expand it.", entry )  );
+            Preconditions.checkArgument( expandCommands,
+                    format( "%s is a command, but config is not explicitly told to expand it. (Missing --expand-commands argument?)", entry ) );
             String str = entry.trim();
             String command = str.substring( 2, str.length() - 1 );
             log.info( "Executing external script to retrieve value of setting " + settingName );

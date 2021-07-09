@@ -37,18 +37,24 @@ abstract class BootloaderCommand
         this.ctx = ctx;
     }
 
-    protected abstract static class BaseCommand implements Callable<Integer>
+    protected abstract static class BaseCommand implements Callable<Integer>, VerboseCommand
     {
         @CommandLine.ParentCommand
         protected BootloaderCommand bootloader;
 
-        @Option( names = "--verbose", description = "Prints additional information." )
+        @Option( names = ARG_VERBOSE, description = "Prints additional information." )
         boolean verbose;
 
         Bootloader getBootloader( boolean expandCommands )
         {
             bootloader.ctx.init( expandCommands, verbose );
             return new Bootloader( bootloader.ctx );
+        }
+
+        @Override
+        public boolean verbose()
+        {
+            return verbose;
         }
     }
 
@@ -83,7 +89,7 @@ abstract class BootloaderCommand
         @Override
         public int handleExecutionException( Exception exception, CommandLine commandLine, CommandLine.ParseResult parseResult )
         {
-            if ( commandLine.getCommand() instanceof BaseCommand && !((BaseCommand) commandLine.getCommand()).verbose )
+            if ( commandLine.getCommand() instanceof VerboseCommand && !((VerboseCommand) commandLine.getCommand()).verbose() )
             {
                 ctx.err.println( exception.getMessage() );
                 ctx.err.println( "Run with '--verbose' for a more detailed error message.");

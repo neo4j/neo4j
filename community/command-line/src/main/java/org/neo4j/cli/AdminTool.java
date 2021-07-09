@@ -55,6 +55,13 @@ import static picocli.CommandLine.IVersionProvider;
 )
 public final class AdminTool
 {
+    //Accept arguments also used by Neo4jAdminCommand, just to let them show in the usage
+    @CommandLine.Option( names = "--expand-commands", description = "Allow command expansion in config value evaluation." )
+    private boolean expandCommands;
+
+    @CommandLine.Option( names = "--verbose", description = "Prints additional information." )
+    private boolean verbose;
+
     private AdminTool()
     {
         // nope
@@ -74,21 +81,24 @@ public final class AdminTool
     @VisibleForTesting
     public static int execute( ExecutionContext ctx, String... args )
     {
-        PrintWriter out = new PrintWriter( ctx.out(), true );
-        final var cmd = new CommandLine( new AdminTool() )
-                .setOut( out )
+        final CommandLine cmd = getCommandLine( ctx );
+        if ( args.length == 0 )
+        {
+            cmd.usage( cmd.getOut() );
+            return ExitCode.USAGE;
+        }
+        return cmd.execute( args );
+    }
+
+    public static CommandLine getCommandLine( ExecutionContext ctx )
+    {
+        CommandLine cmd = new CommandLine( new AdminTool() )
+                .setOut( new PrintWriter( ctx.out(), true ) )
                 .setErr( new PrintWriter( ctx.err(), true ) )
                 .setUsageHelpWidth( 120 )
                 .setCaseInsensitiveEnumValuesAllowed( true );
         registerCommands( cmd, ctx, Services.loadAll( CommandProvider.class ) );
-
-        if ( args.length == 0 )
-        {
-            cmd.usage( out );
-            return ExitCode.USAGE;
-        }
-
-        return cmd.execute( args );
+        return cmd;
     }
 
     private static void registerCommands( CommandLine cmd, ExecutionContext ctx, Collection<CommandProvider> commandProviders )

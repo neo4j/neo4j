@@ -77,7 +77,7 @@ class Neo4jCommandTest
         @Test
         void shouldPrintUsageWhenNoArgument()
         {
-            assertThat( execute( null ) ).isEqualTo( ExitCode.USAGE );
+            assertThat( execute() ).isEqualTo( ExitCode.USAGE );
             assertThat( err.toString() ).contains( "Usage: Neo4j" );
         }
 
@@ -194,7 +194,7 @@ class Neo4jCommandTest
             assertThat( err.toString() ).doesNotContain( "Exception" );
 
             clearOutAndErr();
-            assertThat( execute( List.of( "start", "--verbose" ), Map.of() ) ).isEqualTo( ExitCode.SOFTWARE );
+            assertThat( execute( "start", "--verbose" ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).doesNotContain( "Run with '--verbose' for a more detailed error message." );
             assertThat( err.toString() ).contains( "BootFailureException" );
         }
@@ -245,7 +245,7 @@ class Neo4jCommandTest
                 // where it's essentially impossible to create correct ACL/owner of the config file that passes the validation in the config reading.
                 assumeThat( isCurrentlyRunningAsWindowsAdmin() ).isFalse();
             }
-            assertThat( execute( List.of( "start", "--expand-commands" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( execute( "start", "--expand-commands" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "--expand-commands" );
         }
 
@@ -350,14 +350,14 @@ class Neo4jCommandTest
         @Test
         void shouldHideDryRunArgument()
         {
-            assertThat( execute( List.of( "help", "console" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( execute( "help", "console" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).doesNotContain( "--dry-run" );
         }
 
         @Test
         void shouldOnlyGetCommandLineFromDryRun()
         {
-            assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).hasLineCount( 1 );
             assertThat( out.toString() ).containsSubsequence( "java", "-cp", TestEntryPoint.class.getName(), "--home-dir", "--config-dir" );
         }
@@ -370,7 +370,7 @@ class Neo4jCommandTest
             addConf( BootloaderSettings.additional_jvm, "\"-Dbaz=/path/with spaces/and double qoutes\"" );
             addConf( BootloaderSettings.additional_jvm, "-Dqux=/path/with spaces/and unmatched \" qoute" );
             addConf( BootloaderSettings.additional_jvm, "-Dcorge=/path/with/no/spaces" );
-            assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains(
                     "\"-Dfoo=/path/with spaces/\"",
                     "\"-Dbar=/path/with spaces/and single qoutes\"",

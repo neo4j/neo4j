@@ -28,9 +28,10 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 
 import org.neo4j.cli.AdminTool;
+import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.BootloaderSettings;
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
@@ -39,7 +40,7 @@ import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
         name = "Neo4j Admin",
         description = "Neo4j Admin CLI."
 )
-class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>
+class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>, VerboseCommand
 {
     Neo4jAdminCommand( Neo4jAdminBootloaderContext ctx )
     {
@@ -59,10 +60,39 @@ class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>
     @CommandLine.Option( names = ARG_EXPAND_COMMANDS, hidden = true, description = "Allow command expansion in config value evaluation." )
     boolean expandCommands;
 
+    @CommandLine.Option( names = ARG_VERBOSE, hidden = true, description = "Prints additional information." )
+    boolean verbose;
+
     @Override
-    public Integer call()
+    public Integer call() throws Exception
     {
-        ctx.init( expandCommands, false, allParameters.toArray( new String[0] ) );
+        String[] args = allParameters.toArray( new String[0] );
+        ctx.init( expandCommands, verbose, args );
+
+        //Lets verify our arguments before we try to execute the command, avoiding forking the VM if the arguments are invalid and improves error/help messages
+        CommandLine actualAdminCommand =
+                AdminTool.getCommandLine( new ExecutionContext( ctx.home(), ctx.confDir(), ctx.out, ctx.err, new DefaultFileSystemAbstraction() ) );
+
+        if ( allParameters.isEmpty() )
+        {   //No arguments (except expand commands/verbose), print usage
+            actualAdminCommand.usage( ctx.out );
+            return CommandLine.ExitCode.USAGE;
+        }
+        try
+        {
+            CommandLine.ParseResult result = actualAdminCommand.parseArgs( args ); //Check if we can parse it
+            Integer code = CommandLine.executeHelpRequest( result ); //If help is requested
+            if ( code != null )
+            {
+                return code;
+            }
+        }
+        catch ( CommandLine.ParameterException e )
+        {
+            return e.getCommandLine().getParameterExceptionHandler().handleParseException( e, args ); //Parse error, handle and exit
+        }
+
+        //Arguments looks fine! Lets try to execute them for real
         Bootloader bootloader = new Bootloader( ctx );
         return bootloader.admin();
     }
@@ -71,6 +101,12 @@ class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>
     {
         int exitCode = Neo4jAdminCommand.asCommandLine( new Neo4jAdminBootloaderContext() ).execute( args );
         System.exit( exitCode );
+    }
+
+    @Override
+    public boolean verbose()
+    {
+        return verbose;
     }
 
     static class Neo4jAdminBootloaderContext extends BootloaderContext
@@ -89,9 +125,13 @@ class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>
         }
 
         @Override
-        Configuration config()
+        void init( boolean expandCommands, boolean verbose, String... additionalArgs )
         {
-            return super.config();
+            super.init( expandCommands, verbose, additionalArgs );
+            if ( verbose )
+            {
+                this.additionalArgs.add( ARG_VERBOSE );
+            }
         }
 
         @Override

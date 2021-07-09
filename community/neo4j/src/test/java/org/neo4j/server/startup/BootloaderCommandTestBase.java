@@ -135,9 +135,9 @@ abstract class BootloaderCommandTestBase
         }
     }
 
-    protected int execute( String arg )
+    protected int execute( String... arg )
     {
-        return execute( StringUtils.isNotEmpty( arg ) ? List.of( arg ) : List.of(), Map.of() );
+        return execute( arg.length != 0 ? List.of( arg ) : List.of(), Map.of() );
     }
 
     protected int execute( List<String> args, Map<String, String> env )
