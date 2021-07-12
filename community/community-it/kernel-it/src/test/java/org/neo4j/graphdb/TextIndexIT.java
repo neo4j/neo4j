@@ -29,9 +29,12 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -249,6 +252,53 @@ public class TextIndexIT
         assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 4 );
         assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.BTREE ) ).isEqualTo( 0 );
         dbms.shutdown();
+    }
+
+    @Test
+    void shouldRecoverIndexUpdatesAfterCrash()
+    {
+        // Given a database with some index updates
+        var person = label( "PERSON" );
+        var fs = new EphemeralFileSystemAbstraction();
+        var dbms = startDbms( fs, new Monitors() );
+        var db = dbms.database( DEFAULT_DATABASE_NAME );
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().indexFor( person ).on( "name" ).withIndexType( IndexType.TEXT ).create();
+            tx.commit();
+        }
+        try ( var tx = db.beginTx() )
+        {
+            tx.createNode( person ).setProperty( "name", "David Smith Adams" );
+            tx.commit();
+        }
+
+        // When the db crashes
+        var crashedFs = fs.snapshot();
+        dbms.shutdown();
+
+        // And restarted with crashed file system
+        var monitor = new IndexAccessMonitor();
+        dbms = startDbms( crashedFs, monitor.monitors() );
+        db = dbms.database( DEFAULT_DATABASE_NAME );
+
+        // Then the index updates are recovered
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, MINUTES );
+            assertThat( tx.findNodes( person, "name", "Smith", CONTAINS ).stream().count() ).isEqualTo( 1 );
+            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
+        }
+        dbms.shutdown();
+    }
+
+    private DatabaseManagementService startDbms( FileSystemAbstraction fs, Monitors monitors )
+    {
+        return new TestDatabaseManagementServiceBuilder( databaseLayout )
+                .setFileSystem( fs )
+                .setMonitors( monitors )
+                .setConfig( text_indexes_enabled, true )
+                .build();
     }
 
     private static class IndexAccessMonitor extends IndexMonitor.MonitorAdapter
