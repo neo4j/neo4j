@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -34,6 +35,7 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Ref
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
   override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
@@ -42,9 +44,26 @@ case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsF
     (query: PlannerQueryPart, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable) => cached.apply(query, input, semanticTable)
   }
 
+  /*
+   * The arguments to the CachedFunction are the cache-key, e.g plan, input, semanticTable, cardinalities, providedOrders, monitor.
+   *
+   * We wrap the Cardinalities/ProvidedOrders object in the `Ref` class since we don't need to compare the attributes inside
+   * the Cardinalities/ProvidedOrders object.
+   * The reason for this is that the objects are mutable and during planning we modify them instead of creating new ones.
+   */
   override def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel = {
-    val cached = CachedFunction(metricsFactory.newCostModel(config: CypherPlannerConfiguration, executionModel).costFor _)
-    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders, monitor: CostModelMonitor) => cached(plan, input, semanticTable, cardinalities, providedOrders, monitor)
+    val cached = CachedFunction(
+      (plan: LogicalPlan,
+       input: QueryGraphSolverInput,
+       semanticTable: SemanticTable,
+       cardinalities: Ref[Cardinalities],
+       providedOrders: Ref[ProvidedOrders],
+       monitor: CostModelMonitor) => {
+        SimpleMetricsFactory.newCostModel(config: CypherPlannerConfiguration, executionModel).costFor(plan, input, semanticTable, cardinalities.value,
+          providedOrders.value, monitor)
+      })
+    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders, monitor: CostModelMonitor) =>
+      cached(plan, input, semanticTable, Ref(cardinalities), Ref(providedOrders), monitor)
   }
 
   override def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = {
