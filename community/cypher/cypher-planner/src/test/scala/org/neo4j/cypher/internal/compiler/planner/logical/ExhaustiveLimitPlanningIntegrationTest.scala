@@ -294,4 +294,35 @@ class ExhaustiveLimitPlanningIntegrationTest
       .nodeByLabelScan("n", "N")
       .build()
   }
+
+  test("Should plan exhaustive limit when updating plan on RHS of apply") {
+    // given
+    val config = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .build()
+
+    val query =
+      s"""
+         |MATCH (n)
+         |CALL {
+         |  CREATE (a)
+         |  RETURN count(a) AS ca
+         |}
+         |RETURN n LIMIT 0
+         |""".stripMargin
+
+    // when
+    val plan = config.plan(query)
+
+    // then
+    plan shouldEqual config.planBuilder()
+      .produceResults("n")
+      .exhaustiveLimit(0)
+      .apply(true)
+      .|.aggregation(Seq(), Seq("count(a) AS ca"))
+      .|.create(createNode("a"))
+      .|.argument()
+      .allNodeScan("n")
+      .build()
+  }
 }
