@@ -25,7 +25,9 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexValueCapability;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
@@ -84,6 +86,13 @@ abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCo
             public IndexValueCapability valueCapability( ValueCategory... valueCategories )
             {
                 return IndexValueCapability.NO;
+            }
+
+            @Override
+            public boolean supportPartitionedScan( IndexQuery... queries )
+            {
+                Preconditions.requireNoNullElements( queries );
+                return false;
             }
         };
         IndexDescriptor index = descriptor.withIndexCapability( capability );

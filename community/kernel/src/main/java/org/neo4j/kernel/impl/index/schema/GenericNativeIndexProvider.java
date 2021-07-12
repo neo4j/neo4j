@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.common.TokenNameLookup;
@@ -28,6 +29,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
@@ -35,6 +37,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -44,6 +47,7 @@ import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSett
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -228,6 +232,38 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Nat
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.YES;
+        }
+
+        @Override
+        public boolean supportPartitionedScan( IndexQuery... queries )
+        {
+            Preconditions.requireNoNullElements( queries );
+            if ( queries.length == 0
+                 || Arrays.stream( queries ).anyMatch( PropertyIndexQuery.GeometryRangePredicate.class::isInstance )
+                 || (queries.length > 1 && (Arrays.stream( queries ).anyMatch( PropertyIndexQuery.StringSuffixPredicate.class::isInstance )
+                                            || Arrays.stream( queries ).anyMatch( PropertyIndexQuery.StringContainsPredicate.class::isInstance ))) )
+            {
+                return false;
+            }
+
+            for ( int i = 1; i < queries.length; i++ )
+            {
+                final var prev = queries[i - 1];
+                final var query = queries[i];
+
+                if ( prev instanceof PropertyIndexQuery.ExactPredicate )
+                {
+                    continue;
+                }
+                if ( (prev instanceof PropertyIndexQuery.ExistsPredicate
+                      || prev instanceof PropertyIndexQuery.RangePredicate
+                      || prev instanceof PropertyIndexQuery.StringPrefixPredicate)
+                     && !(query instanceof PropertyIndexQuery.ExistsPredicate) )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         @Override

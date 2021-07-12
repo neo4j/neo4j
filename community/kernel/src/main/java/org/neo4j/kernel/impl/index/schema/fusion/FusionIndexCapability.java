@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import java.util.Arrays;
 import java.util.function.Function;
 
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrderCapability;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexValueCapability;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
 public class FusionIndexCapability implements IndexCapability
@@ -75,6 +79,19 @@ public class FusionIndexCapability implements IndexCapability
             return IndexValueCapability.PARTIAL;
         }
         return instanceSelector.select( slot ).valueCapability( valueCategories );
+    }
+
+    @Override
+    public boolean supportPartitionedScan( IndexQuery... queries )
+    {
+        Preconditions.requireNoNullElements( queries );
+        final var propertyIndexQueries = Arrays.stream( queries ).map( PropertyIndexQuery.class::cast ).toArray( PropertyIndexQuery[]::new );
+        final var slot = slotSelector.selectSlot( propertyIndexQueries, PropertyIndexQuery::valueCategory );
+        if ( slot == null )
+        {
+            return propertyIndexQueries[0] instanceof PropertyIndexQuery.ExistsPredicate;
+        }
+        return instanceSelector.select( slot ).supportPartitionedScan( queries );
     }
 
     @Override

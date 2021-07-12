@@ -25,12 +25,14 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
@@ -40,7 +42,7 @@ import static org.neo4j.internal.schema.IndexValueCapability.NO;
 public class TextIndexProvider extends AbstractLuceneIndexProvider
 {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "text", "1.0" );
-    private static final IndexCapability TEXT_CAPABILITY = new TextIndexCapability();
+    public static final IndexCapability CAPABILITY = new TextIndexCapability();
 
     public TextIndexProvider( FileSystemAbstraction fileSystem,
                               DirectoryFactory directoryFactory,
@@ -54,7 +56,7 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
     @Override
     public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
-        return index.getCapability().equals( NO_CAPABILITY ) ? index.withIndexCapability( TEXT_CAPABILITY ) : index;
+        return index.getCapability().equals( NO_CAPABILITY ) ? index.withIndexCapability( CAPABILITY ) : index;
     }
 
     public static class TextIndexCapability implements IndexCapability
@@ -69,6 +71,13 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return NO;
+        }
+
+        @Override
+        public boolean supportPartitionedScan( IndexQuery... queries )
+        {
+            Preconditions.requireNoNullElements( queries );
+            return false;
         }
     }
 }

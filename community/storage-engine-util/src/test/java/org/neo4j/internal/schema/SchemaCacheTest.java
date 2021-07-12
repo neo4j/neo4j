@@ -33,6 +33,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.test.Race;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
 import static java.util.Arrays.asList;
@@ -659,6 +660,13 @@ class SchemaCacheTest
             public IndexValueCapability valueCapability( ValueCategory... valueCategories )
             {
                 return IndexValueCapability.NO;
+            }
+
+            @Override
+            public boolean supportPartitionedScan( IndexQuery... queries )
+            {
+                Preconditions.requireNoNullElements( queries );
+                return false;
             }
         };
         List<IndexDescriptor> completed = new ArrayList<>();

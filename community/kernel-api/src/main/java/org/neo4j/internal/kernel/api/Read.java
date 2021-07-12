@@ -74,7 +74,7 @@ public interface Read
      */
     PartitionedScan<NodeValueIndexCursor> nodeIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
                                                          QueryContext queryContext, PropertyIndexQuery... query )
-            throws IndexNotApplicableKernelException;
+            throws KernelException;
 
     /**
      * Seek all relationships matching the provided index query in an index.
@@ -96,7 +96,7 @@ public interface Read
      */
     PartitionedScan<RelationshipValueIndexCursor> relationshipIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
                                                                          QueryContext queryContext, PropertyIndexQuery... query )
-            throws IndexNotApplicableKernelException;
+            throws KernelException;
 
     /**
      * Returns node id of node found in the unique index, or -1 if no node was found.
@@ -134,7 +134,7 @@ public interface Read
      * @param queryContext the underlying contexts for the thread doing the partition.
      */
     PartitionedScan<NodeValueIndexCursor> nodeIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
-            throws IndexNotApplicableKernelException;
+            throws KernelException;
 
     /**
      * Scan all values in an index.
@@ -153,7 +153,7 @@ public interface Read
      * @param queryContext the underlying contexts for the thread doing the partitioning.
      */
     PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
-            throws IndexNotApplicableKernelException;
+            throws KernelException;
 
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
 
@@ -169,7 +169,7 @@ public interface Read
      */
     PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, int desiredNumberOfPartitions,
                                                          CursorContext cursorContext, TokenPredicate query )
-            throws IndexNotApplicableKernelException;
+            throws KernelException;
 
     /**
      * Scan all nodes in a token index.
@@ -374,7 +374,7 @@ public interface Read
      */
     PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, int desiredNumberOfPartitions,
                                                                        CursorContext cursorContext, TokenPredicate query )
-            throws IndexNotApplicableKernelException;
+            throws KernelException;
 
     /**
      * Scan all relationships in a token index of the specified type.

@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -42,6 +43,7 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
@@ -645,6 +647,13 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             public IndexValueCapability valueCapability( ValueCategory... valueCategories )
             {
                 return IndexValueCapability.NO;
+            }
+
+            @Override
+            public boolean supportPartitionedScan( IndexQuery... queries )
+            {
+                Preconditions.requireNoNullElements( queries );
+                return false;
             }
         };
         FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext( NODE, new int[]{1}, new int[]{1} );

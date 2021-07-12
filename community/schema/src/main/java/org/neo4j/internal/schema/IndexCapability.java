@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
 /**
@@ -59,6 +60,15 @@ public interface IndexCapability
     IndexValueCapability valueCapability( ValueCategory... valueCategories );
 
     /**
+     * Does the index support {@link org.neo4j.internal.kernel.api.PartitionedScan PartitionedScan} for a given {@code queries}.
+     * @param queries a relevant set of query for the index; such as {@link org.neo4j.internal.kernel.api.TokenPredicate TokenPredicate}, for token indexes;
+     * or {@link org.neo4j.internal.kernel.api.PropertyIndexQuery PropertyIndexQuery}, for property indexes.
+     * @return {@code true} if the index supports {@link org.neo4j.internal.kernel.api.PartitionedScan PartitionedScan} for the given {@code queries};
+     * false otherwise.
+     */
+    boolean supportPartitionedScan( IndexQuery... queries );
+
+    /**
      * @return an array of behaviours that are particular to the implementation or configuration of this index.
      * It could be anything that planning could look at and either try to avoid, seek out, or issue warning for.
      */
@@ -79,6 +89,13 @@ public interface IndexCapability
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.NO;
+        }
+
+        @Override
+        public boolean supportPartitionedScan( IndexQuery... queries )
+        {
+            Preconditions.requireNoNullElements( queries );
+            return false;
         }
     };
 }

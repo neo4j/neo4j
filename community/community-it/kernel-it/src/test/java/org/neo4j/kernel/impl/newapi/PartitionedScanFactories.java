@@ -54,7 +54,7 @@ class PartitionedScanFactories
     abstract static class PartitionedScanFactory<QUERY extends Query<?>, CURSOR extends Cursor>
     {
         abstract PartitionedScan<CURSOR> partitionedScan( KernelTransaction tx, QUERY query, int desiredNumberOfPartitions )
-                throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
+                throws KernelException;
 
         abstract CURSOR getCursor( KernelTransaction tx );
 
@@ -70,7 +70,7 @@ class PartitionedScanFactories
             extends PartitionedScanFactory<TokenScanQuery,CURSOR>
     {
         protected final TokenReadSession getSession( KernelTransaction tx, TokenScanQuery query )
-                throws IndexNotFoundKernelException
+                throws KernelException
         {
             final var index = tx.schemaRead().indexGetForName( query.indexName() );
             return tx.dataRead().tokenReadSession( index );
@@ -87,7 +87,7 @@ class PartitionedScanFactories
 
         @Override
         PartitionedScan<NodeLabelIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery tokenScanQuery, int desiredNumberOfPartitions )
-                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+                throws KernelException
         {
             return tx.dataRead().nodeLabelScan( getSession( tx, tokenScanQuery ), desiredNumberOfPartitions, CursorContext.NULL, tokenScanQuery.get() );
         }
@@ -115,7 +115,7 @@ class PartitionedScanFactories
 
         @Override
         PartitionedScan<RelationshipTypeIndexCursor> partitionedScan( KernelTransaction tx, TokenScanQuery tokenScanQuery, int desiredNumberOfPartitions )
-                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+                throws KernelException
         {
             return tx.dataRead().relationshipTypeScan( getSession( tx, tokenScanQuery ), desiredNumberOfPartitions, CursorContext.NULL, tokenScanQuery.get() );
         }
@@ -152,7 +152,7 @@ class PartitionedScanFactories
         }
 
         protected final IndexReadSession getSession( KernelTransaction tx, QUERY query )
-                throws IndexNotFoundKernelException
+                throws KernelException
         {
             final var index = tx.schemaRead().indexGetForName( query.indexName() );
             return tx.dataRead().indexReadSession( index );
@@ -169,7 +169,7 @@ class PartitionedScanFactories
 
         @Override
         PartitionedScan<NodeValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeySeekQuery propertyKeySeekQuery, int desiredNumberOfPartitions )
-                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+                throws KernelException
         {
             return tx.dataRead().nodeIndexSeek( getSession( tx, propertyKeySeekQuery ), desiredNumberOfPartitions,
                                                 QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get() );
@@ -210,7 +210,7 @@ class PartitionedScanFactories
 
         @Override
         PartitionedScan<NodeValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery propertyKeyScanQuery, int desiredNumberOfPartitions )
-                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+                throws KernelException
         {
             return tx.dataRead().nodeIndexScan( getSession( tx, propertyKeyScanQuery ), desiredNumberOfPartitions, QueryContext.NULL_CONTEXT );
         }
@@ -251,7 +251,7 @@ class PartitionedScanFactories
         @Override
         PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeySeekQuery propertyKeySeekQuery,
                                                                        int desiredNumberOfPartitions )
-                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+                throws KernelException
         {
             return tx.dataRead().relationshipIndexSeek( getSession( tx, propertyKeySeekQuery ), desiredNumberOfPartitions,
                                                         QueryContext.NULL_CONTEXT, propertyKeySeekQuery.get() );
@@ -293,7 +293,7 @@ class PartitionedScanFactories
         @Override
         PartitionedScan<RelationshipValueIndexCursor> partitionedScan( KernelTransaction tx, PropertyKeyScanQuery propertyKeyScanQuery,
                                                                        int desiredNumberOfPartitions )
-                throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+                throws KernelException
         {
             return tx.dataRead().relationshipIndexScan( getSession( tx, propertyKeyScanQuery ), desiredNumberOfPartitions, QueryContext.NULL_CONTEXT );
         }

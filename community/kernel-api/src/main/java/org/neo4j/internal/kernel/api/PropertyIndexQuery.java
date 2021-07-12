@@ -24,6 +24,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
@@ -39,7 +40,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.utf8Value;
 
-public abstract class PropertyIndexQuery
+public abstract class PropertyIndexQuery implements IndexQuery
 {
     /**
      * Searches the index for all entries that has the given property.
@@ -228,23 +229,18 @@ public abstract class PropertyIndexQuery
         return ToStringBuilder.reflectionToString( this, ToStringStyle.SHORT_PREFIX_STYLE );
     }
 
+    @Override
     public final int propertyKeyId()
     {
         return propertyKeyId;
     }
-
-    public abstract boolean acceptsValue( Value value );
 
     public boolean acceptsValueAt( PropertyCursor property )
     {
         return acceptsValue( property.propertyValue() );
     }
 
-    /**
-     * @return Target {@link ValueGroup} for query or {@link ValueGroup#UNKNOWN} if not targeting single group.
-     */
-    public abstract ValueGroup valueGroup();
-
+    @Override
     public ValueCategory valueCategory()
     {
         return valueGroup().category();

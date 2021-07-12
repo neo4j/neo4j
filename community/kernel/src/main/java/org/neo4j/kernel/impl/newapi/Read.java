@@ -425,6 +425,7 @@ abstract class Read implements TxStateHolder,
     }
 
     private <C extends Cursor> PartitionedScan<C> propertyIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
+            throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
         return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext,
@@ -435,25 +436,15 @@ abstract class Read implements TxStateHolder,
 
     private <C extends Cursor> PartitionedScan<C> propertyIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,
                                                                      QueryContext queryContext, PropertyIndexQuery... query )
+            throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
         final var descriptor = index.reference();
-
-//        // todo: This is just an example to illustrate that we need to check what index we are targeting
-//        //       because not all indexes will support partitioned scan
-//        if ( !descriptor.getCapability().supportPartitionedScan( query ) )
-//        {
-//        // Ideally we only implement this functionality for RANGE type for now,
-//        // because we will deprecate BTREE.
-//        //
-//        // Otherwise:
-//        // Indexes that can support partitioned scan
-//        // - RANGE
-//        // - BTREE with native-btree-1.0, except for GeometryRangePredicate
-//        // - BTREE with lucene+native-3.0, except for GeometryRangePredicate and single-property-string-queries
-//            throw new IndexNotApplicableKernelException( "This index does not support partitioned scan for this query: " +
-//                    descriptor.userDescription( ktx.tokenRead() ) );
-//        }
+        if ( !descriptor.getCapability().supportPartitionedScan( query ) )
+        {
+            throw new IndexNotApplicableKernelException( "This index does not support partitioned scan for this query: " +
+                                                         descriptor.userDescription( ktx.tokenRead() ) );
+        }
 
         final var session = (DefaultIndexReadSession) index;
         final var valueSeek = session.reader.valueSeek( desiredNumberOfPartitions, queryContext, query );
