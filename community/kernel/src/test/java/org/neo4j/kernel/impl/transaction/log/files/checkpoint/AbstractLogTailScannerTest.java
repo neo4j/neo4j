@@ -82,7 +82,7 @@ abstract class AbstractLogTailScannerTest
     private final LogEntryReader reader = logEntryReader();
 
     private final Monitors monitors = new Monitors();
-    private LogFiles logFiles;
+    protected LogFiles logFiles;
     protected AssertableLogProvider logProvider;
     protected LogVersionRepository logVersionRepository;
     protected TransactionIdStore transactionIdStore;
@@ -495,7 +495,7 @@ abstract class AbstractLogTailScannerTest
 
     // === Below is code for helping the tests above ===
 
-    private static void setupLogFiles( long endLogVersion, LogCreator... logFiles )
+    static void setupLogFiles( long endLogVersion, LogCreator... logFiles )
     {
         Map<Entry, LogPosition> positions = new HashMap<>();
         long version = endLogVersion - logFiles.length;
@@ -505,7 +505,7 @@ abstract class AbstractLogTailScannerTest
         }
     }
 
-    private LogCreator logFile( Entry... entries )
+    LogCreator logFile( Entry... entries )
     {
         return ( logVersion, positions ) ->
         {
@@ -580,27 +580,27 @@ abstract class AbstractLogTailScannerTest
     {
     }
 
-    private static StartEntry start()
+    static StartEntry start()
     {
         return new StartEntry();
     }
 
-    private static CommitEntry commit( long txId )
+    static CommitEntry commit( long txId )
     {
         return new CommitEntry( txId );
     }
 
-    private static CheckPointEntry checkPoint()
+    static CheckPointEntry checkPoint()
     {
         return checkPoint( null/*means self-position*/ );
     }
 
-    private static CheckPointEntry checkPoint( Entry forEntry )
+    static CheckPointEntry checkPoint( Entry forEntry )
     {
         return new CheckPointEntry( forEntry );
     }
 
-    private static PositionEntry position()
+    static PositionEntry position()
     {
         return new PositionEntry();
     }
@@ -629,7 +629,7 @@ abstract class AbstractLogTailScannerTest
         }
     }
 
-    private static class PositionEntry implements Entry
+    static class PositionEntry implements Entry
     {
     }
 

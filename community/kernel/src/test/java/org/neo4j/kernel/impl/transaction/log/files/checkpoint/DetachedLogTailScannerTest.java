@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Instant;
 
 import org.neo4j.configuration.Config;
@@ -30,6 +33,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.storageengine.api.StoreId;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 
@@ -47,6 +52,38 @@ class DetachedLogTailScannerTest extends AbstractLogTailScannerTest
                 .withLogProvider( logProvider )
                 .withConfig( Config.defaults( fail_on_corrupted_log_files, false ) )
                 .build();
+    }
+
+    @Test
+    void includeWrongPositionInException() throws Exception
+    {
+        logFiles = LogFilesBuilder
+                .activeFilesBuilder( databaseLayout, fs, pageCache )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .withLogProvider( logProvider )
+                .withConfig( Config.defaults( fail_on_corrupted_log_files, true ) )
+                .build();
+
+        long txId = 6;
+        PositionEntry position = position();
+        setupLogFiles( 10,
+                logFile( start(), commit( txId - 1 ), position ),
+                logFile( checkPoint( position ) ),
+                logFile( start(), commit( txId ) ) );
+
+        // remove all tx log files
+        Path[] matchedFiles = logFiles.getLogFile().getMatchedFiles();
+        for ( Path matchedFile : matchedFiles )
+        {
+            fs.delete( matchedFile );
+        }
+
+        var e = assertThrows( RuntimeException.class, () -> logFiles.getTailInformation() );
+        assertThat( e ).getRootCause().hasMessageContaining( "LogPosition{logVersion=8," ).hasMessageContaining(
+                "checkpoint does not point to a valid location in transaction logs." );
     }
 
     @Override
