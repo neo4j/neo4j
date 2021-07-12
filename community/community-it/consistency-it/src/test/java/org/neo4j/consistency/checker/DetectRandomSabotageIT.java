@@ -617,10 +617,17 @@ public class DetectRandomSabotageIT
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdate( random, stores.getRelationshipStore(), usedRecord(), PrimitiveRecord::getNextProp,
-                                PrimitiveRecord::setNextProp, () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), propertyId ->
+                                PrimitiveRecord::setNextProp, () -> randomLargeSometimesNegative( random, propertyId ->
                                 {
                                     // For relationship properties there's a chance that the generated id will be a perfectly valid
                                     // start of an existing property chain, therefore add some extra validation to this ID
+
+                                    // We can not detect corrupt property pointers that look like empty pointers.
+                                    if ( NULL_REFERENCE.is( propertyId ) )
+                                    {
+                                        return false;
+                                    }
+
                                     if ( propertyId < 0 )
                                     {
                                         return true;
