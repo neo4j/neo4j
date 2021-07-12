@@ -114,6 +114,12 @@ public class DatabasePageCache implements PageCache
     }
 
     @Override
+    public int pageReservedBytes()
+    {
+        return globalPageCache.pageReservedBytes();
+    }
+
+    @Override
     public long maxCachedPages()
     {
         return globalPageCache.maxCachedPages();

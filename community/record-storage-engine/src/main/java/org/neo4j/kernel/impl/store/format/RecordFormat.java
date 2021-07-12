@@ -83,7 +83,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @param record to put read data into, replacing any existing data in that record object.
      * @param cursor {@link PageCursor} to read data from.
      * @param mode {@link RecordLoad} mode of reading.
-     * See {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad, CursorContext)} for more information.
+     * See {@link RecordStore#getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)} for more information.
      * @param recordSize size of records of this format. This is passed in like this since not all formats
      * know the record size in advance, but may be read from store header when opening the store.
      * @throws IOException on error reading.
@@ -122,7 +122,6 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
     /**
      * @param record to obtain "next" reference from.
      * @return "next" reference of records of this type.
-     * @see RecordStore#getNextRecordReference(AbstractBaseRecord)
      */
     long getNextRecordReference( RECORD record );
 
@@ -152,7 +151,8 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * Page size of store file represented by current record format
      * @param pageCachePageSize page cache page size
      * @param recordSize store format record size
+     * @param reservedBytes number of reserved bytes in page
      * @return page size for file
      */
-    int getPageSize( int pageCachePageSize, int recordSize );
+    int getPageSize( int pageCachePageSize, int recordSize, int reservedBytes );
 }

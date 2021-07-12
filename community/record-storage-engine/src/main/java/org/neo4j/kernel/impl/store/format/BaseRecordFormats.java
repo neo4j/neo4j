@@ -64,9 +64,9 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public RecordFormat<MetaDataRecord> metaData()
+    public RecordFormat<MetaDataRecord> metaData( int reservedBytes )
     {
-        return new MetaDataRecordFormat();
+        return new MetaDataRecordFormat( reservedBytes );
     }
 
     @Override

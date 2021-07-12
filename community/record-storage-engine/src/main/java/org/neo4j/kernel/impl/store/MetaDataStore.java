@@ -336,9 +336,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         long previousValue = FIELD_NOT_INITIALIZED;
         int pageSize = pageCache.pageSize();
+        int pageReservedBytes = pageCache.pageReservedBytes();
         try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, immutable.empty() ) )
         {
-            int offset = offset( position );
+            int offset = offset( position, pageReservedBytes );
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
             {
                 if ( cursor.next() )
@@ -370,9 +371,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return previousValue;
     }
 
-    private static int offset( Position position )
+    private static int offset( Position position, int reservedBytes )
     {
-        return RECORD_SIZE * position.id;
+        return reservedBytes + RECORD_SIZE * position.id;
     }
 
     /**
@@ -386,7 +387,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      */
     public static long getRecord( PageCache pageCache, Path neoStore, Position position, String databaseName, CursorContext cursorContext ) throws IOException
     {
-        var recordFormat = new MetaDataRecordFormat();
+        int reservedBytes = pageCache.pageReservedBytes();
+        var recordFormat = new MetaDataRecordFormat( reservedBytes );
         int pageSize = pageCache.pageSize();
         long value = FIELD_NOT_PRESENT;
         try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, immutable.empty(), DISABLED ) )
@@ -414,7 +416,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         while ( cursor.shouldRetry() );
                         if ( cursor.checkAndClearBoundsFlag() )
                         {
-                            int offset = offset( position );
+                            int offset = offset( position, reservedBytes );
                             throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
                                     record, 0, offset, RECORD_SIZE, pageSize, neoStore.toAbsolutePath().toString() ) );
                         }
@@ -688,7 +690,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             throw new IllegalArgumentException( "Cannot increment log version on page cursor that is not write-locked" );
         }
         // offsets plus one to skip the inUse byte
-        int offset = (position.id * getRecordSize()) + 1;
+        int offset = offsetForId( position.id ) + 1;
         long value = cursor.getLong( offset ) + 1;
         cursor.putLong( offset, value );
         checkForDecodingErrors( cursor, position.id, NORMAL );

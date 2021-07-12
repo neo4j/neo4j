@@ -162,6 +162,7 @@ public class MuninnPageCache implements PageCache
     private final int pageCacheId;
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
+    private final int reservedPageBytes;
     private final int keepFree;
     private final PageCacheTracer pageCacheTracer;
     private final IOBufferFactory bufferFactory;
@@ -241,16 +242,18 @@ public class MuninnPageCache implements PageCache
         private final int faultLockStriping;
         private final boolean enableEvictionThread;
         private final boolean preallocateStoreFiles;
+        private final int reservedPageSize;
 
         private Configuration( MemoryAllocator memoryAllocator, SystemNanoClock clock, MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer,
                 int pageSize, IOBufferFactory bufferFactory, int faultLockStriping,
-                boolean enableEvictionThread, boolean preallocateStoreFiles )
+                boolean enableEvictionThread, boolean preallocateStoreFiles, int reservedPageSize )
         {
             this.memoryAllocator = memoryAllocator;
             this.clock = clock;
             this.memoryTracker = memoryTracker;
             this.pageCacheTracer = pageCacheTracer;
             this.pageSize = pageSize;
+            this.reservedPageSize = reservedPageSize;
             this.bufferFactory = bufferFactory;
             this.faultLockStriping = faultLockStriping;
             this.enableEvictionThread = enableEvictionThread;
@@ -263,7 +266,7 @@ public class MuninnPageCache implements PageCache
         public Configuration memoryAllocator( MemoryAllocator memoryAllocator )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles, reservedPageSize );
         }
 
         /**
@@ -272,7 +275,7 @@ public class MuninnPageCache implements PageCache
         public Configuration clock( SystemNanoClock clock )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles, reservedPageSize );
         }
 
         /**
@@ -281,7 +284,7 @@ public class MuninnPageCache implements PageCache
         public Configuration memoryTracker( MemoryTracker memoryTracker )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles, reservedPageSize );
         }
 
         /**
@@ -290,7 +293,7 @@ public class MuninnPageCache implements PageCache
         public Configuration pageCacheTracer( PageCacheTracer pageCacheTracer )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles, reservedPageSize );
         }
 
         /**
@@ -299,7 +302,7 @@ public class MuninnPageCache implements PageCache
         public Configuration pageSize( int pageSize )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles, reservedPageSize );
         }
 
         /**
@@ -308,7 +311,16 @@ public class MuninnPageCache implements PageCache
         public Configuration bufferFactory( IOBufferFactory bufferFactory )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles, reservedPageSize );
+        }
+
+        /**
+         * @param reservedPageBytes number of reserved bytes per page
+         */
+        public Configuration reservedPageBytes( int reservedPageBytes )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles, reservedPageBytes );
         }
 
         /**
@@ -317,7 +329,7 @@ public class MuninnPageCache implements PageCache
         public Configuration faultLockStriping( int faultLockStriping )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles, reservedPageSize );
         }
 
         /**
@@ -326,7 +338,7 @@ public class MuninnPageCache implements PageCache
         public Configuration disableEvictionThread()
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, false, preallocateStoreFiles );
+                    faultLockStriping, false, preallocateStoreFiles, reservedPageSize );
         }
 
         /**
@@ -335,7 +347,7 @@ public class MuninnPageCache implements PageCache
         public Configuration preallocateStoreFiles( boolean preallocateStoreFiles )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles, reservedPageSize );
         }
     }
 
@@ -355,7 +367,7 @@ public class MuninnPageCache implements PageCache
     public static Configuration config( MemoryAllocator memoryAllocator )
     {
         return new Configuration( memoryAllocator, Clocks.nanoClock(), EmptyMemoryTracker.INSTANCE, PageCacheTracer.NULL,
-                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true, true );
+                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true, true, 0 );
     }
 
     /**
@@ -374,6 +386,7 @@ public class MuninnPageCache implements PageCache
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
         this.cachePageSize = configuration.pageSize;
+        this.reservedPageBytes = configuration.reservedPageSize;
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
         this.pageCacheTracer = configuration.pageCacheTracer;
         this.printExceptionsOnClose = true;
@@ -798,6 +811,12 @@ public class MuninnPageCache implements PageCache
     public int pageSize()
     {
         return cachePageSize;
+    }
+
+    @Override
+    public int pageReservedBytes()
+    {
+        return reservedPageBytes;
     }
 
     @Override

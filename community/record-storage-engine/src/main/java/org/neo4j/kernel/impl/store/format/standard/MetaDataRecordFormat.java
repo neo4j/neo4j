@@ -31,15 +31,17 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
     public static final int RECORD_SIZE = 9;
     public static final long FIELD_NOT_PRESENT = -1;
     private static final int ID_BITS = 32;
+    private final int reservedBytesPerPage;
 
-    public MetaDataRecordFormat()
+    public MetaDataRecordFormat( int reservedBytesPerPage )
     {
-        this( true );
+        this( true, reservedBytesPerPage );
     }
 
-    public MetaDataRecordFormat( boolean pageAligned )
+    public MetaDataRecordFormat( boolean pageAligned, int reservedBytesPerPage )
     {
         super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, ID_BITS, pageAligned );
+        this.reservedBytesPerPage = reservedBytesPerPage;
     }
 
     @Override
@@ -60,7 +62,7 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
         }
 
         Position position = values[id];
-        int offset = position.id() * recordSize;
+        int offset = reservedBytesPerPage + position.id() * recordSize;
         cursor.setOffset( offset );
         boolean inUse = cursor.getByte() == Record.IN_USE.byteValue();
         long value = inUse ? cursor.getLong() : FIELD_NOT_PRESENT;

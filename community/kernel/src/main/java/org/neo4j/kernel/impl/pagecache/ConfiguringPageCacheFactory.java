@@ -39,6 +39,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
@@ -108,6 +109,7 @@ public class ConfiguringPageCacheFactory
         MuninnPageCache.Configuration configuration = MuninnPageCache.config( memoryAllocator )
                 .memoryTracker( memoryTracker )
                 .bufferFactory( bufferFactory )
+                .reservedPageBytes( config.get( reserved_page_header_bytes ) )
                 .preallocateStoreFiles( config.get( preallocate_store_files ) )
                 .clock( clock )
                 .pageCacheTracer( pageCacheTracer );

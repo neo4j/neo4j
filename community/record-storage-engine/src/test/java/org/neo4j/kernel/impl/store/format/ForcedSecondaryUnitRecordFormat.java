@@ -108,8 +108,8 @@ public class ForcedSecondaryUnitRecordFormat<RECORD extends AbstractBaseRecord> 
     }
 
     @Override
-    public int getPageSize( int pageCachePageSize, int recordSize )
+    public int getPageSize( int pageCachePageSize, int recordSize, int reservedBytes )
     {
-        return actual.getPageSize( pageCachePageSize, recordSize );
+        return actual.getPageSize( pageCachePageSize, recordSize, reservedBytes );
     }
 }

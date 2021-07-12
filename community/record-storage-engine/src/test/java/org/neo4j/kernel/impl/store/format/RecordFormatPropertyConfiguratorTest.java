@@ -165,7 +165,7 @@ class RecordFormatPropertyConfiguratorTest
         }
 
         @Override
-        public RecordFormat<MetaDataRecord> metaData()
+        public RecordFormat<MetaDataRecord> metaData( int reservedBytes )
         {
             return null;
         }

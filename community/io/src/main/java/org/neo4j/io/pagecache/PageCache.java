@@ -171,6 +171,11 @@ public interface PageCache extends AutoCloseable
     int pageSize();
 
     /**
+     * Number of bytes reserved per page for internal purpose
+     */
+    int pageReservedBytes();
+
+    /**
      * The max number of cached pages.
      */
     long maxCachedPages();

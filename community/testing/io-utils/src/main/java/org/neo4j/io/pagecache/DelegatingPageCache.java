@@ -64,6 +64,12 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
+    public int pageReservedBytes()
+    {
+        return delegate.pageReservedBytes();
+    }
+
+    @Override
     public void close()
     {
         delegate.close();

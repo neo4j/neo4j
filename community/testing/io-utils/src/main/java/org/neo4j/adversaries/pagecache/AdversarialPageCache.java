@@ -113,6 +113,12 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
+    public int pageReservedBytes()
+    {
+        return delegate.pageReservedBytes();
+    }
+
+    @Override
     public long maxCachedPages()
     {
         return delegate.maxCachedPages();

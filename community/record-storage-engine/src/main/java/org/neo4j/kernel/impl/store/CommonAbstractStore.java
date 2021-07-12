@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.function.LongPredicate;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
@@ -54,8 +55,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.util.concurrent.Runnables;
 
 import static java.lang.String.format;
@@ -95,6 +96,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     private int filePageSize;
     private int recordsPerPage;
     private int recordsEndOffset;
+    private int reservedBytes;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
     private RuntimeException causeOfStoreNotOk;
@@ -322,7 +324,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     protected int offsetForId( long id )
     {
-        return RecordPageLocationCalculator.offsetForId( id, recordSize, recordsPerPage );
+        return RecordPageLocationCalculator.offsetForId( id, recordSize, recordsPerPage, reservedBytes );
     }
 
     @Override
@@ -379,9 +381,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         storeHeader = header;
         recordSize = determineRecordSize();
-        filePageSize = recordFormat.getPageSize( pageCache.pageSize(), recordSize );
-        recordsPerPage = filePageSize / recordSize;
-        recordsEndOffset = recordsPerPage * recordSize; // Truncated file page size to whole multiples of record size.
+        reservedBytes = configuration.get( GraphDatabaseInternalSettings.reserved_page_header_bytes );
+        filePageSize = recordFormat.getPageSize( pageCache.pageSize(), recordSize, reservedBytes );
+        recordsPerPage = (filePageSize - reservedBytes) / recordSize;
+        recordsEndOffset = reservedBytes + recordsPerPage * recordSize; // Truncated file page size to whole multiples of record size.
     }
 
     public boolean isInUse( long id, PageCursor cursor )
@@ -1087,6 +1090,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     public IdGenerator getIdGenerator()
     {
         return idGenerator;
+    }
+
+    public int getReservedBytes()
+    {
+        return reservedBytes;
     }
 
     @Override

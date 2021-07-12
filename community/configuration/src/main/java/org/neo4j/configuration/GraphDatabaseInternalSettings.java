@@ -764,4 +764,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                     .addConstraint( min( 0.1D ) )
                     .addConstraint( max( 1D ) )
                     .build();
+
+    @Description( "Number of reserved header bytes in each page in page cache. Please note changing it for already existing store is not supported." )
+    public static final Setting<Integer> reserved_page_header_bytes = newBuilder( "unsupported.dbms.reserved.page.header.bytes", INT, 0 ).build();
 }

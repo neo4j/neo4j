@@ -113,9 +113,9 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     }
 
     @Override
-    public int getPageSize( int pageCachePageSize, int recordSize )
+    public int getPageSize( int pageCachePageSize, int recordSize, int reservedBytes )
     {
-        return pageAligned ? pageCachePageSize : pageCachePageSize - pageCachePageSize % recordSize;
+        return pageAligned ? pageCachePageSize : Math.min( pageCachePageSize, pageCachePageSize + reservedBytes - pageCachePageSize % recordSize );
     }
 
     @Override

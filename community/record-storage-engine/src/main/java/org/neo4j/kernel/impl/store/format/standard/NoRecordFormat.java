@@ -77,7 +77,7 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
     }
 
     @Override
-    public int getPageSize( int pageCachePageSize, int recordSize )
+    public int getPageSize( int pageCachePageSize, int recordSize, int reservedBytes )
     {
         return pageCachePageSize;
     }

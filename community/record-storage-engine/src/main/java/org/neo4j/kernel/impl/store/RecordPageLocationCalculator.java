@@ -51,8 +51,8 @@ public class RecordPageLocationCalculator
      * @return which offset into the right page the given {@code id} lives at, given the
      * {@code pageSize} and {@code recordSize}.
      */
-    public static int offsetForId( long id, int recordSize, int recordsPerPage )
+    public static int offsetForId( long id, int recordSize, int recordsPerPage, int reservedBytes )
     {
-        return (int) (id % recordsPerPage) * recordSize;
+        return reservedBytes + (int) (id % recordsPerPage) * recordSize;
     }
 }

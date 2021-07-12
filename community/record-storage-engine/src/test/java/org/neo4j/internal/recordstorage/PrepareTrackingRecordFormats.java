@@ -131,9 +131,9 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
-    public PrepareTrackingRecordFormat<MetaDataRecord> metaData()
+    public PrepareTrackingRecordFormat<MetaDataRecord> metaData( int reservedBytes )
     {
-        return new PrepareTrackingRecordFormat<>( actual.metaData(), metaDataPrepare );
+        return new PrepareTrackingRecordFormat<>( actual.metaData( reservedBytes ), metaDataPrepare );
     }
 
     @Override
@@ -239,9 +239,9 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public int getPageSize( int pageCachePageSize, int recordSize )
+        public int getPageSize( int pageCachePageSize, int recordSize, int reservedBytes )
         {
-            return actual.getPageSize( pageCachePageSize, recordSize );
+            return actual.getPageSize( pageCachePageSize, recordSize, reservedBytes );
         }
 
         @Override
