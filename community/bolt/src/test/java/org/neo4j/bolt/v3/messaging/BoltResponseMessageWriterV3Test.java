@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v3.messaging;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -32,11 +33,15 @@ import org.neo4j.bolt.v3.messaging.response.IgnoredMessage;
 import org.neo4j.bolt.v3.messaging.response.RecordMessage;
 import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -44,6 +49,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.bolt.messaging.BoltResponseMessage.IGNORED;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
@@ -174,6 +180,38 @@ public class BoltResponseMessageWriterV3Test
         inOrder.verify( output ).messageSucceeded();
 
         verify( output, never() ).messageFailed();
+    }
+
+    /**
+     * Asserts that large values aren't passed directly to the log provider as this may lead to overflows when flushing the message.
+     */
+    @Test
+    void shouldLimitLogOutputToSensibleSizes() throws IOException
+    {
+        PackOutput output = mock( PackOutput.class );
+
+        Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
+        IOException error = new IOException( "Unable to flush" );
+        doThrow( error ).when( packer ).pack( ArgumentMatchers.any( AnyValue.class ) );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
+        var writer = new BoltResponseMessageWriterV3( out -> packer, output, new SimpleLogService( logProvider ) );
+
+        var listValue = VirtualValues.list();
+        for ( var i = 0; i < 1000; i++ )
+        {
+            listValue = VirtualValues.list( listValue );
+        }
+
+        var testValue = listValue;
+        var cause = assertThrows( IOException.class, () -> writer.consumeField( testValue ) );
+        assertSame( error, cause );
+
+        assertThat( logProvider ).forClass( BoltResponseMessageWriterV3.class )
+                                 .containsMessagesOnce( "Failed to write value" );
+        assertThat( logProvider ).forClass( BoltResponseMessageWriterV3.class )
+                                 .doesNotContainMessageWithArguments( "Failed to write value %s because: %s", listValue, cause.getMessage() );
     }
 
     protected BoltResponseMessageWriter newWriter( PackOutput output, Neo4jPack.Packer packer )
