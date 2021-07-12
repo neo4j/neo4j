@@ -53,6 +53,7 @@ import static java.lang.String.format;
 public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
 {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltResponseMessageWriterV3.class );
+    private static final int MAX_LOG_COMPONENT_LENGTH = 4096;
 
     private final PackOutput output;
     private final Neo4jPack.Packer packer;
@@ -160,10 +161,22 @@ public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
         }
         catch ( Throwable error )
         {
-            log.error( "Failed to write value %s because: %s", value, error.getMessage() );
+            log.error( "Failed to write value %s because: %s", formatValue( value ), error.getMessage() );
             onError();
             throw error;
         }
+    }
+
+    private String formatValue( AnyValue value )
+    {
+        var encoded = value.toString();
+
+        if ( encoded.length() < MAX_LOG_COMPONENT_LENGTH )
+        {
+            return encoded;
+        }
+
+        return encoded.substring( 0, MAX_LOG_COMPONENT_LENGTH ) + "...";
     }
 
     @Override
