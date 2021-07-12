@@ -27,17 +27,22 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.attribution.IdGen
+
+import scala.annotation.tailrec
 
 object skipAndLimit extends PlanTransformer {
 
-  def shouldPlanExhaustiveLimit(plan: LogicalPlan): Boolean = plan.treeFold(false) {
-    case _: UpdatingPlan => _ => SkipChildren(true)
-    case _: EagerLogicalPlan => acc => SkipChildren(acc)
-  }
+    @tailrec
+    def shouldPlanExhaustiveLimit(plan: LogicalPlan): Boolean = plan match {
+      case _: UpdatingPlan => true
+      case _: EagerLogicalPlan => false
+      case p: LogicalBinaryPlan => p.right.treeExists{case _: UpdatingPlan => true} || shouldPlanExhaustiveLimit(p.left)
+      case p: LogicalPlan => if (p.lhs.nonEmpty) shouldPlanExhaustiveLimit(p.lhs.get) else false
+    }
 
   def planLimitOnTopOf(plan: LogicalPlan, count: Expression)(implicit idGen: IdGen): LogicalPlan =
     if (shouldPlanExhaustiveLimit(plan)) ExhaustiveLimit(plan, count)(idGen)
