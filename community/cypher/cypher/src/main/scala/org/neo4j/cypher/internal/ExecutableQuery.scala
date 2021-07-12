@@ -111,11 +111,6 @@ trait ExecutableQuery extends CacheabilityInfo {
   val extractedParams: MapValue
 
   /**
-   * Type of this query.
-   */
-  def queryType: QueryType
-
-  /**
    * Obfuscator to be used on this query's raw text and parameters before logging.
    */
   def queryObfuscator: QueryObfuscator

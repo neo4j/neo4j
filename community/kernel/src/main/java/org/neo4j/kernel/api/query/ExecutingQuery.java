@@ -30,7 +30,6 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.ActiveLock;
@@ -74,7 +73,6 @@ public class ExecutingQuery
     private long compilationCompletedNanos;
     private String obfuscatedQueryText;
     private MapValue obfuscatedQueryParameters;
-    private QueryExecutionType.QueryType queryType;
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
     private volatile ExecutingQueryStatus status = SimpleState.parsing();
     private volatile ExecutingQuery previousQuery;
@@ -187,7 +185,6 @@ public class ExecutingQuery
     }
 
     public void onCompilationCompleted( CompilerInfo compilerInfo,
-                                        QueryExecutionType.QueryType queryType,
                                         Supplier<ExecutionPlanDescription> planDescriptionSupplier )
     {
         assertExpectedStatus( SimpleState.planning() );
@@ -195,7 +192,6 @@ public class ExecutingQuery
         this.compilerInfo = compilerInfo;
         this.compilationCompletedNanos = clock.nanos();
         this.planDescriptionSupplier = planDescriptionSupplier;
-        this.queryType = queryType;
         this.status = SimpleState.planned(); // write barrier - must be last
     }
 
@@ -214,7 +210,6 @@ public class ExecutingQuery
         this.compilerInfo = null;
         this.compilationCompletedNanos = 0;
         this.planDescriptionSupplier = null;
-        this.queryType = null;
         this.memoryTracker = OptionalMemoryTracker.NONE;
         this.obfuscatedQueryParameters = null;
         this.obfuscatedQueryText = null;

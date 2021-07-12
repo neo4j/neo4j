@@ -47,7 +47,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
@@ -84,7 +83,7 @@ class ExecutingQueryTest
         assertEquals( "planning", query.snapshot().status() );
 
         // when
-        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
+        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
 
         // then
         assertEquals( "planned", query.snapshot().status() );
@@ -118,7 +117,7 @@ class ExecutingQueryTest
 
         // when
         clock.forward( 16, TimeUnit.MICROSECONDS );
-        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
+        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
         clock.forward( 200, TimeUnit.MICROSECONDS );
 
         // then
@@ -132,7 +131,7 @@ class ExecutingQueryTest
     {
         // given
         query.onObfuscatorReady( null );
-        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
+        query.onCompilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
         query.onExecutionStarted( new FakeMemoryTracker() );
 
         // then
@@ -318,8 +317,8 @@ class ExecutingQueryTest
     void shouldNotAllowCompletingCompilationMultipleTimes()
     {
         query.onObfuscatorReady( null );
-        query.onCompilationCompleted( null, null, null );
-        assertThatIllegalStateException().isThrownBy( () -> query.onCompilationCompleted( null, null, null ) );
+        query.onCompilationCompleted( null, null );
+        assertThatIllegalStateException().isThrownBy( () -> query.onCompilationCompleted( null, null ) );
     }
 
     @Test
@@ -336,7 +335,7 @@ class ExecutingQueryTest
         query.onObfuscatorReady( null );
         assertEquals( "planning", query.snapshot().status() );
 
-        query.onCompilationCompleted( null, null, null );
+        query.onCompilationCompleted( null, null );
         assertEquals( "planned", query.snapshot().status() );
 
         query.onExecutionStarted( new FakeMemoryTracker() );
@@ -350,7 +349,7 @@ class ExecutingQueryTest
     void shouldNotAllowRetryingWithoutStartingExecuting()
     {
         query.onObfuscatorReady(null );
-        query.onCompilationCompleted( null, null, null );
+        query.onCompilationCompleted( null, null );
         assertThatIllegalStateException().isThrownBy( query::onRetryAttempted );
     }
 

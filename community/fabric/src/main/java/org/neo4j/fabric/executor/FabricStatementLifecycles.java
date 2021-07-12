@@ -237,7 +237,7 @@ public class FabricStatementLifecycles
                 if ( !shouldLogIfSingleQuery )
                 {
                     getQueryExecutionMonitor().startExecution( executingQuery );
-                    executingQuery.onCompilationCompleted( null, null, null );
+                    executingQuery.onCompilationCompleted( null, null );
                     executingQuery.onExecutionStarted( OptionalMemoryTracker.NONE );
                 }
             }

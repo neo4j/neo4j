@@ -445,8 +445,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       val builder = planDescriptionBuilder
       () => builder.explain()
     }
-
-    override def queryType: QueryExecutionType.QueryType = QueryTypeConversion.asPublic(internalQueryType)
   }
 
   /**
