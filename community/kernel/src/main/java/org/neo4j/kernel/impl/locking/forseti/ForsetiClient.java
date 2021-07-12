@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
@@ -103,6 +104,7 @@ public class ForsetiClient implements Locks.Client
 
     private final SystemNanoClock clock;
     private final boolean verboseDeadlocks;
+    private final LongSupplier internalIdSupplier;
 
     /** List of other clients this client is waiting for. */
     private final Set<ForsetiClient> waitList = ConcurrentHashMap.newKeySet();
@@ -135,22 +137,26 @@ public class ForsetiClient implements Locks.Client
      */
     private volatile ForsetiLockManager.Lock waitingForLock;
     private volatile long transactionId;
+    private volatile long internalClientId;
     private volatile MemoryTracker memoryTracker;
     private static final long CONCURRENT_NODE_SIZE = HeapEstimator.LONG_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE;
 
-    public ForsetiClient( ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps, SystemNanoClock clock, boolean verboseDeadlocks )
+    public ForsetiClient( ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps, SystemNanoClock clock, boolean verboseDeadlocks,
+            LongSupplier internalIdSupplier )
     {
         this.lockMaps = lockMaps;
         this.sharedLockCounts = new HeapTrackingLongIntHashMap[lockMaps.length];
         this.exclusiveLockCounts = new HeapTrackingLongIntHashMap[lockMaps.length];
         this.clock = clock;
         this.verboseDeadlocks = verboseDeadlocks;
+        this.internalIdSupplier = internalIdSupplier;
     }
 
     @Override
     public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config )
     {
         stateHolder.reset();
+        this.internalClientId = internalIdSupplier.getAsLong();
         this.transactionId = transactionId;
         this.memoryTracker = requireNonNull( memoryTracker );
         this.lockAcquisitionTimeoutNano = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toNanos();
@@ -650,6 +656,7 @@ public class ForsetiClient implements Locks.Client
         waitForAllClientsToLeave();
         releaseAllLocks();
         transactionId = INVALID_TRANSACTION_ID;
+        internalClientId = INVALID_TRANSACTION_ID;
         memoryTracker = null;
         // This exclusive lock instance has been used for all exclusive locks held by this client for this transaction.
         // Close it to mark it not participate in deadlock detection anymore
@@ -741,13 +748,13 @@ public class ForsetiClient implements Locks.Client
 
         ForsetiClient that = (ForsetiClient) o;
 
-        return transactionId == that.transactionId;
+        return internalClientId == that.internalClientId;
     }
 
     @Override
     public int hashCode()
     {
-        return Long.hashCode( transactionId );
+        return Long.hashCode( internalClientId );
     }
 
     @Override

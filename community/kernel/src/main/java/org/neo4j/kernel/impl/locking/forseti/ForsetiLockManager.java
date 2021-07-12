@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -157,6 +158,9 @@ public class ForsetiLockManager implements Locks
     /** Reverse lookup resource types by id, used for introspection */
     private final ResourceType[] resourceTypes;
 
+    /** Counter to keep internal client ids unique, important to be thread safe! */
+    private final AtomicLong clientIds = new AtomicLong();
+
     private final SystemNanoClock clock;
     private final boolean verboseDeadlocks;
     private volatile boolean closed;
@@ -188,7 +192,7 @@ public class ForsetiLockManager implements Locks
             throw new IllegalStateException( this + " already closed" );
         }
 
-        return new ForsetiClient( lockMaps, clock, verboseDeadlocks );
+        return new ForsetiClient( lockMaps, clock, verboseDeadlocks, clientIds::incrementAndGet );
     }
 
     @Override
