@@ -61,4 +61,11 @@ public class CheckpointInfo
     {
         return storeId;
     }
+
+    @Override
+    public String toString()
+    {
+        return "CheckpointInfo{" + "transactionLogPosition=" + transactionLogPosition + ", checkpointEntryPosition=" + checkpointEntryPosition + ", storeId=" +
+                storeId + '}';
+    }
 }
