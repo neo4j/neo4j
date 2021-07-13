@@ -132,7 +132,7 @@ class SchemaChecker
                 }
 
                 SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, storeCursors );
-                SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( schemaRule ), record.copy() );
+                SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( SchemaRuleKey.from( schemaRule ), record.copy() );
                 if ( previousContentRecord != null )
                 {
                     reporter.forSchema( record ).duplicateRuleContent( previousContentRecord );

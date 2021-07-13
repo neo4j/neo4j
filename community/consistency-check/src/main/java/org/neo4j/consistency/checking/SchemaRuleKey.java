@@ -23,30 +23,55 @@ import java.util.Objects;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 
-public class SchemaRuleKey
+public abstract class SchemaRuleKey
 {
-    private final boolean isConstraint;
     private final boolean isUnique;
     private final SchemaDescriptor schema;
 
-    public SchemaRuleKey( SchemaRule rule )
+    protected SchemaRuleKey( SchemaDescriptor schema, boolean isUnique )
     {
-        if ( rule instanceof ConstraintDescriptor )
+        this.isUnique = isUnique;
+        this.schema = schema;
+    }
+
+    public static SchemaRuleKey from( SchemaRule rule )
+    {
+        return rule instanceof ConstraintDescriptor ? new ConstraintKey( (ConstraintDescriptor) rule ) : new IndexKey( (IndexDescriptor) rule );
+    }
+
+    static class IndexKey extends SchemaRuleKey
+    {
+        private final IndexType type;
+
+        IndexKey( IndexDescriptor index )
         {
-            ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
-            this.isConstraint = true;
-            this.isUnique = constraint.enforcesUniqueness();
+            super( index.schema(), index.isUnique() );
+            this.type = index.getIndexType();
         }
-        else
+
+        @Override
+        public boolean equals( Object others )
         {
-            IndexDescriptor index = (IndexDescriptor) rule;
-            this.isConstraint = false;
-            this.isUnique = index.isUnique();
+            return super.equals( others ) && type == ((IndexKey) others).type;
         }
-        this.schema = rule.schema();
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( type, super.hashCode() );
+        }
+    }
+
+    static class ConstraintKey extends SchemaRuleKey
+    {
+        ConstraintKey( ConstraintDescriptor constraint )
+        {
+            super( constraint.schema(), constraint.enforcesUniqueness() );
+        }
     }
 
     @Override
@@ -60,23 +85,13 @@ public class SchemaRuleKey
         {
             return false;
         }
-
         SchemaRuleKey that = (SchemaRuleKey) o;
-
-        if ( isConstraint != that.isConstraint )
-        {
-            return false;
-        }
-        if ( isUnique != that.isUnique )
-        {
-            return false;
-        }
-        return schema.equals( that.schema );
+        return isUnique == that.isUnique && schema.equals( that.schema );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( isConstraint ? 1 : 0, isUnique ? 1 : 0, schema.hashCode() );
+        return Objects.hash( isUnique ? 1 : 0, schema.hashCode() );
     }
 }
