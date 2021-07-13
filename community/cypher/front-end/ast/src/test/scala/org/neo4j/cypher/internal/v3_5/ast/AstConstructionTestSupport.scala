@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.v3_5.ast
 
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.expressions.functions.Exists
+import org.neo4j.cypher.internal.v3_5.expressions.functions.Id
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.v3_5.util.{DummyPosition, InputPosition}
 
@@ -37,6 +38,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def exists(e: Expression): FunctionInvocation =
     FunctionInvocation(FunctionName(Exists.name)(e.position), e)(e.position)
+
+  def id(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(Id.name)(pos))
+
+  def equals(lhs: Expression, rhs: Expression): Equals = Equals(lhs, rhs)(pos)
+
+  def in(lhs: Expression, rhs: Expression): In = In(lhs, rhs)(pos)
 
   def prop(variable: String, propKey: String): Property = Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
 
