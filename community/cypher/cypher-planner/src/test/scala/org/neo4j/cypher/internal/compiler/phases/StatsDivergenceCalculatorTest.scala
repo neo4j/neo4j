@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class StatsDivergenceCalculatorTest extends CypherFunSuite {
-  val defaultInitialThreshold = GraphDatabaseSettings.query_statistics_divergence_threshold.defaultValue.toDouble
-  val defaultTargetThreshold = GraphDatabaseInternalSettings.query_statistics_divergence_target.defaultValue.toDouble
-  val defaultInitialInterval = GraphDatabaseSettings.cypher_min_replan_interval.defaultValue.toMillis
-  val defaultTargetInterval = GraphDatabaseInternalSettings.cypher_replan_interval_target.defaultValue.toMillis
-  val marginOfError = 0.0001
+  private val defaultInitialThreshold = GraphDatabaseSettings.query_statistics_divergence_threshold.defaultValue.toDouble
+  private val defaultTargetThreshold = GraphDatabaseInternalSettings.query_statistics_divergence_target.defaultValue.toDouble
+  private val defaultInitialInterval = GraphDatabaseSettings.cypher_min_replan_interval.defaultValue.toMillis
+  private val defaultTargetInterval = GraphDatabaseInternalSettings.cypher_replan_interval_target.defaultValue.toMillis
+  private val marginOfError = 0.0001
 
   test("Disabling decay should show no decay") {
     val divergence = StatsDivergenceCalculator.divergenceNoDecayCalculator(defaultInitialThreshold, defaultInitialInterval)
@@ -91,6 +91,12 @@ class StatsDivergenceCalculatorTest extends CypherFunSuite {
   test("Small time interval should work") {
     Seq(StatsDivergenceCalculator.inverse, StatsDivergenceCalculator.exponential).foreach { name =>
       assertDecaysMakeSense(name, defaultInitialThreshold, defaultTargetThreshold, 1000, 1002)
+    }
+  }
+
+  test("A small threshold should not increase on decay") {
+    Seq(StatsDivergenceCalculator.inverse, StatsDivergenceCalculator.exponential).foreach { name =>
+      assertNoDecay(name, 0, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
     }
   }
 
