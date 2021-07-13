@@ -954,9 +954,15 @@ public class Operations implements Write, SchemaWrite
         {
             assertTokenAndRelationshipPropertyIndexesSupported( "Failed to create btree relationship property index." );
         }
-        if ( prototype.getIndexType() == IndexType.TEXT )
+        IndexType indexType = prototype.getIndexType();
+        if ( indexType == IndexType.TEXT )
         {
             assertTextIndexSupport( prototype );
+        }
+        if ( indexType == IndexType.RANGE )
+        {
+            // All parts for creating RANGE indexes are not in place yet, so blocking any creation attempts for now.
+            throw new UnsupportedOperationException( "Index of RANGE type is not supported yet." );
         }
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();

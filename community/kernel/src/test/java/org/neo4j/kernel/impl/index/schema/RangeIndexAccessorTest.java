@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -55,8 +56,8 @@ import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLI
 
 class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey,NativeIndexValue>
 {
-    //TODO should be change to an IndexDescriptor of the correct type and provider when those are implemented
-    private static final IndexDescriptor indexDescriptor = forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 );
+    private static final IndexDescriptor indexDescriptor = forSchema( forLabel( 42, 666 ) ).withIndexType( IndexType.RANGE )
+            .withName( "index" ).materialise( 0 );
 
     private final ValueType[] supportedTypes = ValueType.values();
     private final IndexLayoutFactory<RangeKey,NativeIndexValue> indexLayoutFactory = () -> new RangeLayout( 1 );
