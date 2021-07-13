@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOn
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
@@ -89,7 +90,7 @@ object EagerAnalyzer {
 
 class EagerAnalyzer(context: LogicalPlanningContext) {
 
-  implicit val semanticTable: SemanticTable = context.semanticTable
+  private implicit val semanticTable: SemanticTable = context.semanticTable
 
   /**
    * Determines whether there is a conflict between the so-far planned LogicalPlan
@@ -97,12 +98,14 @@ class EagerAnalyzer(context: LogicalPlanningContext) {
    * argument PlannerQuery is the very head of the PlannerQuery chain.
    */
   private def readWriteConflictInHead(plan: LogicalPlan, plannerQuery: SinglePlannerQuery): Boolean = {
-    val nodeOrRelLeaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
+    val entityProvidingLeaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
       case n: NodeLogicalLeafPlan => n
       case r: RelationshipLogicalLeafPlan => r
+        // If in a subquery, we consider the argument to provide us with stable identifiers
+      case a: Argument if context.isInSubquery && a.argumentIds.nonEmpty => a
     }
 
-    if (nodeOrRelLeaves.isEmpty)
+    if (entityProvidingLeaves.isEmpty)
       false // the query did not start with a read, possibly CREATE () ...
     else {
       // In the following we determine if there are any stably solved predicates that we can leave out of the eagerness analysis.
@@ -112,7 +115,7 @@ class EagerAnalyzer(context: LogicalPlanningContext) {
       // The reads from predicates that are solved by that first leaf do not need to be protected against seeing conflicting writes from later in the query.
 
       // If we're in a subquery, the first leaf of that subquery is not actually the first leaf of the whole LogicalPlan.
-      val (maybeStableLeaf, unstableLeaves) = if (context.isInSubquery) (None, nodeOrRelLeaves) else (nodeOrRelLeaves.headOption, nodeOrRelLeaves.tail)
+      val (maybeStableLeaf, unstableLeaves) = if (context.isInSubquery) (None, entityProvidingLeaves) else (entityProvidingLeaves.headOption, entityProvidingLeaves.tail)
 
       // Collect all predicates solved by the first leaf and exclude them from the eagerness analysis.
       val stablySolvedPredicates: Set[Predicate] = maybeStableLeaf.map { p =>
@@ -129,9 +132,10 @@ class EagerAnalyzer(context: LogicalPlanningContext) {
         case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName, isIdStable = false)
       }
 
-      val unstableLeafIdNames = unstableLeaves.map {
-        case n: NodeLogicalLeafPlan => n.idName
-        case r: RelationshipLogicalLeafPlan => r.idName
+      val unstableLeafIdNames = unstableLeaves.flatMap {
+        case n: NodeLogicalLeafPlan => Set(n.idName)
+        case r: RelationshipLogicalLeafPlan => Set(r.idName)
+        case a: Argument => a.argumentIds
       }.toSet
 
       val headQgWithLeafInfo = QgWithLeafInfo(
