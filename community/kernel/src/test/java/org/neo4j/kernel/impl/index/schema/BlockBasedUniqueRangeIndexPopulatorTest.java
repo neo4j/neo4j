@@ -22,19 +22,18 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.values.storable.ValueType;
 
-import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.genericBlockBasedPopulatorFactory;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.spaceFillingCurveSettings;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.rangeBlockBasedPopulatorFactory;
 
-class GenericBlockBasedNativeNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopulatorTest<BtreeKey,NativeIndexValue>
+class BlockBasedUniqueRangeIndexPopulatorTest extends NativeUniqueIndexPopulatorTest<RangeKey,NativeIndexValue>
 {
-    GenericBlockBasedNativeNonUniqueIndexPopulatorTest()
+    BlockBasedUniqueRangeIndexPopulatorTest()
     {
-        super( genericBlockBasedPopulatorFactory(), ValueType.values(), () -> new GenericLayout( 1, spaceFillingCurveSettings ) );
+        super( rangeBlockBasedPopulatorFactory(), ValueType.values(), () -> new RangeLayout( 1 ) );
     }
 
     @Override
     IndexType indexType()
     {
-        return IndexType.BTREE;
+        return IndexType.RANGE;
     }
 }

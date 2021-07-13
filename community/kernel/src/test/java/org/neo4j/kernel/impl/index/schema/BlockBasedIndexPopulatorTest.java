@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongPredicate;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -45,6 +43,7 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.ByteUnit;
@@ -57,8 +56,6 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.IndexValueValidator;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -100,12 +97,13 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 @ActorsExtension
 @EphemeralPageCacheExtension
-class BlockBasedIndexPopulatorTest
+abstract class BlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>>
 {
     private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptors.forLabel( 1, 1 );
-    private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withName( "index" ).materialise( 1 );
+    final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withIndexType( indexType() )
+            .withName( "index" ).materialise( 1 );
     public static final int SUFFICIENTLY_LARGE_BUFFER_SIZE = (int) ByteUnit.kibiBytes( 50 );
-    private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
+    final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
     @Inject
     Actor merger;
@@ -118,10 +116,15 @@ class BlockBasedIndexPopulatorTest
     @Inject
     PageCache pageCache;
 
-    private IndexFiles indexFiles;
-    private DatabaseIndexContext databaseIndexContext;
+    IndexFiles indexFiles;
+    DatabaseIndexContext databaseIndexContext;
     private JobScheduler jobScheduler;
     private IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
+
+    abstract IndexType indexType();
+    abstract BlockBasedIndexPopulator<KEY,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker ) throws IOException;
+    abstract Layout<KEY, NativeIndexValue> layout();
 
     @BeforeEach
     void setup()
@@ -158,7 +161,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         TrappingMonitor monitor = new TrappingMonitor( ignore -> false );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( monitor );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( monitor );
         boolean closed = false;
         try
         {
@@ -187,7 +190,7 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    private Callable<Object> scanCompletedTask( BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator )
+    private Callable<Object> scanCompletedTask( BlockBasedIndexPopulator<KEY,NativeIndexValue> populator )
     {
         return () ->
         {
@@ -201,7 +204,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         TrappingMonitor monitor = new TrappingMonitor( numberOfBlocks -> numberOfBlocks == 2 );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( monitor );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( monitor );
         boolean closed = false;
         try
         {
@@ -237,7 +240,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         TrappingMonitor monitor = new TrappingMonitor( numberOfBlocks -> numberOfBlocks == 1 );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( monitor );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( monitor );
         try
         {
             populator.add( batchOfUpdates(), NULL );
@@ -265,7 +268,7 @@ class BlockBasedIndexPopulatorTest
     void shouldCorrectlyDecideToAwaitMergeDependingOnProgress() throws Throwable
     {
         // given
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
         boolean closed = false;
         try
         {
@@ -296,7 +299,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         TrappingMonitor monitor = new TrappingMonitor( ignore -> false );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( monitor );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( monitor );
         boolean closed = false;
         try
         {
@@ -336,7 +339,7 @@ class BlockBasedIndexPopulatorTest
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         boolean closed = false;
         try
         {
@@ -374,7 +377,7 @@ class BlockBasedIndexPopulatorTest
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         boolean closed = false;
         try
         {
@@ -411,7 +414,7 @@ class BlockBasedIndexPopulatorTest
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         Collection<IndexEntryUpdate<?>> populationUpdates = batchOfUpdates();
         populator.add( populationUpdates, NULL );
 
@@ -456,7 +459,7 @@ class BlockBasedIndexPopulatorTest
         databaseIndexContext = DatabaseIndexContext.builder( databaseIndexContext )
                 .withMonitors( monitors )
                 .build();
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         try
         {
             // when
@@ -476,7 +479,7 @@ class BlockBasedIndexPopulatorTest
     void shouldScheduleMergeOnJobSchedulerWithCorrectGroup() throws IndexEntryConflictException, IOException
     {
         // given
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
         boolean closed = false;
         try
         {
@@ -513,18 +516,18 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap();
-            GenericLayout layout = layout();
+            Layout<KEY,NativeIndexValue> layout = layout();
             Value value = generateStringValueResultingInIndexEntrySize( layout, size );
             Collection<? extends IndexEntryUpdate<?>> data = singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value ) );
             populator.add( data, NULL );
             populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
 
             // when
-            try ( Seeker<BtreeKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
+            try ( Seeker<KEY,NativeIndexValue> seek = seek( populator.tree, layout ) )
             {
                 // then
                 assertTrue( seek.next() );
@@ -543,7 +546,7 @@ class BlockBasedIndexPopulatorTest
     {
         /// given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap() + 1;
@@ -562,11 +565,11 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap();
-            GenericLayout layout = layout();
+            Layout<KEY,NativeIndexValue> layout = layout();
             Value value = generateStringValueResultingInIndexEntrySize( layout, size );
             IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value );
             Race.ThrowingRunnable updateAction = () ->
@@ -588,7 +591,7 @@ class BlockBasedIndexPopulatorTest
             }
 
             // when
-            try ( Seeker<BtreeKey,NativeIndexValue> seek = seek( populator.tree, layout ) )
+            try ( Seeker<KEY,NativeIndexValue> seek = seek( populator.tree, layout ) )
             {
                 // then
                 assertTrue( seek.next() );
@@ -608,7 +611,7 @@ class BlockBasedIndexPopulatorTest
     {
         /// given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap() + 1;
@@ -634,7 +637,7 @@ class BlockBasedIndexPopulatorTest
     void shouldCountExternalUpdatesAsSampleUpdates() throws IOException, IndexEntryConflictException
     {
         // given
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
+        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
         try
         {
             populator.add( List.of( add( 0 ), add( 1 ) ), NULL );
@@ -663,19 +666,19 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    private static Seeker<BtreeKey,NativeIndexValue> seek( GBPTree<BtreeKey,NativeIndexValue> tree, Layout<BtreeKey,NativeIndexValue> layout )
+    private Seeker<KEY,NativeIndexValue> seek( GBPTree<KEY,NativeIndexValue> tree, Layout<KEY,NativeIndexValue> layout )
             throws IOException
     {
-        BtreeKey low = layout.newKey();
+        KEY low = layout.newKey();
         low.initialize( Long.MIN_VALUE );
         low.initValuesAsLowest();
-        BtreeKey high = layout.newKey();
+        KEY high = layout.newKey();
         high.initialize( Long.MAX_VALUE );
         high.initValuesAsHighest();
         return tree.seek( low, high, NULL );
     }
 
-    private static void externalUpdates( BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator, int firstId, int lastId )
+    private void externalUpdates( BlockBasedIndexPopulator<KEY,NativeIndexValue> populator, int firstId, int lastId )
             throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
@@ -687,43 +690,12 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    private BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor ) throws IOException
+    private BlockBasedIndexPopulator<KEY,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor ) throws IOException
     {
         return instantiatePopulator( monitor, heapBufferFactory( 100), INSTANCE );
     }
 
-    private BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker ) throws IOException
-    {
-        GenericLayout layout = layout();
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator =
-                new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory,
-                        Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 ),
-                        memoryTracker, monitor )
-                {
-                    @Override
-                    NativeIndexReader<BtreeKey,NativeIndexValue> newReader()
-                    {
-                        throw new UnsupportedOperationException( "Not needed in this test" );
-                    }
-
-                    @Override
-                    protected IndexValueValidator instantiateValueValidator()
-                    {
-                        return new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
-                    }
-                };
-        populator.create();
-        return populator;
-    }
-
-    private static GenericLayout layout()
-    {
-        IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-        return new GenericLayout( 1, spatialSettings );
-    }
-
-    private static Collection<IndexEntryUpdate<?>> batchOfUpdates()
+    private Collection<IndexEntryUpdate<?>> batchOfUpdates()
     {
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
         for ( int i = 0; i < 50; i++ )
@@ -733,12 +705,12 @@ class BlockBasedIndexPopulatorTest
         return updates;
     }
 
-    private static IndexEntryUpdate<IndexDescriptor> add( int i )
+    private IndexEntryUpdate<IndexDescriptor> add( int i )
     {
         return IndexEntryUpdate.add( i, INDEX_DESCRIPTOR, stringValue( "Value" + i ) );
     }
 
-    private static IndexEntryUpdate<IndexDescriptor> remove( int i )
+    private IndexEntryUpdate<IndexDescriptor> remove( int i )
     {
         return IndexEntryUpdate.remove( i, INDEX_DESCRIPTOR, stringValue( "Value" + i ) );
     }

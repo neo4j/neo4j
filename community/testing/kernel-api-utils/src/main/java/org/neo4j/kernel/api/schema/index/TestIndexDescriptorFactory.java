@@ -23,6 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 
@@ -34,8 +35,13 @@ public class TestIndexDescriptorFactory
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema )
     {
+        return forSchema( IndexType.BTREE, schema );
+    }
+
+    public static IndexDescriptor forSchema( IndexType indexType, SchemaDescriptor schema )
+    {
         int id = randomId();
-        return IndexPrototype.forSchema( schema ).withName( "index_" + id ).materialise( id );
+        return IndexPrototype.forSchema( schema ).withIndexType( indexType ).withName( "index_" + id ).materialise( id );
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
@@ -47,6 +53,11 @@ public class TestIndexDescriptorFactory
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )
     {
         return forSchema( SchemaDescriptors.forLabel( labelId, propertyIds ) );
+    }
+
+    public static IndexDescriptor forLabel( IndexType indexType, int labelId, int... propertyIds )
+    {
+        return forSchema( indexType, SchemaDescriptors.forLabel( labelId, propertyIds ) );
     }
 
     public static IndexDescriptor forRelType( int relTypeId, int... propertyIds )

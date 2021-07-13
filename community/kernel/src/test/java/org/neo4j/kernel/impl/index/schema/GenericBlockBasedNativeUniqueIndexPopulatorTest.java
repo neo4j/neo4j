@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.values.storable.ValueType;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.genericBlockBasedPopulatorFactory;
@@ -29,5 +30,11 @@ class GenericBlockBasedNativeUniqueIndexPopulatorTest extends NativeUniqueIndexP
     GenericBlockBasedNativeUniqueIndexPopulatorTest()
     {
         super( genericBlockBasedPopulatorFactory(), ValueType.values(), () -> new GenericLayout( 1, spaceFillingCurveSettings ) );
+    }
+
+    @Override
+    IndexType indexType()
+    {
+        return IndexType.BTREE;
     }
 }

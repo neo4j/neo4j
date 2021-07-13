@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -55,7 +56,9 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         this.indexLayoutFactory = indexLayoutFactory;
     }
 
-    private static final IndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( 42, 666 );
+    private final IndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( indexType(), 42, 666 );
+
+    abstract IndexType indexType();
 
     @Override
     NativeIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache ) throws IOException

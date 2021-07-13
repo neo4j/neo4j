@@ -43,6 +43,13 @@ class NativeIndexPopulatorTestCases
                         heapBufferFactory( 10 * 1024 ), config, INSTANCE, tokenNameLookup );
     }
 
+    static NativeIndexPopulatorTestCases.PopulatorFactory<RangeKey,NativeIndexValue> rangeBlockBasedPopulatorFactory()
+    {
+        return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
+                new BlockBasedRangeIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, false,
+                        heapBufferFactory( 10 * 1024 ), config, INSTANCE, tokenNameLookup );
+    }
+
     @FunctionalInterface
     public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {

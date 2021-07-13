@@ -26,30 +26,28 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexValueValidator;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.MemoryTracker;
 
-class GenericBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorTest<BtreeKey>
+class RangeBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorTest<RangeKey>
 {
-
     @Override
     IndexType indexType()
     {
-        return IndexType.BTREE;
+        return IndexType.RANGE;
     }
 
     @Override
-    BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
+    BlockBasedIndexPopulator<RangeKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker ) throws IOException
     {
-        GenericLayout layout = layout();
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator =
+        RangeLayout layout = layout();
+        BlockBasedIndexPopulator<RangeKey,NativeIndexValue> populator =
                 new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory,
                         Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 ),
                         memoryTracker, monitor )
                 {
                     @Override
-                    NativeIndexReader<BtreeKey,NativeIndexValue> newReader()
+                    NativeIndexReader<RangeKey,NativeIndexValue> newReader()
                     {
                         throw new UnsupportedOperationException( "Not needed in this test" );
                     }
@@ -65,10 +63,9 @@ class GenericBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorTest<B
     }
 
     @Override
-    GenericLayout layout()
+    RangeLayout layout()
     {
-        IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-        return new GenericLayout( 1, spatialSettings );
+        return new RangeLayout( 1 );
     }
 
 }
