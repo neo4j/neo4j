@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -121,6 +122,8 @@ abstract class IndexPopulationStressTest
     private TokenNameLookup tokenNameLookup;
     private boolean prevAccessCheck;
 
+    abstract IndexType indexType();
+
     IndexPopulationStressTest(
             boolean hasValues, Function<RandomValues,Value> valueGenerator, Function<IndexPopulationStressTest,IndexProvider> providerCreator )
     {
@@ -139,8 +142,10 @@ abstract class IndexPopulationStressTest
     {
         indexProvider = providerCreator.apply( this );
         tokenNameLookup = SIMPLE_NAME_LOOKUP;
-        descriptor = indexProvider.completeConfiguration( forSchema( forLabel( 0, 0 ), PROVIDER ).withName( "index_0" ).materialise( 0 ) );
-        descriptor2 = indexProvider.completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withName( "index_1" ).materialise( 1 ) );
+        descriptor = indexProvider
+                .completeConfiguration( forSchema( forLabel( 0, 0 ), PROVIDER ).withIndexType( indexType() ).withName( "index_0" ).materialise( 0 ) );
+        descriptor2 = indexProvider
+                .completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withIndexType( indexType() ).withName( "index_1" ).materialise( 1 ) );
         fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
         populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE, tokenNameLookup );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt(), any( CursorContext.class ) ) ).thenThrow(

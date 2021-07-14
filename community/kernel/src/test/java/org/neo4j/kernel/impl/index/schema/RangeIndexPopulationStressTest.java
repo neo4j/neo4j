@@ -26,20 +26,20 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
-class GenericNativeIndexPopulationStressTest extends IndexPopulationStressTest
+class RangeIndexPopulationStressTest extends IndexPopulationStressTest
 {
-    GenericNativeIndexPopulationStressTest()
+    RangeIndexPopulationStressTest()
     {
         super( true, RandomValues::nextValue, test ->
         {
             DatabaseIndexContext context = DatabaseIndexContext.builder( test.pageCache, test.fs, DEFAULT_DATABASE_NAME ).build();
-            return new GenericNativeIndexProvider( context, test.directory(), immediate(), defaults() );
+            return new RangeIndexProvider( context, test.directory(), immediate(), defaults() );
         } );
     }
 
     @Override
     IndexType indexType()
     {
-        return IndexType.BTREE;
+        return IndexType.RANGE;
     }
 }
