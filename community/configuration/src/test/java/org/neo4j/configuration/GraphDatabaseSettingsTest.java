@@ -313,10 +313,10 @@ class GraphDatabaseSettingsTest
 
     @ParameterizedTest
     @EnumSource( value = GraphDatabaseSettings.Mode.class, mode = EnumSource.Mode.EXCLUDE, names = {"CORE"} )
-    void shouldNotLimitTxSizeIfNotCore()
+    void shouldNotLimitTxSizeIfNotCore( GraphDatabaseSettings.Mode mode )
     {
         Config.newBuilder()
-                .set( GraphDatabaseSettings.mode, GraphDatabaseSettings.Mode.SINGLE )
+                .set( GraphDatabaseSettings.mode, mode )
                 .set( GraphDatabaseSettings.memory_transaction_max_size, gibiBytes( 3 ) ).build();
     }
 }

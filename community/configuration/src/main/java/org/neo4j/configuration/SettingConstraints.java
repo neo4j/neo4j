@@ -491,10 +491,10 @@ public final class SettingConstraints
         return ifMode( clusterConstraint, nonClusterConstraint, GraphDatabaseSettings.Mode.CORE, GraphDatabaseSettings.Mode.READ_REPLICA );
     }
 
-    public static <T> SettingConstraint<T> ifMode( SettingConstraint<T> clusterConstraint, SettingConstraint<T> nonClusterConstraint,
+    public static <T> SettingConstraint<T> ifMode( SettingConstraint<T> modeConstraint, SettingConstraint<T> nonModeConstraint,
             GraphDatabaseSettings.Mode... modes )
     {
-        return dependency( clusterConstraint, nonClusterConstraint, GraphDatabaseSettings.mode, isOneOf( modes ) );
+        return dependency( modeConstraint, nonModeConstraint, GraphDatabaseSettings.mode, isOneOf( modes ) );
     }
 
     public static <T> SettingConstraint<T> isOneOf( T[] acceptedValues )
