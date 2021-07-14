@@ -226,15 +226,15 @@ trait SemanticAnalysisTooling {
   def requireFeatureSupport(msg: String, feature: SemanticFeature, position: InputPosition): SemanticCheck =
     s => {
       if(!s.features(feature))
-        SemanticCheckResult(s,
-          List(FeatureError(s"$msg is not available in this implementation of Cypher " +
-                              s"due to lack of support for $feature.", feature, position)))
+        SemanticCheckResult.error(s,
+          FeatureError(s"$msg is not available in this implementation of Cypher " +
+                              s"due to lack of support for $feature.", feature, position))
       else
         SemanticCheckResult.success(s)
   }
 
   def error(msg: String, position: InputPosition)(state: SemanticState): SemanticCheckResult =
-    SemanticCheckResult(state, Vector(SemanticError(msg, position)))
+    SemanticCheckResult.error(state, SemanticError(msg, position))
 
   def possibleTypes(expression: Expression) : TypeGenerator =
     types(expression)(_).unwrapLists

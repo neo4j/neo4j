@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
-import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -55,7 +54,7 @@ case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyNa
 abstract class CreateIndex(variable: Variable, properties: List[Property], ifExistsDo: IfExistsDo, isNodeIndex: Boolean, options: Options)(val position: InputPosition)
   extends SchemaCommand with SemanticAnalysisTooling {
   override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError("Failed to create index: `OR REPLACE` cannot be used together with this command.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => error("Failed to create index: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
       val ctType = if (isNodeIndex) CTNode else CTRelationship
       declareVariable(variable, ctType) chain
@@ -70,8 +69,8 @@ abstract class CreateIndex(variable: Variable, properties: List[Property], ifExi
 
   // The validation of the values (provider, config keys and config values) are done at runtime.
   def checkOptionsMap(indexString: String): SemanticCheck = options match {
-    case OptionsMap(ops) if (ops.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty) =>
-      SemanticError(s"Failed to create $indexString index: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
+    case OptionsMap(ops) if ops.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty =>
+      error(s"Failed to create $indexString index: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
     case _ => SemanticCheckResult.success
   }
 }
@@ -98,10 +97,10 @@ case class CreateLookupIndex(variable: Variable, isNodeIndex: Boolean, function:
 
   override def semanticCheck: SemanticCheck = function match {
     case FunctionInvocation(_, FunctionName(name), _, _) if !allowedFunction(name) =>
-      if (isNodeIndex) SemanticError(s"Failed to create node lookup index: Function '$name' is not allowed, valid function is '${Labels.name}'.", position)
-      else SemanticError(s"Failed to create relationship lookup index: Function '$name' is not allowed, valid function is '${Type.name}'.", position)
+      if (isNodeIndex) error(s"Failed to create node lookup index: Function '$name' is not allowed, valid function is '${Labels.name}'.", position)
+      else error(s"Failed to create relationship lookup index: Function '$name' is not allowed, valid function is '${Type.name}'.", position)
     case _ =>
-      if (options != NoOptions) SemanticError("Failed to create index: Lookup indexes do not support option values.", position)
+      if (options != NoOptions) error("Failed to create index: Lookup indexes do not support option values.", position)
       else super.semanticCheck chain SemanticExpressionCheck.simple(function)
   }
 }
@@ -153,7 +152,7 @@ trait CompositePropertyConstraintCommand extends SchemaCommand with SemanticAnal
 
   def entityType: CypherType
 
-  override def semanticCheck =
+  override def semanticCheck: SemanticCheck =
     declareVariable(variable, entityType) chain
       SemanticExpressionCheck.simple(properties) chain
       semanticCheckFold(properties) {
@@ -196,11 +195,11 @@ case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, propert
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
-    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create node key constraint: `OR REPLACE` cannot be used together with this command.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create node key constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ => options match {
       // The validation of the values (provider, config keys and config values) are done at runtime.
-      case OptionsMap(ops) if (ops.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty) =>
-        SemanticError(s"Failed to create node key constraint: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
+      case OptionsMap(ops) if ops.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty =>
+        error(s"Failed to create node key constraint: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
       case _ =>  super.semanticCheck
   }}
 }
@@ -213,11 +212,11 @@ case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, 
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
-    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create uniqueness constraint: `OR REPLACE` cannot be used together with this command.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create uniqueness constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ => options match {
       // The validation of the values (provider, config keys and config values) are done at runtime.
-      case OptionsMap(ops) if (ops.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty) =>
-        SemanticError(s"Failed to create uniqueness constraint: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
+      case OptionsMap(ops) if ops.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty =>
+        error(s"Failed to create uniqueness constraint: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
       case _ => super.semanticCheck
   }}
 }
@@ -230,9 +229,9 @@ case class CreateNodePropertyExistenceConstraint(variable: Variable, label: Labe
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
-    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create node property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create node property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
-      if (options != NoOptions) SemanticError(s"Failed to create node property existence constraint: `OPTIONS` cannot be used together with this command.", position)
+      if (options != NoOptions) error(s"Failed to create node property existence constraint: `OPTIONS` cannot be used together with this command.", position)
       else super.semanticCheck
   }
 }
@@ -245,9 +244,9 @@ case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, rel
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
-    case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create relationship property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
+    case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create relationship property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
-      if (options != NoOptions) SemanticError(s"Failed to create relationship property existence constraint: `OPTIONS` cannot be used together with this command.", position)
+      if (options != NoOptions) error(s"Failed to create relationship property existence constraint: `OPTIONS` cannot be used together with this command.", position)
       else super.semanticCheck
   }
 }
