@@ -90,7 +90,7 @@ public class DefaultRecoveryService implements RecoveryService
 
     @Override
     public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastRecoveredTransactionPosition,
-            LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs, CursorContext cursorContext )
+            LogPosition positionAfterLastRecoveredTransaction, LogPosition checkpointPosition, boolean missingLogs, CursorContext cursorContext )
     {
         if ( missingLogs )
         {
@@ -104,14 +104,21 @@ public class DefaultRecoveryService implements RecoveryService
                     "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
             transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true, cursorContext );
             logVersionRepository.setCurrentLogVersion( logVersion, cursorContext );
+            long checkpointLogVersion = logVersionRepository.getCheckpointLogVersion();
+            if ( checkpointLogVersion < 0 )
+            {
+                log.warn( "Recovery detected that checkpoint log version is invalid. " +
+                        "Resetting version to start from the beginning. Current recorder version: %d. New version: 0.", checkpointLogVersion );
+                logVersionRepository.setCheckpointLogVersion( 0, cursorContext );
+            }
             return;
         }
         if ( lastRecoveredTransaction != null )
         {
             LogEntryCommit commitEntry = lastRecoveredTransaction.getCommitEntry();
-            transactionIdStore
-                    .setLastCommittedAndClosedTransactionId( commitEntry.getTxId(), lastRecoveredTransaction.getChecksum(), commitEntry.getTimeWritten(),
-                            lastRecoveredTransactionPosition.getByteOffset(), lastRecoveredTransactionPosition.getLogVersion(), cursorContext );
+            transactionIdStore.setLastCommittedAndClosedTransactionId( commitEntry.getTxId(), lastRecoveredTransaction.getChecksum(),
+                    commitEntry.getTimeWritten(), lastRecoveredTransactionPosition.getByteOffset(), lastRecoveredTransactionPosition.getLogVersion(),
+                    cursorContext );
         }
         else
         {
@@ -126,5 +133,6 @@ public class DefaultRecoveryService implements RecoveryService
         }
 
         logVersionRepository.setCurrentLogVersion( positionAfterLastRecoveredTransaction.getLogVersion(), cursorContext );
+        logVersionRepository.setCheckpointLogVersion( checkpointPosition.getLogVersion(), cursorContext );
     }
 }

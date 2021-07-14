@@ -85,7 +85,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
 
         Stopwatch recoveryStartTime = Stopwatch.start();
 
-        LogPosition recoveryStartPosition = recoveryStartInformation.getRecoveryPosition();
+        LogPosition recoveryStartPosition = recoveryStartInformation.getTransactionLogPosition();
 
         monitor.recoveryRequired( recoveryStartPosition );
 
@@ -170,7 +170,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RECOVERY_COMPLETED_TAG ) ) )
         {
             final boolean missingLogs = recoveryStartInformation.isMissingLogs();
-            recoveryService.transactionsRecovered( lastTransaction, lastTransactionPosition, recoveryToPosition, missingLogs, cursorContext );
+            recoveryService.transactionsRecovered( lastTransaction, lastTransactionPosition, recoveryToPosition,
+                    recoveryStartInformation.getCheckpointPosition(), missingLogs, cursorContext );
         }
         monitor.recoveryCompleted( numberOfRecoveredTransactions, recoveryStartTime.elapsed( MILLISECONDS ) );
     }

@@ -47,6 +47,8 @@ public interface AdditionalInitialIds
 
     long lastCommittedTransactionLogByteOffset();
 
+    long checkpointLogVersion();
+
     /**
      * High ids of zero, useful when creating a completely new store with {@link ParallelBatchImporter}.
      */
@@ -74,6 +76,12 @@ public interface AdditionalInitialIds
         public long lastCommittedTransactionLogByteOffset()
         {
             return BASE_TX_LOG_BYTE_OFFSET;
+        }
+
+        @Override
+        public long checkpointLogVersion()
+        {
+            return 0;
         }
     };
 }

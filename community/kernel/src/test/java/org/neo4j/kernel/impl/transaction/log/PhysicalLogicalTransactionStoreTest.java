@@ -391,7 +391,8 @@ class PhysicalLogicalTransactionStoreTest
         @Override
         public RecoveryStartInformation getRecoveryStartInformation() throws IOException
         {
-            return new RecoveryStartInformation( logFiles.getLogFile().extractHeader( 0 ).getStartPosition(), 1 );
+            return new RecoveryStartInformation( logFiles.getLogFile().extractHeader( 0 ).getStartPosition(),
+                    logFiles.getCheckpointFile().findLatestCheckpoint().get().getCheckpointEntryPosition(), 1 );
         }
 
         @Override
@@ -408,7 +409,7 @@ class PhysicalLogicalTransactionStoreTest
 
         @Override
         public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastTransactionPosition,
-                LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs, CursorContext cursorContext )
+                LogPosition positionAfterLastRecoveredTransaction, LogPosition checkpointPosition, boolean missingLogs, CursorContext cursorContext )
         {
             recoveryPerformed.set( true );
         }
