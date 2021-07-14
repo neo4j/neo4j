@@ -530,10 +530,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details("count( (:LabelName) ) AS x")), Set("x")))
 
     assertGood(attach(NodeCountFromCountStore("x", List(Some(label("LabelName")), Some(label("LabelName2"))), Set.empty), 54.2),
-      planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details("count( (:LabelName:LabelName2) ) AS x")), Set("x")))
+      planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details("count( (:LabelName), (:LabelName2) ) AS x")), Set("x")))
 
     assertGood(attach(NodeCountFromCountStore("  UNNAMED123", List(Some(label("LabelName"))), Set.empty), 54.2),
       planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details(s"count( (:LabelName) ) AS ${anonVar("123")}")), Set(anonVar("123"))))
+
+    assertGood(attach(NodeCountFromCountStore("x", List(None, None), Set.empty), 54.2),
+      planDescription(id, "NodeCountFromCountStore", NoChildren, Seq(details("count( (), () ) AS x")), Set("x")))
   }
 
   test("ProcedureCall") {
@@ -562,6 +565,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(RelationshipCountFromCountStore("x", Some(label("StartLabel")), Seq(RelTypeName("LIKES")(pos), RelTypeName("LOVES")(pos)), Some(label("EndLabel")), Set.empty), 54.2),
       planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details("count( (:StartLabel)-[:LIKES|LOVES]->(:EndLabel) ) AS x")), Set("x")))
+
+    assertGood(attach(RelationshipCountFromCountStore("x", Some(label("StartLabel")), Seq.empty, Some(label("EndLabel")), Set.empty), 54.2),
+      planDescription(id, "RelationshipCountFromCountStore", NoChildren, Seq(details("count( (:StartLabel)-[]->(:EndLabel) ) AS x")), Set("x")))
   }
 
   test("CreateIndex") {
