@@ -115,6 +115,38 @@ class GraphCountsJsonTest extends CypherFunSuite {
     )
   }
 
+  test("lookup index for label") {
+    implicit val formats: Formats = DefaultFormats + IndexTypeSerializer
+    JsonMethods.parse(StringInput(
+      """
+        |{
+        |    "estimatedUniqueSize": 0,
+        |    "labels": [],
+        |    "totalSize": 0,
+        |    "updatesSinceEstimation": 0,
+        |    "indexType": "LOOKUP"
+        |}
+      """.stripMargin)).extract[Index] should be(
+      Index(Some(Seq()), None, IndexType.LOOKUP, Seq(), 0, 0, 0)
+    )
+  }
+
+  test("lookup index for relationship type") {
+    implicit val formats: Formats = DefaultFormats + IndexTypeSerializer
+    JsonMethods.parse(StringInput(
+      """
+        |{
+        |    "estimatedUniqueSize": 0,
+        |    "relationshipTypes": [],
+        |    "totalSize": 0,
+        |    "updatesSinceEstimation": 0,
+        |    "indexType": "LOOKUP"
+        |}
+      """.stripMargin)).extract[Index] should be(
+      Index(None, Some(Seq()), IndexType.LOOKUP, Seq(), 0, 0, 0)
+    )
+  }
+
   test("NodeLCount with Label") {
     JsonMethods.parse(StringInput(
       """

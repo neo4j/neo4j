@@ -19,6 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.graphCounts.Constraint
+import org.neo4j.cypher.graphCounts.GraphCountData
+import org.neo4j.cypher.graphCounts.Index
+import org.neo4j.cypher.graphCounts.NodeCount
+import org.neo4j.cypher.graphCounts.RelationshipCount
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
@@ -54,6 +59,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -63,6 +69,9 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.schema.ConstraintType
+import org.neo4j.internal.schema.IndexType.BTREE
+import org.neo4j.internal.schema.IndexType.LOOKUP
 
 trait StatisticsBackedLogicalPlanningSupport {
 
@@ -80,12 +89,24 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
                       connectComponentsPlanner: Boolean = true,
                       executionModel: ExecutionModel = ExecutionModel.default,
+                      useMinimumGraphStatistics: Boolean = false
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
                             labels: Map[String, Double] = Map[String, Double](),
-                            relationships: Map[RelDef, Double] = Map[RelDef, Double]()
-                          )
+                            relationships: Map[RelDef, Double] = Map[RelDef, Double](),
+                            defaultRelationshipCardinalityTo0: Boolean = false
+                          ) {
+    def getRelCount(relDef: RelDef): Double = {
+      def orElse: Double =
+        if (defaultRelationshipCardinalityTo0) 0.0
+        else throw new IllegalStateException(
+          s"""No cardinality set for relationship $relDef. Please specify using
+             |.setRelationshipCardinality("$relDef", cardinality)""".stripMargin)
+
+        relationships.getOrElse(relDef, orElse)
+    }
+  }
   object RelDef {
 
     private implicit class RegexHelper(val sc: StringContext) {
@@ -217,6 +238,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     withToLabel.copy(cardinalities = cardinalities.copy(relationships = cardinalities.relationships + (RelDef(from, rel, to) -> cardinality)))
   }
 
+  def defaultRelationshipCardinalityTo0(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(cardinalities = cardinalities.copy(defaultRelationshipCardinalityTo0 = enable))
+  }
+
   def addNodeIndex(label: String,
                    properties: Seq[String],
                    existsSelectivity: Double,
@@ -304,7 +329,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
   private def fail(message: String): Nothing =
     throw new IllegalStateException(message)
 
-
   def enableDebugOption(option: CypherDebugOption, enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(options = options.copy(
       debug = if (enable)
@@ -322,8 +346,77 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(options = options.copy(connectComponentsPlanner = enable))
   }
 
+  def enableMinimumGraphStatistics(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(useMinimumGraphStatistics = enable))
+  }
+
   def setExecutionModel(executionModel: ExecutionModel): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(options = options.copy(executionModel = executionModel))
+  }
+
+  /**
+   * Process graph count data and return a builder with updated constraints, indexes and counts.
+   */
+  def processGraphCounts(graphCountData: GraphCountData): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    def matchingUniquenessConstraintExists(index: Index): Boolean = {
+      index match {
+        case Index(Some(Seq(label)), None, BTREE, properties, _, _, _) => graphCountData.constraints.exists {
+          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE) => true
+          case _ => false
+        }
+        case Index(None, Some(Seq(relType)), BTREE, properties, _, _, _) => graphCountData.constraints.exists {
+          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE) => true
+          case _ => false
+        }
+        case _ => false
+      }
+    }
+
+    val bare = this
+      // Lookup indexes are present in the Graph counts, if they exist.
+      .removeNodeLookupIndex()
+      .removeRelationshipLookupIndex()
+      // Graph counts do not capture relationship counts with both from and to label, because they are not actually present in the count store.
+      // So when using graphCountData, we should always use MinimumGraphStatistics, just like in the real product.
+      .enableMinimumGraphStatistics()
+      // Graph counts may lack relationship counts if they are 0
+      .defaultRelationshipCardinalityTo0()
+
+    val withNodes = graphCountData.nodes.foldLeft(bare) {
+      case (builder, NodeCount(count, None)) => builder.setAllNodesCardinality(count)
+      case (builder, NodeCount(count, Some(label))) => builder.setLabelCardinality(label, count)
+    }
+
+    val withRelationships = graphCountData.relationships.foldLeft(withNodes) {
+      case (builder, RelationshipCount(count, relationshipType, startLabel, endLabel)) =>
+        builder.setRelationshipCardinality(startLabel, relationshipType, endLabel, count)
+    }
+
+    val withConstraints = graphCountData.constraints.foldLeft(withRelationships) {
+      case (builder, Constraint(Some(label), None, Seq(property), ConstraintType.EXISTS)) => builder.addNodeExistenceConstraint(label, property)
+      case (builder, Constraint(None, Some(relType), Seq(property), ConstraintType.EXISTS)) => builder.addRelationshipExistenceConstraint(relType, property)
+      case (_, constraint) => throw new IllegalArgumentException(s"Unsupported constraint: $constraint")
+    }
+
+    val withIndexes = graphCountData.indexes.foldLeft(withConstraints) {
+      case (builder, i@Index(Some(Seq(label)), None, BTREE, properties, totalSize, estimatedUniqueSize, _)) =>
+        val existsSelectivity = totalSize / builder.cardinalities.labels(label)
+        val uniqueSelectivity = 1.0 / estimatedUniqueSize
+        val isUnique = matchingUniquenessConstraintExists(i)
+        builder.addNodeIndex(label, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH)
+      case (builder, i@Index(None, Some(Seq(relType)), BTREE, properties, totalSize, estimatedUniqueSize, _)) =>
+        val existsSelectivity = totalSize / builder.cardinalities.getRelCount(RelDef(None, Some(relType), None))
+        val uniqueSelectivity = 1.0 / estimatedUniqueSize
+        val isUnique = matchingUniquenessConstraintExists(i)
+        builder.addRelationshipIndex(relType, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH)
+      case (builder, Index(Some(Seq()), None, LOOKUP, Seq(), _, _, _)) =>
+        builder.addNodeLookupIndex()
+      case (builder, Index(None, Some(Seq()), LOOKUP, Seq(), _, _, _)) =>
+        builder.addRelationshipLookupIndex()
+      case (_, index) => throw new IllegalArgumentException(s"Unsupported index: $index")
+    }
+
+    withIndexes
   }
 
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
@@ -341,7 +434,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
     val resolver = tokens.getResolver(procedures)
 
-    val graphStatistics = new GraphStatistics {
+    val internalGraphStatistics = new GraphStatistics {
       override def nodesAllCardinality(): Cardinality = cardinalities.allNodes.get
 
       override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = {
@@ -360,9 +453,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
           relType = relTypeId.map(_.id).map(resolver.getRelTypeName),
           toLabel = toLabelId.map(_.id).map(resolver.getLabelName),
         )
-        cardinalities.relationships.getOrElse(relDef, fail(
-          s"""No cardinality set for relationship $relDef. Please specify using
-             |.setRelationshipCardinality("$relDef", cardinality)""".stripMargin))
+        cardinalities.getRelCount(relDef)
       }
 
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
@@ -386,6 +477,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
           IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relType.id))
       }
     }
+
+    val graphStatistics =
+      if (options.useMinimumGraphStatistics) new MinimumGraphStatistics(internalGraphStatistics)
+      else internalGraphStatistics
 
     val planContext: PlanContext = new NotImplementedPlanContext() {
       override def statistics: InstrumentedGraphStatistics =
