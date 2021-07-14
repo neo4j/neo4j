@@ -27,6 +27,7 @@ import org.json4s.JArray
 import org.json4s.JString
 import org.json4s.StringInput
 import org.json4s.native.JsonMethods
+import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexType
 
 import java.io.File
@@ -43,17 +44,22 @@ object GraphCountsJson {
    * @return the scala representation
    */
   def parseAsGraphCountData(file: File): GraphCountData = {
-    implicit val formats: Formats = DefaultFormats + RowSerializer
+    implicit val formats: Formats = DefaultFormats + RowSerializer + IndexTypeSerializer + ConstraintTypeSerializer
     JsonMethods.parse(FileInput(file)).extract[GraphCountData]
   }
 
   def parseAsGraphCountsJson(file: File): DbStatsRetrieveGraphCountsJSON = {
-    implicit val formats: Formats = DefaultFormats + RowSerializer
+    implicit val formats: Formats = DefaultFormats + RowSerializer + IndexTypeSerializer + ConstraintTypeSerializer
     JsonMethods.parse(FileInput(file)).extract[DbStatsRetrieveGraphCountsJSON]
   }
 
-  def parse(str: String): DbStatsRetrieveGraphCountsJSON = {
-    implicit val formats: Formats = DefaultFormats + RowSerializer
+  def parseAsGraphCountDataFromString(str: String): GraphCountData = {
+    implicit val formats: Formats = DefaultFormats + RowSerializer + IndexTypeSerializer + ConstraintTypeSerializer
+    JsonMethods.parse(StringInput(str)).extract[GraphCountData]
+  }
+
+  def parseAsGraphCountsJsonFromString(str: String): DbStatsRetrieveGraphCountsJSON = {
+    implicit val formats: Formats = DefaultFormats + RowSerializer + IndexTypeSerializer + ConstraintTypeSerializer
     JsonMethods.parse(StringInput(str)).extract[DbStatsRetrieveGraphCountsJSON]
   }
 }
@@ -79,7 +85,7 @@ case class GraphCountData(constraints: Seq[Constraint],
 case class Constraint(label: Option[String],
                       relationshipType: Option[String],
                       properties: Seq[String],
-                      `type`: String)
+                      `type`: ConstraintType)
 
 case class Index(labels: Option[Seq[String]],
                  relationshipTypes: Option[Seq[String]],
@@ -104,7 +110,7 @@ case class RelationshipCount(count: Long,
 case object RowSerializer extends CustomSerializer[Row](format => (
   {
     case JArray(arr) =>
-      implicit val formats: Formats = DefaultFormats + IndexTypeSerializer
+      implicit val formats: Formats = DefaultFormats + IndexTypeSerializer + ConstraintTypeSerializer
       Row(arr.head.extract[String], arr.last.extract[GraphCountData])
   },
   {
@@ -117,5 +123,18 @@ case object IndexTypeSerializer extends CustomSerializer[IndexType](format => (
   },
   {
     case indexType: IndexType => JString(indexType.name())
+  }
+))
+
+case object ConstraintTypeSerializer extends CustomSerializer[ConstraintType](format => (
+  {
+    case JString("Uniqueness constraint") => ConstraintType.UNIQUE
+    case JString("Existence constraint") => ConstraintType.EXISTS
+    case JString("Node Key") => ConstraintType.UNIQUE_EXISTS
+  },
+  {
+    case ConstraintType.UNIQUE => JString("Uniqueness constraint")
+    case ConstraintType.EXISTS => JString("Existence constraint")
+    case ConstraintType.UNIQUE_EXISTS => JString("Node Key")
   }
 ))

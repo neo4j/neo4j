@@ -24,6 +24,7 @@ import org.json4s.Formats
 import org.json4s.StringInput
 import org.json4s.native.JsonMethods
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexType
 
 class GraphCountsJsonTest extends CypherFunSuite {
@@ -31,6 +32,7 @@ class GraphCountsJsonTest extends CypherFunSuite {
   implicit val formats: Formats = DefaultFormats + RowSerializer
 
   test("Constraint") {
+    implicit val formats: Formats = DefaultFormats + ConstraintTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{
@@ -45,12 +47,13 @@ class GraphCountsJsonTest extends CypherFunSuite {
         Some("DeprecatedRelyingParty"),
         None,
         List("relyingPartyId"),
-        "Uniqueness constraint"
+        ConstraintType.UNIQUE
       )
     )
   }
 
   test("Relationship Existence Constraint") {
+    implicit val formats: Formats = DefaultFormats + ConstraintTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{
@@ -65,7 +68,7 @@ class GraphCountsJsonTest extends CypherFunSuite {
         None,
         Some("Foo"),
         List("relyingPartyId"),
-        "Existence constraint"
+        ConstraintType.EXISTS
       )
     )
   }
@@ -182,7 +185,7 @@ class GraphCountsJsonTest extends CypherFunSuite {
   }
 
   test("GraphCountData") {
-    implicit val formats: Formats = DefaultFormats + IndexTypeSerializer
+    implicit val formats: Formats = DefaultFormats + IndexTypeSerializer + ConstraintTypeSerializer
     JsonMethods.parse(StringInput(
       """
         |{"constraints": [{
@@ -215,7 +218,7 @@ class GraphCountsJsonTest extends CypherFunSuite {
         |}]}
       """.stripMargin)).extract[GraphCountData] should be(
       GraphCountData(
-        Seq(Constraint(Some("SSLCertificate"), None, Seq("serialNumber"), "Uniqueness constraint")),
+        Seq(Constraint(Some("SSLCertificate"), None, Seq("serialNumber"), ConstraintType.UNIQUE)),
         Seq(Index(Some(Seq("SSLCertificate")), None, IndexType.BTREE, Seq("serialNumber"), 4, 4, 0)),
         Seq(NodeCount(1, Some("VettingProvider"))),
         Seq(RelationshipCount(1, Some("HAS_GEOLOCATION"), Some("Address"), None))
