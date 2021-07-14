@@ -1044,9 +1044,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
   }
 
   private def nodeCountFromCountStoreInfo(ident: String, labelNames: List[Option[LabelName]]): PrettyString = {
-    val labels = labelNames.flatten.map(_.name).map(asPrettyString(_))
-    val node = labels.map(labelName => pretty":$labelName").mkPrettyString
-    pretty"count( ($node) ) AS ${asPrettyString(ident)}"
+    val nodes = labelNames.map{
+      case Some(label) => pretty"(:${asPrettyString(label.name)})"
+      case None        => pretty"()"
+    }.mkPrettyString(", ")
+    pretty"count( $nodes ) AS ${asPrettyString(ident)}"
   }
 
   private def relationshipCountFromCountStoreInfo(ident: String,
@@ -1063,10 +1065,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       .map(asPrettyString(_))
       .map(l => pretty":$l")
       .getOrElse(pretty"")
-    val types = typeNames
+    val types = if (typeNames.nonEmpty) {
+      typeNames
       .map(_.name)
       .map(asPrettyString(_))
       .mkPrettyString(":", "|", "")
+    } else {
+      pretty""
+    }
+
     pretty"count( ($start)-[$types]->($end) ) AS ${asPrettyString(ident)}"
   }
 
