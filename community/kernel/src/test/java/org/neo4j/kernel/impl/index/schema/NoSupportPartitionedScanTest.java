@@ -51,7 +51,7 @@ public class NoSupportPartitionedScanTest extends SupportPartitionedScanTestSuit
     {
         Range()
         {
-            super( RangeIndexReader.CAPABILITY, NO_SUPPORT );
+            super( RangeIndexProvider.CAPABILITY, NO_SUPPORT );
         }
     }
 

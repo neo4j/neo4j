@@ -62,7 +62,7 @@ class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey,NativeInd
 
     private final ValueType[] supportedTypes = ValueType.values();
     private final IndexLayoutFactory<RangeKey,NativeIndexValue> indexLayoutFactory = () -> new RangeLayout( 1 );
-    private final IndexCapability indexCapability = RangeIndexReader.CAPABILITY;
+    private final IndexCapability indexCapability = RangeIndexProvider.CAPABILITY;
 
     @Override
     NativeIndexAccessor<RangeKey,NativeIndexValue> createAccessor( PageCache pageCache )

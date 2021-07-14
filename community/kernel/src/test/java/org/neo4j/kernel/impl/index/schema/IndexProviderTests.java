@@ -31,6 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -133,6 +134,22 @@ abstract class IndexProviderTests
         {
             assertThrows( IllegalArgumentException.class, () -> provider.validatePrototype( invalidPrototype ) );
         }
+    }
+
+    /* completeConfiguration */
+
+    @Test
+    void mustCompleteIndexDescriptorConfigurationsWithCapabilities()
+    {
+        // Given
+        provider = newProvider();
+        IndexDescriptor incompleteDescriptor = validPrototype().materialise( 1 );
+
+        // When
+        IndexDescriptor completedDescriptor = provider.completeConfiguration( incompleteDescriptor );
+
+        // Then
+        assertThat( completedDescriptor.getCapability() ).isNotEqualTo( IndexCapability.NO_CAPABILITY );
     }
 
     /* getPopulator */

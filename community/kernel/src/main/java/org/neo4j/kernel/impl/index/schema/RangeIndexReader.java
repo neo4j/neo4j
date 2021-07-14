@@ -25,15 +25,8 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.IndexQueryType;
-import org.neo4j.internal.schema.IndexBehaviour;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrderCapability;
-import org.neo4j.internal.schema.IndexQuery;
-import org.neo4j.internal.schema.IndexValueCapability;
-import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
@@ -54,7 +47,7 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey,NativeIndexValu
     void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery[] predicates )
     {
         validateNoUnsupportedPredicates( predicates );
-        QueryValidator.validateOrder( CAPABILITY, constraints.order(), predicates );
+        QueryValidator.validateOrder( RangeIndexProvider.CAPABILITY, constraints.order(), predicates );
         QueryValidator.validateCompositeQuery( predicates );
     }
 
@@ -157,39 +150,6 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey,NativeIndexValu
         {
             throw new IllegalArgumentException( format( "Tried to query index with illegal query. %s predicate is not allowed " +
                                                         "for RANGE index. Query was: %s ", type, Arrays.toString( predicates ) ) );
-        }
-    }
-
-    // TODO This class belongs in the provider that isn't implemented yet. Should be moved later.
-    static final RangeIndexCapability CAPABILITY = new RangeIndexCapability();
-
-    private static class RangeIndexCapability implements IndexCapability
-    {
-        private final IndexBehaviour[] behaviours = {IndexBehaviour.SLOW_CONTAINS};
-
-        @Override
-        public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
-        {
-            return IndexOrderCapability.BOTH_FULLY_SORTED;
-        }
-
-        @Override
-        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
-        {
-            return IndexValueCapability.YES;
-        }
-
-        @Override
-        public boolean supportPartitionedScan( IndexQuery... queries )
-        {
-            Preconditions.requireNoNullElements( queries );
-            return false;
-        }
-
-        @Override
-        public IndexBehaviour[] behaviours()
-        {
-            return behaviours;
         }
     }
 }
