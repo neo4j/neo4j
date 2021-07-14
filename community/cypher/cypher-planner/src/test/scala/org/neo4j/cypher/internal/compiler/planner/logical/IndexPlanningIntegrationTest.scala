@@ -333,7 +333,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enableRelationshipByTypeLookup()
       .build()
 
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) RETURN r")
@@ -369,7 +368,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enableRelationshipByTypeLookup()
       .build()
 
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) RETURN r.prop AS p")
@@ -407,7 +405,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enableRelationshipByTypeLookup()
       .build()
 
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.x = 1 RETURN r.prop AS p")
@@ -447,7 +444,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipIndex("REL", Seq("counted"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enableRelationshipByTypeLookup()
       .build()
 
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) RETURN count(r.counted) AS c")
@@ -487,7 +483,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipIndex("REL", Seq("counted"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enableRelationshipByTypeLookup()
       .build()
 
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.x = 1 RETURN count(r.counted) AS c")
@@ -528,7 +523,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipIndex("REL", Seq("counted"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enableRelationshipByTypeLookup()
       .build()
 
     val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop <> 1 AND r.x = 1 RETURN count(r.counted) AS c")

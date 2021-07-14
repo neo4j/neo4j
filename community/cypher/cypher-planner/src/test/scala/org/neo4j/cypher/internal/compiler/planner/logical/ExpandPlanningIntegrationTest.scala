@@ -136,6 +136,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
     val cfg = plannerBuilder()
       .setAllNodesCardinality(100)
       .setRelationshipCardinality("()-[:REL]->()", 10)
+      .removeRelationshipLookupIndex() // We want to test Expand
       .build()
 
     val plan = cfg

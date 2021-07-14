@@ -52,7 +52,6 @@ class OrLeafPlanningIntegrationTest
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL1]->()", 5)
       .setRelationshipCardinality("()-[:REL2]->()", 5)
-      .enableRelationshipByTypeLookup()
 
   // This config favors linear plans without union/distinct in most cases.
   private def hintPlannerConfig(): StatisticsBackedLogicalPlanningConfigurationBuilder =
@@ -63,7 +62,6 @@ class OrLeafPlanningIntegrationTest
       .setAllRelationshipsCardinality(2)
       .setRelationshipCardinality("()-[:REL1]->()", 1)
       .setRelationshipCardinality("()-[:REL2]->()", 1)
-      .enableRelationshipByTypeLookup()
 
   test("should work with index seeks of property disjunctions") {
     val cfg = plannerConfig()

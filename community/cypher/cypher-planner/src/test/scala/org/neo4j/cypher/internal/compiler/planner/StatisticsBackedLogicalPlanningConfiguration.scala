@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.ExistenceConstraintDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition.EntityType
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Indexes
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
@@ -79,7 +80,6 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
                       connectComponentsPlanner: Boolean = true,
                       executionModel: ExecutionModel = ExecutionModel.default,
-                      relationshipByTypeLookupEnabled: Boolean = false,
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
@@ -135,6 +135,17 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
       final case class Relationship(relType: String) extends EntityType
     }
   }
+  case class Indexes(
+                      nodeLookupIndex: Boolean = true,
+                      relationshipLookupIndex: Boolean = true,
+                      propertyIndexes: Seq[IndexDefinition] = Seq.empty,
+                    ) {
+    def addPropertyIndex(indexDefinition: IndexDefinition): Indexes = this.copy(propertyIndexes = propertyIndexes :+ indexDefinition)
+    def addNodeLookupIndex(): Indexes = this.copy(nodeLookupIndex = true)
+    def removeNodeLookupIndex(): Indexes = this.copy(nodeLookupIndex = false)
+    def addRelationshipLookupIndex(): Indexes = this.copy(relationshipLookupIndex = true)
+    def removeRelationshipLookupIndex(): Indexes = this.copy(relationshipLookupIndex = false)
+  }
 
   case class ExistenceConstraintDefinition(entityType: IndexDefinition.EntityType,
                                            propertyKey: String)
@@ -144,7 +155,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                                                                         options: Options = Options(),
                                                                         cardinalities: Cardinalities = Cardinalities(),
                                                                         tokens: TokenContainer = TokenContainer(),
-                                                                        indexes: Seq[IndexDefinition] = Seq.empty,
+                                                                        indexes: Indexes = Indexes(),
                                                                         constraints: Seq[ExistenceConstraintDefinition] = Seq.empty,
                                                                         procedures: Set[ProcedureSignature] = Set.empty,
                                                                         settings: Map[Setting[_], AnyRef] = Map.empty,
@@ -244,12 +255,28 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     addRelType(relType).addIndexDefAndProperties(indexDef, properties)
   }
 
+  def addNodeLookupIndex(): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(indexes = indexes.addNodeLookupIndex())
+  }
+
+  def removeNodeLookupIndex(): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(indexes = indexes.removeNodeLookupIndex())
+  }
+
+  def addRelationshipLookupIndex(): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(indexes = indexes.addRelationshipLookupIndex())
+  }
+
+  def removeRelationshipLookupIndex(): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(indexes = indexes.removeRelationshipLookupIndex())
+  }
+
   private def addIndexDefAndProperties(indexDef: IndexDefinition, properties: Seq[String]): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     val withProperties = properties.foldLeft(this) {
       case (builder, prop) => builder.addProperty(prop)
     }
     withProperties
-      .copy(indexes = indexes :+ indexDef)
+      .copy(indexes = indexes.addPropertyIndex(indexDef))
   }
 
   def addNodeExistenceConstraint(label: String,
@@ -299,10 +326,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(options = options.copy(executionModel = executionModel))
   }
 
-  def enableRelationshipByTypeLookup(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    this.copy(options = options.copy(relationshipByTypeLookupEnabled = enable))
-  }
-
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -343,14 +366,14 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       }
 
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
-        indexes.find { indexDef =>
+        indexes.propertyIndexes.find { indexDef =>
           indexDef.entityType == resolveEntityType(index) &&
             indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
         }.flatMap(indexDef => Selectivity.of(indexDef.uniqueValueSelectivity))
       }
 
       override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = {
-        indexes.find { indexDef =>
+        indexes.propertyIndexes.find { indexDef =>
           indexDef.entityType == resolveEntityType(index) &&
             indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
         }.flatMap(indexDef => Selectivity.of(indexDef.propExistsSelectivity))
@@ -379,7 +402,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       }
 
       private def indexesGetForEntityType(entityType: IndexDefinition.EntityType): Iterator[IndexDescriptor] = {
-        indexes.collect {
+        indexes.propertyIndexes.collect {
           case indexDef if entityType == indexDef.entityType =>
             newIndexDescriptor(indexDef)
         }
@@ -387,16 +410,15 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
-        indexes.collect {
+        indexes.propertyIndexes.collect {
           case indexDef if entityType == indexDef.entityType && indexDef.isUnique =>
             newIndexDescriptor(indexDef)
         }
       }.iterator
 
-      override def canLookupNodesByLabel: Boolean = true
+      override def canLookupNodesByLabel: Boolean = indexes.nodeLookupIndex
 
-      override def canLookupRelationshipsByType: Boolean =
-        options.relationshipByTypeLookupEnabled
+      override def canLookupRelationshipsByType: Boolean = indexes.relationshipLookupIndex
 
       override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = {
         constraints.collect {
@@ -461,7 +483,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       }
 
       private def indexGetForEntityTypeAndProperties(entityType: IndexDefinition.EntityType, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-        indexes.collectFirst {
+        indexes.propertyIndexes.collectFirst {
           case indexDef if indexDef.entityType == entityType && indexDef.propertyKeys == propertyKeys => newIndexDescriptor(indexDef)
         }
       }

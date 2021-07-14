@@ -45,6 +45,7 @@ class LimitPropagationPlanningIntegrationTest
       .setRelationshipCardinality("(:A)-[:REL_AB]->()", 123)
       .setRelationshipCardinality("(:A)-[:REL_AB]->(:B)", 123)
       .setRelationshipCardinality("()-[:REL_AB]->(:B)", 555)
+      .setRelationshipCardinality("()-[:REL_AB]->()", 555)
       .setRelationshipCardinality("(:C)-[:REL_CB]->()", 4444)
       .setRelationshipCardinality("(:C)-[:REL_CB]->(:B)", 4444)
       .setRelationshipCardinality("()-[:REL_CB]->(:B)", 10000)

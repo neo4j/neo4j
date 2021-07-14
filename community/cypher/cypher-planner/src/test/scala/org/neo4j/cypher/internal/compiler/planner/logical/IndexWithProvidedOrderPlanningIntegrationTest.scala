@@ -701,7 +701,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setRelationshipCardinality("()-[:REL]-()", 50)
         .setRelationshipCardinality("()-[:REL2]-()", 500)
         .addRelationshipIndex("REL2", Seq("prop"), 0.1, 0.002)
-        .enableRelationshipByTypeLookup()
         .build()
 
       val plan = planner
@@ -2096,7 +2095,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   // Min and Max
 
   private def relationshipIndexMinMaxSetup = plannerBuilder()
-    .enableRelationshipByTypeLookup()
     .setAllNodesCardinality(500)
     .setAllRelationshipsCardinality(500)
     .setRelationshipCardinality("()-[:REL]->()", 100)

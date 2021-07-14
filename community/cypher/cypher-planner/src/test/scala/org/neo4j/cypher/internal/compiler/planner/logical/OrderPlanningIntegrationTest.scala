@@ -1423,6 +1423,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setRelationshipCardinality("()-[:Q]->()", nodeCount * nodeCount)
       .setRelationshipCardinality("()-[:NARROW]->()", nodeCount / 10)
       .addProcedure(proc)
+      .removeRelationshipLookupIndex() // Let's avoid RelTypeScan since we are testing Expands
       .build()
   }
 
