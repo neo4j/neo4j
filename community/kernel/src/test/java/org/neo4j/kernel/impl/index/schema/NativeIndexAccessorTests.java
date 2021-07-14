@@ -813,6 +813,19 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         }
     }
 
+    @Test
+    void dropShouldDeleteEntireIndexFolder()
+    {
+        // given
+        assertFilePresent();
+
+        // when
+        accessor.drop();
+
+        // then
+        assertFalse( fs.fileExists( indexFiles.getBase() ) );
+    }
+
     private Value generateUniqueValue( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
     {
         return filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) ).next().values()[0];
