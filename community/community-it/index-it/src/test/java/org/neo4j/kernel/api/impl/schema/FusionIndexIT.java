@@ -27,11 +27,15 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -43,9 +47,13 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.PointValue;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure;
+import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.conditions.Conditions.equalityCondition;
 import static org.neo4j.values.storable.Values.pointValue;
 
 @DbmsExtension( configurationCallback = "configure" )
@@ -65,11 +73,33 @@ public class FusionIndexIT
     private final String stringValue = "string";
     private final PointValue spatialValue = pointValue( CoordinateReferenceSystem.WGS84, 0.5, 0.5 );
     private final DateValue temporalValue = DateValue.date( 2018, 3, 19 );
+    private final String indexName = "some_index_name";
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
+    }
+
+    @Test
+    void shouldKeepIndexSamplesUpdated()
+    {
+        // Given
+        createIndex();
+        assertThat( indexSample() ).isEqualTo( new IndexSample( 0, 0, 0, 0 ) );
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode( label ).setProperty( propKey, numberValue );
+            tx.createNode( label ).setProperty( propKey, stringValue );
+            tx.createNode( label ).setProperty( propKey, spatialValue );
+            tx.createNode( label ).setProperty( propKey, temporalValue );
+            tx.commit();
+        }
+
+        // Then
+        assertEventually( this::indexSample, equalityCondition( new IndexSample( 4, 4, 4 ) ), 1, MINUTES );
     }
 
     @Test
@@ -137,11 +167,13 @@ public class FusionIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
+            tx.schema().awaitIndexesOnline( 30, TimeUnit.SECONDS );
             assertEquals( 1L, Iterators.stream( tx.schema().getIndexes( label ).iterator() ).count() );
             assertNotNull( tx.findNode( label, propKey, numberValue ) );
             assertNotNull( tx.findNode( label, propKey, stringValue ) );
             assertNotNull( tx.findNode( label, propKey, spatialValue ) );
             assertNotNull( tx.findNode( label, propKey, temporalValue ) );
+            assertThat( indexSample() ).isEqualTo( new IndexSample( 4, 4, 4, 0 ) );
             tx.commit();
         }
     }
@@ -159,7 +191,6 @@ public class FusionIndexIT
 
     private void initializeIndexWithData()
     {
-        createIndex();
         try ( Transaction tx = db.beginTx() )
         {
             tx.createNode( label ).setProperty( propKey, numberValue );
@@ -168,19 +199,29 @@ public class FusionIndexIT
             tx.createNode( label ).setProperty( propKey, temporalValue );
             tx.commit();
         }
+        createIndex();
     }
 
     private void createIndex()
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().indexFor( label ).on( propKey ).create();
+            tx.schema().indexFor( label ).on( propKey ).withName( indexName ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 30, TimeUnit.SECONDS );
             tx.commit();
+        }
+    }
+
+    private IndexSample indexSample()
+    {
+        try ( var tx = db.beginTx() )
+        {
+            var index = (IndexDefinitionImpl) tx.schema().getIndexByName( indexName );
+            return db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ).indexSample( index.getIndexReference().getId() );
         }
     }
 }

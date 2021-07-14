@@ -128,7 +128,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
         }
         return descriptor.isUnique()
                ? new UniqueLuceneIndexPopulator( luceneIndex, descriptor )
-               : new NonUniqueLuceneIndexPopulator( luceneIndex, samplingConfig );
+               : new NonUniqueLuceneIndexPopulator( luceneIndex );
     }
 
     @Override
