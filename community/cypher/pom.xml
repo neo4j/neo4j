@@ -62,6 +62,7 @@
                 <module>cypher-testing</module>
                 <module>cypher-config</module>
                 <module>literal-interpreter</module>
+                <module>graph-counts</module>
             </modules>
         </profile>
     </profiles>
