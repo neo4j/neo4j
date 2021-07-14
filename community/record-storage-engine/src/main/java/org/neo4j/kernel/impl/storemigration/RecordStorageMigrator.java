@@ -199,6 +199,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, cursorTracer );
             TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId, cursorTracer );
             LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId, cursorTracer );
+            long checkpointLogVersion = extractCheckpointLogVersion( neoStore, directoryLayout, cursorTracer );
             // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
             writeLastTxInformation( migrationLayout, lastTxInfo );
             writeLastTxLogPosition( migrationLayout, lastTxLogPosition );
@@ -235,7 +236,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             {
                 // Some form of migration is required (a fallback/catch-all option)
                 migrateWithBatchImporter( directoryLayout, migrationLayout, lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
-                        lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat, requiresDynamicStoreMigration, requiresPropertyMigration );
+                        lastTxLogPosition.getByteOffset(), checkpointLogVersion, progressReporter, oldFormat, newFormat,
+                        requiresDynamicStoreMigration, requiresPropertyMigration );
             }
 
             // update necessary neostore records
@@ -377,6 +379,17 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return specificTransactionInformationSupplier( lastTransactionId );
     }
 
+    long extractCheckpointLogVersion( Path neoStore, DatabaseLayout directoryLayout, PageCursorTracer cursorTracer )
+            throws IOException
+    {
+        long checkpointLogVersion = MetaDataStore.getRecord( pageCache, neoStore, CHECKPOINT_LOG_VERSION, cursorTracer );
+        if ( checkpointLogVersion != FIELD_NOT_PRESENT )
+        {
+            return checkpointLogVersion;
+        }
+        return MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, cursorTracer );
+    }
+
     /**
      * In case if we can't find information about transaction in logs we will create new transaction
      * information record.
@@ -429,8 +442,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return new LogPosition( logVersion, offset );
     }
 
-    private void migrateWithBatchImporter( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationDirectoryStructure, long lastTxId,
-            int lastTxChecksum, long lastTxLogVersion, long lastTxLogByteOffset, ProgressReporter progressReporter, RecordFormats oldFormat,
+    private void migrateWithBatchImporter( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationDirectoryStructure,
+            long lastTxId, int lastTxChecksum, long lastTxLogVersion, long lastTxLogByteOffset, long lastCheckpointLogVersion,
+            ProgressReporter progressReporter, RecordFormats oldFormat,
             RecordFormats newFormat, boolean requiresDynamicStoreMigration, boolean requiresPropertyMigration ) throws IOException
     {
         prepareBatchImportMigration( sourceDirectoryStructure, migrationDirectoryStructure, oldFormat, newFormat );
@@ -439,7 +453,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         {
             Configuration importConfig = new Configuration.Overridden( defaultConfiguration( sourceDirectoryStructure.databaseDirectory() ), config );
             AdditionalInitialIds additionalInitialIds =
-                    readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
+                    readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset, lastCheckpointLogVersion );
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
             BatchImporter importer = batchImporterFactory.instantiate(
@@ -565,7 +579,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final int lastTxChecksum, final long lastTxLogVersion,
-            final long lastTxLogByteOffset )
+            final long lastTxLogByteOffset, long lastCheckpointLogVersion )
     {
         return new AdditionalInitialIds()
         {
@@ -591,6 +605,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             public long lastCommittedTransactionLogByteOffset()
             {
                 return lastTxLogByteOffset;
+            }
+
+            @Override
+            public long checkpointLogVersion()
+            {
+                return lastCheckpointLogVersion;
             }
         };
     }

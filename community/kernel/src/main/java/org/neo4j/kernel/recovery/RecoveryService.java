@@ -38,5 +38,5 @@ public interface RecoveryService
     RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCursorTracer cursorTracer ) throws Exception;
 
     void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastTransactionPosition,
-            LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs, PageCursorTracer cursorTracer );
+            LogPosition positionAfterLastRecoveredTransaction, LogPosition checkpointPosition, boolean missingLogs, PageCursorTracer cursorTracer );
 }

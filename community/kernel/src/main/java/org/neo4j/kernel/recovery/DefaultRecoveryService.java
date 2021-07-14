@@ -86,7 +86,7 @@ public class DefaultRecoveryService implements RecoveryService
 
     @Override
     public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastRecoveredTransactionPosition,
-            LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs, PageCursorTracer cursorTracer )
+            LogPosition positionAfterLastRecoveredTransaction, LogPosition checkpointPosition, boolean missingLogs, PageCursorTracer cursorTracer )
     {
         if ( missingLogs )
         {
@@ -100,6 +100,13 @@ public class DefaultRecoveryService implements RecoveryService
                     "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
             transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true, cursorTracer );
             logVersionRepository.setCurrentLogVersion( logVersion, cursorTracer );
+            long checkpointLogVersion = logVersionRepository.getCheckpointLogVersion();
+            if ( checkpointLogVersion < 0 )
+            {
+                log.warn( "Recovery detected that checkpoint log version is invalid. " +
+                        "Resetting version to start from the beginning. Current recorder version: %d. New version: 0.", checkpointLogVersion );
+                logVersionRepository.setCheckpointLogVersion( 0, cursorTracer );
+            }
             return;
         }
         if ( lastRecoveredTransaction != null )
@@ -122,6 +129,7 @@ public class DefaultRecoveryService implements RecoveryService
         }
 
         logVersionRepository.setCurrentLogVersion( positionAfterLastRecoveredTransaction.getLogVersion(), cursorTracer );
+        logVersionRepository.setCheckpointLogVersion( checkpointPosition.getLogVersion(), cursorTracer );
     }
 
     static class RecoveryVisitor implements RecoveryApplier
