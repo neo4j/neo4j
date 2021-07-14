@@ -1002,8 +1002,10 @@
        -->
       <dependency>
         <groupId>io.projectreactor</groupId>
-        <artifactId>reactor-core</artifactId>
-        <version>3.3.17.RELEASE</version>
+        <artifactId>reactor-bom</artifactId>
+        <version>Dysprosium-SR21</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <!-- testing -->
