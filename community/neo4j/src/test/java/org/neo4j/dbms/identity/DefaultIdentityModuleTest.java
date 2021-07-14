@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATA_DIR_NAME;
 
 @EphemeralTestDirectoryExtension
-public class StandaloneIdentityModuleTest
+public class DefaultIdentityModuleTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -53,7 +53,7 @@ public class StandaloneIdentityModuleTest
         assertFalse( fs.fileExists( dataDir ) );
 
         // when
-        var identityModule = new StandaloneIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var identityModule = new DefaultIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertTrue( fs.fileExists( dataDir ) );
@@ -61,13 +61,13 @@ public class StandaloneIdentityModuleTest
         assertNotNull( identityModule.serverId() );
 
         // when
-        var secondIdentityModule = new StandaloneIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var secondIdentityModule = new DefaultIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertEquals( identityModule.serverId(), secondIdentityModule.serverId() );
 
         fs.deleteRecursively( dataDir );
-        var thirdIdentityModule = new StandaloneIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var thirdIdentityModule = new DefaultIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertNotEquals( secondIdentityModule.serverId(), thirdIdentityModule.serverId() );

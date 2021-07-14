@@ -43,8 +43,8 @@ import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.StandaloneDatabaseInfoService;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
-import org.neo4j.dbms.identity.StandaloneIdentityModule;
 import org.neo4j.dbms.procedures.StandaloneDatabaseStateProcedure;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
@@ -127,7 +127,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         globalDependencies.satisfyDependency( sslPolicyLoader ); // for bolt and web server
         globalDependencies.satisfyDependency( new DatabaseOperationCounts.Counter() ); // for global metrics
 
-        identityModule = StandaloneIdentityModule.fromGlobalModule( globalModule );
+        identityModule = DefaultIdentityModule.fromGlobalModule( globalModule );
         globalDependencies.satisfyDependency( identityModule );
 
         LocksFactory lockFactory = createLockFactory( globalConfig, logService );

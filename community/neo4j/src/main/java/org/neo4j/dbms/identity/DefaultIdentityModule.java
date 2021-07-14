@@ -27,20 +27,19 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 
-public class StandaloneIdentityModule extends AbstractIdentityModule
+public class DefaultIdentityModule extends AbstractIdentityModule
 {
     private final ServerId serverId;
 
-    public static StandaloneIdentityModule fromGlobalModule( GlobalModule globalModule )
+    public static DefaultIdentityModule fromGlobalModule( GlobalModule globalModule )
     {
-        return new StandaloneIdentityModule( globalModule.getLogService(),
+        return new DefaultIdentityModule( globalModule.getLogService(),
                 globalModule.getFileSystem(),
                 globalModule.getNeo4jLayout(),
                 globalModule.getOtherMemoryPool().getPoolMemoryTracker() );
     }
 
-    StandaloneIdentityModule( LogService logService,
-            FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
+    DefaultIdentityModule( LogService logService, FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
     {
         var log = logService.getInternalLog( getClass() );
         var storage = createServerIdStorage( fs, layout.serverIdFile() );
