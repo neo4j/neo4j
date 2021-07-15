@@ -75,7 +75,8 @@ class RecoveryStartInformationProviderTest
 
         // then
         verify( monitor ).noCommitsAfterLastCheckPoint( null );
-        assertEquals( LogPosition.UNSPECIFIED, recoveryStartInformation.getRecoveryPosition() );
+        assertEquals( LogPosition.UNSPECIFIED, recoveryStartInformation.getTransactionLogPosition() );
+        assertEquals( LogPosition.UNSPECIFIED, recoveryStartInformation.getCheckpointPosition() );
         assertEquals( NO_TRANSACTION_ID, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() );
         assertFalse( recoveryStartInformation.isRecoveryRequired() );
     }
@@ -84,17 +85,19 @@ class RecoveryStartInformationProviderTest
     void shouldReturnLogPositionToRecoverFromIfNeeded()
     {
         // given
-        LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
+        LogPosition txPosition = new LogPosition( 1L, 4242 );
+        LogPosition checkpointPosition = new LogPosition( 2, 4 );
         when( logFiles.getTailInformation() ).thenReturn(
-                new LogTailInformation( new CheckpointInfo( checkPointLogPosition, StoreId.UNKNOWN, LogPosition.UNSPECIFIED ), true, 10L, false,
+                new LogTailInformation( new CheckpointInfo( txPosition, StoreId.UNKNOWN, checkpointPosition ), true, 10L, false,
                         currentLogVersion, LATEST.version(), StoreId.UNKNOWN ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( logFiles, monitor ).get();
 
         // then
-        verify( monitor ).commitsAfterLastCheckPoint( checkPointLogPosition, 10L );
-        assertEquals( checkPointLogPosition, recoveryStartInformation.getRecoveryPosition() );
+        verify( monitor ).commitsAfterLastCheckPoint( txPosition, 10L );
+        assertEquals( txPosition, recoveryStartInformation.getTransactionLogPosition() );
+        assertEquals( checkpointPosition, recoveryStartInformation.getCheckpointPosition() );
         assertEquals( 10L, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() );
         assertTrue( recoveryStartInformation.isRecoveryRequired() );
     }
@@ -111,7 +114,8 @@ class RecoveryStartInformationProviderTest
 
         // then
         verify( monitor ).noCheckPointFound();
-        assertEquals( new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), recoveryStartInformation.getRecoveryPosition() );
+        assertEquals( new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), recoveryStartInformation.getTransactionLogPosition() );
+        assertEquals( new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), recoveryStartInformation.getCheckpointPosition() );
         assertEquals( 10L, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() );
         assertTrue( recoveryStartInformation.isRecoveryRequired() );
     }

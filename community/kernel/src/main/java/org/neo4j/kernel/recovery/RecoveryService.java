@@ -39,5 +39,5 @@ public interface RecoveryService
     RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag ) throws Exception;
 
     void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastTransactionPosition,
-            LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs, CursorContext cursorContext );
+            LogPosition positionAfterLastRecoveredTransaction, LogPosition checkpointPosition, boolean missingLogs, CursorContext cursorContext );
 }

@@ -56,9 +56,10 @@ class RecoveryProgressIndicatorTest
         int transactionsToRecover = 5;
         int expectedMax = transactionsToRecover * 2;
         int lastCommittedTransactionId = 14;
-        LogPosition recoveryStartPosition = new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE );
+        LogPosition transactionLogPosition = new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE );
+        LogPosition checkpointLogPosition = new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE );
         int firstTxIdAfterLastCheckPoint = 10;
-        RecoveryStartInformation startInformation = new RecoveryStartInformation( recoveryStartPosition, firstTxIdAfterLastCheckPoint );
+        RecoveryStartInformation startInformation = new RecoveryStartInformation( transactionLogPosition, checkpointLogPosition, firstTxIdAfterLastCheckPoint );
 
         when( reverseTransactionCursor.next() ).thenAnswer( new NextTransactionAnswer( transactionsToRecover ) );
         when( transactionCursor.next() ).thenAnswer( new NextTransactionAnswer( transactionsToRecover ) );
@@ -67,8 +68,8 @@ class RecoveryProgressIndicatorTest
         when( transactionRepresentation.getCommitEntry() ).thenReturn( new LogEntryCommit( lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM ) );
 
         when( recoveryService.getRecoveryStartInformation() ).thenReturn( startInformation );
-        when( recoveryService.getTransactionsInReverseOrder( recoveryStartPosition ) ).thenReturn( reverseTransactionCursor );
-        when( recoveryService.getTransactions( recoveryStartPosition ) ).thenReturn( transactionCursor );
+        when( recoveryService.getTransactionsInReverseOrder( transactionLogPosition ) ).thenReturn( reverseTransactionCursor );
+        when( recoveryService.getTransactions( transactionLogPosition ) ).thenReturn( transactionCursor );
 
         AssertableProgressReporter progressReporter = new AssertableProgressReporter( expectedMax );
         TransactionLogsRecovery recovery = new TransactionLogsRecovery( recoveryService, logsTruncator, new LifecycleAdapter(), recoveryMonitor,

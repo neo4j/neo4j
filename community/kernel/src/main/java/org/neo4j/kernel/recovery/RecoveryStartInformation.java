@@ -23,28 +23,31 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 public class RecoveryStartInformation
 {
-    static final RecoveryStartInformation NO_RECOVERY_REQUIRED = new RecoveryStartInformation( LogPosition.UNSPECIFIED, -1 );
-    static final RecoveryStartInformation MISSING_LOGS = new RecoveryStartInformation( null, -1, true );
+    static final RecoveryStartInformation NO_RECOVERY_REQUIRED = new RecoveryStartInformation( LogPosition.UNSPECIFIED, LogPosition.UNSPECIFIED, -1 );
+    static final RecoveryStartInformation MISSING_LOGS = new RecoveryStartInformation( null, null, -1, true );
 
     private final long firstTxIdAfterLastCheckPoint;
-    private final LogPosition recoveryPosition;
+    private final LogPosition transactionLogPosition;
+    private final LogPosition checkpointPosition;
     private final boolean missingLogs;
 
-    public RecoveryStartInformation( LogPosition recoveryPosition, long firstTxIdAfterLastCheckPoint )
+    public RecoveryStartInformation( LogPosition transactionLogPosition, LogPosition checkpointPosition, long firstTxIdAfterLastCheckPoint )
     {
-        this( recoveryPosition, firstTxIdAfterLastCheckPoint, false );
+        this( transactionLogPosition, checkpointPosition, firstTxIdAfterLastCheckPoint, false );
     }
 
-    private RecoveryStartInformation( LogPosition recoveryPosition, long firstTxIdAfterLastCheckPoint, boolean missingLogs )
+    private RecoveryStartInformation( LogPosition transactionLogPosition, LogPosition checkpointPosition, long firstTxIdAfterLastCheckPoint,
+            boolean missingLogs )
     {
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
-        this.recoveryPosition = recoveryPosition;
+        this.transactionLogPosition = transactionLogPosition;
+        this.checkpointPosition = checkpointPosition;
         this.missingLogs = missingLogs;
     }
 
     public boolean isRecoveryRequired()
     {
-        return recoveryPosition != LogPosition.UNSPECIFIED;
+        return transactionLogPosition != LogPosition.UNSPECIFIED;
     }
 
     long getFirstTxIdAfterLastCheckPoint()
@@ -52,9 +55,14 @@ public class RecoveryStartInformation
         return firstTxIdAfterLastCheckPoint;
     }
 
-    LogPosition getRecoveryPosition()
+    LogPosition getTransactionLogPosition()
     {
-        return recoveryPosition;
+        return transactionLogPosition;
+    }
+
+    public LogPosition getCheckpointPosition()
+    {
+        return checkpointPosition;
     }
 
     boolean isMissingLogs()

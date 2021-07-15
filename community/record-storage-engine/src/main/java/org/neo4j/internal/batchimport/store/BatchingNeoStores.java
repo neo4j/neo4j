@@ -56,6 +56,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -274,10 +275,12 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         {
             neoStores.start( cursorContext );
             temporaryNeoStores.start( cursorContext );
-            neoStores.getMetaDataStore().setLastCommittedAndClosedTransactionId(
+            MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+            metaDataStore.setLastCommittedAndClosedTransactionId(
                     initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
                     BASE_TX_COMMIT_TIMESTAMP, initialIds.lastCommittedTransactionLogByteOffset(),
                     initialIds.lastCommittedTransactionLogVersion(), cursorContext );
+            metaDataStore.setCheckpointLogVersion( initialIds.checkpointLogVersion(), cursorContext );
         }
     }
 

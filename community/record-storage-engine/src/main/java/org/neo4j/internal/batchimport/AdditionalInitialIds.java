@@ -23,6 +23,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
+import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
  * Migrating a store uses the {@link ParallelBatchImporter} to do so, where node/relationship stores
@@ -46,6 +47,8 @@ public interface AdditionalInitialIds
     long lastCommittedTransactionLogVersion();
 
     long lastCommittedTransactionLogByteOffset();
+
+    long checkpointLogVersion();
 
     /**
      * High ids of zero, useful when creating a completely new store with {@link ParallelBatchImporter}.
@@ -74,6 +77,12 @@ public interface AdditionalInitialIds
         public long lastCommittedTransactionLogByteOffset()
         {
             return BASE_TX_LOG_BYTE_OFFSET;
+        }
+
+        @Override
+        public long checkpointLogVersion()
+        {
+            return INITIAL_LOG_VERSION;
         }
     };
 }

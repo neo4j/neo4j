@@ -124,11 +124,11 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
                 }
                 monitor.noCheckPointFound();
                 LogPosition position = tryExtractHeaderSize();
-                return createRecoveryInformation( position, txIdAfterLastCheckPoint );
+                return createRecoveryInformation( position, new LogPosition( INITIAL_LOG_VERSION, CURRENT_FORMAT_LOG_HEADER_SIZE ), txIdAfterLastCheckPoint );
             }
-            LogPosition checkpointLogPosition = lastCheckPoint.getTransactionLogPosition();
-            monitor.commitsAfterLastCheckPoint( checkpointLogPosition, txIdAfterLastCheckPoint );
-            return createRecoveryInformation( lastCheckPoint.getTransactionLogPosition(), txIdAfterLastCheckPoint );
+            LogPosition transactionLogPosition = lastCheckPoint.getTransactionLogPosition();
+            monitor.commitsAfterLastCheckPoint( transactionLogPosition, txIdAfterLastCheckPoint );
+            return createRecoveryInformation( transactionLogPosition, lastCheckPoint.getCheckpointEntryPosition(), txIdAfterLastCheckPoint );
         }
         else
         {
@@ -150,8 +150,8 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         }
     }
 
-    private static RecoveryStartInformation createRecoveryInformation( LogPosition logPosition, long firstTxId )
+    private static RecoveryStartInformation createRecoveryInformation( LogPosition transactionLogPosition, LogPosition checkpointLogPosition, long firstTxId )
     {
-        return new RecoveryStartInformation( logPosition, firstTxId );
+        return new RecoveryStartInformation( transactionLogPosition, checkpointLogPosition, firstTxId );
     }
 }

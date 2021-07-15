@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -66,11 +67,14 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -109,12 +113,14 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.StorageEngineFactory.defaultStorageEngine;
 
 @PageCacheExtension
@@ -843,6 +849,96 @@ class RecoveryIT
         assertTrue( recoveryRunEvenThoughNoCommitsAfterLastCheckpoint.booleanValue() );
     }
 
+    @Test
+    void keepCheckpointVersionOnMissingLogFilesWhenValueIsReasonable() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        managementService.shutdown();
+
+        removeTransactionLogs();
+
+        assertTrue( isRecoveryRequired( layout ) );
+
+        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, 18, layout.getDatabaseName(), NULL );
+
+        recoverDatabase();
+        assertFalse( isRecoveryRequired( layout ) );
+
+        assertEquals( 18, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL ) );
+    }
+
+    @Test
+    void resetCheckpointVersionOnMissingLogFilesWhenValueIsDefinitelyWrong() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        managementService.shutdown();
+
+        removeTransactionLogs();
+
+        assertTrue( isRecoveryRequired( layout ) );
+
+        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -42, layout.getDatabaseName(), NULL );
+
+        recoverDatabase();
+        assertFalse( isRecoveryRequired( layout ) );
+
+        assertEquals( 0, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL ) );
+    }
+
+    @Test
+    void recoverySetsCheckpointLogVersionFieldNoCheckpointFiles() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        managementService.shutdown();
+
+        removeFileWithCheckpoint();
+
+        assertTrue( isRecoveryRequired( layout ) );
+
+        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -5, layout.getDatabaseName(), NULL );
+
+        recoverDatabase();
+        assertFalse( isRecoveryRequired( layout ) );
+
+        assertEquals( 0, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL ) );
+    }
+
+    @Test
+    void recoverySetsCheckpointLogVersionFieldSeveralCheckpointFiles() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+
+        var checkpointFile = db.getDependencyResolver().resolveDependency( LogFiles.class ).getCheckpointFile();
+        var appender = (DetachedCheckpointAppender) checkpointFile.getCheckpointAppender();
+        appender.rotate();
+        appender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, BASE_TX_LOG_BYTE_OFFSET ), Instant.now(), "test1" );
+        appender.rotate();
+        appender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, BASE_TX_LOG_BYTE_OFFSET ), Instant.now(), "test2" );
+        appender.rotate();
+        appender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, BASE_TX_LOG_BYTE_OFFSET ), Instant.now(), "test3" );
+
+        DatabaseLayout layout = db.databaseLayout();
+        managementService.shutdown();
+
+        removeFileWithCheckpoint();
+
+        assertTrue( isRecoveryRequired( layout ) );
+
+        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -5, layout.getDatabaseName(), NULL );
+
+        recoverDatabase();
+        assertFalse( isRecoveryRequired( layout ) );
+
+        assertEquals( 2, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL ) );
+    }
+
     private boolean idGeneratorIsDirty( Path path, IdType idType ) throws IOException
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
@@ -896,6 +992,7 @@ class RecoveryIT
 
     void additionalConfiguration( Config config )
     {
+        config.set( fail_on_missing_files, false );
     }
 
     TestDatabaseManagementServiceBuilder additionalConfiguration( TestDatabaseManagementServiceBuilder builder )
