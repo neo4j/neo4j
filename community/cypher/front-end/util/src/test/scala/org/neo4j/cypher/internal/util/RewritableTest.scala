@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.util
 import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 import org.neo4j.cypher.internal.util.RewritableTest.Add
+import org.neo4j.cypher.internal.util.RewritableTest.ExpList
 import org.neo4j.cypher.internal.util.RewritableTest.Options
 import org.neo4j.cypher.internal.util.RewritableTest.Pos
 import org.neo4j.cypher.internal.util.RewritableTest.Val
@@ -47,6 +48,11 @@ object RewritableTest {
   case class Options(args: Seq[(Exp, Exp)]) extends Exp {
     def dup(children: Seq[AnyRef]): this.type =
       Options(children.head.asInstanceOf[Seq[(Exp, Exp)]]).asInstanceOf[this.type]
+  }
+
+  case class ExpList(args: List[Exp]) extends Exp {
+    def dup(children: Seq[AnyRef]): this.type =
+      ExpList(children.head.asInstanceOf[List[Exp]]).asInstanceOf[this.type]
   }
 }
 
@@ -201,6 +207,16 @@ class RewritableTest extends CypherFunSuite {
       })
 
       assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
+    }
+
+    test(s"$name should duplicate terms with list of pairs") {
+      val ast = Add(Val(1), ExpList(List(Val(2), Val(3))))
+
+      val result = bottomUpVariant(ast, {
+        case Val(_) => Val(99)
+      })
+
+      assert(result === Add(Val(99), ExpList(List(Val(99), Val(99)))))
     }
   }
 
