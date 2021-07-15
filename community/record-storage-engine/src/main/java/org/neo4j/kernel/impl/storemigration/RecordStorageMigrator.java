@@ -205,7 +205,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, directoryLayout.getDatabaseName(), cursorContext );
             TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId, directoryLayout, cursorContext );
             LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId, cursorContext );
-            long checkpointLogVersion = extractCheckpointLogVersion( neoStore, directoryLayout, cursorContext );
+            long checkpointLogVersion = extractCheckpointLogVersion( neoStore, directoryLayout, lastTxLogPosition, cursorContext );
             // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
             writeLastTxInformation( migrationLayout, lastTxInfo );
             writeLastTxLogPosition( migrationLayout, lastTxLogPosition );
@@ -383,7 +383,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return specificTransactionInformationSupplier( lastTransactionId );
     }
 
-    long extractCheckpointLogVersion( Path neoStore, DatabaseLayout directoryLayout, CursorContext cursorContext )
+    long extractCheckpointLogVersion( Path neoStore, DatabaseLayout directoryLayout, LogPosition txLogPosition, CursorContext cursorContext )
             throws IOException
     {
         String databaseName = directoryLayout.getDatabaseName();
@@ -392,7 +392,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         {
             return checkpointLogVersion;
         }
-        return MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, databaseName, cursorContext );
+        return txLogPosition.getLogVersion();
     }
 
     /**

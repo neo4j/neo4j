@@ -30,6 +30,7 @@ class ParallelRecoveryIT extends RecoveryIT
     @Override
     void additionalConfiguration( Config config )
     {
+        super.additionalConfiguration( config );
         config.set( do_parallel_recovery, true );
     }
 

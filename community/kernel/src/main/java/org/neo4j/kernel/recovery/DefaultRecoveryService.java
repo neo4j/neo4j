@@ -108,7 +108,7 @@ public class DefaultRecoveryService implements RecoveryService
             if ( checkpointLogVersion < 0 )
             {
                 log.warn( "Recovery detected that checkpoint log version is invalid. " +
-                        "Resetting version to start from the beginning. Current recorder version: %d. New version: 0.", checkpointLogVersion );
+                        "Resetting version to start from the beginning. Current recorded version: %d. New version: 0.", checkpointLogVersion );
                 logVersionRepository.setCheckpointLogVersion( 0, cursorContext );
             }
             return;

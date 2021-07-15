@@ -23,6 +23,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
+import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
  * Migrating a store uses the {@link ParallelBatchImporter} to do so, where node/relationship stores
@@ -81,7 +82,7 @@ public interface AdditionalInitialIds
         @Override
         public long checkpointLogVersion()
         {
-            return 0;
+            return INITIAL_LOG_VERSION;
         }
     };
 }
