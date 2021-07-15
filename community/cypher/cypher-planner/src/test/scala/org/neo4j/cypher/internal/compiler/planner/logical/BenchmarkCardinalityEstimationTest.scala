@@ -19,37 +19,46 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.apache.commons.io.FileUtils
+import org.neo4j.cypher.graphCounts.GraphCountsJson
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.kernel.impl.util.dbstructure.QMULDbStructure
 
-class BenchmarkCardinalityEstimationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class BenchmarkCardinalityEstimationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
-  val qmul: LogicalPlanningEnvironment[_] = new fromDbStructure(QMULDbStructure.INSTANCE)
+  private val qmulGraphCounts = GraphCountsJson.parseAsGraphCountData(
+    FileUtils.toFile(classOf[BenchmarkCardinalityEstimationTest].getResource("/qmul.json"))
+  )
 
   test("qmul should estimate simple pattern relationship with labels and rel type") {
-    qmul.assertNoRegression("MATCH (a:Person)-[r:friends]->(b:Person) RETURN r", 4535800.0, 900.0)
-  }
+    val planner = plannerBuilder()
+      .processGraphCounts(qmulGraphCounts)
+      .build()
 
-  implicit class RichLogicalPlanningEnvironment(val env: LogicalPlanningEnvironment[_]) {
-    def assertNoRegression(query: String, actual: Double, expectedDifference: Double, allowedSlack: Double = 0.05): Unit = {
-      val (_, plan, _, attributes) = env.getLogicalPlanFor(query)
-      val estimate = attributes.cardinalities.get(plan.id).amount
-      val currentDifference = Math.abs(estimate - actual)
+    val query = "MATCH (a:Person)-[r:friends]->(b:Person) RETURN r"
+    val planState = planner.planState(query)
+    val plan = planState.logicalPlan
+    val cardinalities = planState.planningAttributes.cardinalities
 
-      val differenceDifference = Math.abs(currentDifference - expectedDifference)
-      val differenceDifferenceMargin = Math.round(expectedDifference * allowedSlack)
+    val actual = 4535800.0
+    val expectedDifference = 900.0
+    val allowedSlack = 0.05
 
-      if (differenceDifference > differenceDifferenceMargin) {
-        val builder = new StringBuilder
-        builder.append(s"Estimate changed by more than ${allowedSlack * 100} % for query $query:\n")
-        builder.append(s" - actual cardinality: $actual\n")
-        builder.append(s" - estimated cardinality: $estimate\n")
-        builder.append(s" - expected difference: $expectedDifference ± ${differenceDifferenceMargin / 2}\n")
-        builder.append(s" - actual difference: $currentDifference\n")
+    val estimate = cardinalities.get(plan.id).amount
+    val currentDifference = Math.abs(estimate - actual)
 
-        throw new AssertionError(builder.toString())
-      }
+    val differenceDifference = Math.abs(currentDifference - expectedDifference)
+    val differenceDifferenceMargin = Math.round(expectedDifference * allowedSlack)
+
+    if (differenceDifference > differenceDifferenceMargin) {
+      val builder = new StringBuilder
+      builder.append(s"Estimate changed by more than ${allowedSlack * 100} % for query $query:\n")
+      builder.append(s" - actual cardinality: $actual\n")
+      builder.append(s" - estimated cardinality: $estimate\n")
+      builder.append(s" - expected difference: $expectedDifference ± ${differenceDifferenceMargin / 2}\n")
+      builder.append(s" - actual difference: $currentDifference\n")
+
+      fail(builder.toString())
     }
   }
 }

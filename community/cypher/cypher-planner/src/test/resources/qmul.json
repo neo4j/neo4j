@@ -1,0 +1,72 @@
+{
+  "indexes": [
+    {
+      "estimatedUniqueSize": 0,
+      "labels": [],
+      "totalSize": 0,
+      "updatesSinceEstimation": 0,
+      "indexType": "LOOKUP"
+    },
+    {
+      "estimatedUniqueSize": 0,
+      "relationshipTypes": [],
+      "totalSize": 0,
+      "updatesSinceEstimation": 0,
+      "indexType": "LOOKUP"
+    },
+    {
+      "labels": [
+        "Person"
+      ],
+      "properties": [
+        "uid"
+      ],
+      "totalSize": 135164,
+      "estimatedUniqueSize": 1,
+      "updatesSinceEstimation": 0,
+      "indexType": "BTREE"
+    }
+  ],
+  "nodes": [
+    {
+      "count": 135242
+    },
+    {
+      "count": 135213,
+      "label": "Person"
+    }
+  ],
+  "relationships": [
+    {
+      "count": 4537616
+    },
+    {
+      "count": 4537616,
+      "relationshipType": "friends"
+    },
+    {
+      "count": 0,
+      "relationshipType": "FRIEND"
+    },
+    {
+      "count": 4536688,
+      "startLabel": "Person",
+      "relationshipType": "friends"
+    },
+    {
+      "count": 4536688,
+      "relationshipType": "friends",
+      "endLabel": "Person"
+    },
+    {
+      "count": 0,
+      "startLabel": "Person",
+      "relationshipType": "FRIEND"
+    },
+    {
+      "count": 0,
+      "relationshipType": "FRIEND",
+      "endLabel": "Person"
+    }
+  ]
+}
