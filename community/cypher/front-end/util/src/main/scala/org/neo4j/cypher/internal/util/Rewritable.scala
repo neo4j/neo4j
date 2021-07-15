@@ -81,16 +81,18 @@ object Rewritable {
         that match {
           case a: Rewritable =>
             a.dup(children)
-          case p: Product =>
-              copyConstructor(p).invoke(p, children: _*)
           case _: IndexedSeq[_] =>
             children.toIndexedSeq
+          case _: List[_] =>
+            children.toList
           case _: Seq[_] =>
             children
           case _: Set[_] =>
             children.toSet
           case _: Map[_, _] =>
             children.map(value => value.asInstanceOf[(String, AnyRef)]).toMap
+          case p: Product =>
+            copyConstructor(p).invoke(p, children: _*)
           case t =>
             t
         }
