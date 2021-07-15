@@ -53,6 +53,12 @@ case class Selections private (predicates: Set[Predicate]) {
     buffer
   }
 
+  def expressionsContainingVariable: Map[String, Set[Predicate]] = {
+    predicates.flatMap { predicate =>
+      predicate.findAllByClass[Variable].map(v => v.name -> predicate)
+    }.groupBy(_._1).mapValues(p => p.map(_._2))
+  }
+
   def scalarPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
 
   def patternPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)

@@ -56,7 +56,6 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
@@ -174,20 +173,19 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext).toSet[IndexMatch]
   }
 
-  private case class NodeRelQgs(nodeQgs: Seq[QueryGraph], relQgs: Seq[QueryGraph]) {
+  private case class NodeRelQgs(nodeQgs: Iterable[QueryGraph], relQgs: Iterable[QueryGraph]) {
     def mapQgs(f: QueryGraph => QueryGraph): NodeRelQgs = NodeRelQgs(nodeQgs.map(f), relQgs.map(f))
   }
 
   private def getQueryGraphs(labelInfo: LabelInfo,
                              relTypeInfo: RelTypeInfo,
                              unwrappedSelections: Selections): NodeRelQgs = {
-    val variables = unwrappedSelections.findAllByClass[Variable].map(_.name)
+    val expressionsContainingVariable = unwrappedSelections.expressionsContainingVariable
+    val variables = expressionsContainingVariable.keys
     val nodes = variables.filter(labelInfo.contains)
     val relationships = variables.filter(relTypeInfo.contains)
 
-    def findSelectionsFor(variable: String): Selections = unwrappedSelections.filter(_.treeExists {
-      case Variable(`variable`) => true
-    })
+    def findSelectionsFor(variable: String): Selections = unwrappedSelections.filter(expressionsContainingVariable(variable))
 
     // Construct query graphs for each variable that can be fed to leaf planners to search for index matches.
     val nodeQgs = nodes.map { n =>
