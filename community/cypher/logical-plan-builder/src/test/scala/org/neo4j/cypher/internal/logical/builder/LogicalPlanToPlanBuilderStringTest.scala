@@ -55,6 +55,7 @@ import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Modifier
 
+import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
@@ -668,9 +669,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .eager()
-      .eager(Seq(EagernessReason.UpdateStrategyEager))
-      .eager(Seq(EagernessReason.Unknown))
-      .eager(Seq(
+      .eager(ListSet(EagernessReason.UpdateStrategyEager))
+      .eager(ListSet(EagernessReason.Unknown))
+      .eager(ListSet(
         EagernessReason.DeleteOverlap(Seq("n", "m")),
         EagernessReason.OverlappingSetLabels(Seq("X")),
         EagernessReason.OverlappingDeletedLabels(Seq("Foo", "Bar"))
@@ -1780,7 +1781,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       interpreter.beQuietDuring {
         // imports
         interpreter.interpret(
-          """import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
+          """import scala.collection.immutable.ListSet
+            |
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship

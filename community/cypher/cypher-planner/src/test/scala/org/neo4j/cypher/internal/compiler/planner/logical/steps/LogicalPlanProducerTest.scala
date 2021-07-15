@@ -58,6 +58,8 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.collection.immutable.ListSet
+
 class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
 
   test("should rename provided order of property columns in projection if property projected") {
@@ -1063,7 +1065,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val leaf1 = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
       val leaf2 = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
       val p1 = lpp.planSort(leaf1, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
-      val p2 = lpp.planEager(p1, context, Seq.empty)
+      val p2 = lpp.planEager(p1, context, ListSet.empty)
       val p3 = lpp.planRightOuterHashJoin(Set("x"), leaf2, p2, Set.empty, context)
 
       // when

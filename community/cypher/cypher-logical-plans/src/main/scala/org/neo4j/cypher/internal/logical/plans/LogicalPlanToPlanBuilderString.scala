@@ -914,7 +914,7 @@ object LogicalPlanToPlanBuilderString {
           fieldTerminatorStr
         ).mkString(", ")
       case Apply(_, _, fromSubquery)           => s"fromSubquery = $fromSubquery"
-      case Eager(_, reasons)                   => reasons.map(eagernessReasonStr).mkString("Seq(", ", ", ")")
+      case Eager(_, reasons)                   => reasons.map(eagernessReasonStr).mkString("ListSet(", ", ", ")")
       case TransactionForeach(_, _, batchSize) => expressionStringifier(batchSize)
       case TransactionApply(_, _, batchSize)   => expressionStringifier(batchSize)
     }

@@ -244,6 +244,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
 import org.neo4j.exceptions.InternalException
 
+import scala.collection.immutable.ListSet
+
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
@@ -2310,9 +2312,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planEager(
     inner: LogicalPlan,
     context: LogicalPlanningContext,
-    reasons: Seq[EagernessReason.Reason]
+    reasons: ListSet[EagernessReason.Reason]
   ): LogicalPlan =
-    annotate(Eager(inner, reasons.distinct), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
+    annotate(Eager(inner, reasons), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
 
   def planError(
     inner: LogicalPlan,

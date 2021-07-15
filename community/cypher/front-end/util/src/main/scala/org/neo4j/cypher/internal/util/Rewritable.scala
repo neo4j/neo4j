@@ -22,6 +22,8 @@ import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import java.lang.reflect.Method
 
 import scala.annotation.tailrec
+import scala.collection.IterableFactory
+import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -88,6 +90,8 @@ object Rewritable {
             children.toList
           case _: collection.Seq[_] =>
             children
+          case _: collection.immutable.ListSet[_] =>
+            children.to(IterableFactory.toFactory(ListSet))
           case _: collection.Set[_] =>
             children.toSet
           case _: collection.Map[_, _] =>

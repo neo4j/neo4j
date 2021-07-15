@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListSet
 
 trait UpdateGraph {
 
@@ -167,9 +168,9 @@ trait UpdateGraph {
    * Checks if there is overlap between what is being read in the query graph
    * and what is being written here
    */
-  def overlaps(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
+  def overlaps(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): ListSet[EagernessReason.Reason] = {
     if (!containsUpdates) {
-      Seq.empty
+      ListSet.empty
     } else {
       // A MERGE is always on its own in a QG. That's why we pick either the read graph of a MERGE or the qg itself.
       val readQg =
@@ -187,14 +188,14 @@ trait UpdateGraph {
         setLabelOverlap(_)
       )
 
-      val reasons = checkers.map(c => c(readQg)).collect { case Some(reason) => reason }
+      val reasons = checkers.view.map(c => c(readQg)).collect { case Some(reason) => reason }.to(ListSet)
 
       if (reasons.nonEmpty) {
         reasons
       } else if (unknownReasons) {
-        Seq(EagernessReason.Unknown)
+        ListSet(EagernessReason.Unknown)
       } else {
-        Seq.empty
+        ListSet.empty
       }
     }
   }
@@ -202,11 +203,11 @@ trait UpdateGraph {
   /*
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
    */
-  def overlapsHorizon(horizon: QueryHorizon)(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
+  def overlapsHorizon(horizon: QueryHorizon)(implicit semanticTable: SemanticTable): ListSet[EagernessReason.Reason] = {
     if (!containsUpdates || !horizon.couldContainRead)
-      Seq.empty
+      ListSet.empty
     else {
-      horizon.allQueryGraphs.flatMap(overlaps)
+      horizon.allQueryGraphs.view.flatMap(overlaps).to(ListSet)
     }
   }
 

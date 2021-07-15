@@ -245,6 +245,8 @@ import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
 
+import scala.collection.immutable.ListSet
+
 object LogicalPlan2PlanDescription {
 
   def create(
@@ -2168,8 +2170,8 @@ case class LogicalPlan2PlanDescription(
     }.mkPrettyString(SEPARATOR)
   }
 
-  private def eagernessReasonInfo(reasons: Seq[EagernessReason.Reason]): Seq[PrettyString] = {
-    reasons.collect {
+  private def eagernessReasonInfo(reasons: ListSet[EagernessReason.Reason]): Seq[PrettyString] = {
+    reasons.toSeq.collect {
       case _ @EagernessReason.UpdateStrategyEager => pretty"updateStrategy=eager"
       case _ @EagernessReason.OverlappingSetLabels(labels) =>
         pretty"overlapping set labels: ${labels.map(asPrettyString(_)).mkPrettyString(", ")}"

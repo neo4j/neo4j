@@ -354,6 +354,7 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.storable.Values.stringValue
 import org.scalatest.prop.TableDrivenPropertyChecks
 
+import scala.collection.immutable.ListSet
 import scala.language.implicitConversions
 
 object LogicalPlan2PlanDescriptionTest {
@@ -3269,22 +3270,22 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("Eager") {
     assertGood(
-      attach(Eager(lhsLP, Seq.empty), 34.5),
+      attach(Eager(lhsLP, ListSet.empty), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq.empty, Set("a"))
     )
 
     assertGood(
-      attach(Eager(lhsLP, Seq(EagernessReason.Unknown)), 34.5),
+      attach(Eager(lhsLP, ListSet(EagernessReason.Unknown)), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq.empty, Set("a"))
     )
 
     assertGood(
-      attach(Eager(lhsLP, Seq(EagernessReason.UpdateStrategyEager)), 34.5),
+      attach(Eager(lhsLP, ListSet(EagernessReason.UpdateStrategyEager)), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("updateStrategy=eager"))), Set("a"))
     )
 
     assertGood(
-      attach(Eager(lhsLP, Seq(EagernessReason.OverlappingDeletedLabels(Seq("Foo", "Bar")))), 34.5),
+      attach(Eager(lhsLP, ListSet(EagernessReason.OverlappingDeletedLabels(Seq("Foo", "Bar")))), 34.5),
       planDescription(
         id,
         "Eager",
@@ -3295,18 +3296,21 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(Eager(lhsLP, Seq(EagernessReason.OverlappingSetLabels(Seq("Foo", "Bar")))), 34.5),
+      attach(Eager(lhsLP, ListSet(EagernessReason.OverlappingSetLabels(Seq("Foo", "Bar")))), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("overlapping set labels: Foo, Bar"))), Set("a"))
     )
 
     assertGood(
-      attach(Eager(lhsLP, Seq(EagernessReason.DeleteOverlap(Seq("b")))), 34.5),
+      attach(Eager(lhsLP, ListSet(EagernessReason.DeleteOverlap(Seq("b")))), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("delete overlap: b"))), Set("a"))
     )
 
     assertGood(
       attach(
-        Eager(lhsLP, Seq(EagernessReason.DeleteOverlap(Seq("b")), EagernessReason.OverlappingSetLabels(Seq("Foo")))),
+        Eager(
+          lhsLP,
+          ListSet(EagernessReason.DeleteOverlap(Seq("b")), EagernessReason.OverlappingSetLabels(Seq("Foo")))
+        ),
         34.5
       ),
       planDescription(

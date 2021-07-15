@@ -218,6 +218,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.graphdb.schema.IndexType
 
+import scala.collection.immutable.ListSet
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -675,7 +676,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def eager(reasons: Seq[EagernessReason.Reason] = Seq(EagernessReason.Unknown)): IMPL = {
+  def eager(reasons: ListSet[EagernessReason.Reason] = ListSet(EagernessReason.Unknown)): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Eager(lp, reasons)(_)))
     self
   }
