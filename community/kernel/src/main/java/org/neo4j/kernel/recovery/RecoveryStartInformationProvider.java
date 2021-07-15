@@ -124,7 +124,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
                 }
                 monitor.noCheckPointFound();
                 LogPosition position = tryExtractHeaderSize();
-                return createRecoveryInformation( position, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), txIdAfterLastCheckPoint );
+                return createRecoveryInformation( position, new LogPosition( INITIAL_LOG_VERSION, CURRENT_FORMAT_LOG_HEADER_SIZE ), txIdAfterLastCheckPoint );
             }
             LogPosition transactionLogPosition = lastCheckPoint.getTransactionLogPosition();
             monitor.commitsAfterLastCheckPoint( transactionLogPosition, txIdAfterLastCheckPoint );
