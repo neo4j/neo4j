@@ -78,25 +78,6 @@ class IndexType(var isUnique: Boolean = false,
                 var withValues: Boolean = false,
                 var withOrdering: IndexOrderCapability = IndexOrderCapability.NONE)
 
-class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
-  override def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable = parent.updateSemanticTableWithTokens(in)
-  override def cardinalityModel(planContext: PlanContext, queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
-    parent.cardinalityModel(planContext, queryGraphCardinalityModel, expressionEvaluator)
-  override def costModel(executionModel: ExecutionModel = executionModel) = parent.costModel(executionModel)
-  override def graphStatistics = parent.graphStatistics
-  override def indexes = parent.indexes
-  override def nodeConstraints: Set[(String, Set[String])] = parent.nodeConstraints
-  override def relationshipConstraints: Set[(String, Set[String])] = parent.relationshipConstraints
-  override def labelCardinality = parent.labelCardinality
-  override def knownLabels = parent.knownLabels
-  override def knownRelationships = parent.knownRelationships
-  override def labelsById = parent.labelsById
-  override def relTypesById = parent.relTypesById
-  override def qg = parent.qg
-  override def procedureSignatures: Set[ProcedureSignature] = parent.procedureSignatures
-  override def executionModel: ExecutionModel = parent.executionModel
-}
-
 trait LogicalPlanningConfigurationAdHocSemanticTable {
   self: LogicalPlanningConfiguration =>
 

@@ -55,7 +55,6 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 import org.scalatest.Inside
 
 class OptionalMatchIDPPlanningIntegrationTest extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)

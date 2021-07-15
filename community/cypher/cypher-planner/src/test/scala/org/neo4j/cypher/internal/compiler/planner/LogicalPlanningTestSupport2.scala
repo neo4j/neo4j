@@ -95,8 +95,6 @@ import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
-import org.neo4j.internal.helpers.collection.Visitable
-import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions
@@ -426,9 +424,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   class givenPlanWithMinimumCardinalityEnabled
     extends StubbedLogicalPlanningConfiguration(RealLogicalPlanningConfiguration(cypherCompilerConfig))
-
-  class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
-    extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(cypherCompilerConfig)(dbStructure))
 
   implicit def propertyKeyId(label: String)(implicit semanticTable: SemanticTable): PropertyKeyId =
     semanticTable.resolvedPropertyKeyNames(label)
