@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import scala.collection.mutable.ArrayBuffer
 
 case class Selections private (predicates: Set[Predicate]) {
-  def isEmpty = predicates.isEmpty
+  def isEmpty: Boolean = predicates.isEmpty
 
   def predicatesGiven(ids: Set[String]): Seq[Expression] = {
     val buffer = new ArrayBuffer[Expression]()
@@ -62,6 +62,9 @@ case class Selections private (predicates: Set[Predicate]) {
 
   def flatPredicates: Seq[Expression] =
     flatPredicatesSet.toIndexedSeq
+
+  def filter(filterExpression: Predicate => Boolean): Selections =
+    new Selections(predicates.filter(filterExpression))
 
   /**
    * The top level label predicates for each variable.

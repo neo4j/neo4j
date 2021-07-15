@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSee
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.WhereClausePredicate
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexMatch
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexMatch
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner
 import org.neo4j.cypher.internal.expressions.Contains
@@ -89,8 +89,12 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
 
   private val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(planContext.statistics, combiner)
 
-  private val indexMatchCache = CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch with Product with Serializable]] {
-    (a, b, c) => findIndexMatches(a, b, c)
+  private val nodeIndexMatchCache = CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch]] {
+    (a, b, c) => findNodeIndexMatches(a, b, c)
+  }
+
+  private val relationshipIndexMatchCache = CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch]] {
+    (a, b, c) => findRelationshipIndexMatches(a, b, c)
   }
 
   override def apply(
@@ -108,9 +112,11 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     // These are not recognized by the Leaf planners, so let's unwrap them.
     val unwrappedSelections = selections.endoRewrite(unwrapPartialPredicates)
 
-    val queryGraph = getQueryGraph(labelInfo, relTypeInfo, unwrappedSelections)
+    val queryGraphs = getQueryGraphs(labelInfo, relTypeInfo, unwrappedSelections)
 
-    val indexMatches = indexMatchCache(queryGraph, semanticTable, indexPredicateProviderContext)
+    // we search for index matches for each variable individually to increase the chance of cache hits
+    val indexMatches = queryGraphs.relQgs.flatMap(relationshipIndexMatchCache(_, semanticTable, indexPredicateProviderContext)) ++
+      queryGraphs.nodeQgs.flatMap(nodeIndexMatchCache(_, semanticTable, indexPredicateProviderContext))
 
     val selectivitiesForPredicates = indexMatches
       .groupBy(_.indexDescriptor)
@@ -156,27 +162,48 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     combiner.andTogetherSelectivities(notCoveredPredicatesSelectivities ++ coveredPredicatesSelectivities).getOrElse(Selectivity.ONE)
   }
 
-  private def findIndexMatches(queryGraph: QueryGraph,
-                               semanticTable: SemanticTable,
-                               indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Set[IndexMatch with Product with Serializable] = {
-    NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext) ++
-      RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext)
+  private def findNodeIndexMatches(queryGraph: QueryGraph,
+                                   semanticTable: SemanticTable,
+                                   indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Set[IndexMatch] = {
+    NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext).toSet[IndexMatch]
   }
 
-  private def getQueryGraph(labelInfo: LabelInfo,
-                            relTypeInfo: RelTypeInfo,
-                            unwrappedSelections: Selections) = {
+  private def findRelationshipIndexMatches(queryGraph: QueryGraph,
+                                           semanticTable: SemanticTable,
+                                           indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Set[IndexMatch] = {
+    RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext).toSet[IndexMatch]
+  }
+
+  private case class NodeRelQgs(nodeQgs: Seq[QueryGraph], relQgs: Seq[QueryGraph]) {
+    def mapQgs(f: QueryGraph => QueryGraph): NodeRelQgs = NodeRelQgs(nodeQgs.map(f), relQgs.map(f))
+  }
+
+  private def getQueryGraphs(labelInfo: LabelInfo,
+                             relTypeInfo: RelTypeInfo,
+                             unwrappedSelections: Selections): NodeRelQgs = {
     val variables = unwrappedSelections.findAllByClass[Variable].map(_.name)
     val nodes = variables.filter(labelInfo.contains)
     val relationships = variables.filter(relTypeInfo.contains)
 
-    // Construct a query graph that can be fed to leaf planners to search for index matches.
-    val Some(queryGraph) = Some(QueryGraph(
-      patternNodes = nodes.toSet,
-      patternRelationships = relationships.map(PatternRelationship(_, ("  UNNAMED0", "  UNNAMED1"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)).toSet,
-      selections = unwrappedSelections
-    )).map(inlineLabelAndRelTypeInfo(_, labelInfo, relTypeInfo))
-    queryGraph
+    def findSelectionsFor(variable: String): Selections = unwrappedSelections.filter(_.treeExists {
+      case Variable(`variable`) => true
+    })
+
+    // Construct query graphs for each variable that can be fed to leaf planners to search for index matches.
+    val nodeQgs = nodes.map { n =>
+      QueryGraph(
+        patternNodes = Set(n),
+        selections = findSelectionsFor(n)
+      )
+    }
+    val relQgs = relationships.map { r =>
+      QueryGraph(
+        patternRelationships = Set(PatternRelationship(r, ("  UNNAMED0", "  UNNAMED1"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
+        selections = findSelectionsFor(r)
+      )
+    }
+
+    NodeRelQgs(nodeQgs, relQgs).mapQgs(inlineLabelAndRelTypeInfo(_, labelInfo, relTypeInfo))
   }
 
   private def inlineLabelAndRelTypeInfo(qg: QueryGraph, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo): QueryGraph = {
