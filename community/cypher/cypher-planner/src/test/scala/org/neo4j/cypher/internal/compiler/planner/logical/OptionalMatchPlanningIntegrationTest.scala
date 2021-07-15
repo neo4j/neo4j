@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.apache.commons.io.FileUtils
+import org.neo4j.cypher.graphCounts.GraphCountsJson
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -284,8 +286,14 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should plan for large number of optional matches without numerical overflow in estimatedRows") {
+    val largeOptionalMatchStructureGraphCounts = GraphCountsJson.parseAsGraphCountData(
+      FileUtils.toFile(classOf[BenchmarkCardinalityEstimationTest].getResource("/largeOptionalMatchStructure.json"))
+    )
 
-    val lom: LogicalPlanningEnvironment[_] = new fromDbStructure(DbStructureLargeOptionalMatchStructure.INSTANCE)
+    val planner = plannerBuilder()
+      .processGraphCounts(largeOptionalMatchStructureGraphCounts)
+      .build()
+
     val query =
       """
         |MATCH (me:Label1)-[rmeState:REL1]->(meState:Label2 {deleted: 0})
@@ -329,8 +337,10 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |RETURN *
       """.stripMargin
 
-    val (_, plan, _, attributes) = lom.getLogicalPlanFor(query)
-    val cardinalities = attributes.cardinalities
+    val planState = planner.planState(query)
+    val plan = planState.logicalPlan
+    val cardinalities = planState.planningAttributes.cardinalities
+
     plan.treeExists {
       case plan: LogicalPlan =>
         cardinalities.get(plan.id) match {

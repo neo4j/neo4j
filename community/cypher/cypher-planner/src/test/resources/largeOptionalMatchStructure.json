@@ -1,0 +1,148 @@
+{
+  "indexes": [
+    {
+      "estimatedUniqueSize": 0,
+      "labels": [],
+      "totalSize": 0,
+      "updatesSinceEstimation": 0,
+      "indexType": "LOOKUP"
+    },
+    {
+      "estimatedUniqueSize": 0,
+      "relationshipTypes": [],
+      "totalSize": 0,
+      "updatesSinceEstimation": 0,
+      "indexType": "LOOKUP"
+    },
+    {
+      "labels": [
+        "Label2"
+      ],
+      "properties": [
+        "id"
+      ],
+      "totalSize": 304838,
+      "estimatedUniqueSize": 3,
+      "updatesSinceEstimation": 0,
+      "indexType": "BTREE"
+    }
+  ],
+  "nodes": [
+    {
+      "count": 2668827
+    },
+    {
+      "count": 3,
+      "label": "Label20"
+    },
+    {
+      "count": 0,
+      "label": "Label4"
+    },
+    {
+      "count": 0,
+      "label": "Label22"
+    },
+    {
+      "count": 0,
+      "label": "Label6"
+    },
+    {
+      "count": 111110,
+      "label": "Label1"
+    },
+    {
+      "count": 111112,
+      "label": "Label12"
+    },
+    {
+      "count": 99917,
+      "label": "Label14"
+    },
+    {
+      "count": 3,
+      "label": "Label26"
+    },
+    {
+      "count": 111150,
+      "label": "Label10"
+    },
+    {
+      "count": 0,
+      "label": "Label24"
+    },
+    {
+      "count": 0,
+      "label": "Label8"
+    },
+    {
+      "count": 111112,
+      "label": "Label18"
+    },
+    {
+      "count": 3,
+      "label": "Label19"
+    },
+    {
+      "count": 0,
+      "label": "Label3"
+    },
+    {
+      "count": 0,
+      "label": "Label16"
+    },
+    {
+      "count": 0,
+      "label": "Label15"
+    },
+    {
+      "count": 0,
+      "label": "Label21"
+    },
+    {
+      "count": 0,
+      "label": "Label5"
+    },
+    {
+      "count": 310059,
+      "label": "Label2"
+    },
+    {
+      "count": 179015,
+      "label": "Label11"
+    },
+    {
+      "count": 99917,
+      "label": "Label13"
+    },
+    {
+      "count": 179021,
+      "label": "Label17"
+    },
+    {
+      "count": 3,
+      "label": "Label25"
+    },
+    {
+      "count": 111150,
+      "label": "Label9"
+    },
+    {
+      "count": 0,
+      "label": "Label23"
+    },
+    {
+      "count": 0,
+      "label": "Label7"
+    },
+    {
+      "count": 1567352,
+      "label": "Label27"
+    }
+  ],
+  "relationships": [
+    {
+      "count": 4944492
+    }
+  ]
+}
