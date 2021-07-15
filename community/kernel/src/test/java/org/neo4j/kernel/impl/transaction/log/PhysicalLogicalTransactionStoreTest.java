@@ -74,6 +74,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -392,7 +393,7 @@ class PhysicalLogicalTransactionStoreTest
         public RecoveryStartInformation getRecoveryStartInformation() throws IOException
         {
             return new RecoveryStartInformation( logFiles.getLogFile().extractHeader( 0 ).getStartPosition(),
-                    logFiles.getCheckpointFile().findLatestCheckpoint().get().getCheckpointEntryPosition(), 1 );
+                    new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), 1 );
         }
 
         @Override
