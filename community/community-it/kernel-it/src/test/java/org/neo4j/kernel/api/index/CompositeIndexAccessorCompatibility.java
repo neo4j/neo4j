@@ -80,6 +80,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Pair.of;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.IndexQueryType.stringContains;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.IndexQueryType.stringSuffix;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
@@ -300,6 +302,8 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     @Test
     void testIndexSeekExactWithRangeBySpatial() throws Exception
     {
+        assumeTrue( testSuite.supportsSpatialRangeQueries(), "Assume support for spatial range queries" );
+
         testIndexSeekExactWithRange( intValue( 100 ), intValue( 10 ),
                 pointValue( WGS84, -10D, -10D ),
                 pointValue( WGS84, -1D, -1D ),
@@ -622,6 +626,8 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     @Test
     void testIndexSeekRangeWithExistsBySpatial() throws Exception
     {
+        assumeTrue( testSuite.supportsSpatialRangeQueries(), "Assume support for spatial range queries" );
+
         testIndexSeekRangeWithExists(
                 pointValue( Cartesian, 0D, 0D ),
                 pointValue( Cartesian, 1D, 1D ),
@@ -1264,11 +1270,24 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                     catch ( IllegalArgumentException e )
                     {
                         // then
-                        assertThat( e.getMessage() ).contains( "Tried to query index with illegal composite query." );
+                        if ( !testSuite.supportsContainsAndEndsWithQueries() && hasContainsOrEndsWithQuery( theQuery ) )
+                        {
+                            assertThat( e.getMessage() ).contains( "Tried to query index with illegal query." );
+                        }
+                        else
+                        {
+                            assertThat( e.getMessage() ).contains( "Tried to query index with illegal composite query." );
+                        }
                     }
                 }
             }
         }
+    }
+
+    private boolean hasContainsOrEndsWithQuery( PropertyIndexQuery[] theQuery )
+    {
+        return Arrays.stream( theQuery )
+                .anyMatch( predicate -> predicate.type().equals( stringContains ) || predicate.type().equals( stringSuffix ) );
     }
 
     @Test

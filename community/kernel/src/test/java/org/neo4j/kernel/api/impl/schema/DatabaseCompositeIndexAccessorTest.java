@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.AssertableLogProvider;
@@ -318,7 +319,8 @@ public class DatabaseCompositeIndexAccessorTest
     {
         Collection<AbstractIndexProviderFactory<?>> indexProviderFactories = Arrays.asList(
                 new GenericNativeIndexProviderFactory(),
-                new NativeLuceneFusionIndexProviderFactory30() );
+                new NativeLuceneFusionIndexProviderFactory30(),
+                new RangeIndexProviderFactory() );
         return indexProviderFactories.stream().map( f -> f.create( pageCache, fileSystem, new SimpleLogService( logProvider ),
                                                                    new Monitors(), CONFIG, writable(), DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(),
                                                                    PageCacheTracer.NULL, DatabaseLayout.ofFlat( testDirectory.homePath() ),

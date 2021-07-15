@@ -29,15 +29,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.monitoring.Monitors;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
-class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCompatibilityIncludingConstraintsTestSuite
+class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
 {
     @Override
     IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
@@ -46,7 +44,7 @@ class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCo
         String monitorTag = "";
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         var readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
-        return GenericNativeIndexProviderFactory.
+        return RangeIndexProviderFactory.
                 create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, PageCacheTracer.NULL,
                         DEFAULT_DATABASE_NAME );
     }
@@ -70,14 +68,20 @@ class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCo
     }
 
     @Override
-    void consistencyCheck( IndexPopulator populator )
+    boolean supportsContainsAndEndsWithQueries()
     {
-        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
+        return false;
     }
 
     @Override
-    void additionalConfig( Config.Builder configBuilder )
+    boolean supportsSpatialRangeQueries()
     {
-        configBuilder.set( default_schema_provider, NATIVE_BTREE10.providerName() );
+        return false;
+    }
+
+    @Override
+    void consistencyCheck( IndexPopulator populator )
+    {
+        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
     }
 }

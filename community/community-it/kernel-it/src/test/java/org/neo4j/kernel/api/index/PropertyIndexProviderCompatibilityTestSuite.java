@@ -84,6 +84,19 @@ abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProvider
         return true;
     }
 
+    boolean supportsContainsAndEndsWithQueries()
+    {
+        return true;
+    }
+
+    /**
+     * Not all indexes that support spatial types supports all types of queries on them.
+     */
+    boolean supportsSpatialRangeQueries()
+    {
+        return supportsSpatial();
+    }
+
     ValueType[] supportedValueTypes()
     {
         if ( !supportsSpatial() )
@@ -168,15 +181,6 @@ abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProvider
     class UniqueCompositeIndexAccessor extends CompositeIndexAccessorCompatibility.Unique
     {
         UniqueCompositeIndexAccessor()
-        {
-            super( PropertyIndexProviderCompatibilityTestSuite.this );
-        }
-    }
-
-    @Nested
-    class UniqueConstraint extends UniqueConstraintCompatibility
-    {
-        UniqueConstraint()
         {
             super( PropertyIndexProviderCompatibilityTestSuite.this );
         }

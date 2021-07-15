@@ -34,7 +34,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
-class FusionIndexProvider30CompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
+class FusionIndexProvider30CompatibilitySuiteTest extends PropertyIndexProviderCompatibilityIncludingConstraintsTestSuite
 {
     @Override
     IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )

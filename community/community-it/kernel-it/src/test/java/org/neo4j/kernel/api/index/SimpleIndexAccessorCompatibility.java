@@ -162,6 +162,7 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
     void testIndexRangeSeekWithSpatial() throws Exception
     {
         assumeTrue( testSuite.supportsSpatial() );
+        assumeTrue( testSuite.supportsSpatialRangeQueries() );
 
         PointValue p1 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, -1 );
         PointValue p2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, 1 );
@@ -1146,6 +1147,8 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
         @Test
         void testIndexFullSearchWithDuplicates() throws Exception
         {
+            assumeTrue( testSuite.supportsContainsAndEndsWithQueries() );
+
             updateAndCommit( asList(
                     add( 1L, descriptor, "a" ),
                     add( 2L, descriptor, "A" ),
@@ -1164,6 +1167,8 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
         @Test
         void testIndexEndsWithWithDuplicated() throws Exception
         {
+            assumeTrue( testSuite.supportsContainsAndEndsWithQueries() );
+
             updateAndCommit( asList(
                     add( 1L, descriptor, "a" ),
                     add( 2L, descriptor, "A" ),
