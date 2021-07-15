@@ -94,6 +94,12 @@ class StatsDivergenceCalculatorTest extends CypherFunSuite {
     }
   }
 
+  test("A small threshold should not increase on decay") {
+    Seq(StatsDivergenceCalculator.inverse, StatsDivergenceCalculator.exponential).foreach { name =>
+      assertNoDecay(name, 0, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
+    }
+  }
+
   private def assertNoDecay(name: String, initialThreshold: Double, targetThreshold: Double, initialInterval: Long, targetInterval: Long): Unit = {
     val divergence = StatsDivergenceCalculator.divergenceCalculatorFor(name, initialThreshold, targetThreshold, initialInterval, targetInterval)
     assertNoDecay(name, divergence, initialThreshold, initialInterval)

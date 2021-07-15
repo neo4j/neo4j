@@ -58,17 +58,6 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
-          <configuration>
-              <analysisConfiguration>
-                  <revapi.ignore>
-                      <item>
-                          <code>java.field.addedStaticField</code>
-                          <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.log_inconsistent_data_deletion</new>
-                          <justification>Adding an internal setting for logging of inconsistent data on delete.</justification>
-                      </item>
-                  </revapi.ignore>
-              </analysisConfiguration>
-          </configuration>
       </plugin>
 
       <plugin>

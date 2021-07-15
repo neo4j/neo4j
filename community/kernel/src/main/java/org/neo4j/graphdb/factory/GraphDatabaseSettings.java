@@ -269,12 +269,14 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> query_cache_size =
             buildSetting( "dbms.query_cache_size", INTEGER, "1000" ).constraint( min( 0 ) ).build();
 
-    @Description( "The threshold when a plan is considered stale. If any of the underlying " +
-                  "statistics used to create the plan have changed more than this value, " +
+    @Description( "The threshold for statistics above which a plan is considered stale.\n\n" +
+                  "If any of the underlying statistics used to create the plan have changed more than this value, " +
                   "the plan will be considered stale and will be replanned. Change is calculated as " +
-                  "abs(a-b)/max(a,b). This means that a value of 0.75 requires the database to approximately " +
-                  "quadruple in size. A value of 0 means replan as soon as possible, with the soonest being " +
-                  "defined by the cypher.min_replan_interval which defaults to 10s. After this interval the " +
+                  "`abs(a-b)/max(a,b)`.\n\n" +
+                  "This means that a value of `0.75` requires the database to " +
+                  "quadruple in size before query replanning. A value of `0` means that the query will be " +
+                  "replanned as soon as there is any change in statistics and the replan interval has elapsed.\n\n" +
+                  "This interval is defined by `cypher.min_replan_interval` and defaults to 10s. After this interval, the " +
                   "divergence threshold will slowly start to decline, reaching 10% after about 7h. This will " +
                   "ensure that long running databases will still get query replanning on even modest changes, " +
                   "while not replanning frequently unless the changes are very large." )

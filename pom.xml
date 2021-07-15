@@ -342,6 +342,16 @@
                     <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.store_user_log_rotation_threshold</new>
                     <justification>Updating setting description for documentation</justification>
                   </item>
+                  <item>
+                    <code>java.field.addedStaticField</code>
+                    <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.log_inconsistent_data_deletion</new>
+                    <justification>Adding an internal setting for logging of inconsistent data on delete.</justification>
+                  </item>
+                  <item>
+                    <code>java.annotation.attributeValueChanged</code>
+                    <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.query_statistics_divergence_threshold</new>
+                    <justification>Correcting setting description for documentation</justification>
+                  </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
