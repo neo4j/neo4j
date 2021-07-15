@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.builder
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
@@ -514,6 +515,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .eager()
+      .eager(Seq(EagernessReason.UpdateStrategyEager))
+      .eager(Seq(EagernessReason.Unknown))
+      .eager(Seq(
+        EagernessReason.DeleteOverlap(Seq("n", "m")),
+        EagernessReason.OverlappingSetLabels(Seq("X")),
+        EagernessReason.OverlappingDeletedLabels(Seq("Foo", "Bar")),
+      ))
       .argument()
       .build())
 
@@ -1185,6 +1193,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.logical.builder.TestException
             |import org.neo4j.cypher.internal.ir.HasHeaders
             |import org.neo4j.cypher.internal.ir.NoHeaders
+            |import org.neo4j.cypher.internal.ir.EagernessReason
             |""".stripMargin)
         interpreter.bind("result", "Array[AnyRef]", res)
       }

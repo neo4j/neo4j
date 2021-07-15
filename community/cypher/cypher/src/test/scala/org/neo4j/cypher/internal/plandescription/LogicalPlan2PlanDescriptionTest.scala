@@ -1129,16 +1129,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(Eager(lhsLP, Seq(EagernessReason.UpdateStrategyEager)), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("updateStrategy=eager"))), Set("a")))
 
-    assertGood(attach(Eager(lhsLP, Seq(EagernessReason.OverlappingDeletedLabels(Seq(label("Foo"), label("Bar"))))), 34.5),
+    assertGood(attach(Eager(lhsLP, Seq(EagernessReason.OverlappingDeletedLabels(Seq("Foo", "Bar")))), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("overlapping remove labels: Foo, Bar"))), Set("a")))
 
-    assertGood(attach(Eager(lhsLP, Seq(EagernessReason.OverlappingSetLabels(Seq(label("Foo"), label("Bar"))))), 34.5),
+    assertGood(attach(Eager(lhsLP, Seq(EagernessReason.OverlappingSetLabels(Seq("Foo", "Bar")))), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("overlapping set labels: Foo, Bar"))), Set("a")))
 
     assertGood(attach(Eager(lhsLP, Seq(EagernessReason.DeleteOverlap(Seq("b")))), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("delete overlap: b"))), Set("a")))
 
-    assertGood(attach(Eager(lhsLP, Seq(EagernessReason.DeleteOverlap(Seq("b")), EagernessReason.OverlappingSetLabels(Seq(label("Foo"))))), 34.5),
+    assertGood(attach(Eager(lhsLP, Seq(EagernessReason.DeleteOverlap(Seq("b")), EagernessReason.OverlappingSetLabels(Seq("Foo")))), 34.5),
       planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("delete overlap: b", "overlapping set labels: Foo"))), Set("a")))
   }
 

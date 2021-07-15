@@ -348,7 +348,7 @@ trait UpdateGraph {
     }
 
     if (overlapWithKnownLabels.nonEmpty)
-      Some(EagernessReason.OverlappingSetLabels(overlapWithKnownLabels.toSeq))
+      Some(EagernessReason.OverlappingSetLabels(overlapWithKnownLabels.toSeq.map(_.name)))
     else if (overlapWithLabelsFunction)
       Some(EagernessReason.OverlappingSetLabels(Seq.empty))
     else
@@ -395,7 +395,7 @@ trait UpdateGraph {
     }.flatten
 
     if (overlappingLabels.nonEmpty) {
-      Some(EagernessReason.OverlappingDeletedLabels(overlappingLabels))
+      Some(EagernessReason.OverlappingDeletedLabels(overlappingLabels.map(_.name)))
     } else {
       None
     }

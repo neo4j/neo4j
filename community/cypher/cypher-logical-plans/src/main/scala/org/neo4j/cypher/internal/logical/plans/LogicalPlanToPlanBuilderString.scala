@@ -38,6 +38,8 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Reason
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
@@ -418,6 +420,7 @@ object LogicalPlanToPlanBuilderString {
         val fieldTerminatorStr = fieldTerminator.fold("None")(ft => s"Some(${wrapInQuotations(ft)})")
         Seq(wrapInQuotations(expressionStringifier(url)), wrapInQuotations(variableName), format, fieldTerminatorStr).mkString(", ")
       case Apply(_, _, fromSubquery) => fromSubquery.toString
+      case Eager(_, reasons)  => reasons.map(eagernessReasonStr).mkString("Seq(", ", ", ")")
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[NodeIndexSeekLeafPlan]) =>
@@ -595,6 +598,18 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def sortItemStr(si: ColumnOrder): String =  s""" ${si.getClass.getSimpleName}("${si.id}") """.trim
+
+  private def eagernessReasonStr(reason: Reason): String = {
+    val prefix = objectName(EagernessReason)
+    val suffix = reason match {
+      case EagernessReason.Unknown => objectName(EagernessReason.Unknown)
+      case EagernessReason.UpdateStrategyEager => objectName(EagernessReason.UpdateStrategyEager)
+      case EagernessReason.OverlappingSetLabels(labels) => s"${objectName(EagernessReason.OverlappingSetLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
+      case EagernessReason.OverlappingDeletedLabels(labels) => s"${objectName(EagernessReason.OverlappingDeletedLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
+      case EagernessReason.DeleteOverlap(identifiers) => s"${objectName(EagernessReason.DeleteOverlap)}(Seq(${wrapInQuotationsAndMkString(identifiers)}))"
+    }
+    s"$prefix.$suffix"
+  }
 
   private def variablePredicate(nodePredicate: Option[VariablePredicate], name: String) = {
     nodePredicate.map(vp => s""", $name = Predicate("${vp.variable.name}", "${expressionStringifier(vp.predicate)}") """.trim).getOrElse("")

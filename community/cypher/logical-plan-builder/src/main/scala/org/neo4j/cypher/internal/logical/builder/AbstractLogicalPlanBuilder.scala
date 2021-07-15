@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
@@ -534,8 +535,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, literalInt(limit), Some(literalInt(skipSortingPrefixLength)))(_)))
     self
   }
-  def eager(): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Eager(lp)(_)))
+  def eager(reasons: Seq[EagernessReason.Reason] = Seq(EagernessReason.Unknown)): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Eager(lp, reasons)(_)))
     self
   }
 
