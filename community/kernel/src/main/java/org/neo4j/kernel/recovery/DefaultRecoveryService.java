@@ -38,6 +38,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 public class DefaultRecoveryService implements RecoveryService
 {
@@ -105,7 +106,7 @@ public class DefaultRecoveryService implements RecoveryService
             {
                 log.warn( "Recovery detected that checkpoint log version is invalid. " +
                         "Resetting version to start from the beginning. Current recorded version: %d. New version: 0.", checkpointLogVersion );
-                logVersionRepository.setCheckpointLogVersion( 0, cursorTracer );
+                logVersionRepository.setCheckpointLogVersion( INITIAL_LOG_VERSION, cursorTracer );
             }
             return;
         }
