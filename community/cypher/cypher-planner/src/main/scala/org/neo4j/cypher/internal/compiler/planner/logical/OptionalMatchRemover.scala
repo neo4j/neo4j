@@ -208,28 +208,29 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
   }
 
   private def toAst(elementsToKeep: Set[String], predicates: Map[String, LabelsAndEquality], gen: PositionGenerator, pattern: PatternRelationship) = {
-    def createVariable(name: String): Some[Variable] =
+    def createVariable(name: String): Variable =
       if (!elementsToKeep(name)) {
         val pos = gen.nextPosition()
-        Some(Variable(UnNamedNameGenerator.name(pos))(pos))
+        Variable(UnNamedNameGenerator.name(pos))(pos)
       } else {
-        Some(Variable(name)(gen.nextPosition()))
+        Variable(name)(gen.nextPosition())
       }
 
     def createNode(name: String): NodePattern = {
       val labelsAndProps = predicates.getOrElse(name, LabelsAndEquality.empty)
       val props = if (labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(
         gen.nextPosition()))
-      NodePattern(createVariable(name), labels = labelsAndProps.labels, properties = props)(gen.nextPosition())
+      NodePattern(Some(createVariable(name)), labels = labelsAndProps.labels, properties = props)(gen.nextPosition())
     }
 
     val relName = createVariable(pattern.name)
     val leftNode = createNode(pattern.nodes._1)
     val rightNode = createNode(pattern.nodes._2)
-    val relPattern = RelationshipPattern(relName, pattern.types, length = None, properties = None, pattern.dir)(
+    val relPattern = RelationshipPattern(Some(relName), pattern.types, length = None, properties = None, pattern.dir)(
       gen.nextPosition())
     val chain = RelationshipChain(leftNode, relPattern, rightNode)(gen.nextPosition())
-    PatternExpression(RelationshipsPattern(chain)(gen.nextPosition()))(Set.empty)
+    val outerScope: Set[Variable] = elementsToKeep.map(createVariable)
+    PatternExpression(RelationshipsPattern(chain)(gen.nextPosition()))(outerScope)
   }
 
   implicit class FlatMapWithTailable(in: IndexedSeq[QueryGraph]) {
