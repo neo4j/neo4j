@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
@@ -80,7 +81,11 @@ public class StaticIndexProviderMapFactory
                 pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
                 recoveryCleanupWorkCollector, pageCacheTracer, databaseLayout, tokenHolders, scheduler ) );
 
+        var rangeIndexProvider = life.add( new RangeIndexProviderFactory().create(
+                pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
+                recoveryCleanupWorkCollector, pageCacheTracer, databaseLayout, tokenHolders, scheduler ) );
+
         return new StaticIndexProviderMap( tokenIndexProvider, nativeIndexProvider, fusionIndexProvider, textIndexProvider, fulltextIndexProvider,
-                                           databaseConfig, dependencies );
+                                           rangeIndexProvider, databaseConfig, dependencies );
     }
 }

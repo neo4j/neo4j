@@ -65,6 +65,12 @@ public class MockIndexProviderMap extends LifecycleAdapter implements IndexProvi
     }
 
     @Override
+    public IndexProvider getRangeIndexProvider()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public IndexProvider lookup( IndexProviderDescriptor providerDescriptor )
     {
         if ( indexProvider.getProviderDescriptor().equals( providerDescriptor ) )

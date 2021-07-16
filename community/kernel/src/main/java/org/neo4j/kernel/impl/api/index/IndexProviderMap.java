@@ -79,6 +79,11 @@ public interface IndexProviderMap extends IndexConfigCompleter
     IndexProvider getTextIndexProvider();
 
     /**
+     * The preferred {@link IndexProvider} for handling range indexes.
+     */
+    IndexProvider getRangeIndexProvider();
+
+    /**
      * Visits all the {@link IndexProvider} with the visitor.
      *
      * @param visitor {@link Consumer} visiting all the {@link IndexProvider index providers} in this map.
@@ -125,6 +130,12 @@ public interface IndexProviderMap extends IndexConfigCompleter
 
         @Override
         public IndexProvider getTextIndexProvider()
+        {
+            return IndexProvider.EMPTY;
+        }
+
+        @Override
+        public IndexProvider getRangeIndexProvider()
         {
             return IndexProvider.EMPTY;
         }

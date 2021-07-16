@@ -55,6 +55,7 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -72,7 +73,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -490,6 +490,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     public IndexProviderDescriptor getTextIndexProvider()
     {
         return providerMap.getTextIndexProvider().getProviderDescriptor();
+    }
+
+    @Override
+    public IndexProviderDescriptor getRangeIndexProvider()
+    {
+        return providerMap.getRangeIndexProvider().getProviderDescriptor();
     }
 
     @Override

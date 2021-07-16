@@ -1058,6 +1058,10 @@ public class Operations implements Write, SchemaWrite
             {
                 provider = indexProviders.getTextIndexProvider();
             }
+            else if ( prototype.getIndexType() == IndexType.RANGE )
+            {
+                provider = indexProviders.getRangeIndexProvider();
+            }
             else
             {
                 provider = indexProviders.getDefaultProvider();
