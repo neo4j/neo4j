@@ -206,25 +206,26 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
       }
 
   private def toAst(elementsToKeep: Set[String], predicates: Map[String, LabelsAndEquality], pattern: PatternRelationship, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = {
-    def createVariable(name: String): Some[Variable] =
+    def createVariable(name: String): Variable =
       if (!elementsToKeep(name)) {
-        Some(Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE))
+        Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
       } else {
-        Some(Variable(name)(InputPosition.NONE))
+        Variable(name)(InputPosition.NONE)
       }
 
     def createNode(name: String): NodePattern = {
       val labelsAndProps = predicates.getOrElse(name, LabelsAndEquality.empty)
       val props = if (labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(InputPosition.NONE))
-      NodePattern(createVariable(name), labels = labelsAndProps.labels, properties = props)(InputPosition.NONE)
+      NodePattern(Some(createVariable(name)), labels = labelsAndProps.labels, properties = props)(InputPosition.NONE)
     }
 
     val relName = createVariable(pattern.name)
     val leftNode = createNode(pattern.nodes._1)
     val rightNode = createNode(pattern.nodes._2)
-    val relPattern = RelationshipPattern(relName, pattern.types, length = None, properties = None, pattern.dir)(InputPosition.NONE)
+    val relPattern = RelationshipPattern(Some(relName), pattern.types, length = None, properties = None, pattern.dir)(InputPosition.NONE)
     val chain = RelationshipChain(leftNode, relPattern, rightNode)(InputPosition.NONE)
-    PatternExpression(RelationshipsPattern(chain)(InputPosition.NONE))(Set.empty, anonymousVariableNameGenerator.nextName, anonymousVariableNameGenerator.nextName)
+    val outerScope: Set[LogicalVariable] = elementsToKeep.map(createVariable)
+    PatternExpression(RelationshipsPattern(chain)(InputPosition.NONE))(outerScope, anonymousVariableNameGenerator.nextName, anonymousVariableNameGenerator.nextName)
   }
 
   implicit class FlatMapWithTailable(in: IndexedSeq[QueryGraph]) {
