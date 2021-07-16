@@ -114,6 +114,7 @@ import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
@@ -160,6 +161,7 @@ public class Operations implements Write, SchemaWrite
     private DefaultPropertyCursor restrictedPropertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
     private final boolean textIndexesEnabled;
+    private final boolean rangeIndexesEnabled;
 
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
             StorageLocks storageLocks, KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors,
@@ -182,6 +184,7 @@ public class Operations implements Write, SchemaWrite
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.additionLockVerification = config.get( additional_lock_verification );
         this.textIndexesEnabled = config.get( text_indexes_enabled );
+        this.rangeIndexesEnabled  = config.get( range_indexes_enabled );
     }
 
     public void initialize( CursorContext cursorContext )
@@ -935,8 +938,7 @@ public class Operations implements Write, SchemaWrite
         }
         if ( indexType == IndexType.RANGE )
         {
-            // All parts for creating RANGE indexes are not in place yet, so blocking any creation attempts for now.
-            throw new UnsupportedOperationException( "Index of RANGE type is not supported yet." );
+            assertRangeIndexesSupported();
         }
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();
@@ -961,6 +963,14 @@ public class Operations implements Write, SchemaWrite
         if ( prototype.schema().getPropertyIds().length > 1 )
         {
             throw new UnsupportedOperationException( "Composite indexes are not supported for TEXT index type." );
+        }
+    }
+
+    private void assertRangeIndexesSupported()
+    {
+        if ( !rangeIndexesEnabled )
+        {
+            throw new UnsupportedOperationException( "Index of RANGE type is not supported yet." );
         }
     }
 

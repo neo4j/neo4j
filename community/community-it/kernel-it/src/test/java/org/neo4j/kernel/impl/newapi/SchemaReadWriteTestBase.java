@@ -114,13 +114,14 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldCreateIndex() throws Exception
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT" } )
+    void shouldCreateIndex( IndexType type ) throws Exception
     {
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
+            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withIndexType( type ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -128,7 +129,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertThat( single( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ) ) ).isEqualTo( index );
-            assertThat( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ), IndexType.BTREE ) ).isEqualTo( index );
+            assertThat( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ), type ) ).isEqualTo( index );
         }
     }
 
@@ -173,13 +174,14 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldDropIndex() throws Exception
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT" } )
+    void shouldDropIndex( IndexType type ) throws Exception
     {
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
+            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withIndexType( type ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -219,13 +221,14 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldDropInByName() throws Exception
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT" } )
+    void shouldDropIndexByName( IndexType type ) throws Exception
     {
         String indexName = "My fancy index";
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( indexName ) );
+            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withIndexType( type ).withName( indexName ) );
             transaction.commit();
         }
 
@@ -324,13 +327,14 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldFailIfExistingIndex() throws Exception
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT" } )
+    void shouldFailIfExistingIndex( IndexType type ) throws Exception
     {
         //Given
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
+            transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withIndexType( type ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -338,9 +342,11 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( KernelTransaction transaction = beginTransaction() )
         {
             assertThrows( SchemaKernelException.class,
-                          () -> transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my other index" ) ) );
+                    () -> transaction.schemaWrite()
+                            .indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withIndexType( type ).withName( "my other index" ) ) );
             assertThrows( SchemaKernelException.class,
-                          () -> transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withName( "my index" ) ) );
+                    () -> transaction.schemaWrite()
+                            .indexCreate( IndexPrototype.forSchema( forLabel( label, prop2 ) ).withIndexType( type ).withName( "my index" ) ) );
             transaction.commit();
         }
     }
