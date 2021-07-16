@@ -32,233 +32,275 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.flattenBooleanOperators
+import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 with TestName {
 
   val rewriter: Rewriter = OptionalMatchRemover.instance(null)
 
-  assert_that(
+  test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r]->(b)
-       RETURN distinct a as a""").
-    is_rewritten_to(
+       RETURN distinct a as a""") {
+    assert_that(testName).is_rewritten_to(
       """MATCH (a)
          RETURN distinct a as a""")
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)
-        RETURN DISTINCT a as a, b as b""").
-    is_not_rewritten()
+        RETURN DISTINCT a as a, b as b""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
-        RETURN DISTINCT c as c""").
-    is_not_rewritten()
+        RETURN DISTINCT c as c""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
         OPTIONAL MATCH (c)-[r3]->(d)
-        RETURN DISTINCT d as d""").
-    is_not_rewritten()
+        RETURN DISTINCT d as d""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)-[r2]->(c)-[r3]->(d)
-        RETURN DISTINCT d as d""").
-    is_not_rewritten()
+        RETURN DISTINCT d as d""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r1]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
         OPTIONAL MATCH (a)-[r3]->(d)
-        RETURN DISTINCT d as d""").
-    is_rewritten_to(
+        RETURN DISTINCT d as d""") {
+    assert_that(testName).is_rewritten_to(
       """MATCH (a)
         OPTIONAL MATCH (a)-[r3]->(d)
         RETURN DISTINCT d as d"""
     )
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r1]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
         OPTIONAL MATCH (a)-[r3]->(d)
-        RETURN count(distinct d) as x""").
-    is_rewritten_to(
+        RETURN count(distinct d) as x""") {
+    assert_that(testName).is_rewritten_to(
       """MATCH (a)
         OPTIONAL MATCH (a)-[r3]->(d)
-        RETURN count(distinct d) as x"""
-    )
+        RETURN count(distinct d) as x""")
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r1]->(b)
         OPTIONAL MATCH (b)-[r2]->(c)
         OPTIONAL MATCH (a)-[r3]->(d) WHERE c.prop = d.prop
-        RETURN DISTINCT d as d""").
-    is_not_rewritten()
+        RETURN DISTINCT d as d""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r1]->(b)-[r2]->(c)
         OPTIONAL MATCH (a)-[r3]->(d) WHERE c.prop = d.prop
-        RETURN DISTINCT d as d""").
-    is_not_rewritten()
+        RETURN DISTINCT d as d""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a), (b)
        OPTIONAL MATCH (a)-[r]->(b)
-       RETURN DISTINCT a as a, b as b""").
-    is_rewritten_to(
+       RETURN DISTINCT a as a, b as b""") {
+    assert_that(testName).is_rewritten_to(
       """MATCH (a), (b)
          RETURN DISTINCT a as a, b as b""")
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)
-        RETURN DISTINCT a as a, r as r""").
-    is_not_rewritten()
+        RETURN DISTINCT a as a, r as r""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r]->(b)
-       RETURN count(distinct a) as x""").
-    is_rewritten_to(
+       RETURN count(distinct a) as x""") {
+    assert_that(testName).is_rewritten_to(
       """MATCH (a)
          RETURN count(distinct a) as x""")
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
        OPTIONAL MATCH (a)-[r]->(b)-[r2]->(c) WHERE c.prop = b.prop
-       RETURN DISTINCT b as b""").
-    is_not_rewritten()
+       RETURN DISTINCT b as b""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """OPTIONAL MATCH (f:DoesExist)
        OPTIONAL MATCH (n:DoesNotExist)
-       RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b """).
-    is_not_rewritten()
+       RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b """) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c)
-          RETURN DISTINCT b as b""").
-    is_rewritten_to(
+          RETURN DISTINCT b as b""") {
+    assert_that(testName).is_rewritten_to(
       """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->()
           RETURN DISTINCT b as b""")
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE b:B
-          RETURN DISTINCT b as b""").
-    is_rewritten_to(
+          RETURN DISTINCT b as b""") {
+    assert_that(testName).is_rewritten_to(
       """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B and (b)-[:T2]->()
           RETURN DISTINCT b as b""")
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
             OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c.age <> 42
-            RETURN DISTINCT b as b""").
-    is_not_rewritten()
+            RETURN DISTINCT b as b""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c:A:B and c.id = 42 and c.foo = 'apa'
-          RETURN DISTINCT b as b""").
-    is_rewritten_to(
+          RETURN DISTINCT b as b""") {
+    assert_that(testName).is_rewritten_to(
       """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->(:A:B {foo: 'apa', id: 42})
           RETURN DISTINCT b as b""")
+  }
 
-  assert_that(
+  test(
+    """MATCH (a:A)
+      |OPTIONAL MATCH (z)-[IS_A]->(thing) WHERE z:Z
+      |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """MATCH (a:A)
+        |OPTIONAL MATCH (z) WHERE (z)-->() AND z:Z
+        |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin)
+  }
+
+  test(
     """OPTIONAL MATCH (a)-[r1]->(b)-[r2]->(c) WHERE a:A and b:B and c:C and a <> b
-          RETURN DISTINCT c as c""").
-    is_not_rewritten()
+          RETURN DISTINCT c as c""") {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |DELETE r
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |SET b.foo = 1
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |SET a.foo = b.foo
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |SET r.foo = 1
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |SET b:FOO
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |CREATE (c {id: b.prop})
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |CREATE (a)-[r:T]->(b)
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |MERGE (c:X {id: b.prop})
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |MERGE (a)-[r:T]->(b)
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
-  assert_that(
+  test(
     """MATCH (a)
       |OPTIONAL MATCH (a)<-[r1]-(b)
       |FOREACH( x in b.collectionProp |
       |  CREATE (z) )
-      |RETURN DISTINCT a AS a""".stripMargin).
-    is_not_rewritten()
+      |RETURN DISTINCT a AS a""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
 
   val x = "x"
   val n = "n"
@@ -267,7 +309,6 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   val r1 = "r1"
   val r2 = "r2"
   val r3 = "r3"
-
 
   test("finds shortest path starting from a single element with a single node in the QG") {
     val qg = QueryGraph(patternNodes = Set(n))
@@ -305,7 +346,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = smallestGraphIncluding(qg, Set(n, m))
     result should contain(n)
     result should contain(m)
-    result should contain oneOf (r1, r2)
+    result should contain oneOf(r1, r2)
   }
 
   test("finds shortest path starting from two nodes with an intermediate relationship in the QG") {
@@ -336,16 +377,15 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   case class RewriteTester(originalQuery: String) {
-    def is_rewritten_to(newQuery: String): Unit =
-      test(originalQuery) {
-        val expected = getTheWholePlannerQueryFrom(newQuery.stripMargin)
-        val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin)
+    def is_rewritten_to(newQuery: String): Unit = {
+      val expected = getTheWholePlannerQueryFrom(newQuery.stripMargin)
+      val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin)
 
-        val result = original.endoRewrite(fixedPoint(rewriter))
-        assert(result === expected, "\nWas not rewritten correctly\n" + originalQuery)
-      }
+      val result = original.endoRewrite(fixedPoint(rewriter))
+      assert(result === expected, "\nWas not rewritten correctly\n" + originalQuery)
+    }
 
-    def is_not_rewritten(): Unit = test(originalQuery) {
+    def is_not_rewritten(): Unit = {
       val query = getTheWholePlannerQueryFrom(originalQuery.stripMargin)
       val result = query.endoRewrite(fixedPoint(rewriter))
       assert(result === query, "\nShould not have been rewritten\n" + originalQuery)
@@ -355,7 +395,13 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   private def assert_that(originalQuery: String): RewriteTester = RewriteTester(originalQuery)
 
   private def getTheWholePlannerQueryFrom(query: String): PlannerQuery = {
-    val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
+    val astOriginal = parseForRewriting(query)
+    val orgAstState = SemanticChecker.check(astOriginal).state
+    val ast = astOriginal.endoRewrite(inSequence(
+      AddUniquenessPredicates(),
+      flattenBooleanOperators,
+      recordScopes(orgAstState)
+    ))
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val result = SemanticChecker.check(ast)
