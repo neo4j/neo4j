@@ -105,6 +105,7 @@ public enum Group
     CATCHUP_CLIENT( "CatchupClient" ),
     CATCHUP_PROCESS( "CatchupProcess" ),
     CATCHUP_SERVER( "CatchupServer" ),
+    DATABASE_INFO_SERVICE( "DatabaseInfoService" ),
     STORE_COPY_CLIENT( "StoreCopyClient" ),
     THROUGHPUT_MONITOR( "ThroughputMonitor" ),
     PANIC_SERVICE( "PanicService" ),

@@ -28,6 +28,7 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons BeanUtils
   Apache Commons Collections
+  Apache Commons Compress
   Apache Commons Exec
   Apache Commons IO
   Apache Commons Lang
@@ -46,6 +47,8 @@ Apache Software License, Version 2.0
   Caffeine cache
   Java Concurrency Tools Core Library
   Jettison
+  jPowerShell
+  jProcesses
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory
@@ -54,7 +57,9 @@ Apache Software License, Version 2.0
   mercator
   parboiled-core
   parboiled-scala
+  picocli - a mighty tiny Command Line Interface
   Scala Compiler
+  WMI4Java
 
 BSD - Scala License
   Scala Library
@@ -64,6 +69,10 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
+  Zstandard
+
+BSD License 2-clause
+  zstd-jni
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

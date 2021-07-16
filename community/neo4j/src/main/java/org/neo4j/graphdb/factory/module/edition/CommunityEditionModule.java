@@ -34,11 +34,13 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
+import org.neo4j.dbms.database.StandaloneDatabaseInfoService;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.procedures.StandaloneDatabaseStateProcedure;
@@ -210,6 +212,13 @@ public class CommunityEditionModule extends StandaloneEditionModule
                                       LogProvider userLogProvider, DbmsInfo dbmsInfo )
     {
         return new CommunityNeoWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo, globalModule.getMemoryPools() );
+    }
+
+    @Override
+    public DatabaseInfoService createDatabaseInfoService( DatabaseManager<?> databaseManager )
+    {
+        var address = globalModule.getGlobalConfig().get( BoltConnector.advertised_address );
+        return new StandaloneDatabaseInfoService( null, address, databaseManager , databaseStateService );
     }
 
     @Override

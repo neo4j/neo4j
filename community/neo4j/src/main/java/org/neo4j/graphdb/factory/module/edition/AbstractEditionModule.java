@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
@@ -223,4 +224,6 @@ public abstract class AbstractEditionModule
         RoutingTableTTLProvider ttlProvider = RoutingTableTTLProvider.ttlFromConfig( config );
         return new SingleAddressRoutingTableProvider( portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlProvider );
     }
+
+    public abstract DatabaseInfoService createDatabaseInfoService( DatabaseManager<?> databaseManager );
 }

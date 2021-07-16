@@ -134,6 +134,9 @@ public class DatabaseManagementServiceFactory
         DatabaseManagementService managementService = createManagementService( globalModule, globalLife, internalLog, databaseManager );
         globalDependencies.satisfyDependencies( managementService );
 
+        var databaseInfoService = edition.createDatabaseInfoService( databaseManager );
+        globalDependencies.satisfyDependencies( databaseInfoService );
+
         edition.bootstrapFabricServices();
 
         setupProcedures( globalModule, edition, databaseManager );
