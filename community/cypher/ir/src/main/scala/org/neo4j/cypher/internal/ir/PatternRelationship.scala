@@ -27,7 +27,14 @@ final case class PatternRelationship(name: String, nodes: (String, String), dir:
 
   def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
 
-  def otherSide(node: String) = if (node == left) right else left
+  def otherSide(node: String): String =
+    if (node == left) {
+      right
+    } else if (node == right) {
+      left
+    } else {
+      throw new IllegalArgumentException(s"Did not provide either side as an argument to otherSide. Rel: $this, argument: $node")
+    }
 
   def coveredIds: Set[String] = Set(name, left, right)
 
