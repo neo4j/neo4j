@@ -108,8 +108,7 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
       val symbolDefinition = variableDefinitions(SymbolUse(variable))
       val name = newNames.getOrElseUpdate(symbolDefinition, genName)
       val newVariable = variable.renameId(name)
-      val renaming = Ref(variable) -> newVariable
-      renaming
+      Ref(variable) -> newVariable
     }
 
     statement.treeFold(Map.empty[Ref[LogicalVariable], LogicalVariable]) {

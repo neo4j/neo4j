@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.TreeElem

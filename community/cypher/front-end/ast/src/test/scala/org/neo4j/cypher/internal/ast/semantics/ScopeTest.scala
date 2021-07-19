@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.nodeSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.stringSymbol
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 //noinspection ZeroIndexToHead
