@@ -223,7 +223,7 @@ public class CorruptedLogsTruncator
             if ( Files.size( logFile.getLogFileForVersion( recoveredTransactionLogVersion ) ) > recoveredTransactionOffset )
             {
                 try ( PhysicalLogVersionedStoreChannel channel = logFile.openForVersion( recoveredTransactionLogVersion );
-                        var scopedBuffer = new NativeScopedBuffer( safeCastLongToInt( kibiBytes( 8 ) ), memoryTracker ) )
+                        var scopedBuffer = new NativeScopedBuffer( safeCastLongToInt( kibiBytes( 64 ) ), memoryTracker ) )
                 {
                     channel.position( recoveredTransactionOffset );
                     ByteBuffer byteBuffer = scopedBuffer.getBuffer();
