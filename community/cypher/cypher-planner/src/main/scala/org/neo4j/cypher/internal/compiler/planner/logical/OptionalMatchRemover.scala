@@ -113,8 +113,20 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
           None
         else {
           val (predicatesForPatterns, remaining, elementsToKeep) = {
-            val elementsToKeep1 = smallestGraphIncluding(original, mustInclude ++ original.argumentIds)
-            extractElementsAndPatterns(original, mustInclude, elementsToKeep1)
+            // We must keep all variables calculated in the previous step plus all arguments ids.
+            val elementsToKeep0 = mustInclude ++ original.argumentIds
+
+            // We must keep all variables connecting the so far elementsToKeep
+            val elementsToKeep1 = smallestGraphIncluding(original, elementsToKeep0)
+
+            // Now, if two relationships, that are currently not kept, overlap, unless the overlap is on an elementToKeep, we also need to keep the relationships.
+            // Here, we keep the adjacent nodes, and in the next step we add the relationship itself
+            val elementsToKeep2 = elementsToKeep1 ++ overlappingRels(original.patternRelationships, elementsToKeep1).flatMap(r => Seq(r.left, r.right))
+
+            // We must (again) keep all variables connecting the so far elementsToKeep
+            val elementsToKeep3 = smallestGraphIncluding(original, elementsToKeep2)
+
+            extractElementsAndPatterns(original, elementsToKeep3)
           }
 
           val (patternsToKeep, patternsToFilter) = original.patternRelationships.partition(r => elementsToKeep(r.name))
@@ -136,18 +148,34 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
   }
 
-  private def extractElementsAndPatterns(original: QueryGraph, mustInclude: Set[String], elementsToKeepInitial: Set[String]):
+  /**
+   * Given a set of relationships of the original query graph and a set of so-far elements to keep, return all relationships that must be kept.
+   * These are all so-far kept relationships plus all other relationships that have an overlap, unless the overlap is on an elementToKeep.
+   */
+  private def overlappingRels(rels: Set[PatternRelationship], elementsToKeep: Set[String]): Set[PatternRelationship] = {
+    val (keptRels, notYetKeptRels) = rels.partition(r => elementsToKeep(r.name))
+    val alsoKeptRels = notYetKeptRels.filter { rel =>
+      val relIds = rel.coveredIds -- elementsToKeep
+      (notYetKeptRels - rel).exists { rel2 =>
+        val rel2Ids = rel2.coveredIds -- elementsToKeep
+        relIds.intersect(rel2Ids).nonEmpty
+      }
+    }
+    keptRels ++ alsoKeptRels
+  }
+
+  @tailrec
+  private def extractElementsAndPatterns(original: QueryGraph, elementsToKeepInitial: Set[String]):
   (Map[String, LabelsAndEquality], Set[Expression], Set[String]) = {
-    val (predicatesForPatterns, remaining) =
-      partitionPredicates(original.selections.predicates, elementsToKeepInitial)
+    val (predicatesForPatterns, remaining) = partitionPredicates(original.selections.predicates, elementsToKeepInitial)
 
     val variablesNeededForPredicates = remaining.flatMap(expression => expression.dependencies.map(_.name))
-    val elementsToKeep = smallestGraphIncluding(original, mustInclude ++ original.argumentIds ++ variablesNeededForPredicates)
+    val elementsToKeep = smallestGraphIncluding(original, elementsToKeepInitial ++ variablesNeededForPredicates)
 
-    if ( elementsToKeep.equals(elementsToKeepInitial) ) {
+    if (elementsToKeep.equals(elementsToKeepInitial)) {
       (predicatesForPatterns, remaining, elementsToKeep)
     } else {
-      extractElementsAndPatterns(original, mustInclude, elementsToKeep)
+      extractElementsAndPatterns(original, elementsToKeep)
     }
   }
 
@@ -247,25 +275,28 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     }
   }
 
+  /**
+   * Return all variables in the smallest graph that includes all of `mustInclude`.
+   */
   def smallestGraphIncluding(qg: QueryGraph, mustInclude: Set[String]): Set[String] = {
     if (mustInclude.size < 2)
       mustInclude intersect qg.allCoveredIds
     else {
-      var accumulatedElements = mustInclude
+      val mustIncludeRels = qg.patternRelationships.filter(r => mustInclude(r.name))
+      val mustIncludeNodes = mustInclude.intersect(qg.patternNodes) ++ mustIncludeRels.flatMap(r => Seq(r.left, r.right))
+      var accumulatedElements = mustIncludeNodes
       for {
-        lhs <- mustInclude
-        rhs <- mustInclude
+        lhs <- mustIncludeNodes
+        rhs <- mustIncludeNodes
         if lhs < rhs
       } {
         accumulatedElements ++= findPathBetween(qg, lhs, rhs)
       }
-      accumulatedElements
+      accumulatedElements ++ mustInclude
     }
   }
 
-  private case class PathSoFar(end: String, alreadyVisited: Set[PatternRelationship]) {
-    def coveredIds: Set[String] = alreadyVisited.flatMap(_.coveredIds) + end
-  }
+  private case class PathSoFar(end: String, alreadyVisited: Set[PatternRelationship])
 
   private def hasExpandedInto(from: Seq[PathSoFar], into: Seq[PathSoFar]): Seq[Set[String]] =
     for {lhs <- from
