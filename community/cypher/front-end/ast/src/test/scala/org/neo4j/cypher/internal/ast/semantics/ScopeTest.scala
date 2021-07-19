@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.SymbolUses
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.nodeSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
@@ -27,11 +28,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 //noinspection ZeroIndexToHead
 class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private case class SymbolUses(definition: SymbolUse, uses: Seq[SymbolUse]) {
-    def defVar: LogicalVariable = definition.asVariable
-    def useVars: Seq[LogicalVariable] = uses.map(_.asVariable)
-  }
-
   private def symbolUses(name: String, uses: Int): SymbolUses = {
     val v = varFor(name)
     SymbolUses(SymbolUse(v), Seq.fill(uses)(v.copyId).map(SymbolUse(_)))
@@ -41,8 +37,8 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
     val as = symbolUses("a", 1)
     val bs = symbolUses("b", 1)
     val given = scope(
-      intSymbol("a", as.defVar, as.useVars: _*),
-      intSymbol("b", bs.defVar, bs.useVars: _*)
+      intSymbol("a", as),
+      intSymbol("b", bs)
     )()
 
     given.symbolDefinitions should equal(Set(as.definition, bs.definition))
@@ -75,14 +71,14 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
     val books2 = symbolUses("book", 1)
 
     val child11 = scope(
-      stringSymbol("name", names.defVar, names.useVars: _*),
-      nodeSymbol("root", roots.defVar, roots.useVars: _*),
+      stringSymbol("name", names),
+      nodeSymbol("root", roots),
       nodeSymbol("tag", tags.defVar),
       nodeSymbol("book", books1.defVar, books1.useVars(0))
     )()
     val child1 = scope(
       nodeSymbol("root", roots.defVar),
-      nodeSymbol("book", books2.defVar, books2.useVars: _*)
+      nodeSymbol("book", books2)
     )(child11)
     val child2 = scope(
       nodeSymbol("book", books1.defVar, books1.useVars(1))
@@ -101,8 +97,8 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
     val as = symbolUses("a", 1)
     val bs = symbolUses("b", 0)
     val given = scope(
-      intSymbol("a", as.defVar, as.useVars: _*),
-      intSymbol("b", bs.defVar, bs.useVars: _*)
+      intSymbol("a", as),
+      intSymbol("b", bs)
     )()
 
     val actual = given.variableDefinitions
@@ -126,14 +122,14 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
         nodeSymbol("root", roots.defVar),
         nodeSymbol("book", books1.defVar, books1.useVars(0)))(
         scope(
-          stringSymbol("name", names.defVar, names.useVars: _*),
-          nodeSymbol("root", roots.defVar, roots.useVars: _*),
+          stringSymbol("name", names),
+          nodeSymbol("root", roots),
           nodeSymbol("tag", tags.defVar),
           nodeSymbol("book", books1.defVar, books1.useVars(1))
         )()
       ),
       scope(
-        nodeSymbol("book", books2.defVar, books2.useVars: _*)
+        nodeSymbol("book", books2)
       )()
     )
 
