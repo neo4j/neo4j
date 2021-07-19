@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.graphCounts.Constraint
-import org.neo4j.cypher.graphCounts.GraphCountData
-import org.neo4j.cypher.graphCounts.Index
-import org.neo4j.cypher.graphCounts.NodeCount
-import org.neo4j.cypher.graphCounts.RelationshipCount
+import org.neo4j.cypher.graphcounts.Constraint
+import org.neo4j.cypher.graphcounts.GraphCountData
+import org.neo4j.cypher.graphcounts.Index
+import org.neo4j.cypher.graphcounts.NodeCount
+import org.neo4j.cypher.graphcounts.RelationshipCount
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel

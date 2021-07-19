@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.apache.commons.io.FileUtils
-import org.neo4j.cypher.graphCounts.GraphCountsJson
+import org.neo4j.cypher.graphcounts.GraphCountsJson
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
