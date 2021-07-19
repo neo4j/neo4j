@@ -58,7 +58,7 @@ final case class SymbolUse(use: Ref[LogicalVariable]) {
   /**
    * @return The position of the variable and a unique id.
    */
-  private[semantics] def positionAndUniqueId: (Int, Int) = (asVariable.position.offset, use.id)
+  private[semantics] def positionsAndUniqueIdString: (Int, String) = (asVariable.position.offset, use.toIdString)
 
   /**
    * @return the name of the variable.
@@ -86,7 +86,7 @@ final case class Symbol(name: String,
   /**
    * @return the positions and unique IDs of all references.
    */
-  private[semantics] def positionsAndUniqueIds: Set[(Int, Int)] = references.map(_.positionAndUniqueId)
+  private[semantics] def positionsAndUniqueIdString: Set[(Int, String)] = references.map(_.positionsAndUniqueIdString)
 
   override def toString: String =
     s"${definition.uniqueName}(${uses.map(_.uniqueName).mkString(",")}): ${types.toShortString}"
@@ -200,7 +200,7 @@ final case class Scope(symbolTable: Map[String, Symbol],
   private def dumpTree(indent: String, builder: StringBuilder): Unit = {
     symbolTable.keys.toSeq.sorted.foreach { key =>
       val symbol = symbolTable(key)
-      val symbolText = symbol.positionsAndUniqueIds.toSeq.sorted.map(x => s"${x._1}(${x._2})").mkString(" ")
+      val symbolText = symbol.positionsAndUniqueIdString.toSeq.sorted.map(x => s"${x._1}(${x._2})").mkString(" ")
       builder.append(s"$indent$key: $symbolText$EOL")
     }
     children.foreach { child => child.dumpSingle(indent, builder) }
