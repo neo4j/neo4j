@@ -58,7 +58,7 @@ class SemanticStateTest extends CypherFunSuite {
       case Right(state) =>
         val symbol = state.currentScope.localSymbol("foo").get
         symbol.definition.use should equal(Ref(variable1))
-        symbol.readingUses.map(_.use) should equal(Set(Ref(variable2), Ref(variable3)))
+        symbol.uses.map(_.use) should equal(Set(Ref(variable2), Ref(variable3)))
     }
   }
 

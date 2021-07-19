@@ -187,7 +187,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     context.errors should be(empty)
   }
 
-  test("Should register reading uses in PathExpressions") {
+  test("Should register uses in PathExpressions") {
     val query = "MATCH p = (a)-[r]-(b) RETURN p AS p"
 
     val startState = initStartState(query)
@@ -199,7 +199,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val scopeTree = result.semantics().scopeTree
 
     Set("a", "r", "b").foreach { name =>
-      scopeTree.allSymbols(name).head.readingUses shouldNot be(empty)
+      scopeTree.allSymbols(name).head.uses shouldNot be(empty)
     }
   }
 

@@ -30,27 +30,27 @@ object ScopeTestHelper {
   def scope(entries: semantics.Symbol*)(children: Scope*): Scope =
     Scope(entries.map { symbol => symbol.name -> symbol }.toMap, children.toSeq)
 
-  def nodeSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTNode), definition, readingUses: _*)
+  def nodeSymbol(name: String, definition: LogicalVariable, uses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTNode), definition, uses: _*)
 
-  def allSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.all, definition, readingUses: _*)
+  def allSymbol(name: String, definition: LogicalVariable, uses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.all, definition, uses: _*)
 
-  def intSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTInteger), definition, readingUses: _*)
+  def intSymbol(name: String, definition: LogicalVariable, uses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTInteger), definition, uses: _*)
 
-  def stringSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTString), definition, readingUses: _*)
+  def stringSymbol(name: String, definition: LogicalVariable, uses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTString), definition, uses: _*)
 
-  def intCollectionSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTList(CTInteger)), definition, readingUses: _*)
+  def intCollectionSymbol(name: String, definition: LogicalVariable, uses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTList(CTInteger)), definition, uses: _*)
 
-  def pathCollectionSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTList(CTPath)), definition, readingUses: _*)
+  def pathCollectionSymbol(name: String, definition: LogicalVariable, uses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTList(CTPath)), definition, uses: _*)
 
-  def intCollectionCollectionSymbol(name: String, definition: LogicalVariable, readingUses: LogicalVariable*): semantics.Symbol =
-    typedSymbol(name, TypeSpec.exact(CTList(CTList(CTInteger))), definition, readingUses: _*)
+  def intCollectionCollectionSymbol(name: String, definition: LogicalVariable, uses: LogicalVariable*): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTList(CTList(CTInteger))), definition, uses: _*)
 
-  def typedSymbol(name: String, typeSpec: TypeSpec, definition: LogicalVariable, readingUses: LogicalVariable*): Symbol =
-    semantics.Symbol(name, typeSpec, SymbolUse(definition), readingUses.map(SymbolUse(_)).toSet)
+  def typedSymbol(name: String, typeSpec: TypeSpec, definition: LogicalVariable, uses: LogicalVariable*): Symbol =
+    semantics.Symbol(name, typeSpec, SymbolUse(definition), uses.map(SymbolUse(_)).toSet)
 }

@@ -27,14 +27,14 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 //noinspection ZeroIndexToHead
 class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private case class SymbolUses(definition: SymbolUse, readingUses: Seq[SymbolUse]) {
+  private case class SymbolUses(definition: SymbolUse, uses: Seq[SymbolUse]) {
     def defVar: LogicalVariable = definition.asVariable
-    def useVars: Seq[LogicalVariable] = readingUses.map(_.asVariable)
+    def useVars: Seq[LogicalVariable] = uses.map(_.asVariable)
   }
 
-  private def symbolUses(name: String, readingUses: Int): SymbolUses = {
+  private def symbolUses(name: String, uses: Int): SymbolUses = {
     val v = varFor(name)
-    SymbolUses(SymbolUse(v), Seq.fill(readingUses)(v.copyId).map(SymbolUse(_)))
+    SymbolUses(SymbolUse(v), Seq.fill(uses)(v.copyId).map(SymbolUse(_)))
   }
 
   test("Should retrieve local symbol definitions") {
@@ -110,7 +110,7 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
     actual should equal(Map(
       as.definition -> as.definition,
       bs.definition -> bs.definition,
-      as.readingUses(0) -> as.definition,
+      as.uses(0) -> as.definition,
     ))
   }
 
@@ -141,14 +141,14 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
 
     actual should equal(Map(
       roots.definition -> roots.definition,
-      roots.readingUses(0) -> roots.definition,
+      roots.uses(0) -> roots.definition,
       books1.definition -> books1.definition,
-      books1.readingUses(0) -> books1.definition,
-      books1.readingUses(1) -> books1.definition,
+      books1.uses(0) -> books1.definition,
+      books1.uses(1) -> books1.definition,
       books2.definition -> books2.definition,
-      books2.readingUses(0) -> books2.definition,
+      books2.uses(0) -> books2.definition,
       names.definition -> names.definition,
-      names.readingUses(0) -> names.definition,
+      names.uses(0) -> names.definition,
       tags.definition -> tags.definition
     ))
   }
