@@ -35,7 +35,9 @@ import java.util.zip.ZipOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
@@ -44,7 +46,9 @@ import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.io.ByteUnit.MebiByte;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.IOUtils.uncheckedLongConsumer;
 
 /**
@@ -217,7 +221,29 @@ public class CorruptedLogsTruncator
     {
         try
         {
-            return Files.size( logFiles.getLogFile().getLogFileForVersion( recoveredTransactionLogVersion ) ) > recoveredTransactionOffset;
+            LogFile logFile = logFiles.getLogFile();
+            if ( Files.size( logFile.getLogFileForVersion( recoveredTransactionLogVersion ) ) > recoveredTransactionOffset )
+            {
+                try ( PhysicalLogVersionedStoreChannel channel = logFile.openForVersion( recoveredTransactionLogVersion );
+                        var scopedBuffer = new NativeScopedBuffer( safeCastLongToInt( kibiBytes( 64 ) ), memoryTracker ) )
+                {
+                    channel.position( recoveredTransactionOffset );
+                    ByteBuffer byteBuffer = scopedBuffer.getBuffer();
+                    while ( channel.read( byteBuffer ) >= 0 )
+                    {
+                        byteBuffer.flip();
+                        while ( byteBuffer.hasRemaining() )
+                        {
+                            if ( byteBuffer.get() != 0 )
+                            {
+                                return true;
+                            }
+                        }
+                        byteBuffer.clear();
+                    }
+                }
+            }
+            return false;
         }
         catch ( NoSuchFileException ignored )
         {

@@ -21,6 +21,7 @@ package org.neo4j.kernel.recovery;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,11 +57,13 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.recovery.CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
@@ -134,6 +137,75 @@ class CorruptedLogsTruncatorTest
     }
 
     @Test
+    void doNotTruncateLogWithPreAllocatedZeros() throws IOException
+    {
+        life.start();
+        generateTransactionLogFiles( logFiles );
+
+        var logFile = logFiles.getLogFile();
+        long highestLogVersion = logFile.getHighestLogVersion();
+        long fileSizeBeforeAppend = Files.size( logFile.getHighestLogFile() );
+        LogPosition endOfLogsPosition = new LogPosition( highestLogVersion, fileSizeBeforeAppend );
+
+        FlushablePositionAwareChecksumChannel channel = logFile.getTransactionLogWriter().getChannel();
+        for ( int i = 0; i < RandomUtils.nextInt( 100, 10240 ); i++ )
+        {
+            channel.putLong( 0 );
+        }
+        channel.prepareForFlush().flush();
+
+        long fileAfterZeroAppend = Files.size( logFile.getHighestLogFile() );
+
+        assertNotEquals( fileSizeBeforeAppend, fileAfterZeroAppend );
+
+        logPruner.truncate( endOfLogsPosition );
+
+        assertEquals( TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length );
+        assertEquals( fileAfterZeroAppend, Files.size( logFile.getHighestLogFile() ) );
+        assertNotEquals( fileSizeBeforeAppend, Files.size( logFile.getHighestLogFile() ) );
+        assertTrue( ArrayUtils.isEmpty( databaseDirectory.toFile().listFiles( File::isDirectory ) ) );
+    }
+
+    @Test
+    void truncateLogWithCorruptionThatLooksLikePreAllocatedZeros() throws IOException
+    {
+        life.start();
+        generateTransactionLogFiles( logFiles );
+
+        var logFile = logFiles.getLogFile();
+        long highestLogVersion = logFile.getHighestLogVersion();
+        long fileSizeBeforeAppend = Files.size( logFile.getHighestLogFile() );
+        LogPosition endOfLogsPosition = new LogPosition( highestLogVersion, fileSizeBeforeAppend );
+
+        FlushablePositionAwareChecksumChannel channel = logFile.getTransactionLogWriter().getChannel();
+        for ( int i = 0; i < RandomUtils.nextInt( 100, 10240 ); i++ )
+        {
+            channel.putLong( 0 );
+        }
+        // corruption byte
+        channel.put( (byte) 7 );
+        for ( int i = 0; i < RandomUtils.nextInt( 10, 1024 ); i++ )
+        {
+            channel.putLong( 0 );
+        }
+        channel.prepareForFlush().flush();
+
+        long fileAfterZeroAppend = Files.size( logFile.getHighestLogFile() );
+        assertNotEquals( fileSizeBeforeAppend, fileAfterZeroAppend );
+
+        logPruner.truncate( endOfLogsPosition );
+
+        assertEquals( TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length );
+        assertEquals( fileSizeBeforeAppend, Files.size( logFile.getHighestLogFile() ) );
+
+        Path corruptedLogsDirectory = databaseDirectory.resolve( CORRUPTED_TX_LOGS_BASE_NAME );
+        assertTrue( Files.exists( corruptedLogsDirectory ) );
+        File[] files = corruptedLogsDirectory.toFile().listFiles();
+        assertNotNull( files );
+        assertEquals( 1, files.length );
+    }
+
+    @Test
     void pruneAndArchiveLastLog() throws IOException
     {
         life.start();
@@ -152,7 +224,7 @@ class CorruptedLogsTruncatorTest
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length );
         assertEquals( byteOffset, Files.size( highestLogFile ) );
 
-        Path corruptedLogsDirectory = databaseDirectory.resolve( CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
+        Path corruptedLogsDirectory = databaseDirectory.resolve( CORRUPTED_TX_LOGS_BASE_NAME );
         assertTrue( Files.exists( corruptedLogsDirectory ) );
         File[] files = corruptedLogsDirectory.toFile().listFiles();
         assertNotNull( files );
@@ -204,7 +276,7 @@ class CorruptedLogsTruncatorTest
         assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 1 );
         assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */ , Files.size( checkpointFile.getDetachedCheckpointFiles()[0] ) );
 
-        Path corruptedLogsDirectory = databaseDirectory.resolve( CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
+        Path corruptedLogsDirectory = databaseDirectory.resolve( CORRUPTED_TX_LOGS_BASE_NAME );
         assertTrue( Files.exists( corruptedLogsDirectory ) );
         File[] files = corruptedLogsDirectory.toFile().listFiles();
         assertNotNull( files );
