@@ -130,8 +130,7 @@ final case class Scope(symbolTable: Map[String, Symbol],
    * grouped by name.
    */
   def allSymbolDefinitions: Map[String, Set[SymbolUse]] = {
-    val allScopes1 = allScopes
-    allScopes1.foldLeft(Map.empty[String, Set[SymbolUse]]) {
+    allScopes.foldLeft(Map.empty[String, Set[SymbolUse]]) {
       case (acc0, scope) =>
         scope.symbolDefinitions.foldLeft(acc0) {
           case (acc, symDef) if acc.contains(symDef.name) =>
@@ -147,8 +146,7 @@ final case class Scope(symbolTable: Map[String, Symbol],
    * grouped by name.
    */
   def allSymbols: Map[String, Set[Symbol]] = {
-    val allScopes1 = allScopes
-    allScopes1.foldLeft(Map.empty[String, Set[Symbol]]) {
+    allScopes.foldLeft(Map.empty[String, Set[Symbol]]) {
       case (acc0, scope) =>
         scope.symbolTable.foldLeft(acc0) {
           case (acc, (str, symbol)) if acc.contains(str) =>
