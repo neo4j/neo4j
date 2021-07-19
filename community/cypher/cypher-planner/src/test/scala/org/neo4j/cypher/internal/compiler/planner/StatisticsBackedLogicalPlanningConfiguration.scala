@@ -382,41 +382,48 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       // Graph counts may lack relationship counts if they are 0
       .defaultRelationshipCardinalityTo0()
 
-    val withNodes = graphCountData.nodes.foldLeft(bare) {
-      case (builder, NodeCount(count, None)) => builder.setAllNodesCardinality(count)
-      case (builder, NodeCount(count, Some(label))) => builder.setLabelCardinality(label, count)
-    }
+    val withNodes = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
+      graphCountData.nodes.foldLeft(builder) {
+        case (builder, NodeCount(count, None)) => builder.setAllNodesCardinality(count)
+        case (builder, NodeCount(count, Some(label))) => builder.setLabelCardinality(label, count)
+      }
 
-    val withRelationships = graphCountData.relationships.foldLeft(withNodes) {
-      case (builder, RelationshipCount(count, relationshipType, startLabel, endLabel)) =>
-        builder.setRelationshipCardinality(startLabel, relationshipType, endLabel, count)
-    }
+    val withRelationships = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
+      graphCountData.relationships.foldLeft(builder) {
+        case (builder, RelationshipCount(count, relationshipType, startLabel, endLabel)) =>
+          builder.setRelationshipCardinality(startLabel, relationshipType, endLabel, count)
+      }
 
-    val withConstraints = graphCountData.constraints.foldLeft(withRelationships) {
-      case (builder, Constraint(Some(label), None, Seq(property), ConstraintType.EXISTS)) => builder.addNodeExistenceConstraint(label, property)
-      case (builder, Constraint(None, Some(relType), Seq(property), ConstraintType.EXISTS)) => builder.addRelationshipExistenceConstraint(relType, property)
-      case (_, constraint) => throw new IllegalArgumentException(s"Unsupported constraint: $constraint")
-    }
+    val withConstraints = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
+      graphCountData.constraints.foldLeft(builder) {
+        case (builder, Constraint(Some(label), None, Seq(property), ConstraintType.EXISTS)) => builder.addNodeExistenceConstraint(label, property)
+        case (builder, Constraint(None, Some(relType), Seq(property), ConstraintType.EXISTS)) => builder.addRelationshipExistenceConstraint(relType, property)
+        case (_, constraint) => throw new IllegalArgumentException(s"Unsupported constraint: $constraint")
+      }
 
-    val withIndexes = graphCountData.indexes.foldLeft(withConstraints) {
-      case (builder, i@Index(Some(Seq(label)), None, BTREE, properties, totalSize, estimatedUniqueSize, _)) =>
-        val existsSelectivity = totalSize / builder.cardinalities.labels(label)
-        val uniqueSelectivity = 1.0 / estimatedUniqueSize
-        val isUnique = matchingUniquenessConstraintExists(i)
-        builder.addNodeIndex(label, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH)
-      case (builder, i@Index(None, Some(Seq(relType)), BTREE, properties, totalSize, estimatedUniqueSize, _)) =>
-        val existsSelectivity = totalSize / builder.cardinalities.getRelCount(RelDef(None, Some(relType), None))
-        val uniqueSelectivity = 1.0 / estimatedUniqueSize
-        val isUnique = matchingUniquenessConstraintExists(i)
-        builder.addRelationshipIndex(relType, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH)
-      case (builder, Index(Some(Seq()), None, LOOKUP, Seq(), _, _, _)) =>
-        builder.addNodeLookupIndex()
-      case (builder, Index(None, Some(Seq()), LOOKUP, Seq(), _, _, _)) =>
-        builder.addRelationshipLookupIndex()
-      case (_, index) => throw new IllegalArgumentException(s"Unsupported index: $index")
-    }
+    val withIndexes = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
+      graphCountData.indexes.foldLeft(builder) {
+        case (builder, i@Index(Some(Seq(label)), None, BTREE, properties, totalSize, estimatedUniqueSize, _)) =>
+          val existsSelectivity = totalSize / builder.cardinalities.labels(label)
+          val uniqueSelectivity = 1.0 / estimatedUniqueSize
+          val isUnique = matchingUniquenessConstraintExists(i)
+          builder.addNodeIndex(label, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH)
+        case (builder, i@Index(None, Some(Seq(relType)), BTREE, properties, totalSize, estimatedUniqueSize, _)) =>
+          val existsSelectivity = totalSize / builder.cardinalities.getRelCount(RelDef(None, Some(relType), None))
+          val uniqueSelectivity = 1.0 / estimatedUniqueSize
+          val isUnique = matchingUniquenessConstraintExists(i)
+          builder.addRelationshipIndex(relType, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH)
+        case (builder, Index(Some(Seq()), None, LOOKUP, Seq(), _, _, _)) =>
+          builder.addNodeLookupIndex()
+        case (builder, Index(None, Some(Seq()), LOOKUP, Seq(), _, _, _)) =>
+          builder.addRelationshipLookupIndex()
+        case (_, index) => throw new IllegalArgumentException(s"Unsupported index: $index")
+      }
 
-    withIndexes
+    (withNodes
+      andThen withRelationships
+      andThen withConstraints
+      andThen withIndexes)(bare)
   }
 
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
