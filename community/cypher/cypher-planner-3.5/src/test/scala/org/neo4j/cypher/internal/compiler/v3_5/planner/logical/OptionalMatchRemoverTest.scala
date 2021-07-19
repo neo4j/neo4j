@@ -49,6 +49,42 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """MATCH (a)
+       OPTIONAL MATCH (a)-[r]->(b)-[r2]-(c)
+       RETURN distinct a as a""") {
+    assert_that(testName).is_rewritten_to(
+      """MATCH (a)
+         RETURN distinct a as a""")
+  }
+
+  test(
+    """MATCH (a)
+       OPTIONAL MATCH (a)-[r]->(b), (a)-[r2]-(c)
+       RETURN distinct a as a""") {
+    assert_that(testName).is_rewritten_to(
+      """MATCH (a)
+         RETURN distinct a as a""")
+  }
+
+  test(
+    """MATCH (a)
+       OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]-(c)
+       RETURN distinct a as a""") {
+    assert_that(testName).is_rewritten_to(
+      """MATCH (a)
+         RETURN distinct a as a""")
+  }
+
+  test(
+    """MATCH (a)
+       OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]-(c)
+       RETURN distinct a as a""") {
+    assert_that(testName).is_rewritten_to(
+      """MATCH (a)
+         RETURN distinct a as a""")
+  }
+
+  test(
+    """MATCH (a)
         OPTIONAL MATCH (a)-[r]->(b)
         RETURN DISTINCT a as a, b as b""") {
     assert_that(testName).is_not_rewritten()
@@ -189,7 +225,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""") {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B and (b)-[:T2]->()
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B AND (b)-[:T2]->()
           RETURN DISTINCT b as b""")
   }
 
@@ -202,7 +238,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test(
     """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c:A:B and c.id = 42 and c.foo = 'apa'
+          OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c:A:B AND c.id = 42 AND c.foo = 'apa'
           RETURN DISTINCT b as b""") {
     assert_that(testName).is_rewritten_to(
       """MATCH (a)
@@ -221,7 +257,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test(
-    """OPTIONAL MATCH (a)-[r1]->(b)-[r2]->(c) WHERE a:A and b:B and c:C and a <> b
+    """OPTIONAL MATCH (a)-[r1]->(b)-[r2]->(c) WHERE a:A AND b:B AND c:C AND a <> b
           RETURN DISTINCT c as c""") {
     assert_that(testName).is_not_rewritten()
   }
@@ -338,13 +374,68 @@ test(
     )
   }
 
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (b)-[r3:R3]-(d)
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d) WHERE b:B AND c:C AND d:D
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a)-[r:R]->(b) WHERE b:B AND (b)-[:R2]->(:C) AND (a)-[:R3]-(:D)
+        |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
+    )
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)-[r3:R3]-(d), (a)-[r4:R4]-(e) WHERE b:B AND c:C AND d:D
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)-[r3:R3]-(d) WHERE b:B AND c:C AND d:D AND (a)-[:R4]-()
+        |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
+    )
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)-[r3:R3]-(d), (a)-[r4:R4]-(e)-[r5:R5]-(f) WHERE b:B AND c:C AND d:D AND f:F
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d), (b)-[r4:R4]-(e), (c)-[r5:R5]-(f)
+      |WHERE a:A AND b:B AND c:C AND d:D AND e:E AND f:F
+      |  AND a.prop = 0 AND b.prop = 1 AND c.prop = 2 AND d.prop = 3 AND e.prop = 4 AND f.prop = 5
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)
+        |WHERE a:A AND b:B AND c:C
+        | AND a.prop = 0 AND b.prop = 1 AND c.prop = 2
+        | AND (a)-[:R3]-(:D {prop: 3})
+        | AND (b)-[:R4]-(:E {prop: 4})
+        | AND (c)-[:R5]-(:F {prop: 5})
+        |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin
+    )
+  }
+
   val x = "x"
   val n = "n"
   val m = "m"
   val c = "c"
+  val d = "d"
+  val e = "e"
   val r1 = "r1"
   val r2 = "r2"
   val r3 = "r3"
+  val r4 = "r4"
 
   test("finds shortest path starting from a single element with a single node in the QG") {
     val qg = QueryGraph(patternNodes = Set(n))
@@ -404,6 +495,40 @@ test(
 
     smallestGraphIncluding(qg, Set(n, m, c)) should equal(
       Set(n, m, c, r1, r2))
+  }
+
+  test("find smallest graph if mustInclude has the only relationship") { // MATCH (n)-[r1]-(m)
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(
+      patternRelationships = Set(pattRel1),
+      patternNodes = Set(n, m))
+
+    smallestGraphIncluding(qg, Set(n, r1)) should equal(
+      Set(n, m, r1))
+  }
+
+  test("find smallest graph if mustInclude has one of two relationships") { // MATCH (n)-[r1]-(m), (n)-[r2]->(c)
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (n, c), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(
+      patternRelationships = Set(pattRel1, pattRel2),
+      patternNodes = Set(n, m, c))
+
+    smallestGraphIncluding(qg, Set(n, r1)) should equal(
+      Set(n, m, r1))
+  }
+
+  test("find smallest graph if mustInclude has all but one of many relationships") { // MATCH (n)-[r1]->(m)-[r2]->(c)-[r3:R3]-(d), (n)-[r4]-(e)
+    val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel3 = PatternRelationship(r3, (c, d), BOTH, Seq.empty, SimplePatternLength)
+    val pattRel4 = PatternRelationship(r4, (n, e), BOTH, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(
+      patternRelationships = Set(pattRel1, pattRel2, pattRel3, pattRel4),
+      patternNodes = Set(n, m, c, d, e))
+
+    smallestGraphIncluding(qg, Set(n, r1, m, r2, c, r3, d)) should equal(
+      Set(n, r1, m, r2, c, r3, d))
   }
 
   test("querygraphs containing only nodes") {
