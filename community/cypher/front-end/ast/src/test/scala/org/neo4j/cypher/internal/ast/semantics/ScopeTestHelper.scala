@@ -31,6 +31,9 @@ object ScopeTestHelper {
     def defVar: LogicalVariable = definition.asVariable
 
     def useVars: Seq[LogicalVariable] = uses.map(_.asVariable)
+
+    def mapToDefinition: Map[SymbolUse, SymbolUse] =
+      (uses :+ definition).map(_ -> definition).toMap
   }
 
   def scope(entries: semantics.Symbol*)(children: Scope*): Scope =

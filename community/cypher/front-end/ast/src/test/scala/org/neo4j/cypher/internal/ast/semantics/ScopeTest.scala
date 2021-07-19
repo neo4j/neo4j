@@ -103,11 +103,10 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val actual = given.variableDefinitions
 
-    actual should equal(Map(
-      as.definition -> as.definition,
-      bs.definition -> bs.definition,
-      as.uses(0) -> as.definition,
-    ))
+    actual should equal(
+      as.mapToDefinition ++
+        bs.mapToDefinition
+    )
   }
 
   test("Should build variable map for complex scope tree with shadowing") {
@@ -135,17 +134,12 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val actual = given.allVariableDefinitions
 
-    actual should equal(Map(
-      roots.definition -> roots.definition,
-      roots.uses(0) -> roots.definition,
-      books1.definition -> books1.definition,
-      books1.uses(0) -> books1.definition,
-      books1.uses(1) -> books1.definition,
-      books2.definition -> books2.definition,
-      books2.uses(0) -> books2.definition,
-      names.definition -> names.definition,
-      names.uses(0) -> names.definition,
-      tags.definition -> tags.definition
-    ))
+    actual should equal(
+      roots.mapToDefinition ++
+        books1.mapToDefinition ++
+        books2.mapToDefinition ++
+        names.mapToDefinition ++
+        tags.mapToDefinition
+    )
   }
 }
