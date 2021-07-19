@@ -23,17 +23,13 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -167,7 +163,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
   @tailrec
   private def extractElementsAndPatterns(original: QueryGraph, elementsToKeepInitial: Set[String]):
-  (Map[String, LabelsAndEquality], Set[Expression], Set[String]) = {
+  (Map[String, Seq[LabelName]], Set[Expression], Set[String]) = {
     val (predicatesForPatterns, remaining) = partitionPredicates(original.selections.predicates, elementsToKeepInitial)
 
     val variablesNeededForPredicates = remaining.flatMap(expression => expression.dependencies.map(_.name))
@@ -180,43 +176,28 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     }
   }
 
-  private object LabelsAndEquality {
-    def empty = new LabelsAndEquality(Seq.empty, Seq.empty)
-  }
-
-  private case class LabelsAndEquality(labels: Seq[LabelName], equality: Seq[(PropertyKeyName, Expression)])
-
   /**
    * This method extracts predicates that need to be part of pattern expressions
    *
    * @param predicates All the original predicates of the QueryGraph
    * @param kept       Set of all variables that should not be moved to pattern expressions
-   * @return Map of label and property equality comparisons to move to pattern expressions,
+   * @return Map of label predicates to move to pattern expressions,
    *         and the set of remaining predicates
    */
-  private def partitionPredicates(predicates: Set[Predicate], kept: Set[String]): (Map[String, LabelsAndEquality], Set[Expression]) = {
+  private def partitionPredicates(predicates: Set[Predicate], kept: Set[String]): (Map[String, Seq[LabelName]], Set[Expression]) = {
 
-    val patternPredicates = mutable.Map.empty[String, LabelsAndEquality]
+    val patternPredicates = mutable.Map.empty[String, Seq[LabelName]]
     val predicatesToKeep = mutable.Set.empty[Expression]
 
     def addLabel(idName: String, labelName: LabelName) = {
-      val current = patternPredicates.getOrElse(idName, LabelsAndEquality.empty)
-      patternPredicates += idName -> current.copy(labels = current.labels :+ labelName)
-    }
-
-    def addProperty(idName: String, prop: PropertyKeyName, rhs: Expression) = {
-      val current = patternPredicates.getOrElse(idName, LabelsAndEquality.empty)
-      patternPredicates += idName -> current.copy(equality = current.equality :+ prop -> rhs)
+      val current = patternPredicates.getOrElse(idName, Seq.empty)
+      patternPredicates += idName -> (current :+ labelName)
     }
 
     predicates.foreach {
       case Predicate(deps, HasLabels(Variable(_), labels)) if deps.size == 1 && !kept(deps.head) =>
         require(labels.size == 1) // We know there is only a single label here because AST rewriting
         addLabel(deps.head, labels.head)
-        ()
-
-      case Predicate(deps, Equals(Property(Variable(_), prop), rhs)) if deps.size == 1 && !kept(deps.head) =>
-        addProperty(deps.head, prop, rhs)
         ()
 
       case Predicate(_, expr) =>
@@ -244,7 +225,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     }
   }
 
-  private def toAst(elementsToKeep: Set[String], predicates: Map[String, LabelsAndEquality], gen: PositionGenerator, pattern: PatternRelationship, allNameGenerators: AllNameGenerators) = {
+  private def toAst(elementsToKeep: Set[String], predicates: Map[String, Seq[LabelName]], gen: PositionGenerator, pattern: PatternRelationship, allNameGenerators: AllNameGenerators): PatternExpression = {
     def createVariable(name: String): Variable =
       if (!elementsToKeep(name)) {
         val pos = gen.nextPosition()
@@ -254,10 +235,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
       }
 
     def createNode(name: String): NodePattern = {
-      val labelsAndProps = predicates.getOrElse(name, LabelsAndEquality.empty)
-      val props = if (labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(
-        gen.nextPosition()))
-      NodePattern(Some(createVariable(name)), labels = labelsAndProps.labels, properties = props)(gen.nextPosition())
+      val labels = predicates.getOrElse(name, Seq.empty)
+      NodePattern(Some(createVariable(name)), labels = labels, properties = None)(gen.nextPosition())
     }
 
     val relName = createVariable(pattern.name)

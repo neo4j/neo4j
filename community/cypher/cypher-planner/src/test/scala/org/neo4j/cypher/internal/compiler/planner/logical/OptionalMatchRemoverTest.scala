@@ -258,10 +258,14 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c:A:B AND c.id = 42 AND c.foo = 'apa'
           RETURN DISTINCT b as b""") {
-    assert_that(testName).is_rewritten_to(
-      """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED1`:A:B {id: 42, foo: 'apa'})
-          RETURN DISTINCT b as b""")
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """MATCH (a)
+          OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c) WHERE c:A:B AND r2.id = 42 AND r2.foo = 'apa'
+          RETURN DISTINCT b as b""") {
+    assert_that(testName).is_not_rewritten()
   }
 
   test(
@@ -408,7 +412,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d) WHERE b:B AND c:C AND d:D
       |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a)-[r:R]->(b) WHERE b:B AND (b)-[`  UNNAMED0`:R2]->(`  UNNAMED1`:C) AND (a)-[`  UNNAMED4`:R3]-(`  UNNAMED5`:D)
+      """OPTIONAL MATCH (a)-[r:R]->(b) WHERE b:B AND (b)-[`  UNNAMED0`:R2]->(`  UNNAMED1`:C) AND (a)-[`  UNNAMED2`:R3]-(`  UNNAMED3`:D)
         |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
     )
   }
@@ -431,17 +435,34 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   test(
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d), (b)-[r4:R4]-(e), (c)-[r5:R5]-(f)
       |WHERE a:A AND b:B AND c:C AND d:D AND e:E AND f:F
-      |  AND a.prop = 0 AND b.prop = 1 AND c.prop = 2 AND d.prop = 3 AND e.prop = 4 AND f.prop = 5
+      |  AND a.prop = 0 AND b.prop = 1 AND c.prop = 2
       |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)
         |WHERE a:A AND b:B AND c:C
         | AND a.prop = 0 AND b.prop = 1 AND c.prop = 2
-        | AND (a)-[`  UNNAMED0`:R3]-(`  UNNAMED1`:D {prop: 3})
-        | AND (b)-[`  UNNAMED4`:R4]-(`  UNNAMED5`:E {prop: 4})
-        | AND (c)-[`  UNNAMED8`:R5]-(`  UNNAMED9`:F {prop: 5})
+        | AND (a)-[`  UNNAMED0`:R3]-(`  UNNAMED1`:D)
+        | AND (b)-[`  UNNAMED2`:R4]-(`  UNNAMED3`:E)
+        | AND (c)-[`  UNNAMED4`:R5]-(`  UNNAMED5`:F)
         |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin
     )
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d), (b)-[r4:R4]-(e), (c)-[r5:R5]-(f)
+      |WHERE a:A AND b:B AND c:C AND d:D AND e:E AND f:F
+      |  AND a.prop = 0 AND b.prop = 1 AND c.prop = 2 AND d.prop = 3 AND e.prop = 4 AND f.prop = 5
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d), (b)-[r4:R4]-(e), (c)-[r5:R5]-(f)
+      |WHERE a:A AND b:B AND c:C AND d:D AND e:E AND f:F
+      |  AND a.prop = 0 AND b.prop = 1 AND c.prop = 2 AND d.prop = 3 AND e.prop = 4 AND f.prop = 5
+      |  AND r.prop = 0 AND r2.prop = 1 AND r3.prop = 2 AND r4.prop = 3 AND r5.prop = 4
+      |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
   }
 
   val x = "x"
