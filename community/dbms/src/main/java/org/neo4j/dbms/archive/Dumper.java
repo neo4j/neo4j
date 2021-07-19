@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.commandline.Util;
+import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Resource;
 
@@ -62,6 +63,11 @@ public class Dumper
     {
         operations = new ArrayList<>();
         progressPrinter = new ArchiveProgressPrinter( output );
+    }
+
+    public void dump( Path dbPath, Path transactionalLogsPath, Path archive, CompressionFormat format ) throws IOException
+    {
+        this.dump( dbPath, transactionalLogsPath, archive, format, Predicates.alwaysFalse() );
     }
 
     public void dump( Path dbPath, Path transactionalLogsPath, Path archive, CompressionFormat format, Predicate<Path> exclude ) throws IOException

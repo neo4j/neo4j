@@ -63,11 +63,17 @@ public class Loader
 
     public void load( Path archive, DatabaseLayout databaseLayout ) throws IOException, IncorrectFormat
     {
+        load( archive, databaseLayout, false, true );
+    }
+
+    public void load( Path archive, DatabaseLayout databaseLayout, boolean validateDatabaseExistence, boolean validateLogsExistence )
+            throws IOException, IncorrectFormat
+    {
         Path databaseDestination = databaseLayout.databaseDirectory();
         Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
 
-        validatePath( databaseDestination, false );
-        validatePath( transactionLogsDirectory, true );
+        validatePath( databaseDestination, validateDatabaseExistence );
+        validatePath( transactionLogsDirectory, validateLogsExistence );
 
         createDestination( databaseDestination );
         createDestination( transactionLogsDirectory );
