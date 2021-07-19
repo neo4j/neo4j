@@ -66,7 +66,9 @@ final case class SymbolUse(use: Ref[LogicalVariable]) {
 }
 
 /**
- * A symbol collects the definition and all reading uses of a variable.
+ * A symbol collects the definition and all uses of a variable.
+ *
+ * All uses are in the same scope or in child scopes of the scope that contains the definition.
  *
  * @param name       the name
  * @param definition the definition
