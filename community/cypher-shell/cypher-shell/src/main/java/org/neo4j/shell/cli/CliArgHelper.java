@@ -262,7 +262,8 @@ public class CliArgHelper
               .setDefault( Format.AUTO.name().toLowerCase() );
 
         parser.addArgument( "-P", "--param" )
-              .help( "Add a parameter to this session. Example: `-P \"number => 3\"`. This argument can be specified multiple times." )
+              .help( "Add a parameter to this session. Example: `-P \"number => 3\"` or `-P \"country => 'Spain'\"`. " +
+                      "This argument can be specified multiple times." )
               .action( new AddParamArgumentAction( parameterMap ) );
 
         parser.addArgument( "--debug" )
