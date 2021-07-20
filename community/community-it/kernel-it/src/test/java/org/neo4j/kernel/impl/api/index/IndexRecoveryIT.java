@@ -71,7 +71,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;

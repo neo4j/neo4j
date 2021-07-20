@@ -26,7 +26,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsSupportExtension;
 import org.neo4j.test.extension.StatefulFieldExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY;
 import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY_NAMESPACE;

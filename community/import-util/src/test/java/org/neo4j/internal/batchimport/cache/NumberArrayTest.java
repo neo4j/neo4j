@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.NullLog;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.lang.Integer.max;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -49,7 +49,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NumberArrayTest extends NumberArrayPageCacheTestSupport
 {
-    private static final RandomRule random = new RandomRule();
+    private static final RandomSupport random = new RandomSupport();
     private static final int INDEXES = 50_000;
     private static final int CHUNK_SIZE = max( 1, INDEXES / 100 );
     private static Fixture fixture;
@@ -148,7 +148,7 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
                     random -> random.nextInt( 1_000_000_000 ), ( array, index, value ) -> array.setInt( index, 1, (Integer) value ),
                     ( array, index ) -> array.getInt( index, 1 ) ) );
 
-            Function<RandomRule,Object> valueGenerator =
+            Function<RandomSupport,Object> valueGenerator =
                     random -> new long[]{random.nextLong(), random.nextInt(), (short) random.nextInt(), (byte) random.nextInt()};
             Writer<ByteArray> writer = ( array, index, value ) ->
             {
@@ -183,11 +183,11 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
     {
         private final String name;
         private final T array;
-        private final Function<RandomRule,Object> valueGenerator;
+        private final Function<RandomSupport,Object> valueGenerator;
         private final Writer<T> writer;
         private final Reader<T> reader;
 
-        NumberArrayTestData( String name, T array, Function<RandomRule,Object> valueGenerator, Writer<T> writer, Reader<T> reader )
+        NumberArrayTestData( String name, T array, Function<RandomSupport,Object> valueGenerator, Writer<T> writer, Reader<T> reader )
         {
             this.name = name;
             this.array = array;
@@ -204,8 +204,8 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
         return result;
     }
 
-    private static <N extends NumberArray<N>> NumberArrayTestData arrayData( String name, N array, Function<RandomRule,Object> valueGenerator, Writer<N> writer,
-            Reader<N> reader )
+    private static <N extends NumberArray<N>> NumberArrayTestData arrayData( String name, N array, Function<RandomSupport,Object> valueGenerator,
+            Writer<N> writer, Reader<N> reader )
     {
         return new NumberArrayTestData( name, array, valueGenerator, writer, reader );
     }

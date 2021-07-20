@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.storageengine.api.format.CapabilityType;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,7 +40,7 @@ class BaseRecordFormatsTest
     private static final CapabilityType[] CAPABILITY_TYPES = CapabilityType.values();
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldReportCompatibilityBetweenTwoEqualSetsOfCapabilities()

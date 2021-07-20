@@ -33,7 +33,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -95,7 +95,7 @@ public class TokenIndexUtility
         return tree.seek( lowest, highest, NULL );
     }
 
-    static List<TokenIndexEntryUpdate<?>> generateSomeRandomUpdates( MutableLongObjectMap<long[]> entityTokens, RandomRule random )
+    static List<TokenIndexEntryUpdate<?>> generateSomeRandomUpdates( MutableLongObjectMap<long[]> entityTokens, RandomSupport random )
     {
         long currentScanId = 0;
         List<TokenIndexEntryUpdate<?>> updates = new ArrayList<>();
@@ -110,7 +110,7 @@ public class TokenIndexUtility
     }
 
     static void generateRandomUpdate( long entityId, MutableLongObjectMap<long[]> trackingState, List<TokenIndexEntryUpdate<?>> updates,
-            RandomRule random )
+            RandomSupport random )
     {
         long[] addTokens = generateRandomTokens( random );
         if ( addTokens.length != 0 )
@@ -129,7 +129,7 @@ public class TokenIndexUtility
      * Generated array contains specific tokens with different probability to get varying distribution - some bitset
      * should be quite full, while others should be quite empty and more likely to become empty with later updates.
      */
-    static long[] generateRandomTokens( RandomRule random )
+    static long[] generateRandomTokens( RandomSupport random )
     {
         long[] allTokens = TokenIndexUtility.TOKENS;
         double[] allTokensRatio = new double[]{0.9, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.01, 0.001};

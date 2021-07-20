@@ -47,7 +47,7 @@ import org.neo4j.pushtocloud.PushToCloudCommand.DumpCreator;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.Objects.requireNonNull;
 import static java.lang.String.format;

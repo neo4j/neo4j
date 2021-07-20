@@ -43,7 +43,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -65,7 +65,7 @@ class TokenScanWriteMonitorTest
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private String baseName;
 

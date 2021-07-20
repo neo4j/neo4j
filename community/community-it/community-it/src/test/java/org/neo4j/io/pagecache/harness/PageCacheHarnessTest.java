@@ -41,7 +41,7 @@ import org.neo4j.resources.Profiler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.ProfilerExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;

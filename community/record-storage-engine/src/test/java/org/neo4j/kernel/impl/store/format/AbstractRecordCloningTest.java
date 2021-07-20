@@ -37,9 +37,9 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
@@ -48,7 +48,7 @@ import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 public abstract class AbstractRecordCloningTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private RecordKeys keys;
     private IdSequence idSequence;

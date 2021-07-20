@@ -72,7 +72,7 @@ import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -99,7 +99,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 abstract class TxStateTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private final IndexDescriptor indexOn_1_1 = TestIndexDescriptorFactory.forLabel( 1, 1 );
     private final IndexDescriptor indexOn_2_1 = TestIndexDescriptorFactory.forLabel( 2, 1 );

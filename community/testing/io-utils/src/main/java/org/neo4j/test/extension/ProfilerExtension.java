@@ -34,7 +34,7 @@ import java.nio.file.Path;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.resources.Profiler;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 /**
  * A sampling profiler extension for JUnit 5. This extension profiles a given set of threads that run in a unit test, and if the test fails, prints a profile

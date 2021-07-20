@@ -52,7 +52,7 @@ import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.eclipse.collections.impl.list.mutable.primitive.LongArrayList.newListWith;
 import static org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap.newWithKeysValues;
@@ -78,7 +78,7 @@ import static org.neo4j.kernel.impl.util.collection.LinearProbeLongLongHashMap.R
 class LinearProbeLongLongHashMapTest
 {
     @Inject
-    private RandomRule rnd;
+    private RandomSupport rnd;
 
     private final CachingOffHeapBlockAllocator blockAllocator = new CachingOffHeapBlockAllocator();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();

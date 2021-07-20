@@ -37,8 +37,8 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,7 +60,7 @@ class StringCollisionValuesTest
     } );
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Inject
     private TestDirectory testDirectory;

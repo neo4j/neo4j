@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSett
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SpatialIndexConfigTest
 {
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     @Test
     void mustAddSpatialConfigToMap()

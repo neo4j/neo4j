@@ -31,7 +31,7 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

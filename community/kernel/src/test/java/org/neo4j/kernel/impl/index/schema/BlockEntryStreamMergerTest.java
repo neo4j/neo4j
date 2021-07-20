@@ -33,11 +33,11 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RawBytes;
 import org.neo4j.index.internal.gbptree.SimpleByteArrayLayout;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.impl.index.schema.BlockEntryMergerTestUtils.assertMergedPartStream;
@@ -51,7 +51,7 @@ class BlockEntryStreamMergerTest
     private static final int BATCH_SIZE = 10;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Inject
     private OtherThread t2;

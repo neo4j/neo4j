@@ -35,7 +35,7 @@ import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,7 +52,7 @@ class StageTest
 {
     private static final int TEST_BATCH_SIZE = 100;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldReceiveBatchesInOrder()

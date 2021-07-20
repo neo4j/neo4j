@@ -23,9 +23,9 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class BitsUtilTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldSetBitsInSingleLong()

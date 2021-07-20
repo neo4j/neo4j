@@ -45,8 +45,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,7 +66,7 @@ public abstract class IndexTestUtil<KEY,VALUE, LAYOUT extends Layout<KEY,VALUE>>
     @Inject
     protected PageCache pageCache;
     @Inject
-    protected RandomRule random;
+    protected RandomSupport random;
 
     IndexDescriptor indexDescriptor;
     LAYOUT layout;

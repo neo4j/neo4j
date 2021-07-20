@@ -43,7 +43,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.lang.Math.max;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,7 +61,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 public class NodeRelationshipCacheTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private NodeRelationshipCache cache;
 

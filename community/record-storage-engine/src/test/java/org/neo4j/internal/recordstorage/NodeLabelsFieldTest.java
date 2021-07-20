@@ -41,7 +41,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -63,7 +62,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.util.Bits;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,7 +87,7 @@ class NodeLabelsFieldTest
     @Inject
     private PageCache pageCache;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private FileSystemAbstraction fs;
     @Inject

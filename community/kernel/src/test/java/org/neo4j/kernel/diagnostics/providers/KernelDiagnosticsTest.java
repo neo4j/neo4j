@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.Collections.singletonList;
 import static org.mockito.ArgumentMatchers.any;

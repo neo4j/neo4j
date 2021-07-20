@@ -41,8 +41,8 @@ import org.neo4j.storageengine.api.schema.SimpleEntityTokenClient;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +57,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 class TokenIndexReaderTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private PageCache pageCache;
     @Inject

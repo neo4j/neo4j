@@ -38,10 +38,10 @@ import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,7 +61,7 @@ public abstract class AbstractRecordFormatTest
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
     @Inject
-    protected RandomRule random;
+    protected RandomSupport random;
 
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 

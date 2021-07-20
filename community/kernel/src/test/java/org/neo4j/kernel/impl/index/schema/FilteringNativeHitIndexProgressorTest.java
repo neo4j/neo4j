@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
@@ -45,7 +45,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValue
 class FilteringNativeHitIndexProgressorTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldFilterResults()

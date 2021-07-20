@@ -56,8 +56,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -82,7 +82,7 @@ class PropertyDeleterTest
     @Inject
     private PageCache pageCache;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private final PropertyTraverser traverser = new PropertyTraverser();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();

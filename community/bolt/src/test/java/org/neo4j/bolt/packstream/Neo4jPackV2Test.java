@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -77,7 +77,7 @@ public class Neo4jPackV2Test
     private static final int RANDOM_LIST_MAX_SIZE = 500;
 
     @Inject
-    public RandomRule random;
+    public RandomSupport random;
 
     @Test
     void shouldFailToPackPointWithIllegalDimensions()

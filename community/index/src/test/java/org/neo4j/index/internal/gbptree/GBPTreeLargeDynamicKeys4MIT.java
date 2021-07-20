@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.rule.PageCacheConfig;
+import org.neo4j.test.utils.PageCacheConfig;
 
 import static org.neo4j.io.ByteUnit.mebiBytes;
 

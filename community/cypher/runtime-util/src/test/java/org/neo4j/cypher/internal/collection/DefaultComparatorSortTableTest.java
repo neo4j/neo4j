@@ -30,7 +30,7 @@ import java.util.PriorityQueue;
 import org.neo4j.memory.Measurable;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,7 +44,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 class DefaultComparatorSortTableTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private static final List<Long> TEST_VALUES = List.of( 7L, 4L, 5L, 0L, 3L, 4L, 8L, 6L, 1L, 9L, 2L );
 

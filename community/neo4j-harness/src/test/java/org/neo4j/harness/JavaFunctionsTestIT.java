@@ -22,15 +22,13 @@ package org.neo4j.harness;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.messages.MessageUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.UserFunction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -30,10 +30,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.FileSystemExtension;
 import org.neo4j.test.extension.StatefulFieldExtension;
-import org.neo4j.test.rule.PageCacheConfig;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.utils.PageCacheConfig;
+import org.neo4j.test.utils.PageCacheSupport;
 
-import static org.neo4j.test.rule.PageCacheConfig.config;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache>
 {
@@ -71,7 +71,7 @@ public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache>
         FileSystemAbstraction contextFileSystem = fileSystemStore.get( FileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class );
         FileSystemAbstraction pageCacheFileSystem = Optional.ofNullable( contextFileSystem )
                                                     .orElseGet( DefaultFileSystemAbstraction::new );
-        return new PageCacheRule().getPageCache( pageCacheFileSystem, config );
+        return new PageCacheSupport().getPageCache( pageCacheFileSystem, config );
     }
 
     /**
@@ -79,7 +79,7 @@ public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache>
      */
     public static PageCache getPageCache( FileSystemAbstraction fs, PageCacheConfig config )
     {
-        return new PageCacheRule().getPageCache( fs, config );
+        return new PageCacheSupport().getPageCache( fs, config );
     }
 
     /**
@@ -87,7 +87,7 @@ public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache>
      */
     public PageCache getPageCache( FileSystemAbstraction fs )
     {
-        return new PageCacheRule().getPageCache( fs, config );
+        return new PageCacheSupport().getPageCache( fs, config );
     }
 
     @Override

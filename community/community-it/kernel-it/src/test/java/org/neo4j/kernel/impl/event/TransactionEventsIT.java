@@ -56,7 +56,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
@@ -85,7 +85,7 @@ class TransactionEventsIT
     private GraphDatabaseAPI db;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void createAdditionalDataInTransactionOnBeforeCommit()
@@ -557,11 +557,11 @@ class TransactionEventsIT
     {
         private static final String[] TOKENS = {"A", "B", "C", "D", "E"};
 
-        private final RandomRule random;
+        private final RandomSupport random;
         private final List<Node> nodes = new ArrayList<>();
         private final List<Relationship> relationships = new ArrayList<>();
 
-        Graph( RandomRule random )
+        Graph( RandomSupport random )
         {
             this.random = random;
         }

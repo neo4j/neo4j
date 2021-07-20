@@ -35,8 +35,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.PageCacheSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,7 +45,7 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.test.rule.PageCacheConfig.config;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @EphemeralPageCacheExtension
 class IndexedIdGeneratorRecoverabilityTest
@@ -258,7 +258,7 @@ class IndexedIdGeneratorRecoverabilityTest
 
     private static PageCache getPageCache( FileSystemAbstraction fs )
     {
-        return new PageCacheRule().getPageCache( fs, config() );
+        return new PageCacheSupport().getPageCache( fs, config() );
     }
 
     private static void markUsed( IdGenerator freelist, long... ids )

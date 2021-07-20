@@ -49,7 +49,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,7 +64,7 @@ public class IndexBackupIT
     private static final int NUMBER_OF_INDEXES = 10;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private GraphDatabaseAPI database;
 

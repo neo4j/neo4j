@@ -45,7 +45,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -64,7 +64,7 @@ class RecordRelationshipScanCursorTest
     private static final long RELATIONSHIP_ID = 1L;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject

@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.factory.Sets.immutable;

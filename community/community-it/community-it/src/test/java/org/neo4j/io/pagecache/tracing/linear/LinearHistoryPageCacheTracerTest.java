@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 public class LinearHistoryPageCacheTracerTest

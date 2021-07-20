@@ -27,7 +27,7 @@ import java.util.Iterator;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class DataStatisticsTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldSumCounts() throws Throwable

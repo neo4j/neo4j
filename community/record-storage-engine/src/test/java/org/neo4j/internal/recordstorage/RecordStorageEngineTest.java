@@ -56,7 +56,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.RecordStorageEngineRule;
+import org.neo4j.test.storage.RecordStorageEngineSupport;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,7 +86,7 @@ class RecordStorageEngineTest
     private RecordDatabaseLayout databaseLayout;
 
     private final Health databaseHealth = mock( DatabaseHealth.class );
-    private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
+    private final RecordStorageEngineSupport storageEngineRule = new RecordStorageEngineSupport();
 
     @BeforeEach
     void before() throws Throwable
@@ -220,7 +220,7 @@ class RecordStorageEngineTest
         return recordStorageEngineBuilder().build();
     }
 
-    private RecordStorageEngineRule.Builder recordStorageEngineBuilder()
+    private RecordStorageEngineSupport.Builder recordStorageEngineBuilder()
     {
         return storageEngineRule
                 .getWith( fs, pageCache, databaseLayout )

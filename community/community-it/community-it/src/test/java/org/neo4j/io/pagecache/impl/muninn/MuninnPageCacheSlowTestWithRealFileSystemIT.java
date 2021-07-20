@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class MuninnPageCacheSlowTestWithRealFileSystemIT extends MuninnPageCacheSlowIT

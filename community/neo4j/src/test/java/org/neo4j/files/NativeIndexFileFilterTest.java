@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProvider
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

@@ -45,7 +45,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,12 +69,12 @@ public abstract class StringLengthIndexValidationIT
     private GraphDatabaseAPI db;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     protected abstract int getSingleKeySizeLimit();
 
     // Each char in string need to fit in one byte
-    protected abstract String getString( RandomRule random, int keySize );
+    protected abstract String getString( RandomSupport random, int keySize );
 
     protected abstract GraphDatabaseSettings.SchemaIndex getSchemaIndex();
 

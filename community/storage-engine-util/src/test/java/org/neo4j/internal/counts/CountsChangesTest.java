@@ -37,9 +37,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,7 +51,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 class CountsChangesTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private static final Function<CountsKey,AtomicLong> NOT_STORED = key -> new AtomicLong();
 

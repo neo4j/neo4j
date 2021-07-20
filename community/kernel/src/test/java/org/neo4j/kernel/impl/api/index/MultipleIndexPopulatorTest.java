@@ -54,7 +54,7 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -86,7 +86,7 @@ import static org.neo4j.values.storable.Values.intValue;
 class MultipleIndexPopulatorTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private JobScheduler jobScheduler;
 

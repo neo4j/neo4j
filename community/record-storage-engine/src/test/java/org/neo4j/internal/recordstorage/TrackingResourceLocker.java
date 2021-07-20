@@ -38,7 +38,7 @@ import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
@@ -54,16 +54,16 @@ class TrackingResourceLocker implements ResourceLocker
     private final Set<ResourceType> strictAssertions = new HashSet<>();
     private final HashMap<ResourceType,MutableSortedBag<Long>> exclusiveLocks = new HashMap<>();
     private final HashMap<ResourceType,MutableSortedBag<Long>> sharedLocks = new HashMap<>();
-    private final RandomRule random;
+    private final RandomSupport random;
     private final LockAcquisitionMonitor lockAcquisitionMonitor;
     private final int changeOfGettingTryLock;
 
-    TrackingResourceLocker( RandomRule random, LockAcquisitionMonitor lockAcquisitionMonitor )
+    TrackingResourceLocker( RandomSupport random, LockAcquisitionMonitor lockAcquisitionMonitor )
     {
         this( random, lockAcquisitionMonitor, random.nextInt( 10, 90 )/*%*/ );
     }
 
-    TrackingResourceLocker( RandomRule random, LockAcquisitionMonitor lockAcquisitionMonitor, int chanceOfGettingTrylockInPercent  )
+    TrackingResourceLocker( RandomSupport random, LockAcquisitionMonitor lockAcquisitionMonitor, int chanceOfGettingTrylockInPercent  )
     {
         assert chanceOfGettingTrylockInPercent >= 0 && chanceOfGettingTrylockInPercent <= 100 : chanceOfGettingTrylockInPercent;
         this.random = random;

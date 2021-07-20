@@ -32,9 +32,9 @@ import java.util.List;
 
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,7 +47,7 @@ class CombinedPartSeekerTest
     private static final Comparator<Pair<MutableLong,MutableLong>> HIT_COMPARATOR = Comparator.comparing( Pair::getKey );
 
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     @Test
     void shouldCombineAllParts() throws IOException

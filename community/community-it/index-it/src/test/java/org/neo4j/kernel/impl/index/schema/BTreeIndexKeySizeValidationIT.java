@@ -46,12 +46,12 @@ import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -101,7 +101,7 @@ public class BTreeIndexKeySizeValidationIT
     @Inject
     private Neo4jLayout neo4jLayout;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     private DatabaseManagementService dbms;
     private GraphDatabaseAPI db;
     private JobScheduler scheduler;
@@ -460,12 +460,12 @@ public class BTreeIndexKeySizeValidationIT
             this.generator = generator;
         }
 
-        Object dynamicValue( RandomRule random, int length )
+        Object dynamicValue( RandomSupport random, int length )
         {
             return generator.dynamicValue( random, length );
         }
 
-        Object dynamicValue( RandomRule random, int keySizeLimit, int wiggleRoom )
+        Object dynamicValue( RandomSupport random, int keySizeLimit, int wiggleRoom )
         {
             int lowLimit = lowLimit( keySizeLimit, wiggleRoom, singleArrayEntrySize );
             int highLimit = highLimit( keySizeLimit, wiggleRoom, singleArrayEntrySize );
@@ -485,7 +485,7 @@ public class BTreeIndexKeySizeValidationIT
         @FunctionalInterface
         private interface DynamicValueGenerator
         {
-            Object dynamicValue( RandomRule random, int arrayLength );
+            Object dynamicValue( RandomSupport random, int arrayLength );
         }
     }
 }

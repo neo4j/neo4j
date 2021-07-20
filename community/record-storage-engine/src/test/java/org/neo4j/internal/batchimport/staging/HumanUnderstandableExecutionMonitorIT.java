@@ -50,7 +50,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,7 +72,7 @@ class HumanUnderstandableExecutionMonitorIT
     private static final long RELATIONSHIP_COUNT = 10_000;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject

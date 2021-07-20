@@ -46,8 +46,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
@@ -58,7 +58,7 @@ abstract class IndexProviderCompatabilityTestBase
     @Inject
     private PageCache pageCache;
     @Inject
-    RandomRule random;
+    RandomSupport random;
     @Inject
     FileSystemAbstraction fs;
 

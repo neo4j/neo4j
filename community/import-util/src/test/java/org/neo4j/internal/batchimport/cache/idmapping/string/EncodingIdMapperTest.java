@@ -46,7 +46,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.lang.Math.toIntExact;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,7 +68,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 public class EncodingIdMapperTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private final Groups groups = new Groups();
 

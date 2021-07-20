@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -40,7 +40,7 @@ class PropertyValueRecordSizeCalculatorTest
     private static final int DYNAMIC_RECORD_SIZE = 120;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldIncludePropertyRecordSize()

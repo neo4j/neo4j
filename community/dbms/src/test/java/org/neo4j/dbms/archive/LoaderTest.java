@@ -44,7 +44,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.nio.file.Files.delete;
 import static java.util.Collections.emptySet;

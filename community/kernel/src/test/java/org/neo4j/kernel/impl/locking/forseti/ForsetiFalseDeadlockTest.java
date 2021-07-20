@@ -50,7 +50,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
 
@@ -70,7 +70,7 @@ class ForsetiFalseDeadlockTest
     } );
 
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     @AfterAll
     static void tearDown()

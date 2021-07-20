@@ -32,7 +32,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -55,7 +55,7 @@ class GenericIndexKeyValidatorTest
     private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 1 ) ).withName( "test" ).materialise( 1 );
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldNotBotherSerializingToRealBytesIfFarFromThreshold()

@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -35,7 +34,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.time.Clocks;
 
 import static org.neo4j.test.Race.throwing;
@@ -45,7 +44,7 @@ import static org.neo4j.test.Race.throwing;
 class ForsetiLockManagerTest
 {
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     @Test
     void testMultipleClientsSameTxId() throws Throwable

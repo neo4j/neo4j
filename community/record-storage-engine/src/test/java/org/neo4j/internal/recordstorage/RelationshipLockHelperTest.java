@@ -51,7 +51,7 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.lang.Integer.min;
 import static org.mockito.Mockito.mock;
@@ -66,7 +66,7 @@ import static org.neo4j.storageengine.api.txstate.RelationshipModifications.idsA
 class RelationshipLockHelperTest
 {
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     @Test
     void shouldKeepListSorted()

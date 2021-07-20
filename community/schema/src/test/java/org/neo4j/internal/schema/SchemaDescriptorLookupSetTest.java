@@ -37,7 +37,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.util.Arrays.stream;
 import static org.apache.commons.lang3.ArrayUtils.contains;
@@ -49,7 +49,7 @@ import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 class SchemaDescriptorLookupSetTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldLookupSingleKeyDescriptors()

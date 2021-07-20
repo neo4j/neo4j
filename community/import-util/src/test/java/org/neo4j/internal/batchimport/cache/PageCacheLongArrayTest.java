@@ -30,8 +30,8 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
@@ -52,7 +52,7 @@ class PageCacheLongArrayTest
     @Inject
     private PageCache pageCache;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void verifyPageCacheLongArray() throws Exception

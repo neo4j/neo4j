@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.rule.PageCacheConfig;
+import org.neo4j.test.utils.PageCacheConfig;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
 import static org.junit.jupiter.api.Assertions.assertEquals;

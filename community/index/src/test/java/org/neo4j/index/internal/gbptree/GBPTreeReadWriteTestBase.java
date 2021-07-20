@@ -36,8 +36,8 @@ import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.lang.String.format;
@@ -61,7 +61,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
     @Inject
     private DefaultFileSystemAbstraction fs;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private PageCache pageCache;
     private TestLayout<KEY,VALUE> layout;
@@ -77,7 +77,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
         }
     }
 
-    abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
+    abstract TestLayout<KEY,VALUE> getLayout( RandomSupport random, int pageSize );
 
     @ParameterizedTest
     @MethodSource( "pageSizes" )

@@ -35,8 +35,8 @@ import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,7 +55,7 @@ class IndexUpdateStorageTest
     protected TestDirectory directory;
 
     @Inject
-    protected RandomRule random;
+    protected RandomSupport random;
 
     private final GenericLayout layout = new GenericLayout( 1, spatialSettings );
 

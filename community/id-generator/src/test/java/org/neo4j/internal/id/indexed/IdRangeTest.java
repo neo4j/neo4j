@@ -30,7 +30,7 @@ import java.util.Collection;
 import org.neo4j.internal.id.indexed.IdRange.IdState;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,7 +46,7 @@ import static org.neo4j.internal.id.indexed.IdRange.IdState.USED;
 class IdRangeTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void defaultStateIsUsed()

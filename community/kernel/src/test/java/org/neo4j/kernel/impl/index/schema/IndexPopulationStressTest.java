@@ -58,8 +58,8 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -99,7 +99,7 @@ abstract class IndexPopulationStressTest
     private static final int BATCHES_PER_THREAD = 100;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     PageCache pageCache;
     @Inject

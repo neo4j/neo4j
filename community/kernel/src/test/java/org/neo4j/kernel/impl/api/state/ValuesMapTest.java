@@ -37,7 +37,7 @@ import java.util.List;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,7 +57,7 @@ import static org.neo4j.values.storable.Values.intValue;
 class ValuesMapTest
 {
     @Inject
-    private RandomRule rnd;
+    private RandomSupport rnd;
 
     private final ValuesMap map = newMap();
 

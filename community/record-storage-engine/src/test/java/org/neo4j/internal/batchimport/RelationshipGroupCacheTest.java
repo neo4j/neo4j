@@ -27,7 +27,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,7 +38,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class RelationshipGroupCacheTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldPutGroupsOnlyWithinPreparedRange()

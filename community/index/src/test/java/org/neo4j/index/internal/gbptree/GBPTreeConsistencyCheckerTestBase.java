@@ -43,8 +43,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.test.rule.PageCacheConfig.config;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectorySupportExtension.class, RandomExtension.class} )
 abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
@@ -68,7 +68,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     @Inject
     TestDirectory directory;
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     TestLayout<KEY,VALUE> layout;
     private RandomValues randomValues;

@@ -47,7 +47,7 @@ import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Integer.max;
 import static java.util.UUID.randomUUID;

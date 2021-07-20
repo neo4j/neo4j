@@ -40,11 +40,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -68,7 +68,7 @@ class BlockStorageTest
     @Inject
     TestDirectory directory;
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     private Path file;
     private FileSystemAbstraction fileSystem;

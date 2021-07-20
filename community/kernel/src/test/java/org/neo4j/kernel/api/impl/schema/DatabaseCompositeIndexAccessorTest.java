@@ -82,7 +82,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Threading;
 import org.neo4j.test.extension.ThreadingExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;

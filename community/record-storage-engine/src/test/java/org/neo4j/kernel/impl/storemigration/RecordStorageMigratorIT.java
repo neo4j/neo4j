@@ -104,8 +104,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.TokenHolders;
 
@@ -148,7 +148,7 @@ class RecordStorageMigratorIT
     @Inject
     private RecordDatabaseLayout databaseLayout;
     @Inject
-    private RandomRule randomRule;
+    private RandomSupport randomRule;
 
     private DatabaseLayout migrationLayout;
     private BatchImporterFactory batchImporterFactory;

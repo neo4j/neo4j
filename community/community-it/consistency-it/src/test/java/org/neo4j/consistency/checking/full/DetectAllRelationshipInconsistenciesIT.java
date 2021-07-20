@@ -61,8 +61,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.token.TokenHolders;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -81,7 +81,7 @@ public class DetectAllRelationshipInconsistenciesIT
     @Inject
     private TestDirectory directory;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
 

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule;
+package org.neo4j.test.utils;
 
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -43,21 +43,21 @@ import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.Boolean.TRUE;
 import static org.neo4j.io.ByteUnit.parse;
-import static org.neo4j.test.rule.PageCacheConfig.config;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
-public class PageCacheRule
+public class PageCacheSupport
 {
     protected JobScheduler jobScheduler;
     protected SystemNanoClock clock;
     protected PageCache pageCache;
     private final PageCacheConfig baseConfig;
 
-    public PageCacheRule()
+    public PageCacheSupport()
     {
         this( config() );
     }
 
-    public PageCacheRule( PageCacheConfig config )
+    public PageCacheSupport( PageCacheConfig config )
     {
         this.baseConfig = config;
     }
@@ -71,7 +71,7 @@ public class PageCacheRule
      * Opens a new {@link PageCache} with the provided file system and config.
      *
      * @param fs {@link FileSystemAbstraction} to use for the {@link PageCache}.
-     * @param overriddenConfig specific {@link PageCacheConfig} overriding config provided in {@link PageCacheRule}
+     * @param overriddenConfig specific {@link PageCacheConfig} overriding config provided in {@link PageCacheSupport}
      * constructor, if any.
      * @return the opened {@link PageCache}.
      */
@@ -90,7 +90,7 @@ public class PageCacheRule
      * Opens a new {@link PageCache} with the provided file system and config.
      *
      * @param factory {@link PageSwapperFactory} to use for the {@link PageCache}.
-     * @param overriddenConfig specific {@link PageCacheConfig} overriding config provided in {@link PageCacheRule}
+     * @param overriddenConfig specific {@link PageCacheConfig} overriding config provided in {@link PageCacheSupport}
      * constructor, if any.
      * @return the opened {@link PageCache}.
      */

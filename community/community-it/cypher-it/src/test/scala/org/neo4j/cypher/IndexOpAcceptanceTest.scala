@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFacto
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
-import org.neo4j.test.rule.TestDirectory
+import org.neo4j.test.utils.TestDirectory
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 

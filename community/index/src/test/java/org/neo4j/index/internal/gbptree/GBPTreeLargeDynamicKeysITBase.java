@@ -37,8 +37,8 @@ import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -54,7 +54,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
     private static final Layout<RawBytes,RawBytes> layout = new SimpleByteArrayLayout( false );
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private TestDirectory testDirectory;
     protected abstract PageCache getPageCache();

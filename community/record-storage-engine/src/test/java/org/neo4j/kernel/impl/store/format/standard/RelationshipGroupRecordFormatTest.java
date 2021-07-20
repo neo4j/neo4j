@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,7 +44,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 class RelationshipGroupRecordFormatTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @ParameterizedTest
     @MethodSource( "formats" )

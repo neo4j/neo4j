@@ -29,14 +29,14 @@ import org.opentest4j.TestAbortedException;
 
 import java.util.Optional;
 
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.RandomRule.Seed;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.RandomSupport.Seed;
 import org.neo4j.values.storable.RandomValues;
 
 import static java.lang.String.format;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
 
-public class RandomExtension extends StatefulFieldExtension<RandomRule> implements BeforeEachCallback, AfterEachCallback, TestExecutionExceptionHandler
+public class RandomExtension extends StatefulFieldExtension<RandomSupport> implements BeforeEachCallback, AfterEachCallback, TestExecutionExceptionHandler
 {
     private static final String RANDOM = "random";
     private static final Namespace RANDOM_NAMESPACE = Namespace.create( RANDOM );
@@ -60,9 +60,9 @@ public class RandomExtension extends StatefulFieldExtension<RandomRule> implemen
     }
 
     @Override
-    protected Class<RandomRule> getFieldType()
+    protected Class<RandomSupport> getFieldType()
     {
-        return RandomRule.class;
+        return RandomSupport.class;
     }
 
     @Override
@@ -72,9 +72,9 @@ public class RandomExtension extends StatefulFieldExtension<RandomRule> implemen
     }
 
     @Override
-    protected RandomRule createField( ExtensionContext extensionContext )
+    protected RandomSupport createField( ExtensionContext extensionContext )
     {
-        RandomRule randomRule = new RandomRule().withConfiguration( config );
+        RandomSupport randomRule = new RandomSupport().withConfiguration( config );
         randomRule.setSeed( System.currentTimeMillis() );
         return randomRule;
     }

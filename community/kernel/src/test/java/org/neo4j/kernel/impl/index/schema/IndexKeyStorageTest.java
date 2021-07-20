@@ -37,8 +37,8 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +59,7 @@ class IndexKeyStorageTest
     protected TestDirectory directory;
 
     @Inject
-    protected RandomRule random;
+    protected RandomSupport random;
 
     private GenericLayout layout;
     private int numberOfSlots;

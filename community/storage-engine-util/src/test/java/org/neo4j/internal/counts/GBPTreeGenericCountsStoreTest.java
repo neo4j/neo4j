@@ -61,8 +61,8 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
@@ -116,7 +116,7 @@ class GBPTreeGenericCountsStoreTest
     private FileSystemAbstraction fs;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private GBPTreeGenericCountsStore countsStore;
 
@@ -726,7 +726,7 @@ class GBPTreeGenericCountsStoreTest
     }
 
     /**
-     * Generates a transaction, i.e. a counts change set. The data is random, but uses a seed which is the seed of the {@link RandomRule} in this test
+     * Generates a transaction, i.e. a counts change set. The data is random, but uses a seed which is the seed of the {@link RandomSupport} in this test
      * as well as the the supplied txId. Calling this method in any given test multiple times with any specific txId will generate the same data.
      *
      * @param expected map of counts to update with the generated changes.

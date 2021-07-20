@@ -28,8 +28,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
@@ -47,7 +47,7 @@ class SizeEstimationTest
     @Inject
     private PageCache pageCache;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldEstimateSizeOnFixedSizeKeys() throws IOException

@@ -33,7 +33,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +45,7 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
     public static final int ZEBRAS = 24;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private long topEntity;
 

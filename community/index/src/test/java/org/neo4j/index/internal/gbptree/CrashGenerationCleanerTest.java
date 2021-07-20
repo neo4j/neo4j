@@ -44,12 +44,12 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
@@ -60,7 +60,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import static org.neo4j.index.internal.gbptree.TreeNode.setKeyCount;
-import static org.neo4j.test.rule.PageCacheConfig.config;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @EphemeralTestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -73,7 +73,7 @@ class CrashGenerationCleanerTest
     @Inject
     private TestDirectory testDirectory;
     @Inject
-    private RandomRule randomRule;
+    private RandomSupport randomRule;
 
     private static final String FILE_NAME = "index";
     private static final String DATABASE_NAME = "neo4j";

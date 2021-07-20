@@ -37,7 +37,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.lang.Long.max;
 import static java.lang.Math.toIntExact;
@@ -50,7 +50,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 class NativeAllEntriesTokenScanReaderTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldSeeNonOverlappingRanges() throws Exception
@@ -94,7 +94,7 @@ class NativeAllEntriesTokenScanReaderTest
         }
     }
 
-    static List<Labels> randomData( RandomRule random )
+    static List<Labels> randomData( RandomSupport random )
     {
         List<Labels> labels = new ArrayList<>();
         int labelCount = random.intBetween( 30, 100 );

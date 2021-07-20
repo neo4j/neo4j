@@ -45,8 +45,8 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -71,7 +71,7 @@ class DegreesRebuildFromStoreTest
     private TestDirectory directory;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void skipNotUsedRecordsOnDegreeStoreRebuild() throws Exception

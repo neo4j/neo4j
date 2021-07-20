@@ -29,7 +29,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory.INSTANCE;
@@ -41,7 +41,7 @@ import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 class NodeStateImplTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldReportNoAddedRelationshipsOnNoRelationshipsAdded()

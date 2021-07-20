@@ -44,7 +44,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -72,7 +72,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
     @Inject
     private OtherThread otherThread;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )

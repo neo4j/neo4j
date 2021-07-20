@@ -85,8 +85,8 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.String.format;
 import static java.lang.String.join;
@@ -140,7 +140,7 @@ class ImportCommandTest
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private SuppressOutput suppressOutput;
     private DatabaseManagementService managementService;

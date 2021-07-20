@@ -28,7 +28,7 @@ import java.util.List;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +40,7 @@ import static org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat.D
 class TestLongerShortString
 {
     @Inject
-    protected RandomRule random;
+    protected RandomSupport random;
 
     @Test
     void canEncodeEmptyString()

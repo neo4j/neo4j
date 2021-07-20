@@ -44,7 +44,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
@@ -63,7 +63,7 @@ public class IndexFailureOnStartupTest
     private static final Label PERSON = Label.label( "Person" );
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private GraphDatabaseAPI db;
     @Inject

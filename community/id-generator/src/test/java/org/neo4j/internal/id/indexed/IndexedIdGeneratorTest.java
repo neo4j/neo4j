@@ -72,8 +72,8 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -113,7 +113,7 @@ class IndexedIdGeneratorTest
     @Inject
     private PageCache pageCache;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private IndexedIdGenerator idGenerator;
     private Path file;

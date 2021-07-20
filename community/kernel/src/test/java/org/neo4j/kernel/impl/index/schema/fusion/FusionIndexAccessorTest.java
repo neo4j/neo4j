@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,7 +91,7 @@ abstract class FusionIndexAccessorTest
     private IndexDirectoryStructure directoryStructure;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     private final FusionVersion fusionVersion;
 
     FusionIndexAccessorTest( FusionVersion fusionVersion )

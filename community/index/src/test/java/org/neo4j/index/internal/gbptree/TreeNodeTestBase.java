@@ -31,7 +31,7 @@ import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -62,7 +62,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     private final GenerationKeeper generationTarget = new GenerationKeeper();
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @BeforeEach
     void prepareCursor()

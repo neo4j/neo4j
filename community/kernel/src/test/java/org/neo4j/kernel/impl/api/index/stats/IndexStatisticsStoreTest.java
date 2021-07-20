@@ -43,8 +43,8 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,7 +70,7 @@ class IndexStatisticsStoreTest
     @Inject
     private FileSystemAbstraction fs;
     @Inject
-    private RandomRule randomRule;
+    private RandomSupport randomRule;
 
     private IndexStatisticsStore store;
     private final PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;

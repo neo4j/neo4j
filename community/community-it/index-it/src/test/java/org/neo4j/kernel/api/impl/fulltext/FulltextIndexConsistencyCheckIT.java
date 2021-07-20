@@ -80,7 +80,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
@@ -108,7 +108,7 @@ class FulltextIndexConsistencyCheckIT
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private DatabaseManagementServiceBuilder builder;
     private GraphDatabaseService database;

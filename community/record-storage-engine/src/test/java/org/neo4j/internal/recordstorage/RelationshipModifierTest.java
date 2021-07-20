@@ -66,7 +66,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.lang.Integer.min;
 import static java.util.Collections.singletonList;
@@ -108,7 +108,7 @@ class RelationshipModifierTest
     private static final int DENSE_THRESHOLD = 15;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private final Supplier<RelationshipDirection> RANDOM_DIRECTION = () -> random.among( DIRECTIONS );
     private RelationshipModifier modifier;

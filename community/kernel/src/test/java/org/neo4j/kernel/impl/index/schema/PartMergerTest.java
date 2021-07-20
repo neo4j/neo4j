@@ -39,7 +39,7 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.util.Collections.emptyList;
@@ -53,7 +53,7 @@ import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 class PartMergerTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private JobScheduler scheduler;
     private PopulationWorkScheduler populationWorkScheduler;

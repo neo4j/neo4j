@@ -34,7 +34,7 @@ import java.util.stream.LongStream;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 
 import static java.lang.Integer.numberOfLeadingZeros;
@@ -53,7 +53,7 @@ import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
 class SpmcLongQueueTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void fillAndDrain()

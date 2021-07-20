@@ -72,8 +72,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.JobSchedulerAdapter;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.singletonList;

@@ -57,7 +57,7 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,7 +69,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
     @Inject
     private GraphDatabaseService db;
     @Inject
-    protected RandomRule random;
+    protected RandomSupport random;
 
     @InjectSoftAssertions
     protected SoftAssertions softly;

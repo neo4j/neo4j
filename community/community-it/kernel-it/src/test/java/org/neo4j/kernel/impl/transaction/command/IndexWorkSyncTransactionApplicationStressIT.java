@@ -61,8 +61,8 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RecordStorageEngineRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.storage.RecordStorageEngineSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -91,7 +91,7 @@ class IndexWorkSyncTransactionApplicationStressIT
     @Inject
     private PageCache pageCache;
 
-    private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
+    private final RecordStorageEngineSupport storageEngineRule = new RecordStorageEngineSupport();
 
     @BeforeEach
     void setUp() throws Throwable

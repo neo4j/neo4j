@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class RandomExtensionTest
 {
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     @Test
     void randomInjectionsInitialiseField()
@@ -51,10 +51,10 @@ class RandomExtensionTest
     class NestedRandomTest
     {
         @Inject
-        RandomRule nestedRandom;
+        RandomSupport nestedRandom;
 
         @Test
-        @RandomRule.Seed( 15 )
+        @RandomSupport.Seed( 15 )
         void randomSeedSetupTest()
         {
             assertEquals( 15, nestedRandom.seed() );

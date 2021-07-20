@@ -101,15 +101,15 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Long.max;
@@ -145,7 +145,7 @@ class DatabaseRecoveryIT
     @Inject
     private Neo4jLayout neo4jLayout;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @RegisterExtension
     static final PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
 

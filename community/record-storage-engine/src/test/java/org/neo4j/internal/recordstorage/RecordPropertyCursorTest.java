@@ -53,7 +53,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -77,7 +77,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 public class RecordPropertyCursorTest
 {
     @Inject
-    protected RandomRule random;
+    protected RandomSupport random;
     @Inject
     protected FileSystemAbstraction fs;
     @Inject

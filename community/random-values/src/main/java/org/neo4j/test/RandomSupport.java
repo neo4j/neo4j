@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule;
+package org.neo4j.test;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -40,7 +40,7 @@ import org.neo4j.values.storable.ValueType;
  *
  * Available methods directly on this class include those found in {@link RandomValues} and the basic ones in {@link Random}.
  */
-public class RandomRule
+public class RandomSupport
 {
     private long globalSeed;
     private long seed;
@@ -50,13 +50,13 @@ public class RandomRule
 
     private RandomValues.Configuration config = RandomValues.DEFAULT_CONFIGURATION;
 
-    public RandomRule withConfiguration( RandomValues.Configuration config )
+    public RandomSupport withConfiguration( RandomValues.Configuration config )
     {
         this.config = config;
         return this;
     }
 
-    public RandomRule withSeedForAllTests( long seed )
+    public RandomSupport withSeedForAllTests( long seed )
     {
         hasGlobalSeed = true;
         this.globalSeed = seed;

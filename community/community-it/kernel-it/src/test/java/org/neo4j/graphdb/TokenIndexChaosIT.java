@@ -36,7 +36,7 @@ import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -55,7 +55,7 @@ import static org.neo4j.io.fs.FileUtils.writeAll;
 public class TokenIndexChaosIT
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private GraphDatabaseAPI db;
     @Inject

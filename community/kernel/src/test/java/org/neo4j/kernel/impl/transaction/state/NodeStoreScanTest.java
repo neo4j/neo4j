@@ -50,7 +50,7 @@ import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -70,7 +70,7 @@ class NodeStoreScanTest
     private static final String KEY_AGE = "age";
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private final LockService locks = mock( LockService.class, RETURNS_MOCKS );
     private final StubStorageCursors cursors = new StubStorageCursors();

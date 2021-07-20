@@ -31,8 +31,8 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
@@ -48,7 +48,7 @@ public abstract class PageCacheNumberArrayConcurrencyTest
     @Inject
     private PageCache pageCache;
     @Inject
-    protected RandomRule random;
+    protected RandomSupport random;
     protected static final int COUNT = 100;
     static final int LAPS = 2_000;
     static final int CONTESTANTS = 10;

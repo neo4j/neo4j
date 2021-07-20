@@ -25,13 +25,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 @ExtendWith( RandomExtension.class )
 class UTF8StringValueRandomTest
 {
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     @Test
     void shouldCompareToRandomAlphanumericString()

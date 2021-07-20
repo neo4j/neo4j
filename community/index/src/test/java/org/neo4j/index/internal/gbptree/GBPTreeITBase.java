@@ -39,8 +39,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Integer.max;
 import static java.lang.String.format;
@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.test.rule.PageCacheConfig.config;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @EphemeralTestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -62,7 +62,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
     @Inject
     private TestDirectory testDirectory;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private double ratioToKeepInLeftOnSplit;
     private TestLayout<KEY,VALUE> layout;
@@ -91,7 +91,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
         return index.writer( ratioToKeepInLeftOnSplit, NULL );
     }
 
-    abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
+    abstract TestLayout<KEY,VALUE> getLayout( RandomSupport random, int pageSize );
 
     abstract Class<KEY> getKeyClass();
 

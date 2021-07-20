@@ -34,7 +34,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -51,7 +51,7 @@ class KernelAPIParallelLabelScanStressIT
     @Inject
     private GraphDatabaseAPI db;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private Kernel kernel;
 

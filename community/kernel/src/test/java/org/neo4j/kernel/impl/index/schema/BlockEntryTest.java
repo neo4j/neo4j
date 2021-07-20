@@ -30,9 +30,9 @@ import java.util.List;
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class BlockEntryTest
 {
     @Inject
-    RandomRule rnd;
+    RandomSupport rnd;
 
     private static final PageCursor pageCursor = ByteArrayPageCursor.wrap( 1000 );
     private static SimpleLongLayout layout;

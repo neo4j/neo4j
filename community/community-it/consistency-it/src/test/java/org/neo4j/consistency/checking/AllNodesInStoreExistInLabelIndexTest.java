@@ -46,10 +46,10 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -76,7 +76,7 @@ class AllNodesInStoreExistInLabelIndexTest
     @Inject
     private CheckPointer checkPointer;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private final AssertableLogProvider log = new AssertableLogProvider();
     private static final Label[] LABEL_ALPHABET = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};

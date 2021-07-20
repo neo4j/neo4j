@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringResultingInIndexEntrySize;
@@ -36,7 +36,7 @@ public class GenericStringLengthIndexValidationIT extends StringLengthIndexValid
     }
 
     @Override
-    protected String getString( RandomRule random, int keySize )
+    protected String getString( RandomSupport random, int keySize )
     {
         return generateStringResultingInIndexEntrySize( keySize );
     }

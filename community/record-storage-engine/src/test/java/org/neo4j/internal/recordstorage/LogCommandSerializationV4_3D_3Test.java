@@ -31,7 +31,7 @@ import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldReadAndWriteMetaDataCommand() throws IOException

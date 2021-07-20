@@ -83,9 +83,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.PageCacheConfig;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.PageCacheConfig;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Math.toIntExact;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -106,7 +106,7 @@ import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.rule.PageCacheConfig.config;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -121,7 +121,7 @@ class GBPTreeTest
     @Inject
     private TestDirectory testDirectory;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private Path indexFile;
     private ExecutorService executor;

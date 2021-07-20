@@ -88,7 +88,7 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.lang.String.format;
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;
@@ -127,7 +127,7 @@ class DenseNodeConcurrencyIT
     FileSystemAbstraction fs; // this is the actual ephemeral file system, we close it ourselves
 
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -896,7 +896,7 @@ class DenseNodeConcurrencyIT
     private interface WorkTask
     {
         void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted );
+                Set<Relationship> allRelationships, RandomSupport random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted );
     }
 
     enum WorkType implements WorkTask
@@ -905,7 +905,7 @@ class DenseNodeConcurrencyIT
                 {
                     @Override
                     public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                            Set<Relationship> allRelationships, RandomSupport random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
                     {
                         Node from;
                         Node to;
@@ -941,7 +941,7 @@ class DenseNodeConcurrencyIT
                 {
                     @Override
                     public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                            Set<Relationship> allRelationships, RandomSupport random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
                     {
                         Node onNode = randomDenseNode( tx, denseNodeIds, random );
                         List<Relationship> rels = Iterables.asList( onNode.getRelationships( type ) );
@@ -961,7 +961,7 @@ class DenseNodeConcurrencyIT
                 {
                     @Override
                     public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                            Set<Relationship> allRelationships, RandomSupport random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
                     {
                         Node onNode = randomDenseNode( tx, denseNodeIds, random );
                         Iterable<Relationship> relationships = onNode.getRelationships( random.among( Direction.values() ), type );
@@ -972,7 +972,7 @@ class DenseNodeConcurrencyIT
                 {
                     @Override
                     public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                            Set<Relationship> allRelationships, RandomSupport random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
                     {
                         Node onNode = randomDenseNode( tx, denseNodeIds, random );
                         deleteRelationships( allRelationships, txCreated, txDeleted, onNode.getRelationships( type ), denseNodeIds );
@@ -982,7 +982,7 @@ class DenseNodeConcurrencyIT
                 {
                     @Override
                     public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                            Set<Relationship> allRelationships, RandomSupport random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
                     {
                         Node onNode = randomDenseNode( tx, denseNodeIds, random );
                         deleteRelationships( allRelationships, txCreated, txDeleted, onNode.getRelationships(), denseNodeIds );
@@ -992,7 +992,7 @@ class DenseNodeConcurrencyIT
                 {
                     @Override
                     public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                            Set<Relationship> allRelationships, RandomSupport random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
                     {
                         Node onNode = randomDenseNode( tx, denseNodeIds, random );
                         switch ( random.nextInt( 5 ) )
@@ -1019,7 +1019,7 @@ class DenseNodeConcurrencyIT
                     }
 
                     private void modifyRandomRelationship( Node fromNode, RelationshipType type, Consumer<Relationship> modifier,
-                            Set<Relationship> allRelationships, RandomRule random )
+                            Set<Relationship> allRelationships, RandomSupport random )
                     {
                         List<Relationship> rels = Iterables.asList( fromNode.getRelationships( type ) );
                         while ( !rels.isEmpty() )
@@ -1039,14 +1039,14 @@ class DenseNodeConcurrencyIT
                     }
                 };
 
-        private static Node randomDenseNode( Transaction tx, Set<Long> denseNodeIds, RandomRule random )
+        private static Node randomDenseNode( Transaction tx, Set<Long> denseNodeIds, RandomSupport random )
         {
             long id = randomAmong( denseNodeIds, random );
             assertThat( isNull( id ) ).isFalse();
             return tx.getNodeById( id );
         }
 
-        private static long randomAmong( Set<Long> ids, RandomRule randomRule )
+        private static long randomAmong( Set<Long> ids, RandomSupport randomRule )
         {
             long value = Record.NULL_REFERENCE.longValue();
             do

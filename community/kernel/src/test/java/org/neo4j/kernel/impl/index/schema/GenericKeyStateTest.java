@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.ByteArray;
@@ -118,7 +118,7 @@ class GenericKeyStateTest
     private final IndexSpecificSpaceFillingCurveSettings noSpecificIndexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
 
     @Inject
-    private static RandomRule random;
+    private static RandomSupport random;
 
     @BeforeEach
     void setupRandomConfig()

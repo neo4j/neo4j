@@ -59,7 +59,7 @@ import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,7 +86,7 @@ class RelationshipTypeIndexIT
     @Inject
     DatabaseLayout databaseLayout;
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     @Test
     void shouldSeeAddedRelationship() throws IndexNotFoundKernelException

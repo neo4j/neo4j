@@ -41,7 +41,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static java.nio.file.Files.createDirectories;

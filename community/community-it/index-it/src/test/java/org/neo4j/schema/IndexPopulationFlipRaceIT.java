@@ -36,7 +36,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -57,7 +57,7 @@ class IndexPopulationFlipRaceIT
     @Inject
     private Kernel kernel;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void shouldAtomicallyFlipMultipleIndexes() throws Exception

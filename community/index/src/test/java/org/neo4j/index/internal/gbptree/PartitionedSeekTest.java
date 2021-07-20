@@ -54,9 +54,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
-import org.neo4j.test.rule.PageCacheConfig;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.PageCacheConfig;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,7 +76,7 @@ class PartitionedSeekTest
     @Inject
     private TestDirectory testDirectory;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private PageCache pageCache;
     private SimpleLongLayout layout;

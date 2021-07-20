@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -64,7 +64,7 @@ abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBas
     public static final String PROP_PRIP_INDEX = "propPripIndex";
 
     @Inject
-    private RandomRule randomRule;
+    private RandomSupport randomRule;
 
     private List<Value> singlePropValues = new ArrayList<>();
     private List<ValueTuple> doublePropValues = new ArrayList<>();

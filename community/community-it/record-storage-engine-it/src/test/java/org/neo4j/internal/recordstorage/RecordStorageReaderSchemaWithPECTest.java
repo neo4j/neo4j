@@ -30,7 +30,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
-import org.neo4j.test.rule.RecordStorageEngineRule;
+import org.neo4j.test.storage.RecordStorageEngineSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,7 +42,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
 {
     @Override
-    protected RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
+    protected RecordStorageEngineSupport.Builder modify( RecordStorageEngineSupport.Builder builder )
     {
         // Basically temporarily allow PEC and node key constraints here, which is usually is only allowed in enterprise edition
         return builder.constraintSemantics( new StandardConstraintRuleAccessor() );

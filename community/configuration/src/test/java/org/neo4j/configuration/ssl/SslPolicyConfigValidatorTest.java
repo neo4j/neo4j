@@ -32,7 +32,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.string.SecureString;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;

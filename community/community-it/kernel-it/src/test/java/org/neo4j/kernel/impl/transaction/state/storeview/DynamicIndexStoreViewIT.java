@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
@@ -43,7 +41,7 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.token.TokenHolders;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +58,7 @@ public class DynamicIndexStoreViewIT
     private static final RelationshipType FRIEND = RelationshipType.withName( "friend" );
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private GraphDatabaseAPI database;
     @Inject

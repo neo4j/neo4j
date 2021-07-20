@@ -36,7 +36,7 @@ import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
@@ -82,18 +82,18 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return PropertyIndexQuery.range( 0, from, fromInclusive, to, toInclusive );
     }
 
-    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule randomRule )
+    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomSupport randomRule )
     {
         return someUpdates( randomRule, supportedTypes(), fractionDuplicates() );
     }
 
-    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, ValueType[] types, boolean allowDuplicates )
+    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomSupport random, ValueType[] types, boolean allowDuplicates )
     {
         double fractionDuplicates = allowDuplicates ? FRACTION_DUPLICATE_NON_UNIQUE : FRACTION_DUPLICATE_UNIQUE;
         return someUpdates( random, types, fractionDuplicates );
     }
 
-    private ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, ValueType[] types, double fractionDuplicates )
+    private ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomSupport random, ValueType[] types, double fractionDuplicates )
     {
         RandomValueGenerator valueGenerator = new RandomValueGenerator( random.randomValues(), types, fractionDuplicates );
         RandomUpdateGenerator randomUpdateGenerator = new RandomUpdateGenerator( valueGenerator );
@@ -106,7 +106,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return result;
     }
 
-    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues( RandomRule randomRule )
+    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues( RandomSupport randomRule )
     {
         Iterator<Value> valueIterator = new RandomValueGenerator( randomRule.randomValues(), supportedTypes(), fractionDuplicates() );
         Value[] someValues = new Value[N_VALUES];
@@ -117,12 +117,12 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return generateAddUpdatesFor( ArrayUtils.addAll( someValues, someValues ) );
     }
 
-    Iterator<ValueIndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule randomRule )
+    Iterator<ValueIndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomSupport randomRule )
     {
         return randomUpdateGenerator( randomRule, supportedTypes() );
     }
 
-    Iterator<ValueIndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random, ValueType[] types )
+    Iterator<ValueIndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomSupport random, ValueType[] types )
     {
         Iterator<Value> valueIterator = new RandomValueGenerator( random.randomValues(), types, fractionDuplicates() );
         return new RandomUpdateGenerator( valueIterator );

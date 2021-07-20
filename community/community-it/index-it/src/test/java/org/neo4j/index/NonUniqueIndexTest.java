@@ -42,7 +42,7 @@ import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MINUTES;

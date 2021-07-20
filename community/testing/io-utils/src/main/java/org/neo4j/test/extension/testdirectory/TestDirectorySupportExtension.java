@@ -34,13 +34,13 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.FileSystemExtension;
 import org.neo4j.test.extension.StatefulFieldExtension;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
-import static org.neo4j.test.rule.TestDirectory.testDirectory;
+import static org.neo4j.test.utils.TestDirectory.testDirectory;
 
 public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDirectory>
         implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback, TestExecutionExceptionHandler

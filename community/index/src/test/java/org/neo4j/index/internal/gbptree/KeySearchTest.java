@@ -30,7 +30,7 @@ import java.util.List;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,7 +60,7 @@ class KeySearchTest
     private final MutableLong dummyValue = layout.newValue();
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     @Test
     void searchEmptyLeaf()

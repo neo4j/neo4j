@@ -45,8 +45,8 @@ import org.neo4j.storageengine.util.EagerDegrees;
 import org.neo4j.storageengine.util.SingleDegree;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.RecordStorageEngineRule;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.storage.RecordStorageEngineSupport;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -76,10 +76,10 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     protected static final int RELATIONSHIPS_COUNT = 20;
 
     @Inject
-    protected RandomRule random;
+    protected RandomSupport random;
 
     @Override
-    protected RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
+    protected RecordStorageEngineSupport.Builder modify( RecordStorageEngineSupport.Builder builder )
     {
         return builder.setting( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_COUNT );
     }

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.neo4j.values.storable.StringHelpers.assertConsistent;
 
@@ -34,7 +34,7 @@ import static org.neo4j.values.storable.StringHelpers.assertConsistent;
 class TextValueFuzzTest
 {
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private static final int ITERATIONS = 1000;
 

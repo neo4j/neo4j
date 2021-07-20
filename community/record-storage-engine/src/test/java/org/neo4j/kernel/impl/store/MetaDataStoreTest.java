@@ -84,7 +84,7 @@ import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_STORE_
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
-import static org.neo4j.test.rule.PageCacheConfig.config;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @EphemeralNeo4jLayoutExtension
 class MetaDataStoreTest

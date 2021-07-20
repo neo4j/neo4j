@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,7 +73,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     };
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private TestLayout<KEY,VALUE> layout;
     private TreeNode<KEY,VALUE> node;

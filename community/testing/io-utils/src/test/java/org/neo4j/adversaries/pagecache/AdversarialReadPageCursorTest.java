@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.utils.PageCacheSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -37,7 +37,7 @@ class AdversarialReadPageCursorTest
         byte[] buf = new byte[4];
         byte[] page = new byte[]{7};
         AdversarialReadPageCursor cursor = new AdversarialReadPageCursor( new ByteArrayPageCursor( page ),
-                new PageCacheRule.AtomicBooleanInconsistentReadAdversary( new AtomicBoolean( true ) ) );
+                new PageCacheSupport.AtomicBooleanInconsistentReadAdversary( new AtomicBoolean( true ) ) );
 
         // When
         cursor.next( 0 );

@@ -51,8 +51,8 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,7 +83,7 @@ class RelationshipGroupDefragmenterTest
     @Inject
     private RecordDatabaseLayout databaseLayout;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private static Stream<Arguments> parameters()
     {

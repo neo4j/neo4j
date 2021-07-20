@@ -84,7 +84,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
@@ -118,7 +118,7 @@ public class ParallelBatchImporterTest
     private static final int NUMBER_OF_ID_GROUPS = 5;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     @Inject
     private FileSystemAbstraction fs;
     @Inject

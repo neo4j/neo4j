@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 public class Native30StringLengthIndexValidationIT extends StringLengthIndexValidationIT
 {
@@ -32,7 +32,7 @@ public class Native30StringLengthIndexValidationIT extends StringLengthIndexVali
     }
 
     @Override
-    protected String getString( RandomRule random, int keySize )
+    protected String getString( RandomSupport random, int keySize )
     {
         return random.nextAlphaNumericString( keySize, keySize );
     }

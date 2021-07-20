@@ -51,9 +51,9 @@ import org.neo4j.kernel.impl.util.collection.OffHeapMemoryAllocator;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -85,7 +85,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 class AppendOnlyValuesContainerTest
 {
     @Inject
-    private RandomRule rnd;
+    private RandomSupport rnd;
 
     private final CachingOffHeapBlockAllocator blockAllocator = new CachingOffHeapBlockAllocator();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();

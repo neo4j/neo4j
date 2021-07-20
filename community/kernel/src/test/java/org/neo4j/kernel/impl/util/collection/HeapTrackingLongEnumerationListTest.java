@@ -37,7 +37,7 @@ import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -58,7 +58,7 @@ class HeapTrackingLongEnumerationListTest
     private final long measuredMemoryTracker = meter.measureDeep( memoryTracker );
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private final HeapTrackingLongEnumerationList<Long> table = HeapTrackingLongEnumerationList.create( memoryTracker );
 

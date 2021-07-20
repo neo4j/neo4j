@@ -98,7 +98,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -121,7 +121,7 @@ class RecoveryCorruptedTransactionLogIT
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private static final int HEADER_OFFSET = CURRENT_FORMAT_LOG_HEADER_SIZE;
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );

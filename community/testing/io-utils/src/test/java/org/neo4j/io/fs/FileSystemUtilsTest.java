@@ -26,7 +26,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;

@@ -46,7 +46,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.TextValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,7 +107,7 @@ class MultipleOpenCursorsTest
     @Inject
     private GraphDatabaseAPI db;
     @Inject
-    private RandomRule rnd;
+    private RandomSupport rnd;
 
     public static Stream<Arguments> params()
     {

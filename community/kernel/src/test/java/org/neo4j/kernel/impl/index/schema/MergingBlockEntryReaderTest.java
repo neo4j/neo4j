@@ -33,7 +33,7 @@ import java.util.Set;
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MergingBlockEntryReaderTest
 {
     @Inject
-    protected RandomRule rnd;
+    protected RandomSupport rnd;
 
     private static final SimpleLongLayout layout = SimpleLongLayout.longLayout().build();
     private static final Comparator<BlockEntry<MutableLong,MutableLong>> blockEntryComparator = ( b1, b2 ) -> layout.compare( b1.key(), b2.key() );

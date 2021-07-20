@@ -59,8 +59,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -93,7 +93,7 @@ class StoreMigratorTest
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
     private JobScheduler jobScheduler;
     private final BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
 

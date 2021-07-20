@@ -27,7 +27,7 @@ import java.util.function.ToIntFunction;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RawBytes;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,14 +46,14 @@ class BlockEntryMergerTestUtils
         assertThat( expected.hasNext() ).isFalse();
     }
 
-    static List<BlockEntryCursor<RawBytes,RawBytes>> buildParts( RandomRule random, Layout<RawBytes,RawBytes> layout,
+    static List<BlockEntryCursor<RawBytes,RawBytes>> buildParts( RandomSupport random, Layout<RawBytes,RawBytes> layout,
             List<BlockEntry<RawBytes,RawBytes>> allData )
     {
         return buildParts( random, layout, allData, random.nextInt( 1, 12 ), rng -> rng.nextInt( 1, 1_000 ) );
     }
 
-    static List<BlockEntryCursor<RawBytes,RawBytes>> buildParts( RandomRule random, Layout<RawBytes,RawBytes> layout,
-            List<BlockEntry<RawBytes,RawBytes>> allData, int numParts, ToIntFunction<RandomRule> partSize )
+    static List<BlockEntryCursor<RawBytes,RawBytes>> buildParts( RandomSupport random, Layout<RawBytes,RawBytes> layout,
+            List<BlockEntry<RawBytes,RawBytes>> allData, int numParts, ToIntFunction<RandomSupport> partSize )
     {
         List<BlockEntryCursor<RawBytes,RawBytes>> parts = new ArrayList<>();
         for ( int i = 0; i < numParts; i++ )
@@ -66,7 +66,7 @@ class BlockEntryMergerTestUtils
         return parts;
     }
 
-    static List<BlockEntry<RawBytes, RawBytes>> buildPart( RandomRule random, Layout<RawBytes,RawBytes> layout, int count )
+    static List<BlockEntry<RawBytes, RawBytes>> buildPart( RandomSupport random, Layout<RawBytes,RawBytes> layout, int count )
     {
         List<BlockEntry<RawBytes,RawBytes>> entries = new ArrayList<>();
         for ( int i = 0; i < count; i++ )
@@ -77,7 +77,7 @@ class BlockEntryMergerTestUtils
         return entries;
     }
 
-    private static RawBytes randomBytesInstance( RandomRule random )
+    private static RawBytes randomBytesInstance( RandomSupport random )
     {
         return new RawBytes( random.nextBytes( new byte[Long.BYTES] ) );
     }

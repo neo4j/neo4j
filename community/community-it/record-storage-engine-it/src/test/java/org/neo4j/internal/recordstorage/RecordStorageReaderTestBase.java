@@ -52,7 +52,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.rule.RecordStorageEngineRule;
+import org.neo4j.test.storage.RecordStorageEngineSupport;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -75,7 +75,7 @@ public abstract class RecordStorageReaderTestBase
 {
     private static final ResourceLocker IGNORE_LOCKING = ResourceLocker.IGNORE;
 
-    private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
+    private final RecordStorageEngineSupport storageEngineRule = new RecordStorageEngineSupport();
 
     @Inject
     protected PageCache pageCache;
@@ -105,7 +105,7 @@ public abstract class RecordStorageReaderTestBase
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        RecordStorageEngineRule.Builder builder =
+        RecordStorageEngineSupport.Builder builder =
                 storageEngineRule.getWith( fs, pageCache, databaseLayout ).tokenHolders( tokenHolders );
 
         builder = modify( builder );
@@ -125,7 +125,7 @@ public abstract class RecordStorageReaderTestBase
         storageEngineRule.after( true );
     }
 
-    protected RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
+    protected RecordStorageEngineSupport.Builder modify( RecordStorageEngineSupport.Builder builder )
     {
         return builder;
     }

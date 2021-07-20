@@ -48,8 +48,8 @@ import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
@@ -83,7 +83,7 @@ class GenericAccessorPointsTest
     @Inject
     private PageCache pageCache;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private NativeIndexAccessor accessor;
     private IndexDescriptor descriptor;

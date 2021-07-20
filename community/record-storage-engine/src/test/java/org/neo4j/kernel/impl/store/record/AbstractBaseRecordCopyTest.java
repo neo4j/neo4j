@@ -38,9 +38,9 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StandaloneDynamicRecordAllocator;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals;
@@ -57,7 +57,7 @@ class AbstractBaseRecordCopyTest
     private static final int MAX_RANDOM_LIST_SIZE = 16;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private Map<Class<?>,Callable<Object>> dataProviders = new HashMap<>();
 

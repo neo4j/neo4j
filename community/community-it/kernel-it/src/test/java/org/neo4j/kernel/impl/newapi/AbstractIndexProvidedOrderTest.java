@@ -41,9 +41,9 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -67,7 +67,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
     private static final String INDEX_NAME = "propIndex";
 
     @Inject
-    RandomRule randomRule;
+    RandomSupport randomRule;
 
     private TreeSet<EntityValueTuple> singlePropValues = new TreeSet<>( COMPARATOR );
     private ValueType[] targetedTypes;

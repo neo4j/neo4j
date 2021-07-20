@@ -54,7 +54,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -82,7 +82,7 @@ class IndexConsistencyIT
     private DefaultIndexProviderMap indexProviderMap;
 
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
     private final AssertableLogProvider log = new AssertableLogProvider();
     private static final Label[] LABELS = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};

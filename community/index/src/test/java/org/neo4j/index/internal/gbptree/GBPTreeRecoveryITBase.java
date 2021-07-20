@@ -40,16 +40,16 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.utils.PageCacheSupport;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.test.rule.PageCacheConfig.config;
+import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @EphemeralTestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -62,9 +62,9 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
     @Inject
     private TestDirectory directory;
     @Inject
-    private RandomRule random;
+    private RandomSupport random;
 
-    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
+    private final PageCacheSupport pageCacheSupport = new PageCacheSupport( config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
     private final Action CHECKPOINT = new CheckpointAction();
 
     // Test config
@@ -90,7 +90,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         maxRemoveCountPerBatch = 20;
     }
 
-    protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
+    protected abstract TestLayout<KEY,VALUE> getLayout( RandomSupport random, int pageSize );
 
     @Test
     void shouldRecoverFromCrashBeforeFirstCheckpoint() throws Exception
@@ -455,7 +455,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 
     private PageCache createPageCache()
     {
-        return pageCacheRule.getPageCache( fs );
+        return pageCacheSupport.getPageCache( fs );
     }
 
     enum ActionType

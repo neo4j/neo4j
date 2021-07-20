@@ -43,7 +43,7 @@ import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.shuffle;
@@ -71,7 +71,7 @@ import static org.neo4j.kernel.impl.util.collection.MutableLinearProbeLongHashSe
 class MutableLinearProbeLongHashSetTest
 {
     @Inject
-    private RandomRule rnd;
+    private RandomSupport rnd;
 
     private final CachingOffHeapBlockAllocator blockAllocator = new CachingOffHeapBlockAllocator();
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();

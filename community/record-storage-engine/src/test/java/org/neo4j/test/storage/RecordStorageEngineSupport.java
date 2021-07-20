@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule;
+package org.neo4j.test.storage;
 
 import java.util.function.Function;
 
@@ -69,7 +69,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
  * <p>
  * Keep in mind that this rule must be created BEFORE page cache rule and any file system rule so that shutdown order gets correct.
  */
-public class RecordStorageEngineRule
+public class RecordStorageEngineSupport
 {
     private final LifeSupport life = new LifeSupport();
 

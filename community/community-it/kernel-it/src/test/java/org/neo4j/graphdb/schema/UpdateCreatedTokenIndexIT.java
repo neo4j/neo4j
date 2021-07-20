@@ -35,7 +35,7 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.RandomSupport;
 
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.test.Race.throwing;
@@ -52,7 +52,7 @@ class UpdateCreatedTokenIndexIT
     DatabaseManagementService managementService;
 
     @Inject
-    RandomRule random;
+    RandomSupport random;
 
     private static final int NODES = 100;
     private static final int SKIP_NODES = 100;
