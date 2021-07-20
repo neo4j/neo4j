@@ -45,8 +45,8 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
@@ -55,6 +55,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -71,6 +72,7 @@ class TransactionLogChannelAllocatorIT
     private FileSystemAbstraction fileSystem;
     private TransactionLogFilesHelper fileHelper;
     private TransactionLogChannelAllocator fileAllocator;
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @BeforeEach
     void setUp()
@@ -126,6 +128,21 @@ class TransactionLogChannelAllocatorIT
     }
 
     @Test
+    @EnabledOnOs( OS.LINUX )
+    void failToPreallocateFileWithOutOfDiskSpaceError() throws IOException
+    {
+        var unreasonableAllocator = createLogFileAllocator( ByteUnit.tebiBytes( 5 ) );
+        try ( PhysicalLogVersionedStoreChannel channel = unreasonableAllocator.createLogChannel( 10, () -> 1L ) )
+        {
+            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, channel.size() );
+            assertThat( logProvider.serialize() ).containsSequence(
+                    "Warning! System is running out of disk space. Failed to preallocate log file since disk does not have enough space left. " +
+                            "If database will continue to grow in size it will become corrupted and recovery will be required. " +
+                            "Please provision more space to avoid that." );
+        }
+    }
+
+    @Test
     @DisabledOnOs( OS.LINUX )
     void allocateNewTransactionLogFileOnSystemThatDoesNotSupportPreallocations() throws IOException
     {
@@ -150,18 +167,28 @@ class TransactionLogChannelAllocatorIT
 
     private TransactionLogChannelAllocator createLogFileAllocator()
     {
-        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
-        var logFileContext = createLogFileContext();
-        var nativeChannelAccessor = new LogFileChannelNativeAccessor( fileSystem, logFileContext );
-        return new TransactionLogChannelAllocator( logFileContext, fileHelper, logHeaderCache, nativeChannelAccessor );
+        return createLogFileAllocator( ROTATION_THRESHOLD );
     }
 
     private TransactionLogFilesContext createLogFileContext()
     {
-        return new TransactionLogFilesContext( new AtomicLong( ROTATION_THRESHOLD ), new AtomicBoolean( true ),
+        return createLogFileContext( ROTATION_THRESHOLD );
+    }
+
+    private TransactionLogChannelAllocator createLogFileAllocator( long rotationsThreshold )
+    {
+        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
+        var logFileContext = createLogFileContext( rotationsThreshold );
+        var nativeChannelAccessor = new LogFileChannelNativeAccessor( fileSystem, logFileContext );
+        return new TransactionLogChannelAllocator( logFileContext, fileHelper, logHeaderCache, nativeChannelAccessor );
+    }
+
+    private TransactionLogFilesContext createLogFileContext( long rotationThreshold )
+    {
+        return new TransactionLogFilesContext( new AtomicLong( rotationThreshold ), new AtomicBoolean( true ),
                 new VersionAwareLogEntryReader( new TestCommandReaderFactory() ), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
-                SimpleLogVersionRepository::new, fileSystem, NullLogProvider.getInstance(), DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
+                SimpleLogVersionRepository::new, fileSystem, logProvider, DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
                 NativeAccessProvider.getNativeAccess(), INSTANCE, new Monitors(), true,
                 new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), () -> KernelVersion.LATEST,
                 Clock.systemUTC(), Config.defaults() );

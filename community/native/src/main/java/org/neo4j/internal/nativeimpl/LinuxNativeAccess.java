@@ -25,6 +25,8 @@ import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
+import static org.neo4j.internal.nativeimpl.LinuxErrorTranslator.EINVAL;
+import static org.neo4j.internal.nativeimpl.LinuxErrorTranslator.ERANGE;
 
 public class LinuxNativeAccess implements NativeAccess
 {
@@ -46,9 +48,6 @@ public class LinuxNativeAccess implements NativeAccess
      * For more info check man page for posix_fadvise.
      */
     private static final int POSIX_FADV_DONTNEED = 4;
-
-    private static final int EINVAL = 22;
-    private static final int ERANGE = 34;
 
     private static final boolean NATIVE_ACCESS_AVAILABLE;
     private static final Throwable INITIALIZATION_FAILURE;
@@ -154,6 +153,12 @@ public class LinuxNativeAccess implements NativeAccess
             return new NativeCallResult( ERROR, "Number of bytes to preallocate should be positive. Requested: " + bytes );
         }
         return wrapResult( () -> posix_fallocate( fd, 0, bytes ) );
+    }
+
+    @Override
+    public ErrorTranslator errorTranslator()
+    {
+        return LinuxErrorTranslator.INSTANCE;
     }
 
     @Override

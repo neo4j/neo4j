@@ -133,6 +133,12 @@ class LinuxNativeAccessTest
         }
 
         @Test
+        void ootOfDiskErrorCheck()
+        {
+            assertTrue( nativeAccess.errorTranslator().isOutOfDiskSpace( new NativeCallResult( 28, "Out of space jam!" ) ) );
+        }
+
+        @Test
         void adviseSequentialAccessOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException, ClassNotFoundException
         {
             Path file = tempFile.resolve( "correctSequentialFile" );

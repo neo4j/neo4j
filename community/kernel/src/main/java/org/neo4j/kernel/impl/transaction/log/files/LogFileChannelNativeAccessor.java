@@ -80,7 +80,17 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
         var result = nativeAccess.tryPreallocateSpace( fileDescriptor, rotationThreshold.get() );
         if ( result.isError() )
         {
-            log.warn( "Error on attempt to preallocate log file version: " + version + ". Error: " + result );
+            if ( nativeAccess.errorTranslator().isOutOfDiskSpace( result ) )
+            {
+                log.error( "Warning! System is running out of disk space. Failed to preallocate log file since disk does not have enough space left. " +
+                        "If database will continue to grow in size it will become corrupted and recovery will be required. " +
+                        "Please provision more space to avoid that. " +
+                        "Failure details: " + result );
+            }
+            else
+            {
+                log.warn( "Error on attempt to preallocate log file version: " + version + ". Error: " + result );
+            }
         }
     }
 }

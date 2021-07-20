@@ -70,6 +70,11 @@ public interface NativeAccess
     NativeCallResult tryPreallocateSpace( int fd, long bytes );
 
     /**
+     * High level error translator to be able to map high level exceptions checks with low level error codes on particular system
+     */
+    ErrorTranslator errorTranslator();
+
+    /**
      * Details about native access provider
      * @return details about native access
      */

@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.nativeimpl.ErrorTranslator;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
@@ -532,6 +533,12 @@ class TransactionLogFileTest
         {
             preallocateCounter++;
             return NativeCallResult.SUCCESS;
+        }
+
+        @Override
+        public ErrorTranslator errorTranslator()
+        {
+            return callResult -> false;
         }
 
         @Override

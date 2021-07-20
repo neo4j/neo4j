@@ -46,7 +46,6 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
-import org.neo4j.util.FeatureToggles;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
@@ -759,6 +758,12 @@ public class SingleFilePageSwapper implements PageSwapper
             NativeCallResult result = access.tryPreallocateSpace( channel.getFileDescriptor(), newFileSize );
             if ( result.isError() )
             {
+                if ( access.errorTranslator().isOutOfDiskSpace( result ) )
+                {
+                    throw new IOException( "System is out of dist space for store file at: " + path + ". " +
+                            "To be able to proceed please allocate more disk space for the database and restart." + "Requested file size: " + newFileSize +
+                            ". Call error: " + result );
+                }
                 throw new IOException( "Fail to preallocate additional space for store file at: " + path + ". " +
                         "Requested file size: " + newFileSize + ". Call error: " + result );
             }

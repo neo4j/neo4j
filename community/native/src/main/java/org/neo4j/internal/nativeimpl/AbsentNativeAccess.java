@@ -52,8 +52,29 @@ public class AbsentNativeAccess implements NativeAccess
     }
 
     @Override
+    public ErrorTranslator errorTranslator()
+    {
+        return MissingErrorTranslator.INSTANCE;
+    }
+
+    @Override
     public String describe()
     {
         return "Native access is not available for current platform.";
+    }
+
+    private static class MissingErrorTranslator implements ErrorTranslator
+    {
+        static final ErrorTranslator INSTANCE = new MissingErrorTranslator();
+
+        private MissingErrorTranslator()
+        {
+        }
+
+        @Override
+        public boolean isOutOfDiskSpace( NativeCallResult callResult )
+        {
+            return false;
+        }
     }
 }
