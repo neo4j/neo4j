@@ -105,6 +105,10 @@ case class QueryOptions(offset: InputPosition,
     if (key.isBlank) key else "CYPHER " + key
   }
 
+  def runtimeCacheKey: String = {
+    cacheKey + isPeriodicCommit + recompilationLimitReached + materializedEntitiesMode
+  }
+
   def render: Option[String] = {
     val text = queryOptions.render
     if (text.isBlank) None else Some("CYPHER " + text)

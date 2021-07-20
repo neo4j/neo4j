@@ -82,4 +82,30 @@ class AttributeTest extends CypherFunSuite {
     attr2.size should be(0)
   }
 
+  test("test equals") {
+    val attr = new TestAttribute
+    val attrSameValue = new TestAttribute
+    val differentValue = new TestAttribute
+    val differentId = new TestAttribute
+
+    attr.set(Id(4), 27)
+    attrSameValue.set(Id(4), 27)
+    differentValue.set(Id(4), 26)
+    differentId.set(Id(2), 26)
+
+    attr.shouldEqual(attr)
+    attr.shouldEqual(attrSameValue)
+    attrSameValue.get(Id(4))
+    attr.equals(attrSameValue) shouldBe false // now attrSameValue has been seen whereas attr has not
+    attr.equals(differentValue) shouldBe false
+    attr.equals(differentId) shouldBe false
+
+    // modify an attribute that was equal to `attr`
+    val attrModify = new TestAttribute
+    attrModify.set(Id(4), 27)
+    attrModify.shouldEqual(attr)
+    attrModify.set(Id(5), 21)
+    attrModify.equals(attr) shouldBe false
+  }
+
 }

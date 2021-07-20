@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.concurrent.ConcurrentHashMap
-
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 /**
@@ -51,12 +50,18 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
     val numClearedEntries =
       compilers.values().asScala.collect {
         case c: CypherPlanner => c.clearCaches()
-        case c: CypherCurrentCompiler[_] if c.planner.isInstanceOf[CypherPlanner] => c.planner.clearCaches()
+        case c: CypherCurrentCompiler[_] => c.clearCaches()
       }
 
     if (numClearedEntries.nonEmpty)
       numClearedEntries.max
     else 0
+  }
+
+  def clearExecutionPlanCaches(): Unit = {
+    compilers.values().asScala.collect {
+      case c: CypherCurrentCompiler[_] => c.clearExecutionPlanCache()
+    }
   }
 
   case class CompilerKey(cypherVersion: CypherVersion,

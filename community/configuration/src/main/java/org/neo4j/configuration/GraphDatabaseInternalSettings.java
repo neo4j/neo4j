@@ -375,6 +375,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Integer> snapshot_query_retries =
             newBuilder( "unsupported.dbms.query.snapshot.retries", INT, 5 ).addConstraint( range( 1, Integer.MAX_VALUE ) ).build();
 
+    @Description( "Cypher keeps a cache of the conversion from logical plans to execution plans. " +
+                  "This cache is mainly meant to avoid generating code multiple times if different queries use the same logical plan. " +
+                  "Items are only evicted from the cache when all query caches are cleared, e.g. by calling `db.clearQueryCaches()`. " +
+                  "The cache is allowed to grow up to this size. Setting the size to 0 means disabling this cache." )
+    public static final Setting<Integer> query_execution_plan_cache_size =
+            newBuilder( "unsupported.dbms.query_execution_plan_cache_size", INT, 0 ).addConstraint( min( 0 ) ).build();
+
     /**
      * Block size properties values depends from selected record format.
      * We can't figured out record format until it will be selected by corresponding edition.

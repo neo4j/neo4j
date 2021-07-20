@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.cache
 
-import java.util.function.Function
-
 import com.github.benmanes.caffeine.cache.Cache
 
 /**
@@ -30,9 +28,7 @@ class LFUCache[K <: AnyRef, V <: AnyRef](cacheFactory: CaffeineCacheFactory, val
 
   val inner: Cache[K, V] = cacheFactory.createCache(size)
 
-  def computeIfAbsent(key: K, f: => V): V = inner.get(key, new Function[K, V] {
-    override def apply(t: K): V = f
-  })
+  def computeIfAbsent(key: K, f: => V): V = inner.get(key, (_: K) => f)
 
   def get(key: K): Option[V] = Option(inner.getIfPresent(key))
 

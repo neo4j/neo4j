@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.function.Supplier
-
+import org.neo4j.cypher.internal.ExecutionPlanCacheTracer.NO_TRACING
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
+import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -38,11 +38,14 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributesCacheKey
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
+import org.neo4j.cypher.internal.planning.LogicalPlanResult
 import org.neo4j.cypher.internal.result.ClosingExecutionResult
 import org.neo4j.cypher.internal.result.ExplainExecutionResult
 import org.neo4j.cypher.internal.result.FailedExecutionResult
@@ -82,7 +85,22 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
+import java.util.function.Supplier
 import scala.collection.JavaConverters.seqAsJavaListConverter
+
+case class ExecutionPlanCacheKey(runtimeKey: String, logicalPlan: LogicalPlan, planningAttributesCacheKey: PlanningAttributesCacheKey)
+
+trait ExecutionPlanCacheTracer {
+  def cacheHit(key: ExecutionPlanCacheKey): Unit
+  def cacheMiss(key: ExecutionPlanCacheKey): Unit
+}
+
+object ExecutionPlanCacheTracer {
+  val NO_TRACING: ExecutionPlanCacheTracer = new ExecutionPlanCacheTracer {
+    override def cacheHit(key: ExecutionPlanCacheKey): Unit = {}
+    override def cacheMiss(key: ExecutionPlanCacheKey): Unit = {}
+  }
+}
 
 /**
  * Composite [[Compiler]], which uses a [[CypherPlanner]] and [[CypherRuntime]] to compile
@@ -99,6 +117,20 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                             contextManager: RuntimeContextManager[CONTEXT],
                                                             kernelMonitors: Monitors
                                                            ) extends org.neo4j.cypher.internal.Compiler {
+
+  private val cacheTracer =
+    if (contextManager.config.enableMonitors) {
+      kernelMonitors.newMonitor(classOf[ExecutionPlanCacheTracer], "cypher")
+    } else {
+      NO_TRACING
+    }
+
+  private val executionPlanCache = if (contextManager.config.executionPlanCacheSize > 0) {
+    Some(
+      new LFUCache[ExecutionPlanCacheKey, (ExecutionPlan, PlanningAttributes)](planner.cacheFactory, contextManager.config.executionPlanCacheSize))
+  } else {
+    None
+  }
 
   /**
    * Compile [[InputQuery]] into [[ExecutableQuery]].
@@ -129,7 +161,48 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan = planState.logicalPlan
     val queryType = getQueryType(planState)
+    val (executionPlan, attributes) = executionPlanCache match {
+      case Some(ePlanCache) if logicalPlanResult.shouldBeCached =>
+        val cacheKey = ExecutionPlanCacheKey(query.options.runtimeCacheKey, logicalPlan, planState.planningAttributes.cacheKey)
+        var hit = true
+        val result = ePlanCache.computeIfAbsent(cacheKey, {
+          hit = false
+          computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
+        })
+        if (hit) cacheTracer.cacheHit(cacheKey) else cacheTracer.cacheMiss(cacheKey)
+        result
+      case _ => computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
+    }
 
+    new CypherExecutableQuery(
+      logicalPlan,
+      queryType == READ_ONLY,
+      attributes.cardinalities,
+      attributes.effectiveCardinalities,
+      logicalPlanResult.plannerContext.debugOptions.rawCardinalitiesEnabled,
+      attributes.providedOrders,
+      executionPlan,
+      preParsingNotifications,
+      logicalPlanResult.notifications.toIndexedSeq,
+      logicalPlanResult.reusability,
+      logicalPlanResult.paramNames.toArray,
+      logicalPlanResult.extractedParams,
+      buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan.runtimeName),
+      planState.plannerName,
+      query.options.queryOptions.version,
+      queryType,
+      logicalPlanResult.shouldBeCached,
+      contextManager.config.enableMonitors,
+      logicalPlanResult.queryObfuscator
+    )
+  }
+
+  private def computeExecutionPlan(query: InputQuery,
+                                   transactionalContext: TransactionalContext,
+                                   logicalPlanResult: LogicalPlanResult,
+                                   planState: LogicalPlanState,
+                                   logicalPlan: LogicalPlan,
+                                   queryType: InternalQueryType): (ExecutionPlan, PlanningAttributes) = {
     val runtimeContext = contextManager.create(logicalPlanResult.plannerContext.planContext,
       transactionalContext.kernelTransaction().schemaRead(),
       logicalPlanResult.plannerContext.clock,
@@ -138,10 +211,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       query.options.materializedEntitiesMode,
       query.options.queryOptions.operatorEngine,
       query.options.queryOptions.interpretedPipesFallback,
-      logicalPlanResult.logicalPlanState.anonymousVariableNameGenerator)
+      planState.anonymousVariableNameGenerator)
 
     // Make copy, so per-runtime logical plan rewriting does not mutate cached attributes
-    val planningAttributesCopy = logicalPlanResult.logicalPlanState.planningAttributes.createCopy()
+    val planningAttributesCopy = planState.planningAttributes.createCopy()
 
     val logicalQuery = LogicalQuery(
       logicalPlan,
@@ -157,9 +230,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       new SequentialIdGen(planningAttributesCopy.cardinalities.size),
       query.options.queryOptions.executionMode == CypherExecutionMode.profile)
 
-
-    val executionPlan: ExecutionPlan = try {
-      runtime.compileToExecutable(logicalQuery, runtimeContext)
+    try {
+      (runtime.compileToExecutable(logicalQuery, runtimeContext), planningAttributesCopy)
     } catch {
       case e: Exception =>
         // The logical plan is valuable information if we fail to create an executionPlan
@@ -168,28 +240,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         e.addSuppressed(planInfo)
         throw e
     }
-
-    new CypherExecutableQuery(
-      logicalPlan,
-      logicalQuery.readOnly,
-      planningAttributesCopy.cardinalities,
-      planningAttributesCopy.effectiveCardinalities,
-      logicalPlanResult.plannerContext.debugOptions.rawCardinalitiesEnabled,
-      planningAttributesCopy.providedOrders,
-      executionPlan,
-      preParsingNotifications,
-      logicalPlanResult.notifications.toIndexedSeq,
-      logicalPlanResult.reusability,
-      logicalPlanResult.paramNames.toArray,
-      logicalPlanResult.extractedParams,
-      buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan.runtimeName),
-      planState.plannerName,
-      query.options.queryOptions.version,
-      queryType,
-      logicalPlanResult.shouldBeCached,
-      runtimeContext.config.enableMonitors,
-      logicalPlanResult.queryObfuscator
-    )
   }
 
   private def buildCompilerInfo(logicalPlan: LogicalPlan,
@@ -218,16 +268,17 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         DBMS
       case _ =>
         val procedureOrSchema = SchemaCommandRuntime.queryType(planState.logicalPlan)
-        if (procedureOrSchema.isDefined)
+        if (procedureOrSchema.isDefined) {
           procedureOrSchema.get
-        else if (planHasDBMSProcedure(planState.logicalPlan))
+        } else if (planHasDBMSProcedure(planState.logicalPlan)) {
           DBMS
-        else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly)
+        } else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly) {
           READ_ONLY
-        else if (columnNames(planState.logicalPlan).isEmpty)
+        } else if (columnNames(planState.logicalPlan).isEmpty) {
           WRITE
-        else
+        } else {
           READ_WRITE
+        }
     }
   }
 
@@ -305,14 +356,16 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
       val taskCloser = new TaskCloser
       val queryContext = getQueryContext(transactionalContext, queryOptions.queryOptions.debugOptions, taskCloser)
-      if (isOutermostQuery) taskCloser.addTask(success => {
-        val context = queryContext.transactionalContext
-        if (!success) {
-          context.rollback()
-        } else {
-          context.close()
-        }
-      })
+      if (isOutermostQuery) {
+        taskCloser.addTask(success => {
+          val context = queryContext.transactionalContext
+          if (!success) {
+            context.rollback()
+          } else {
+            context.close()
+          }
+        })
+      }
       taskCloser.addTask(_ => queryContext.resources.close())
       try {
         innerExecute(transactionalContext,
@@ -368,9 +421,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
         val runtimeResult = executionPlan.run(queryContext, innerExecutionMode, params, prePopulateResults, input, subscriber)
 
-        if (isOutermostQuery)
+        if (isOutermostQuery) {
           transactionalContext.executingQuery().onExecutionStarted(runtimeResult)
-
+        }
         taskCloser.addTask(_ => runtimeResult.close())
 
         new StandardInternalExecutionResult(
@@ -401,4 +454,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     override def queryType: QueryExecutionType.QueryType = QueryTypeConversion.asPublic(internalQueryType)
   }
 
+  /**
+   * Clear the caches of this caching compiler.
+   *
+   * @return the number of entries that were cleared in any cache
+   */
+  def clearCaches(): Long = {
+    Math.max(planner.clearCaches(), executionPlanCache.map(_.clear()).getOrElse(0L))
+  }
+
+  def clearExecutionPlanCache(): Unit = executionPlanCache.foreach(_.clear())
 }

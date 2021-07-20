@@ -130,6 +130,8 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
              anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
             ): CONTEXT
 
+  def config: CypherRuntimeConfiguration
+
   /**
    * Assert that all acquired resources have been released back to their central pools.
    *
@@ -230,7 +232,8 @@ object CypherRuntimeConfiguration {
       schedulerTracing = SchedulerTracingConfiguration.fromCypherConfiguration(config),
       lenientCreateRelationship = config.lenientCreateRelationship,
       memoryTrackingController = config.memoryTrackingController,
-      enableMonitors = config.enableMonitors
+      enableMonitors = config.enableMonitors,
+      executionPlanCacheSize = config.executionPlanCacheSize
     )
   }
 
@@ -244,7 +247,8 @@ case class CypherRuntimeConfiguration(pipelinedBatchSizeSmall: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
                                       lenientCreateRelationship: Boolean,
                                       memoryTrackingController: MemoryTrackingController,
-                                      enableMonitors: Boolean) {
+                                      enableMonitors: Boolean,
+                                      executionPlanCacheSize: Int) {
 
   Preconditions.checkArgument(pipelinedBatchSizeSmall <= pipelinedBatchSizeBig, s"pipelinedBatchSizeSmall (got $pipelinedBatchSizeSmall) must be <= pipelinedBatchSizeBig (got $pipelinedBatchSizeBig)")
 

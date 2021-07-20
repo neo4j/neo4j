@@ -60,6 +60,7 @@ class CypherConfiguration private (val config: Config) {
   val planner: CypherPlannerOption = CypherPlannerOption.fromConfig(config)
   val runtime: CypherRuntimeOption = CypherRuntimeOption.fromConfig(config)
   val queryCacheSize: Int = config.get(GraphDatabaseSettings.query_cache_size).toInt
+  val executionPlanCacheSize: Int = config.get(GraphDatabaseInternalSettings.query_execution_plan_cache_size).toInt
   val statsDivergenceCalculator: StatsDivergenceCalculatorConfig = statsDivergenceFromConfig(config)
   val useErrorsOverWarnings: Boolean = config.get(GraphDatabaseSettings.cypher_hints_error)
   val idpMaxTableSize: Int = config.get(GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold).toInt

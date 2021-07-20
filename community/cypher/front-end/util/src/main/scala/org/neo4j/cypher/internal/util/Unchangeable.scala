@@ -40,6 +40,13 @@ final class Unchangeable[A]() {
     _value = Some(newValue)
   }
 
+  override def clone(): Unchangeable[A] = {
+    val unchangeable = new Unchangeable[A]()
+    unchangeable._value = _value
+    unchangeable._seen = _seen
+    unchangeable
+  }
+
   // Copy from another Unchangeable[A] iff set
   def copyFrom(other: Unchangeable[A]): Unit = if(other.hasValue)
     value_=(other.value)
@@ -47,6 +54,8 @@ final class Unchangeable[A]() {
   override def toString: String = s"Unchangeable(${_value.getOrElse("NOT SET")})"
 
   override def hashCode(): Int = MurmurHash3.productHash((_seen, _value))
+
+  def valueHashCode(): Int = _value.hashCode()
 
   override def equals(obj: Any): Boolean = {
     obj match {
