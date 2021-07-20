@@ -47,8 +47,8 @@ import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -437,7 +437,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
     /**
      * Create transaction execution context to be use in threads, separate to one where transaction is executed.
      * Resources that are passed over context should be safe to access from other thread.
-     * Each separate execution thread should request its own independent execution context.
+     * Each separate execution thread should use its own independent execution context.
      * In the end of execution separate thread should call {@link ExecutionContext#complete()} to mark context as completed and prepare any execution statistic
      * After that transaction thread should call {@link ExecutionContext#close()}}
      * @return separate thread execution context
@@ -519,6 +519,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
          * Close execution context and merge back any data to the owning transaction if such exists.
          * Should be called by transaction thread.
          */
+        @Override
         void close();
     }
 }

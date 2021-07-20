@@ -1490,6 +1490,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             super( pageCacheTracer, tag );
         }
 
+        // We override report events here since we want to capture all the events accumulated in the tracer and another thread and make
+        // then available to consumer thread. That in ensued by waiting for completed flag by consumer thread.
         @Override
         public void reportEvents()
         {

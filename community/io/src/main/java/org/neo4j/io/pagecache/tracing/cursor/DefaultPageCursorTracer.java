@@ -85,6 +85,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         this.merges += cursorTracer.merges();
     }
 
+    // When updating reporting here please check if that affects any reporting on additional available tracers
     @Override
     public void reportEvents()
     {
