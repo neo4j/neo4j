@@ -195,6 +195,8 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withSingleRow(nodes(10))
   }
 
+
+
   test("should exact (multiple, but empty) seek nodes of an index with a property") {
     given {
       nodeIndex("Honey", "prop")
@@ -1361,5 +1363,26 @@ trait EnterpriseNodeIndexSeekTestBase[CONTEXT <: RuntimeContext] {
       _ <- milk
     } yield honey(10)
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should handle null in exact unique multiple seek") {
+    given {
+      nodeKey("Honey", "prop1", "prop2")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop1" -> i, "prop2" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop1 = 10, prop2 = ???)",  unique = true, paramExpr = Some(nullLiteral))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withNoRows()
   }
 }
