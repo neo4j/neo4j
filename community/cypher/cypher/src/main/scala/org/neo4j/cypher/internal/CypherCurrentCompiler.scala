@@ -125,11 +125,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       NO_TRACING
     }
 
-  private val executionPlanCache = if (contextManager.config.executionPlanCacheSize > 0) {
-    Some(
-      new LFUCache[ExecutionPlanCacheKey, (ExecutionPlan, PlanningAttributes)](planner.cacheFactory, contextManager.config.executionPlanCacheSize))
-  } else {
-    None
+  private val executionPlanCache = contextManager.config.executionPlanCacheSize match {
+    case 0 => None
+    case -1 => Some(new LFUCache[ExecutionPlanCacheKey, (ExecutionPlan, PlanningAttributes)](planner.cacheFactory, planner.config.queryCacheSize))
+    case executionPlanCacheSize => Some(new LFUCache[ExecutionPlanCacheKey, (ExecutionPlan, PlanningAttributes)](planner.cacheFactory, executionPlanCacheSize))
   }
 
   /**

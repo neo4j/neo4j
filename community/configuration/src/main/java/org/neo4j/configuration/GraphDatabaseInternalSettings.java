@@ -378,9 +378,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Cypher keeps a cache of the conversion from logical plans to execution plans. " +
                   "This cache is mainly meant to avoid generating code multiple times if different queries use the same logical plan. " +
                   "Items are only evicted from the cache when all query caches are cleared, e.g. by calling `db.clearQueryCaches()`. " +
-                  "The cache is allowed to grow up to this size. Setting the size to 0 means disabling this cache." )
+                  "The cache is allowed to grow up to this size. " +
+                  "If the size is set to -1 (default), it will use the size configured for the query cache, that is `dbms.query_cache_size`" +
+                  "Setting the size to 0 means disabling this cache." )
     public static final Setting<Integer> query_execution_plan_cache_size =
-            newBuilder( "unsupported.dbms.query_execution_plan_cache_size", INT, 0 ).addConstraint( min( 0 ) ).build();
+            newBuilder( "unsupported.dbms.query_execution_plan_cache_size", INT, -1 ).addConstraint( min( -1 ) ).build();
 
     /**
      * Block size properties values depends from selected record format.

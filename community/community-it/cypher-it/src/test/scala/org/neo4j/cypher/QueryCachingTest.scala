@@ -925,14 +925,14 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
   }
 }
 
-class ExecutablePlanQueryCachingTest extends QueryCachingTest(1000) {
+class DefaultQueryCachingTest extends QueryCachingTest() {
   override def executionPlanCacheKeyHit: String = "ExecutionPlanCacheKey: cacheHit"
 
   override def executionPlanCacheKeyMiss: String = "ExecutionPlanCacheKey: cacheMiss"
 }
 
-class DefaultQueryCachingTest extends QueryCachingTest() {
-  override def executionPlanCacheKeyHit: String = "" // The default is to have query_execution_plan_cache_size=0 (no caching)
+class NoExecutablePlanQueryCachingTest extends QueryCachingTest(0) {
+  override def executionPlanCacheKeyHit: String = ""
 
-  override def executionPlanCacheKeyMiss: String = "" // The default is to have query_execution_plan_cache_size=0 (no caching)
+  override def executionPlanCacheKeyMiss: String = ""
 }
