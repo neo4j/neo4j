@@ -34,7 +34,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.memory.OptionalMemoryTracker;
+import org.neo4j.memory.HeapHighWatermarkTracker;
 import org.neo4j.test.FakeCpuClock;
 import org.neo4j.test.FakeMemoryTracker;
 import org.neo4j.time.Clocks;
@@ -238,7 +238,7 @@ class ExecutingQueryTest
         QuerySnapshot snapshot = query.snapshot();
 
         // then
-        assertEquals( OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED, snapshot.allocatedBytes() );
+        assertEquals( HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED, snapshot.allocatedBytes() );
     }
 
     @Test

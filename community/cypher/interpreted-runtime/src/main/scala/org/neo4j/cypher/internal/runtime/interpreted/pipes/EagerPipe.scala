@@ -30,7 +30,7 @@ case class EagerPipe(src: Pipe)(val id: Id = Id.INVALID_ID)
   extends PipeWithSource(src) {
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    val buffer = EagerBuffer.createEagerBuffer[CypherRow](state.memoryTracker.memoryTrackerForOperator(id.x),
+    val buffer = EagerBuffer.createEagerBuffer[CypherRow](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x),
                                                           1024,
                                                           8192,
                                                           EagerBuffer.GROW_NEW_CHUNKS_BY_100_PCT

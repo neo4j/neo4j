@@ -19,9 +19,9 @@
  */
 package org.neo4j.test;
 
-import org.neo4j.memory.OptionalMemoryTracker;
+import org.neo4j.memory.HeapHighWatermarkTracker;
 
-public class FakeMemoryTracker implements OptionalMemoryTracker
+public class FakeMemoryTracker implements HeapHighWatermarkTracker
 {
     private long allocatedBytes;
 
@@ -31,7 +31,7 @@ public class FakeMemoryTracker implements OptionalMemoryTracker
     }
 
     @Override
-    public long totalAllocatedMemory()
+    public long heapHighWaterMark()
     {
         return allocatedBytes;
     }

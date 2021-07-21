@@ -19,35 +19,8 @@
  */
 package org.neo4j.memory;
 
-/**
- * Memory allocation tracker that tracks bytes allocation and de-allocation
- */
-public interface MemoryTracker extends AutoCloseable, JustHeapMemoryTracker
+public interface JustHeapMemoryTracker extends HeapHighWatermarkTracker
 {
-    /**
-     * @return number of bytes of native memory that are used
-     */
-    long usedNativeMemory();
-
-    /**
-     * @return estimated number of retained heap in bytes
-     */
-    long estimatedHeapMemory();
-
-    /**
-     * Record allocation of bytes in native memory.
-     *
-     * @param bytes number of allocated bytes.
-     */
-    void allocateNative( long bytes );
-
-    /**
-     * Record de-allocation of bytes in native memory.
-     *
-     * @param bytes number of released bytes.
-     */
-    void releaseNative( long bytes );
-
     /**
      * Record an allocation of heap memory.
      *
@@ -62,26 +35,4 @@ public interface MemoryTracker extends AutoCloseable, JustHeapMemoryTracker
      * @param bytes number of released bytes
      */
     void releaseHeap( long bytes );
-
-    /**
-     * @return The high water mark, i.e. the maximum observed value, of allocated heap in bytes.
-     */
-    long heapHighWaterMark();
-
-    void reset();
-
-    @Override
-    default void close()
-    {
-        reset();
-    }
-
-    /**
-     * Get a memory tracker that can track sub-allocations and be closed in a single call.
-     * Can be useful for collections when the items are tracked, to avoid iterating over all
-     * of the elements and releasing them individual.
-     *
-     * @return The scoped memory tracker.
-     */
-    MemoryTracker getScopedMemoryTracker();
 }

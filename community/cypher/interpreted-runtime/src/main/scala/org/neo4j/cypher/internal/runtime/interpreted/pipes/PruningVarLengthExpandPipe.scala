@@ -356,7 +356,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                               private val queryState: QueryState
   ) extends ClosingIterator[CypherRow] {
 
-    private val memoryTracker = queryState.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
+    private val memoryTracker = queryState.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     private var outputRow: CypherRow = _
     private var fullPruneState: FullPruneState = new FullPruneState(queryState, memoryTracker)
     private var hasPrefetched = false

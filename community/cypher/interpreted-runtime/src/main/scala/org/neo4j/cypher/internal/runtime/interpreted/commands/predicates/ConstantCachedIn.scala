@@ -46,7 +46,7 @@ case class ConstantCachedIn(value: Expression, list: Expression, id: Id) extends
         NullListChecker
       else {
         val input = makeTraversable(listValue)
-        if (input.isEmpty) AlwaysFalseChecker else new BuildUp(input, state.memoryTracker.memoryTrackerForOperator(id.x))
+        if (input.isEmpty) AlwaysFalseChecker else new BuildUp(input, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
       }
       new InCheckContainer(checker)
     })
@@ -83,7 +83,7 @@ case class DynamicCachedIn(value: Expression, list: Expression, id: Id) extends 
       return Some(false)
 
     val inChecker = state.cachedIn.getOrElseUpdate(traversable, {
-      val checker = new BuildUp(traversable, state.memoryTracker.memoryTrackerForOperator(id.x))
+      val checker = new BuildUp(traversable, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
       new InCheckContainer(checker)
     })
 

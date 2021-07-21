@@ -39,7 +39,7 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
     if (input.isEmpty)
       return ClosingIterator.empty
 
-    val probeTable = buildProbeTableAndFindNullRows(input, state.memoryTracker.memoryTrackerForOperator(id.x), withNulls = true)
+    val probeTable = buildProbeTableAndFindNullRows(input, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x), withNulls = true)
     state.query.resources.trace(probeTable)
     val rhsIterator = rhs.createResults(state)
 

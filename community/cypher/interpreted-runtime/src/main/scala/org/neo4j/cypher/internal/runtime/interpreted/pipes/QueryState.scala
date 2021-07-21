@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.config.MemoryTrackingController
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.MapCypherRow
 import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.QueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
@@ -33,6 +33,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheck
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InLRUCache
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleThreadedLRUCache
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
+import org.neo4j.cypher.internal.runtime.memory.MemoryTrackerForOperatorProvider
+import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel
 import org.neo4j.internal.kernel.api.TokenReadSession
@@ -48,7 +50,8 @@ class QueryState(val query: QueryContext,
                  val relTypeTokenReadSession: Option[TokenReadSession],
                  val expressionVariables: Array[AnyValue],
                  val subscriber: QuerySubscriber,
-                 val memoryTracker: QueryMemoryTracker,
+                 val queryMemoryTracker: QueryMemoryTracker,
+                 val memoryTrackerForOperatorProvider: MemoryTrackerForOperatorProvider,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val initialContext: Option[CypherRow] = None,
                  val cachedIn: InLRUCache[Any, InCheckContainer] = createDefaultInCache(),
@@ -87,19 +90,19 @@ class QueryState(val query: QueryContext,
 
   def withDecorator(decorator: PipeDecorator) =
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
-      expressionVariables, subscriber, memoryTracker, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
+      expressionVariables, subscriber, queryMemoryTracker, memoryTrackerForOperatorProvider, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContext(initialContext: CypherRow) =
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
-      expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
+      expressionVariables, subscriber, queryMemoryTracker, memoryTrackerForOperatorProvider, decorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContextAndDecorator(initialContext: CypherRow, newDecorator: PipeDecorator) =
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
-      expressionVariables, subscriber, memoryTracker, newDecorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
+      expressionVariables, subscriber, queryMemoryTracker, memoryTrackerForOperatorProvider, newDecorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
-      expressionVariables, subscriber, memoryTracker, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
+      expressionVariables, subscriber, queryMemoryTracker, memoryTrackerForOperatorProvider, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def setExecutionContextFactory(rowFactory: CypherRowFactory): Unit = {
     _rowFactory = rowFactory
@@ -124,6 +127,45 @@ object QueryState {
   val inCacheMaxSize: Int = 16
 
   def createDefaultInCache(): InLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = inCacheMaxSize)
+
+  def apply(query: QueryContext,
+            resources: ExternalCSVResource,
+            params: Array[AnyValue],
+            cursors: ExpressionCursors,
+            queryIndexes: Array[IndexReadSession],
+            nodeLabelTokenReadSession: Option[TokenReadSession],
+            relTypeTokenReadSession: Option[TokenReadSession],
+            expressionVariables: Array[AnyValue],
+            subscriber: QuerySubscriber,
+            memoryTrackingController: MemoryTrackingController,
+            doProfile: Boolean,
+            decorator: PipeDecorator,
+            initialContext: Option[CypherRow],
+            cachedIn: InLRUCache[Any, InCheckContainer],
+            lenientCreateRelationship: Boolean,
+            prePopulateResults: Boolean,
+            input: InputDataStream): QueryState = {
+    val queryHeapHighWatermarkTracker = QueryMemoryTracker(memoryTrackingController.memoryTracking(doProfile))
+    new QueryState(
+      query,
+      resources,
+      params,
+      cursors,
+      queryIndexes,
+      nodeLabelTokenReadSession,
+      relTypeTokenReadSession,
+      expressionVariables,
+      subscriber,
+      queryHeapHighWatermarkTracker,
+      queryHeapHighWatermarkTracker.newMemoryTrackerForOperatorProvider(query.transactionalContext.transaction.memoryTracker()),
+      decorator,
+      initialContext,
+      cachedIn,
+      lenientCreateRelationship,
+      prePopulateResults,
+      input
+    )
+  }
 }
 
 trait CypherRowFactory {

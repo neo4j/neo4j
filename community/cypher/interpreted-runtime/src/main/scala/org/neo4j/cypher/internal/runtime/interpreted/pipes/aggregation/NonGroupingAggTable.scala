@@ -39,7 +39,7 @@ class NonGroupingAggTable(aggregations: Array[AggregatingCol],
                           rowFactory: CypherRowFactory,
                           operatorId: Id) extends AggregationTable {
   private val aggregationFunctions = new Array[AggregationFunction](aggregations.length) // We do not track this allocation, but it should be negligable
-  private val scopedMemoryTracker: MemoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x).getScopedMemoryTracker
+  private val scopedMemoryTracker: MemoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(operatorId.x).getScopedMemoryTracker
 
   protected def close(): Unit = {
     scopedMemoryTracker.close()

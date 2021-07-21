@@ -37,7 +37,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.memory.OptionalMemoryTracker
+import org.neo4j.memory.HeapHighWatermarkTracker
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
@@ -117,7 +117,7 @@ case class SingleRowRuntimeResult(cols: Array[String], row: Array[Value], subscr
 
   override def fieldNames(): Array[String] = cols
   override def queryStatistics(): QueryStatistics = QueryStatistics()
-  override def totalAllocatedMemory(): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
+  override def heapHighWaterMark(): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
   override def consumptionState: RuntimeResult.ConsumptionState = cs
   override def close(): Unit = {}
   override def queryProfile(): QueryProfile = QueryProfile.NONE

@@ -42,7 +42,7 @@ case class PartialTopNPipe(source: Pipe,
   override def getReceiver(state: QueryState): OrderedChunkReceiver = throw new IllegalStateException()
 
   class PartialTopNReceiver(var remainingLimit: Long, state: QueryState) extends OrderedChunkReceiver {
-    private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+    private val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
     private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
     private val skip = skipExpression.map(SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(_, state, "SKIP"))
 

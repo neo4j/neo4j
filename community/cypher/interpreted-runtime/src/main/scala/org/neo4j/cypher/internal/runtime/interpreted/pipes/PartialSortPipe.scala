@@ -38,7 +38,7 @@ case class PartialSortPipe(source: Pipe,
   extends PipeWithSource(source) with OrderedInputPipe {
 
   class PartialSortReceiver(state: QueryState) extends OrderedChunkReceiver {
-    private val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+    private val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
     private val rowsMemoryTracker = memoryTracker.getScopedMemoryTracker
     private val buffer = HeapTrackingArrayList.newArrayList[CypherRow](16, memoryTracker)
     private val skipSortingPrefixLength = skipSortingPrefixLengthExp.map(SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(_, state, "SKIP"))

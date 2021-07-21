@@ -35,7 +35,7 @@ case class SortPipe(source: Pipe, comparator: Comparator[ReadableRow])
   extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    val scopedMemoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
+    val scopedMemoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     var arrayList: HeapTrackingArrayList[CypherRow] = HeapTrackingArrayList.newArrayList(256, scopedMemoryTracker)
     while (input.hasNext) {
       val row = input.next()

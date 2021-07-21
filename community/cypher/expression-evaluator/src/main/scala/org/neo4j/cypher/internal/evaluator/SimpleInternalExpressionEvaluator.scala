@@ -86,7 +86,8 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
       relTypeTokenReadSession = None,
       expressionVariables = new Array(nExpressionSlots),
       subscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
-      memoryTracker = null
+      queryMemoryTracker = null,
+      memoryTrackerForOperatorProvider = null,
     )
 
   private def withSlottedParams(input: Expression, params: MapValue): (Expression, Array[AnyValue]) = {

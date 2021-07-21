@@ -42,7 +42,7 @@ class PipeExecutionResult(pipe: Pipe,
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
 
-  override def totalAllocatedMemory: Long = state.memoryTracker.totalAllocatedMemory
+  override def heapHighWaterMark: Long = state.queryMemoryTracker.heapHighWaterMark
 
   override def close(): Unit = {
     state.close()

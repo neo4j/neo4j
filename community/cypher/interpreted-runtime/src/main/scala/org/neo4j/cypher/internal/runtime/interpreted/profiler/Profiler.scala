@@ -104,7 +104,7 @@ class Profiler(dbmsInfo: DbmsInfo,
   }
 
   override def decorate(planId: Id, state: QueryState): QueryState = {
-    stats.setMemoryTracker(state.memoryTracker)
+    stats.setQueryMemoryTracker(state.queryMemoryTracker)
     val decoratedContext = stats.dbHitsMap.getOrElseUpdate(planId, state.query match {
       case p: ProfilingPipeQueryContext => new ProfilingPipeQueryContext(p.inner)
       case _ => new ProfilingPipeQueryContext(state.query)

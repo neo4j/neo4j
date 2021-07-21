@@ -21,14 +21,12 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
-import org.neo4j.cypher.internal.SchemaRuntimeName
 import org.neo4j.cypher.internal.SystemCommandRuntimeName
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
@@ -37,7 +35,7 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
-import org.neo4j.memory.OptionalMemoryTracker
+import org.neo4j.memory.HeapHighWatermarkTracker
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
@@ -114,7 +112,7 @@ case object IgnoredRuntimeResult extends RuntimeResult {
   import org.neo4j.cypher.internal.runtime.QueryStatistics
   override def fieldNames(): Array[String] = Array.empty
   override def queryStatistics(): QueryStatistics = QueryStatistics()
-  override def totalAllocatedMemory(): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
+  override def heapHighWaterMark(): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
   override def close(): Unit = {}
   override def queryProfile(): QueryProfile = QueryProfile.NONE

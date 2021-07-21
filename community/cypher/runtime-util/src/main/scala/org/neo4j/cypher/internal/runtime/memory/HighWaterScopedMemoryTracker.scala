@@ -17,11 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime
+package org.neo4j.cypher.internal.runtime.memory
 
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.memory.ScopedMemoryTracker
 
+/**
+ * A scoped memory tracker that keeps its own highWaterMark.
+ * It forwards all calls to a delegate.
+ */
 class HighWaterScopedMemoryTracker(delegate: MemoryTracker) extends ScopedMemoryTracker(delegate) {
   private var _heapHighWaterMark = 0L
 

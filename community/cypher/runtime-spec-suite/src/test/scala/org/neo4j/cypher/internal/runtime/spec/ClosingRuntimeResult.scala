@@ -48,7 +48,7 @@ class ClosingRuntimeResult(inner: RuntimeResult,
 
   override def queryStatistics(): QueryStatistics = inner.queryStatistics()
 
-  override def totalAllocatedMemory(): Long = inner.totalAllocatedMemory()
+  override def heapHighWaterMark(): Long = inner.heapHighWaterMark()
 
   override def queryProfile(): QueryProfile = inner.queryProfile()
 

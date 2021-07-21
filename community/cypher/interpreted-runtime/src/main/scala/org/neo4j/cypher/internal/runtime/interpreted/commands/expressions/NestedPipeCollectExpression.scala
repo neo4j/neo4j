@@ -38,7 +38,7 @@ case class NestedPipeCollectExpression(pipe: Pipe,
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val results = createNestedResults(row, state)
-    collectResults(state, results, projection, state.memoryTracker.memoryTrackerForOperator(owningPlanId.x))
+    collectResults(state, results, projection, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(owningPlanId.x))
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(NestedPipeCollectExpression(pipe, projection.rewrite(f), availableExpressionVariables, owningPlanId))

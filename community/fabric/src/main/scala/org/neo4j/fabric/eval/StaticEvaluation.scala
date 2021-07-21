@@ -95,7 +95,8 @@ object StaticEvaluation {
       relTypeTokenReadSession = None,
       expressionVariables = new Array(nExpressionSlots),
       subscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
-      memoryTracker = null
+      queryMemoryTracker = null,
+      memoryTrackerForOperatorProvider = null,
     )
 
     override def evaluate(expression: Expression, params: MapValue, context: CypherRow): AnyValue = {

@@ -47,7 +47,7 @@ case class OrderedDistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol]
      * The filtering is done by extracting from the context the values of all return expressions, and keeping them
      * in a set.
      */
-    val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+    val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
     var seen: DistinctSet[AnyValue] = DistinctSet.createDistinctSet[AnyValue](memoryTracker)
     state.query.resources.trace(seen)
     var currentOrderedGroupingValue: AnyValue = null

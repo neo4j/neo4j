@@ -37,7 +37,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.memory.OptionalMemoryTracker;
+import org.neo4j.memory.HeapHighWatermarkTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
@@ -81,7 +81,7 @@ public class ExecutingQuery
     @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
 
-    private OptionalMemoryTracker memoryTracker;
+    private HeapHighWatermarkTracker memoryTracker;
     private TransactionBinding transactionBinding = TransactionBinding.EMPTY;
 
     public ExecutingQuery(
@@ -104,7 +104,7 @@ public class ExecutingQuery
         this.threadExecutingTheQueryName = threadExecutingTheQueryName;
         this.clock = clock;
         this.cpuClock = cpuClock;
-        this.memoryTracker = trackQueryAllocations ? OptionalMemoryTracker.ZERO : OptionalMemoryTracker.NONE;
+        this.memoryTracker = trackQueryAllocations ? HeapHighWatermarkTracker.ZERO : HeapHighWatermarkTracker.NONE;
     }
 
     // NOTE: test/benchmarking constructor
@@ -195,7 +195,7 @@ public class ExecutingQuery
         this.status = SimpleState.planned(); // write barrier - must be last
     }
 
-    public void onExecutionStarted( OptionalMemoryTracker memoryTracker )
+    public void onExecutionStarted( HeapHighWatermarkTracker memoryTracker )
     {
         assertExpectedStatus( SimpleState.planned() );
 
@@ -210,7 +210,7 @@ public class ExecutingQuery
         this.compilerInfo = null;
         this.compilationCompletedNanos = 0;
         this.planDescriptionSupplier = null;
-        this.memoryTracker = OptionalMemoryTracker.NONE;
+        this.memoryTracker = HeapHighWatermarkTracker.NONE;
         this.obfuscatedQueryParameters = null;
         this.obfuscatedQueryText = null;
         this.status = SimpleState.parsing();
@@ -270,7 +270,7 @@ public class ExecutingQuery
                 status.toMap( currentTimeNanos ),
                 waitingOnLocks,
                 totalActiveLocks - transactionBinding.initialActiveLocks,
-                memoryTracker.totalAllocatedMemory(),
+                memoryTracker.heapHighWaterMark(),
                 Optional.ofNullable( queryText ),
                 Optional.ofNullable( queryParameters ),
                 transactionBinding.transactionId

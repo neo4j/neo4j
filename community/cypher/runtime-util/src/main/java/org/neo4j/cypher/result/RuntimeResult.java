@@ -21,12 +21,12 @@ package org.neo4j.cypher.result;
 
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.impl.query.QuerySubscription;
-import org.neo4j.memory.OptionalMemoryTracker;
+import org.neo4j.memory.HeapHighWatermarkTracker;
 
 /**
  * The result API of a Cypher runtime
  */
-public interface RuntimeResult extends AutoCloseable, QuerySubscription, OptionalMemoryTracker
+public interface RuntimeResult extends AutoCloseable, QuerySubscription, HeapHighWatermarkTracker
 {
     enum ConsumptionState
     {

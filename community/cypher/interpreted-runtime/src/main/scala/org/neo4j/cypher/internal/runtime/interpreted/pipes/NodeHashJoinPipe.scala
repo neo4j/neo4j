@@ -67,7 +67,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
   }
 
   private def buildProbeTable(input: Iterator[CypherRow], queryState: QueryState): collection.ProbeTable[LongArray, CypherRow] = {
-    val table = collection.ProbeTable.createProbeTable[LongArray, CypherRow](queryState.memoryTracker.memoryTrackerForOperator(id.x))
+    val table = collection.ProbeTable.createProbeTable[LongArray, CypherRow](queryState.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
 
     for {context <- input
          joinKey <- computeKey(context)} {

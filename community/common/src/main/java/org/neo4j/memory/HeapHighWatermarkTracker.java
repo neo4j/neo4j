@@ -22,18 +22,19 @@ package org.neo4j.memory;
 /**
  * Tracker that is possibly capable of reporting the number of allocated bytes.
  */
-public interface OptionalMemoryTracker
+public interface HeapHighWatermarkTracker
 {
     long ALLOCATIONS_NOT_TRACKED = -1L;
 
-    OptionalMemoryTracker NONE = () -> ALLOCATIONS_NOT_TRACKED;
+    HeapHighWatermarkTracker NONE = () -> ALLOCATIONS_NOT_TRACKED;
 
-    OptionalMemoryTracker ZERO = () -> 0L;
+    HeapHighWatermarkTracker ZERO = () -> 0L;
 
     /**
-     * Get the total allocated memory of this query, in bytes.
+     * Get the total allocated memory, in bytes.
+     * The high water mark, i.e. the maximum observed value, of allocated memory in bytes.
      *
-     * @return the total number of allocated memory bytes, or None, if memory tracking was not enabled.
+     * @return the total number of allocated memory bytes, or ALLOCATIONS_NOT_TRACKED, if memory tracking was not enabled.
      */
-    long totalAllocatedMemory();
+    long heapHighWaterMark();
 }

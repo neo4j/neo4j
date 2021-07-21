@@ -65,7 +65,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
   }
 
   private def buildProbeTable(input: Iterator[CypherRow], state: QueryState): collection.ProbeTable[AnyValue, CypherRow] = {
-    val table = collection.ProbeTable.createProbeTable[AnyValue, CypherRow](state.memoryTracker.memoryTrackerForOperator(id.x))
+    val table = collection.ProbeTable.createProbeTable[AnyValue, CypherRow](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
 
     for (context <- input;
          joinKey = lhsExpression(context, state) if joinKey != null) {

@@ -62,7 +62,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
   val predicates: Seq[Predicate] = perStepPredicates ++ fullPathPredicates
 
   def apply(row: ReadableRow, state: QueryState): AnyValue = {
-    apply(row, state, state.memoryTracker.memoryTrackerForOperator(operatorId.x))
+    apply(row, state, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(operatorId.x))
   }
 
   def apply(row: ReadableRow, state: QueryState, memoryTracker: MemoryTracker): AnyValue = {

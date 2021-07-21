@@ -63,7 +63,7 @@ case class VarLengthExpandPipe(source: Pipe,
 
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
                               row: CypherRow): Iterator[(NodeValue, RelationshipContainer)] = {
-    val stack = HeapTrackingCollections.newStack[(NodeValue, RelationshipContainer)](state.memoryTracker.memoryTrackerForOperator(id.x))
+    val stack = HeapTrackingCollections.newStack[(NodeValue, RelationshipContainer)](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
     stack.push((node, RelationshipContainer.EMPTY))
 
     new ClosingIterator[(NodeValue, RelationshipContainer)] {

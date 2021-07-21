@@ -762,7 +762,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   protected def estimateRowSize(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None, nRows: Int = 8): Long = {
     val result = execute(logicalQuery, runtime, inputColumns(1, nRows, i => sampleValue.getOrElse(i.toLong)))
     consume(result)
-    result.runtimeResult.totalAllocatedMemory() / nRows
+    result.runtimeResult.heapHighWaterMark() / nRows
   }
 }
 

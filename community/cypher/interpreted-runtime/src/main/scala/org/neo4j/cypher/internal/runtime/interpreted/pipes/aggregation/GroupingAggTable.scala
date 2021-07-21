@@ -51,7 +51,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
 
   private[this] var resultMap: HeapTrackingOrderedAppendMap[AnyValue, Array[AggregationFunction]] = _
   private[this] val addKeys: (CypherRow, AnyValue) => Unit = AggregationPipe.computeAddKeysToResultRowFunction(groupingColumns)
-  private[this] val memoryTracker = state.memoryTracker.memoryTrackerForOperator(operatorId.x)
+  private[this] val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(operatorId.x)
   private[this] val newAggregators: Function2[AnyValue, MemoryTracker, Array[AggregationFunction]] =
     computeNewAggregatorsFunction(aggregations.map(_.expression))
 

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.procs
 
 import java.util
-
 import org.neo4j.cypher.internal.result.Error
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -31,7 +30,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.memory.OptionalMemoryTracker
+import org.neo4j.memory.HeapHighWatermarkTracker
 
 /**
  * Results, as produced by a system command.
@@ -47,7 +46,7 @@ case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
 
   override def queryStatistics(): QueryStatistics = QueryStatistics()
 
-  override def totalAllocatedMemory(): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
+  override def heapHighWaterMark(): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
 
   override def consumptionState: RuntimeResult.ConsumptionState = state
 

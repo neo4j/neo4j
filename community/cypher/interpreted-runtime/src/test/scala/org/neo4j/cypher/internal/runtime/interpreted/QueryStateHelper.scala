@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NoInput
-import org.neo4j.cypher.internal.runtime.NoOpQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.ResourceMonitor
@@ -35,6 +34,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NullPipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.memory.NoOpMemoryTrackerForOperatorProvider
+import org.neo4j.cypher.internal.runtime.memory.NoOpQueryMemoryTracker
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.spatial.Point
@@ -74,8 +75,20 @@ object QueryStateHelper extends MockitoSugar {
                 initialContext: Option[CypherRow] = None,
                 input: InputDataStream = NoInput
                ):QueryState =
-    new QueryState(query, resources, params, expressionCursors, queryIndexes, nodeTokenIndex, relTokenIndex, expressionVariables, subscriber, NoOpQueryMemoryTracker,
-      decorator, initialContext = initialContext, input = input)
+    new QueryState(query,
+      resources,
+      params,
+      expressionCursors,
+      queryIndexes,
+      nodeTokenIndex,
+      relTokenIndex,
+      expressionVariables,
+      subscriber,
+      NoOpQueryMemoryTracker,
+      NoOpMemoryTrackerForOperatorProvider,
+      decorator = decorator,
+      initialContext = initialContext,
+      input = input)
 
   def queryStateFrom(db: GraphDatabaseQueryService,
                      tx: InternalTransaction,

@@ -43,7 +43,7 @@ case class ShortestPathPipe(source: Pipe,
   private def pathName = shortestPathCommand.pathName
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+    val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
     input.flatMap(ctx => {
       val result = shortestPathExpression(ctx, state, memoryTracker) match {

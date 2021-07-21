@@ -40,7 +40,7 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
        * The filtering is done by extracting from the context the values of all return expressions, and keeping them
        * in a set.
        */
-      private var seen = DistinctSet.createDistinctSet[AnyValue](state.memoryTracker.memoryTrackerForOperator(id.x))
+      private var seen = DistinctSet.createDistinctSet[AnyValue](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
 
       state.query.resources.trace(seen)
 

@@ -43,7 +43,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
     val limit = SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow(countExpression, state, "LIMIT")
     if (limit == 0 || input.isEmpty) return ClosingIterator.empty
 
-    val scopedMemoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
+    val scopedMemoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     val topTable = new DefaultComparatorTopTable[CypherRow](comparator, limit, scopedMemoryTracker)
     state.query.resources.trace(topTable)
 
@@ -100,7 +100,7 @@ case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
     if (input.isEmpty)
       ClosingIterator.empty
     else {
-      val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
+      val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
       val first = input.next()
       var best = first
       val matchingRows = init(best, memoryTracker)

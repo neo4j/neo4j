@@ -33,7 +33,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.query.QuerySubscriber
-import org.neo4j.memory.OptionalMemoryTracker
+import org.neo4j.memory.HeapHighWatermarkTracker
 import org.neo4j.values.virtual.MapValue
 
 class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean,
@@ -66,7 +66,7 @@ case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscr
 
   override def queryStatistics(): QueryStatistics = QueryStatistics()
 
-  override def totalAllocatedMemory(): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
+  override def heapHighWaterMark(): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
 
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
 

@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryIndexes
-import org.neo4j.cypher.internal.runtime.QueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.createParameterArray
 import org.neo4j.cypher.internal.runtime.interpreted.load_csv.LoadCsvPeriodicCommitObserver
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
@@ -34,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.NullPipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -95,20 +95,23 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
       val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors, queryContext.transactionalContext.transaction.cursorContext(), transactionMemoryTracker)
       queryContext.resources.trace(cursors)
 
-      new QueryState(queryContext,
-                     externalResource,
-                     createParameterArray(params, parameterMapping),
-                     cursors,
-                     queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
-                     queryIndexes.initiateNodeTokenIndex(queryContext),
-                     queryIndexes.initiateRelationshipTokenIndex(queryContext),
-                     new Array[AnyValue](nExpressionSlots),
-                     subscriber,
-                     QueryMemoryTracker(memoryTrackingController.memoryTracking(doProfile), transactionMemoryTracker),
-                     pipeDecorator,
-                     lenientCreateRelationship = lenientCreateRelationship,
-                     prePopulateResults = prePopulateResults,
-                     input = input)
+      QueryState(queryContext,
+                 externalResource,
+                 createParameterArray(params, parameterMapping),
+                 cursors,
+                 queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
+                 queryIndexes.initiateNodeTokenIndex(queryContext),
+                 queryIndexes.initiateRelationshipTokenIndex(queryContext),
+                 new Array[AnyValue](nExpressionSlots),
+                 subscriber,
+                 memoryTrackingController,
+                 doProfile,
+                 pipeDecorator,
+                 initialContext = None,
+                 cachedIn = createDefaultInCache(),
+                 lenientCreateRelationship = lenientCreateRelationship,
+                 prePopulateResults = prePopulateResults,
+                 input = input)
     }
   }
 
