@@ -181,7 +181,7 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
 
   // extra spaces tests
 
-  private def assertSameASTWithExtraSpaces(query: String) = {
+  private def assertSameASTWithExtraSpaces(query: String): Unit = {
     assertSameAST(query.replaceAll(" ", " "*2))
     assertSameAST(query.replaceAll(" ", "\n"))
   }
@@ -255,6 +255,10 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   }
 
   test("WITH 1 AS x CALL { WITH x USE neo4j RETURN x AS y } RETURN x, y") {
+    assertSameAST(testName)
+  }
+
+  test("CALL { MATCH (n) RETURN n } IN TRANSACTIONS RETURN n") {
     assertSameAST(testName)
   }
 

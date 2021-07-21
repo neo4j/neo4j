@@ -88,6 +88,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         NULL,
         NULL,
         NULL,
+        NULL,
         NULL>
 {
 
@@ -356,7 +357,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL subqueryClause( NULL p, NULL subquery )
+    public NULL subqueryInTransactionsParams( NULL p )
+    {
+        throw new UnsupportedOperationException( "subqueryInTransactionsParams is not a literal" );
+    }
+
+    @Override
+    public NULL subqueryClause( NULL p, NULL subquery, NULL inTransactions )
     {
         throw new UnsupportedOperationException( "subqueryClause is not a literal" );
     }

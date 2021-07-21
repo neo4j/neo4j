@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
@@ -201,6 +202,35 @@ class SemanticAnalysisTest extends CypherFunSuite {
     Set("a", "r", "b").foreach { name =>
       scopeTree.allSymbols(name).head.uses shouldNot be(empty)
     }
+  }
+
+  test("CALL { ... } IN TRANSACTIONS") {
+    val query = "CALL { MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "The CALL { ... } IN TRANSACTIONS clause is not available in this implementation of Cypher due to lack of support for running subqueries in separate transactions."
+    )
+  }
+
+  test("CALL { ... } IN TRANSACTIONS with feature enabled") {
+    val query = "CALL { MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline =
+      Parsing andThen
+        SemanticAnalysis(warn = true, SemanticFeature.CallSubqueryInTransactions) andThen
+        SemanticAnalysis(warn = false, SemanticFeature.CallSubqueryInTransactions)
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe empty
   }
 
   private def initStartState(query: String) =

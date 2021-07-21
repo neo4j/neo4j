@@ -36,6 +36,10 @@ object SemanticFeature {
   case object UseGraphSelector extends SemanticFeature with FeatureToString {
     override def name: String = "USE graph selector"
   }
+  case object CallSubqueryInTransactions extends SemanticFeature with FeatureToString {
+    override def name: String = "running subqueries in separate transactions"
+  }
+
   case object ExpressionsInViewInvocations extends SemanticFeature
   case object WithInitialQuerySignature extends SemanticFeature
 }

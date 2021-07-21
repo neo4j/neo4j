@@ -72,6 +72,7 @@ public interface ASTFactory<STATEMENT,
         PRIVILEGE_TYPE,
         PRIVILEGE_RESOURCE,
         PRIVILEGE_QUALIFIER,
+        SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
         POS>
         extends ASTExpressionFactory<EXPRESSION,PARAMETER,PATTERN,VARIABLE,PROPERTY,MAP_PROJECTION_ITEM,POS>
 {
@@ -219,7 +220,9 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE foreachClause( POS p, VARIABLE v, EXPRESSION list, List<CLAUSE> clauses );
 
-    CLAUSE subqueryClause( POS p, QUERY subquery );
+    CLAUSE subqueryClause( POS p, QUERY subquery, SUBQUERY_IN_TRANSACTIONS_PARAMETERS inTransactions );
+
+    SUBQUERY_IN_TRANSACTIONS_PARAMETERS subqueryInTransactionsParams( POS p );
 
     // Commands
     STATEMENT_WITH_GRAPH useGraph( STATEMENT_WITH_GRAPH statement, USE_GRAPH useGraph );

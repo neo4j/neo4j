@@ -1129,7 +1129,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _subqueryCall: Gen[SubqueryCall] = for {
     part <- _queryPart
-  } yield SubqueryCall(part)(pos)
+  } yield SubqueryCall(part, None)(pos)
 
   def _clause: Gen[Clause] = oneOf(
     lzy(_use),

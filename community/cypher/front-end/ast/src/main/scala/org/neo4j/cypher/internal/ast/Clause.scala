@@ -983,12 +983,21 @@ case class Yield(returnItems: ReturnItems,
                                                                (error: SemanticErrorDef): SemanticErrorDef = error
 }
 
-case class SubqueryCall(part: QueryPart)(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {
+object SubqueryCall {
+  final case class InTransactionsParameters()(val position: InputPosition) extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
+    override def semanticCheck: SemanticCheck =
+      requireFeatureSupport("The CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallSubqueryInTransactions, position)
+  }
+}
+
+case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters])(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {
 
   override def name: String = "CALL"
 
-  override def semanticCheck: SemanticCheck =
-      checkSubquery
+  override def semanticCheck: SemanticCheck = {
+    checkSubquery chain
+      inTransactionsParameters.semanticCheck
+  }
 
   def checkSubquery: SemanticCheck = { outer: SemanticState =>
 

@@ -285,7 +285,7 @@ case class FabricStitcher(
           val before = stitchChain(apply.input, outermost, outerUse)
           val inner = stitch(apply.inner, outermost = false, Some(before.lastUse))
           before.copy(
-            clauses = before.clauses :+ SubqueryCall(inner.queryPart)(apply.pos),
+            clauses = before.clauses :+ SubqueryCall(inner.queryPart, None)(apply.pos),
             useAppearances = before.useAppearances ++ inner.useAppearances)
 
       }

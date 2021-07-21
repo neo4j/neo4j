@@ -244,7 +244,6 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
@@ -395,6 +394,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     Privilege,
     ActionResource,
     PrivilegeQualifier,
+    SubqueryCall.InTransactionsParameters,
     InputPosition] {
 
   override def newSingleQuery(p: InputPosition, clauses: util.List[Clause]): Query = {
@@ -613,8 +613,11 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                              clauses: util.List[Clause]): Clause =
     Foreach(v, list, clauses.asScala.toList)(p)
 
-  override def subqueryClause(p: InputPosition, subquery: Query): Clause =
-    SubqueryCall(subquery.part)(p)
+  override def subqueryInTransactionsParams(p: InputPosition): SubqueryCall.InTransactionsParameters =
+    SubqueryCall.InTransactionsParameters()(p)
+
+  override def subqueryClause(p: InputPosition, subquery: Query, inTransactions: SubqueryCall.InTransactionsParameters): Clause =
+    SubqueryCall(subquery.part, Option(inTransactions))(p)
 
   // PATTERNS
 

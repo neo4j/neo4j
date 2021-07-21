@@ -96,6 +96,7 @@ public class Cypher<STATEMENT,
                     PRIVILEGE_TYPE,
                     PRIVILEGE_RESOURCE,
                     PRIVILEGE_QUALIFIER,
+                    SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                     POS> {
 
     ASTExceptionFactory exceptionFactory;
@@ -133,6 +134,7 @@ public class Cypher<STATEMENT,
                PRIVILEGE_TYPE,
                PRIVILEGE_RESOURCE,
                PRIVILEGE_QUALIFIER,
+               SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                POS> astFactory;
 
     public Cypher(ASTFactory<STATEMENT,
@@ -169,6 +171,7 @@ public class Cypher<STATEMENT,
                              PRIVILEGE_TYPE,
                              PRIVILEGE_RESOURCE,
                              PRIVILEGE_QUALIFIER,
+                             SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                              POS> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
@@ -1759,14 +1762,27 @@ CLAUSE SubqueryClause() :
 {
     Token t;
     QUERY q;
+    SUBQUERY_IN_TRANSACTIONS_PARAMETERS inTransactionsParams = null;
 }
 {
     t=<CALL>
     <LCURLY>
     ( q=PeriodicCommitQuery() | q=RegularQuery() )
     <RCURLY>
+    ( inTransactionsParams = SubqueryInTransactionsParameters() )?
     {
-        return astFactory.subqueryClause( pos( t ), q );
+        return astFactory.subqueryClause( pos( t ), q, inTransactionsParams );
+    }
+}
+
+SUBQUERY_IN_TRANSACTIONS_PARAMETERS SubqueryInTransactionsParameters() :
+{
+    Token t;
+}
+{
+    t=<IN> <TRANSACTIONS>
+    {
+        return astFactory.subqueryInTransactionsParams( pos( t ) );
     }
 }
 
