@@ -127,7 +127,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
           |}
           |RETURN `5 + 5` AS `5 + 5`
       """.stripMargin,
-      Set(MissingAliasNotification(InputPosition(9, 2, 3))))
+      Set(MissingAliasNotification(InputPosition(16, 2, 10))))
   }
 
   test("ensure variables are aliased for SHOW PRIVILEGES") {
@@ -486,7 +486,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop ORDER BY n.prop
         |RETURN prop AS prop
-      """.stripMargin, "Expression in WITH must be aliased (use AS) (line 2, column 1 (offset: 10))")
+      """.stripMargin, "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 15))")
   }
 
   test("RETURN: attaches ORDER BY expressions to unaliased items") {
@@ -515,7 +515,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """MATCH (n)
         |WITH n.prop WHERE n.prop
         |RETURN prop AS prop
-      """.stripMargin, "Expression in WITH must be aliased (use AS) (line 2, column 1 (offset: 10))")
+      """.stripMargin, "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 15))")
   }
 
   test("rejects use of aggregation in ORDER BY if aggregation is not used in associated WITH") {

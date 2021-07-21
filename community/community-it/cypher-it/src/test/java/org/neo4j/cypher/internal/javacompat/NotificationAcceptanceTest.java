@@ -220,7 +220,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     void shouldWarnOnUnboundedShortestPath()
     {
-        shouldNotifyInStream( "EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m", new InputPosition( 44, 1, 45 ), UNBOUNDED_SHORTEST_PATH );
+        shouldNotifyInStream( "EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m", new InputPosition( 41, 1, 42 ), UNBOUNDED_SHORTEST_PATH );
     }
 
     @Test

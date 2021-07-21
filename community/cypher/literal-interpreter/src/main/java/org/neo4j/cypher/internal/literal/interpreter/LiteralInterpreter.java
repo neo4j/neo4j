@@ -69,10 +69,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         NULL,
         NULL,
         NULL,
+        NULL,
         Object,
         Object,
         Object,
         Object,
+        NULL,
         NULL,
         NULL,
         NULL,
@@ -96,6 +98,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public static final String LONG_MIN_VALUE_OCTAL_STRING = "0o" + Long.toString( Long.MIN_VALUE, 8 ).substring( 1 );
 
     @Override
+    public NULL newSingleQuery( NULL p, List<NULL> nulls )
+    {
+        throw new UnsupportedOperationException( "newSingleQuery is not a literal" );
+    }
+
+    @Override
     public NULL newSingleQuery( List<NULL> nulls )
     {
         throw new UnsupportedOperationException( "newSingleQuery is not a literal" );
@@ -108,7 +116,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL periodicCommitQuery( NULL p, String batchSize, NULL loadCsv, List<NULL> aNull )
+    public NULL periodicCommitQuery( NULL p, NULL periodicCommitPosition, String batchSize, NULL loadCsv, List<NULL> aNull )
     {
         throw new UnsupportedOperationException( "periodicCommitQuery is not a literal" );
     }
@@ -120,9 +128,23 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL newReturnClause( NULL p, boolean distinct, boolean returnAll, List<NULL> nulls, List<NULL> order, Object skip, Object limit )
+    public NULL newReturnClause( NULL p,
+                                 boolean distinct,
+                                 NULL nulls,
+                                 List<NULL> order,
+                                 NULL orderPos,
+                                 Object skip,
+                                 NULL skipPostion,
+                                 Object limit,
+                                 NULL limitPosition )
     {
         throw new UnsupportedOperationException( "newReturnClause is not a literal" );
+    }
+
+    @Override
+    public NULL newReturnItems( NULL p, boolean returnAll, List<NULL> returnItems )
+    {
+        throw new UnsupportedOperationException( "newReturnItems is not a literal" );
     }
 
     @Override
@@ -138,25 +160,31 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL orderDesc( Object e )
+    public NULL orderDesc( NULL p, Object e )
     {
         throw new UnsupportedOperationException( "orderDesc is not a literal" );
     }
 
     @Override
-    public NULL orderAsc( Object e )
+    public NULL orderAsc( NULL p, Object e )
     {
         throw new UnsupportedOperationException( "orderAsc is not a literal" );
     }
 
     @Override
-    public NULL withClause( NULL p, NULL aNull, Object where )
+    public NULL whereClause( NULL p, Object where )
     {
         throw new UnsupportedOperationException( "withClause is not a literal" );
     }
 
     @Override
-    public NULL matchClause( NULL p, boolean optional, List<NULL> nulls, List<NULL> nulls2, Object where )
+    public NULL withClause( NULL p, NULL aNull, NULL where )
+    {
+        throw new UnsupportedOperationException( "withClause is not a literal" );
+    }
+
+    @Override
+    public NULL matchClause( NULL p, boolean optional, List<NULL> nulls, NULL patternPos, List<NULL> nulls2, NULL where )
     {
         throw new UnsupportedOperationException( "matchClause is not a literal" );
     }
@@ -246,13 +274,22 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL mergeClause( NULL p, NULL aNull, List<NULL> setClauses, List<MergeActionType> actionTypes )
+    public NULL mergeClause( NULL p, NULL aNull, List<NULL> setClauses, List<MergeActionType> actionTypes, List<NULL> positions )
     {
         throw new UnsupportedOperationException( "mergeClause is not a literal" );
     }
 
     @Override
-    public NULL callClause( NULL p, List<String> namespace, String name, List<Object> arguments, boolean yieldAll, List<NULL> nulls, Object where )
+    public NULL callClause( NULL p,
+                            NULL procedureResultPosition,
+                            NULL procedureNamePosition,
+                            NULL namespacePosition,
+                            List<String> namespace,
+                            String name,
+                            List<Object> arguments,
+                            boolean yieldAll,
+                            List<NULL> nulls,
+                            NULL where )
     {
         throw new UnsupportedOperationException( "callClause is not a literal" );
     }
@@ -325,31 +362,41 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL yieldClause( NULL p, boolean returnAll, List<NULL> nulls, List<NULL> orderBy, Object skip, Object limit, Object where )
+    public NULL yieldClause( NULL p,
+                             boolean returnAll,
+                             List<NULL> nulls,
+                             NULL returnItemsPosition,
+                             List<NULL> orderBy,
+                             NULL orderPos,
+                             Object skip,
+                             NULL skipPosition,
+                             Object limit,
+                             NULL limitPosition,
+                             NULL where )
     {
         throw new UnsupportedOperationException( "yieldClause is not a literal" );
     }
 
     @Override
-    public NULL showIndexClause( NULL p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, Object where, boolean hasYield )
+    public NULL showIndexClause( NULL p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, NULL where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showIndexClause is not a literal" );
     }
 
     @Override
-    public NULL showConstraintClause( NULL p, ShowCommandFilterTypes constraintType, boolean brief, boolean verbose, Object where, boolean hasYield )
+    public NULL showConstraintClause( NULL p, ShowCommandFilterTypes constraintType, boolean brief, boolean verbose, NULL where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showConstraintClause is not a literal" );
     }
 
     @Override
-    public NULL showProcedureClause( NULL p, boolean currentUser, String user, Object where, boolean hasYield )
+    public NULL showProcedureClause( NULL p, boolean currentUser, String user, NULL where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showProcedureClause is not a literal" );
     }
 
     @Override
-    public NULL showFunctionClause( NULL p, ShowCommandFilterTypes functionType, boolean currentUser, String user, Object where, boolean hasYield )
+    public NULL showFunctionClause( NULL p, ShowCommandFilterTypes functionType, boolean currentUser, String user, NULL where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showFunctionClause is not a literal" );
     }
@@ -449,7 +496,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL showRoles( NULL p, boolean withUsers, boolean showAll, NULL yieldExpr, NULL returnWithoutGraph, Object where )
+    public NULL showRoles( NULL p, boolean withUsers, boolean showAll, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
     {
         throw new UnsupportedOperationException( "showRoles is not a literal" );
     }
@@ -513,13 +560,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL showUsers( NULL p, NULL yieldExpr, NULL returnWithoutGraph, Object where )
+    public NULL showUsers( NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
     {
         throw new UnsupportedOperationException( "showUsers is not a literal" );
     }
 
     @Override
-    public NULL showCurrentUser( NULL p, NULL yieldExpr, NULL returnWithoutGraph, Object where )
+    public NULL showCurrentUser( NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
     {
         throw new UnsupportedOperationException( "showCurrentUser is not a literal" );
     }
@@ -692,7 +739,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL showDatabase( NULL p, NULL aNull, NULL yieldExpr, NULL returnWithoutGraph, Object where )
+    public NULL showDatabase( NULL p, NULL aNull, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
     {
         throw new UnsupportedOperationException( "showDatabase is not a literal" );
     }
@@ -914,7 +961,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public Object not( Object e )
+    public Object not( NULL p, Object e )
     {
         throw new UnsupportedOperationException( "not is not a literal" );
     }
@@ -962,7 +1009,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public Object unaryMinus( Object e )
+    public Object unaryPlus( NULL p, Object e )
+    {
+        throw new UnsupportedOperationException( "unaryPlus is not a literal" );
+    }
+
+    @Override
+    public Object unaryMinus( NULL p, Object e )
     {
         throw new UnsupportedOperationException( "unaryMinus is not a literal" );
     }
@@ -1040,7 +1093,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public Object isNull( Object e )
+    public Object isNull( NULL p, Object e )
     {
         throw new UnsupportedOperationException( "isNull is not a literal" );
     }
@@ -1064,7 +1117,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public Object functionInvocation( NULL p, List<String> namespace, String name, boolean distinct, List<Object> arguments )
+    public Object functionInvocation( NULL p,
+                                      NULL functionNamePosition,
+                                      List<String> namespace,
+                                      String name,
+                                      boolean distinct,
+                                      List<Object> arguments )
     {
         if ( namespace.isEmpty() )
         {
@@ -1178,7 +1236,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public Object patternComprehension( NULL p, Object v, NULL aNull, Object where, Object projection )
+    public Object patternComprehension( NULL p, NULL relationshipPatternPosition, Object v, NULL aNull, Object where, Object projection )
     {
         throw new UnsupportedOperationException( "patternComprehension is not a literal" );
     }

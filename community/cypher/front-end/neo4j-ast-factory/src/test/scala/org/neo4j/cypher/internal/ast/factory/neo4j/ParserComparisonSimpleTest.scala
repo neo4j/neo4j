@@ -292,7 +292,7 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
 
   test("RETURN - 1.4 as double") {
     //java cc is whitespace ignorant
-    assertSameAST(testName, "RETURN -1.4 as double" )
+    assertSameASTForQueries(testName, "RETURN -1.4 as double", comparePosition = false)
   }
 
   test("RETURN Ox as literal") {

@@ -366,6 +366,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     Clause,
     Return,
     ReturnItem,
+    ReturnItems,
     SortItem,
     PatternPart,
     NodePattern,
@@ -386,6 +387,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     AdministrationCommand,
     SchemaCommand,
     Yield,
+    Where,
     DatabaseScope,
     WaitUntilComplete,
     AdministrationAction,
@@ -394,6 +396,13 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     ActionResource,
     PrivilegeQualifier,
     InputPosition] {
+
+  override def newSingleQuery(p: InputPosition, clauses: util.List[Clause]): Query = {
+    if (clauses.isEmpty) {
+      throw new Neo4jASTConstructionException("A valid Cypher query has to contain at least 1 clause")
+    }
+    Query(None, SingleQuery(clauses.asScala.toList)(p))(p)
+  }
 
   override def newSingleQuery(clauses: util.List[Clause]): Query = {
     if (clauses.isEmpty) {
@@ -418,15 +427,16 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     val union =
       if (all) UnionAll(lhs.part, rhsQuery)(p)
       else UnionDistinct(lhs.part, rhsQuery)(p)
-    Query(None, union)(p)
+    Query(None, union)(lhs.position)
   }
 
   override def periodicCommitQuery(p: InputPosition,
+                                   periodicCommitPosition: InputPosition,
                                    batchSize: String,
                                    loadCsv: Clause,
                                    queryBody: util.List[Clause]): Query =
-    Query(Some(PeriodicCommitHint(Option(batchSize).map(SignedDecimalIntegerLiteral(_)(p)))(p)),
-      SingleQuery(loadCsv +: queryBody.asScala)(p)
+    Query(Some(PeriodicCommitHint(Option(batchSize).map(SignedDecimalIntegerLiteral(_)(periodicCommitPosition)))(periodicCommitPosition)),
+      SingleQuery(loadCsv +: queryBody.asScala)(loadCsv.position)
     )(p)
 
   override def useClause(p: InputPosition,
@@ -434,20 +444,28 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def newReturnClause(p: InputPosition,
                                distinct: Boolean,
-                               returnAll: Boolean,
-                               returnItems: util.List[ReturnItem],
+                               returnItems: ReturnItems,
                                order: util.List[SortItem],
+                               orderPosition: InputPosition,
                                skip: Expression,
-                               limit: Expression): Return = {
-    val items = ReturnItems(returnAll, returnItems.asScala.toList)(p)
+                               skipPosition: InputPosition,
+                               limit: Expression,
+                               limitPosition: InputPosition): Return = {
+    val orderList = order.asScala.toList
     Return(distinct,
-      items,
-      if (order.isEmpty) None else Some(OrderBy(order.asScala.toList)(p)),
-      Option(skip).map(e => Skip(e)(p)),
-      Option(limit).map(e => Limit(e)(p)))(p)
+      returnItems,
+      if (order.isEmpty) None else Some(OrderBy(orderList)(orderPosition)),
+      Option(skip).map(e => Skip(e)(skipPosition)),
+      Option(limit).map(e => Limit(e)(limitPosition)))(p)
   }
 
-  override def newReturnItem(p: InputPosition, e: Expression, v: Variable): ReturnItem = AliasedReturnItem(e, v)(p)
+  override def newReturnItems(p: InputPosition, returnAll: Boolean, returnItems: util.List[ReturnItem]): ReturnItems = {
+    ReturnItems(returnAll, returnItems.asScala.toList)(p)
+  }
+
+  override def newReturnItem(p: InputPosition, e: Expression, v: Variable): ReturnItem = {
+    AliasedReturnItem(e, v)(p)
+  }
 
   override def newReturnItem(p: InputPosition,
                              e: Expression,
@@ -458,19 +476,22 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     UnaliasedReturnItem(e, name)(p)
   }
 
-  override def orderDesc(e: Expression): SortItem = DescSortItem(e)(e.position)
+  override def orderDesc(p: InputPosition, e: Expression): SortItem = DescSortItem(e)(p)
 
-  override def orderAsc(e: Expression): SortItem = AscSortItem(e)(e.position)
+  override def orderAsc(p: InputPosition, e: Expression): SortItem = AscSortItem(e)(p)
 
   override def createClause(p: InputPosition, patterns: util.List[PatternPart]): Clause =
-    Create(Pattern(patterns.asScala.toList)(p))(p)
+    Create(Pattern(patterns.asScala.toList)(patterns.asScala.map(_.position).minBy(_.offset)))(p)
 
   override def matchClause(p: InputPosition,
                            optional: Boolean,
                            patterns: util.List[PatternPart],
+                           patternPos: InputPosition,
                            hints: util.List[UsingHint],
-                           where: Expression): Clause =
-    Match(optional, Pattern(patterns.asScala.toList)(p), if (hints == null) Nil else hints.asScala.toList, Option(where).map(Where(_)(p)))(p)
+                           where: Where): Clause = {
+    val patternList = patterns.asScala.toList
+    Match(optional, Pattern(patternList)(patternPos), if (hints == null) Nil else hints.asScala.toList, Option(where))(p)
+  }
 
   override def usingIndexHint(p: InputPosition,
                               v: Variable,
@@ -492,13 +513,17 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def withClause(p: InputPosition,
                           r: Return,
-                          where: Expression): Clause =
+                          where: Where): Clause =
     With(r.distinct,
       r.returnItems,
       r.orderBy,
       r.skip,
       r.limit,
-      Option(where).map(e => Where(e)(e.position)))(p)
+      Option(where))(p)
+
+  override def whereClause(p: InputPosition,
+                           where: Expression): Where =
+    Where(where)(p)
 
   override def setClause(p: InputPosition, setItems: util.List[SetItem]): SetClause =
     SetClause(setItems.asScala.toList)(p)
@@ -535,28 +560,37 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   override def mergeClause(p: InputPosition,
                            pattern: PatternPart,
                            setClauses: util.List[SetClause],
-                           actionTypes: util.List[MergeActionType]): Clause = {
+                           actionTypes: util.List[MergeActionType],
+                           positions: util.List[InputPosition]): Clause = {
     val clausesIter = setClauses.iterator()
+    val positionItr = positions.iterator()
     val actions = actionTypes.asScala.toList.map {
-      case MergeActionType.OnMatch => OnMatch(clausesIter.next())(p)
-      case MergeActionType.OnCreate => OnCreate(clausesIter.next())(p)
+      case MergeActionType.OnMatch => {
+        OnMatch(clausesIter.next())(positionItr.next)
+      }
+      case MergeActionType.OnCreate => {
+        OnCreate(clausesIter.next())(positionItr.next)
+      }
     }
 
     Merge(Pattern(Seq(pattern))(p), actions)(p)
   }
 
   override def callClause(p: InputPosition,
+                          namespacePosition: InputPosition,
+                          procedureNamePosition: InputPosition,
+                          procedureResultPosition: InputPosition,
                           namespace: util.List[String],
                           name: String,
                           arguments: util.List[Expression],
                           yieldAll: Boolean,
                           resultItems: util.List[ProcedureResultItem],
-                          where: Expression): Clause =
+                          where: Where): Clause =
     UnresolvedCall(
-      Namespace(namespace.asScala.toList)(p),
-      ProcedureName(name)(p),
+      Namespace(namespace.asScala.toList)(namespacePosition),
+      ProcedureName(name)(procedureNamePosition),
       if (arguments == null) None else Some(arguments.asScala.toList),
-      Option(resultItems).map(items => ProcedureResult(items.asScala.toList.toIndexedSeq, Option(where).map(w => Where(w)(w.position)))(p)),
+      Option(resultItems).map(items => ProcedureResult(items.asScala.toList.toIndexedSeq, Option(where))(procedureResultPosition)),
       yieldAll
     )(p)
 
@@ -602,7 +636,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     while (relIter.hasNext) {
       val relPattern = relIter.next()
       val rightNodePattern = nodeIter.next()
-      patternElement = RelationshipChain(patternElement, relPattern, rightNodePattern)(relPattern.position)
+      patternElement = RelationshipChain(patternElement, relPattern, rightNodePattern)(patternElement.position)
     }
     EveryPath(patternElement)
   }
@@ -648,7 +682,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     } else {
       val min = if (minLength == "") None else Some(UnsignedDecimalIntegerLiteral(minLength)(pMin))
       val max = if (maxLength == "") None else Some(UnsignedDecimalIntegerLiteral(maxLength)(pMax))
-      Some(Range(min, max)(p))
+      Some(Range(min, max)(if (pMin != null) pMin else p))
     }
   }
 
@@ -745,10 +779,10 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def ands(exprs: util.List[Expression]): Expression = Ands(exprs.asScala.toList)(exprs.get(0).position)
 
-  override def not(e: Expression): Expression =
+  override def not(p: InputPosition, e: Expression): Expression =
     e match {
-      case IsNull(e) => IsNotNull(e)(e.position)
-      case _ => Not(e)(e.position)
+      case IsNull(e) => IsNotNull(e)(p)
+      case _ => Not(e)(p)
     }
 
   override def plus(p: InputPosition,
@@ -775,9 +809,11 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                    lhs: Expression,
                    rhs: Expression): Expression = Pow(lhs, rhs)(p)
 
-  override def unaryPlus(e: Expression): Expression = UnaryAdd(e)(e.position)
+  override def unaryPlus(e: Expression): Expression = unaryPlus(e.position, e)
 
-  override def unaryMinus(e: Expression): Expression = UnarySubtract(e)(e.position)
+  override def unaryPlus(p: InputPosition, e: Expression): Expression = UnaryAdd(e)(p)
+
+  override def unaryMinus(p: InputPosition, e: Expression): Expression = UnarySubtract(e)(p)
 
   override def eq(p: InputPosition,
                   lhs: Expression,
@@ -827,7 +863,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                   lhs: Expression,
                   rhs: Expression): Expression = In(lhs, rhs)(p)
 
-  override def isNull(e: Expression): Expression = IsNull(e)(e.position)
+  override def isNull(p: InputPosition, e: Expression): Expression = IsNull(e)(p)
 
   override def listLookup(list: Expression,
                           index: Expression): Expression = ContainerIndex(list, index)(index.position)
@@ -842,12 +878,13 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   override def newCountStar(p: InputPosition): Expression = CountStar()(p)
 
   override def functionInvocation(p: InputPosition,
+                                  functionNamePosition: InputPosition,
                                   namespace: util.List[String],
                                   name: String,
                                   distinct: Boolean,
                                   arguments: util.List[Expression]): Expression = {
     FunctionInvocation(Namespace(namespace.asScala.toList)(p),
-      FunctionName(name)(p),
+      FunctionName(name)(functionNamePosition),
       distinct,
       arguments.asScala.toIndexedSeq)(p)
   }
@@ -860,12 +897,13 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     ListComprehension(v, list, Option(where), Option(projection))(p)
 
   override def patternComprehension(p: InputPosition,
+                                    relationshipPatternPosition: InputPosition,
                                     v: Variable,
                                     pattern: PatternPart,
                                     where: Expression,
                                     projection: Expression): Expression =
     PatternComprehension(Option(v),
-      RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p),
+      RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(relationshipPatternPosition),
       Option(where),
       projection)(p, Set.empty, anonymousVariableNameGenerator.nextName, anonymousVariableNameGenerator.nextName)
 
@@ -985,18 +1023,22 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   override def yieldClause(p: InputPosition,
                            returnAll: Boolean,
                            returnItemList: util.List[ReturnItem],
+                           returnItemsP: InputPosition,
                            order: util.List[SortItem],
+                           orderPos: InputPosition,
                            skip: Expression,
+                           skipPosition: InputPosition,
                            limit: Expression,
-                           where: Expression): Yield = {
+                           limitPosition: InputPosition,
+                           where: Where): Yield = {
 
-    val returnItems = ReturnItems(returnAll, returnItemList.asScala.toList)(p)
+    val returnItems = ReturnItems(returnAll, returnItemList.asScala.toList)(returnItemsP)
 
     Yield(returnItems,
-      Option(order.asScala.toList).filter(_.nonEmpty).map(OrderBy(_)(p)),
-      Option(skip).map(Skip(_)(p)),
-      Option(limit).map(Limit(_)(p)),
-      Option(where).map(e => Where(e)(e.position))
+      Option(order.asScala.toList).filter(_.nonEmpty).map(o => OrderBy(o)(orderPos)),
+      Option(skip).map(s => Skip(s)(skipPosition)),
+      Option(limit).map(l => Limit(l)(limitPosition)),
+      Option(where)
     )(p)
   }
 
@@ -1004,7 +1046,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                                initialIndexType: ShowCommandFilterTypes,
                                brief: Boolean,
                                verbose: Boolean,
-                               where: Expression,
+                               where: Where,
                                hasYield: Boolean): Clause = {
     val indexType = initialIndexType match {
       case ShowCommandFilterTypes.ALL => AllIndexes
@@ -1013,14 +1055,14 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
       case ShowCommandFilterTypes.LOOKUP => LookupIndexes
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("indexes", t))
     }
-    ShowIndexesClause(indexType, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
+    ShowIndexesClause(indexType, brief, verbose, Option(where), hasYield)(p)
   }
 
   override def showConstraintClause(p: InputPosition,
                                     initialConstraintType: ShowCommandFilterTypes,
                                     brief: Boolean,
                                     verbose: Boolean,
-                                    where: Expression,
+                                    where: Where,
                                     hasYield: Boolean): Clause = {
     val constraintType: ShowConstraintType = initialConstraintType match {
       case ShowCommandFilterTypes.ALL => AllConstraints
@@ -1037,24 +1079,24 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
       case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST => RelExistsConstraints(OldValidSyntax)
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("constraints", t))
     }
-    ShowConstraintsClause(constraintType, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
+    ShowConstraintsClause(constraintType, brief, verbose, Option(where), hasYield)(p)
   }
 
   override def showProcedureClause(p: InputPosition,
                                    currentUser: Boolean,
                                    user: String,
-                                   where: Expression,
+                                   where: Where,
                                    hasYield: Boolean): Clause = {
     // either we have 'EXECUTABLE BY user', 'EXECUTABLE [BY CURRENT USER]' or nothing
     val executableBy = if (user != null) Some(User(user)) else if (currentUser) Some(CurrentUser) else None
-    ShowProceduresClause(executableBy, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
+    ShowProceduresClause(executableBy, Option(where), hasYield)(p)
   }
 
   override def showFunctionClause(p: InputPosition,
                                   initialFunctionType: ShowCommandFilterTypes,
                                   currentUser: Boolean,
                                   user: String,
-                                  where: Expression,
+                                  where: Where,
                                   hasYield: Boolean): Clause = {
     val functionType = initialFunctionType match {
       case ShowCommandFilterTypes.ALL   => AllFunctions
@@ -1065,7 +1107,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
     // either we have 'EXECUTABLE BY user', 'EXECUTABLE [BY CURRENT USER]' or nothing
     val executableBy = if (user != null) Some(User(user)) else if (currentUser) Some(CurrentUser) else None
-    ShowFunctionsClause(functionType, executableBy, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
+    ShowFunctionsClause(functionType, executableBy, Option(where), hasYield)(p)
   }
 
   // Schema Commands
@@ -1222,7 +1264,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                          showAll: Boolean,
                          yieldExpr: Yield,
                          returnWithoutGraph: Return,
-                         where: Expression): ShowRoles = {
+                         where: Where): ShowRoles = {
     ShowRoles(WithUsers, showAll, yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
   }
 
@@ -1286,11 +1328,11 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def passwordExpression(p: InputPosition, password: String): Expression = SensitiveStringLiteral(password.getBytes(StandardCharsets.UTF_8))(p)
 
-  override def showUsers(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Expression): ShowUsers = {
+  override def showUsers(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Where): ShowUsers = {
     ShowUsers(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
   }
 
-  override def showCurrentUser(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Expression): ShowCurrentUser = {
+  override def showCurrentUser(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Where): ShowCurrentUser = {
     ShowCurrentUser(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
   }
 
@@ -1479,11 +1521,11 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                             scope: DatabaseScope,
                             yieldExpr: Yield,
                             returnWithoutGraph: Return,
-                            where: Expression): ShowDatabase = {
+                            where: Where): ShowDatabase = {
     if (yieldExpr != null) {
       ShowDatabase(scope, Some(Left((yieldExpr, Option(returnWithoutGraph)))))(p)
     } else {
-      ShowDatabase(scope, Option(where).map(e => Right(Where(e)(e.position))))(p)
+      ShowDatabase(scope, Option(where).map(e => Right(where)))(p)
     }
   }
 
@@ -1532,11 +1574,11 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   private def yieldOrWhere(yieldExpr: Yield,
                            returnWithoutGraph: Return,
-                           where: Expression): Option[Either[(Yield, Option[Return]), Where]] = {
+                           where: Where): Option[Either[(Yield, Option[Return]), Where]] = {
     if (yieldExpr != null) {
       Some(Left(yieldExpr, Option(returnWithoutGraph)))
     } else if (where != null) {
-      Some(Right(Where(where)(where.position)))
+      Some(Right(where))
     } else {
       None
     }

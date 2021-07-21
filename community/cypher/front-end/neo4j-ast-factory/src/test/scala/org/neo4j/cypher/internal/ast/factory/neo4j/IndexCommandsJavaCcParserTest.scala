@@ -34,11 +34,11 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
   // Create node index (old syntax)
 
   test("CREATE INDEX ON :Person(name)") {
-    assertSameAST(testName)
+    assertSameAST(testName, comparePosition = false)
   }
 
   test("CREATE INDEX ON :Person(name,age)") {
-    assertSameAST(testName)
+    assertSameAST(testName, comparePosition = false)
   }
 
   test("CREATE INDEX my_index ON :Person(name)") {
@@ -518,11 +518,11 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
   // Drop index
 
   test("DROP INDEX ON :Person(name)") {
-    assertSameAST(testName)
+    assertSameAST(testName, comparePosition = false)
   }
 
   test("DROP INDEX ON :Person(name, age)") {
-    assertSameAST(testName)
+    assertSameAST(testName, comparePosition = false)
   }
 
   test("DROP INDEX my_index") {
@@ -586,7 +586,7 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
   }
 
   test("DROP INDEX ON :if(exists)") {
-    assertSameAST(testName)
+    assertSameAST(testName, comparePosition = false)
   }
 
   test("CATALOG DROP INDEX name") {

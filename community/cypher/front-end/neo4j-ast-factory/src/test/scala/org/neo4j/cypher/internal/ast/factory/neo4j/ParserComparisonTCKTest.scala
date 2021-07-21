@@ -54,6 +54,20 @@ class ParserComparisonTCKTest extends ParserComparisonTestBase with FunSpecLike 
     """Feature "Literals8 - Maps": Scenario "Fail on a map containing key with symbol"""",
   )
 
+  val positionAcceptanceList = Seq(
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 1\"",
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 4\"",
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling numerical ranges 1\"",
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling numerical ranges 3\"",
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 3\"",
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 3\"",
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 2\"",
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling numerical ranges 4\"",
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling empty range\"",
+    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling numerical ranges 2\"",
+    "Feature \"Comparison4 - Combination of Comparisons\": Scenario \"Handling long chains of operators\""
+  )
+
   scenariosPerFeature foreach {
     case (featureName, scenarios) =>
       describe(featureName) {
@@ -61,15 +75,18 @@ class ParserComparisonTCKTest extends ParserComparisonTestBase with FunSpecLike 
           .filterNot(scenarioObj => DENYLIST(denyListEntry(scenarioObj)))
           .foreach {
             scenarioObj =>
-              val denyListName = denyListEntry(scenarioObj)
-              describe(denyListName) {
+              val testName = denyListEntry(scenarioObj)
+              describe(testName) {
                 scenarioObj.steps foreach {
                   case Execute(query, _, _) =>
                     x = x + 1
                     it(s"[$x]\n$query") {
-                      withClue(denyListName) {
+                      withClue(testName) {
                         try {
-                          assertSameAST(query)
+                          if(testName.contains("Bound Range")) {
+                            val t = testName
+                          }
+                          assertSameAST(query, !positionAcceptanceList.contains(testName))
                         } catch {
                           // Allow withClue to populate the testcase name
                           case e: Exception => fail(e.getMessage, e)

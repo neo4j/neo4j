@@ -99,7 +99,7 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
   }
 
   test("SHOW DATABASE blah YIELD *,database, databases, default, dbms RETURN user") {
-    assertSameAST(testName)
+    assertSameAST(testName) // throws exception and does therefore not validate position
   }
 
   // CREATE DATABASE

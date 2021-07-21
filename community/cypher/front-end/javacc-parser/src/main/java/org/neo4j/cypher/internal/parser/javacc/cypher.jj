@@ -67,6 +67,7 @@ public class Cypher<STATEMENT,
                     CLAUSE,
                     RETURN_CLAUSE extends CLAUSE,
                     RETURN_ITEM,
+                    RETURN_ITEMS,
                     ORDER_ITEM,
                     PATTERN,
                     NODE_PATTERN,
@@ -87,6 +88,7 @@ public class Cypher<STATEMENT,
                     ADMINISTRATION_COMMAND extends STATEMENT_WITH_GRAPH,
                     SCHEMA_COMMAND extends STATEMENT_WITH_GRAPH,
                     YIELD extends CLAUSE,
+                    WHERE,
                     DATABASE_SCOPE,
                     WAIT_CLAUSE,
                     ADMINISTRATION_ACTION,
@@ -102,6 +104,7 @@ public class Cypher<STATEMENT,
                CLAUSE,
                RETURN_CLAUSE,
                RETURN_ITEM,
+               RETURN_ITEMS,
                ORDER_ITEM,
                PATTERN,
                NODE_PATTERN,
@@ -122,6 +125,7 @@ public class Cypher<STATEMENT,
                ADMINISTRATION_COMMAND,
                SCHEMA_COMMAND,
                YIELD,
+               WHERE,
                DATABASE_SCOPE,
                WAIT_CLAUSE,
                ADMINISTRATION_ACTION,
@@ -136,6 +140,7 @@ public class Cypher<STATEMENT,
                              CLAUSE,
                              RETURN_CLAUSE,
                              RETURN_ITEM,
+                             RETURN_ITEMS,
                              ORDER_ITEM,
                              PATTERN,
                              NODE_PATTERN,
@@ -156,6 +161,7 @@ public class Cypher<STATEMENT,
                              ADMINISTRATION_COMMAND,
                              SCHEMA_COMMAND,
                              YIELD,
+                             WHERE,
                              DATABASE_SCOPE,
                              WAIT_CLAUSE,
                              ADMINISTRATION_ACTION,
@@ -173,7 +179,7 @@ public class Cypher<STATEMENT,
 
     private POS pos( Token t )
     {
-        return astFactory.inputPosition( t.beginOffset, t.beginLine, t.beginColumn );
+        return t != null ? astFactory.inputPosition( t.beginOffset, t.beginLine, t.beginColumn ) : null;
     }
 
     private void assertValidType( Token t, String expected, String actual ) throws Exception
@@ -1219,16 +1225,17 @@ STATEMENT SingleQueryOrCommand( USE_CLAUSE useClause ) throws Exception:
 QUERY PeriodicCommitQuery() :
 {
     Token t;
+    Token tPeriodicCommit;
     Token batchSize = null;
     CLAUSE loadCsv;
     List<CLAUSE> queryBody;
 }
 {
-    <USING> t=<PERIODIC> <COMMIT> ( batchSize=<UNSIGNED_DECIMAL_INTEGER> )?
+    t=<USING> tPeriodicCommit=<PERIODIC> <COMMIT> ( batchSize=<UNSIGNED_DECIMAL_INTEGER> )?
     loadCsv=LoadCSVClause()
     queryBody=PeriodicCommitQueryBody()
     {
-        return astFactory.periodicCommitQuery( pos( t ), batchSize == null ? null : batchSize.image, loadCsv, queryBody );
+        return astFactory.periodicCommitQuery( pos( t ), pos( tPeriodicCommit ), batchSize == null ? null : batchSize.image, loadCsv, queryBody );
     }
 }
 
@@ -1341,22 +1348,23 @@ RETURN_CLAUSE ReturnClause() :
 
 RETURN_CLAUSE ReturnBody( Token t ) :
 {
+    Token skipPosition = null;
+    Token limitPosition = null;
     boolean distinct = false;
-    boolean returnAll = false;
     List<ORDER_ITEM> order = new ArrayList<>();
+    Token orderPos = null;
     EXPRESSION skip = null;
     EXPRESSION limit = null;
+    ORDER_ITEM o = null;
     RETURN_ITEM x;
-    List<RETURN_ITEM> returnItems = new ArrayList<>();
+    RETURN_ITEMS returnItems;
 }
 {
     ( LOOKAHEAD( 2 ) <DISTINCT> { distinct = true; } )?
-    (
-        <TIMES> { returnAll = true; } ( "," x=ReturnItem() { returnItems.add( x ); } )*
-        | x=ReturnItem() { returnItems.add( x ); } ( "," x=ReturnItem() { returnItems.add( x ); } )*
-    ) ( order=Order() )? ( skip=Skip() )? ( limit=Limit() )?
+    ( returnItems=ReturnItems() )
+    ( orderPos=<ORDER> <BY> o=OrderItem() { order.add( o ); } ( "," o=OrderItem() {order.add( o ); } )* )? ( { skipPosition=token.next; } skip=Skip() )? ( { limitPosition=token.next; } limit=Limit() )?
     {
-        return astFactory.newReturnClause(  pos( t ), distinct, returnAll, returnItems, order, skip, limit );
+        return astFactory.newReturnClause(  pos( t ), distinct, returnItems, order, pos( orderPos ), skip, pos( skipPosition ), limit, pos( limitPosition ) );
     }
 }
 
@@ -1373,36 +1381,43 @@ RETURN_ITEM ReturnItem() :
     {
         if ( v != null )
         {
-            return astFactory.newReturnItem( pos( eStart ), e, v );
+            return astFactory.newReturnItem( pos( eStart.next ), e, v );
         }
         else
         {
-            return astFactory.newReturnItem( pos( eStart ), e, eStart.next.beginOffset, eEnd.endOffset );
+            return astFactory.newReturnItem( pos( eStart.next ), e, eStart.next.beginOffset, eEnd.endOffset );
         }
     }
 }
 
-List<ORDER_ITEM> Order() :
+RETURN_ITEMS ReturnItems() :
 {
-    ORDER_ITEM o;
-    List<ORDER_ITEM> items = new ArrayList<>();
+    Token returnItemsPosition;
+    RETURN_ITEM x;
+    List<RETURN_ITEM> returnItems = new ArrayList<>();
+    boolean returnAll = false;
 }
 {
-    <ORDER> <BY> o=OrderItem() { items.add( o ); } ( "," o=OrderItem() {items.add( o ); } )*
-    {
-        return items;
+    { returnItemsPosition = token; }
+    (
+        <TIMES> { returnAll = true; } ( "," x=ReturnItem() { returnItems.add( x ); } )*
+        | x=ReturnItem() { returnItems.add( x ); } ( "," x=ReturnItem() { returnItems.add( x ); } )*
+    ) {
+        return astFactory.newReturnItems( pos( returnItemsPosition.next ), returnAll, returnItems );
     }
 }
 
 ORDER_ITEM OrderItem() :
 {
+    Token t;
     EXPRESSION e;
 }
 {
+    {t = token;}
     e=Expression()
     (
-        <DESC> { return astFactory.orderDesc( e ); }
-        | ( <ASC> )? { return astFactory.orderAsc( e ); }
+        <DESC> { return astFactory.orderDesc( pos( t.next ), e ); }
+        | ( <ASC> )? { return astFactory.orderAsc( pos( t.next ), e ); }
     )
 }
 
@@ -1427,16 +1442,30 @@ EXPRESSION Limit() :
     }
 }
 
+// WHERE
+
+WHERE WhereClause() :
+{
+    Token t;
+    EXPRESSION e;
+}
+{
+    t=<WHERE> e=Expression()
+    {
+        return astFactory.whereClause( pos( t ), e );
+    }
+}
+
 // WITH
 
 CLAUSE WithClause() :
 {
     Token t;
     RETURN_CLAUSE returnClause;
-    EXPRESSION where = null;
+    WHERE where = null;
 }
 {
-    t=<WITH> returnClause=ReturnBody( t ) ( where=Where() )?
+    t=<WITH> returnClause=ReturnBody( t ) ( where=WhereClause() )?
     {
         return astFactory.withClause( pos( t ), returnClause, where );
     }
@@ -1516,15 +1545,16 @@ REMOVE_ITEM RemoveItem() :
 
 CLAUSE DeleteClause() :
 {
+    Token detachT = null;
     Token t;
     boolean detach = false;
     EXPRESSION e;
     List<EXPRESSION> list = new ArrayList<>();
 }
 {
-    ( <DETACH> { detach = true; } )? t=<DELETE> e=Expression() {list.add( e );} ( "," e=Expression() { list.add( e ); } )*
+    ( detachT=<DETACH> { detach = true; } )? t=<DELETE> e=Expression() {list.add( e );} ( "," e=Expression() { list.add( e ); } )*
     {
-        return astFactory.deleteClause( pos( t ), detach, list );
+        return astFactory.deleteClause( pos( detachT != null ? detachT : t ), detach, list );
     }
 }
 
@@ -1532,16 +1562,18 @@ CLAUSE DeleteClause() :
 
 CLAUSE MatchClause() :
 {
+    Token optionalT = null;
     Token t;
+    Token whereToken = null;
     boolean optional = false;
     List<PATTERN> patterns;
     List<HINT> hints;
-    EXPRESSION where = null;
+    WHERE where = null;
 }
 {
-    ( <OPTIONAL> { optional = true; } )? t=<MATCH> patterns=PatternList() hints=Hints() ( where=Where() )?
+    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> patterns=PatternList() hints=Hints() ( where=WhereClause() )?
     {
-        return astFactory.matchClause( pos( t ), optional, patterns, hints, where );
+        return astFactory.matchClause( pos( optionalT != null ? optionalT : t ), optional, patterns, pos( t.next ), hints, where );
     }
 }
 
@@ -1583,21 +1615,23 @@ List<HINT> Hints() :
 CLAUSE MergeClause() :
 {
     Token t;
+    Token onToken;
     PATTERN p;
     SET_CLAUSE c;
     ArrayList<SET_CLAUSE> clauses = new ArrayList<>();
+    ArrayList<POS> positions = new ArrayList<>();
     ArrayList<ASTFactory.MergeActionType> actionTypes = new ArrayList<>();
 }
 {
     t=<MERGE> p=Pattern()
     (
-        <ON> (
-            <MATCH> c=SetClause() { clauses.add( c ); actionTypes.add( ASTFactory.MergeActionType.OnMatch ); }
-            | <CREATE> c=SetClause() { clauses.add( c ); actionTypes.add( ASTFactory.MergeActionType.OnCreate ); }
+        onToken = <ON> (
+            <MATCH> c=SetClause() { clauses.add( c ); actionTypes.add( ASTFactory.MergeActionType.OnMatch ); positions.add( pos( onToken ) ); }
+            | <CREATE> c=SetClause() { clauses.add( c ); actionTypes.add( ASTFactory.MergeActionType.OnCreate ); positions.add( pos( onToken ) ); }
         )
     )*
     {
-        return astFactory.mergeClause( pos( t ), p, clauses, actionTypes );
+        return astFactory.mergeClause( pos( t ), p, clauses, actionTypes, positions );
     }
 }
 
@@ -1620,6 +1654,8 @@ CLAUSE UnwindClause() :
 CLAUSE CallClause() :
 {
     Token t;
+    Token procedureNamePosition;
+    Token procedureResultPosition = null;
     List<String> namespace;
     String name;
     EXPRESSION e;
@@ -1627,24 +1663,27 @@ CLAUSE CallClause() :
     boolean yieldAll = false;
     CALL_RESULT_ITEM x;
     List<CALL_RESULT_ITEM> items = null;
-    EXPRESSION where = null;
+    WHERE where = null;
 }
 {
-    t=<CALL> namespace=Namespace() name=ProcedureName()
+    t=<CALL> namespace=Namespace() {procedureNamePosition = token;} name=ProcedureName()
     ( <LPAREN> { arguments = new ArrayList<>(); }
         ( LOOKAHEAD( 2 ) e=Expression() { arguments.add( e ); })? ( "," e=Expression() { arguments.add( e ); })*
         <RPAREN>
     )?
-    ( <YIELD> (
+    ( procedureResultPosition=<YIELD> (
         <TIMES> { yieldAll = true; }
         | { items = new ArrayList<>(); }
             x=ProcedureResultItem() { items.add( x ); }
             ( "," x=ProcedureResultItem() { items.add( x ); })*
-            ( where=Where() )?
+            ( where=WhereClause() )?
         )
     )?
     {
         return astFactory.callClause( pos( t ),
+                                     pos( t.next ),
+                                     pos( procedureNamePosition.next ),
+                                     pos( procedureResultPosition ),
                                      namespace,
                                      name,
                                      arguments,
@@ -1728,19 +1767,6 @@ CLAUSE SubqueryClause() :
     <RCURLY>
     {
         return astFactory.subqueryClause( pos( t ), q );
-    }
-}
-
-// WHERE
-
-EXPRESSION Where() :
-{
-    EXPRESSION e;
-}
-{
-    <WHERE> e=Expression()
-    {
-        return e;
     }
 }
 
@@ -1977,7 +2003,7 @@ PATH_LENGTH PathLengthLiteral( Token t ) :
     Token v2 = null;
 }
 {
-    LOOKAHEAD( 2 ) ( v1=<UNSIGNED_DECIMAL_INTEGER> )? <DOTDOT> ( v2=<UNSIGNED_DECIMAL_INTEGER> )?
+    LOOKAHEAD( 2 ) ( v1=<UNSIGNED_DECIMAL_INTEGER> )? t=<DOTDOT> ( v2=<UNSIGNED_DECIMAL_INTEGER> )?
         {
             return astFactory.pathLength( pos( t ), v1 == null ? null : pos ( v1 ), v2 == null ? null : pos ( v2 ),  v1 == null ? "" : v1.image, v2 == null ? "" : v2.image );
         }
@@ -2042,11 +2068,12 @@ EXPRESSION Expression10() :
 
 EXPRESSION Expression9() :
 {
+    Token t;
     EXPRESSION e;
 }
 {
     (
-        LOOKAHEAD( 3 ) <NOT> e=Expression9() { e = astFactory.not( e ); }
+        LOOKAHEAD( 3 ) t=<NOT> e=Expression9() { e = astFactory.not( pos( t ), e ); }
         | e=Expression8()
     )
     {
@@ -2111,8 +2138,8 @@ EXPRESSION ComparisonExpression6( EXPRESSION lhs ) :
     | t=<CONTAINS> rhs=Expression6() { return astFactory.contains( pos( t ), lhs, rhs ); }
     | t=<IN> rhs=Expression6() { return astFactory.in( pos( t ), lhs, rhs ); }
     | t=<IS> (
-        <NULL> { return astFactory.isNull( lhs ); }
-        | <NOT> <NULL> { return astFactory.not( astFactory.isNull( lhs ) ); }
+        <NULL> { return astFactory.isNull( pos( t ), lhs ); }
+        | <NOT> <NULL> { return astFactory.not( pos( t ), astFactory.isNull( pos( t ), lhs ) ); } // We will not use the position of IsNull
     )
 }
 
@@ -2164,13 +2191,14 @@ EXPRESSION Expression4() :
 
 EXPRESSION Expression3() :
 {
+    Token t;
     EXPRESSION e;
 }
 {
     (
         LOOKAHEAD(3) e=Expression2()
-        | <PLUS> e=Expression2() { e = astFactory.unaryPlus( e ); }
-        | <MINUS> e=Expression2() { e = astFactory.unaryMinus( e ); }
+        | t = <PLUS> e=Expression2() { e = astFactory.unaryPlus( pos( t ), e ); }
+        | t = <MINUS> e=Expression2() { e = astFactory.unaryMinus( pos( t ), e ); }
     )
     {
         return e;
@@ -2307,7 +2335,7 @@ EXPRESSION ListComprehension() :
     EXPRESSION projection = null;
 }
 {
-    t=<LBRACKET> v=Variable() <IN> e=Expression() ( where=Where() )? ( <BAR> projection=Expression() )? <RBRACKET>
+    t=<LBRACKET> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? ( <BAR> projection=Expression() )? <RBRACKET>
     {
         return astFactory.listComprehension( pos( t ), v, e, where, projection );
     }
@@ -2316,15 +2344,16 @@ EXPRESSION ListComprehension() :
 EXPRESSION PatternComprehension() :
 {
     Token t;
+    Token relationshipPatternPosition;
     VARIABLE v = null;
     PATTERN p;
     EXPRESSION where = null;
     EXPRESSION projection = null;
 }
 {
-    t=<LBRACKET> ( v=Variable() <EQ> )? p=EveryPathPatternNonEmpty() ( where=Where() )? <BAR> projection=Expression() <RBRACKET>
+    t=<LBRACKET> ( v=Variable() <EQ> )? {relationshipPatternPosition = token;} p=EveryPathPatternNonEmpty() ( <WHERE> where=Expression() )? <BAR> projection=Expression() <RBRACKET>
     {
-        return astFactory.patternComprehension( pos( t ), v, p, where, projection );
+        return astFactory.patternComprehension( pos( t ), pos( relationshipPatternPosition.next ), v, p, where, projection );
     }
 }
 
@@ -2342,7 +2371,7 @@ EXPRESSION FilterExpression() :
     EXPRESSION where = null;
 }
 {
-    t=<FILTER> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    t=<FILTER> <LPAREN> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? <RPAREN>
     {
         return astFactory.filterExpression( pos( t ), v, e, where );
     }
@@ -2357,7 +2386,7 @@ EXPRESSION ExtractExpression() :
     EXPRESSION projection = null;
 }
 {
-    t=<EXTRACT> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? ( <BAR> projection=Expression() )? <RPAREN>
+    t=<EXTRACT> <LPAREN> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? ( <BAR> projection=Expression() )? <RPAREN>
     {
         return astFactory.extractExpression( pos( t ), v, e, where, projection );
     }
@@ -2392,7 +2421,7 @@ EXPRESSION AllExpression() :
     EXPRESSION where = null;
 }
 {
-    t=<ALL> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    t=<ALL> <LPAREN> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? <RPAREN>
     {
         return astFactory.allExpression( pos( t ), v, e, where );
     }
@@ -2406,7 +2435,7 @@ EXPRESSION AnyExpression() :
     EXPRESSION where = null;
 }
 {
-    t=<ANY> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    t=<ANY> <LPAREN> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? <RPAREN>
     {
         return astFactory.anyExpression( pos( t ), v, e, where );
     }
@@ -2420,7 +2449,7 @@ EXPRESSION NoneExpression() :
     EXPRESSION where = null;
 }
 {
-    t=<NONE> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    t=<NONE> <LPAREN> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? <RPAREN>
     {
         return astFactory.noneExpression( pos( t ), v, e, where );
     }
@@ -2434,7 +2463,7 @@ EXPRESSION SingleExpression() :
     EXPRESSION where = null;
 }
 {
-    t=<SINGLE> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    t=<SINGLE> <LPAREN> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? <RPAREN>
     {
         return astFactory.singleExpression( pos( t ), v, e, where );
     }
@@ -2501,7 +2530,7 @@ EXPRESSION ExistsSubQuery() :
     EXPRESSION where = null;
 }
 {
-    t=<EXISTS> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? patterns=PatternList() ( where=Where() )? <RCURLY>
+    t=<EXISTS> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? patterns=PatternList() ( <WHERE> where=Expression() )? <RCURLY>
     {
         return astFactory.existsSubQuery( pos( t ), patterns, where );
     }
@@ -2664,20 +2693,21 @@ EXPRESSION OldParameter() :
 EXPRESSION FunctionInvocation() :
 {
     Token before = token;
+    Token nameSpaceToken;
+    Token nameToken;
     List<String> namespace;
-    String name;
     boolean distinct = false;
     EXPRESSION e;
     List<EXPRESSION> arguments = new ArrayList<>();
 }
 {
-    namespace=Namespace() name=FunctionName()
+    namespace=Namespace() nameToken=SymbolicNameString()
     <LPAREN>
         ( LOOKAHEAD( 2 ) <DISTINCT> { distinct=true; })?
         ( e=Expression() { arguments.add( e ); } )? ( "," e=Expression() { arguments.add( e ); } )*
     <RPAREN>
     {
-        return astFactory.functionInvocation( pos( before.next ), namespace, name, distinct, arguments );
+        return astFactory.functionInvocation( pos( before.next ), pos( nameToken ), namespace, nameToken.image, distinct, arguments );
     }
 }
 
@@ -2935,24 +2965,28 @@ STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFil
 YIELD YieldClause():
 {
     Token start;
+    Token skipPosition = null;
+    Token limitPosition = null;
+    Token orderToken = null;
     boolean returnAll = false;
     RETURN_ITEM item;
+    ORDER_ITEM o;
     List<RETURN_ITEM> returnItems = new ArrayList<>();
     List<ORDER_ITEM> orders = new ArrayList<>();
     EXPRESSION skip = null;
     EXPRESSION limit = null;
-    EXPRESSION where = null;
+    WHERE where = null;
 }
 {
     start=<YIELD>
     ( <TIMES> { returnAll = true; }  |
     ( item=ReturnItem() { returnItems.add( item ); } ("," item=ReturnItem() { returnItems.add( item ); } )*))
-    ( orders=Order() )?
-    ( <SKIPROWS> skip=SignedIntegerLiteral() )?
-    ( <LIMITROWS> limit=SignedIntegerLiteral() )?
-    ( where = Where() ) ?
+    ( orderToken=<ORDER> <BY> o=OrderItem() { orders.add( o ); } ( "," o=OrderItem() {orders.add( o ); } )*)?
+    ( skipPosition=<SKIPROWS> skip=SignedIntegerLiteral() )?
+    ( limitPosition=<LIMITROWS> limit=SignedIntegerLiteral() )?
+    ( where=WhereClause() ) ?
     {
-        return astFactory.yieldClause( pos( start ), returnAll, returnItems, orders, skip, limit, where );
+        return astFactory.yieldClause( pos( start ), returnAll, returnItems, pos( start.next ), orders, pos( orderToken ), skip, pos( skipPosition ), limit, pos( limitPosition ), where );
     }
 }
 
@@ -2966,7 +3000,7 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandF
     }
     boolean brief = false;
     boolean verbose = false;
-    EXPRESSION where = null;
+    WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
 }
@@ -2975,7 +3009,7 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandF
     (
         ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; } ) ( <OUTPUT> )? )
         | ( yieldClause=YieldClause() ( returnClause=ReturnClause() )? )
-        | where= Where()
+        | where=WhereClause()
     )?
     {
         if ( yieldClause != null )
@@ -2991,7 +3025,7 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandF
         {
             clauses.add( astFactory.showIndexClause( pos( start ), indexType, brief, verbose, where, false ) );
         }
-        return astFactory.newSingleQuery( clauses );
+        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 
@@ -3002,13 +3036,14 @@ STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, ShowCommandFilte
   if (useClause != null) {
       clauses.add( useClause );
   }
-  EXPRESSION where = null;
+  Token t;
+  WHERE where = null;
   YIELD yieldClause = null;
   RETURN_CLAUSE returnClause = null;
 }
 {
-    ( <INDEX> | <INDEXES> )
-    ( (yieldClause = YieldClause() ( returnClause=ReturnClause() )?) | where = Where() )?
+    ( t=<INDEX> | t=<INDEXES> )
+    ( (yieldClause = YieldClause() ( returnClause=ReturnClause() )?) | where=WhereClause() )?
     {
         if ( yieldClause != null )
         {
@@ -3023,7 +3058,7 @@ STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, ShowCommandFilte
         {
             clauses.add( astFactory.showIndexClause( pos( start ), indexType, false, false, where, false ) );
         }
-        return astFactory.newSingleQuery( clauses );
+        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 
@@ -3037,7 +3072,7 @@ STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, 
     }
     boolean brief = false;
     boolean verbose = false;
-    EXPRESSION where = null;
+    WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
 }
@@ -3046,7 +3081,7 @@ STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, 
     (
         ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? )
         | ( yieldClause=YieldClause() ( returnClause=ReturnClause() )?)
-        | where = Where()
+        | where=WhereClause()
     )?
     {
         if ( yieldClause != null )
@@ -3062,7 +3097,7 @@ STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, 
         {
             clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, where, false ) );
         }
-        return astFactory.newSingleQuery( clauses );
+        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 
@@ -3070,6 +3105,7 @@ STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, ShowComm
 {
     // old deprecated existence constraints
     List<CLAUSE> clauses = new ArrayList<>();
+    Token t;
     if ( useClause != null )
     {
         clauses.add( useClause );
@@ -3078,11 +3114,11 @@ STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, ShowComm
     boolean verbose = false;
 }
 {
-    ( <CONSTRAINT> | <CONSTRAINTS> )
+    ( t=<CONSTRAINT> | t=<CONSTRAINTS> )
     ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? )?
     {
         clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, null, false ) );
-        return astFactory.newSingleQuery( clauses );
+        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 
@@ -3090,19 +3126,20 @@ STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, ShowComm
 {
     // new existence constraints
     List<CLAUSE> clauses = new ArrayList<>();
+    Token t;
     if (useClause != null)
     {
         clauses.add( useClause );
     }
-    EXPRESSION where = null;
+    WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
 }
 {
-    ( <CONSTRAINT> | <CONSTRAINTS> )
+    ( t=<CONSTRAINT> | t=<CONSTRAINTS> )
     (
         ( yieldClause = YieldClause() ( returnClause=ReturnClause() ) ? )
-        | where = Where()
+        | where=WhereClause()
     )?
     {
         if ( yieldClause != null )
@@ -3118,12 +3155,13 @@ STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, ShowComm
         {
             clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, false, false, where, false ) );
         }
-        return astFactory.newSingleQuery( clauses );
+        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 
 STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
 {
+    Token t;
     List<CLAUSE> clauses = new ArrayList<>();
     if (useClause != null)
     {
@@ -3134,12 +3172,12 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
     Token userToken = null;
     String user = null;
 
-    EXPRESSION where = null;
+    WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
 }
 {
-    ( <PROCEDURE> | <PROCEDURES> )
+    ( t=<PROCEDURE> | t=<PROCEDURES> )
     (
         <EXECUTABLE> { currentUser = true; } ( <BY>
         ( <CURRENT> <USER> { currentUser = true; }
@@ -3147,7 +3185,7 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
     )?
     (
         ( yieldClause = YieldClause() ( returnClause=ReturnClause() ) ? )
-        | where = Where()
+        | where=WhereClause()
     )?
     {
         if ( yieldClause != null )
@@ -3163,12 +3201,13 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
         {
             clauses.add( astFactory.showProcedureClause( pos( start ), currentUser, user, where, false ) );
         }
-        return astFactory.newSingleQuery( clauses );
+        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 
 STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes functionType ):
 {
+    Token t;
     List<CLAUSE> clauses = new ArrayList<>();
     if (useClause != null)
     {
@@ -3179,12 +3218,12 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTyp
     Token userToken = null;
     String user = null;
 
-    EXPRESSION where = null;
+    WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
 }
 {
-    ( <FUNCTION> | <FUNCTIONS> )
+    ( t=<FUNCTION> | t=<FUNCTIONS> )
     (
         <EXECUTABLE> { currentUser = true; } ( <BY>
         ( <CURRENT> <USER> { currentUser = true; }
@@ -3192,7 +3231,7 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTyp
     )?
     (
         ( yieldClause = YieldClause() ( returnClause=ReturnClause() ) ? )
-        | where = Where()
+        | where=WhereClause()
     )?
     {
         if ( yieldClause != null )
@@ -3208,7 +3247,7 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTyp
         {
             clauses.add( astFactory.showFunctionClause( pos( start ), functionType, currentUser, user, where, false ) );
         }
-        return astFactory.newSingleQuery( clauses );
+        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 
@@ -3665,14 +3704,14 @@ STATEMENT_WITH_GRAPH ShowRoles( Token start, USE_CLAUSE useClause, boolean showA
     boolean withUsers = false;
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
-    EXPRESSION where = null;
+    WHERE where = null;
 }
 {
     <ROLES>
     ( <WITH> <USERS> { withUsers = true; } )?
     (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
-        | ( where = Where() )
+        | ( where=WhereClause() )
     )?
     {
         return astFactory.useGraph( astFactory.showRoles( pos( start ), withUsers, showAll, yield, returnClause, where ), useClause );
@@ -3920,12 +3959,12 @@ STATEMENT_WITH_GRAPH ShowUsers( Token start, USE_CLAUSE useClause ):
 {
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
-    EXPRESSION where = null;
+    WHERE where = null;
 }
 {
     <USERS> (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
-        | where = Where()
+        | where=WhereClause()
     )?
     {
         return astFactory.useGraph( astFactory.showUsers( pos( start ), yield, returnClause, where ), useClause );
@@ -3936,12 +3975,12 @@ STATEMENT_WITH_GRAPH ShowCurrentUser( Token start, USE_CLAUSE useClause ):
 {
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
-    EXPRESSION where = null;
+    WHERE where = null;
 }
 {
     <CURRENT> <USER> (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
-        | where = Where() )?
+        | where=WhereClause() )?
     {
         return astFactory.useGraph( astFactory.showCurrentUser( pos( start ), yield, returnClause, where ), useClause );
     }
@@ -4477,13 +4516,13 @@ STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ):
     DATABASE_SCOPE scope;
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
-    EXPRESSION where = null;
+    WHERE where = null;
 }
 {
    scope = DatabaseScope()
         (
             ( yield = YieldClause() ( returnClause = ReturnClause() )? )
-            | ( where = Where() )
+            | ( where=WhereClause() )
         )?
    {
         return astFactory.useGraph( astFactory.showDatabase( pos( start ), scope, yield, returnClause, where), useClause );

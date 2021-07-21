@@ -43,6 +43,7 @@ public interface ASTFactory<STATEMENT,
         CLAUSE,
         RETURN_CLAUSE extends CLAUSE,
         RETURN_ITEM,
+        RETURN_ITEMS,
         ORDER_ITEM,
         PATTERN,
         NODE_PATTERN,
@@ -63,6 +64,7 @@ public interface ASTFactory<STATEMENT,
         ADMINISTRATION_COMMAND extends STATEMENT_WITH_GRAPH,
         SCHEMA_COMMAND extends STATEMENT_WITH_GRAPH,
         YIELD extends CLAUSE,
+        WHERE,
         DATABASE_SCOPE,
         WAIT_CLAUSE,
         ADMINISTRATION_ACTION,
@@ -95,32 +97,40 @@ public interface ASTFactory<STATEMENT,
 
     // QUERY
 
+    QUERY newSingleQuery( POS p, List<CLAUSE> clauses );
+
     QUERY newSingleQuery( List<CLAUSE> clauses );
 
     QUERY newUnion( POS p, QUERY lhs, QUERY rhs, boolean all );
 
-    QUERY periodicCommitQuery( POS p, String batchSize, CLAUSE loadCsv, List<CLAUSE> queryBody );
+    QUERY periodicCommitQuery( POS p, POS periodicCommitPosition, String batchSize, CLAUSE loadCsv, List<CLAUSE> queryBody );
 
     USE_GRAPH useClause( POS p, EXPRESSION e );
 
     RETURN_CLAUSE newReturnClause( POS p, boolean distinct,
-                                   boolean returnAll,
-                                   List<RETURN_ITEM> returnItems,
+                                   RETURN_ITEMS returnItems,
                                    List<ORDER_ITEM> order,
+                                   POS orderPos,
                                    EXPRESSION skip,
-                                   EXPRESSION limit );
+                                   POS skipPosition,
+                                   EXPRESSION limit,
+                                   POS limitPosition );
+
+    RETURN_ITEMS newReturnItems( POS p, boolean returnAll, List<RETURN_ITEM> returnItems );
 
     RETURN_ITEM newReturnItem( POS p, EXPRESSION e, VARIABLE v );
 
     RETURN_ITEM newReturnItem( POS p, EXPRESSION e, int eStartOffset, int eEndOffset );
 
-    ORDER_ITEM orderDesc( EXPRESSION e );
+    ORDER_ITEM orderDesc( POS p, EXPRESSION e );
 
-    ORDER_ITEM orderAsc( EXPRESSION e );
+    ORDER_ITEM orderAsc( POS p, EXPRESSION e );
 
-    CLAUSE withClause( POS p, RETURN_CLAUSE returnClause, EXPRESSION where );
+    WHERE whereClause( POS p, EXPRESSION e );
 
-    CLAUSE matchClause( POS p, boolean optional, List<PATTERN> patterns, List<HINT> hints, EXPRESSION where );
+    CLAUSE withClause( POS p, RETURN_CLAUSE returnClause, WHERE where );
+
+    CLAUSE matchClause( POS p, boolean optional, List<PATTERN> patterns, POS patternPos, List<HINT> hints, WHERE where );
 
     HINT usingIndexHint( POS p, VARIABLE v, String labelOrRelType, List<String> properties, boolean seekOnly );
 
@@ -156,15 +166,18 @@ public interface ASTFactory<STATEMENT,
         OnMatch
     }
 
-    CLAUSE  mergeClause( POS p, PATTERN pattern, List<SET_CLAUSE> setClauses, List<MergeActionType> actionTypes );
+    CLAUSE  mergeClause( POS p, PATTERN pattern, List<SET_CLAUSE> setClauses, List<MergeActionType> actionTypes, List<POS> positions );
 
     CLAUSE callClause( POS p,
+                       POS namespacePosition,
+                       POS procedureNamePosition,
+                       POS procedureResultPosition,
                        List<String> namespace,
                        String name,
                        List<EXPRESSION> arguments,
                        boolean yieldAll,
                        List<CALL_RESULT_ITEM> resultItems,
-                       EXPRESSION where );
+                       WHERE where );
 
     CALL_RESULT_ITEM callResultItem( POS p, String name, VARIABLE v );
 
@@ -218,18 +231,22 @@ public interface ASTFactory<STATEMENT,
     YIELD yieldClause( POS p,
                        boolean returnAll,
                        List<RETURN_ITEM> returnItems,
+                       POS returnItemsPosition,
                        List<ORDER_ITEM> orderBy,
+                       POS orderPos,
                        EXPRESSION skip,
+                       POS skipPosition,
                        EXPRESSION limit,
-                       EXPRESSION where );
+                       POS limitPosition,
+                       WHERE where );
 
-    CLAUSE showIndexClause( POS p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, EXPRESSION where, boolean hasYield );
+    CLAUSE showIndexClause( POS p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, WHERE where, boolean hasYield );
 
-    CLAUSE showConstraintClause( POS p, ShowCommandFilterTypes constraintType, boolean brief, boolean verbose, EXPRESSION where, boolean hasYield );
+    CLAUSE showConstraintClause( POS p, ShowCommandFilterTypes constraintType, boolean brief, boolean verbose, WHERE where, boolean hasYield );
 
-    CLAUSE showProcedureClause( POS p, boolean currentUser, String user, EXPRESSION where, boolean hasYield );
+    CLAUSE showProcedureClause( POS p, boolean currentUser, String user, WHERE where, boolean hasYield );
 
-    CLAUSE showFunctionClause( POS p, ShowCommandFilterTypes functionType, boolean currentUser, String user, EXPRESSION where, boolean hasYield );
+    CLAUSE showFunctionClause( POS p, ShowCommandFilterTypes functionType, boolean currentUser, String user, WHERE where, boolean hasYield );
 
     // Schema Commands
     // Constraint Commands
@@ -267,7 +284,7 @@ public interface ASTFactory<STATEMENT,
 
     ADMINISTRATION_COMMAND renameRole( POS p, Either<String, PARAMETER> fromRoleName, Either<String, PARAMETER> toRoleName, boolean ifExists );
 
-    ADMINISTRATION_COMMAND showRoles( POS p, boolean withUsers, boolean showAll, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
+    ADMINISTRATION_COMMAND showRoles( POS p, boolean withUsers, boolean showAll, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
     ADMINISTRATION_COMMAND grantRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );
 
@@ -305,9 +322,9 @@ public interface ASTFactory<STATEMENT,
 
     EXPRESSION passwordExpression( POS p, String password );
 
-    ADMINISTRATION_COMMAND showUsers( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
+    ADMINISTRATION_COMMAND showUsers( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
-    ADMINISTRATION_COMMAND showCurrentUser( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
+    ADMINISTRATION_COMMAND showCurrentUser( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
     // Privilege Commands
 
@@ -378,7 +395,7 @@ public interface ASTFactory<STATEMENT,
 
     ADMINISTRATION_COMMAND dropDatabase( POS p, Either<String,PARAMETER> databaseName, boolean ifExists, boolean dumpData, WAIT_CLAUSE wait );
 
-    ADMINISTRATION_COMMAND showDatabase( POS p, DATABASE_SCOPE scope, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
+    ADMINISTRATION_COMMAND showDatabase( POS p, DATABASE_SCOPE scope, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
     ADMINISTRATION_COMMAND startDatabase( POS p, Either<String,PARAMETER> databaseName, WAIT_CLAUSE wait );
 
