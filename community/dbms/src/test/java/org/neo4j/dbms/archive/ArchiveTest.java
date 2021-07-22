@@ -52,8 +52,8 @@ class ArchiveTest
     private TestDirectory testDirectory;
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void shouldRoundTripAnEmptyDirectory( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void shouldRoundTripAnEmptyDirectory( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" );
 
@@ -61,8 +61,8 @@ class ArchiveTest
     }
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void shouldRoundTripASingleFile( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void shouldRoundTripASingleFile( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" );
         Files.createDirectories( directory );
@@ -72,8 +72,8 @@ class ArchiveTest
     }
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void shouldRoundTripAnEmptyFile( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void shouldRoundTripAnEmptyFile( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" );
         Files.createDirectories( directory );
@@ -83,8 +83,8 @@ class ArchiveTest
     }
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void shouldRoundTripFilesWithDifferentContent( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void shouldRoundTripFilesWithDifferentContent( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" );
         Files.createDirectories( directory );
@@ -95,8 +95,8 @@ class ArchiveTest
     }
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void shouldRoundTripEmptyDirectories( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void shouldRoundTripEmptyDirectories( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" );
         Path subdir = directory.resolve( "a-subdirectory" );
@@ -105,8 +105,8 @@ class ArchiveTest
     }
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void shouldRoundTripFilesInDirectories( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void shouldRoundTripFilesInDirectories( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" );
         Path subdir = directory.resolve( "a-subdirectory" );
@@ -116,8 +116,8 @@ class ArchiveTest
     }
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void shouldCopeWithLongPaths( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void shouldCopeWithLongPaths( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" );
         Path subdir = directory.resolve( "a/very/long/path/which/is/not/realistic/for/a/database/today/but/which" +
@@ -129,8 +129,8 @@ class ArchiveTest
     }
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void shouldExcludeFilesMatchedByTheExclusionPredicate( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void shouldExcludeFilesMatchedByTheExclusionPredicate( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" );
         Files.createDirectories( directory );
@@ -151,8 +151,8 @@ class ArchiveTest
     }
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void shouldExcludeWholeDirectoriesMatchedByTheExclusionPredicate( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void shouldExcludeWholeDirectoriesMatchedByTheExclusionPredicate( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path directory = testDirectory.directory( "a-directory" );
         Path subdir = directory.resolve( "subdir" );
@@ -173,8 +173,8 @@ class ArchiveTest
     }
 
     @ParameterizedTest
-    @EnumSource( CompressionFormat.class )
-    void dumpAndLoadTransactionLogsFromCustomLocations( CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    @EnumSource( StandardCompressionFormat.class )
+    void dumpAndLoadTransactionLogsFromCustomLocations( StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path txLogsRoot = testDirectory.directory( "txLogsRoot" );
         DatabaseLayout testDatabaseLayout = layoutWithCustomTxRoot( txLogsRoot,"testDatabase" );
@@ -212,7 +212,7 @@ class ArchiveTest
         return DatabaseLayout.of( config );
     }
 
-    private void assertRoundTrips( Path oldDirectory, CompressionFormat compressionFormat ) throws IOException, IncorrectFormat
+    private void assertRoundTrips( Path oldDirectory, StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" );
         new Dumper().dump( oldDirectory, oldDirectory, archive, compressionFormat, alwaysFalse() );

@@ -22,9 +22,9 @@ package org.neo4j.dbms.archive;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.dbms.archive.CompressionFormat.GZIP;
-import static org.neo4j.dbms.archive.CompressionFormat.ZSTD;
-import static org.neo4j.dbms.archive.CompressionFormat.selectCompressionFormat;
+import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
+import static org.neo4j.dbms.archive.StandardCompressionFormat.ZSTD;
+import static org.neo4j.dbms.archive.StandardCompressionFormat.selectCompressionFormat;
 import static org.neo4j.test.proc.ProcessUtil.start;
 
 class CompressionFormatTest
@@ -49,7 +49,7 @@ class CompressionFormatTest
     {
         int exitCode = Integer.parseInt( args[0] );
         System.setProperty( "os.arch", "foo" ); // sabotage ZSTD loading
-        CompressionFormat format = selectCompressionFormat();
+        StandardCompressionFormat format = selectCompressionFormat();
         assertEquals( GZIP, format, String.format( "Should fallback to %s when %s fails", GZIP.name(), ZSTD.name() ) );
         System.exit( exitCode );
     }

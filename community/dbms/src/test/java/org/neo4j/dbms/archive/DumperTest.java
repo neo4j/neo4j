@@ -41,7 +41,7 @@ import org.neo4j.test.utils.TestDirectory;
 import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.dbms.archive.CompressionFormat.GZIP;
+import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
 
 @TestDirectoryExtension
 class DumperTest

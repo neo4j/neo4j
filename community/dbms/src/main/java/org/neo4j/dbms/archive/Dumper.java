@@ -65,6 +65,11 @@ public class Dumper
         progressPrinter = new ArchiveProgressPrinter( output );
     }
 
+    public void dump( Path path, Path archive, CompressionFormat format ) throws IOException
+    {
+        this.dump( path, path, archive, format, Predicates.alwaysFalse() );
+    }
+
     public void dump( Path dbPath, Path transactionalLogsPath, Path archive, CompressionFormat format ) throws IOException
     {
         this.dump( dbPath, transactionalLogsPath, archive, format, Predicates.alwaysFalse() );
@@ -118,7 +123,7 @@ public class Dumper
         OutputStream compress = format.compress( out );
 
         // Add enough archive meta-data that the load command can print a meaningful progress indicator.
-        if ( format == CompressionFormat.ZSTD )
+        if ( StandardCompressionFormat.ZSTD.isFormat( compress ) )
         {
             writeArchiveMetadata( compress );
         }

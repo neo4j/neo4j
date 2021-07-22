@@ -48,7 +48,7 @@ import org.neo4j.memory.MemoryTracker;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.archive.CompressionFormat.selectCompressionFormat;
+import static org.neo4j.dbms.archive.StandardCompressionFormat.selectCompressionFormat;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;

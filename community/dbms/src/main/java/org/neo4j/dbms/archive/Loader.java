@@ -37,6 +37,7 @@ import java.nio.file.Path;
 
 import org.neo4j.commandline.dbms.StoreVersionLoader;
 import org.neo4j.configuration.Config;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -63,11 +64,11 @@ public class Loader
 
     public void load( Path archive, DatabaseLayout databaseLayout ) throws IOException, IncorrectFormat
     {
-        load( archive, databaseLayout, false, true );
+        load( archive, databaseLayout, false, true, StandardCompressionFormat::decompress );
     }
 
-    public void load( Path archive, DatabaseLayout databaseLayout, boolean validateDatabaseExistence, boolean validateLogsExistence )
-            throws IOException, IncorrectFormat
+    public void load( Path archive, DatabaseLayout databaseLayout, boolean validateDatabaseExistence, boolean validateLogsExistence,
+            DecompressionSelector selector ) throws IOException, IncorrectFormat
     {
         Path databaseDestination = databaseLayout.databaseDirectory();
         Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
@@ -80,7 +81,7 @@ public class Loader
 
         checkDatabasePresence( databaseLayout );
 
-        try ( ArchiveInputStream stream = openArchiveIn( archive );
+        try ( ArchiveInputStream stream = openArchiveIn( archive, selector );
               Resource ignore = progressPrinter.startPrinting() )
         {
             ArchiveEntry entry;
@@ -102,12 +103,12 @@ public class Loader
 
     public DumpMetaData getMetaData( Path archive ) throws IOException
     {
-        try ( InputStream decompressor = CompressionFormat.decompress( () -> Files.newInputStream( archive ) ) )
+        try ( InputStream decompressor = StandardCompressionFormat.decompress( () -> Files.newInputStream( archive ) ) )
         {
             String format = "TAR+GZIP.";
             String files = "?";
             String bytes = "?";
-            if ( CompressionFormat.ZSTD.isFormat( decompressor ) )
+            if ( StandardCompressionFormat.ZSTD.isFormat( decompressor ) )
             {
                 format = "Neo4j ZSTD Dump.";
                 // Important: Only the ZSTD compressed archives have any archive metadata.
@@ -192,13 +193,14 @@ public class Loader
         }
     }
 
-    private ArchiveInputStream openArchiveIn( Path archive ) throws IOException, IncorrectFormat
+    private ArchiveInputStream openArchiveIn( Path archive, DecompressionSelector selector ) throws IOException, IncorrectFormat
     {
         try
         {
-            InputStream decompressor = CompressionFormat.decompress( () -> Files.newInputStream( archive ) );
+            ThrowingSupplier<InputStream,IOException> streamSupplier = () -> Files.newInputStream( archive );
+            InputStream decompressor = selector.decompress( streamSupplier );
 
-            if ( CompressionFormat.ZSTD.isFormat( decompressor ) )
+            if ( StandardCompressionFormat.ZSTD.isFormat( decompressor ) )
             {
                 // Important: Only the ZSTD compressed archives have any archive metadata.
                 readArchiveMetadata( decompressor );

@@ -83,7 +83,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.dbms.archive.CompressionFormat.ZSTD;
+import static org.neo4j.dbms.archive.StandardCompressionFormat.ZSTD;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @Neo4jLayoutExtension
