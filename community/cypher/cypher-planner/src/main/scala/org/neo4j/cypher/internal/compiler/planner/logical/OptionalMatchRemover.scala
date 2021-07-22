@@ -98,7 +98,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
         // and it can't change cardinality, it's safe to ignore it
           None
         else {
-          val (predicatesForPatterns, remaining, elementsToKeep) = {
+          val ExtractionResult(predicatesForPatternExpression, predicatesToKeep, elementsToKeep) = {
             // We must keep all variables calculated in the previous step plus all arguments ids.
             val elementsToKeep0 = mustInclude ++ original.argumentIds
 
@@ -118,12 +118,12 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
           val (patternsToKeep, patternsToFilter) = original.patternRelationships.partition(r => elementsToKeep(r.name))
           val patternNodes = original.patternNodes.filter(elementsToKeep.apply)
 
-          val patternPredicates = patternsToFilter.map(toAst(elementsToKeep, predicatesForPatterns, gen, _))
+          val patternPredicates = patternsToFilter.map(toAst(elementsToKeep, predicatesForPatternExpression, gen, _))
 
           val newOptionalGraph = original.
             withPatternRelationships(patternsToKeep).
             withPatternNodes(patternNodes).
-            withSelections(Selections.from(remaining) ++ patternPredicates)
+            withSelections(Selections.from(predicatesToKeep) ++ patternPredicates)
 
           Some(newOptionalGraph)
         }
@@ -150,20 +150,36 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
     keptRels ++ alsoKeptRels
   }
 
-  @tailrec
-  private def extractElementsAndPatterns(original: QueryGraph, elementsToKeepInitial: Set[String]):
-  (Map[String, Seq[LabelName]], Set[Expression], Set[String]) = {
-    val (predicatesForPatterns, remaining) = partitionPredicates(original.selections.predicates, elementsToKeepInitial)
+  /**
+   * @param predicatesForPatternExpression predicates that can get moved into PatternExpressions.
+   *                                       These are currently only `HasLabels`.
+   *                                       This is a map from node variable name to the label names.
+   * @param predicatesToKeep               predicate expressions that cannot be moved into patternExpressions
+   * @param elementsToKeep                 node and relationship variables that cannot be moved into patternExpressions
+   */
+  case class ExtractionResult(predicatesForPatternExpression: Map[String, Seq[LabelName]], predicatesToKeep: Set[Expression], elementsToKeep: Set[String])
 
-    val variablesNeededForPredicates = remaining.flatMap(expression => expression.dependencies.map(_.name))
+  @tailrec
+  private def extractElementsAndPatterns(original: QueryGraph, elementsToKeepInitial: Set[String]): ExtractionResult = {
+    val PartitionedPredicates(predicatesForPatterns, predicatesToKeep) = partitionPredicates(original.selections.predicates, elementsToKeepInitial)
+
+    val variablesNeededForPredicates = predicatesToKeep.flatMap(expression => expression.dependencies.map(_.name))
     val elementsToKeep = smallestGraphIncluding(original, elementsToKeepInitial ++ variablesNeededForPredicates)
 
     if (elementsToKeep.equals(elementsToKeepInitial)) {
-      (predicatesForPatterns, remaining, elementsToKeep)
+      ExtractionResult(predicatesForPatterns, predicatesToKeep, elementsToKeep)
     } else {
       extractElementsAndPatterns(original, elementsToKeep)
     }
   }
+
+  /**
+   * @param predicatesForPatternExpression predicates that can get moved into PatternExpressions.
+   *                                       These are currently only `HasLabels`.
+   *                                       This is a map from node variable name to the label names.
+   * @param predicatesToKeep               predicate expressions that cannot be moved into patternExpressions
+   */
+  case class PartitionedPredicates(predicatesForPatternExpression: Map[String, Seq[LabelName]], predicatesToKeep: Set[Expression])
 
   /**
    * This method extracts predicates that need to be part of pattern expressions
@@ -173,14 +189,14 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
    * @return Map of label predicates to move to pattern expressions,
    *         and the set of remaining predicates
    */
-  private def partitionPredicates(predicates: Set[Predicate], kept: Set[String]): (Map[String, Seq[LabelName]], Set[Expression]) = {
+  private def partitionPredicates(predicates: Set[Predicate], kept: Set[String]): PartitionedPredicates = {
 
-    val patternPredicates = mutable.Map.empty[String, Seq[LabelName]]
+    val predicatesForPatternExpression = mutable.Map.empty[String, Seq[LabelName]]
     val predicatesToKeep = mutable.Set.empty[Expression]
 
     def addLabel(idName: String, labelName: LabelName) = {
-      val current = patternPredicates.getOrElse(idName, Seq.empty)
-      patternPredicates += idName -> (current :+ labelName)
+      val current = predicatesForPatternExpression.getOrElse(idName, Seq.empty)
+      predicatesForPatternExpression += idName -> (current :+ labelName)
     }
 
     predicates.foreach {
@@ -194,7 +210,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
         ()
     }
 
-    (patternPredicates.toMap, predicatesToKeep.toSet)
+    PartitionedPredicates(predicatesForPatternExpression.toMap, predicatesToKeep.toSet)
   }
 
   private def validAggregations(aggregations: Map[String, Expression]) =
