@@ -773,6 +773,50 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
+    test(s"should support null in directed seek on composite index (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 =>
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = ???)]->(y)", paramExpr = Some(nullLiteral))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = nodesAndRelationship(relationships(10 / 10))
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
+    }
+
+    test(s"should support null in undirected seek on composite index (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 =>
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = ???)]-(y)", paramExpr = Some(nullLiteral))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = nodesAndRelationship(relationships(10 / 10))
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
+    }
+
     test(s"directed seek should cache properties (${indexProvider.providerName()})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
