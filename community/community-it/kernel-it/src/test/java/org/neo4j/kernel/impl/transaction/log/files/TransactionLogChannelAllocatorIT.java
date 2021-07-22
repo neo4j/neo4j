@@ -24,8 +24,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,6 +39,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -57,12 +60,16 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
+@Isolated
 class TransactionLogChannelAllocatorIT
 {
     private static final long ROTATION_THRESHOLD = ByteUnit.mebiBytes( 25 );
@@ -73,6 +80,7 @@ class TransactionLogChannelAllocatorIT
     private TransactionLogFilesHelper fileHelper;
     private TransactionLogChannelAllocator fileAllocator;
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private final Config config = Config.defaults();
 
     @BeforeEach
     void setUp()
@@ -131,14 +139,28 @@ class TransactionLogChannelAllocatorIT
     @EnabledOnOs( OS.LINUX )
     void failToPreallocateFileWithOutOfDiskSpaceError() throws IOException
     {
-        var unreasonableAllocator = createLogFileAllocator( ByteUnit.tebiBytes( 5 ) );
+        var unreasonableAllocator = createLogFileAllocator( getUnavailableBytes() );
+        var exception = assertThrows( RuntimeException.class, () -> unreasonableAllocator.createLogChannel( 10, () -> 1L ) );
+        assertThat( exception ).hasRootCauseInstanceOf( ReadOnlyDbException.class )
+                .hasRootCauseMessage( "This Neo4j instance is read only for the database neo4j" );
+
+        assertThat( logProvider.serialize() ).containsSequence( "Warning! System is running out of disk space. " +
+                "Failed to preallocate log file since disk does not have enough space left. Please provision more space to avoid that." );
+    }
+
+    @Test
+    @EnabledOnOs( OS.LINUX )
+    void failToPreallocateFileWithOutOfDiskSpaceErrorAndDisabledFailover() throws IOException
+    {
+        config.setDynamic( dynamic_read_only_failover, false, "test" );
+        var unreasonableAllocator = createLogFileAllocator( getUnavailableBytes() );
         try ( PhysicalLogVersionedStoreChannel channel = unreasonableAllocator.createLogChannel( 10, () -> 1L ) )
         {
             assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, channel.size() );
-            assertThat( logProvider.serialize() ).containsSequence(
-                    "Warning! System is running out of disk space. Failed to preallocate log file since disk does not have enough space left. " +
-                            "If database will continue to grow in size it will become corrupted and recovery will be required. " +
-                            "Please provision more space to avoid that." );
+            assertThat( logProvider.serialize() )
+                    .containsSequence( "Warning! System is running out of disk space. Failed to preallocate log file since disk does " +
+                            "not have enough space left. Please provision more space to avoid that." )
+                    .containsSequence( "Dynamic switchover to read-only mode is disabled. The database will continue execution in the current mode." );
         }
     }
 
@@ -163,6 +185,11 @@ class TransactionLogChannelAllocatorIT
         {
             assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, channel.size() );
         }
+    }
+
+    private long getUnavailableBytes() throws IOException
+    {
+        return Files.getFileStore( testDirectory.homePath() ).getUsableSpace() + ByteUnit.gibiBytes( 10 );
     }
 
     private TransactionLogChannelAllocator createLogFileAllocator()
@@ -191,7 +218,7 @@ class TransactionLogChannelAllocatorIT
                 SimpleLogVersionRepository::new, fileSystem, logProvider, DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
                 NativeAccessProvider.getNativeAccess(), INSTANCE, new Monitors(), true,
                 new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), () -> KernelVersion.LATEST,
-                Clock.systemUTC(), Config.defaults() );
+                Clock.systemUTC(), DEFAULT_DATABASE_NAME, config );
     }
 
     private static class AdviseCountingChannelNativeAccessor extends ChannelNativeAccessor.EmptyChannelNativeAccessor

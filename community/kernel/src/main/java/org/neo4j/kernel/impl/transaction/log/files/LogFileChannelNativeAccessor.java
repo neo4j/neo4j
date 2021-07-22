@@ -19,12 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.logging.Log;
+
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
 
 public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
 {
@@ -32,6 +40,8 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
     private final NativeAccess nativeAccess;
     private final Log log;
     private final AtomicLong rotationThreshold;
+    private final Config config;
+    private final String databaseName;
 
     public LogFileChannelNativeAccessor( FileSystemAbstraction fileSystem, TransactionLogFilesContext context )
     {
@@ -39,6 +49,8 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
         this.nativeAccess = context.getNativeAccess();
         this.log = context.getLogProvider().getLog( getClass() );
         this.rotationThreshold = context.getRotationThreshold();
+        this.config = context.getConfig();
+        this.databaseName = context.getDatabaseName();
     }
 
     @Override
@@ -82,15 +94,35 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
         {
             if ( nativeAccess.errorTranslator().isOutOfDiskSpace( result ) )
             {
-                log.error( "Warning! System is running out of disk space. Failed to preallocate log file since disk does not have enough space left. " +
-                        "If database will continue to grow in size it will become corrupted and recovery will be required. " +
-                        "Please provision more space to avoid that. " +
-                        "Failure details: " + result );
+                handleOutOfDiskSpaceError( result );
             }
             else
             {
                 log.warn( "Error on attempt to preallocate log file version: " + version + ". Error: " + result );
             }
         }
+    }
+
+    private void handleOutOfDiskSpaceError( NativeCallResult result )
+    {
+        log.error( "Warning! System is running out of disk space. Failed to preallocate log file since disk does not have enough space left. " +
+                "Please provision more space to avoid that. Allocation failure details: " + result );
+        if ( config.get( dynamic_read_only_failover ) )
+        {
+            log.error( "Switching database to read only mode." );
+            markDatabaseReadOnly();
+            throw new RuntimeException( new ReadOnlyDbException( databaseName ) );
+        }
+        else
+        {
+            log.error( "Dynamic switchover to read-only mode is disabled. The database will continue execution in the current mode." );
+        }
+    }
+
+    private void markDatabaseReadOnly()
+    {
+        Set<String> readOnlyDatabases = new HashSet<>( config.get( read_only_databases ) );
+        readOnlyDatabases.add( databaseName );
+        config.setDynamic( read_only_databases, readOnlyDatabases, "Dynamic failover to read-only mode." );
     }
 }

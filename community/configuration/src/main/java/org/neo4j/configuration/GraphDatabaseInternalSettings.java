@@ -736,6 +736,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             .build();
 
     @Internal
+    @Description( "Whether or database should switch to read only mode on disk space problems." )
+    public static final Setting<Boolean> dynamic_read_only_failover = newBuilder( "unsupported.dbms.readonly.failover", BOOL, Boolean.TRUE )
+            .dynamic()
+            .build();
+
+    @Internal
     @Description( "Feature flag to enable/disable text indexes" )
     public static final Setting<Boolean> text_indexes_enabled = newBuilder( "unsupported.dbms.text_indexes_enabled", BOOL, false ).build();
 

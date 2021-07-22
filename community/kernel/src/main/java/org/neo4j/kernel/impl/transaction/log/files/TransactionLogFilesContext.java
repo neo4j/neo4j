@@ -59,6 +59,7 @@ public class TransactionLogFilesContext
     private final DatabaseHealth databaseHealth;
     private final KernelVersionRepository kernelVersionRepository;
     private final Clock clock;
+    private final String databaseName;
     private final Config config;
 
     public TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
@@ -66,7 +67,7 @@ public class TransactionLogFilesContext
             Supplier<LogVersionRepository> logVersionRepositorySupplier,FileSystemAbstraction fileSystem, LogProvider logProvider,
             DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
             MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
-            KernelVersionRepository kernelVersionRepository, Clock clock, Config config )
+            KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
@@ -86,6 +87,7 @@ public class TransactionLogFilesContext
         this.databaseHealth = databaseHealth;
         this.kernelVersionRepository = kernelVersionRepository;
         this.clock = clock;
+        this.databaseName = databaseName;
         this.config = config;
     }
 
@@ -177,6 +179,11 @@ public class TransactionLogFilesContext
     public Clock getClock()
     {
         return clock;
+    }
+
+    public String getDatabaseName()
+    {
+        return databaseName;
     }
 
     public Config getConfig()
