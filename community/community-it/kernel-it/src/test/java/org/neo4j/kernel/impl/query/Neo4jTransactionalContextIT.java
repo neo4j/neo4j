@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.query;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
@@ -29,8 +30,10 @@ import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.QueryObfuscator;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -46,6 +49,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -453,6 +459,81 @@ class Neo4jTransactionalContextIT
         var profilingBytes = queryMemoryTracker.heapHighWaterMark();
         assertThat( snapshotBytes, equalTo( growingArraySize + outerHighWaterMark + Math.max( innerHighWaterMark, openHighWaterMark ) ) );
         assertThat( profilingBytes, equalTo( snapshotBytes ) );
+    }
+
+    @Test
+    void contextWithNewTransaction_throws_after_transaction_terminate()
+    {
+        // Given
+        var tx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( tx );
+
+        // When
+        tx.kernelTransaction().markForTermination( Status.Transaction.Terminated );
+
+        // Then
+        assertThrows( TransactionTerminatedException.class, ctx::contextWithNewTransaction );
+    }
+
+    @Test
+    void contextWithNewTransaction_terminate_inner_context_after_outer_transaction_terminate()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        ctx.kernelTransaction().markForTermination( Status.Transaction.Terminated );
+
+        // Then
+        assertTrue( innerCtx.transaction().terminationReason().isPresent() );
+    }
+
+    @Test
+    void contextWithNewTransaction_do_not_terminate_outer_context_after_inner_transaction_terminate()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        innerCtx.kernelTransaction().markForTermination( Status.Transaction.Terminated );
+
+        // Then
+        assertTrue( ctx.transaction().terminationReason().isEmpty() );
+    }
+
+    @Disabled("Strictly speaking this does not need to work, but it would protect us from our own programming mistakes in Cypher")
+    @Test
+    void contextWithNewTransaction_close_inner_context_on_rollback_of_outer_context()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        ctx.rollback();
+
+        // Then
+        assertFalse( innerCtx.isOpen() );
+    }
+
+    @Test
+    void contextWithNewTransaction_do_not_close_outer_context_on_rollback_of_inner_context()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        innerCtx.rollback();
+
+        // Then
+        assertTrue( ctx.isOpen() );
     }
 
     // PERIODIC COMMIT
