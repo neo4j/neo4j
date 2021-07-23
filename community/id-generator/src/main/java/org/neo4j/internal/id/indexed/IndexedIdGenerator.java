@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
@@ -689,7 +690,7 @@ public class IndexedIdGenerator implements IdGenerator
      * @param cacheTracer underlying page cache tracer
      * @throws IOException if the file was missing or some other I/O error occurred.
      */
-    public static void dump( PageCache pageCache, Path path, PageCacheTracer cacheTracer ) throws IOException
+    public static void dump( PageCache pageCache, Path path, PageCacheTracer cacheTracer, boolean onlySummary ) throws IOException
     {
         try ( var cursorTracer = cacheTracer.createPageCursorTracer( "IndexDump" ) )
         {
@@ -698,23 +699,58 @@ public class IndexedIdGenerator implements IdGenerator
             try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
                     immediate(), true, cacheTracer, immutable.empty(), "Indexed ID generator" ) )
             {
-                tree.visit( new GBPTreeVisitor.Adaptor<>()
-                {
-                    private IdRangeKey key;
-
-                    @Override
-                    public void key( IdRangeKey key, boolean isLeaf, long offloadId )
-                    {
-                        this.key = key;
-                    }
-
-                    @Override
-                    public void value( IdRange value )
-                    {
-                        System.out.println( format( "%s [%d]", value, key.getIdRangeIdx() ) );
-                    }
-                }, cursorTracer );
                 System.out.println( header );
+                if ( onlySummary )
+                {
+                    MutableLong numDeletedNotFreed = new MutableLong();
+                    MutableLong numDeletedAndFreed = new MutableLong();
+                    System.out.println( "Calculating summary..." );
+                    tree.visit( new GBPTreeVisitor.Adaptor<>()
+                    {
+                        @Override
+                        public void value( IdRange value )
+                        {
+                            for ( int i = 0; i < 128; i++ )
+                            {
+                                IdRange.IdState state = value.getState( i );
+                                if ( state == IdRange.IdState.FREE )
+                                {
+                                    numDeletedAndFreed.increment();
+                                }
+                                else if ( state == IdRange.IdState.DELETED )
+                                {
+                                    numDeletedNotFreed.increment();
+                                }
+                            }
+                        }
+                    }, cursorTracer );
+
+                    System.out.println();
+                    System.out.println( "Number of IDs deleted and available for reuse: " + numDeletedAndFreed );
+                    System.out.println( "Number of IDs deleted, but not yet available for reuse: " + numDeletedNotFreed );
+                    System.out.printf(
+                            "NOTE: A deleted ID not yet available for reuse is buffered until all transactions that were open%n" +
+                            "at the time of its deletion have been closed, or the database is restarted" );
+                }
+                else
+                {
+                    tree.visit( new GBPTreeVisitor.Adaptor<>()
+                    {
+                        private IdRangeKey key;
+
+                        @Override
+                        public void key( IdRangeKey key, boolean isLeaf, long offloadId )
+                        {
+                            this.key = key;
+                        }
+
+                        @Override
+                        public void value( IdRange value )
+                        {
+                            System.out.println( format( "%s [%d]", value, key.getIdRangeIdx() ) );
+                        }
+                    }, cursorTracer );
+                }
             }
         }
     }
