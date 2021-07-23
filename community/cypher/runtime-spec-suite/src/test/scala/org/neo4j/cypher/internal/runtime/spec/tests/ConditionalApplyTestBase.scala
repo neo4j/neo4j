@@ -399,4 +399,29 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     // then
    result should beColumns("prop1").withRows((0 until sizeHint).map(Array[Any](_)))
   }
+
+  test("limit after conditionalApply on the RHS of apply") {
+    //given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    //when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.exhaustiveLimit(1)
+      .|.apply()
+      .|.|.conditionalApply("i")
+      .|.|.|.argument("x", "i")
+      .|.|.argument("x", "i")
+      .|.unwind("[1, null] AS i")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
+  }
 }

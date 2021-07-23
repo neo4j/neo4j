@@ -317,4 +317,30 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "ys").withRows(expected)
   }
 
+
+  test("limit after antiConditionalApply on the RHS of apply") {
+    //given
+    val inputRows = (0 until 5).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    //when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.exhaustiveLimit(1)
+      .|.apply()
+      .|.|.antiConditionalApply("i")
+      .|.|.|.argument("x", "i")
+      .|.|.argument("x", "i")
+      .|.unwind("[1, null] AS i")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    //then
+    //then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
+  }
 }

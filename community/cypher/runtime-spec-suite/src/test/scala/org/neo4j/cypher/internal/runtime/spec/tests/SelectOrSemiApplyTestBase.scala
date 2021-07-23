@@ -517,4 +517,29 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("prop").withRows((0 until 20).map(Array[Any](_)))
   }
+
+  test("limit after selectOrSemiApply on the RHS of apply") {
+    //given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    //when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.exhaustiveLimit(1)
+      .|.apply()
+      .|.|.selectOrSemiApply("i % 2 = 0")
+      .|.|.|.argument("x", "i")
+      .|.|.argument("x", "i")
+      .|.unwind("[1, 2] AS i")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
+  }
 }
