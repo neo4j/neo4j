@@ -221,12 +221,14 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         // Create new InternalTransaction, creates new KernelTransaction
         InternalTransaction newTransaction = graph.beginTransaction( transactionType, securityContext, clientInfo );
+        transaction.addInnerTransaction(newTransaction);
 
         KernelStatement newStatement = (KernelStatement) newTransaction.kernelTransaction().acquireStatement();
         // Bind the new transaction/statement to the executingQuery
         // TODO Can we connect/disconnect executingQuery and statement in one call?
         ExecutingQueryFactory.bindToStatement( executingQuery, newStatement );
         newStatement.queryRegistration().registerExecutingQuery( executingQuery );
+        newTransaction.addCloseCallback(() -> transaction.removeInnerTransaction(newTransaction));
 
         return new Neo4jTransactionalContext(
                 graph,

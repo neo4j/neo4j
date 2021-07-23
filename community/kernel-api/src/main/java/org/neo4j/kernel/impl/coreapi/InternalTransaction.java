@@ -76,6 +76,21 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
         throw new UnsupportedOperationException( "This transaction implementation does not allow close callbacks" );
     }
 
+    /**
+     * Registers the given transaction to be an inner transaction of this.
+     */
+    void addInnerTransaction( InternalTransaction innerTransaction );
+
+    /**
+     * Deregisters the given transaction from being an inner transaction of this.
+     */
+    void removeInnerTransaction( InternalTransaction innerTransaction );
+
+    /**
+     * Whether this transaction has any (open) inner transactions.
+     */
+    boolean hasInnerTransactions();
+
     @FunctionalInterface
     interface TransactionClosedCallback
     {

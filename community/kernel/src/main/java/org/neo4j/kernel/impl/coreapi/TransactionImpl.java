@@ -25,7 +25,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -46,6 +48,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -128,6 +131,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private final QueryExecutionEngine executionEngine;
     private final Consumer<Status> terminationCallback;
     private final TransactionExceptionMapper exceptionMapper;
+    private final Queue<InternalTransaction> innerTransactions = new ConcurrentLinkedQueue<>();
     /**
      * Tracker of resources in use by the Core API.
      * <p>
@@ -610,6 +614,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             terminationCallback.accept( reason );
         }
+        innerTransactions.forEach( InternalTransaction::terminate );
     }
 
     @Override
@@ -655,6 +660,24 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             closeCallbacks = new ArrayList<>( 4 );
         }
         closeCallbacks.add( callback );
+    }
+
+    @Override
+    public void addInnerTransaction( InternalTransaction innerTransaction )
+    {
+        innerTransactions.add( innerTransaction );
+    }
+
+    @Override
+    public void removeInnerTransaction( InternalTransaction innerTransaction )
+    {
+        innerTransactions.remove( innerTransaction );
+    }
+
+    @Override
+    public boolean hasInnerTransactions()
+    {
+        return !innerTransactions.isEmpty();
     }
 
     private void safeTerminalOperation( TransactionalOperation operation )

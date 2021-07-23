@@ -491,6 +491,51 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
+    void contextWithNewTransaction_deregister_inner_transaction_on_inner_commit()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        innerCtx.commit();
+
+        // Then
+        assertFalse( ctx.transaction().hasInnerTransactions() );
+    }
+
+    @Test
+    void contextWithNewTransaction_deregister_inner_transaction_on_inner_rollback()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        innerCtx.rollback();
+
+        // Then
+        assertFalse( ctx.transaction().hasInnerTransactions() );
+    }
+
+    @Test
+    void contextWithNewTransaction_deregister_inner_transaction_on_inner_close()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        innerCtx.transaction().close();
+
+        // Then
+        assertFalse( ctx.transaction().hasInnerTransactions() );
+    }
+
+    @Test
     void contextWithNewTransaction_do_not_terminate_outer_context_after_inner_transaction_terminate()
     {
         // Given

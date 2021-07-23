@@ -402,5 +402,23 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         {
             transaction.addCloseCallback( callback );
         }
+
+        @Override
+        public void addInnerTransaction( InternalTransaction innerTransaction )
+        {
+            throw new UnsupportedOperationException( "Nesting inside procedure transactions is not supported at the moment." );
+        }
+
+        @Override
+        public void removeInnerTransaction( InternalTransaction innerTransaction )
+        {
+            throw new UnsupportedOperationException( "Nesting inside procedure transactions is not supported at the moment." );
+        }
+
+        @Override
+        public boolean hasInnerTransactions()
+        {
+            throw new UnsupportedOperationException( "Nesting inside procedure transactions is not supported at the moment." );
+        }
     }
 }
