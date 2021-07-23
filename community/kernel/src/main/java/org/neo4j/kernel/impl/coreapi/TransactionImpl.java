@@ -72,6 +72,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
@@ -115,6 +116,7 @@ import static java.util.Collections.emptyMap;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.nodeMatchProperties;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.relationshipMatchProperties;
 import static org.neo4j.util.Preconditions.checkArgument;
@@ -170,6 +172,10 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
     public void commit( KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor )
     {
+        if ( hasInnerTransactions() )
+        {
+            throw exceptionMapper.mapException( new TransactionFailureException( TransactionCommitFailed ) );
+        }
         safeTerminalOperation( transaction ->
         {
             try ( transaction )
@@ -688,6 +694,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             {
                 throw new NotInTransactionException( "The transaction has been closed." );
             }
+
+            innerTransactions.forEach( Transaction::close );
 
             coreApiResourceTracker.closeAllCloseableResources();
 

@@ -476,7 +476,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_terminate_inner_context_after_outer_transaction_terminate()
+    void contextWithNewTransaction_terminate_inner_transaction_on_outer_transaction_terminate()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -491,7 +491,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_deregister_inner_transaction_on_inner_commit()
+    void contextWithNewTransaction_deregister_inner_transaction_on_inner_context_commit()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -506,7 +506,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_deregister_inner_transaction_on_inner_rollback()
+    void contextWithNewTransaction_deregister_inner_transaction_on_inner_context_rollback()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -521,7 +521,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_deregister_inner_transaction_on_inner_close()
+    void contextWithNewTransaction_deregister_inner_transaction_on_inner_context_close()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -536,7 +536,22 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_do_not_terminate_outer_context_after_inner_transaction_terminate()
+    void contextWithNewTransaction_throw_if_inner_transaction_present_on_outer_transaction_commit()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        ctx.contextWithNewTransaction();
+
+        // Then
+        //noinspection Convert2MethodRef (I find this test clearer to be written like this)
+        assertThrows( Exception.class,
+                      // When
+                      () -> outerTx.commit());
+    }
+
+    @Test
+    void contextWithNewTransaction_close_inner_transaction_on_outer_transaction_rollback()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -544,15 +559,15 @@ class Neo4jTransactionalContextIT
         var innerCtx = ctx.contextWithNewTransaction();
 
         // When
-        innerCtx.kernelTransaction().markForTermination( Status.Transaction.Terminated );
+        outerTx.rollback();
 
         // Then
-        assertTrue( ctx.transaction().terminationReason().isEmpty() );
+        assertFalse( innerCtx.transaction().isOpen() );
     }
 
     @Disabled("Strictly speaking this does not need to work, but it would protect us from our own programming mistakes in Cypher")
     @Test
-    void contextWithNewTransaction_close_inner_context_on_rollback_of_outer_context()
+    void contextWithNewTransaction_close_inner_context_on_outer_context_rollback()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -567,7 +582,37 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_do_not_close_outer_context_on_rollback_of_inner_context()
+    void contextWithNewTransaction_close_inner_transaction_on_outer_transaction_close()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        outerTx.close();
+
+        // Then
+        assertFalse( innerCtx.transaction().isOpen() );
+    }
+
+    @Test
+    void contextWithNewTransaction_do_not_terminate_outer_transaction_on_inner_transaction_terminate()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        innerCtx.kernelTransaction().markForTermination( Status.Transaction.Terminated );
+
+        // Then
+        assertTrue( ctx.transaction().terminationReason().isEmpty() );
+    }
+
+    @Test
+    void contextWithNewTransaction_do_not_close_outer_context_on_inner_context_rollback()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
