@@ -37,7 +37,7 @@ import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
  */
 public class ParallelSort
 {
-    private final int[] radixIndexCount;
+    private final long[] radixIndexCount;
     private final RadixCalculator radixCalculator;
     private final LongArray dataCache;
     private final long highestSetIndex;

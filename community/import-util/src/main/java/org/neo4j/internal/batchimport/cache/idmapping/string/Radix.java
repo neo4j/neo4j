@@ -35,7 +35,7 @@ public abstract class Radix
 
     public static final Factory<Radix> STRING = String::new;
 
-    final int[] radixIndexCount = new int[(int) pow( 2, RadixCalculator.RADIX_BITS - 1 )];
+    final long[] radixIndexCount = new long[(int) pow( 2, RadixCalculator.RADIX_BITS - 1 )];
 
     public int registerRadixOf( long value )
     {
@@ -44,7 +44,7 @@ public abstract class Radix
         return radix;
     }
 
-    public int[] getRadixIndexCounts()
+    public long[] getRadixIndexCounts()
     {
         return radixIndexCount;
     }
