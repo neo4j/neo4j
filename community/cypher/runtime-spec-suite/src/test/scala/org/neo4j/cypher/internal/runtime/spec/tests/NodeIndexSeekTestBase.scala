@@ -184,16 +184,6 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test("should exact (multiple, but empty) seek nodes of an index with a property") {
-      given {
-        nodeIndex("Honey", "prop")
-        nodeGraph(5, "Milk")
-        nodePropertyGraph(sizeHint, {
-          case i if i % 10 == 0 => Map("prop" -> i)
-        }, "Honey")
-      }
-    }
-
     test(s"should exact (multiple, with null) seek nodes of an index with a property (${indexProvider.providerName()})") {
       val nodes = given(defaultRandomIndexedNodePropertyGraph())
       val lookFor = randomAmong(nodes).getProperty("prop")
