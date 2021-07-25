@@ -47,6 +47,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -54,10 +55,10 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -194,6 +195,32 @@ public class LuceneIndexAccessorIT
                 }
             }
             assertThat( count ).isEqualTo( expectedCount );
+        }
+    }
+
+    @Test
+    void shouldPartitionAndReadAllDocuments() throws Exception
+    {
+        // given
+        IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
+        MutableLongSet expectedNodes = new LongHashSet();
+        populateWithInitialNodes( descriptor, random.nextInt( 1_000, 10_000 ), expectedNodes );
+
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        {
+            // when
+            MutableLongSet readNodes = new LongHashSet();
+            IndexEntriesReader[] partitionReaders = accessor.newAllEntriesValueReader( random.nextInt( 2, 16 ), NULL );
+            for ( IndexEntriesReader partitionReader : partitionReaders )
+            {
+                while ( partitionReader.hasNext() )
+                {
+                    boolean added = readNodes.add( partitionReader.next() );
+                    assertThat( added ).isTrue();
+                }
+                partitionReader.close();
+            }
+            assertThat( readNodes ).isEqualTo( expectedNodes );
         }
     }
 

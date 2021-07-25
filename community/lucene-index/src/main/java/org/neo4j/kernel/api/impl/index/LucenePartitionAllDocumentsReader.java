@@ -58,10 +58,18 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
     @Override
     public Iterator<Document> iterator()
     {
+        return documentIterator( iterateAllDocs() );
+    }
+
+    public Iterator<Document> iterator( int from, int to )
+    {
+        return documentIterator( iterateDocs( from, to ) );
+    }
+
+    private Iterator<Document> documentIterator( DocIdSetIterator idIterator )
+    {
         return new PrefetchingIterator<>()
         {
-            DocIdSetIterator idIterator = iterateAllDocs();
-
             @Override
             protected Document fetchNextOrNull()
             {
@@ -102,13 +110,22 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
 
     private DocIdSetIterator iterateAllDocs()
     {
-        DocIdSetIterator allDocs = DocIdSetIterator.all( reader.maxDoc() );
+        return filterRemovals( DocIdSetIterator.all( reader.maxDoc() ) );
+    }
+
+    private DocIdSetIterator iterateDocs( int from, int to )
+    {
+        return from == to ? DocIdSetIterator.empty() : filterRemovals( DocIdSetIterator.range( from, to ) );
+    }
+
+    private DocIdSetIterator filterRemovals( DocIdSetIterator docs )
+    {
         if ( !reader.hasDeletions() )
         {
-            return allDocs;
+            return docs;
         }
 
-        return new FilteredDocIdSetIterator( allDocs )
+        return new FilteredDocIdSetIterator( docs )
         {
             private final Bits liveDocs = MultiBits.getLiveDocs( reader );
 

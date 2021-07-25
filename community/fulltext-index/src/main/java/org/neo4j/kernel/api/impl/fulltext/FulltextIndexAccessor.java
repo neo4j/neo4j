@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
+import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -80,6 +81,12 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
     {
         return super.newAllEntriesReader( LuceneFulltextDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive );
+    }
+
+    @Override
+    public IndexEntriesReader[] newAllEntriesValueReader( int partitions, CursorContext cursorContext )
+    {
+        return super.newAllEntriesValueReader( LuceneFulltextDocumentStructure::getNodeId, partitions );
     }
 
     @Override
