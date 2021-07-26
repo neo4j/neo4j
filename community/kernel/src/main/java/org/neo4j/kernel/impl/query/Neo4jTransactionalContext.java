@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -218,6 +219,10 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public Neo4jTransactionalContext contextWithNewTransaction()
     {
         checkNotTerminated();
+        if ( transactionType != KernelTransaction.Type.IMPLICIT )
+        {
+            throw new TransactionFailureException( "Can only start inner transactions in an implicit transaction." );
+        }
 
         // Create new InternalTransaction, creates new KernelTransaction
         InternalTransaction newTransaction = graph.beginTransaction( transactionType, securityContext, clientInfo );

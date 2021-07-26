@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -56,6 +57,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -553,10 +555,9 @@ class Neo4jTransactionalContextIT
         ctx.contextWithNewTransaction();
 
         // Then
-        //noinspection Convert2MethodRef (I find this test clearer to be written like this)
-        assertThrows( Exception.class,
+        assertThrows( TransactionFailureException.class,
                       // When
-                      () -> outerTx.commit());
+                      outerTx::commit);
     }
 
     @Test
@@ -652,6 +653,20 @@ class Neo4jTransactionalContextIT
 
         // Then
         assertTrue( isMarkedForTermation( innerCtx ) );
+    }
+
+    @Test
+    void contextWithNewTransaction_should_throw_if_outer_transaction_is_explicit()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+
+        // Then
+        //noinspection Convert2MethodRef
+        assertThrows( TransactionFailureException.class,
+                      // When
+                      () -> ctx.contextWithNewTransaction());
     }
 
     // PERIODIC COMMIT
