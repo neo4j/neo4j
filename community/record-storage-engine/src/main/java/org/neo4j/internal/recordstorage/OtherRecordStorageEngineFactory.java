@@ -17,20 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.consistency.checker.full;
+package org.neo4j.internal.recordstorage;
 
-import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
-import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
+import org.neo4j.annotations.service.ServiceProvider;
 
-import static org.neo4j.consistency.checking.cache.CacheSlots.CACHE_LINE_SIZE_BYTES;
-
-class LimitedFullCheckIT extends FullCheckIntegrationTest
+@ServiceProvider
+public class OtherRecordStorageEngineFactory extends RecordStorageEngineFactory
 {
     @Override
-    protected NodeBasedMemoryLimiter.Factory memoryLimit()
+    public String name()
     {
-        // Make it so that it will have to do the checking in a couple of node id ranges
-        return ( pageCacheMemory, highNodeId ) -> new NodeBasedMemoryLimiter( pageCacheMemory, 0, pageCacheMemory + highNodeId * CACHE_LINE_SIZE_BYTES / 3,
-                CACHE_LINE_SIZE_BYTES, highNodeId, 1 );
+        return "other";
     }
 }

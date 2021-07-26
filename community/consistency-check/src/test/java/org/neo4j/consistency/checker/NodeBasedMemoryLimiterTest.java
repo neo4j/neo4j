@@ -32,7 +32,7 @@ class NodeBasedMemoryLimiterTest
     void shouldReturnTheWholeRangeIfItFits()
     {
         // given
-        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 100, 100, 250, 1, 40 );
+        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 100, 100, 250, 1, 40, 1 );
         assertEquals( 1, limiter.numberOfRanges() );
 
         // when
@@ -47,7 +47,7 @@ class NodeBasedMemoryLimiterTest
     void shouldReturnMultipleRangesIfWholeRangeDontFit()
     {
         // given
-        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 100, 100, 1000, 10, 200 );
+        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 100, 100, 1000, 10, 200, 1 );
         assertEquals( 3, limiter.numberOfRanges() );
 
         // when/then
@@ -58,10 +58,23 @@ class NodeBasedMemoryLimiterTest
     }
 
     @Test
+    void shouldReturnMultipleRangesIfWholeRangeDontFitWithLeeway()
+    {
+        // given
+        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 100, 100, 500, 25, 10, 0.8 );
+        assertEquals( 2, limiter.numberOfRanges() );
+
+        // when/then
+        assertRange( limiter.next(), 0, 8 );
+        assertRange( limiter.next(), 8, 10 );
+        assertFalse( limiter.hasNext() );
+    }
+
+    @Test
     void shouldReturnCorrectNumberOfRangesOnExactMatch()
     {
         // given
-        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 10, 20, 40, 1, 100 );
+        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 10, 20, 40, 1, 100, 1 );
 
         // then
         assertEquals( 10, limiter.numberOfRanges() );
