@@ -23,7 +23,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING$;
 import org.neo4j.cypher.internal.runtime.GrowingArray;
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
@@ -31,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -91,6 +95,11 @@ class Neo4jTransactionalContextIT
     private long getActiveLockCount( TransactionalContext ctx )
     {
         return ((KernelStatement) ctx.statement()).locks().activeLockCount();
+    }
+
+    private boolean isMarkedForTermation( TransactionalContext ctx )
+    {
+        return ctx.transaction().terminationReason().isPresent();
     }
 
     private TransactionalContext createTransactionContext( InternalTransaction transaction )
@@ -487,7 +496,7 @@ class Neo4jTransactionalContextIT
         ctx.kernelTransaction().markForTermination( Status.Transaction.Terminated );
 
         // Then
-        assertTrue( innerCtx.transaction().terminationReason().isPresent() );
+        assertTrue( isMarkedForTermation( innerCtx ) );
     }
 
     @Test
@@ -608,7 +617,7 @@ class Neo4jTransactionalContextIT
         innerCtx.kernelTransaction().markForTermination( Status.Transaction.Terminated );
 
         // Then
-        assertTrue( ctx.transaction().terminationReason().isEmpty() );
+        assertFalse( isMarkedForTermation( ctx ) );
     }
 
     @Test
@@ -624,6 +633,25 @@ class Neo4jTransactionalContextIT
 
         // Then
         assertTrue( ctx.isOpen() );
+    }
+
+    @Test
+    void contextWithNewTransaction_terminate_inner_transaction_on_outer_transaction_timeout() throws InterruptedException
+    {
+        // Given
+        var checkIntervalSeconds = GraphDatabaseSettings.transaction_monitor_check_interval.defaultValue().getSeconds();
+        var timeoutSeconds = 1;
+        var outerTx =
+                graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED, ClientConnectionInfo.EMBEDDED_CONNECTION, timeoutSeconds, TimeUnit.SECONDS );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        // When
+        var sleepMillis = TimeUnit.SECONDS.toMillis( timeoutSeconds + checkIntervalSeconds + 1 );
+        Thread.sleep( sleepMillis );
+
+        // Then
+        assertTrue( isMarkedForTermation( innerCtx ) );
     }
 
     // PERIODIC COMMIT
