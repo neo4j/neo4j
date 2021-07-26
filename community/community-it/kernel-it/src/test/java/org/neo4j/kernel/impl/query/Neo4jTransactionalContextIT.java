@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
@@ -30,25 +31,32 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING$;
 import org.neo4j.cypher.internal.runtime.GrowingArray;
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.query.QueryObfuscator;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -65,7 +73,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 class Neo4jTransactionalContextIT
 {
     @Inject
-    private GraphDatabaseService graphOps;
+    private GraphDatabaseAPI graphOps;
     @Inject
     private GraphDatabaseQueryService graph;
 
@@ -639,6 +647,7 @@ class Neo4jTransactionalContextIT
     @Test
     void contextWithNewTransaction_terminate_inner_transaction_on_outer_transaction_timeout() throws InterruptedException
     {
+        // TODO: try to find a way to run this without waiting for 4 seconds (change configuration (?))
         // Given
         var checkIntervalSeconds = GraphDatabaseSettings.transaction_monitor_check_interval.defaultValue().getSeconds();
         var timeoutSeconds = 1;
@@ -667,6 +676,28 @@ class Neo4jTransactionalContextIT
         assertThrows( TransactionFailureException.class,
                       // When
                       () -> ctx.contextWithNewTransaction());
+    }
+
+    @Test
+    void contextWithNewTransaction_procedure_called_from_inner_context_should_use_inner_transaction() throws ProcedureException
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        var procsRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        var txSetMetaData = procsRegistry.procedure( new QualifiedName( new String[]{"tx"}, "setMetaData") );
+        var id = txSetMetaData.id();
+        var procContext = new ProcedureCallContext( id, new String[0], false, "", false );
+
+        // When
+        AnyValue[] arguments = {VirtualValues.map( new String[]{"foo"}, new AnyValue[]{Values.stringValue( "bar" )} )};
+        innerCtx.kernelTransaction().procedures().procedureCallDbms( id, arguments, procContext );
+
+        // Then
+        assertThat( innerCtx.kernelTransaction().getMetaData(), equalTo( Collections.singletonMap( "foo", "bar" ) ) );
+        assertThat( ctx.kernelTransaction().getMetaData(), equalTo( Collections.emptyMap() ) );
     }
 
     // PERIODIC COMMIT
