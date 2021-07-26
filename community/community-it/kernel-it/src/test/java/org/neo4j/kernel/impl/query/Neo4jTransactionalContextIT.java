@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -35,12 +36,16 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.query.QueryObfuscator;
@@ -49,8 +54,10 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.procedure.builtin.TransactionId;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.AnyValue;
@@ -59,8 +66,10 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -698,6 +707,55 @@ class Neo4jTransactionalContextIT
         // Then
         assertThat( innerCtx.kernelTransaction().getMetaData(), equalTo( Collections.singletonMap( "foo", "bar" ) ) );
         assertThat( ctx.kernelTransaction().getMetaData(), equalTo( Collections.emptyMap() ) );
+    }
+
+    @Test
+    void contextWithNewTransaction_listTransactions() throws ProcedureException, InvalidArgumentsException
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var queryText = "<query text>";
+        var ctx = Neo4jTransactionalContextFactory
+                .create( () -> graph, transactionFactory )
+                .newContext( outerTx, queryText, MapValue.EMPTY );
+
+        // We need to be done with parsing and provide an obfuscator to see the query text in the procedure
+        ctx.executingQuery().onObfuscatorReady( QueryObfuscator.PASSTHROUGH );
+
+        var innerCtx = ctx.contextWithNewTransaction();
+        var innerTx = innerCtx.transaction();
+
+        var procsRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        var listTransactions = procsRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "listTransactions") );
+        var id = listTransactions.id();
+        var transactionIdIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "transactionId", Neo4jTypes.NTString ) );
+        var currentQueryIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "currentQuery", Neo4jTypes.NTString ) );
+        var currentQueryIdIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "currentQueryId", Neo4jTypes.NTString ) );
+        var procContext = new ProcedureCallContext( id, new String[]{"transactionId", "currentQuery"}, false, "", false );
+
+        // When
+        var procResult = Iterators.asList(
+                innerCtx.kernelTransaction().procedures().procedureCallDbms( id, new AnyValue[]{}, procContext )
+        );
+
+        var mapper = new DefaultValueMapper(innerTx);
+        var transactionIds = procResult.stream().map( array -> array[transactionIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
+        var currentQueries = procResult.stream().map( array -> array[currentQueryIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
+        var currentQueryIds = procResult.stream().map( array -> array[currentQueryIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
+
+        // Then
+        var expectedOuterTxId = new TransactionId( outerTx.getDatabaseName(), outerTx.kernelTransaction().getUserTransactionId() ).toString();
+        var expectedInnerTxId = new TransactionId( innerTx.getDatabaseName(), innerTx.kernelTransaction().getUserTransactionId() ).toString();
+        var expectedQueryId = String.format( "query-%s", ctx.executingQuery().id() );
+
+        assertThat( transactionIds, containsInAnyOrder( expectedOuterTxId, expectedInnerTxId) );
+        assertThat( transactionIds, hasSize(2) );
+        assertThat( currentQueries, containsInAnyOrder( queryText, queryText) );
+        assertThat( currentQueries, hasSize(2) );
+        assertThat( currentQueryIds, containsInAnyOrder( expectedQueryId, expectedQueryId) );
+        assertThat( currentQueryIds, hasSize(2) );
+
+        // TODO add assertion for new field: outerTransactionId
     }
 
     // PERIODIC COMMIT
