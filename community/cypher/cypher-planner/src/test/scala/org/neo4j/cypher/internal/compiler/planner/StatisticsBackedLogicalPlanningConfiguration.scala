@@ -363,10 +363,12 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       index match {
         case Index(Some(Seq(label)), None, BTREE, properties, _, _, _) => graphCountData.constraints.exists {
           case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE) => true
+          case Constraint(Some(`label`), None, `properties`, ConstraintType.UNIQUE_EXISTS) => true
           case _ => false
         }
         case Index(None, Some(Seq(relType)), BTREE, properties, _, _, _) => graphCountData.constraints.exists {
           case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE) => true
+          case Constraint(None, Some(`relType`), `properties`, ConstraintType.UNIQUE_EXISTS) => true
           case _ => false
         }
         case _ => false
@@ -399,6 +401,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       graphCountData.constraints.foldLeft(builder) {
         case (builder, Constraint(Some(label), None, Seq(property), ConstraintType.EXISTS)) => builder.addNodeExistenceConstraint(label, property)
         case (builder, Constraint(None, Some(relType), Seq(property), ConstraintType.EXISTS)) => builder.addRelationshipExistenceConstraint(relType, property)
+        case (builder, Constraint(_, _, _, ConstraintType.UNIQUE)) => builder // Will get found by matchingUniquenessConstraintExists
+        case (builder, Constraint(_, _, _, ConstraintType.UNIQUE_EXISTS)) => builder // Will get found by matchingUniquenessConstraintExists
         case (_, constraint) => throw new IllegalArgumentException(s"Unsupported constraint: $constraint")
       }
 
