@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.util.Set;
 
 import org.neo4j.internal.id.IdController;
-import org.neo4j.kernel.api.KernelTransactionHandle;
 
 /**
  * An instance of this class can get a snapshot of all currently running transactions and be able to tell
@@ -35,14 +34,14 @@ public class KernelTransactionsSnapshot implements IdController.ConditionSnapsho
 {
     private Tx relevantTransactions;
 
-    KernelTransactionsSnapshot( Set<KernelTransactionHandle> allTransactions )
+    KernelTransactionsSnapshot( Set<KernelTransactionStamp> transactionStamps )
     {
         Tx head = null;
-        for ( KernelTransactionHandle tx : allTransactions )
+        for ( KernelTransactionStamp stamp : transactionStamps )
         {
-            if ( tx.isOpen() )
+            if ( stamp.isOpen() )
             {
-                Tx current = new Tx( tx );
+                Tx current = new Tx( stamp );
                 if ( head != null )
                 {
                     current.next = head;
@@ -78,17 +77,17 @@ public class KernelTransactionsSnapshot implements IdController.ConditionSnapsho
 
     private static class Tx
     {
-        private final KernelTransactionHandle transaction;
+        private final KernelTransactionStamp txStamp;
         private Tx next;
 
-        Tx( KernelTransactionHandle tx )
+        Tx( KernelTransactionStamp tx )
         {
-            this.transaction = tx;
+            this.txStamp = tx;
         }
 
         boolean haveClosed()
         {
-            return !transaction.isOpen();
+            return !txStamp.isOpen();
         }
     }
 }
