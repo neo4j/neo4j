@@ -31,6 +31,7 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.is;
+import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
@@ -533,4 +534,17 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_inconsistent_data_deletion = newBuilder( "dbms.log_inconsistent_data_deletion", BOOL, Boolean.FALSE )
             .dynamic()
             .build();
+
+    @Internal
+    @Description( "Feature flag to enable/disable text indexes" )
+    public static final Setting<Boolean> text_indexes_enabled = newBuilder( "unsupported.dbms.text_indexes_enabled", BOOL, false ).build();
+
+    @Internal
+    @Description( "Limits the maximum amount of off-heap memory the consistency checker will allocate. The value is given as a factor between 0.1 .. 1 " +
+            "and will be multiplied with actual available memory to get the effectively available amount of memory taken into consideration" )
+    public static final Setting<Double> consistency_check_memory_limit_factor =
+            newBuilder( "unsupported.consistency_checker.memory_limit_factor", DOUBLE, 0.9D )
+                    .addConstraint( min( 0.1D ) )
+                    .addConstraint( max( 1D ) )
+                    .build();
 }

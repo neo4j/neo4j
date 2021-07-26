@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.DebugContext;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -298,8 +299,9 @@ public class ConsistencyCheckService
             DirectStoreAccess stores =
                     new DirectStoreAccess( storeAccess, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
                             idGeneratorFactory );
+            double memoryLimitLeewayFactor = config.get( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor );
             FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, debugContext,
-                    NodeBasedMemoryLimiter.DEFAULT );
+                    NodeBasedMemoryLimiter.defaultWithLeeway( memoryLimitLeewayFactor ) );
             summary = check.execute( pageCache, stores, countsManager, null, pageCacheTracer, memoryTracker, new DuplicatingLog( log, reportLog ) );
         }
         finally
