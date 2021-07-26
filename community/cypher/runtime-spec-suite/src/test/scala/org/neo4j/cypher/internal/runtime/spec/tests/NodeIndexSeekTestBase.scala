@@ -1364,6 +1364,11 @@ trait EnterpriseNodeIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     } yield honey(10)
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
+}
+
+// Supported by slotted, pipelined, parallel (not compiled though because of composite index)
+trait SerialEnterpriseNodeIndexSeekTestBase[CONTEXT <: RuntimeContext] {
+  self: NodeIndexSeekTestBase[CONTEXT] =>
 
   test("should handle null in exact unique multiple seek") {
     given {
