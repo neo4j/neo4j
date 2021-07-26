@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.consistency.checker.DebugContext;
@@ -224,7 +225,7 @@ public class ConsistencyCheckService
             DebugContext debugContext, Path reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
-        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.convert( layout ); //Right now we only support consistencychecker on record format
+        RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.convert( layout ); //Right now we only support consistency checker on record storage engine
         assertRecovered( databaseLayout, config, fileSystem, memoryTracker );
         Log log = logProvider.getLog( getClass() );
         config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
@@ -278,7 +279,9 @@ public class ConsistencyCheckService
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();
             DirectStoreAccess stores = new DirectStoreAccess( neoStores, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
-            FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, debugContext, NodeBasedMemoryLimiter.DEFAULT );
+            double memoryLimitLeewayFactor = config.get( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor );
+            FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, debugContext,
+                    NodeBasedMemoryLimiter.defaultWithLeeway( memoryLimitLeewayFactor ) );
             summary = check.execute( pageCache, stores, countsStoreManager, groupDegreesStoreManager, null, pageCacheTracer, memoryTracker,
                     new DuplicatingLog( log, reportLog ) );
         }

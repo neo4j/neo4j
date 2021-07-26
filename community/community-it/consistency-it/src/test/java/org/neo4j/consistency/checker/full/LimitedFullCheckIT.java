@@ -30,7 +30,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
     protected NodeBasedMemoryLimiter.Factory memoryLimit()
     {
         // Make it so that it will have to do the checking in a couple of node id ranges
-        return ( pageCacheMemory, highNodeId ) ->
-                new NodeBasedMemoryLimiter( pageCacheMemory, 0, pageCacheMemory + highNodeId * CACHE_LINE_SIZE_BYTES / 3, CACHE_LINE_SIZE_BYTES, highNodeId );
+        return ( pageCacheMemory, highNodeId ) -> new NodeBasedMemoryLimiter( pageCacheMemory, 0, pageCacheMemory + highNodeId * CACHE_LINE_SIZE_BYTES / 3,
+                CACHE_LINE_SIZE_BYTES, highNodeId, 1 );
     }
 }

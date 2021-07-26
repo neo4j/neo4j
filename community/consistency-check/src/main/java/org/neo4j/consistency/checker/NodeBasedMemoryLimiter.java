@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checker;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
@@ -34,18 +35,12 @@ import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
 public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
 {
-    public interface Factory
-    {
-        NodeBasedMemoryLimiter create( long pageCacheMemory, long highNodeId );
-    }
+    public static final Factory DEFAULT = new DefaultFactory( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor.defaultValue() );
 
-    public static final Factory DEFAULT = ( pageCacheMemory, highNodeId ) ->
+    public static Factory defaultWithLeeway( double leewayFactor )
     {
-        long jvmMemory = Runtime.getRuntime().maxMemory();
-        long machineMemory = OsBeanUtil.getTotalPhysicalMemory();
-        long perNodeMemory = CacheSlots.CACHE_LINE_SIZE_BYTES;
-        return new NodeBasedMemoryLimiter( pageCacheMemory, jvmMemory, machineMemory, perNodeMemory, highNodeId );
-    };
+        return new DefaultFactory( leewayFactor );
+    }
 
     // Original parameters
     private final long pageCacheMemory;
@@ -63,7 +58,7 @@ public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
     private long currentRangeStart;
     private long currentRangeEnd;
 
-    public NodeBasedMemoryLimiter( long pageCacheMemory, long jvmMemory, long machineMemory, long requiredMemoryPerNode, long highNodeId )
+    public NodeBasedMemoryLimiter( long pageCacheMemory, long jvmMemory, long machineMemory, long requiredMemoryPerNode, long highNodeId, double leewayFactor )
     {
         // Store the original parameters so that they can be printed for reference later
         this.pageCacheMemory = pageCacheMemory;
@@ -78,7 +73,7 @@ public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
                                       // When the OS can't provide a number, we assume at least twice page-cache size, and at least 2GiB
                                       ? max( pageCacheMemory * 2, gibiBytes( 2 ) )
                                       : machineMemory;
-        this.effectiveMachineMemory = max( effectiveMachineMemory, occupiedMemory );
+        this.effectiveMachineMemory = max( (long) (effectiveMachineMemory * leewayFactor), occupiedMemory );
         long availableMemory = effectiveMachineMemory - occupiedMemory;
 
         assert availableMemory > 0;
@@ -145,5 +140,29 @@ public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
     boolean isLast( LongRange range )
     {
         return range.to() == highNodeId;
+    }
+
+    public interface Factory
+    {
+        NodeBasedMemoryLimiter create( long pageCacheMemory, long highNodeId );
+    }
+
+    private static class DefaultFactory implements Factory
+    {
+        private final double memoryLeewayFactor;
+
+        DefaultFactory( double memoryLeewayFactor )
+        {
+            this.memoryLeewayFactor = memoryLeewayFactor;
+        }
+
+        @Override
+        public NodeBasedMemoryLimiter create( long pageCacheMemory, long highNodeId )
+        {
+            long jvmMemory = Runtime.getRuntime().maxMemory();
+            long machineMemory = OsBeanUtil.getTotalPhysicalMemory();
+            long perNodeMemory = CacheSlots.CACHE_LINE_SIZE_BYTES;
+            return new NodeBasedMemoryLimiter( pageCacheMemory, jvmMemory, machineMemory, perNodeMemory, highNodeId, memoryLeewayFactor );
+        }
     }
 }
