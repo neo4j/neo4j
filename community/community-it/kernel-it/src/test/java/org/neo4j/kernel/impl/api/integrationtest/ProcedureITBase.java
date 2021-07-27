@@ -215,7 +215,8 @@ public interface ProcedureITBase
                                 "clientAddress :: STRING?, requestUri :: STRING?, status :: STRING?, resourceInformation :: MAP?, " +
                                 "activeLockCount :: INTEGER?, " +
                                 "elapsedTimeMillis :: INTEGER?, cpuTimeMillis :: INTEGER?, waitTimeMillis :: INTEGER?, idleTimeMillis :: INTEGER?, " +
-                                "allocatedBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, database :: STRING?)",
+                                "allocatedBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, database :: STRING?, " +
+                                "transactionId :: STRING?)",
                         "List all queries currently executing at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.killConnection", "(id :: STRING?) :: (connectionId :: STRING?, username :: STRING?, message :: STRING?)",

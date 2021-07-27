@@ -760,6 +760,49 @@ class Neo4jTransactionalContextIT
         assertThat( outerTransactionIds, hasSize(2) );
     }
 
+    @Test
+    void contextWithNewTransaction_listQueries() throws ProcedureException, InvalidArgumentsException
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var queryText = "<query text>";
+        var ctx = Neo4jTransactionalContextFactory
+                .create( () -> graph, transactionFactory )
+                .newContext( outerTx, queryText, MapValue.EMPTY );
+
+        // We need to be done with parsing and provide an obfuscator to see the query text in the procedure
+        ctx.executingQuery().onObfuscatorReady( QueryObfuscator.PASSTHROUGH );
+
+        var innerCtx = ctx.contextWithNewTransaction();
+        var innerTx = innerCtx.transaction();
+
+        var procsRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        var listQueries = procsRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "listQueries") );
+        var procedureId = listQueries.id();
+        var transactionIdIndex = listQueries.signature().outputSignature().indexOf( FieldSignature.outputField( "transactionId", Neo4jTypes.NTString ) );
+        var queryIndex = listQueries.signature().outputSignature().indexOf( FieldSignature.outputField( "query", Neo4jTypes.NTString ) );
+        var queryIdIndex = listQueries.signature().outputSignature().indexOf( FieldSignature.outputField( "queryId", Neo4jTypes.NTString ) );
+        var procContext = new ProcedureCallContext( procedureId, new String[]{"transactionId", "query", "queryId"}, false, "", false );
+
+        // When
+        var procResult = Iterators.asList(
+                innerCtx.kernelTransaction().procedures().procedureCallDbms( procedureId, new AnyValue[]{}, procContext )
+        );
+
+        var mapper = new DefaultValueMapper(innerTx);
+        var transactionIds = procResult.stream().map( array -> array[transactionIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
+        var queries = procResult.stream().map( array -> array[queryIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
+        var queryIds = procResult.stream().map( array -> array[queryIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
+
+        // Then
+        var expectedTransactionId = new TransactionId( outerTx.getDatabaseName(), outerTx.kernelTransaction().getUserTransactionId() ).toString();
+        var expectedQueryId = String.format( "query-%s", ctx.executingQuery().id() );
+
+        assertThat( transactionIds, equalTo( Collections.singletonList( expectedTransactionId ) ) );
+        assertThat( queries, equalTo( Collections.singletonList( queryText ) ) );
+        assertThat( queryIds, equalTo( Collections.singletonList( expectedQueryId ) ) );
+    }
+
     // PERIODIC COMMIT
 
     @Test

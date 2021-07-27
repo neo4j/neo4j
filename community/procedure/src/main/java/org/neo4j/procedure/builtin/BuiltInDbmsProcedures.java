@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,7 +35,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.capabilities.CapabilitiesService;
-import org.neo4j.capabilities.Capability;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -435,7 +435,7 @@ public class BuiltInDbmsProcedures
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException
     {
         ZoneId zoneId = getConfiguredTimeZone();
-        List<QueryStatusResult> result = new ArrayList<>();
+        Stream.Builder<QueryStatusResult> result = Stream.builder();
 
         for ( FabricTransaction tx : getFabricTransactions() )
         {
@@ -455,31 +455,46 @@ public class BuiltInDbmsProcedures
             if ( databaseContext.database().isStarted() )
             {
                 DatabaseScope dbScope = new DatabaseScope( databaseContext.database().getNamedDatabaseId().name() );
-                for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
+                Iterator<ExecutingQuery> distinctQueries = getExecutingTransactions( databaseContext ).stream()
+                                                                                                      .map( KernelTransactionHandle::executingQuery )
+                                                                                                      .flatMap( Optional::stream )
+                                                                                                      .distinct()
+                                                                                                      .iterator();
+
+                while ( distinctQueries.hasNext() )
                 {
-                    if ( tx.executingQuery().isPresent() )
-                    {
-                        ExecutingQuery query = tx.executingQuery().get();
-
-                        // Include both the executing query and any previous queries (parent queries of nested query) in the result.
-                        while ( query != null )
-                        {
-                            String username = query.username();
-                            var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
-                            if ( isSelfOrAllows( username, action ) )
-                            {
-                                result.add(
-                                        new QueryStatusResult( query, (InternalTransaction) transaction, zoneId,
-                                                               databaseContext.databaseFacade().databaseName() ) );
-                            }
-
-                            query = query.getPreviousQuery();
-                        }
-                    }
+                    var query = distinctQueries.next();
+                    addQueryStatusesToResult( zoneId, result, databaseContext, dbScope, query );
                 }
             }
         }
-        return result.stream();
+        return result.build();
+    }
+
+    private void addQueryStatusesToResult( ZoneId zoneId,
+                                           Stream.Builder<QueryStatusResult> result,
+                                           DatabaseContext databaseContext,
+                                           DatabaseScope dbScope,
+                                           ExecutingQuery query ) throws InvalidArgumentsException
+    {
+        // Include both the executing query and any previous queries (parent queries of nested query) in the result.
+        while ( query != null )
+        {
+            String username = query.username();
+            var action = new AdminActionOnResource( SHOW_TRANSACTION,
+                                                    dbScope,
+                                                    new UserSegment( username ) );
+            if ( isSelfOrAllows( username, action ) )
+            {
+                result.add(
+                        new QueryStatusResult( query,
+                                               (InternalTransaction) transaction,
+                                               zoneId,
+                                               databaseContext.databaseFacade().databaseName() ) );
+            }
+
+            query = query.getPreviousQuery();
+        }
     }
 
     @SystemProcedure

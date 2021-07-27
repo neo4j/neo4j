@@ -87,6 +87,8 @@ public class QueryStatusResult
     public final String connectionId;
     /** @since Neo4j 4.0 */
     public final String database;
+    /** @since Neo4j 4.4 */
+    public final String transactionId;
 
     QueryStatusResult( ExecutingQuery query, TransactionalEntityFactory manager, ZoneId zoneId, String database ) throws InvalidArgumentsException
     {
@@ -123,6 +125,7 @@ public class QueryStatusResult
         this.pageHits = query.pageHits();
         this.pageFaults = query.pageFaults();
         this.connectionId = clientConnection.connectionId();
+        this.transactionId = new TransactionId( database, query.transactionId() ).toString();
     }
 
     private static Long asMillis( Long micros )
