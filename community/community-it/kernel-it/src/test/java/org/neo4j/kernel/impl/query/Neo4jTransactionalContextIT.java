@@ -74,6 +74,10 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
@@ -651,6 +655,79 @@ class Neo4jTransactionalContextIT
 
         // Then
         assertTrue( ctx.isOpen() );
+    }
+
+    @Test
+    void contextWithNewTransaction_close_inner_statement_on_inner_context_commit_close() throws Exception
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var outerCtx = createTransactionContext( outerTx );
+        var innerCtx = outerCtx.contextWithNewTransaction();
+
+        var outerCloseable = mock( AutoCloseable.class );
+        var innerCloseable = mock( AutoCloseable.class );
+
+        outerCtx.statement().registerCloseableResource( outerCloseable );
+        innerCtx.statement().registerCloseableResource( innerCloseable );
+
+        // When
+        innerCtx.commit();
+        innerCtx.close();
+
+        // Then
+        verify( innerCloseable ).close();
+        verifyNoMoreInteractions( innerCloseable );
+        verifyNoInteractions( outerCloseable );
+    }
+
+    @Test
+    void contextWithNewTransaction_close_inner_statement_on_inner_transaction_commit_close() throws Exception
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var outerCtx = createTransactionContext( outerTx );
+        var innerCtx = outerCtx.contextWithNewTransaction();
+        var innerTx = innerCtx.transaction();
+
+        var outerCloseable = mock( AutoCloseable.class );
+        var innerCloseable = mock( AutoCloseable.class );
+
+        outerCtx.statement().registerCloseableResource( outerCloseable );
+        innerCtx.statement().registerCloseableResource( innerCloseable );
+
+        // Then (we close the transaction w/o closing the referencing context)
+        assertThrows( TransactionFailureException.class,
+                      // When
+                      innerTx::commit);
+        verify( innerCloseable ).close();
+        verifyNoMoreInteractions( innerCloseable );
+        verifyNoInteractions( outerCloseable );
+    }
+
+    @Test
+    void contextWithNewTransaction_close_inner_statement_on_outer_context_rollback_close() throws Exception
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var outerCtx = createTransactionContext( outerTx );
+        var innerCtx = outerCtx.contextWithNewTransaction();
+
+        var outerCloseable = mock( AutoCloseable.class );
+        var innerCloseable = mock( AutoCloseable.class );
+
+        outerCtx.statement().registerCloseableResource( outerCloseable );
+        innerCtx.statement().registerCloseableResource( innerCloseable );
+
+        // When
+        outerTx.rollback();
+        outerTx.close();
+
+        // Then
+        verify( innerCloseable ).close();
+        verifyNoMoreInteractions( innerCloseable );
+        verify( outerCloseable ).close();
+        verifyNoMoreInteractions( outerCloseable );
     }
 
     @Test
