@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.memory
 
-import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.OperatorMemoryTracker
-import org.neo4j.cypher.internal.runtime.memory.TransactionBoundMemoryTrackerForOperatorProvider.TransactionBoundOperatorMemoryTracker
+import org.neo4j.cypher.internal.runtime.memory.TransactionBoundMemoryTrackerForOperatorProvider.TransactionBoundMemoryTracker
 import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapHighWaterMarkTracker
+import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.memory.ScopedMemoryTracker
-import org.neo4j.cypher.result.QueryProfile
 
 /**
  * Gives the ability to track memory per operator.
@@ -65,24 +65,27 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
 
   /**
    * Forward heap allocations and de-allocations to both a transaction memory tracker
-   * and a tracker for this operator spanning multiple transactions.
+   * and a tracker for this scope spanning multiple transactions in the same query.
+   *
+   * This tracker can be used both for the whole query and a single operator in a query,
+   * given the right arguments.
    */
-  class TransactionBoundOperatorMemoryTracker(transactionMemoryTracker: MemoryTracker,
-                                              globalOperatorMemoryTracker: OperatorMemoryTracker)
+  class TransactionBoundMemoryTracker(transactionMemoryTracker: MemoryTracker,
+                                      queryGlobalMemoryTracker: HeapMemoryTracker)
     extends ScopedMemoryTracker(transactionMemoryTracker) {
 
     override def allocateHeap(bytes: Long): Unit = {
       // Forward to transaction memory tracker
       super.allocateHeap(bytes)
-      // Forward to the globalOperatorMemoryTracker
-      globalOperatorMemoryTracker.allocateHeap(bytes)
+      // Forward to the queryGlobalMemoryTracker
+      queryGlobalMemoryTracker.allocateHeap(bytes)
     }
 
     override def releaseHeap(bytes: Long): Unit = {
       // Forward to transaction memory tracker
       super.releaseHeap(bytes)
-      // Forward to the globalOperatorMemoryTracker
-      globalOperatorMemoryTracker.releaseHeap(bytes)
+      // Forward to the queryGlobalMemoryTracker
+      queryGlobalMemoryTracker.releaseHeap(bytes)
     }
   }
 }
@@ -95,20 +98,10 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
  *
  */
 class TransactionBoundMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker, queryHeapHighWatermarkTracker: TrackingQueryMemoryTracker)
-  extends ScopedMemoryTracker(transactionMemoryTracker)
+  extends TransactionBoundMemoryTracker(transactionMemoryTracker, queryHeapHighWatermarkTracker)
   with MemoryTrackerForOperatorProvider {
 
   override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = {
-    new TransactionBoundOperatorMemoryTracker(transactionMemoryTracker, queryHeapHighWatermarkTracker.memoryTrackerForOperator(operatorId))
-  }
-
-  override def allocateHeap(bytes: Long): Unit = {
-    super.allocateHeap(bytes)
-    queryHeapHighWatermarkTracker.allocateHeap(bytes)
-  }
-
-  override def releaseHeap(bytes: Long): Unit = {
-    super.releaseHeap(bytes)
-    queryHeapHighWatermarkTracker.releaseHeap(bytes)
+    new TransactionBoundMemoryTracker(transactionMemoryTracker, queryHeapHighWatermarkTracker.memoryTrackerForOperator(operatorId))
   }
 }
