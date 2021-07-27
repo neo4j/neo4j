@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Last
 import org.neo4j.cypher.internal.expressions.functions.Left
 import org.neo4j.cypher.internal.expressions.functions.Length
+import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.expressions.functions.Linenumber
 import org.neo4j.cypher.internal.expressions.functions.Log
 import org.neo4j.cypher.internal.expressions.functions.Log10
@@ -303,6 +304,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext, anonymousVar
       case e: internal.expressions.CollectAll=>
         commands.expressions.CollectAll(self.toCommandExpression(id, e.arguments.head))
       case e: DefaultValueLiteral => commands.expressions.Literal(e.value)
+      case Length3_5(arg) => commands.expressions.Length3_5Function(self.toCommandExpression(id, arg))
       case _ => null
     }
 
