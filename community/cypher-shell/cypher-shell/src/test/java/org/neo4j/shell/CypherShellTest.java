@@ -72,7 +72,7 @@ public class CypherShellTest
     @Before
     public void setup()
     {
-        when( mockedBoltStateHandler.getServerVersion() ).thenReturn( "" );
+        when( mockedBoltStateHandler.getProtocolVersion() ).thenReturn( "" );
 
         doReturn( System.out ).when( logger ).getOutputStream();
         offlineTestShell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
@@ -105,12 +105,12 @@ public class CypherShellTest
     }
 
     @Test
-    public void verifyDelegationOfGetServerVersionMethod() throws CommandException
+    public void verifyDelegationOfGetProtocolVersionMethod() throws CommandException
     {
         CypherShell shell = new CypherShell( logger, mockedBoltStateHandler, mockedPrettyPrinter, new ShellParameterMap() );
 
-        shell.getServerVersion();
-        verify( mockedBoltStateHandler ).getServerVersion();
+        shell.getProtocolVersion();
+        verify( mockedBoltStateHandler ).getProtocolVersion();
     }
 
     @Test

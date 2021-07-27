@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.state;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,6 @@ import org.neo4j.shell.exception.ThrowingAction;
 import org.neo4j.shell.log.NullLogging;
 
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
-import static org.neo4j.shell.util.Versions.majorVersion;
 
 /**
  * Handles interactions with the driver
@@ -73,7 +73,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private final Map<String, Bookmark> bookmarks = new HashMap<>();
     protected Driver driver;
     Session session;
-    private String version;
+    private String protocolVersion;
     private String activeDatabaseNameAsSetByUser;
     private String actualDatabaseNameAsReportedByServer;
     private Transaction tx;
@@ -373,36 +373,29 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
 
     private ThrowingAction<CommandException> getPing()
     {
-
         return () ->
         {
-            ResultSummary summary = null;
-            Result run = session.run( "CALL db.ping()" );
             try
             {
-                summary = run.consume();
+                Result run = session.run( "CALL db.ping()" );
+                ResultSummary summary = run.consume();
+                BoltStateHandler.this.protocolVersion = summary.server().protocolVersion();
+                updateActualDbName( summary );
             }
             catch ( ClientException e )
             {
                 //In older versions there is no db.ping procedure, use legacy method.
                 if ( procedureNotFound( e ) )
                 {
-                    run = session.run( isSystemDb() ? "CALL db.indexes()" : "RETURN 1" );
+                    Result run = session.run( isSystemDb() ? "CALL db.indexes()" : "RETURN 1" );
+                    ResultSummary summary = run.consume();
+                    BoltStateHandler.this.protocolVersion = summary.server().protocolVersion();
+                    updateActualDbName( summary );
                 }
                 else
                 {
                     throw e;
                 }
-            }
-            finally
-            {
-                // Since run.consume() can throw the first time we have to go through this extra hoop to get the summary
-                if ( summary == null )
-                {
-                    summary = run.consume();
-                }
-                BoltStateHandler.this.version = summary.server().version();
-                updateActualDbName( summary );
             }
         };
     }
@@ -411,19 +404,35 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     @Override
     public String getServerVersion()
     {
+        try
+        {
+            return runCypher("CALL dbms.components() YIELD versions", Collections.emptyMap())
+                    .flatMap(recordOpt -> recordOpt.getRecords().stream().findFirst())
+                    .map(record -> record.get("versions"))
+                    .filter(value  -> !value.isNull())
+                    .map(value -> value.get(0).asString())
+                    .orElse("");
+        }
+        catch ( CommandException e )
+        {
+            // On versions before 3.1.0-M09
+            return "";
+        }
+    }
+
+    @Nonnull
+    @Override
+    public String getProtocolVersion()
+    {
         if ( isConnected() )
         {
-            if ( version == null )
+            if ( protocolVersion == null )
             {
                 // On versions before 3.1.0-M09
-                version = "";
+                protocolVersion = "";
             }
-            if ( version.startsWith( "Neo4j/" ) )
-            {
-                // Want to return '3.1.0' and not 'Neo4j/3.1.0'
-                version = version.substring( 6 );
-            }
-            return version;
+
+            return protocolVersion;
         }
         return "";
     }
@@ -488,21 +497,28 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             {
             } );
 
-            String command;
-            Value parameters;
-            if ( majorVersion( getServerVersion() ) >= 4 )
+            try
             {
-                command = "ALTER CURRENT USER SET PASSWORD FROM $o TO $n";
-                parameters = Values.parameters( "o", connectionConfig.password(), "n", connectionConfig.newPassword() );
+                String command = "ALTER CURRENT USER SET PASSWORD FROM $o TO $n";
+                Value parameters = Values.parameters("o", connectionConfig.password(), "n", connectionConfig.newPassword());
+                Result run = session.run(command, parameters);
+                run.consume();
             }
-            else
+            catch ( Neo4jException e )
             {
-                command = "CALL dbms.security.changePassword($n)";
-                parameters = Values.parameters( "n", connectionConfig.newPassword() );
+                if ( isPasswordChangeRequiredException( e ) )
+                {
+                    // In < 4.0 versions use legacy method.
+                    String oldCommand = "CALL dbms.security.changePassword($n)";
+                    Value oldParameters = Values.parameters("n", connectionConfig.newPassword());
+                    Result run = session.run(oldCommand, oldParameters);
+                    run.consume();
+                }
+                else
+                {
+                    throw e;
+                }
             }
-
-            Result run = session.run( command, parameters );
-            run.consume();
 
             // If successful, use the new password when reconnecting
             connectionConfig.setPassword( connectionConfig.newPassword() );
@@ -614,7 +630,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     {
         reset();
         silentDisconnect();
-        version = null;
+        protocolVersion = null;
     }
 
     private Driver getDriver( @Nonnull ConnectionConfig connectionConfig, @Nullable AuthToken authToken )

@@ -65,6 +65,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -93,14 +94,14 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void versionIsEmptyBeforeConnect()
+    public void protocolVersionIsEmptyBeforeConnect()
     {
         assertFalse( boltStateHandler.isConnected() );
-        assertEquals( "", boltStateHandler.getServerVersion() );
+        assertEquals( "", boltStateHandler.getProtocolVersion() );
     }
 
     @Test
-    public void versionIsEmptyIfDriverReturnsNull() throws CommandException
+    public void protocolVersionIsEmptyIfDriverReturnsNull() throws CommandException
     {
         RecordingDriverProvider provider = new RecordingDriverProvider()
         {
@@ -114,25 +115,43 @@ public class BoltStateHandlerTest
         BoltStateHandler handler = new BoltStateHandler( provider, false );
         handler.connect( config );
 
-        assertEquals( "", handler.getServerVersion() );
+        assertEquals( "", handler.getProtocolVersion() );
     }
 
     @Test
-    public void versionIsNotEmptyAfterConnect() throws CommandException
+    public void protocolVersionIsNotEmptyAfterConnect() throws CommandException
     {
-        Driver driverMock = stubResultSummaryInAnOpenSession( mock( Result.class ), mock( Session.class ), "Neo4j/9.4.1-ALPHA" );
+        Driver driverMock = stubResultSummaryInAnOpenSession( mock( Result.class ), mock( Session.class ), "9.4.1-ALPHA" );
 
         BoltStateHandler handler = new BoltStateHandler( ( s, authToken, config ) -> driverMock, false );
         handler.connect( config );
 
-        assertEquals( "9.4.1-ALPHA", handler.getServerVersion() );
+        assertEquals( "9.4.1-ALPHA", handler.getProtocolVersion() );
+    }
+
+    @Test
+    public void serverVersionIsEmptyBeforeConnect()
+    {
+        assertFalse( boltStateHandler.isConnected() );
+        assertEquals( "", boltStateHandler.getServerVersion() );
+    }
+
+    @Test
+    public void serverVersionIsNotEmptyAfterConnect() throws CommandException
+    {
+        Driver fakeDriver = new FakeDriver();
+
+        BoltStateHandler handler = new BoltStateHandler( ( s, authToken, config ) -> fakeDriver, false );
+        handler.connect( config );
+
+        assertEquals( "4.3.0", handler.getServerVersion() );
     }
 
     @Test
     public void actualDatabaseNameIsNotEmptyAfterConnect() throws CommandException
     {
         Driver driverMock =
-                stubResultSummaryInAnOpenSession( mock( Result.class ), mock( Session.class ), "Neo4j/9.4.1-ALPHA", "my_default_db" );
+                stubResultSummaryInAnOpenSession( mock( Result.class ), mock( Session.class ), "9.4.1-ALPHA", "my_default_db" );
 
         BoltStateHandler handler = new BoltStateHandler( ( s, authToken, config ) -> driverMock, false );
         handler.connect( config );
@@ -146,7 +165,7 @@ public class BoltStateHandlerTest
         Session sessionMock = mock( Session.class );
         Result resultMock = mock( Result.class );
         Driver driverMock =
-                stubResultSummaryInAnOpenSession( resultMock, sessionMock, "Neo4j/9.4.1-ALPHA", "my_default_db" );
+                stubResultSummaryInAnOpenSession( resultMock, sessionMock, "9.4.1-ALPHA", "my_default_db" );
 
         ClientException databaseNotFound = new ClientException( "Neo.ClientError.Database.DatabaseNotFound", "blah" );
 
@@ -633,7 +652,7 @@ public class BoltStateHandlerTest
         return stubResultSummaryInAnOpenSession( resultMock, sessionMock, version, DEFAULT_DEFAULT_DB_NAME );
     }
 
-    private Driver stubResultSummaryInAnOpenSession( Result resultMock, Session sessionMock, String version, String databaseName )
+    private Driver stubResultSummaryInAnOpenSession( Result resultMock, Session sessionMock, String protocolVersion, String databaseName )
     {
         Driver driverMock = mock( Driver.class );
         ResultSummary resultSummary = mock( ResultSummary.class );
@@ -641,13 +660,14 @@ public class BoltStateHandlerTest
         DatabaseInfo databaseInfo = mock( DatabaseInfo.class );
 
         when( resultSummary.server() ).thenReturn( serverInfo );
-        when( serverInfo.version() ).thenReturn( version );
+        when( serverInfo.protocolVersion() ).thenReturn( protocolVersion );
         when( resultMock.consume() ).thenReturn( resultSummary );
         when( resultSummary.database() ).thenReturn( databaseInfo );
         when( databaseInfo.name() ).thenReturn( databaseName );
 
         when( sessionMock.isOpen() ).thenReturn( true );
         when( sessionMock.run( "CALL db.ping()" ) ).thenReturn( resultMock );
+        when( sessionMock.run( anyString(), any(Value.class) ) ).thenReturn( resultMock );
         when( driverMock.session( any() ) ).thenReturn( sessionMock );
 
         return driverMock;

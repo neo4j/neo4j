@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.util;
 
+import java.util.Arrays;
+
 import org.neo4j.driver.exceptions.Neo4jException;
 
 import static java.lang.Integer.parseInt;

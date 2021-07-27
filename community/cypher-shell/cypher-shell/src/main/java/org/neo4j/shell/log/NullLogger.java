@@ -55,6 +55,11 @@ public class NullLogger implements Logger
     }
 
     @Override
+    public void debug( String s, Throwable throwable )
+    {
+    }
+
+    @Override
     public void trace( String message, Object... params )
     {
     }

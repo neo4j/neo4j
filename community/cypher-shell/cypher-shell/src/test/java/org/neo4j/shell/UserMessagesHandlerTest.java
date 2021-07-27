@@ -35,7 +35,7 @@ public class UserMessagesHandlerTest
         when( connectionConfig.username() ).thenReturn( "bob" );
         when( connectionConfig.driverUrl() ).thenReturn( "bolt://some.place.com:99" );
 
-        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connectionConfig, "3.1.0-Beta99" );
+        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connectionConfig, "3.1" );
         assertEquals( "Connected to Neo4j using Bolt protocol version 3.1 at @|BOLD bolt://some.place.com:99|@ as user @|BOLD bob|@.\n" +
                       "Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.\n" +
                       "Note that Cypher queries must end with a @|BOLD semicolon.|@",
@@ -48,7 +48,7 @@ public class UserMessagesHandlerTest
         when( connectionConfig.username() ).thenReturn( "bob" );
         when( connectionConfig.driverUrl() ).thenReturn( "bolt://some.place.com:99" );
 
-        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connectionConfig, "3.1.0-Beta99" );
+        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connectionConfig, "3.1" );
         assertEquals( "\nBye!", userMessagesHandler.getExitMessage() );
     }
 }
