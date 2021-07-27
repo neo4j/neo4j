@@ -45,7 +45,6 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
 {
     private static final String USER_TRANSACTION_NAME_SEPARATOR = "-transaction-";
 
-    private final long txReuseCount;
     private final long lastTransactionTimestampWhenStarted;
     private final long startTime;
     private final long startTimeNanos;
@@ -59,11 +58,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final Map<String,Object> metaData;
     private final long userTransactionId;
     private final TransactionInitializationTrace initializationTrace;
+    private final KernelTransactionStamp transactionStamp;
     private final String databaseName;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx, SystemNanoClock clock )
     {
-        this.txReuseCount = tx.getReuseCount();
+        this.transactionStamp = new KernelTransactionStamp( tx );
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
         this.startTimeNanos = tx.startTimeNanos();
@@ -107,19 +107,19 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public boolean isOpen()
     {
-        return tx.isOpen() && txReuseCount == tx.getReuseCount();
+        return transactionStamp.isOpen();
     }
 
     @Override
     public boolean isClosing()
     {
-        return tx.isClosing() && txReuseCount == tx.getReuseCount();
+        return transactionStamp.isClosing();
     }
 
     @Override
     public boolean markForTermination( Status reason )
     {
-        return tx.markForTermination( txReuseCount, reason );
+        return tx.markForTermination( transactionStamp.getReuseCount(), reason );
     }
 
     @Override
@@ -173,7 +173,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public TransactionExecutionStatistic transactionStatistic()
     {
-        if ( txReuseCount == tx.getReuseCount() )
+        if ( transactionStamp.isNotExpired() )
         {
             return new TransactionExecutionStatistic( tx, clock, startTime );
         }
@@ -213,18 +213,18 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
             return false;
         }
         KernelTransactionImplementationHandle that = (KernelTransactionImplementationHandle) o;
-        return txReuseCount == that.txReuseCount && tx.equals( that.tx );
+        return transactionStamp.equals( that.transactionStamp );
     }
 
     @Override
     public int hashCode()
     {
-        return 31 * (int) (txReuseCount ^ (txReuseCount >>> 32)) + tx.hashCode();
+        return transactionStamp.hashCode();
     }
 
     @Override
     public String toString()
     {
-        return "KernelTransactionImplementationHandle{txReuseCount=" + txReuseCount + ", tx=" + tx + "}";
+        return "KernelTransactionImplementationHandle{txReuseCount=" + transactionStamp.getReuseCount() + ", tx=" + tx + "}";
     }
 }
