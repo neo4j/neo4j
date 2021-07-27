@@ -60,7 +60,7 @@ class TrackingQueryMemoryTrackerTest extends CypherFunSuite {
     // Then
     queryMemoryTracker.heapHighWaterMark should be(15L + sizeOfGrowingArray)
     txMemoryTracker.heapHighWaterMark() should be(15L)
-    queryMemoryTracker.maxMemoryOfOperator(0) should be(15L)
+    queryMemoryTracker.heapHighWaterMarkOfOperator(0) should be(15L)
   }
 
   test("Tracks overall memory high water mark with AnyValues: Single transaction, single operator") {
@@ -85,7 +85,7 @@ class TrackingQueryMemoryTrackerTest extends CypherFunSuite {
     val expected = Math.max(v1.estimatedHeapUsage() + v2.estimatedHeapUsage(), v1.estimatedHeapUsage() + v2.estimatedHeapUsage() - v3.estimatedHeapUsage() + v4.estimatedHeapUsage())
     queryMemoryTracker.heapHighWaterMark should be(expected + sizeOfGrowingArray)
     txMemoryTracker.heapHighWaterMark() should be(expected)
-    queryMemoryTracker.maxMemoryOfOperator(0) should be(expected)
+    queryMemoryTracker.heapHighWaterMarkOfOperator(0) should be(expected)
   }
 
   test("Throws exception if operator allocations exceed threshold: Single transaction, single operator") {
@@ -133,9 +133,9 @@ class TrackingQueryMemoryTrackerTest extends CypherFunSuite {
     operator1Tracker.allocateHeap(iterator1.next().estimatedHeapUsage) // [10, 11, 7] / 28
 
     // Then
-    queryMemoryTracker.maxMemoryOfOperator(0) should be(10L)
-    queryMemoryTracker.maxMemoryOfOperator(1) should be(11L)
-    queryMemoryTracker.maxMemoryOfOperator(2) should be(28L)
+    queryMemoryTracker.heapHighWaterMarkOfOperator(0) should be(10L)
+    queryMemoryTracker.heapHighWaterMarkOfOperator(1) should be(11L)
+    queryMemoryTracker.heapHighWaterMarkOfOperator(2) should be(28L)
     txMemoryTracker.heapHighWaterMark() should be(32L)
     queryMemoryTracker.heapHighWaterMark should be(32L + sizeOfGrowingArray)
   }
@@ -177,7 +177,7 @@ class TrackingQueryMemoryTrackerTest extends CypherFunSuite {
 
     // Then
     queryMemoryTracker.heapHighWaterMark should be(15L + sizeOfGrowingArray)
-    queryMemoryTracker.maxMemoryOfOperator(0) should be(15L)
+    queryMemoryTracker.heapHighWaterMarkOfOperator(0) should be(15L)
     tx0MemoryTracker.heapHighWaterMark() should be(10L)
     tx1MemoryTracker.heapHighWaterMark() should be(9L)
   }
@@ -273,9 +273,9 @@ class TrackingQueryMemoryTrackerTest extends CypherFunSuite {
     operator1Tx1Tracker.allocateHeap(iterator1.next().estimatedHeapUsage) // [10, 11, 14] / [5, 30] / 35
 
     // Then
-    queryMemoryTracker.maxMemoryOfOperator(0) should be(10L)
-    queryMemoryTracker.maxMemoryOfOperator(1) should be(11L)
-    queryMemoryTracker.maxMemoryOfOperator(2) should be(28L)
+    queryMemoryTracker.heapHighWaterMarkOfOperator(0) should be(10L)
+    queryMemoryTracker.heapHighWaterMarkOfOperator(1) should be(11L)
+    queryMemoryTracker.heapHighWaterMarkOfOperator(2) should be(28L)
     tx0MemoryTracker.heapHighWaterMark() should be(17L)
     tx1MemoryTracker.heapHighWaterMark() should be(30L)
     queryMemoryTracker.heapHighWaterMark should be(35 + sizeOfGrowingArray)

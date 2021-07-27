@@ -24,7 +24,6 @@ import java.util.function.Supplier
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.graphdb.ExecutionPlanDescription
-import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.api.query.RelationshipTypeIndexUsage

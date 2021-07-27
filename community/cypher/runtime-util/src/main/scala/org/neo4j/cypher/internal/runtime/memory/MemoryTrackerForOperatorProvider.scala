@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.Opera
 import org.neo4j.cypher.internal.runtime.memory.TransactionBoundMemoryTrackerForOperatorProvider.TransactionBoundOperatorMemoryTracker
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.memory.EmptyMemoryTracker
-import org.neo4j.memory.HeapHighWatermarkTracker
+import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.memory.ScopedMemoryTracker
+import org.neo4j.cypher.result.QueryProfile
 
 /**
  * Gives the ability to track memory per operator.
@@ -43,10 +44,11 @@ trait MemoryTrackerForOperatorProvider {
 object MemoryTrackerForOperatorProvider {
 
   /**
-   * Convert a value returned from `totalAllocatedMemory` or `maxMemoryOfOperator` to a value to be given to a QueryProfile.
+   * Convert a value returned from [[TrackingQueryMemoryTracker.heapHighWaterMark]]
+   * or [[TrackingQueryMemoryTracker.heapHighWaterMarkOfOperator]] to a value to be given to a [[QueryProfile]].
    */
   def memoryAsProfileData(value: Long): Long = value match {
-    case HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED => OperatorProfile.NO_DATA
+    case HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED => OperatorProfile.NO_DATA
     case x => x
   }
 }

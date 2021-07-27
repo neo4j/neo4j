@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.runtime.GrowingArray.DEFAULT_SIZE
 import org.neo4j.cypher.internal.runtime.GrowingArray.SHALLOW_SIZE
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
-import org.neo4j.memory.JustHeapMemoryTracker
+import org.neo4j.memory.HeapMemoryTracker
 
 /**
  * Random access data structure which grows dynamically as elements are added.
  */
-class GrowingArray[T <: AnyRef](memoryTracker: JustHeapMemoryTracker) extends AutoCloseable {
+class GrowingArray[T <: AnyRef](memoryTracker: HeapMemoryTracker) extends AutoCloseable {
 
   private var trackedMemory = shallowSizeOfObjectArray(DEFAULT_SIZE)
   memoryTracker.allocateHeap(trackedMemory + SHALLOW_SIZE)

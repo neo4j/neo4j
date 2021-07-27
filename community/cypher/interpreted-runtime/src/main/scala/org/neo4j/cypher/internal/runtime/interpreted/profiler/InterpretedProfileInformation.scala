@@ -70,7 +70,7 @@ class InterpretedProfileInformation extends QueryProfile {
     val rows = rowMap.get(id).map(_.count).getOrElse(0L)
     val dbHits = dbHitsMap.get(id).map(_.count).getOrElse(0L)
     val pageCacheStats = pageCacheMap(id)
-    val maxMemoryAllocated = MemoryTrackerForOperatorProvider.memoryAsProfileData(memoryTracker.maxMemoryOfOperator(operatorId))
+    val maxMemoryAllocated = MemoryTrackerForOperatorProvider.memoryAsProfileData(memoryTracker.heapHighWaterMarkOfOperator(operatorId))
 
     OperatorData(dbHits, rows, pageCacheStats.hits, pageCacheStats.misses, maxMemoryAllocated)
   }

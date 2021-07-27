@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.memory
 
-import org.neo4j.memory.HeapHighWatermarkTracker
-import org.neo4j.memory.JustHeapMemoryTracker
+import org.neo4j.memory.HeapHighWaterMarkTracker
+import org.neo4j.memory.HeapMemoryTracker
 
 /**
  * Gives the ability to track heap memory per operator, spanning multiple transactions.
@@ -28,11 +28,11 @@ import org.neo4j.memory.JustHeapMemoryTracker
  */
 trait TransactionSpanningMemoryTrackerForOperatorProvider {
   /**
-   * Get the maximum allocated memory of this operator, in bytes.
+   * Get the high water mark of allocated heap memory of this operator, in bytes.
    *
-   * @return the maximum number of allocated memory bytes, or [[HeapHighWatermarkTracker]].ALLOCATIONS_NOT_TRACKED, if memory tracking was not enabled.
+   * @return the maximum number of allocated memory bytes, or [[HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED]], if memory tracking was not enabled.
    */
-  def maxMemoryOfOperator(operatorId: Int): Long
+  def heapHighWaterMarkOfOperator(operatorId: Int): Long
 
   /**
    * Get the memory tracker for the operator with the given id.
@@ -44,5 +44,5 @@ trait TransactionSpanningMemoryTrackerForOperatorProvider {
    *
    * @param operatorId the id of the operator
    */
-  private[memory] def memoryTrackerForOperator(operatorId: Int): JustHeapMemoryTracker
+  private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker
 }

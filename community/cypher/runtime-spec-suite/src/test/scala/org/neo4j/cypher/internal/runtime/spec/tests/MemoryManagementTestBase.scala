@@ -197,7 +197,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
     val input = infiniteInput(expectedRowSize)
 
     // then
@@ -247,7 +247,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT_IN_DISTINCT)
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT_IN_DISTINCT)
     val input = infiniteInput(expectedRowSize)
 
     // then
@@ -295,7 +295,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
     val input = infiniteInput(expectedRowSize)
 
     // then
@@ -313,7 +313,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT, Some(0L))
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT, Some(0L))
     val input = infiniteInput(expectedRowSize, Some(_ => Array(0L)))
 
     // then
@@ -331,7 +331,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
     val input = infiniteInput(expectedRowSize)
 
     // then
@@ -351,7 +351,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
     val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then
@@ -371,7 +371,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
     val input = finiteInputWithRowSize(1, expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then no exception
@@ -413,7 +413,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
     val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then
@@ -472,7 +472,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
     val input = finiteInput(1000000, Some(_ => Array(expectedRowSize)))
 
     // then no exception
@@ -526,7 +526,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
     val input = infiniteInput(expectedRowSize)
 
     // then
@@ -544,7 +544,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
     val input = infiniteInput(expectedRowSize)
 
     // then
@@ -562,7 +562,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
     val input = infiniteInput(expectedRowSize)
 
     // then
@@ -750,7 +750,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     consume(execute(logicalQuery, runtime, input))
   }
 
-  protected def assertTotalAllocatedMemory(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
+  protected def assertHeapHighWaterMark(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
     // TODO: Improve this to be a bit more reliable
     val expectedRowSize = estimateSize(valueToEstimate)
     val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
@@ -781,7 +781,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val estimatedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val estimatedRowSize = assertHeapHighWaterMark(logicalQuery, E_INT)
     val input = infiniteInput(estimatedRowSize)
 
     // then
@@ -836,7 +836,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
     val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then
@@ -856,7 +856,7 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       .build()
 
     // when
-    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val expectedRowSize = assertHeapHighWaterMark(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
     val input = infiniteInput(expectedRowSize, Some(_ => Array(nodes.head)))
 
     // then

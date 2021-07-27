@@ -27,24 +27,26 @@ import org.neo4j.cypher.internal.runtime.GrowingArray
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.MemoryTrackerPerOperator
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.OperatorMemoryTracker
 import org.neo4j.memory.EmptyMemoryTracker
-import org.neo4j.memory.HeapHighWatermarkTracker
-import org.neo4j.memory.JustHeapMemoryTracker
+import org.neo4j.memory.HeapHighWaterMarkTracker
+import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
 
 /**
  * Tracks the heap high water mark for one Cypher query.
  * One Cypher query might use multiple transactions to execute,
- * which is why the memory per query needs to be tracked in addition to the query per transaction.
+ * which is why the memory per query needs to be tracked in addition to the memory per transaction.
  *
  * This class is used by all [[MemoryTrackerForOperatorProvider]] that are usually bound to a transaction.
  */
 trait QueryMemoryTracker
   extends TransactionSpanningMemoryTrackerForOperatorProvider
-  with JustHeapMemoryTracker {
+  with HeapMemoryTracker {
   /**
-   * Return a new [[MemoryTrackerForOperatorProvider]] that  wraps the given transactionMemoryTracker,
-   * but also reports to this [[QueryMemoryTracker]].
+   * Return a new [[MemoryTrackerForOperatorProvider]] that wraps the given transactionMemoryTracker,
+   * but also reports to this [[QueryMemoryTracker]]. Use this method to obtain memory trackers for operators that
+   * execute in a specific transaction (possibly one of multiple transactions in a query) as part of the query
+   * tracked by this [[QueryMemoryTracker]].
    */
   def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker): MemoryTrackerForOperatorProvider
 }
@@ -66,12 +68,14 @@ object TrackingQueryMemoryTracker {
    * Tracks memory of one operator.
    * This tracker is not bound to any transaction.
    */
-  class OperatorMemoryTracker(queryMemoryTracker: TrackingQueryMemoryTracker) extends DelegatingScopedJustHeapMemoryTracked(queryMemoryTracker)
+  class OperatorMemoryTracker(queryMemoryTracker: TrackingQueryMemoryTracker) extends DelegatingScopedHeapMemoryTracker(queryMemoryTracker)
 
   /**
    * Basically an efficient `Map[OperatorId, OperatorMemoryTracker]`.
+   *
+   * @param memoryTracker a memory tracker used to track the memory of this collection.
    */
-  class MemoryTrackerPerOperator(memoryTracker: JustHeapMemoryTracker) extends GrowingArray[OperatorMemoryTracker](memoryTracker)
+  class MemoryTrackerPerOperator(memoryTracker: HeapMemoryTracker) extends GrowingArray[OperatorMemoryTracker](memoryTracker)
 
 }
 
@@ -97,11 +101,11 @@ class TrackingQueryMemoryTracker extends QueryMemoryTracker {
   override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker): MemoryTrackerForOperatorProvider =
     new TransactionBoundMemoryTrackerForOperatorProvider(transactionMemoryTracker, this)
 
-  override def maxMemoryOfOperator(operatorId: Int): Long = {
+  override def heapHighWaterMarkOfOperator(operatorId: Int): Long = {
     if (memoryTrackerPerOperator.isDefinedAt(operatorId)) {
       memoryTrackerPerOperator.get(operatorId).heapHighWaterMark
     } else {
-      HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
+      HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
     }
   }
 
@@ -123,7 +127,7 @@ class CustomTrackingQueryMemoryTracker(transactionMemoryTrackerDecorator: Memory
  */
 case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
 
-  override def heapHighWaterMark(): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
+  override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
   override def allocateHeap(bytes: Long): Unit = ()
 
@@ -131,7 +135,7 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
 
   override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker): MemoryTrackerForOperatorProvider = NoOpMemoryTrackerForOperatorProvider
 
-  override def maxMemoryOfOperator(operatorId: Int): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
+  override def heapHighWaterMarkOfOperator(operatorId: Int): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
-  override private[memory] def memoryTrackerForOperator(operatorId: Int): JustHeapMemoryTracker = EmptyMemoryTracker.INSTANCE
+  override private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker = EmptyMemoryTracker.INSTANCE
 }

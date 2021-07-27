@@ -35,7 +35,7 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
-import org.neo4j.memory.HeapHighWatermarkTracker
+import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
@@ -112,7 +112,7 @@ case object IgnoredRuntimeResult extends RuntimeResult {
   import org.neo4j.cypher.internal.runtime.QueryStatistics
   override def fieldNames(): Array[String] = Array.empty
   override def queryStatistics(): QueryStatistics = QueryStatistics()
-  override def heapHighWaterMark(): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
+  override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
   override def close(): Unit = {}
   override def queryProfile(): QueryProfile = QueryProfile.NONE

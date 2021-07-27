@@ -26,7 +26,7 @@ import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.kernel.impl.query.QuerySubscriber
-import org.neo4j.memory.HeapHighWatermarkTracker
+import org.neo4j.memory.HeapHighWaterMarkTracker
 
 /**
  * Empty result, as produced by a schema write.
@@ -37,7 +37,7 @@ case class SchemaRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber) e
 
   override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
 
-  override def heapHighWaterMark(): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
+  override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
 

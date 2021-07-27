@@ -40,7 +40,7 @@ import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.memory.HeapHighWatermarkTracker
+import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.values.storable.Values.intValue
 
 import java.io.PrintWriter
@@ -176,7 +176,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
 
     override def queryStatistics(): QueryStatistics = QueryStatistics()
 
-    override def heapHighWaterMark(): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
+    override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
     override def queryProfile(): QueryProfile = QueryProfile.NONE
 

@@ -30,7 +30,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.memory.HeapHighWatermarkTracker
+import org.neo4j.memory.HeapHighWaterMarkTracker
 
 /**
  * Results, as produced by a system command.
@@ -46,7 +46,7 @@ case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
 
   override def queryStatistics(): QueryStatistics = QueryStatistics()
 
-  override def heapHighWaterMark(): Long = HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED
+  override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
   override def consumptionState: RuntimeResult.ConsumptionState = state
 

@@ -17,31 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.memory
-
-import org.neo4j.memory.MemoryTracker
-import org.neo4j.memory.ScopedMemoryTracker
+package org.neo4j.memory;
 
 /**
- * A scoped memory tracker that keeps its own highWaterMark.
- * It forwards all calls to a delegate.
+ * Memory allocation tracker that tracks bytes allocation and de-allocation on the heap.
  */
-class HighWaterScopedMemoryTracker(delegate: MemoryTracker) extends ScopedMemoryTracker(delegate) {
-  private var _heapHighWaterMark = 0L
+public interface HeapMemoryTracker extends HeapHighWaterMarkTracker
+{
+    /**
+     * Record an allocation of heap memory.
+     *
+     * @param bytes the number of bytes about to be allocated.
+     * @throws MemoryLimitExceededException if the current quota would be exceeded by allocating the provided number of bytes.
+     */
+    void allocateHeap( long bytes );
 
-  override def allocateHeap(bytes: Long): Unit = {
-    super.allocateHeap(bytes)
-    if (estimatedHeapMemory() > _heapHighWaterMark) {
-      _heapHighWaterMark = estimatedHeapMemory()
-    }
-  }
-
-  override def heapHighWaterMark(): Long = {
-    _heapHighWaterMark
-  }
-
-  override def reset(): Unit = {
-    super.reset()
-    _heapHighWaterMark = 0L
-  }
+    /**
+     * Record the release of heap memory. This should be called when we forget about a reference and that particular object will be garbage collected.
+     *
+     * @param bytes number of released bytes
+     */
+    void releaseHeap( long bytes );
 }

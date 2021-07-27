@@ -19,34 +19,29 @@
  */
 package org.neo4j.cypher.internal.runtime.memory
 
-import org.neo4j.memory.JustHeapMemoryTracker
+import org.neo4j.memory.MemoryTracker
+import org.neo4j.memory.ScopedMemoryTracker
 
 /**
- * A [[JustHeapMemoryTracker]] that keeps its own highWaterMark.
- * It forwards all allocate and deallocate calls to a delegate.
+ * A [[ScopedMemoryTracker]] that keeps its own highWaterMark for heap memory.
+ * It also forwards all calls to a delegate.
  */
-class DelegatingScopedJustHeapMemoryTracked(delegate: JustHeapMemoryTracker) extends JustHeapMemoryTracker {
-  /**
-   * The current size of the tracked heap in this class. May be less than the size of the delegate.
-   */
-  private var allocatedBytesHeap = 0L
-  /**
-   * The heap high water mark, i.e. the maximum observed allocated heap bytes.
-   */
+class HighWaterMarkScopedMemoryTracker(delegate: MemoryTracker) extends ScopedMemoryTracker(delegate) {
   private var _heapHighWaterMark = 0L
 
   override def allocateHeap(bytes: Long): Unit = {
-    delegate.allocateHeap(bytes)
-    allocatedBytesHeap += bytes
-    if (allocatedBytesHeap > heapHighWaterMark) {
-      _heapHighWaterMark = allocatedBytesHeap
+    super.allocateHeap(bytes)
+    if (estimatedHeapMemory() > _heapHighWaterMark) {
+      _heapHighWaterMark = estimatedHeapMemory()
     }
   }
 
-  override def releaseHeap(bytes: Long): Unit = {
-    delegate.releaseHeap(bytes)
-    allocatedBytesHeap -= bytes
+  override def heapHighWaterMark(): Long = {
+    _heapHighWaterMark
   }
 
-  override def heapHighWaterMark: Long = _heapHighWaterMark
+  override def reset(): Unit = {
+    super.reset()
+    _heapHighWaterMark = 0L
+  }
 }

@@ -20,9 +20,9 @@
 package org.neo4j.memory;
 
 /**
- * Memory allocation tracker that tracks bytes allocation and de-allocation
+ * Memory allocation tracker that tracks bytes allocation and de-allocation on the heap and in native memory.
  */
-public interface MemoryTracker extends AutoCloseable, JustHeapMemoryTracker
+public interface MemoryTracker extends AutoCloseable, HeapMemoryTracker
 {
     /**
      * @return number of bytes of native memory that are used

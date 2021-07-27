@@ -33,7 +33,7 @@ import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.ExecutingQueryFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
-import org.neo4j.memory.HeapHighWatermarkTracker;
+import org.neo4j.memory.HeapHighWaterMarkTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
@@ -238,7 +238,7 @@ public class FabricStatementLifecycles
                 {
                     getQueryExecutionMonitor().startExecution( executingQuery );
                     executingQuery.onCompilationCompleted( null, null );
-                    executingQuery.onExecutionStarted( HeapHighWatermarkTracker.NONE );
+                    executingQuery.onExecutionStarted( HeapHighWaterMarkTracker.NONE );
                 }
             }
 

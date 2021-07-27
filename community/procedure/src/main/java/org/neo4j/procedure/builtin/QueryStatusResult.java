@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
-import org.neo4j.memory.HeapHighWatermarkTracker;
+import org.neo4j.memory.HeapHighWaterMarkTracker;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
@@ -119,7 +119,7 @@ public class QueryStatusResult
         this.runtime = query.runtime();
         this.indexes = query.indexes();
         long bytes = query.allocatedBytes();
-        this.allocatedBytes = bytes == HeapHighWatermarkTracker.ALLOCATIONS_NOT_TRACKED ? null : bytes;
+        this.allocatedBytes = bytes == HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED ? null : bytes;
         this.pageHits = query.pageHits();
         this.pageFaults = query.pageFaults();
         this.connectionId = clientConnection.connectionId();
