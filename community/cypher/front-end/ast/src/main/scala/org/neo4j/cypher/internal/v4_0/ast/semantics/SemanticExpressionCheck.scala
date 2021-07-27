@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v4_0.expressions.ReduceExpression.AccumulatorExpressionTypeMismatchMessageGenerator
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 import scala.util.Try
@@ -434,6 +435,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
               check(ctx, x.optionalWhereExpression.get)
             }
         }
+
+      case x: Length3_5 =>
+        check(ctx, x.argument) chain
+          checkTypes(x, x.signatures)
 
       case x:Expression => semanticCheckFallback(ctx, x)
     }

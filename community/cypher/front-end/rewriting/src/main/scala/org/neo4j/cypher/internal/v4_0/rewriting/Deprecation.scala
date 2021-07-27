@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.v4_0.rewriting
 
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.functions.{Length, Length3_5}
 import org.neo4j.cypher.internal.v4_0.util._
 
 import scala.collection.immutable.TreeMap
@@ -148,12 +149,19 @@ object Deprecations {
         )
 
       // length of a string, collection or pattern expression
-      case f@FunctionInvocation(_, FunctionName(name), _, args)
-        if name.toLowerCase.equals("length") && args.nonEmpty &&
+      case f@FunctionInvocation(_, _, _, args)
+        if f.function == Length && args.nonEmpty &&
           (args.head.isInstanceOf[StringLiteral] || args.head.isInstanceOf[ListLiteral] || args.head.isInstanceOf[PatternExpression]) =>
         Deprecation(
           () => renameFunctionTo("size")(f),
           () => Some(LengthOnNonPathNotification(f.position))
+        )
+
+      // length of anything else
+      case f@FunctionInvocation(_, _, _, Seq(argumentExpr)) if f.function == Length =>
+        Deprecation(
+          () => Length3_5(argumentExpr)(f.position),
+          () => None
         )
 
       // legacy type separator
