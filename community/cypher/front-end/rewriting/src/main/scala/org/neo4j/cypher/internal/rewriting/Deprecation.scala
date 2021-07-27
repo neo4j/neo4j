@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.functions.Length
+import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDropConstraintSyntax
@@ -184,12 +186,19 @@ object Deprecations {
         )
 
       // length of a string, collection or pattern expression
-      case f@FunctionInvocation(_, FunctionName(name), _, args)
-        if name.toLowerCase.equals("length") && args.nonEmpty &&
+      case f@FunctionInvocation(_, _, _, args)
+        if f.function == Length && args.nonEmpty &&
           (args.head.isInstanceOf[StringLiteral] || args.head.isInstanceOf[ListLiteral] || args.head.isInstanceOf[PatternExpression]) =>
         Deprecation(
           () => renameFunctionTo("size")(f),
           () => Some(LengthOnNonPathNotification(f.position))
+        )
+
+      // length of anything else
+      case f@FunctionInvocation(_, _, _, Seq(argumentExpr)) if f.function == Length =>
+        Deprecation(
+          () => Length3_5(argumentExpr)(f.position),
+          () => None
         )
 
       // legacy type separator

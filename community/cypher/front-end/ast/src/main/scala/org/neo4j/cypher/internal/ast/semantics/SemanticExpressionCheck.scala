@@ -97,6 +97,7 @@ import org.neo4j.cypher.internal.expressions.UnarySubtract
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
@@ -562,6 +563,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
                   check(ctx, x.optionalWhereExpression.get, x +: parents)
                 }
             }
+
+      case x: Length3_5 =>
+        check(ctx, x.argument, x +: parents) chain
+          checkTypes(x, x.signatures)
 
       case x:Expression => semanticCheckFallback(ctx, x)
     }
