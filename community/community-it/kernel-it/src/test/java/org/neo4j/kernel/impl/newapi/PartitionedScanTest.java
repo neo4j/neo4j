@@ -48,6 +48,15 @@ class PartitionedScanTest
                 super( IndexType.BTREE );
             }
         }
+
+        @Nested
+        class Fusion extends NodePropertyIndexSeekPartitionedScanTestSuite
+        {
+            Fusion()
+            {
+                super( IndexType.FUSION );
+            }
+        }
     }
 
     @Nested
@@ -72,6 +81,15 @@ class PartitionedScanTest
             BTree()
             {
                 super( IndexType.BTREE );
+            }
+        }
+
+        @Nested
+        class Fusion extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
+        {
+            Fusion()
+            {
+                super( IndexType.FUSION );
             }
         }
     }

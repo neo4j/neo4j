@@ -111,7 +111,12 @@ class FusionIndexReader extends FusionIndexBase<ValueIndexReader> implements Val
     @Override
     public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query )
     {
-        throw new UnsupportedOperationException();
+        var slot = slotSelector.selectSlot( query, PropertyIndexQuery::valueCategory );
+        if ( slot == null )
+        {
+            throw new UnsupportedOperationException();
+        }
+        return instanceSelector.select( slot ).valueSeek( desiredNumberOfPartitions, context, query );
     }
 
     private static final class InnerException extends RuntimeException
