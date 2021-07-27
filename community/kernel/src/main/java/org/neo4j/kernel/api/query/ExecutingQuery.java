@@ -91,8 +91,12 @@ public class ExecutingQuery
     // faults piggy-back on the write-barrier of the volatile hits
     private long pageFaultsOfClosedTransactions;
 
-    // List of all transactions that are active executing this query.
-    // Needs to be thread-safe because other Threads traverse the list when calling snapshot().
+    /**
+     * List of all transactions that are active executing this query.
+     * Needs to be thread-safe because other Threads traverse the list when calling {@link #snapshot()}.
+     * The first element of this list is always the outer transaction, given that {@link #onTransactionBound(TransactionBinding)}
+     * will be called with the outer transaction first.
+     */
     private final Queue<TransactionBinding> openTransactionBindings = new ConcurrentLinkedQueue<>();
     /**
      * Database id of the last transaction binding.
@@ -142,7 +146,7 @@ public class ExecutingQuery
                 cpuClock,
                 trackQueryAllocations
         );
-        onTransactionBound( new TransactionBinding( namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount, -1 ) );
+        onTransactionBound( new TransactionBinding( namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount, 1 ) );
     }
 
     public static class TransactionBinding
@@ -211,6 +215,7 @@ public class ExecutingQuery
         {
             pageFaultsOfClosedTransactions += foundBinding.faultsSupplier.getAsLong();
             // Write volatile field last
+            //noinspection NonAtomicOperationOnVolatileField (we only have one thread which writes to this field)
             pageHitsOfClosedTransactions += foundBinding.hitsSupplier.getAsLong();
             openTransactionBindings.remove( foundBinding );
         }
@@ -319,8 +324,8 @@ public class ExecutingQuery
         cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
         waitTimeNanos += status.waitTimeNanos( currentTimeNanos );
 
-        TransactionBinding firstTransaction = openTransactionBindings.peek();
-        long firstTransactionId = firstTransaction != null ? firstTransaction.transactionId : -1L;
+        TransactionBinding outerTransaction = openTransactionBindings.peek();
+        long outerTransactionId = outerTransaction != null ? outerTransaction.transactionId : -1L;
 
         return new QuerySnapshot(
                 this,
@@ -338,7 +343,7 @@ public class ExecutingQuery
                 memoryTracker.heapHighWaterMark(),
                 Optional.ofNullable( queryText ),
                 Optional.ofNullable( queryParameters ),
-                firstTransactionId
+                outerTransactionId
         );
     }
 

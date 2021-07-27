@@ -70,6 +70,8 @@ public class TransactionStatusResult
     public final String database;
     /** @since Neo4j 4.1 */
     public final Long estimatedUsedHeapMemory;
+    /** @since Neo4j 4.4 */
+    public final String outerTransactionId;
 
     public TransactionStatusResult( String database, KernelTransactionHandle transaction,
             TransactionDependenciesResolver transactionDependenciesResolver,
@@ -97,11 +99,14 @@ public class TransactionStatusResult
             QuerySnapshot snapshot = querySnapshot.get();
             this.currentQueryId = new QueryId( snapshot.internalQueryId() ).toString();
             this.currentQuery = snapshot.obfuscatedQueryText().orElse( null );
+            String queryTransactionId = new TransactionId( database, snapshot.transactionId() ).toString();
+            this.outerTransactionId = queryTransactionId.equals( this.transactionId ) ? EMPTY : queryTransactionId;
         }
         else
         {
             this.currentQueryId = EMPTY;
             this.currentQuery = EMPTY;
+            this.outerTransactionId = EMPTY;
         }
 
         var clientInfo = transaction.clientInfo();

@@ -731,7 +731,8 @@ class Neo4jTransactionalContextIT
         var transactionIdIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "transactionId", Neo4jTypes.NTString ) );
         var currentQueryIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "currentQuery", Neo4jTypes.NTString ) );
         var currentQueryIdIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "currentQueryId", Neo4jTypes.NTString ) );
-        var procContext = new ProcedureCallContext( id, new String[]{"transactionId", "currentQuery"}, false, "", false );
+        var outerTransactionIdIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "outerTransactionId", Neo4jTypes.NTString ) );
+        var procContext = new ProcedureCallContext( id, new String[]{"transactionId", "currentQuery", "currentQueryId", "outerTransactionId"}, false, "", false );
 
         // When
         var procResult = Iterators.asList(
@@ -742,6 +743,7 @@ class Neo4jTransactionalContextIT
         var transactionIds = procResult.stream().map( array -> array[transactionIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
         var currentQueries = procResult.stream().map( array -> array[currentQueryIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
         var currentQueryIds = procResult.stream().map( array -> array[currentQueryIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
+        var outerTransactionIds = procResult.stream().map( array -> array[outerTransactionIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
 
         // Then
         var expectedOuterTxId = new TransactionId( outerTx.getDatabaseName(), outerTx.kernelTransaction().getUserTransactionId() ).toString();
@@ -754,8 +756,8 @@ class Neo4jTransactionalContextIT
         assertThat( currentQueries, hasSize(2) );
         assertThat( currentQueryIds, containsInAnyOrder( expectedQueryId, expectedQueryId) );
         assertThat( currentQueryIds, hasSize(2) );
-
-        // TODO add assertion for new field: outerTransactionId
+        assertThat( outerTransactionIds, containsInAnyOrder( expectedOuterTxId, "") );
+        assertThat( outerTransactionIds, hasSize(2) );
     }
 
     // PERIODIC COMMIT
