@@ -140,8 +140,8 @@ public class FakeSession implements Session
     }
 
     @Override
-    public Result run( Query statement )
+    public Result run( Query query )
     {
-        return new FakeResult();
+        return FakeResult.fromQuery( query );
     }
 }

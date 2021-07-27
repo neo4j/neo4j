@@ -59,4 +59,12 @@ public interface Connector
      */
     @Nonnull
     String getServerVersion();
+
+    /**
+     * Returns Bolt protocol version
+     *
+     * @return the version of neo4j driver (like '4.3') if connected and available, an empty string otherwise
+     */
+    @Nonnull
+    String getProtocolVersion();
 }

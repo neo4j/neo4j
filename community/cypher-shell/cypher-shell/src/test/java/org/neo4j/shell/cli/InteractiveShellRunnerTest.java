@@ -592,7 +592,7 @@ class InteractiveShellRunnerTest
         ByteArrayOutputStream error = new ByteArrayOutputStream();
 
         BoltStateHandler mockedBoltStateHandler = mock( BoltStateHandler.class );
-        when( mockedBoltStateHandler.getServerVersion() ).thenReturn( "" );
+        when( mockedBoltStateHandler.getProtocolVersion() ).thenReturn( "" );
 
         final PrettyPrinter mockedPrettyPrinter = mock( PrettyPrinter.class );
 

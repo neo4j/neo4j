@@ -30,10 +30,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.internal.value.BooleanValue;
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.shell.test.Util;
 
@@ -44,6 +47,9 @@ class FakeResult implements Result
 {
 
     public static final FakeResult PING_SUCCESS = new FakeResult( Collections.singletonList( FakeRecord.of( "success", BooleanValue.TRUE ) ) );
+    public static final FakeResult SERVER_VERSION = new FakeResult(
+            Collections.singletonList( FakeRecord.of( "versions", new ListValue( new StringValue( "4.3.0" ) ) ) )
+    );
     private final List<Record> records;
     private int currentRecord = -1;
 
@@ -66,6 +72,11 @@ class FakeResult implements Result
         if ( isPing( statement ) )
         {
             return PING_SUCCESS;
+        }
+
+        if ( isServerVersion( statement ) )
+        {
+            return SERVER_VERSION;
         }
 
         Pattern returnAsPattern = Pattern.compile( "^return (.*) as (.*)$", Pattern.CASE_INSENSITIVE );
@@ -91,9 +102,25 @@ class FakeResult implements Result
         throw new IllegalArgumentException( "No idea how to parse this statement: " + statement );
     }
 
+    static FakeResult fromQuery( @Nonnull final Query statement )
+    {
+
+        if ( isServerVersion( statement.text() ) )
+        {
+            return SERVER_VERSION;
+        }
+
+        return new FakeResult();
+    }
+
     private static boolean isPing( @Nonnull String statement )
     {
         return statement.trim().equalsIgnoreCase( "CALL db.ping()" );
+    }
+
+    private static boolean isServerVersion( @Nonnull String statement )
+    {
+        return statement.trim().equalsIgnoreCase( "CALL dbms.components() YIELD versions" );
     }
 
     @Override

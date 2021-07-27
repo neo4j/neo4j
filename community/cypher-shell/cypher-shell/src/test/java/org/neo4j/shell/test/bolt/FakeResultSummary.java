@@ -115,6 +115,18 @@ class FakeResultSummary implements ResultSummary
             {
                 return null;
             }
+
+            @Override
+            public String protocolVersion()
+            {
+                return null;
+            }
+
+            @Override
+            public String agent()
+            {
+                return null;
+            }
         };
     }
 

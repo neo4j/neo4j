@@ -30,21 +30,21 @@ import org.neo4j.shell.util.Versions;
 public class UserMessagesHandler
 {
     private ConnectionConfig connectionConfig;
-    private String serverVersion;
+    private String protocolVersion;
 
-    public UserMessagesHandler( @Nonnull ConnectionConfig connectionConfig, @Nonnull String serverVersion )
+    public UserMessagesHandler( @Nonnull ConnectionConfig connectionConfig, @Nonnull String protocolVersion )
     {
         this.connectionConfig = connectionConfig;
-        this.serverVersion = serverVersion;
+        this.protocolVersion = protocolVersion;
     }
 
     @Nonnull
     public String getWelcomeMessage()
     {
         String neo4j = "Neo4j";
-        if ( !serverVersion.isEmpty() )
+        if ( !protocolVersion.isEmpty() )
         {
-            Version version = Versions.version( serverVersion );
+            Version version = Versions.version( protocolVersion );
             neo4j += " using Bolt protocol version " + version.major() + "." + version.minor();
         }
         AnsiFormattedText welcomeMessage = AnsiFormattedText.from( "Connected to " )
