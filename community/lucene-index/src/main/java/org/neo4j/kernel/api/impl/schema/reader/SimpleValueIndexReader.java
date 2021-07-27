@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.IndexQueryType;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -92,12 +93,12 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
+    public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
+                       IndexQueryConstraints constraints, PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         context.monitor().queried( descriptor );
         Query query = toLuceneQuery( predicates );
-        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, constraints, false );
+        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), accessMode, false, constraints, predicates );
     }
 
     @Override

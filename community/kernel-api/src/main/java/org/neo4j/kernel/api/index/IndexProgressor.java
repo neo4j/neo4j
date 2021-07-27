@@ -80,16 +80,17 @@ public interface IndexProgressor extends AutoCloseable
          * propertyIds provided here. Called by index implementation.
          * @param descriptor The descriptor
          * @param progressor The progressor
-         * @param query The query of this progression
-         * @param constraints Constraints on the produced results, like the required order the index should return entity ids in, or if the index should fetch
-         * property values together with entity ids.
+         * @param accessMode security store access mode.
          * @param indexIncludesTransactionState {@code true} if the index takes transaction state into account such that the entities delivered through
          * {@link #acceptEntity(long, float, Value...)} have already been filtered through, and merged with, the transaction state. If this is {@code true},
          * then the client does not need to do its own transaction state filtering. This is the case for the fulltext schema indexes, for instance.
          * Otherwise, if this parameter is {@code false}, then the client needs to filter and merge the transaction state in on their own.
+         * @param constraints Constraints on the produced results, like the required order the index should return entity ids in, or if the index should fetch
+         * property values together with entity ids.
+         * @param query The query of this progression
          */
-        void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                         PropertyIndexQuery[] query, IndexQueryConstraints constraints, boolean indexIncludesTransactionState );
+        void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
+                         boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query );
 
         /**
          * Accept the entity id and values of a candidate index entry. Return true if the entry is

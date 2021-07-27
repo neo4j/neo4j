@@ -33,6 +33,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -143,7 +144,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                   NodeValueIterator nodes = new NodeValueIterator() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
-                reader.query( NULL_CONTEXT, nodes, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, propertyValue ) );
+                reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, propertyValue ) );
                 assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
             }
         }
@@ -206,7 +207,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 {
                     try ( NodeValueIterator nodes = new NodeValueIterator() )
                     {
-                        reader.query( NULL_CONTEXT, nodes, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
+                        reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
                         assertEquals( entry.nodeId, nodes.next() );
                         assertFalse( nodes.hasNext() );
                     }
@@ -288,7 +289,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 for ( NodeAndValue nodeAndValue : toRemove )
                 {
                     NodeValueIterator nodes = new NodeValueIterator();
-                    reader.query( NULL_CONTEXT, nodes, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, nodeAndValue.value ) );
+                    reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, nodeAndValue.value ) );
                     boolean anyHits = false;
 
                     StringJoiner nodesStillLeft = new StringJoiner( ", ", "[", "]" );
@@ -326,7 +327,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 {
                     try ( NodeValueIterator nodes = new NodeValueIterator() )
                     {
-                        reader.query( NULL_CONTEXT, nodes, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
+                        reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
                         assertEquals( entry.nodeId, nodes.next() );
                         assertFalse( nodes.hasNext() );
                     }
@@ -363,7 +364,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                     {
                         try ( NodeValueIterator nodes = new NodeValueIterator() )
                         {
-                            reader.query( NULL_CONTEXT, nodes, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
+                            reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ,
+                                          unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
                             assertEquals( asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ), entry.value.toString() );
                         }
                     }

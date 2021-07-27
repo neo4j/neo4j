@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -65,8 +66,8 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey,NativeIndexVal
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            PropertyIndexQuery... query )
+    public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
+                       IndexQueryConstraints constraints, PropertyIndexQuery... query )
     {
         PropertyIndexQuery.GeometryRangePredicate geometryRangePredicate = getGeometryRangePredicateIfAny( query );
         if ( geometryRangePredicate != null )
@@ -77,7 +78,7 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey,NativeIndexVal
                 // If there's a GeometryRangeQuery among the predicates then this query changes from a straight-forward: build from/to and seek...
                 // into a query that is split into multiple sub-queries. Predicates both before and after will have to be accompanied each sub-query.
                 BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-                client.initialize( descriptor, multiProgressor, query, constraints, false );
+                client.initialize( descriptor, multiProgressor, accessMode, false, constraints, query );
                 double[] from = geometryRangePredicate.from() == null ? null : geometryRangePredicate.from().coordinate();
                 double[] to = geometryRangePredicate.to() == null ? null : geometryRangePredicate.to().coordinate();
                 CoordinateReferenceSystem crs = geometryRangePredicate.crs();
@@ -91,18 +92,19 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey,NativeIndexVal
                     BtreeKey treeKeyTo = layout.newKey();
                     initializeFromToKeys( treeKeyFrom, treeKeyTo );
                     boolean needFiltering = initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, crs, range );
-                    startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, constraints, needFiltering, context.cursorContext() );
+                    startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, context.cursorContext(), accessMode,
+                                                  needFiltering, constraints, query );
                 }
             }
             catch ( IllegalArgumentException e )
             {
                 // Invalid query ranges will cause this state (eg. min>max)
-                client.initialize( descriptor, IndexProgressor.EMPTY, query, constraints, false );
+                client.initialize( descriptor, IndexProgressor.EMPTY, accessMode, false, constraints, query );
             }
         }
         else
         {
-            super.query( context, client, constraints, query );
+            super.query( client, context, accessMode, constraints, query );
         }
     }
 

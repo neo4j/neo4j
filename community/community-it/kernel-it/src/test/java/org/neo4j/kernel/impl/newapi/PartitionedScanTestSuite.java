@@ -45,19 +45,21 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.WorkerContext;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.PartitionedScanFactory;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -152,7 +154,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         final void shouldHandleEmptyDatabase() throws KernelException
         {
             try ( var tx = beginTx();
-                  var entities = factory.getCursor( tx ) )
+                  var entities = factory.getCursor( tx.cursors() ).with( tx.cursorContext() ) )
             {
                 for ( final var entry : entityIdsMatchingQuery )
                 {
@@ -160,7 +162,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
                     // given  an empty database
                     // when   scanning
                     final var scan = factory.partitionedScan( tx, query, Integer.MAX_VALUE );
-                    while ( scan.reservePartition( entities, tx.cursorContext() ) )
+                    while ( scan.reservePartition( entities, tx.cursorContext(), tx.securityContext().mode() ) )
                     {
                         // then   no data should be found, and should not throw
                         softly.assertThat( entities.next() ).as( "no data should be found for %s", query ).isFalse();
@@ -193,7 +195,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         final void shouldScanSubsetOfEntriesWithSinglePartition() throws KernelException
         {
             try ( var tx = beginTx();
-                  var entities = factory.getCursor( tx ) )
+                  var entities = factory.getCursor( tx.cursors() ).with( tx.cursorContext() ) )
             {
                 for ( final var entry : entityIdsMatchingQuery )
                 {
@@ -211,7 +213,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
 
                     // given  a partition
                     final var found = new HashSet<Long>();
-                    scan.reservePartition( entities, tx.cursorContext() );
+                    scan.reservePartition( entities, tx.cursorContext(), tx.securityContext().mode() );
                     while ( entities.next() )
                     {
                         // when   inspecting the found entities
@@ -257,7 +259,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         private void singleThreadedCheck( int desiredNumberOfPartitions ) throws KernelException
         {
             try ( var tx = beginTx();
-                  var entities = factory.getCursor( tx ) )
+                  var entities = factory.getCursor( tx.cursors() ).with( tx.cursorContext() ) )
             {
                 for ( final var entry : entityIdsMatchingQuery )
                 {
@@ -276,7 +278,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
 
                     // given  each partition
                     final var found = new HashSet<Long>();
-                    while ( scan.reservePartition( entities, tx.cursorContext() ) )
+                    while ( scan.reservePartition( entities, tx.cursorContext(), tx.securityContext().mode() ) )
                     {
                         while ( entities.next() )
                         {
@@ -314,16 +316,17 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
 
                     // given  each partition distributed over multiple threads
                     final var allFound = Collections.synchronizedSet( new HashSet<Long>() );
+                    final var workerContexts = TestUtils.createContexts( tx, factory.getCursor( tx.cursors() )::with, numberOfThreads );
                     final var race = new Race();
-                    for ( int i = 0; i < numberOfThreads; i++ )
+                    for ( final var workerContext : workerContexts )
                     {
-                        var entities = factory.getCursor( tx );
                         race.addContestant( () ->
                         {
-                            try
+                            final var executionContext = workerContext.getContext();
+                            try ( var entities = workerContext.getCursor() )
                             {
                                 final var found = new HashSet<Long>();
-                                while ( scan.reservePartition( entities, CursorContext.NULL ) )
+                                while ( scan.reservePartition( entities, executionContext.cursorContext(), executionContext.accessMode() ) )
                                 {
                                     while ( entities.next() )
                                     {
@@ -340,11 +343,12 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
                             }
                             finally
                             {
-                                entities.close();
+                                executionContext.complete();
                             }
                         } );
                     }
                     race.goUnchecked();
+                    workerContexts.forEach( WorkerContext::close );
 
                     // then   all the entities with matching the query should be found
                     softly.assertThat( allFound ).as( "only the expected data found matching %s", query )

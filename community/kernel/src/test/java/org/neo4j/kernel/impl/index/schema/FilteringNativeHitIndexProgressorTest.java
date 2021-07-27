@@ -28,10 +28,11 @@ import java.util.function.Predicate;
 
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
@@ -73,7 +74,7 @@ class FilteringNativeHitIndexProgressorTest
         try ( FilteringNativeHitIndexProgressor<BtreeKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
                 predicates ) )
         {
-            valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates, unorderedValues(), false );
+            valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, AccessMode.Static.READ, false, unorderedValues(), predicates );
             List<Long> result = new ArrayList<>();
 
             // when

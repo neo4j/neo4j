@@ -60,6 +60,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.recordstorage.StoreTokens;
@@ -456,9 +457,8 @@ class FulltextIndexProviderTest
                 }
 
                 @Override
-                public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                        PropertyIndexQuery[] query, IndexQueryConstraints constraints,
-                        boolean indexIncludesTransactionState )
+                public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
+                                        boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
                 {
                     this.progressor = progressor;
                 }

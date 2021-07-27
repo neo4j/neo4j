@@ -39,6 +39,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -674,7 +675,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             PropertyIndexQuery.ExactPredicate filter = PropertyIndexQuery.exact( 0, valueOf( updates[1] ) );
             PropertyIndexQuery rangeQuery = ValueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
             IndexProgressor.EntityValueClient filterClient = filterClient( iter, filter );
-            reader.query( NULL_CONTEXT, filterClient, unconstrained(), rangeQuery );
+            reader.query( filterClient, NULL_CONTEXT, AccessMode.Static.ACCESS, unconstrained(), rangeQuery );
 
             // then
             assertTrue( iter.hasNext() );
@@ -736,7 +737,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             Arrays.sort( expectedValues, Values.COMPARATOR.reversed() );
         }
         SimpleEntityValueClient client = new SimpleEntityValueClient();
-        reader.query( NULL_CONTEXT, client, constrained( supportedOrder, true ), supportedQuery );
+        reader.query( client, NULL_CONTEXT, AccessMode.Static.READ, constrained( supportedOrder, true ), supportedQuery );
         int i = 0;
         while ( client.next() )
         {
@@ -800,7 +801,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         try ( var reader = accessor.newValueReader() )
         {
                 SimpleEntityValueClient client = new SimpleEntityValueClient();
-                reader.query( NULL_CONTEXT, client, unorderedValues(), supportedQuery );
+                reader.query( client, NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), supportedQuery );
 
                 // then
                 while ( client.next() )
@@ -842,10 +843,10 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         return new IndexProgressor.EntityValueClient()
         {
             @Override
-            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                    PropertyIndexQuery[] query, IndexQueryConstraints constraints, boolean indexIncludesTransactionState )
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
+                                    boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
             {
-                iter.initialize( descriptor, progressor, query, constraints, indexIncludesTransactionState );
+                iter.initialize( descriptor, progressor, accessMode, indexIncludesTransactionState, constraints, query );
             }
 
             @Override
@@ -870,7 +871,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     private static NodeValueIterator query( ValueIndexReader reader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator client = new NodeValueIterator();
-        reader.query( NULL_CONTEXT, client, unconstrained(), query );
+        reader.query( client, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query );
         return client;
     }
 

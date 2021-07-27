@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
@@ -81,11 +82,8 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor,
-                            IndexProgressor progressor,
-                            PropertyIndexQuery[] queries,
-                            IndexQueryConstraints constraints,
-                            boolean indexIncludesTransactionState )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
+                            boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... queries )
     {
         assertKeysAlign( descriptor.schema().getPropertyIds() );
         progressors.add( progressor );

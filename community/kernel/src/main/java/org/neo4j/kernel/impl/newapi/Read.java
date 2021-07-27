@@ -104,7 +104,7 @@ abstract class Read implements TxStateHolder,
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        indexSession.reader.query( queryContext, client, constraints, query );
+        indexSession.reader.query( client, queryContext, ktx.securityContext().mode(), constraints, query );
     }
 
     @Override
@@ -136,7 +136,7 @@ abstract class Read implements TxStateHolder,
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        indexSession.reader.query( queryContext, client, constraints, query );
+        indexSession.reader.query( client, queryContext, ktx.securityContext().mode(), constraints, query );
     }
 
     @Override
@@ -194,7 +194,7 @@ abstract class Read implements TxStateHolder,
             PropertyIndexQuery.ExactPredicate... query ) throws IndexNotApplicableKernelException
     {
         cursor.setRead( this );
-        indexReader.query( this, cursor, unconstrained(), query );
+        indexReader.query( cursor, this, ktx.securityContext().mode(), unconstrained(), query );
     }
 
     @Override
@@ -270,7 +270,7 @@ abstract class Read implements TxStateHolder,
         int firstProperty = indexSession.reference.schema().getPropertyIds()[0];
 
         indexSeekClient.setRead( this );
-        indexSession.reader.query( this, indexSeekClient, constraints, PropertyIndexQuery.exists( firstProperty ) );
+        indexSession.reader.query( indexSeekClient, this, ktx.securityContext().mode(), constraints, PropertyIndexQuery.exists( firstProperty ) );
     }
 
     @Override

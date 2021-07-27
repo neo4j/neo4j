@@ -60,7 +60,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
         ValueIndexReader reader = mock( ValueIndexReader.class );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 0 ) ).when( reader ).query( any(), any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 0 ) ).when( reader ).query( any(), any(), any(), any(), any(), any() );
         long nodeId = 0;
         List<ValueIndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
         updates.add( add( nodeId++, descriptor, tuple( 10, 11 ) ) );
@@ -89,7 +89,7 @@ class DeferredConflictCheckingIndexUpdaterTest
                 {
                     query[i] = PropertyIndexQuery.exact( propertyKeyIds[i], tuple[i] );
                 }
-                verify( reader ).query( any(), any(), any(), eq( query[0] ), eq( query[1] ) );
+                verify( reader ).query( any(), any(), any(), any(), eq( query[0] ), eq( query[1] ) );
             }
         }
         verify( reader ).close();
@@ -102,7 +102,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
         ValueIndexReader reader = mock( ValueIndexReader.class );
-        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 101, 202 ) ).when( reader ).query( any(), any(), any(), any() );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 101, 202 ) ).when( reader ).query( any(), any(), any(), any(), any() );
         DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL );
 
         // when

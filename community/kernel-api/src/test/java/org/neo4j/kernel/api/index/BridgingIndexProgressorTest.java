@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -42,7 +43,7 @@ class BridgingIndexProgressorTest
         // Given
         for ( IndexProgressor part : parts )
         {
-            progressor.initialize( index, part, null, unconstrained(), false );
+            progressor.initialize( index, part, AccessMode.Static.ACCESS, false, unconstrained(), null );
         }
 
         // When

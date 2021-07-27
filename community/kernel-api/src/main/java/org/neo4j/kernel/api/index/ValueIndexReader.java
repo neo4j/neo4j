@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
@@ -44,11 +45,12 @@ public interface ValueIndexReader extends IndexReader
     /**
      * Queries the index for the given {@link PropertyIndexQuery} predicates.
      * @param client the client which will control the progression though query results.
+     * @param accessMode security store access mode.
      * @param constraints constraints upon the query result, like ordering and whether the index should fetch property values alongside the entity ids.
      * @param query the query so serve.
      */
-    void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-                PropertyIndexQuery... query ) throws IndexNotApplicableKernelException;
+    void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
+                IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws IndexNotApplicableKernelException;
 
     /**
      * Create a partitioning over the result set for the given query. The partitions can be processed in parallel.
@@ -75,8 +77,8 @@ public interface ValueIndexReader extends IndexReader
         }
 
         @Override
-        public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-                           PropertyIndexQuery... query )
+        public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
+                           IndexQueryConstraints constraints, PropertyIndexQuery... query )
         {
             // do nothing
         }

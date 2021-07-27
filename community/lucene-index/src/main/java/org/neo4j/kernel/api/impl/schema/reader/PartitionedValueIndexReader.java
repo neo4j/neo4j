@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -69,8 +70,8 @@ public class PartitionedValueIndexReader extends AbstractValueIndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
+    public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
+                       IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
     {
         try
         {
@@ -79,14 +80,14 @@ public class PartitionedValueIndexReader extends AbstractValueIndexReader
             {
                 try
                 {
-                    reader.query( context, bridgingIndexProgressor, constraints, query );
+                    reader.query( bridgingIndexProgressor, context, accessMode, constraints, query );
                 }
                 catch ( IndexNotApplicableKernelException e )
                 {
                     throw new InnerException( e );
                 }
             } );
-            client.initialize( descriptor, bridgingIndexProgressor, query, constraints, false );
+            client.initialize( descriptor, bridgingIndexProgressor, accessMode, false, constraints, query );
         }
         catch ( InnerException e )
         {

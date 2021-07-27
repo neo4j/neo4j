@@ -38,6 +38,7 @@ import java.util.function.Function;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.unsafe.UnsafeUtil;
@@ -187,8 +188,8 @@ abstract class IndexPopulationStressTest
         {
             SimpleEntityValueClient entries = new SimpleEntityValueClient();
             SimpleEntityValueClient referenceEntries = new SimpleEntityValueClient();
-            reader.query( NULL_CONTEXT, entries, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
-            referenceReader.query( NULL_CONTEXT, referenceEntries, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
+            reader.query( entries, NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
+            referenceReader.query( referenceEntries, NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
             while ( referenceEntries.next() )
             {
                 assertTrue( entries.next() );

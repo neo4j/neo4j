@@ -27,7 +27,8 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
  * Similar to an {@link IndexProgressor.EntityValueClient}, but will be given a {@link Read} instance, and possibly a {@link Resource}, prior to its
- * {@link #initialize(IndexDescriptor, IndexProgressor, PropertyIndexQuery[], IndexQueryConstraints, boolean)}  initialization}.
+ * {@link IndexProgressor.EntityValueClient#initialize(IndexDescriptor, IndexProgressor, org.neo4j.internal.kernel.api.security.AccessMode,
+ * boolean, IndexQueryConstraints, PropertyIndexQuery...)}  initialization}.
  * <p>
  * This is useful if the entity references needs to be processed further.
  */

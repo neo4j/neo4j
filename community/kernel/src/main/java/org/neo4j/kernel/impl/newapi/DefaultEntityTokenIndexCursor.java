@@ -140,11 +140,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
 
     boolean allowed( long reference, TokenSet tokens )
     {
-        if ( shortcutSecurity )
-        {
-            return true;
-        }
-        return allowedToSeeEntity( accessMode, reference, tokens );
+        return shortcutSecurity || allowedToSeeEntity( accessMode, reference, tokens );
     }
 
     @Override

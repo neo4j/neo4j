@@ -29,6 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -224,14 +225,13 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
                     }
 
                     @Override
-                    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-                                       PropertyIndexQuery... query )
+                    public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
+                                       IndexQueryConstraints constraints, PropertyIndexQuery... query )
                     {
                     }
 
                     @Override
-                    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context,
-                                                           PropertyIndexQuery... query )
+                    public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext context, PropertyIndexQuery... query )
                     {
                         throw new UnsupportedOperationException();
                     }

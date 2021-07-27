@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -68,13 +69,13 @@ class FusionIndexReader extends FusionIndexBase<ValueIndexReader> implements Val
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexQueryConstraints constraints,
-            PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
+    public void query( IndexProgressor.EntityValueClient cursor, QueryContext context, AccessMode accessMode,
+                       IndexQueryConstraints constraints, PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         IndexSlot slot = slotSelector.selectSlot( predicates, PropertyIndexQuery::valueCategory );
         if ( slot != null )
         {
-            instanceSelector.select( slot ).query( context, cursor, constraints, predicates );
+            instanceSelector.select( slot ).query( cursor, context, accessMode, constraints, predicates );
         }
         else
         {
@@ -85,14 +86,14 @@ class FusionIndexReader extends FusionIndexBase<ValueIndexReader> implements Val
                                 constraints.order(), Arrays.toString( predicates ), IndexOrder.NONE ) );
             }
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates, constraints, false );
+            cursor.initialize( descriptor, multiProgressor, accessMode, false, constraints, predicates );
             try
             {
                 instanceSelector.forAll( reader ->
                 {
                     try
                     {
-                        reader.query( context, multiProgressor, constraints, predicates );
+                        reader.query( multiProgressor, context, accessMode, constraints, predicates );
                     }
                     catch ( IndexNotApplicableKernelException e )
                     {

@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -122,8 +123,8 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexQueryConstraints constraints,
-            PropertyIndexQuery... predicates )
+    public void query( IndexProgressor.EntityValueClient cursor, QueryContext context, AccessMode accessMode,
+                       IndexQueryConstraints constraints, PropertyIndexQuery... predicates )
     {
         validateQuery( constraints, predicates );
         context.monitor().queried( descriptor );
@@ -133,7 +134,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         initializeFromToKeys( treeKeyFrom, treeKeyTo );
 
         boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, constraints, needFilter, context.cursorContext() );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, context.cursorContext(), accessMode, needFilter, constraints, predicates );
     }
 
     void initializeFromToKeys( KEY treeKeyFrom, KEY treeKeyTo )
@@ -149,19 +150,19 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
      */
     abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, PropertyIndexQuery[] predicates );
 
-    void startSeekForInitializedRange( IndexProgressor.EntityValueClient client, KEY treeKeyFrom, KEY treeKeyTo, PropertyIndexQuery[] query,
-            IndexQueryConstraints constraints, boolean needFilter, CursorContext cursorContext )
+    void startSeekForInitializedRange( IndexProgressor.EntityValueClient client, KEY treeKeyFrom, KEY treeKeyTo, CursorContext cursorContext,
+                                       AccessMode accessMode, boolean needFilter, IndexQueryConstraints constraints, PropertyIndexQuery... query )
     {
         if ( isEmptyRange( treeKeyFrom, treeKeyTo ) )
         {
-            client.initialize( descriptor, IndexProgressor.EMPTY, query, constraints, false );
+            client.initialize( descriptor, IndexProgressor.EMPTY, accessMode, false, constraints, query );
             return;
         }
         try
         {
             Seeker<KEY,VALUE> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, constraints.order(), cursorContext );
             IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
-            client.initialize( descriptor, hitProgressor, query, constraints, false );
+            client.initialize( descriptor, hitProgressor, accessMode, false, constraints, query );
         }
         catch ( IOException e )
         {

@@ -27,6 +27,7 @@ import java.util.Iterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -108,8 +109,11 @@ class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey,NativeInd
 
         try ( var reader = accessor.newValueReader() )
         {
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( NULL_CONTEXT, new SimpleEntityValueClient(),
-                    unorderedValues(), geometryRangePredicate ) );
+            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( new SimpleEntityValueClient(),
+                                                                                                           NULL_CONTEXT,
+                                                                                                           AccessMode.Static.ACCESS,
+                                                                                                           unorderedValues(),
+                                                                                                           geometryRangePredicate ) );
             assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. Geometry range predicate is not allowed" );
         }
     }
@@ -121,8 +125,11 @@ class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey,NativeInd
 
         try ( var reader = accessor.newValueReader() )
         {
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( NULL_CONTEXT, new SimpleEntityValueClient(),
-                    unorderedValues(), suffixPredicate ) );
+            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( new SimpleEntityValueClient(),
+                                                                                                           NULL_CONTEXT,
+                                                                                                           AccessMode.Static.ACCESS,
+                                                                                                           unorderedValues(),
+                                                                                                           suffixPredicate ) );
             assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. stringSuffix predicate is not allowed" );
         }
     }
@@ -134,8 +141,11 @@ class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey,NativeInd
 
         try ( var reader = accessor.newValueReader() )
         {
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( NULL_CONTEXT, new SimpleEntityValueClient(),
-                    unorderedValues(), containsPredicate ) );
+            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( new SimpleEntityValueClient(),
+                                                                                                           NULL_CONTEXT,
+                                                                                                           AccessMode.Static.ACCESS,
+                                                                                                           unorderedValues(),
+                                                                                                           containsPredicate ) );
             assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. stringContains predicate is not allowed" );
         }
     }
@@ -179,7 +189,7 @@ class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey,NativeInd
             Arrays.sort( allValues, Values.COMPARATOR.reversed() );
         }
         SimpleEntityValueClient client = new SimpleEntityValueClient();
-        reader.query( NULL_CONTEXT, client, constrained( supportedOrder, true ), supportedQuery );
+        reader.query( client, NULL_CONTEXT, AccessMode.Static.READ, constrained( supportedOrder, true ), supportedQuery );
         int i = 0;
         while ( client.next() )
         {

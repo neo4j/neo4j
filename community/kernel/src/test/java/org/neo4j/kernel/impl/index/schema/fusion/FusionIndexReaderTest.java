@@ -30,6 +30,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -88,7 +89,7 @@ abstract class FusionIndexReaderTest
         for ( int i = 0; i < activeSlots.length; i++ )
         {
             var mock = mock( ValueIndexReader.class );
-            doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR ) ).when( mock ).query( any(), any(), any(), any() );
+            doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR ) ).when( mock ).query( any(), any(), any(), any(), any() );
             aliveReaders[i] = mock;
             switch ( activeSlots[i] )
             {
@@ -141,18 +142,18 @@ abstract class FusionIndexReaderTest
             int slot = i;
             doAnswer( invocation ->
             {
-                IndexProgressor.EntityValueClient client = invocation.getArgument( 1 );
+                IndexProgressor.EntityValueClient client = invocation.getArgument( 0 );
                 IndexProgressor progressor = mock( IndexProgressor.class );
-                client.initialize( DESCRIPTOR, progressor, getIndexQueryArgument( invocation ), invocation.getArgument( 2 ), false );
+                client.initialize( DESCRIPTOR, progressor, AccessMode.Static.ACCESS, false, invocation.getArgument( 3 ), getIndexQueryArgument( invocation ) );
                 progressors[slot] = progressor;
                 return null;
-            } ).when( aliveReaders[i] ).query( any(), any(), any(), any() );
+            } ).when( aliveReaders[i] ).query( any(), any(), any(), any(), any() );
         }
 
         // when
         try ( NodeValueIterator iterator = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, iterator, unconstrained(), PropertyIndexQuery.exists( PROP_KEY ) );
+            fusionIndexReader.query( iterator, NULL_CONTEXT, AccessMode.Static.ACCESS, unconstrained(), PropertyIndexQuery.exists( PROP_KEY ) );
         }
 
         // then
@@ -256,14 +257,14 @@ abstract class FusionIndexReaderTest
         for ( var aliveReader : aliveReaders )
         {
             doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR, lastId++, lastId++ ) ).when( aliveReader ).query(
-                    any(), any(), any(), any() );
+                    any(), any(), any(), any(), any() );
         }
 
         // when
         LongSet resultSet;
         try ( NodeValueIterator result = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, result, unconstrained(), exists );
+            fusionIndexReader.query( result, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), exists );
 
             // then
             resultSet = PrimitiveLongCollections.asSet( result );
@@ -287,7 +288,7 @@ abstract class FusionIndexReaderTest
                 Value value = values.get( i )[0];
                 try ( NodeValueIterator cursor = new NodeValueIterator() )
                 {
-                    fusionIndexReader.query( NULL_CONTEXT, cursor, unconstrained(), PropertyIndexQuery.exact( 0, value ) );
+                    fusionIndexReader.query( cursor, NULL_CONTEXT, AccessMode.Static.ACCESS, unconstrained(), PropertyIndexQuery.exact( 0, value ) );
                 }
                 for ( IndexSlot j : IndexSlot.values() )
                 {
@@ -296,7 +297,7 @@ abstract class FusionIndexReaderTest
                     {
                         if ( i == j )
                         {
-                            verify( readers.get( i ) ).query( any(), any(), any(), any() );
+                            verify( readers.get( i ) ).query( any(), any(), any(), any(), any() );
                         }
                         else
                         {
@@ -316,18 +317,18 @@ abstract class FusionIndexReaderTest
         // when
         try ( NodeValueIterator cursor = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, cursor, unconstrained(), indexQuery );
+            fusionIndexReader.query( cursor, NULL_CONTEXT, AccessMode.Static.ACCESS, unconstrained(), indexQuery );
         }
 
         // then
         // Strange mockito inconsistency regarding varargs
         if ( indexQuery.length == 1 )
         {
-            verify( expectedReader ).query( any(), any(), any(), eq( indexQuery[0] ) );
+            verify( expectedReader ).query( any(), any(), any(), any(), eq( indexQuery[0] ) );
         }
         else
         {
-            verify( expectedReader ).query( any(), any(), any(), eq( indexQuery[0] ), eq( indexQuery[1] ) );
+            verify( expectedReader ).query( any(), any(), any(), any(), eq( indexQuery[0] ), eq( indexQuery[1] ) );
         }
         for ( IndexReader reader : aliveReaders )
         {

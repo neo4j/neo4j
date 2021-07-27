@@ -30,6 +30,7 @@ import java.util.concurrent.Callable;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -316,7 +317,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         {
             SimpleEntityValueClient valueClient = new SimpleEntityValueClient();
             PropertyIndexQuery.ExactPredicate exact = PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), entry );
-            reader.query( NULL_CONTEXT, valueClient, unconstrained(), exact );
+            reader.query( valueClient, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), exact );
             assertTrue( valueClient.next() );
             long id = valueClient.reference;
             assertEquals( expectedId, id );
@@ -338,7 +339,8 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         try ( NativeIndexReader<KEY, NativeIndexValue> reader = populator.newReader() )
         {
             SimpleEntityValueClient cursor = new SimpleEntityValueClient();
-            reader.query( NULL_CONTEXT, cursor, unorderedValues(), PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
+            reader.query( cursor, NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(),
+                          PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
             assertTrue( cursor.next() );
             assertEquals( id, cursor.reference );
             assertEquals( value, cursor.values[0] );

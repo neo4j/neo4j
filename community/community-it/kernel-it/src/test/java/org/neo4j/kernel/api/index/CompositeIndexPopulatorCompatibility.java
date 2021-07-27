@@ -25,6 +25,7 @@ import java.util.Arrays;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -75,8 +76,8 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                 try ( ValueIndexReader reader = accessor.newValueReader();
                       NodeValueIterator nodes = new NodeValueIterator() )
                 {
-                    reader.query( NULL_CONTEXT, nodes, unconstrained(),
-                            PropertyIndexQuery.exact( 1, "v1" ), PropertyIndexQuery.exact( 1, "v2" ) );
+                    reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(),
+                                  PropertyIndexQuery.exact( 1, "v1" ), PropertyIndexQuery.exact( 1, "v2" ) );
                     assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
                 }
             }

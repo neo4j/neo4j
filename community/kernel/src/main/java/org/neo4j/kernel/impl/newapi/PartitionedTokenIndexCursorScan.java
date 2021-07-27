@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
@@ -50,7 +50,7 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
     }
 
     @Override
-    public boolean reservePartition( Cursor cursor, CursorContext cursorContext )
+    public boolean reservePartition( Cursor cursor, CursorContext cursorContext, AccessMode accessMode )
     {
         var indexCursor = (DefaultEntityTokenIndexCursor<? extends DefaultEntityTokenIndexCursor<?>>) cursor;
         indexCursor.setRead( read );
@@ -59,7 +59,7 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
         {
             return false;
         }
-        indexCursor.initialize( indexProgressor, query.tokenId(), IndexOrder.NONE );
+        indexCursor.initialize( indexProgressor, query.tokenId(), null, null, accessMode );
         return true;
     }
 }

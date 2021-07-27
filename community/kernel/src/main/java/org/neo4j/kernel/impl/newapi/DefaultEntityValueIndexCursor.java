@@ -104,11 +104,8 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     @Override
-    public final void initialize( IndexDescriptor descriptor,
-            IndexProgressor progressor,
-            PropertyIndexQuery[] query,
-            IndexQueryConstraints constraints,
-            boolean indexIncludesTransactionState )
+    public final void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
+                                  boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
     {
         assert query != null;
         super.initialize( progressor );
@@ -123,6 +120,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             tracer.onIndexSeek( );
         }
 
+        this.accessMode = accessMode;
         shortcutSecurity = setupSecurity( descriptor );
 
         if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() && query.length > 0 )
@@ -618,27 +616,12 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private boolean setupSecurity( IndexDescriptor descriptor )
     {
-        if ( allowsAll() )
-        {
-            return true;
-        }
-
-        if ( accessMode == null )
-        {
-            accessMode = read.ktx.securityContext().mode();
-        }
-
-        return canAccessAllDescribedEntities( descriptor, accessMode );
+        return allowsAll() || canAccessAllDescribedEntities( descriptor, accessMode );
     }
 
     boolean allowed( long reference )
     {
-        if ( shortcutSecurity )
-        {
-            return true;
-        }
-
-        return allowed( reference, accessMode );
+        return shortcutSecurity || allowed( reference, accessMode );
     }
 
     /**

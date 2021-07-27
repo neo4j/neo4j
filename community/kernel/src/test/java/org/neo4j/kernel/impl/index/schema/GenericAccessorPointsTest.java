@@ -34,6 +34,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -267,7 +268,7 @@ class GenericAccessorPointsTest
                     true,
                     limitPoint,
                     true );
-            indexReader.query( QueryContext.NULL_CONTEXT, client, unorderedValues(), range );
+            indexReader.query( client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), range );
 
             List<Value> queryResult = new ArrayList<>();
             while ( client.next() )
@@ -318,7 +319,7 @@ class GenericAccessorPointsTest
             for ( Value value : values )
             {
                 PropertyIndexQuery.ExactPredicate exact = PropertyIndexQuery.exact( descriptor.schema().getPropertyId(), value );
-                indexReader.query( QueryContext.NULL_CONTEXT, client, unorderedValues(), exact );
+                indexReader.query( client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ , unorderedValues(), exact );
 
                 // then
                 assertTrue( client.next() );

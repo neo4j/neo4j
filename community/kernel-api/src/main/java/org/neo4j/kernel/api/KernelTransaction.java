@@ -511,7 +511,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
 
         /**
          * Mark execution context as completed and prepare any data that needs to be reported back to owning transaction.
-         * Should be called by thread were work was executed.
+         * Should be called by thread where work was executed.
          */
         void complete();
 

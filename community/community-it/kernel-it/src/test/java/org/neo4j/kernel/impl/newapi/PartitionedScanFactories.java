@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -37,8 +38,6 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenReadSession;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.kernel.impl.newapi.PropertyIndexScanPartitionedScanTestSuite.PropertyKeyScanQuery;
 import org.neo4j.kernel.impl.newapi.PropertyIndexSeekPartitionedScanTestSuite.PropertyKeySeekQuery;
 import org.neo4j.kernel.impl.newapi.TokenIndexScanPartitionedScanTestSuite.TokenScanQuery;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.util.Id;
 
 class PartitionedScanFactories
@@ -56,7 +56,7 @@ class PartitionedScanFactories
         abstract PartitionedScan<CURSOR> partitionedScan( KernelTransaction tx, QUERY query, int desiredNumberOfPartitions )
                 throws KernelException;
 
-        abstract CURSOR getCursor( KernelTransaction tx );
+        abstract CursorWithContext<CURSOR> getCursor( CursorFactory cursors );
 
         abstract long getEntityReference( CURSOR cursor );
 
@@ -93,9 +93,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        NodeLabelIndexCursor getCursor( KernelTransaction tx )
+        CursorWithContext<NodeLabelIndexCursor> getCursor( CursorFactory cursors )
         {
-            return tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() );
+            return cursors::allocateNodeLabelIndexCursor;
         }
 
         @Override
@@ -121,9 +121,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        RelationshipTypeIndexCursor getCursor( KernelTransaction tx )
+        CursorWithContext<RelationshipTypeIndexCursor> getCursor( CursorFactory cursors )
         {
-            return tx.cursors().allocateRelationshipTypeIndexCursor( tx.cursorContext() );
+            return cursors::allocateRelationshipTypeIndexCursor;
         }
 
         @Override
@@ -176,9 +176,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        NodeValueIndexCursor getCursor( KernelTransaction tx )
+        CursorWithContext<NodeValueIndexCursor> getCursor( CursorFactory cursors )
         {
-            return tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
+            return context -> cursors.allocateNodeValueIndexCursor( context, EmptyMemoryTracker.INSTANCE );
         }
 
         @Override
@@ -216,9 +216,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        NodeValueIndexCursor getCursor( KernelTransaction tx )
+        CursorWithContext<NodeValueIndexCursor> getCursor( CursorFactory cursors )
         {
-            return tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
+            return context -> cursors.allocateNodeValueIndexCursor( context, EmptyMemoryTracker.INSTANCE );
         }
 
         @Override
@@ -258,9 +258,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        RelationshipValueIndexCursor getCursor( KernelTransaction tx )
+        CursorWithContext<RelationshipValueIndexCursor> getCursor( CursorFactory cursors )
         {
-            return tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
+            return context -> cursors.allocateRelationshipValueIndexCursor( context, EmptyMemoryTracker.INSTANCE );
         }
 
         @Override
@@ -299,9 +299,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        RelationshipValueIndexCursor getCursor( KernelTransaction tx )
+        CursorWithContext<RelationshipValueIndexCursor> getCursor( CursorFactory cursors )
         {
-            return tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
+            return context -> cursors.allocateRelationshipValueIndexCursor( context, EmptyMemoryTracker.INSTANCE );
         }
 
         @Override
@@ -321,6 +321,12 @@ class PartitionedScanFactories
         {
             return SchemaDescriptors.forRelType( relTypeId, propKeyIds );
         }
+    }
+
+    @FunctionalInterface
+    interface CursorWithContext<CURSOR extends Cursor>
+    {
+        CURSOR with( CursorContext cursorContext );
     }
 
     abstract static class Tag<TAG> implements Supplier<TAG>

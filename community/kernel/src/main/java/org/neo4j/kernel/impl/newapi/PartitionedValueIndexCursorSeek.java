@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -53,7 +54,7 @@ public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.k
     }
 
     @Override
-    public boolean reservePartition( Cursor cursor, CursorContext cursorContext )
+    public boolean reservePartition( Cursor cursor, CursorContext cursorContext, AccessMode accessMode )
     {
         final var indexCursor = (DefaultEntityValueIndexCursor<?>) cursor;
         indexCursor.setRead( read );
@@ -62,7 +63,7 @@ public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.k
         {
             return false;
         }
-        indexCursor.initialize( descriptor, indexProgressor, query, IndexQueryConstraints.unorderedValues(), false );
+        indexCursor.initialize( descriptor, indexProgressor, accessMode, false, IndexQueryConstraints.unorderedValues(), query );
         return true;
     }
 }

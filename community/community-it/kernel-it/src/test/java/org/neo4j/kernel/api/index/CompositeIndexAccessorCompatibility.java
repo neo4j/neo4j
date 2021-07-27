@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -1248,7 +1249,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 if ( legal )
                 {
                     // when
-                    reader.query( NULL_CONTEXT, client, unconstrained(), theQuery );
+                    reader.query( client, NULL_CONTEXT, AccessMode.Static.ACCESS, unconstrained(), theQuery );
 
                     // then should not throw
                 }
@@ -1257,7 +1258,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                     try
                     {
                         // when
-                        reader.query( NULL_CONTEXT, client, unconstrained(), theQuery );
+                        reader.query( client, NULL_CONTEXT, AccessMode.Static.ACCESS, unconstrained(), theQuery );
                         fail( "Expected index reader to throw for illegal composite query. Query was, " + Arrays.toString( theQuery ) );
                     }
                     catch ( IllegalArgumentException e )

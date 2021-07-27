@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
@@ -138,8 +139,8 @@ class FulltextIndexProgressorTest
         private final List<Float> scores = new ArrayList<>();
 
         @Override
-        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, PropertyIndexQuery[] query, IndexQueryConstraints constraints,
-                boolean indexIncludesTransactionState )
+        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
+                                boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
         {
         }
 
