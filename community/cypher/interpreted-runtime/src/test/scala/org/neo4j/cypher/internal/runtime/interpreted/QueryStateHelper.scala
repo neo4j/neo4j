@@ -62,7 +62,6 @@ object QueryStateHelper extends MockitoSugar {
 
   def emptyWith(db: GraphDatabaseQueryService = null,
                 query: QueryContext = null,
-                kernelQueryContext : org.neo4j.internal.kernel.api.QueryContext = null,
                 resources: ExternalCSVResource = null,
                 params: Array[AnyValue] = Array.empty,
                 expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory], CursorContext.NULL, EmptyMemoryTracker.INSTANCE),
@@ -75,7 +74,7 @@ object QueryStateHelper extends MockitoSugar {
                 initialContext: Option[CypherRow] = None,
                 input: InputDataStream = NoInput
                ):QueryState =
-    new QueryState(query, kernelQueryContext, resources, params, expressionCursors, queryIndexes, nodeTokenIndex, relTokenIndex, expressionVariables, subscriber, NoOpQueryMemoryTracker,
+    new QueryState(query, resources, params, expressionCursors, queryIndexes, nodeTokenIndex, relTokenIndex, expressionVariables, subscriber, NoOpQueryMemoryTracker,
       decorator, initialContext = initialContext, input = input)
 
   def queryStateFrom(db: GraphDatabaseQueryService,
