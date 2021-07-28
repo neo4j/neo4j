@@ -59,7 +59,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 {
     private static final String DEFAULT_TEMPORAL_ARGUMENT = "DEFAULT_TEMPORAL_ARGUMENT";
     private static final TextValue DEFAULT_TEMPORAL_ARGUMENT_VALUE = Values.utf8Value( DEFAULT_TEMPORAL_ARGUMENT );
-    private static final DefaultParameterValue DEFAULT_PARAMETER_VALUE = new DefaultParameterValue( DEFAULT_TEMPORAL_ARGUMENT, Neo4jTypes.NTAny );
+    private static final DefaultParameterValue DEFAULT_PARAMETER_VALUE = new DefaultParameterValue( DEFAULT_TEMPORAL_ARGUMENT_VALUE, Neo4jTypes.NTAny );
     private static final String TEMPORAL_CATEGORY = Category.TEMPORAL();
 
     public static void registerTemporalFunctions( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig ) throws ProcedureException
