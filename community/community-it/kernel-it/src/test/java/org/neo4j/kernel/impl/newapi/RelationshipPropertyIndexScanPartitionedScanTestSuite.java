@@ -35,6 +35,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RelationshipPropertyIndexScanPartitionedScanTestSuite
         extends PropertyIndexScanPartitionedScanTestSuite<RelationshipValueIndexCursor>
 {
+    RelationshipPropertyIndexScanPartitionedScanTestSuite( IndexType index )
+    {
+        super( index );
+    }
+
     @Override
     public final RelationshipPropertyIndexScan getFactory()
     {

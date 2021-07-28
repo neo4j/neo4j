@@ -38,22 +38,54 @@ class PartitionedScanTest
     // Property Indexes
 
     @Nested
-    class NodePropertyIndexSeek extends NodePropertyIndexSeekPartitionedScanTestSuite
+    class NodePropertyIndexSeek
     {
+        @Nested
+        class BTree extends NodePropertyIndexSeekPartitionedScanTestSuite
+        {
+            BTree()
+            {
+                super( IndexType.BTREE );
+            }
+        }
     }
 
     @Nested
-    class NodePropertyIndexScan extends NodePropertyIndexScanPartitionedScanTestSuite
+    class NodePropertyIndexScan
     {
+        @Nested
+        class BTree extends NodePropertyIndexScanPartitionedScanTestSuite
+        {
+            BTree()
+            {
+                super( IndexType.BTREE );
+            }
+        }
     }
 
     @Nested
-    class RelationshipPropertyIndexSeek extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
+    class RelationshipPropertyIndexSeek
     {
+        @Nested
+        class BTree extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
+        {
+            BTree()
+            {
+                super( IndexType.BTREE );
+            }
+        }
     }
 
     @Nested
-    class RelationshipPropertyIndexScan extends RelationshipPropertyIndexScanPartitionedScanTestSuite
+    class RelationshipPropertyIndexScan
     {
+        @Nested
+        class BTree extends RelationshipPropertyIndexScanPartitionedScanTestSuite
+        {
+            BTree()
+            {
+                super( IndexType.BTREE );
+            }
+        }
     }
 }

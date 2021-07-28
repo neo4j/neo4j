@@ -29,6 +29,11 @@ import org.neo4j.kernel.impl.newapi.PropertyIndexScanPartitionedScanTestSuite.Pr
 abstract class PropertyIndexScanPartitionedScanTestSuite<CURSOR extends Cursor>
         extends PropertyIndexPartitionedScanTestSuite<PropertyKeyScanQuery,CURSOR>
 {
+    PropertyIndexScanPartitionedScanTestSuite( IndexType index )
+    {
+        super( index );
+    }
+
     abstract static class WithoutData<CURSOR extends Cursor>
             extends PropertyIndexPartitionedScanTestSuite.WithoutData<PropertyKeyScanQuery,CURSOR>
     {

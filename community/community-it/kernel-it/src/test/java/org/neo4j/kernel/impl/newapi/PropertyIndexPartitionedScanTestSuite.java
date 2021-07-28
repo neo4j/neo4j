@@ -29,7 +29,10 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -39,6 +42,13 @@ import org.neo4j.values.storable.Values;
 abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends Cursor>
         implements PartitionedScanTestSuite.TestSuite<QUERY,CURSOR>
 {
+    private final IndexType index;
+
+    PropertyIndexPartitionedScanTestSuite( IndexType index )
+    {
+        this.index = index;
+    }
+
     protected final Iterable<IndexPrototype> createIndexPrototypes( Pair<Integer,int[]> tokenAndPropKeyCombination )
     {
         // IndexPrototype isn't hashable, and do not wish to alter production code for test;
@@ -54,8 +64,11 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
         indexesFrom.add( Pair.of( factory.getSchemaDescriptor( tokenId, propKeyIds ), factory.getIndexName( tokenId, propKeyIds ) ) );
 
         return indexesFrom.stream()
-                .map( indexFrom -> IndexPrototype.forSchema( indexFrom.first() ).withName( indexFrom.other() ) )
-                .collect( Collectors.toUnmodifiableList() );
+                          .map( indexFrom -> IndexPrototype.forSchema( indexFrom.first() )
+                                                           .withIndexType( index.type() )
+                                                           .withIndexProvider( index.descriptor() )
+                                                           .withName( indexFrom.other() ) )
+                          .collect( Collectors.toUnmodifiableList() );
     }
 
     abstract static class WithoutData<QUERY extends Query<?>, CURSOR extends Cursor>
@@ -66,7 +79,7 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
         WithoutData( PropertyIndexPartitionedScanTestSuite<QUERY,CURSOR> testSuite )
         {
             super( testSuite );
-            this.factory = (PartitionedScanFactories.PropertyIndex<QUERY,CURSOR>) testSuite.getFactory();
+            factory = (PartitionedScanFactories.PropertyIndex<QUERY,CURSOR>) testSuite.getFactory();
         }
     }
 
@@ -161,6 +174,31 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
         public Value toValue( int value )
         {
             return Values.of( toValueObject( value ) );
+        }
+    }
+
+    protected enum IndexType
+    {
+        BTREE( org.neo4j.internal.schema.IndexType.BTREE, GenericNativeIndexProvider.DESCRIPTOR ),
+        FUSION( org.neo4j.internal.schema.IndexType.BTREE, NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR );
+
+        private final org.neo4j.internal.schema.IndexType type;
+        private final IndexProviderDescriptor descriptor;
+
+        IndexType( org.neo4j.internal.schema.IndexType type, IndexProviderDescriptor descriptor )
+        {
+            this.type = type;
+            this.descriptor = descriptor;
+        }
+
+        final org.neo4j.internal.schema.IndexType type()
+        {
+            return type;
+        }
+
+        final IndexProviderDescriptor descriptor()
+        {
+            return descriptor;
         }
     }
 }

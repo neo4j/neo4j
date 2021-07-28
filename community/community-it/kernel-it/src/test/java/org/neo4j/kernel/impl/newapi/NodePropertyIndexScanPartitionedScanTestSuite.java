@@ -34,6 +34,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class NodePropertyIndexScanPartitionedScanTestSuite
         extends PropertyIndexScanPartitionedScanTestSuite<NodeValueIndexCursor>
 {
+    NodePropertyIndexScanPartitionedScanTestSuite( IndexType index )
+    {
+        super( index );
+    }
+
     @Override
     public final NodePropertyIndexScan getFactory()
     {

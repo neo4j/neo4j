@@ -31,6 +31,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class NodePropertyIndexSeekPartitionedScanTestSuite
         extends PropertyIndexSeekPartitionedScanTestSuite<NodeValueIndexCursor>
 {
+    NodePropertyIndexSeekPartitionedScanTestSuite( IndexType index )
+    {
+        super( index );
+    }
+
     @Override
     public final NodePropertyIndexSeek getFactory()
     {
@@ -55,9 +60,8 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
             final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
             final var labelAndPropKeyCombination = Pair.of( labelId, propKeyIds );
 
-            final var data = emptyQueries( labelAndPropKeyCombination );
             createIndexes( createIndexPrototypes( labelAndPropKeyCombination ) );
-            return data;
+            return emptyQueries( labelAndPropKeyCombination );
         }
     }
 
@@ -81,9 +85,8 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
             final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
             final var labelAndPropKeyCombination = Pair.of( labelId, propKeyIds );
 
-            final var data = createData( numberOfProperties, labelAndPropKeyCombination );
             createIndexes( createIndexPrototypes( labelAndPropKeyCombination ) );
-            return data;
+            return createData( numberOfProperties, labelAndPropKeyCombination );
         }
 
         @Override
@@ -119,12 +122,12 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
                                 numberOfCreatedProperties++;
                                 assignedPropValues[i] = value;
                                 // when   and tracked against queries
-                                tracking.generateAndTrack( nodeId, factory.getIndexName( labelId, propKeyId ),
-                                                           propKeyId, value, shouldIncludeExactQuery() );
+                                final var index = factory.getIndex( tx, labelId, propKeyId );
+                                tracking.generateAndTrack( nodeId, index, propKeyId, value, shouldIncludeExactQuery() );
                             }
                         }
-                        tracking.generateAndTrack( nodeId, factory.getIndexName( labelId, propKeyIds ),
-                                                   propKeyIds, assignedPropValues, shouldIncludeExactQuery() );
+                        final var index = factory.getIndex( tx, labelId, propKeyIds );
+                        tracking.generateAndTrack( nodeId, index, propKeyIds, assignedPropValues, shouldIncludeExactQuery() );
                     }
                 }
 

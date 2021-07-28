@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -156,6 +157,11 @@ class PartitionedScanFactories
         {
             final var index = tx.schemaRead().indexGetForName( query.indexName() );
             return tx.dataRead().indexReadSession( index );
+        }
+
+        protected final IndexDescriptor getIndex( KernelTransaction tx, int tokenId, int... propKeyIds )
+        {
+            return tx.schemaRead().indexGetForName( getIndexName( tokenId, propKeyIds ) );
         }
     }
 
