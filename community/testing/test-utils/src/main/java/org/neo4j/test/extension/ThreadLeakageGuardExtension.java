@@ -73,6 +73,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
             "neo4j.CheckPoint",                 //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "neo4j.IndexSampling",              //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "junit-jupiter-timeout-watcher",
+            "Libgraal MBean Registration",      // graal vm mbean factory
             "docker-java-stream",               //Docker testcontainers related, will be cleaned up at end of test run
             "OkHttp",                           //Docker testcontainers related, will be cleaned up at end of test run
             "Okio Watchdog",                    //Docker testcontainers related, will be cleaned up at end of test run
