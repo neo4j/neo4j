@@ -19,10 +19,12 @@
  */
 package org.neo4j.dbms;
 
+import org.neo4j.dbms.database.SystemGraphDbmsModel;
+
 public enum DefaultOperatorState implements OperatorState
 {
-    STOPPED( "offline" ),
-    STARTED( "online" ),
+    STOPPED( SystemGraphDbmsModel.DatabaseStatus.offline.name() ),
+    STARTED( SystemGraphDbmsModel.DatabaseStatus.online.name() ),
     UNKNOWN( "unknown" );
 
     private final String description;

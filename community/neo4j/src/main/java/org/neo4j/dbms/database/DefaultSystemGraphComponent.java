@@ -88,7 +88,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
      */
     protected void maybeStopDatabase( Node oldDatabaseNode )
     {
-        oldDatabaseNode.setProperty( DATABASE_STATUS_PROPERTY, "offline" );
+        oldDatabaseNode.setProperty( DATABASE_STATUS_PROPERTY, SystemGraphDbmsModel.DatabaseStatus.offline.name() );
     }
 
     /**
@@ -166,7 +166,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
                 if ( defaultDb != null )
                 {
                     defaultDb.setProperty( DATABASE_DEFAULT_PROPERTY, true );
-                    defaultDb.setProperty( DATABASE_STATUS_PROPERTY, "online" );
+                    defaultDb.setProperty( DATABASE_STATUS_PROPERTY, SystemGraphDbmsModel.DatabaseStatus.online.name() );
                     defaultFound = true;
                 }
             }
@@ -192,7 +192,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
             Node node = tx.createNode( DATABASE_LABEL );
             node.setProperty( DATABASE_NAME_PROPERTY, databaseName.name() );
             node.setProperty( DATABASE_UUID_PROPERTY, uuid.toString() );
-            node.setProperty( DATABASE_STATUS_PROPERTY, "online" );
+            node.setProperty( DATABASE_STATUS_PROPERTY, SystemGraphDbmsModel.DatabaseStatus.online.name() );
             node.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
             tx.commit();
         }

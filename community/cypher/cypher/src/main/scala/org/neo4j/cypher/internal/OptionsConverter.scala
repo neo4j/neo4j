@@ -117,7 +117,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
         value match {
           case seed: TextValue => ops.copy(databaseSeed = Some(seed.stringValue()))
           case _ =>
-            throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected database uuid string.")
+            throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected server uuid string.")
         }
       } else {
         throw new InvalidArgumentsException(s"Could not create database with unrecognised option: '$key'. Expected $PERMITTED_OPTIONS.")
@@ -455,15 +455,7 @@ case class CreateWithNoOptions()
 case class CreateBtreeIndexOptions(provider: Option[String], config: IndexConfig)
 case class CreateProviderOnlyIndexOptions(provider: Option[IndexProviderDescriptor])
 case class CreateFulltextIndexOptions(provider: Option[IndexProviderDescriptor], config: IndexConfig)
-case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String]) {
-  def validate(dbName: String): Unit = {
-    (existingData, databaseSeed) match {
-      case (Some(_), None) | (None, Some(_)) =>
-        throw new InvalidArgumentsException(s"Could not create database '$dbName'. Both existingData and databaseSeed options are required to seed database.")
-      case _ => ()
-    }
-  }
-}
+case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String])
 
 object MapValueOps {
 
