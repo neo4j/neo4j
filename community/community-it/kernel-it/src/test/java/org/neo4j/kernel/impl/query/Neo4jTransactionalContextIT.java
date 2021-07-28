@@ -120,7 +120,7 @@ class Neo4jTransactionalContextIT
         return ((KernelStatement) ctx.statement()).locks().activeLockCount();
     }
 
-    private boolean isMarkedForTermation( TransactionalContext ctx )
+    private boolean isMarkedForTermination( TransactionalContext ctx )
     {
         return ctx.transaction().terminationReason().isPresent();
     }
@@ -413,7 +413,6 @@ class Neo4jTransactionalContextIT
         var closedInnerActiveLocksCommit = getActiveLockCount( innerCtxCommit );
         innerCtxCommit.commit();
 
-
         // Leave open
         var innerCtxOpen = outerCtx.contextWithNewTransaction();
         // Get some locks
@@ -445,7 +444,7 @@ class Neo4jTransactionalContextIT
         var queryMemoryTracker = QueryMemoryTracker.apply( MEMORY_TRACKING$.MODULE$ );
         var outerTxMemoryTrackerForOperatorProvider = queryMemoryTracker.newMemoryTrackerForOperatorProvider( outerTxMemoryTracker );
 
-        // We allocate memory trough the same operator id, so it is easy for us to calculate how much memory the GrowingArray of MemoryTrackerPerOperator takes
+        // We allocate memory through the same operator id, so it is easy for us to calculate how much memory the GrowingArray of MemoryTrackerPerOperator takes
         var operatorId = 0;
         var localMem = new LocalMemoryTracker();
         var ga = new GrowingArray<>( localMem );
@@ -519,7 +518,7 @@ class Neo4jTransactionalContextIT
         ctx.kernelTransaction().markForTermination( Status.Transaction.Terminated );
 
         // Then
-        assertTrue( isMarkedForTermation( innerCtx ) );
+        assertTrue( isMarkedForTermination( innerCtx ) );
     }
 
     @Test
@@ -596,7 +595,7 @@ class Neo4jTransactionalContextIT
         assertFalse( innerCtx.transaction().isOpen() );
     }
 
-    @Disabled("Strictly speaking this does not need to work, but it would protect us from our own programming mistakes in Cypher")
+    @Disabled( "Strictly speaking this does not need to work, but it would protect us from our own programming mistakes in Cypher" )
     @Test
     void contextWithNewTransaction_close_inner_context_on_outer_context_rollback()
     {
@@ -639,7 +638,7 @@ class Neo4jTransactionalContextIT
         innerCtx.kernelTransaction().markForTermination( Status.Transaction.Terminated );
 
         // Then
-        assertFalse( isMarkedForTermation( ctx ) );
+        assertFalse( isMarkedForTermination( ctx ) );
     }
 
     @Test
@@ -747,7 +746,7 @@ class Neo4jTransactionalContextIT
         Thread.sleep( sleepMillis );
 
         // Then
-        assertTrue( isMarkedForTermation( innerCtx ) );
+        assertTrue( isMarkedForTermination( innerCtx ) );
     }
 
     @Test
@@ -773,7 +772,7 @@ class Neo4jTransactionalContextIT
         var innerCtx = ctx.contextWithNewTransaction();
 
         var procsRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
-        var txSetMetaData = procsRegistry.procedure( new QualifiedName( new String[]{"tx"}, "setMetaData") );
+        var txSetMetaData = procsRegistry.procedure( new QualifiedName( new String[]{"tx"}, "setMetaData" ) );
         var id = txSetMetaData.id();
         var procContext = new ProcedureCallContext( id, new String[0], false, "", false );
 
@@ -803,20 +802,22 @@ class Neo4jTransactionalContextIT
         var innerTx = innerCtx.transaction();
 
         var procsRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
-        var listTransactions = procsRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "listTransactions") );
+        var listTransactions = procsRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "listTransactions" ) );
         var id = listTransactions.id();
         var transactionIdIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "transactionId", Neo4jTypes.NTString ) );
         var currentQueryIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "currentQuery", Neo4jTypes.NTString ) );
         var currentQueryIdIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "currentQueryId", Neo4jTypes.NTString ) );
-        var outerTransactionIdIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "outerTransactionId", Neo4jTypes.NTString ) );
-        var procContext = new ProcedureCallContext( id, new String[]{"transactionId", "currentQuery", "currentQueryId", "outerTransactionId"}, false, "", false );
+        var outerTransactionIdIndex =
+                listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "outerTransactionId", Neo4jTypes.NTString ) );
+        var procContext =
+                new ProcedureCallContext( id, new String[]{"transactionId", "currentQuery", "currentQueryId", "outerTransactionId"}, false, "", false );
 
         // When
         var procResult = Iterators.asList(
                 innerCtx.kernelTransaction().procedures().procedureCallDbms( id, new AnyValue[]{}, procContext )
         );
 
-        var mapper = new DefaultValueMapper(innerTx);
+        var mapper = new DefaultValueMapper( innerTx );
         var transactionIds = procResult.stream().map( array -> array[transactionIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
         var currentQueries = procResult.stream().map( array -> array[currentQueryIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
         var currentQueryIds = procResult.stream().map( array -> array[currentQueryIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
@@ -854,7 +855,7 @@ class Neo4jTransactionalContextIT
         var innerTx = innerCtx.transaction();
 
         var procsRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
-        var listQueries = procsRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "listQueries") );
+        var listQueries = procsRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "listQueries" ) );
         var procedureId = listQueries.id();
         var transactionIdIndex = listQueries.signature().outputSignature().indexOf( FieldSignature.outputField( "transactionId", Neo4jTypes.NTString ) );
         var queryIndex = listQueries.signature().outputSignature().indexOf( FieldSignature.outputField( "query", Neo4jTypes.NTString ) );
@@ -866,7 +867,7 @@ class Neo4jTransactionalContextIT
                 innerCtx.kernelTransaction().procedures().procedureCallDbms( procedureId, new AnyValue[]{}, procContext )
         );
 
-        var mapper = new DefaultValueMapper(innerTx);
+        var mapper = new DefaultValueMapper( innerTx );
         var transactionIds = procResult.stream().map( array -> array[transactionIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
         var queries = procResult.stream().map( array -> array[queryIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
         var queryIds = procResult.stream().map( array -> array[queryIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
@@ -936,7 +937,6 @@ class Neo4jTransactionalContextIT
 
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var ctx = createTransactionContext( outerTx );
-        var executingQuery = ctx.executingQuery();
 
         var closedTxHits = 0L;
         var closedTxFaults = 0L;
