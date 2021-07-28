@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.NoHeaders
+import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -130,6 +131,16 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Projection(
         Eager(
           ExhaustiveLimit(leaf, literalInt(12))), Map.empty))
+  }
+
+  test("should remove eager on top of eager aggregation") {
+    val leaf = newMockedLogicalPlan()
+    val aggregatingExpression = distinctFunction("count", varFor("to"))
+    val aggregation = Aggregation(leaf, Map.empty, Map("x" -> aggregatingExpression))
+    val eager = Eager(aggregation)
+    val topPlan = Projection(eager, Map.empty)
+
+    rewrite(topPlan) should equal(Projection(aggregation, Map.empty))
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =

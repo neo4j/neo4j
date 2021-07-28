@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.planLimitOnTopOf
 import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Rewriter
@@ -36,8 +38,7 @@ case class cleanUpEager(solveds: Solveds, attributes: Attributes[LogicalPlan]) e
   private val instance: Rewriter = bottomUp(Rewriter.lift {
 
     // E E L => E L
-    case eager@Eager(Eager(source, reasons), _) =>
-      eager.copy(source = source, reasons = reasons)(SameId(eager.id))
+    case Eager(inner: LogicalUnaryPlan with EagerLogicalPlan, _) => inner
 
     // E U => U E
     case eager@Eager(unwind@UnwindCollection(source, _, _), reasons) =>

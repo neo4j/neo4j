@@ -29,7 +29,6 @@ trait LimitingLogicalPlan extends LogicalUnaryPlan
  */
 trait ExhaustiveLogicalPlan extends LogicalPlan
 
-
 /**
  * A plan that exhausts all input from LHS before producing it's first output.
  */
