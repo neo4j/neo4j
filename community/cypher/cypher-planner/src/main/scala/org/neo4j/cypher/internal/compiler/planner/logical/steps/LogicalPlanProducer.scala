@@ -301,6 +301,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planRelationshipByTypeScan(idName: String,
                                  relType: RelTypeName,
+                                 leftNode: String,
+                                 rightNode: String,
                                  pattern: PatternRelationship,
                                  solvedHint: Option[UsingScanHint],
                                  argumentIds: Set[String],
@@ -313,10 +315,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
     )
 
+    val (firstNode, secondNode) = pattern.dir match {
+      case SemanticDirection.INCOMING => (rightNode, leftNode)
+      case _ => (leftNode, rightNode)
+    }
+
     val leafPlan = if (pattern.dir == BOTH) {
-      UndirectedRelationshipTypeScan(idName, pattern.inOrder._1, relType, pattern.inOrder._2, argumentIds, toIndexOrder(providedOrder))
+      UndirectedRelationshipTypeScan(idName, firstNode, relType, secondNode, argumentIds, toIndexOrder(providedOrder))
     } else {
-      DirectedRelationshipTypeScan(idName, pattern.inOrder._1, relType, pattern.inOrder._2, argumentIds, toIndexOrder(providedOrder))
+      DirectedRelationshipTypeScan(idName, firstNode, relType, secondNode, argumentIds, toIndexOrder(providedOrder))
     }
 
     annotate(leafPlan, solved, providedOrder, context)

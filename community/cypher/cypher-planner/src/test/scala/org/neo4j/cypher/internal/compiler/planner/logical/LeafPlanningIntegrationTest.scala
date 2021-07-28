@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
@@ -76,6 +77,7 @@ import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
@@ -839,6 +841,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     .setRelationshipCardinality("()-[:REL]->()", 10)
     .build()
 
+  private val expandConfig: StatisticsBackedLogicalPlanningConfiguration = plannerBuilder()
+    .setAllNodesCardinality(100)
+    .setRelationshipCardinality("()-[:REL]->()", 1000)
+    .build()
+
   test("should plan relationship type scan with inlined type predicate") {
     val query =
       """MATCH (a)-[r:REL]->(b)
@@ -972,6 +979,145 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .build()
 
     plan shouldEqual expectedPlan
+  }
+
+  test("should plan relationship type scan with filter for already bound start node with few relationships") {
+    val query =
+      """
+        |MATCH (a) WITH a SKIP 0
+        |MATCH (a)-[r:REL]-(b) RETURN r""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(
+      relationshipTypeScanConfig.subPlanBuilder()
+        .filter("a = anon_0")
+        .apply()
+        .|.relationshipTypeScan("(anon_0)-[r:REL]-(b)", "a")
+        .skip(0)
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should plan relationship type scan with filter for already end start node with few relationships") {
+    val query =
+      """
+        |MATCH (b) WITH b SKIP 0
+        |MATCH (a)-[r:REL]-(b) RETURN r""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(
+      relationshipTypeScanConfig.subPlanBuilder()
+        .filter("b = anon_0")
+        .apply()
+        .|.relationshipTypeScan("(a)-[r:REL]-(anon_0)", "b")
+        .skip(0)
+        .allNodeScan("b")
+        .build()
+    )
+  }
+
+  test("should plan relationship type scan with filter for already bound start and end node with few relationships") {
+    val query =
+      """
+        |MATCH (a), (b) WITH a, b SKIP 0
+        |MATCH (a)-[r:REL]-(b) RETURN r""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(
+      relationshipTypeScanConfig.subPlanBuilder()
+        .filter("a = anon_0", "b = anon_1")
+        .apply()
+        .|.relationshipTypeScan("(anon_0)-[r:REL]-(anon_1)", "a", "b")
+        .skip(0)
+        .cartesianProduct()
+        .|.allNodeScan("b")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should not plan relationship type scan with filter for already bound start node with many relationships") {
+    val query =
+      """
+        |MATCH (a) WITH a SKIP 0
+        |MATCH (a)-[r:REL]-(b) RETURN r""".stripMargin
+
+    val plan = expandConfig
+      .plan(query)
+      .stripProduceResults
+
+    withClue("Used relationshipTypeScan when not expected:") {
+      plan.treeExists {
+        case _: DirectedRelationshipTypeScan => true
+        case _: UndirectedRelationshipTypeScan => true
+      } should be(false)
+    }
+  }
+
+  test("should plan relationship type scan with filter for self loop with few relationships") {
+    val query =
+      """
+        |MATCH (a)-[r:REL]-(a) RETURN r""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(
+      relationshipTypeScanConfig.subPlanBuilder()
+        .filter("a = anon_0")
+        .relationshipTypeScan("(a)-[r:REL]-(anon_0)")
+        .build()
+    )
+  }
+
+  test("should plan relationship type scan with filter for self loop for already bound start and end node with few relationships") {
+    val query =
+      """
+        |MATCH (a) WITH a SKIP 0
+        |MATCH (a)-[r:REL]-(a) RETURN r""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(
+      relationshipTypeScanConfig.subPlanBuilder()
+        .filter("a = anon_0", "a = anon_1")
+        .apply()
+        .|.relationshipTypeScan("(anon_0)-[r:REL]-(anon_1)", "a")
+        .skip(0)
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should even plan relationship type scan with filter for self loop with many relationships") {
+    val query =
+      """
+        |MATCH (a)-[r:REL]-(a) RETURN r""".stripMargin
+
+    val plan = expandConfig
+      .plan(query)
+      .stripProduceResults
+
+    // The alternative would be AllNodeScan->ExpandInto and ExpandInto is very expensive
+    plan should equal(
+      expandConfig.subPlanBuilder()
+        .filter("a = anon_0")
+        .relationshipTypeScan("(a)-[r:REL]-(anon_0)")
+        .build()
+    )
   }
 
   test("should plan additional filter after nodeIndexSeek with distance seekable predicate") {

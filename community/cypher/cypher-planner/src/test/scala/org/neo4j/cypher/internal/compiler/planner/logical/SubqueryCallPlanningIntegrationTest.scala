@@ -674,7 +674,7 @@ class SubqueryCallPlanningIntegrationTest
   test("should not plan count store lookup in correlated subquery when node-variable is already bound") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .setRelationshipCardinality("()-[:REL]->()", 10000)
       .build()
 
     val query =

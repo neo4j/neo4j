@@ -133,7 +133,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
   private def plannerConfigForMergeOnExistingVariableTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBuilder()
       .setAllNodesCardinality(100)
-      .setRelationshipCardinality("()-[:T]->()", 100)
+      .setRelationshipCardinality("()-[:T]->()", 10000)
       .build()
 
   test("should not plan two create nodes when they are already in scope when creating a relationship") {

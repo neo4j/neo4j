@@ -260,32 +260,30 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
 
   test("should not (yet) plan relationship index scan with filter for already bound start node") {
     val planner = plannerBuilder().build()
-    planner.plan(
+    val plan = planner.plan(
       """MATCH (a) WITH a SKIP 0
-        |MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r""".stripMargin) should equal(
-      planner.planBuilder()
-        .produceResults("r")
-        .filter("r.prop IS NOT NULL")
-        .expandAll("(a)-[r:REL]-(b)")
-        .skip(0)
-        .allNodeScan("a")
-        .build()
-    )
+        |MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r""".stripMargin)
+
+    withClue("Used relationshipIndexScan when not expected:") {
+      plan.treeExists {
+        case _: DirectedRelationshipIndexScan => true
+        case _: UndirectedRelationshipIndexScan => true
+      } should be(false)
+    }
   }
 
   test("should not (yet) plan relationship index scan with filter for already bound end node") {
     val planner = plannerBuilder().build()
-    planner.plan(
+    val plan = planner.plan(
       """MATCH (b) WITH b SKIP 0
-        |MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r""".stripMargin) should equal(
-      planner.planBuilder()
-        .produceResults("r")
-        .filter("r.prop IS NOT NULL")
-        .expandAll("(b)-[r:REL]-(a)")
-        .skip(0)
-        .allNodeScan("b")
-        .build()
-    )
+        |MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r""".stripMargin)
+
+    withClue("Used relationshipIndexScan when not expected:") {
+      plan.treeExists {
+        case _: DirectedRelationshipIndexScan => true
+        case _: UndirectedRelationshipIndexScan => true
+      } should be(false)
+    }
   }
 
   test("should not plan relationship index scan for already bound relationship variable") {
