@@ -27,7 +27,6 @@ import java.util.Objects;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodePropertyIndexScan;
-import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -110,7 +109,7 @@ class NodePropertyIndexScanPartitionedScanTestSuite
                 {
                     final var labelId = labelAndPropKeyCombination.first();
                     final var propKeyIds = labelAndPropKeyCombination.other();
-                    final var assignedPropValues = new Value[propKeyIds.length];
+                    final var assignedProperties = new PropertyRecord[propKeyIds.length];
 
                     final var nodeId = write.nodeCreate();
                     if ( write.nodeAddLabel( nodeId, labelId ) )
@@ -120,16 +119,15 @@ class NodePropertyIndexScanPartitionedScanTestSuite
                             if ( propValues.hasNext() )
                             {
                                 // when   properties are created
-                                final var propKeyId = propKeyIds[i];
-                                final var value = createValue( propValues.next() );
-                                write.nodeSetProperty( nodeId, propKeyId, value );
+                                final var prop = createRandomPropertyRecord( random, propKeyIds[i], propValues.next() );
+                                write.nodeSetProperty( nodeId, prop.id, prop.value );
                                 numberOfCreatedProperties++;
-                                assignedPropValues[i] = value;
+                                assignedProperties[i] = prop;
                                 // when   and tracked against queries
-                                nodesInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( labelId, propKeyId ) ) ).add( nodeId );
+                                nodesInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( labelId, prop.id ) ) ).add( nodeId );
                             }
                         }
-                        if ( Arrays.stream( assignedPropValues ).allMatch( Objects::nonNull ) )
+                        if ( Arrays.stream( assignedProperties ).allMatch( Objects::nonNull ) )
                         {
                             nodesInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( labelId, propKeyIds ) ) ).add( nodeId );
                         }

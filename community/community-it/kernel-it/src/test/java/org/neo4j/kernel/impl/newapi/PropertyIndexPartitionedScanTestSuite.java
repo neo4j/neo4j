@@ -22,18 +22,24 @@ package org.neo4j.kernel.impl.newapi;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
@@ -42,6 +48,10 @@ import org.neo4j.values.storable.Values;
 abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends Cursor>
         implements PartitionedScanTestSuite.TestSuite<QUERY,CURSOR>
 {
+    // range for range based queries, other value type ranges are calculated from this for consistency
+    // as using an int as source of values, ~half of ints will be covered by this range
+    private static final Pair<Integer,Integer> RANGE = Pair.of( Integer.MIN_VALUE / 2, Integer.MAX_VALUE / 2 );
+
     private final IndexType index;
 
     PropertyIndexPartitionedScanTestSuite( IndexType index )
@@ -97,83 +107,191 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
             this.factory = (PartitionedScanFactories.PropertyIndex<QUERY,CURSOR>) testSuite.getFactory();
         }
 
-        protected Value createValue( int value )
+    }
+
+    protected static class PropertyRecord
+    {
+        final int id;
+        final Value value;
+        final ValueType type;
+
+        PropertyRecord( int id, Value value, ValueType type )
         {
-            final var type = random.among( ValueTypes.values() );
-            return type.toValue( value );
+            this.id = id;
+            this.value = value;
+            this.type = type;
         }
     }
 
-    protected enum ValueTypes
+    protected static PropertyRecord createRandomPropertyRecord( RandomSupport random, int propKeyId, int value )
+    {
+        final var type = random.among( ValueType.values() );
+        return new PropertyRecord( propKeyId, type.toValue( value ), type );
+    }
+
+    protected static Stream<PropertyIndexQuery> queries( PropertyRecord prop )
+    {
+        if ( prop == null )
+        {
+            return Stream.of();
+        }
+
+        final var general = Stream.of(
+                PropertyIndexQuery.exists( prop.id ),
+                PropertyIndexQuery.exact( prop.id, prop.value ),
+                PropertyIndexQuery.range( prop.id, prop.type.toValue( RANGE.first() ), true, prop.type.toValue( RANGE.other() ), false ) );
+
+        final var text = Stream.of(
+                PropertyIndexQuery.stringPrefix( prop.id, Values.utf8Value( "1" ) ),
+                PropertyIndexQuery.stringSuffix( prop.id, Values.utf8Value( "1" ) ),
+                PropertyIndexQuery.stringContains( prop.id, Values.utf8Value( "1" ) ) );
+
+        final var queries = prop.type == ValueType.TEXT
+                            ? Stream.concat( general, text )
+                            : general;
+
+        return queries.filter( query -> query.acceptsValue( prop.value ) );
+    }
+
+    protected static Stream<PropertyIndexQuery[]> queries( PropertyRecord... props )
+    {
+        final var allSingleQueries = Arrays.stream( props )
+                                           .map( PropertyIndexPartitionedScanTestSuite::queries )
+                                           .map( queries -> queries.collect( Collectors.toUnmodifiableList() ) )
+                                           .collect( Collectors.toUnmodifiableList() );
+
+        // cartesian product of all single queries that match
+        Stream<List<PropertyIndexQuery>> compositeQueries = Stream.of( List.of() );
+        for ( final var singleQueries : allSingleQueries )
+        {
+            compositeQueries = compositeQueries.flatMap( prev ->
+                singleQueries.stream().map( extra ->
+                {
+                    final var prevWithExtra = new ArrayList<>( prev );
+                    prevWithExtra.add( extra );
+                    return prevWithExtra;
+                } ) );
+        }
+
+        return compositeQueries.map( compositeQuery -> compositeQuery.toArray( PropertyIndexQuery[]::new ) );
+    }
+
+    protected enum ValueType
     {
         NUMBER
         {
             @Override
-            protected Integer toValueObject( int value )
+            protected Integer createUnderlyingValue( int value )
             {
                 return value;
             }
         },
 
-        BOOLEAN
+        NUMBER_ARRAY
         {
             @Override
-            protected Boolean toValueObject( int value )
+            protected Integer[] createUnderlyingValue( int value )
             {
-                return value % 2 == 0;
+                return splitNumber( value ).mapToObj( NUMBER::createUnderlyingValue )
+                                           .map( Integer.class::cast )
+                                           .toArray( Integer[]::new );
             }
         },
 
         TEXT
         {
             @Override
-            protected String toValueObject( int value )
+            protected String createUnderlyingValue( int value )
             {
                 return String.valueOf( value );
+            }
+        },
+
+        TEXT_ARRAY
+        {
+            @Override
+            protected String[] createUnderlyingValue( int value )
+            {
+                return splitNumber( value ).mapToObj( TEXT::createUnderlyingValue )
+                                           .map( String.class::cast )
+                                           .toArray( String[]::new );
+            }
+        },
+
+        GEOMETRY
+        {
+            @Override
+            protected PointValue createUnderlyingValue( int value )
+            {
+                return Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                                          splitNumber( value ).asDoubleStream().toArray() );
+            }
+        },
+
+        GEOMETRY_ARRAY
+        {
+            @Override
+            protected PointValue[] createUnderlyingValue( int value )
+            {
+                return splitNumber( value ).mapToObj( GEOMETRY::createUnderlyingValue )
+                                           .map( PointValue.class::cast )
+                                           .toArray( PointValue[]::new );
             }
         },
 
         TEMPORAL
         {
             @Override
-            protected ZonedDateTime toValueObject( int value )
+            protected ZonedDateTime createUnderlyingValue( int value )
             {
                 return ZonedDateTime.ofInstant( Instant.ofEpochSecond( value ), ZoneOffset.UTC );
             }
         },
 
-        POINT
+        TEMPORAL_ARRAY
         {
             @Override
-            protected PointValue toValueObject( int value )
+            protected ZonedDateTime[] createUnderlyingValue( int value )
             {
-                final int[] coords = splitNumber( value );
-                return Values.pointValue( CoordinateReferenceSystem.Cartesian, Arrays.stream( coords ).asDoubleStream().toArray() );
+                return splitNumber( value ).mapToObj( TEMPORAL::createUnderlyingValue )
+                                           .map( ZonedDateTime.class::cast )
+                                           .toArray( ZonedDateTime[]::new );
             }
         },
 
-        ARRAY
+        BOOLEAN
         {
             @Override
-            protected int[] toValueObject( int value )
+            protected Boolean createUnderlyingValue( int value )
             {
-                return splitNumber( value );
+                return value % 2 == 0;
+            }
+        },
+
+        BOOLEAN_ARRAY
+        {
+            @Override
+            protected Boolean[] createUnderlyingValue( int value )
+            {
+                return splitNumber( value ).mapToObj( BOOLEAN::createUnderlyingValue )
+                                           .map( Boolean.class::cast )
+                                           .toArray( Boolean[]::new );
             }
         };
 
-        protected abstract Object toValueObject( int value );
+        protected abstract Object createUnderlyingValue( int value );
 
-        protected int[] splitNumber( int value )
+        protected IntStream splitNumber( int value )
         {
             final int mask = Short.MAX_VALUE;
             final int x = value & mask;
             final int y = (value & ~mask) >> Short.SIZE;
-            return new int[]{x, y};
+            return IntStream.of( x, y );
         }
 
         public Value toValue( int value )
         {
-            return Values.of( toValueObject( value ) );
+            return Values.of( createUnderlyingValue( value ) );
         }
     }
 

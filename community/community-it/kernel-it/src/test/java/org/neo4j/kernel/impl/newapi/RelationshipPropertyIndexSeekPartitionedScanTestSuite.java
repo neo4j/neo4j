@@ -25,7 +25,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipPropertyIndexSeek;
-import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -107,7 +106,7 @@ class RelationshipPropertyIndexSeekPartitionedScanTestSuite
                 {
                     final var relTypeId = relTypeAndPropKeyCombination.first();
                     final var propKeyIds = relTypeAndPropKeyCombination.other();
-                    final var assignedPropValues = new Value[propKeyIds.length];
+                    final var assignedProperties = new PropertyRecord[propKeyIds.length];
 
                     final var relId = write.relationshipCreate( write.nodeCreate(), relTypeId, write.nodeCreate() );
                     for ( int i = 0; i < propKeyIds.length; i++ )
@@ -115,18 +114,17 @@ class RelationshipPropertyIndexSeekPartitionedScanTestSuite
                         if ( propValues.hasNext() )
                         {
                             // when   properties are created
-                            final var propKeyId = propKeyIds[i];
-                            final var value = createValue( propValues.next() );
-                            write.relationshipSetProperty( relId, propKeyId, value );
+                            final var prop = createRandomPropertyRecord( random, propKeyIds[i], propValues.next() );
+                            write.relationshipSetProperty( relId, prop.id, prop.value );
                             numberOfCreatedProperties++;
-                            assignedPropValues[i] = value;
+                            assignedProperties[i] = prop;
                             // when   and tracked against queries
-                            final var index = factory.getIndex( tx, relTypeId, propKeyId );
-                            tracking.generateAndTrack( relId, index, propKeyId, value, shouldIncludeExactQuery() );
+                            final var index = factory.getIndex( tx, relTypeId, prop.id );
+                            tracking.generateAndTrack( relId, shouldIncludeExactQuery(), index, prop );
                         }
                     }
                     final var index = factory.getIndex( tx, relTypeId, propKeyIds );
-                    tracking.generateAndTrack( relId, index, propKeyIds, assignedPropValues, shouldIncludeExactQuery() );
+                    tracking.generateAndTrack( relId, shouldIncludeExactQuery(), index, assignedProperties );
                 }
 
                 tx.commit();

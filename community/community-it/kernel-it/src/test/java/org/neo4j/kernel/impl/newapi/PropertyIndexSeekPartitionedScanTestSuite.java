@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -32,8 +30,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.EntityIdsMatchingQuery;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.kernel.impl.newapi.PropertyIndexSeekPartitionedScanTestSuite.PropertyKeySeekQuery;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
         extends PropertyIndexPartitionedScanTestSuite<PropertyKeySeekQuery,CURSOR>
@@ -54,17 +50,32 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
         protected EntityIdsMatchingQuery<PropertyKeySeekQuery> emptyQueries( Pair<Integer,int[]> tokenAndPropKeyCombination )
         {
             final var empty = new EntityIdsMatchingQuery<PropertyKeySeekQuery>();
-            final var tokenId = tokenAndPropKeyCombination.first();
-            final var propKeyIds = tokenAndPropKeyCombination.other();
-            for ( final var propKeyId : propKeyIds )
+            try ( var tx = beginTx() )
             {
-                empty.getOrCreate( new PropertyKeySeekQuery( factory.getIndexName( tokenId, propKeyId ),
-                                                             PropertyIndexQuery.exists( propKeyId ) ) );
+                final var tokenId = tokenAndPropKeyCombination.first();
+                final var propKeyIds = tokenAndPropKeyCombination.other();
+                for ( final var propKeyId : propKeyIds )
+                {
+                    final var index = factory.getIndex( tx, tokenId, propKeyId );
+                    Arrays.stream( ValueType.values() )
+                          .map( type -> new PropertyRecord( propKeyId, type.toValue( 0 ), type ) )
+                          .map( PropertyIndexPartitionedScanTestSuite::queries )
+                          .forEach( queries -> queries.filter( index.getCapability()::supportPartitionedScan )
+                                                      .map( query -> new PropertyKeySeekQuery( index.getName(), query ) )
+                                                      .forEach( empty::getOrCreate ) );
+                }
+
+                final var index = factory.getIndex( tx, tokenId, propKeyIds );
+                queries( Arrays.stream( propKeyIds ).mapToObj( propKeyId ->
+                    createRandomPropertyRecord( random, propKeyId, 0 ) ).toArray( PropertyRecord[]::new ) )
+                        .filter( index.getCapability()::supportPartitionedScan )
+                        .map( query -> new PropertyKeySeekQuery( index.getName(), query ) )
+                        .forEach( empty::getOrCreate );
             }
-            empty.getOrCreate( new PropertyKeySeekQuery( factory.getIndexName( tokenId, propKeyIds ),
-                                                         Arrays.stream( propKeyIds )
-                                                               .mapToObj( PropertyIndexQuery::exists )
-                                                               .toArray( PropertyIndexQuery[]::new ) ) );
+            catch ( Exception e )
+            {
+                throw new AssertionError( "failed to create empty queries", e );
+            }
             return empty;
         }
     }
@@ -93,9 +104,6 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
      */
     protected static class TrackEntityIdsMatchingQuery
     {
-        // range for range based queries, other value type ranges are calculated from this for consistency
-        // as using an int as source of values, ~half of ints will be covered by this range
-        private static final Pair<Integer,Integer> RANGE = Pair.of( Integer.MIN_VALUE / 2, Integer.MAX_VALUE / 2 );
         private final EntityIdsMatchingQuery<PropertyKeySeekQuery> tracking = new EntityIdsMatchingQuery<>();
         private final EntityIdsMatchingQuery<PropertyKeySeekQuery> included = new EntityIdsMatchingQuery<>();
 
@@ -104,71 +112,17 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
             return included;
         }
 
-        protected void generateAndTrack( long nodeId, IndexDescriptor index, int propKeyId, Value value, boolean includeExactQueries )
+        protected void generateAndTrack( long nodeId, boolean includeExactQueries, IndexDescriptor index, PropertyRecord... props )
         {
-            // always have a property exist query
-            include( add( nodeId, index.getName(), PropertyIndexQuery.exists( propKeyId ) ) );
-
-            // sometimes have an exact query, as it's likely to only match one thing
-            // track regardless, as there is a chance a previous Label/PropertyKey/Value would match (likely with boolean)
-            final var exactQuery = add( nodeId, index.getName(), PropertyIndexQuery.exact( propKeyId, value ) );
-            if ( includeExactQueries )
-            {
-                include( exactQuery );
-            }
-
-            // less trivial queries
-            Stream.concat(
-                    // ranges
-                    Arrays.stream( ValueTypes.values() )
-                          .map( type -> Pair.of( type.toValue( RANGE.first() ), type.toValue( RANGE.other() ) ) )
-                          .flatMap( range -> Stream.of(
-                                  PropertyIndexQuery.range( propKeyId, range.first(), false, range.other(), false ),
-                                  PropertyIndexQuery.range( propKeyId, range.first(), false, range.other(), true ),
-                                  PropertyIndexQuery.range( propKeyId, range.first(), true, range.other(), false ),
-                                  PropertyIndexQuery.range( propKeyId, range.first(), true, range.other(), false ) ) ),
-                    // text queries
-                    Stream.of( PropertyIndexQuery.stringPrefix( propKeyId, Values.utf8Value( "1" ) ),
-                               PropertyIndexQuery.stringPrefix( propKeyId, Values.utf8Value( "999" ) ),
-                               PropertyIndexQuery.stringSuffix( propKeyId, Values.utf8Value( "1" ) ),
-                               PropertyIndexQuery.stringSuffix( propKeyId, Values.utf8Value( "999" ) ),
-                               PropertyIndexQuery.stringContains( propKeyId, Values.utf8Value( "1" ) ),
-                               PropertyIndexQuery.stringContains( propKeyId, Values.utf8Value( "999" ) ) ) )
-                  // check if query is supported
-                  .filter( index.getCapability()::supportPartitionedScan )
-                  // if value would match query, ensure the query is tracked
-                  .filter( query -> query.acceptsValue( value ) )
-                  .forEach( query -> include( add( nodeId, index.getName(), query ) ) );
-        }
-
-        protected void generateAndTrack( long nodeId, IndexDescriptor index, int[] propKeyIds, Value[] values, boolean includeExactQueries )
-        {
-            final var capability = index.getCapability();
-
-            final var rawExistsQuery = Arrays.stream( propKeyIds )
-                                             .mapToObj( PropertyIndexQuery::exists )
-                                             .toArray( PropertyIndexQuery[]::new );
-
-            final var rawExactQuery = IntStream.range( 0, propKeyIds.length )
-                                               .mapToObj( i -> PropertyIndexQuery.exact( propKeyIds[i], values[i] ) )
-                                               .toArray( PropertyIndexQuery[]::new );
-
-            if ( Arrays.stream( values ).allMatch( Objects::nonNull ) )
-            {
-                if ( capability.supportPartitionedScan( rawExistsQuery ) )
-                {
-                    include( add( nodeId, index.getName(), rawExistsQuery ) );
-                }
-
-                if ( capability.supportPartitionedScan( rawExactQuery ) )
-                {
-                    final var exactQuery = add( nodeId, index.getName(), rawExactQuery );
-                    if ( includeExactQueries )
-                    {
-                        include( exactQuery );
-                    }
-                }
-            }
+            queries( props ).filter( index.getCapability()::supportPartitionedScan )
+                            .forEach( rawQuery ->
+                            {
+                                final var query = add( nodeId, index.getName(), rawQuery );
+                                if ( Arrays.stream( rawQuery ).noneMatch( PropertyIndexQuery.ExactPredicate.class::isInstance ) || includeExactQueries )
+                                {
+                                    include( query );
+                                }
+                            } );
         }
 
         private PropertyKeySeekQuery add( long nodeId, String indexName, PropertyIndexQuery... queries )

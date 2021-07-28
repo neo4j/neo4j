@@ -45,10 +45,8 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.WorkerContext;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
@@ -90,7 +88,12 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
     @BeforeAll
     protected void setup()
     {
+        // given  setting up the database
+        // when   the queries and expected matches are generated
         entityIdsMatchingQuery = setupDatabase();
+        // then   require there to be some queries to test against
+        assertThat( entityIdsMatchingQuery ).as( "there are queries to test against" ).isNotEmpty();
+
         maxNumberOfPartitions = calculateMaxNumberOfPartitions( entityIdsMatchingQuery.queries() );
     }
 

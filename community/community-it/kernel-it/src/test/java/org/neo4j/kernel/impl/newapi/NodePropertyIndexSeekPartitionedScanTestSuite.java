@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Nested;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodePropertyIndexSeek;
-import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -106,7 +105,7 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
                 {
                     final var labelId = labelAndPropKeyCombination.first();
                     final var propKeyIds = labelAndPropKeyCombination.other();
-                    final var assignedPropValues = new Value[propKeyIds.length];
+                    final var assignedProperties = new PropertyRecord[propKeyIds.length];
 
                     final var nodeId = write.nodeCreate();
                     if ( write.nodeAddLabel( nodeId, labelId ) )
@@ -116,18 +115,17 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
                             if ( propValues.hasNext() )
                             {
                                 // when   properties are created
-                                final var propKeyId = propKeyIds[i];
-                                final var value = createValue( propValues.next() );
-                                write.nodeSetProperty( nodeId, propKeyId, value );
+                                final var prop = createRandomPropertyRecord( random, propKeyIds[i], propValues.next() );
+                                write.nodeSetProperty( nodeId, prop.id, prop.value );
                                 numberOfCreatedProperties++;
-                                assignedPropValues[i] = value;
+                                assignedProperties[i] = prop;
                                 // when   and tracked against queries
-                                final var index = factory.getIndex( tx, labelId, propKeyId );
-                                tracking.generateAndTrack( nodeId, index, propKeyId, value, shouldIncludeExactQuery() );
+                                final var index = factory.getIndex( tx, labelId, prop.id );
+                                tracking.generateAndTrack( nodeId, shouldIncludeExactQuery(), index, prop );
                             }
                         }
                         final var index = factory.getIndex( tx, labelId, propKeyIds );
-                        tracking.generateAndTrack( nodeId, index, propKeyIds, assignedPropValues, shouldIncludeExactQuery() );
+                        tracking.generateAndTrack( nodeId, shouldIncludeExactQuery(), index, assignedProperties );
                     }
                 }
 

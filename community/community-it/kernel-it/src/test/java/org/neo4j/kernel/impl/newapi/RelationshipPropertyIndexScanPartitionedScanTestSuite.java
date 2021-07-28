@@ -28,7 +28,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipPropertyIndexScan;
-import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -111,7 +110,7 @@ class RelationshipPropertyIndexScanPartitionedScanTestSuite
                 {
                     final var relTypeId = relTypeAndPropKeyCombination.first();
                     final var propKeyIds = relTypeAndPropKeyCombination.other();
-                    final var assignedPropValues = new Value[propKeyIds.length];
+                    final var assignedProperties = new PropertyRecord[propKeyIds.length];
 
                     final var relId = write.relationshipCreate( write.nodeCreate(), relTypeId, write.nodeCreate() );
                     for ( int i = 0; i < propKeyIds.length; i++ )
@@ -119,16 +118,15 @@ class RelationshipPropertyIndexScanPartitionedScanTestSuite
                         if ( propValues.hasNext() )
                         {
                             // when   properties are created
-                            final var propKeyId = propKeyIds[i];
-                            final var value = createValue( propValues.next() );
-                            write.relationshipSetProperty( relId, propKeyId, value );
+                            final var prop = createRandomPropertyRecord( random, propKeyIds[i], propValues.next() );
+                            write.relationshipSetProperty( relId, prop.id, prop.value );
                             numberOfCreatedProperties++;
-                            assignedPropValues[i] = value;
+                            assignedProperties[i] = prop;
                             // when   and tracked against queries
-                            relsInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( relTypeId, propKeyId ) ) ).add( relId );
+                            relsInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( relTypeId, prop.id ) ) ).add( relId );
                         }
                     }
-                    if ( Arrays.stream( assignedPropValues ).allMatch( Objects::nonNull ) )
+                    if ( Arrays.stream( assignedProperties ).allMatch( Objects::nonNull ) )
                     {
                         relsInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( relTypeId, propKeyIds ) ) ).add( relId );
                     }
