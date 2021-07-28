@@ -19,6 +19,9 @@
  */
 package org.neo4j.procedure.impl;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -54,8 +57,8 @@ public class ProcedureRegistry
     private final ProcedureHolder<CallableProcedure> procedures = new ProcedureHolder<>();
     private final ProcedureHolder<CallableUserFunction> functions = new ProcedureHolder<>();
     private final ProcedureHolder<CallableUserAggregationFunction> aggregationFunctions = new ProcedureHolder<>();
-    private final Set<Integer> builtInFunctionIds = new HashSet<>();
-    private final Set<Integer> builtInAggregatingFunctionIds = new HashSet<>();
+    private final MutableIntSet builtInFunctionIds = new IntHashSet();
+    private final MutableIntSet builtInAggregatingFunctionIds = new IntHashSet();
 
     /**
      * Register a new procedure.
