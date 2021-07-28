@@ -85,11 +85,15 @@ public class FusionIndexCapability implements IndexCapability
     public boolean supportPartitionedScan( IndexQuery... queries )
     {
         Preconditions.requireNoNullElements( queries );
+        if ( Arrays.stream( queries ).anyMatch( PropertyIndexQuery.ExistsPredicate.class::isInstance ) )
+        {
+            return false;
+        }
         final var propertyIndexQueries = Arrays.stream( queries ).map( PropertyIndexQuery.class::cast ).toArray( PropertyIndexQuery[]::new );
         final var slot = slotSelector.selectSlot( propertyIndexQueries, PropertyIndexQuery::valueCategory );
         if ( slot == null )
         {
-            return propertyIndexQueries[0] instanceof PropertyIndexQuery.ExistsPredicate;
+            return false;
         }
         return instanceSelector.select( slot ).supportPartitionedScan( queries );
     }

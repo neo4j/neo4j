@@ -41,8 +41,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
     public FusionSupportPartitionedScanTest()
     {
         super( capability(), supports(
-                Query.EXISTS,
-
                 Query.EXACT_NUMBER,
                 Query.EXACT_NUMBER_ARRAY,
                 Query.EXACT_TEXT_ARRAY,
@@ -61,9 +59,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.RANGE_BOOLEAN,
                 Query.RANGE_BOOLEAN_ARRAY,
 
-                Query.COMPOSITE_EXISTS_EXISTS,
-
-                Query.COMPOSITE_EXACT_NUMBER_EXISTS,
                 Query.COMPOSITE_EXACT_NUMBER_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_NUMBER_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_NUMBER_EXACT_TEXT,
@@ -84,7 +79,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_NUMBER_RANGE_BOOLEAN_ARRAY,
                 Query.COMPOSITE_EXACT_NUMBER_STRING_PREFIX,
 
-                Query.COMPOSITE_EXACT_NUMBER_ARRAY_EXISTS,
                 Query.COMPOSITE_EXACT_NUMBER_ARRAY_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_NUMBER_ARRAY_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_NUMBER_ARRAY_EXACT_TEXT,
@@ -105,7 +99,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_NUMBER_ARRAY_RANGE_BOOLEAN_ARRAY,
                 Query.COMPOSITE_EXACT_NUMBER_ARRAY_STRING_PREFIX,
 
-                Query.COMPOSITE_EXACT_TEXT_EXISTS,
                 Query.COMPOSITE_EXACT_TEXT_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_TEXT_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_TEXT_EXACT_TEXT,
@@ -126,7 +119,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_TEXT_RANGE_BOOLEAN_ARRAY,
                 Query.COMPOSITE_EXACT_TEXT_STRING_PREFIX,
 
-                Query.COMPOSITE_EXACT_TEXT_ARRAY_EXISTS,
                 Query.COMPOSITE_EXACT_TEXT_ARRAY_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_TEXT_ARRAY_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_TEXT_ARRAY_EXACT_TEXT,
@@ -147,7 +139,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_TEXT_ARRAY_RANGE_BOOLEAN_ARRAY,
                 Query.COMPOSITE_EXACT_TEXT_ARRAY_STRING_PREFIX,
 
-                Query.COMPOSITE_EXACT_GEOMETRY_EXISTS,
                 Query.COMPOSITE_EXACT_GEOMETRY_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_GEOMETRY_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_GEOMETRY_EXACT_TEXT,
@@ -168,7 +159,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_GEOMETRY_RANGE_BOOLEAN_ARRAY,
                 Query.COMPOSITE_EXACT_GEOMETRY_STRING_PREFIX,
 
-                Query.COMPOSITE_EXACT_GEOMETRY_ARRAY_EXISTS,
                 Query.COMPOSITE_EXACT_GEOMETRY_ARRAY_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_GEOMETRY_ARRAY_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_GEOMETRY_ARRAY_EXACT_TEXT,
@@ -189,7 +179,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_GEOMETRY_ARRAY_RANGE_BOOLEAN_ARRAY,
                 Query.COMPOSITE_EXACT_GEOMETRY_ARRAY_STRING_PREFIX,
 
-                Query.COMPOSITE_EXACT_TEMPORAL_EXISTS,
                 Query.COMPOSITE_EXACT_TEMPORAL_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_TEMPORAL_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_TEMPORAL_EXACT_TEXT,
@@ -210,7 +199,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_TEMPORAL_RANGE_BOOLEAN_ARRAY,
                 Query.COMPOSITE_EXACT_TEMPORAL_STRING_PREFIX,
 
-                Query.COMPOSITE_EXACT_TEMPORAL_ARRAY_EXISTS,
                 Query.COMPOSITE_EXACT_TEMPORAL_ARRAY_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_TEMPORAL_ARRAY_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_TEMPORAL_ARRAY_EXACT_TEXT,
@@ -231,7 +219,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_TEMPORAL_ARRAY_RANGE_BOOLEAN_ARRAY,
                 Query.COMPOSITE_EXACT_TEMPORAL_ARRAY_STRING_PREFIX,
 
-                Query.COMPOSITE_EXACT_BOOLEAN_EXISTS,
                 Query.COMPOSITE_EXACT_BOOLEAN_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_BOOLEAN_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_BOOLEAN_EXACT_TEXT,
@@ -252,7 +239,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_BOOLEAN_RANGE_BOOLEAN_ARRAY,
                 Query.COMPOSITE_EXACT_BOOLEAN_STRING_PREFIX,
 
-                Query.COMPOSITE_EXACT_BOOLEAN_ARRAY_EXISTS,
                 Query.COMPOSITE_EXACT_BOOLEAN_ARRAY_EXACT_NUMBER,
                 Query.COMPOSITE_EXACT_BOOLEAN_ARRAY_EXACT_NUMBER_ARRAY,
                 Query.COMPOSITE_EXACT_BOOLEAN_ARRAY_EXACT_TEXT,
@@ -271,18 +257,7 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                 Query.COMPOSITE_EXACT_BOOLEAN_ARRAY_RANGE_TEMPORAL_ARRAY,
                 Query.COMPOSITE_EXACT_BOOLEAN_ARRAY_RANGE_BOOLEAN,
                 Query.COMPOSITE_EXACT_BOOLEAN_ARRAY_RANGE_BOOLEAN_ARRAY,
-                Query.COMPOSITE_EXACT_BOOLEAN_ARRAY_STRING_PREFIX,
-
-                Query.COMPOSITE_RANGE_NUMBER_EXISTS,
-                Query.COMPOSITE_RANGE_NUMBER_ARRAY_EXISTS,
-                Query.COMPOSITE_RANGE_TEXT_EXISTS,
-                Query.COMPOSITE_RANGE_TEXT_ARRAY_EXISTS,
-                Query.COMPOSITE_RANGE_TEMPORAL_EXISTS,
-                Query.COMPOSITE_RANGE_TEMPORAL_ARRAY_EXISTS,
-                Query.COMPOSITE_RANGE_BOOLEAN_EXISTS,
-                Query.COMPOSITE_RANGE_BOOLEAN_ARRAY_EXISTS,
-
-                Query.COMPOSITE_STRING_PREFIX_EXISTS ) );
+                Query.COMPOSITE_EXACT_BOOLEAN_ARRAY_STRING_PREFIX ) );
     }
 
     private static IndexCapability capability()
