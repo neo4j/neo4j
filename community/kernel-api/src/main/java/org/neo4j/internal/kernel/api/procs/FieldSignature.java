@@ -124,7 +124,7 @@ public final class FieldSignature
         result.append( name );
         if ( defaultValue != null )
         {
-            result.append( " = " ).append( defaultValue.value() );
+            result.append( " = " ).append( defaultValue.javaValue() );
         }
         return result.append( " :: " ).append( type ).toString();
     }

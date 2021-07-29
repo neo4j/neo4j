@@ -24,6 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.neo4j.values.ValueMapper;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
+
 public class DefaultParameterValue
 {
     private final Object value;
@@ -38,6 +44,11 @@ public class DefaultParameterValue
     public Object value()
     {
         return value;
+    }
+
+    public Object javaValue()
+    {
+        return unifyType( value );
     }
 
     public Neo4jTypes.AnyType neo4jType()
@@ -99,7 +110,7 @@ public class DefaultParameterValue
     public String toString()
     {
         return "DefaultParameterValue{" +
-               "value=" + value +
+               "value=" + javaValue() +
                ", type=" + type +
                '}';
     }
@@ -134,5 +145,39 @@ public class DefaultParameterValue
     {
         int result = value != null ? value.hashCode() : 0;
         return 31 * result + type.hashCode();
+    }
+
+    /**
+     * Make sure we always return plain java objects here so we get a consistent signature
+     */
+    private Object unifyType( Object obj )
+    {
+        if ( obj instanceof Value )
+        {
+            return ((Value) obj).map( new ValueMapper.JavaMapper()
+            {
+                @Override
+                public Object mapPath( PathValue value )
+                {
+                    throw new UnsupportedOperationException( "Not allowed as default values " );
+                }
+
+                @Override
+                public Object mapNode( VirtualNodeValue value )
+                {
+                    throw new UnsupportedOperationException( "Not allowed as default values " );
+                }
+
+                @Override
+                public Object mapRelationship( VirtualRelationshipValue value )
+                {
+                    throw new UnsupportedOperationException( "Not allowed as default values " );
+                }
+            } );
+        }
+        else
+        {
+            return obj;
+        }
     }
 }
