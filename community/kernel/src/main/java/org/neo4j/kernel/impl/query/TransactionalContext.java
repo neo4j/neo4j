@@ -45,28 +45,59 @@ public interface TransactionalContext
     /**
      * This should be called once the query is finished, either successfully or not.
      * Should be called from the same thread the query was executing in.
+     *
+     * This does not close the underlying transaction.
      */
     void close();
 
-    // TODO document
+    /**
+     * Close and commit this context. This will propagate the commit call to the underlying transaction.
+     */
     void commit();
 
     /**
-     * Close and rollback transaction context. For cases when exception occurred during query execution and owning transaction should be rolledback
+     * Close and rollback this context. This will propagate the rollback call to the underlying transaction.
      */
     void rollback();
 
     /**
-     * This is used to terminate a currently running query. Can be called from any thread. Will roll back the current
-     * transaction if it is still open.
+     * This is used to terminate a currently running query. Can be called from any thread.
+     * Will mark the current transaction for termination if it is still open.
      */
     void terminate();
 
+    /**
+     * Commit the underlying {@link KernelTransaction} and open a new {@link KernelTransaction}.
+     * The new {@link KernelTransaction} will be integrated both in the same {@link InternalTransaction}
+     * and in this context.
+     *
+     * @return id of the committed transaction
+     */
     long commitAndRestartTx();
 
-    // TODO document
+    /**
+     * Open a new {@link InternalTransaction} with a new {@link KernelTransaction} and a new {@link Statement}.
+     * Return a new {@link TransactionalContext} that is bound to the new transaction and statement.
+     * The new transaction is called an inner transaction that is connected to the transaction of this context, which we will call the outer transaction.
+     * The connection is as follows:
+     * <ul>
+     *   <li>An outer transaction cannot commit if it is connected to an open inner transaction.</li>
+     *   <li>A termination or rollback of an outer transaction propagates to any open inner transactions.</li>
+     *   <li>The outer transaction and all connected inner transactions are connected to the same {@link ExecutingQuery}.</li>
+     * </ul>
+     * <p/>
+     * This context is still open and can continue to be used.
+     *
+     * @return the new context.
+     */
     TransactionalContext contextWithNewTransaction();
 
+    /**
+     * Make sure this context is open. If it is currently closed, acquire the {@link Statement} from the already open transaction,
+     * otherwise do nothing.
+     *
+     * @return the same instance.
+     */
     TransactionalContext getOrBeginNewIfClosed();
 
     boolean isOpen();
