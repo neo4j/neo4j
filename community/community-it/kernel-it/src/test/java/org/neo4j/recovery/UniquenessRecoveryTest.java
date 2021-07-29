@@ -378,7 +378,7 @@ public class UniquenessRecoveryTest
 
     private static void kill( int signal, Process process ) throws Exception
     {
-        int exitCode = new ProcessBuilder( "kill", "-" + signal, pidOf( process ) ).start().waitFor();
+        int exitCode = new ProcessBuilder( "/bin/sh", "-c", String.format( "kill -%s %s", signal, pidOf( process ) ) ).start().waitFor();
         if ( exitCode != 0 )
         {
             throw new IllegalStateException( "<kill -" + signal + "> failed, exit code: " + exitCode );
