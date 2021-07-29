@@ -1069,8 +1069,22 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                     value = getRecordValue( cursor, position );
                 }
                 while ( cursor.shouldRetry() );
+
+                String additionalDescription = "";
+                try
+                {
+                    if ( position == Position.STORE_VERSION )
+                    {
+                        additionalDescription = " (" + versionLongToString( value ) + ")";
+                    }
+                }
+                catch ( Exception e )
+                {
+                    // Something wrong with this value, but let's not let that hinder this logging
+                }
+
                 boolean bounds = cursor.checkAndClearBoundsFlag();
-                logger.log( position.name() + " (" + position.description() + "): " + value +
+                logger.log( position.name() + " (" + position.description() + "): " + value + additionalDescription +
                             (bounds ? " (out-of-bounds detected; value cannot be trusted)" : ""));
             }
             return false;
