@@ -25,9 +25,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -82,7 +85,20 @@ public class ExecutingQuery
     private volatile long waitTimeNanos;
 
     private HeapHighWaterMarkTracker memoryTracker;
-    private TransactionBinding transactionBinding = TransactionBinding.EMPTY;
+
+    // Accumulated statistics of transactions that have executed this query but are already committed
+    private volatile long pageHitsOfClosedTransactions;
+    // faults piggy-back on the write-barrier of the volatile hits
+    private long pageFaultsOfClosedTransactions;
+
+    // List of all transactions that are active executing this query.
+    // Needs to be thread-safe because other Threads traverse the list when calling snapshot().
+    private final Queue<TransactionBinding> openTransactionBindings = new ConcurrentLinkedQueue<>();
+    /**
+     * Database id of the last transaction binding.
+     */
+    @Nullable
+    private NamedDatabaseId namedDatabaseId;
 
     public ExecutingQuery(
             long queryId, ClientConnectionInfo clientConnection, String username, String queryText, MapValue queryParameters,
@@ -152,15 +168,52 @@ public class ExecutingQuery
             this.transactionId = transactionId;
         }
 
-        public static final TransactionBinding EMPTY =
-                new TransactionBinding( null, () -> 0L, () -> 0L, () -> 0L, -1L );
+        /**
+         * @return the number of active locks, already subtracting the initially active locks count
+         */
+        public long getActiveLocks()
+        {
+            return activeLockCount.getAsLong() - initialActiveLocks;
+        }
     }
 
     // update state
 
+    /**
+     * Called before this query (or part of this query) starts executing in a transaction.
+     * Adds a TransactionBinding used to fetch statistics from the transaction.
+     */
     public void onTransactionBound( TransactionBinding transactionBinding )
     {
-        this.transactionBinding = transactionBinding;
+        if ( this.openTransactionBindings.isEmpty() )
+        {
+            namedDatabaseId = transactionBinding.namedDatabaseId;
+        }
+        this.openTransactionBindings.add( transactionBinding );
+    }
+
+    /**
+     * Called when a transaction, that this query (or part of this query) has executed in, is about to close.
+     * Removes the TransactionBinding for that transaction, after capturing some statistics that we might need even after the transaction has closed.
+     */
+    public void onTransactionUnbound( long userTransactionId )
+    {
+        TransactionBinding foundBinding = null;
+        for ( TransactionBinding binding : this.openTransactionBindings )
+        {
+            if ( binding.transactionId == userTransactionId )
+            {
+                foundBinding = binding;
+                break;
+            }
+        }
+        if ( foundBinding != null )
+        {
+            pageFaultsOfClosedTransactions += foundBinding.faultsSupplier.getAsLong();
+            // Write volatile field last
+            pageHitsOfClosedTransactions += foundBinding.hitsSupplier.getAsLong();
+            openTransactionBindings.remove( foundBinding );
+        }
     }
 
     public void onObfuscatorReady( QueryObfuscator queryObfuscator )
@@ -247,10 +300,18 @@ public class ExecutingQuery
         // guarded by barrier - like compilationCompletedNanos
         CompilerInfo planner = status.isParsingOrPlanning() ? null : this.compilerInfo;
         List<ActiveLock> waitingOnLocks = status.isWaitingOnLocks() ? status.waitingOnLocks() : Collections.emptyList();
+
         // activeLockCount is not atomic to capture, so we capture it after the most sensitive part.
-        long totalActiveLocks = transactionBinding.activeLockCount.getAsLong();
-        // just needs to be captured at some point...
-        PageCounterValues pageCounters = new PageCounterValues( transactionBinding.hitsSupplier, transactionBinding.faultsSupplier );
+        long activeLocks = 0;
+        // Read volatile field first
+        long hits = pageHitsOfClosedTransactions;
+        long faults = pageFaultsOfClosedTransactions;
+        for ( TransactionBinding tx : openTransactionBindings )
+        {
+            activeLocks += tx.getActiveLocks();
+            hits += tx.hitsSupplier.getAsLong();
+            faults += tx.faultsSupplier.getAsLong();
+        }
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
         long compilationTimeNanos = (status.isParsingOrPlanning() ? currentTimeNanos : compilationCompletedNanos) - startTimeNanos;
@@ -258,10 +319,14 @@ public class ExecutingQuery
         cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
         waitTimeNanos += status.waitTimeNanos( currentTimeNanos );
 
+        TransactionBinding firstTransaction = openTransactionBindings.peek();
+        long firstTransactionId = firstTransaction != null ? firstTransaction.transactionId : -1L;
+
         return new QuerySnapshot(
                 this,
                 planner,
-                pageCounters,
+                hits,
+                faults,
                 NANOSECONDS.toMicros( compilationTimeNanos ),
                 NANOSECONDS.toMicros( elapsedTimeNanos ),
                 cpuTimeNanos == 0 && cpuTimeNanosWhenQueryStarted == -1 ? -1 : NANOSECONDS.toMicros( cpuTimeNanos ),
@@ -269,11 +334,11 @@ public class ExecutingQuery
                 status.name(),
                 status.toMap( currentTimeNanos ),
                 waitingOnLocks,
-                totalActiveLocks - transactionBinding.initialActiveLocks,
+                activeLocks,
                 memoryTracker.heapHighWaterMark(),
                 Optional.ofNullable( queryText ),
                 Optional.ofNullable( queryParameters ),
-                transactionBinding.transactionId
+                firstTransactionId
         );
     }
 
@@ -342,7 +407,7 @@ public class ExecutingQuery
 
     public Optional<NamedDatabaseId> databaseId()
     {
-        return Optional.ofNullable( transactionBinding.namedDatabaseId );
+        return Optional.ofNullable( namedDatabaseId );
     }
 
     public long startTimestampMillis()
@@ -420,5 +485,15 @@ public class ExecutingQuery
     public void setPreviousQuery( ExecutingQuery previousQuery )
     {
         this.previousQuery = previousQuery;
+    }
+
+    public long pageHitsOfClosedTransactions()
+    {
+        return pageHitsOfClosedTransactions;
+    }
+
+    public long pageFaultsOfClosedTransactions()
+    {
+        return pageFaultsOfClosedTransactions;
     }
 }

@@ -46,19 +46,21 @@ public class QuerySnapshot
     private final List<ActiveLock> waitingLocks;
     private final long activeLockCount;
     private final long allocatedBytes;
-    private final PageCounterValues page;
+    private final long pageHits;
+    private final long pageFaults;
     private final Optional<String> obfuscatedQueryText;
     private final Optional<MapValue> obfuscatedQueryParameters;
     private final long transactionId;
 
-    QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, PageCounterValues page, long compilationTimeMicros,
+    QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, long pageHits, long pageFaults, long compilationTimeMicros,
                    long elapsedTimeMicros, long cpuTimeMicros, long waitTimeMicros, String status,
                    Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, long allocatedBytes,
                    Optional<String> obfuscatedQueryText, Optional<MapValue> obfuscatedQueryParameters, long transactionId )
     {
         this.query = query;
         this.compilerInfo = compilerInfo;
-        this.page = page;
+        this.pageHits = pageHits;
+        this.pageFaults = pageFaults;
         this.compilationTimeMicros = compilationTimeMicros;
         this.elapsedTimeMicros = elapsedTimeMicros;
         this.cpuTimeMicros = cpuTimeMicros;
@@ -245,12 +247,12 @@ public class QuerySnapshot
 
     public long pageHits()
     {
-        return page.hits;
+        return pageHits;
     }
 
     public long pageFaults()
     {
-        return page.faults;
+        return pageFaults;
     }
 
     public List<ActiveLock> waitingLocks()

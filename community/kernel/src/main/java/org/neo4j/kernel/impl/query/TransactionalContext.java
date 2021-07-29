@@ -48,6 +48,9 @@ public interface TransactionalContext
      */
     void close();
 
+    // TODO document
+    void commit();
+
     /**
      * Close and rollback transaction context. For cases when exception occurred during query execution and owning transaction should be rolledback
      */
@@ -60,6 +63,9 @@ public interface TransactionalContext
     void terminate();
 
     long commitAndRestartTx();
+
+    // TODO document
+    TransactionalContext contextWithNewTransaction();
 
     TransactionalContext getOrBeginNewIfClosed();
 

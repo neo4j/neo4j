@@ -436,6 +436,12 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public void commit()
+        {
+            delegate.commit();
+        }
+
+        @Override
         public void rollback()
         {
             delegate.rollback();
@@ -512,6 +518,17 @@ class QueryExecutionLocksIT
         public ResourceTracker resourceTracker()
         {
             return delegate.resourceTracker();
+        }
+
+        @Override
+        public TransactionalContext contextWithNewTransaction()
+        {
+            return new TransactionalContextWrapper(
+                    delegate.contextWithNewTransaction(),
+                    recordedLocks,
+                    recordedLookupLocks,
+                    listeners
+            );
         }
     }
 

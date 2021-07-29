@@ -82,6 +82,12 @@ public class TestFabricTransactionalContext implements TransactionalContext
     }
 
     @Override
+    public void commit()
+    {
+        throw failure();
+    }
+
+    @Override
     public void rollback()
     {
         throw failure();
@@ -149,6 +155,12 @@ public class TestFabricTransactionalContext implements TransactionalContext
 
     @Override
     public ResourceTracker resourceTracker()
+    {
+        throw failure();
+    }
+
+    @Override
+    public TransactionalContext contextWithNewTransaction()
     {
         throw failure();
     }

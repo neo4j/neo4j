@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.api.ExecutingQueryFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
@@ -54,8 +55,11 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final KernelTransactionFactory transactionFactory;
     private volatile boolean isOpen = true;
 
-    private long pageHits;
-    private long pageMisses;
+    // The statisticProvider behaves different depending on whether we run a "normal" query or a "PERIODIC COMMIT" query.
+    // For normal queries we only include page hits/misses of the current transaction.
+    // For PERIODIC COMMIT we also need to include page hits/misses of any committed transactions, because a transaction
+    // can be committed/restarted at any point, even during a "profiling event".
+    private StatisticProvider statisticProvider;
 
     public Neo4jTransactionalContext( GraphDatabaseQueryService graph, InternalTransaction transaction,
             KernelStatement initialStatement, ExecutingQuery executingQuery, KernelTransactionFactory transactionFactory )
@@ -72,6 +76,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.statement = initialStatement;
         this.valueMapper = new DefaultValueMapper( transaction );
         this.transactionFactory = transactionFactory;
+
+        this.statisticProvider = new TransactionalContextStatisticProvider( kernelTransaction.executionStatistics() );
     }
 
     @Override
@@ -111,6 +117,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         {
             try
             {
+                // Unbind the new transaction/statement from the executingQuery
+                ExecutingQueryFactory.unbindFromStatement( executingQuery, statement );
                 statement.queryRegistration().unregisterExecutingQuery( executingQuery );
                 statement.close();
             }
@@ -119,6 +127,19 @@ public class Neo4jTransactionalContext implements TransactionalContext
                 statement = null;
                 isOpen = false;
             }
+        }
+    }
+
+    @Override
+    public void commit()
+    {
+        try
+        {
+            close();
+        }
+        finally
+        {
+            transaction.commit();
         }
     }
 
@@ -160,21 +181,25 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         checkNotTerminated();
 
-        collectTransactionExecutionStatistic();
-
         // (1) Remember old statement
         QueryRegistry oldQueryRegistry = statement.queryRegistration();
-        Statement oldStatement = statement;
+        KernelStatement oldStatement = statement;
         KernelTransaction oldKernelTx = transaction.kernelTransaction();
 
         // (2) Create and register new transaction
         kernelTransaction = transactionFactory.beginKernelTransaction( transactionType, securityContext, clientInfo );
         statement = (KernelStatement) kernelTransaction.acquireStatement();
+        ExecutingQueryFactory.bindToStatement( executingQuery, statement );
         statement.queryRegistration().registerExecutingQuery( executingQuery );
         transaction.setTransaction( kernelTransaction );
 
         // (3) Commit and close old transaction (and unregister as a side effect of that)
+        ExecutingQueryFactory.unbindFromStatement( executingQuery, oldStatement );
         oldQueryRegistry.unregisterExecutingQuery( executingQuery );
+
+        // Update statistic provider with new kernel transaction
+        updatePeriodicCommitStatisticProvider( kernelTransaction );
+
         try
         {
             oldStatement.close();
@@ -187,6 +212,29 @@ public class Neo4jTransactionalContext implements TransactionalContext
             transaction.rollback();
             throw new RuntimeException( t );
         }
+    }
+
+    @Override
+    public Neo4jTransactionalContext contextWithNewTransaction()
+    {
+        checkNotTerminated();
+
+        // Create new InternalTransaction, creates new KernelTransaction
+        InternalTransaction newTransaction = graph.beginTransaction( transactionType, securityContext, clientInfo );
+
+        KernelStatement newStatement = (KernelStatement) newTransaction.kernelTransaction().acquireStatement();
+        // Bind the new transaction/statement to the executingQuery
+        // TODO Can we connect/disconnect executingQuery and statement in one call?
+        ExecutingQueryFactory.bindToStatement( executingQuery, newStatement );
+        newStatement.queryRegistration().registerExecutingQuery( executingQuery );
+
+        return new Neo4jTransactionalContext(
+                graph,
+                newTransaction,
+                newStatement,
+                executingQuery,
+                transactionFactory
+        );
     }
 
     @Override
@@ -258,14 +306,15 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public StatisticProvider kernelStatisticProvider()
     {
-        return new TransactionalContextStatisticProvider( kernelTransaction().executionStatistics() );
+        return statisticProvider;
     }
 
-    private void collectTransactionExecutionStatistic()
+    /**
+     * Set a new statistic provider that captures hits/misses of the new open transaction plus any hits/misses of already committed transactions.
+     */
+    private void updatePeriodicCommitStatisticProvider( KernelTransaction kernelTransaction )
     {
-        ExecutionStatistics stats = kernelTransaction().executionStatistics();
-        pageHits += stats.pageHits();
-        pageMisses += stats.pageFaults();
+        statisticProvider = new PeriodicCommitTransactionalContextStatisticProvider( kernelTransaction.executionStatistics() );
     }
 
     @FunctionalInterface
@@ -278,6 +327,9 @@ public class Neo4jTransactionalContext implements TransactionalContext
         );
     }
 
+    /**
+     * Provide statistics using only the page hits/misses of the current transaction.
+     */
     private class TransactionalContextStatisticProvider implements StatisticProvider
     {
         private final ExecutionStatistics executionStatistics;
@@ -290,13 +342,38 @@ public class Neo4jTransactionalContext implements TransactionalContext
         @Override
         public long getPageCacheHits()
         {
-            return executionStatistics.pageHits() + pageHits;
+            return executionStatistics.pageHits();
         }
 
         @Override
         public long getPageCacheMisses()
         {
-            return executionStatistics.pageFaults() + pageMisses;
+            return executionStatistics.pageFaults();
+        }
+    }
+
+    /**
+     * Provide statistics using the page hits/misses of the current transaction and any already committed transactions.
+     */
+    private class PeriodicCommitTransactionalContextStatisticProvider implements StatisticProvider
+    {
+        private final ExecutionStatistics executionStatistics;
+
+        private PeriodicCommitTransactionalContextStatisticProvider( ExecutionStatistics executionStatistics )
+        {
+            this.executionStatistics = executionStatistics;
+        }
+
+        @Override
+        public long getPageCacheHits()
+        {
+            return executionStatistics.pageHits() + executingQuery.pageHitsOfClosedTransactions();
+        }
+
+        @Override
+        public long getPageCacheMisses()
+        {
+            return executionStatistics.pageFaults() + executingQuery.pageFaultsOfClosedTransactions();
         }
     }
 }

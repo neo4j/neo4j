@@ -85,5 +85,10 @@ public class ExecutingQueryFactory
                 statement.getTransaction().getUserTransactionId()
         ) );
     }
+
+    public static void unbindFromStatement( ExecutingQuery executingQuery, KernelStatement statement )
+    {
+        executingQuery.onTransactionUnbound( statement.getTransaction().getUserTransactionId() );
+    }
 }
 

@@ -51,7 +51,6 @@ import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
-import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -95,7 +94,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new javacompat.GraphDatabaseCypherService(graphOps)
     transactionFactory = mock[KernelTransactionFactory]
-    outerTx = mock[InternalTransaction]
+    outerTx = mock[InternalTransaction](RETURNS_DEEP_STUBS)
     val kernelTransaction = mock[KernelTransactionImplementation](RETURNS_DEEP_STUBS)
     when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
     when(kernelTransaction.acquireStatement()).thenReturn(statement)

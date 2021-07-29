@@ -45,12 +45,11 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
-import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -207,42 +206,9 @@ class Neo4jTransactionalContextTest
     }
 
     @Test
-    void accumulateExecutionStatisticOverCommitAndRestart()
-    {
-        InternalTransaction userTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
-        when( userTransaction.terminationReason() ).thenReturn( Optional.empty() );
-        var statementMock = mock( KernelStatement.class, new ReturnsDeepStubs() );
-        var transaction = mockTransaction( statementMock );
-        when( userTransaction.kernelTransaction() ).thenReturn( transaction );
-        when( transactionFactory.beginKernelTransaction( any(), any(), any() ) ).thenReturn( transaction );
-        ExecutingQuery executingQuery = mock( ExecutingQuery.class );
-        when( executingQuery.databaseId() ).thenReturn( Optional.of( namedDatabaseId ) );
-        Neo4jTransactionalContext transactionalContext = new Neo4jTransactionalContext( queryService,
-                userTransaction, statement, executingQuery, transactionFactory );
-
-        statistics.setFaults( 2 );
-        statistics.setHits( 5 );
-
-        transactionalContext.commitAndRestartTx();
-
-        statistics.setFaults( 2 );
-        statistics.setHits( 5 );
-
-        transactionalContext.commitAndRestartTx();
-
-        statistics.setFaults( 2 );
-        statistics.setHits( 5 );
-
-        StatisticProvider statisticProvider = transactionalContext.kernelStatisticProvider();
-
-        assertEquals( 6, statisticProvider.getPageCacheMisses(), "Expect to see accumulated number of page cache misses." );
-        assertEquals( 15, statisticProvider.getPageCacheHits(), "Expected to see accumulated number of page cache hits." );
-    }
-
-    @Test
     void shouldBeOpenAfterCreation()
     {
-        InternalTransaction tx = mock( InternalTransaction.class );
+        InternalTransaction tx = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
 
         Neo4jTransactionalContext context = newContext( tx );
 
@@ -252,7 +218,7 @@ class Neo4jTransactionalContextTest
     @Test
     void shouldBeTopLevelWithImplicitTx()
     {
-        InternalTransaction tx = mock( InternalTransaction.class );
+        InternalTransaction tx = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
         when( tx.transactionType() ).thenReturn( KernelTransaction.Type.IMPLICIT );
 
         Neo4jTransactionalContext context = newContext( tx );
@@ -263,7 +229,7 @@ class Neo4jTransactionalContextTest
     @Test
     void shouldNotBeTopLevelWithExplicitTx()
     {
-        InternalTransaction tx = mock( InternalTransaction.class );
+        InternalTransaction tx = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
         when( tx.transactionType() ).thenReturn( KernelTransaction.Type.EXPLICIT );
 
         Neo4jTransactionalContext context = newContext( tx );
@@ -274,7 +240,7 @@ class Neo4jTransactionalContextTest
     @Test
     void shouldNotCloseTransactionDuringTermination()
     {
-        InternalTransaction tx = mock( InternalTransaction.class );
+        InternalTransaction tx = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
         when( tx.transactionType() ).thenReturn( KernelTransaction.Type.IMPLICIT );
 
         Neo4jTransactionalContext context = newContext( tx );
@@ -288,7 +254,7 @@ class Neo4jTransactionalContextTest
     @Test
     void shouldBePossibleToCloseAfterTermination()
     {
-        InternalTransaction tx = mock( InternalTransaction.class );
+        InternalTransaction tx = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
         when( tx.transactionType() ).thenReturn( KernelTransaction.Type.IMPLICIT );
 
         Neo4jTransactionalContext context = newContext( tx );
@@ -304,7 +270,7 @@ class Neo4jTransactionalContextTest
     @Test
     void shouldBePossibleToTerminateWithoutActiveTransaction()
     {
-        InternalTransaction tx = mock( InternalTransaction.class );
+        InternalTransaction tx = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
         Neo4jTransactionalContext context = newContext( tx );
 
         context.close();
@@ -317,7 +283,7 @@ class Neo4jTransactionalContextTest
     void shouldThrowWhenRestartedAfterTermination()
     {
         MutableObject<Status> terminationReason = new MutableObject<>();
-        InternalTransaction tx = mock( InternalTransaction.class );
+        InternalTransaction tx = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
         doAnswer( invocation ->
         {
             terminationReason.setValue( Status.Transaction.Terminated );
@@ -354,7 +320,7 @@ class Neo4jTransactionalContextTest
     @Test
     void shouldNotBePossibleToCloseMultipleTimes()
     {
-        InternalTransaction tx = mock( InternalTransaction.class );
+        InternalTransaction tx = mock( InternalTransaction.class, RETURNS_DEEP_STUBS );
         Neo4jTransactionalContext context = newContext( tx );
 
         context.close();
