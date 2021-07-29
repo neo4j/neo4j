@@ -69,7 +69,7 @@ public class QueryTracingIT
         try ( var transaction = databaseAPI.beginTransaction( IMPLICIT, AUTH_DISABLED );
                 var statement = (KernelStatement) transaction.kernelTransaction().acquireStatement() )
         {
-            QueryRegistry queryRegistry = statement.queryRegistration();
+            QueryRegistry queryRegistry = statement.queryRegistry();
             assertTrue( queryRegistry.executingQuery().isEmpty() );
 
             assertThat( queries ).isEmpty();
@@ -96,12 +96,12 @@ public class QueryTracingIT
         public Stream<Result> myProc()
         {
             var statement = (KernelStatement) ((InternalTransaction) transaction).kernelTransaction().acquireStatement();
-            queries.add( statement.queryRegistration().executingQuery().get() );
+            queries.add( statement.queryRegistry().executingQuery().get() );
             try ( var result = transaction.execute( "match (n) return count(n)" ) )
             {
-                queries.add( statement.queryRegistration().executingQuery().get() );
+                queries.add( statement.queryRegistry().executingQuery().get() );
             }
-            queries.add( statement.queryRegistration().executingQuery().get() );
+            queries.add( statement.queryRegistry().executingQuery().get() );
             return Stream.of( new Result() );
         }
 

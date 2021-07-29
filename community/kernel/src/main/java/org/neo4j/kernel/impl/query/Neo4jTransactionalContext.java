@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.api.ExecutingQueryFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
@@ -119,8 +118,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
             try
             {
                 // Unbind the new transaction/statement from the executingQuery
-                ExecutingQueryFactory.unbindFromStatement( executingQuery, statement );
-                statement.queryRegistration().unregisterExecutingQuery( executingQuery );
+                statement.queryRegistry().unbindExecutingQuery( executingQuery );
                 statement.close();
             }
             finally
@@ -183,20 +181,18 @@ public class Neo4jTransactionalContext implements TransactionalContext
         checkNotTerminated();
 
         // (1) Remember old statement
-        QueryRegistry oldQueryRegistry = statement.queryRegistration();
+        QueryRegistry oldQueryRegistry = statement.queryRegistry();
         KernelStatement oldStatement = statement;
         KernelTransaction oldKernelTx = transaction.kernelTransaction();
 
         // (2) Create and register new transaction
         kernelTransaction = transactionFactory.beginKernelTransaction( transactionType, securityContext, clientInfo );
         statement = (KernelStatement) kernelTransaction.acquireStatement();
-        ExecutingQueryFactory.bindToStatement( executingQuery, statement );
-        statement.queryRegistration().registerExecutingQuery( executingQuery );
+        statement.queryRegistry().bindExecutingQuery( executingQuery );
         transaction.setTransaction( kernelTransaction );
 
         // (3) Commit and close old transaction (and unregister as a side effect of that)
-        ExecutingQueryFactory.unbindFromStatement( executingQuery, oldStatement );
-        oldQueryRegistry.unregisterExecutingQuery( executingQuery );
+        oldQueryRegistry.unbindExecutingQuery( executingQuery );
 
         // Update statistic provider with new kernel transaction
         updatePeriodicCommitStatisticProvider( kernelTransaction );
@@ -230,9 +226,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         KernelStatement newStatement = (KernelStatement) newTransaction.kernelTransaction().acquireStatement();
         // Bind the new transaction/statement to the executingQuery
-        // TODO Can we connect/disconnect executingQuery and statement in one call?
-        ExecutingQueryFactory.bindToStatement( executingQuery, newStatement );
-        newStatement.queryRegistration().registerExecutingQuery( executingQuery );
+        newStatement.queryRegistry().bindExecutingQuery( executingQuery );
         newTransaction.addCloseCallback(() -> transaction.removeInnerTransaction(newTransaction));
 
         return new Neo4jTransactionalContext(
@@ -252,7 +246,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         if ( !isOpen )
         {
             statement = (KernelStatement) kernelTransaction.acquireStatement();
-            statement.queryRegistration().registerExecutingQuery( executingQuery );
+            statement.queryRegistry().bindExecutingQuery( executingQuery );
             isOpen = true;
         }
         return this;

@@ -70,6 +70,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -891,8 +892,8 @@ class Neo4jTransactionalContextIT
         // Add data to database so that we get page hits/faults
         graphOps.executeTransactionally( "CREATE (n)" );
 
-        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
-        var ctx = createTransactionContext( outerTx );
+        var transaction = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( transaction );
         var executingQuery = ctx.executingQuery();
 
         // When
@@ -935,8 +936,8 @@ class Neo4jTransactionalContextIT
         // Add data to database so that we get page hits/faults
         graphOps.executeTransactionally( "CREATE (n)" );
 
-        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
-        var ctx = createTransactionContext( outerTx );
+        var transaction = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( transaction );
 
         var closedTxHits = 0L;
         var closedTxFaults = 0L;
@@ -965,5 +966,32 @@ class Neo4jTransactionalContextIT
         // Actual assertion
         assertThat( profileStatisticsProvider.getPageCacheHits(), equalTo( closedTxHits + lastHits ) );
         assertThat( profileStatisticsProvider.getPageCacheMisses(), equalTo( closedTxFaults + lastFaults ) );
+    }
+
+    @Test
+    void periodic_commit_executing_query_should_be_reused_after_restart()
+    {
+        // Given
+
+        var internalTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var firstKernelTx = internalTx.kernelTransaction();
+        var ctx = createTransactionContext( internalTx );
+        var firstStatement = ctx.statement();
+        //noinspection OptionalGetWithoutIsPresent
+        var firstExecutingQuery = ((KernelStatement) firstStatement).queryRegistry().executingQuery().get();
+
+        // When
+        ctx.commitAndRestartTx();
+
+        // Then
+        var secondKernelTx = internalTx.kernelTransaction();
+        var secondStatement = ctx.statement();
+        //noinspection OptionalGetWithoutIsPresent
+        var secondExecutingQuery = ((KernelStatement) secondStatement).queryRegistry().executingQuery().get();
+
+        assertThat( secondKernelTx, not( sameInstance( firstKernelTx ) ) );
+        assertThat( secondStatement, not( sameInstance( firstStatement ) ) );
+        assertThat( secondExecutingQuery, sameInstance( firstExecutingQuery ) );
+        assertFalse( firstKernelTx.isOpen() );
     }
 }

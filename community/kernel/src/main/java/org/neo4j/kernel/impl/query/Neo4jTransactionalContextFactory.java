@@ -75,7 +75,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     public final Neo4jTransactionalContext newContext( InternalTransaction tx, String queryText, MapValue queryParameters )
     {
         KernelStatement initialStatement = (KernelStatement) tx.kernelTransaction().acquireStatement();
-        var executingQuery = initialStatement.queryRegistration().startQueryExecution( queryText, queryParameters );
+        var executingQuery = initialStatement.queryRegistry().startAndBindExecutingQuery( queryText, queryParameters );
         return contextCreator.create( tx, initialStatement, executingQuery );
     }
 
@@ -83,7 +83,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     public TransactionalContext newContextForQuery( InternalTransaction tx, ExecutingQuery executingQuery )
     {
         KernelStatement initialStatement = (KernelStatement) tx.kernelTransaction().acquireStatement();
-        initialStatement.queryRegistration().startQueryExecution( executingQuery );
+        initialStatement.queryRegistry().bindExecutingQuery( executingQuery );
         return contextCreator.create( tx, initialStatement, executingQuery );
     }
 }

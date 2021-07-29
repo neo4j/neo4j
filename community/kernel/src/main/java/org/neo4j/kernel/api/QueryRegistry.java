@@ -41,25 +41,26 @@ public interface QueryRegistry
     Optional<ExecutingQuery> executingQuery();
 
     /**
-     * Registers a query, and creates the ExecutingQuery object for it.
-     */
-    ExecutingQuery startQueryExecution( String queryText, MapValue queryParameters );
-
-    /**
-     * Registers an already known query that is about to start executing
-     */
-    void startQueryExecution( ExecutingQuery executingQuery );
-
-    /**
-     * Registers an already known query to a this transaction.
+     * Creates a new {@link ExecutingQuery} to be executed and registers it.
      *
-     * This is used solely for supporting PERIODIC COMMIT which requires committing and starting new transactions
-     * and associating the same ExecutingQuery with those new transactions.
+     * @return the new ExecutingQuery
+     */
+    ExecutingQuery startAndBindExecutingQuery( String queryText, MapValue queryParameters );
+
+    /**
+     * Registers an already known query to be executed
+     */
+    void bindExecutingQuery( ExecutingQuery executingQuery );
+
+    /**
+     * Unregisters a query that was stopped
+     */
+    void unbindExecutingQuery( ExecutingQuery executingQuery );
+
+    /**
+     * Registers an already known query with a statement.
+     *
+     * This is used solely for snapshot retry. (see SnapshotExecutionEngine)
      */
     void registerExecutingQuery( ExecutingQuery executingQuery );
-
-    /**
-     * Disassociates a query with this transaction.
-     */
-    void unregisterExecutingQuery( ExecutingQuery executingQuery );
 }

@@ -102,7 +102,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         this.namedDatabaseId = namedDatabaseId;
     }
 
-    public QueryRegistry queryRegistration()
+    public QueryRegistry queryRegistry()
     {
         return queryRegistry;
     }

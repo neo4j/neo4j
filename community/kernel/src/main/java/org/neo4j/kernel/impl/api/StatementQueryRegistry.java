@@ -47,30 +47,31 @@ public class StatementQueryRegistry implements QueryRegistry
     }
 
     @Override
-    public void registerExecutingQuery( ExecutingQuery executingQuery )
-    {
-        statement.startQueryExecution( executingQuery );
-    }
-
-    @Override
-    public ExecutingQuery startQueryExecution( String queryText, MapValue queryParameters )
+    public ExecutingQuery startAndBindExecutingQuery( String queryText, MapValue queryParameters )
     {
         ExecutingQuery executingQuery = factory.createForStatement( statement, queryText, queryParameters );
-        registerExecutingQuery( executingQuery );
+        statement.startQueryExecution( executingQuery );
         return executingQuery;
     }
 
     @Override
-    public void startQueryExecution( ExecutingQuery executingQuery )
+    public void bindExecutingQuery( ExecutingQuery executingQuery )
     {
         ExecutingQueryFactory.bindToStatement( executingQuery, statement );
-        registerExecutingQuery( executingQuery );
+        statement.startQueryExecution( executingQuery );
     }
 
     @Override
-    public void unregisterExecutingQuery( ExecutingQuery executingQuery )
+    public void unbindExecutingQuery( ExecutingQuery executingQuery )
     {
+        ExecutingQueryFactory.unbindFromStatement( executingQuery, statement );
         statement.stopQueryExecution( executingQuery );
+    }
+
+    @Override
+    public void registerExecutingQuery( ExecutingQuery executingQuery )
+    {
+        statement.startQueryExecution( executingQuery );
     }
 }
 

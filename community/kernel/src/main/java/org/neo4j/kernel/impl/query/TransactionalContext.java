@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -96,6 +97,7 @@ public interface TransactionalContext
      * Make sure this context is open. If it is currently closed, acquire the {@link Statement} from the already open transaction,
      * otherwise do nothing.
      *
+     * @throws TransactionTerminatedException if the context is closed or if the transaction is marked for termination.
      * @return the same instance.
      */
     TransactionalContext getOrBeginNewIfClosed();
