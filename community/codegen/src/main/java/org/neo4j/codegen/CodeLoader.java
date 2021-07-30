@@ -67,7 +67,7 @@ class CodeLoader extends ClassLoader
         return defineClass( name, clazz.bytes(), null );
     }
 
-    protected synchronized Class<?> defineAnonymousClass( String name ) throws ClassNotFoundException
+    protected synchronized Class<?> defineAnonymousClass( String name ) throws Throwable
     {
         ByteCodes clazz = stagedClasses.remove( name );
         if ( clazz == null )

@@ -158,7 +158,7 @@ public abstract class CodeGenerator
         {
             return loader.defineAnonymousClass( name );
         }
-        catch ( ClassNotFoundException e )
+        catch ( Throwable e )
         {
             throw new IllegalStateException( "Could not find defined class.", e );
         }
