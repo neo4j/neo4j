@@ -404,7 +404,6 @@ public class IndexedIdGenerator implements IdGenerator
 
     private void prepareIdAllocation( CursorContext cursorContext )
     {
-        assertNotReadOnly();
         if ( strictlyPrioritizeFreelist )
         {
             maintenance( true, cursorContext );
