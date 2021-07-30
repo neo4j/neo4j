@@ -69,15 +69,14 @@ import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -163,7 +162,7 @@ class IndexedIdGeneratorTest
             }
             config.set( GraphDatabaseSettings.read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
 
-            assertThatThrownBy( () -> customGenerator.nextId( NULL ) ).hasCauseInstanceOf( ReadOnlyDbException.class );
+            assertDoesNotThrow( () -> customGenerator.nextId( NULL ) );
 
             customGenerator.checkpoint( NULL );
         }
@@ -172,11 +171,11 @@ class IndexedIdGeneratorTest
                 Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
         {
             reopenedGenerator.start( NO_FREE_IDS, NULL );
-            assertThatThrownBy( () -> reopenedGenerator.nextId( NULL ) ).hasCauseInstanceOf( ReadOnlyDbException.class );
+            assertDoesNotThrow( () -> reopenedGenerator.nextId( NULL ) );
 
             config.set( GraphDatabaseSettings.read_only_databases, emptySet() );
 
-            assertEquals( generatedIds, reopenedGenerator.nextId( NULL ) );
+            assertNotEquals( generatedIds, reopenedGenerator.nextId( NULL ) );
         }
     }
 
@@ -602,7 +601,7 @@ class IndexedIdGeneratorTest
     @Test
     void shouldNotNextIdIfReadOnly() throws IOException
     {
-        assertOperationThrowInReadOnlyMode( idGenerator -> () -> idGenerator.nextId( NULL ) );
+        assertOperationPermittedInReadOnlyMode( idGenerator -> () -> idGenerator.nextId( NULL ) );
     }
 
     @Test
