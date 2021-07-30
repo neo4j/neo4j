@@ -1049,10 +1049,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label")), Some(properties))), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties)))), 32.2),
-      planDescription(id, "Create", SingleChild(lhsPD), Seq(details(Seq("(x:Label)", "(x)<-[r:R]-(y)"))), Set("a", "x", "r")))
+      planDescription(id, "Create", SingleChild(lhsPD), Seq(details(Seq("(x:Label {y: 1, crs: \"cartesian\"})", "(x)<-[r:R {y: 1, crs: \"cartesian\"}]-(y)"))), Set("a", "x", "r")))
   }
 
   test("Merge") {
+    val properties = MapExpression(Seq(
+      (key("x"), number("1")),
+      (key("y"), stringLiteral("two"))))(pos)
+
     assertGood(
       attach(Merge(lhsLP, Seq(CreateNode("x", Seq.empty, None)), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)),
         Seq.empty, Seq.empty, Set.empty), 32.2),
@@ -1072,6 +1076,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
         Seq(SetLabelPattern("x", Seq(label("ON_MATCH")))), Seq(SetLabelPattern("x", Seq(label("ON_CREATE")))), Set.empty), 32.2),
       planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON MATCH SET x:ON_MATCH", "ON CREATE SET x:ON_CREATE"))), Set("a")))
+
+    assertGood(
+      attach(Merge(lhsLP, Seq(CreateNode("x", Seq.empty, Some(properties))), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties))),
+        Seq.empty, Seq.empty, Set.empty), 32.2),
+      planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x: {x: 1, y: \"two\"}), (x)<-[r:R {x: 1, y: \"two\"}]-(y)"))), Set("a")))
+
+    assertGood(
+      attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), Some(properties))), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties))),
+        Seq.empty, Seq.empty, Set.empty), 32.2),
+      planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L {x: 1, y: \"two\"}), (x)<-[r:R {x: 1, y: \"two\"}]-(y)"))), Set("a")))
 
     assertGood(
       attach(Merge(lhsLP, Seq.empty, Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)),

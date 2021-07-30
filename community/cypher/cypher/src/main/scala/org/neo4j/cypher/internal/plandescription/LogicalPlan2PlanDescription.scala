@@ -520,13 +520,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
       case Create(_, nodes, relationships) =>
         val relationshipDetails = relationships.map {
-            case CreateRelationship(idName, leftNode, relType, rightNode, direction, _) =>
-              expandExpressionDescription(leftNode, Some(idName), Seq(relType.name), rightNode, direction, 1, Some(1))
+            case CreateRelationship(idName, leftNode, relType, rightNode, direction, properties) =>
+              expandExpressionDescription(leftNode, Some(idName), Seq(relType.name), rightNode, direction, 1, Some(1), properties)
           }
-        val nodeDetails = nodes.map {
-          case CreateNode(idName, labels, _) =>
-            pretty"(${asPrettyString(idName)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
-        }
+        val nodeDetails = nodes.map(createNodeDescription)
         PlanDescriptionImpl(id, "Create", children, Seq(Details(nodeDetails ++ relationshipDetails)), variables, withRawCardinalities)
 
       case DeleteExpression(_, expression) =>
@@ -570,7 +567,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables, withRawCardinalities)
 
       case Expand(_, fromName, dir, typeNames, toName, relName, mode) =>
-        val expression = Details(expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1)))
+        val expression = Details(expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1), None))
         val modeText = mode match {
           case ExpandAll => "Expand(All)"
           case ExpandInto => "Expand(Into)"
@@ -588,7 +585,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
       case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates) =>
         val predicate = predicates.map(p => pretty" WHERE ${asPrettyString(p)}").getOrElse(pretty"")
-        val expandExpressionDesc = expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1))
+        val expandExpressionDesc = expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1), None)
         val details = Details(pretty"$expandExpressionDesc$predicate")
         val modeText = mode match {
           case ExpandAll => "OptionalExpand(All)"
@@ -630,13 +627,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
         PlanDescriptionImpl(id, "LoadCSV", children, Seq(Details(asPrettyString(variableName))), variables, withRawCardinalities)
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
-        val createNodesPretty = createNodes.map {
-          case CreateNode(node, labels, _) =>
-            pretty"(${asPrettyString(node)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
-        }
+        val createNodesPretty = createNodes.map(createNodeDescription)
         val createRelsPretty = createRelationships.map {
-          case CreateRelationship(relationship, startNode, typ, endNode, direction, _) =>
-            expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1))
+          case CreateRelationship(relationship, startNode, typ, endNode, direction, properties) =>
+            expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1), properties)
         }
         val details: Seq[PrettyString] = Seq(pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}") ++
           (if (onMatch.nonEmpty) Seq(pretty"ON MATCH ${onMatch.map(mutatingPatternString).mkPrettyString(", ")}") else Seq.empty) ++
@@ -664,7 +658,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
       case PruningVarExpand(_, fromName, dir, types, toName, min, max, maybeNodePredicate, maybeRelationshipPredicate) =>
         val maybeRelName = maybeRelationshipPredicate.map(_.variable.name)
-        val expandInfo = expandExpressionDescription(fromName, maybeRelName, types.map(_.name), toName, dir, minLength = min, maxLength = Some(max))
+        val expandInfo = expandExpressionDescription(fromName, maybeRelName, types.map(_.name), toName, dir, minLength = min, maxLength = Some(max), maybeProperties = None)
         val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate) match {
           case Some(predicateInfo) => pretty" WHERE $predicateInfo"
           case _ => pretty""
@@ -732,7 +726,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
         PlanDescriptionImpl(id, "Unwind", children, Seq(details), variables, withRawCardinalities)
 
       case VarExpand(_, fromName, dir, _, types, toName, relName, length, mode, maybeNodePredicate, maybeRelationshipPredicate) =>
-        val expandDescription = expandExpressionDescription(fromName, Some(relName), types.map(_.name), toName, dir, minLength = length.min, maxLength = length.max)
+        val expandDescription = expandExpressionDescription(fromName, Some(relName), types.map(_.name), toName, dir, minLength = length.min, maxLength = length.max, maybeProperties = None)
         val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate) match {
           case Some(predicateInfo) => pretty" WHERE $predicateInfo"
           case _ => pretty""
@@ -1130,7 +1124,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       case VarPatternLength(min, maybeMax) => (min, maybeMax)
     }
 
-    expandExpressionDescription(from, maybeRelName, relTypes, to, direction, min, maybeMax)
+    expandExpressionDescription(from, maybeRelName, relTypes, to, direction, min, maybeMax, None)
+  }
+
+  private def createNodeDescription(cn: CreateNode) = {
+    val CreateNode(node, labels, properties) = cn
+    val separator = if (labels.isEmpty) pretty": " else pretty" "
+    val labelsString = if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""
+    val propsString = properties.map(p => pretty"$separator${asPrettyString(p)}").getOrElse(pretty"")
+    pretty"(${asPrettyString(node)}$labelsString$propsString)"
   }
 
   private def expandExpressionDescription(from: String,
@@ -1139,10 +1141,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
                                           to: String,
                                           direction: SemanticDirection,
                                           minLength: Int,
-                                          maxLength: Option[Int]): PrettyString = {
+                                          maxLength: Option[Int],
+                                          maybeProperties: Option[Expression]): PrettyString = {
     val left = if (direction == SemanticDirection.INCOMING) pretty"<-" else pretty"-"
     val right = if (direction == SemanticDirection.OUTGOING) pretty"->" else pretty"-"
     val types = if (relTypes.isEmpty) pretty"" else relTypes.map(asPrettyString(_)).mkPrettyString(":", "|", "")
+    val separator = if (relTypes.isEmpty) pretty": " else pretty" "
+    val propsString = maybeProperties.map(p => pretty"$separator${asPrettyString(p)}").getOrElse(pretty"")
     val lengthDescr: PrettyString = (minLength, maxLength) match {
       case (1, Some(1)) => pretty""
       case (1, None) => pretty"*"
@@ -1150,7 +1155,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       case _ => pretty"*${asPrettyString.raw(minLength.toString)}..${asPrettyString.raw(maxLength.map(_.toString).getOrElse(""))}"
     }
     val relName = asPrettyString(maybeRelName.getOrElse(""))
-    val relInfo = if (lengthDescr == pretty"" && relTypes.isEmpty && relName.prettifiedString.isEmpty) pretty"" else pretty"[$relName$types$lengthDescr]"
+    val relInfo = if (lengthDescr == pretty"" && relTypes.isEmpty && relName.prettifiedString.isEmpty) pretty"" else pretty"[$relName$types$lengthDescr$propsString]"
     pretty"(${asPrettyString(from)})$left$relInfo$right(${asPrettyString(to)})"
   }
 
@@ -1295,13 +1300,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
   def mutatingPatternString(setOp: SimpleMutatingPattern): PrettyString = setOp match {
     case CreatePattern(nodes, relationships) =>
-      val createNodesPretty = nodes.map {
-        case CreateNode(node, labels, _) =>
-          pretty"(${asPrettyString(node)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
-      }
+      val createNodesPretty = nodes.map(createNodeDescription)
       val createRelsPretty = relationships.map {
-        case CreateRelationship(relationship, startNode, typ, endNode, direction, _) =>
-          expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1))
+        case CreateRelationship(relationship, startNode, typ, endNode, direction, properties) =>
+          expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1), properties)
       }
       pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}"
     case ir.DeleteExpression(toDelete, forced) =>
