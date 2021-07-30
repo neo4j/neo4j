@@ -83,10 +83,6 @@ public interface GlobalProcedures
 
     int[] getIdsOfAggregatingFunctionsMatching( Predicate<CallableUserAggregationFunction> predicate );
 
-    boolean isBuiltInFunction( int id );
-
-    boolean isBuiltInAggregatingFunction( int id );
-
     Set<ProcedureSignature> getAllProcedures();
 
     int[] getIdsOfProceduresMatching( Predicate<CallableProcedure> predicate );

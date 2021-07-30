@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
-import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
-case class FunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
+abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
   extends Expression with GraphElementPropertyFunctions {
 
   override def arguments: Seq[Expression] = input
@@ -42,11 +42,22 @@ case class FunctionInvocation(signature: UserFunctionSignature, input: Array[Exp
     call(query, argValues)
   }
 
-  protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue =
-    query.callFunction(signature.id, argValues, signature.allowed)
+  protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue
 
   override def toString = s"${signature.name}(${input.mkString(",")})"
+}
+
+case class BuiltInFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression]) extends FunctionInvocation(signature, input) {
+  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = query.callBuiltInFunction(signature.id, argValues)
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(FunctionInvocation(signature, input.map(a => a.rewrite(f))))
+    f(BuiltInFunctionInvocation(signature, input.map(a => a.rewrite(f))))
 }
+
+case class UserFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression]) extends FunctionInvocation(signature, input) {
+  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = query.callFunction(signature.id, argValues, signature.allowed)
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(UserFunctionInvocation(signature, input.map(a => a.rewrite(f))))
+}
+

@@ -19,9 +19,6 @@
  */
 package org.neo4j.fabric.pipeline
 
-import java.util.Optional
-import java.util.function.Supplier
-
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
@@ -63,6 +60,8 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.procedure.Mode
 
+import java.util.Optional
+import java.util.function.Supplier
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
@@ -121,6 +120,7 @@ object SignatureResolver {
       description = signature.description().asScala,
       isAggregate = false,
       id = fcn.id(),
+      fcn.signature().isBuiltIn,
       threadSafe = fcn.threadSafe()
     )
   }

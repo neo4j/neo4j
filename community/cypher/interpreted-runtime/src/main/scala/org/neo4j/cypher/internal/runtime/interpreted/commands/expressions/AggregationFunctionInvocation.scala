@@ -59,8 +59,10 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, overr
 
   override def children: Seq[AstNode[_]] = arguments
 
-  protected def call(state: QueryState): UserDefinedAggregator =
-    state.query.aggregateFunction(signature.id, signature.allowed)
+  protected def call(state: QueryState): UserDefinedAggregator = {
+    if (signature.builtIn) state.query.builtInAggregateFunction(signature.id)
+    else state.query.aggregateFunction(signature.id, signature.allowed)
+  }
 
   override def rewrite(f: Expression => Expression): Expression =
     f(AggregationFunctionInvocation(signature, arguments.map(a => a.rewrite(f))))

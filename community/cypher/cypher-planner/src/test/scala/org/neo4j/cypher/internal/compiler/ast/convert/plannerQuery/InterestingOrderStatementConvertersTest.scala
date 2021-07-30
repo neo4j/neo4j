@@ -419,6 +419,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
       description = None,
       isAggregate = false,
       id = 12,
+      builtIn = false
     ))
     val result = buildSinglePlannerQuery("WITH date() AS d RETURN d.year ORDER BY d.year",  functionLookup = Some(Map(dateName -> dateSignature)))
 

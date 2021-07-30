@@ -19,9 +19,6 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,8 +54,6 @@ public class ProcedureRegistry
     private final ProcedureHolder<CallableProcedure> procedures = new ProcedureHolder<>();
     private final ProcedureHolder<CallableUserFunction> functions = new ProcedureHolder<>();
     private final ProcedureHolder<CallableUserAggregationFunction> aggregationFunctions = new ProcedureHolder<>();
-    private final MutableIntSet builtInFunctionIds = new IntHashSet();
-    private final MutableIntSet builtInAggregatingFunctionIds = new IntHashSet();
 
     /**
      * Register a new procedure.
@@ -133,10 +128,6 @@ public class ProcedureRegistry
                         "Unable to register function, because the name `%s` is already in use.", name );
             }
         }
-        if ( builtIn )
-        {
-            builtInFunctionIds.add( functions.idOf( name ) );
-        }
     }
 
     /**
@@ -170,10 +161,6 @@ public class ProcedureRegistry
                 throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Unable to register aggregation function, because the name `%s` is already in use.", name );
             }
-        }
-        if ( builtIn )
-        {
-            builtInAggregatingFunctionIds.add( aggregationFunctions.idOf( name ) );
         }
     }
 
@@ -322,11 +309,6 @@ public class ProcedureRegistry
                         .toArray();
     }
 
-    boolean isBuiltInFunction( int id )
-    {
-        return builtInFunctionIds.contains( id );
-    }
-
     public Stream<UserFunctionSignature> getAllAggregatingFunctions()
     {
         return aggregationFunctions.all().stream().map( CallableUserAggregationFunction::signature );
@@ -340,8 +322,4 @@ public class ProcedureRegistry
                                    .toArray();
     }
 
-    boolean isBuiltInAggregatingFunction( int id )
-    {
-        return builtInAggregatingFunctionIds.contains( id );
-    }
 }

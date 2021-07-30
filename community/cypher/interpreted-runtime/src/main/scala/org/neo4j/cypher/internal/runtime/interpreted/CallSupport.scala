@@ -39,6 +39,10 @@ object CallSupport {
       transactionalContext.kernelTransaction().procedures().functionCall(id, args)
   }
 
+  def callBuiltInFunction(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue]): AnyValue = {
+    transactionalContext.kernelTransaction().procedures().builtInFunctionCall(id, args)
+  }
+
   def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                             allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     callProcedure(args, transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _, context))
@@ -57,6 +61,10 @@ object CallSupport {
 
   def aggregateFunction(transactionalContext: TransactionalContext, id: Int, allowed: Array[String]): UserDefinedAggregator = {
     userDefinedAggregator(transactionalContext.kernelTransaction().procedures().aggregationFunction(id))
+  }
+
+  def builtInAggregateFunction(transactionalContext: TransactionalContext, id: Int): UserDefinedAggregator = {
+    userDefinedAggregator(transactionalContext.kernelTransaction().procedures().builtInAggregationFunction(id))
   }
 
   private def callProcedure(args: Array[AnyValue], call: KernelProcedureCall): Iterator[Array[AnyValue]] = {

@@ -56,6 +56,7 @@ case class UserFunctionSignature(name: QualifiedName,
                                  description: Option[String],
                                  isAggregate: Boolean,
                                  id: Int,
+                                 builtIn: Boolean,
                                  threadSafe: Boolean = false) {
   override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
 }

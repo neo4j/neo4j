@@ -1010,7 +1010,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val functionSignature = UserFunctionSignature(
       QualifiedName(Seq.empty, "datetime"),
       IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
-      BooleanType.instance, None, Array.empty, None, isAggregate = false, 1
+      BooleanType.instance, None, Array.empty, None, isAggregate = false, 1, builtIn = true
     )
 
     val functionInvocation = FunctionInvocation(

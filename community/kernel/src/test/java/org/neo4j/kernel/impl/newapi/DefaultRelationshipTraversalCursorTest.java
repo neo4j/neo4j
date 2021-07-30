@@ -488,7 +488,19 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
+        public AnyValue builtInFunctionCall( int id, AnyValue[] arguments ) throws ProcedureException
+        {
+            return null;
+        }
+
+        @Override
         public UserAggregator aggregationFunction( int id )
+        {
+            return null;
+        }
+
+        @Override
+        public UserAggregator builtInAggregationFunction( int id ) throws ProcedureException
         {
             return null;
         }

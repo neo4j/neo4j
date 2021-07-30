@@ -127,6 +127,13 @@ public interface Procedures
      */
     AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException;
 
+    /** Invoke a read-only built in function by id
+     * @param id the id of the function.
+     * @param arguments the function arguments.
+     * @throws ProcedureException if there was an exception thrown during function execution.
+     */
+    AnyValue builtInFunctionCall( int id, AnyValue[] arguments ) throws ProcedureException;
+
     /**
      * Create a read-only aggregation function by id
      * @param id the id of the function
@@ -134,4 +141,13 @@ public interface Procedures
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
     UserAggregator aggregationFunction( int id ) throws ProcedureException;
+
+
+    /**
+     * Create a read-only built-in aggregation function by id
+     * @param id the id of the function
+     * @return the aggregation function
+     * @throws ProcedureException if there was an exception thrown during function execution.
+     */
+    UserAggregator builtInAggregationFunction( int id ) throws ProcedureException;
 }

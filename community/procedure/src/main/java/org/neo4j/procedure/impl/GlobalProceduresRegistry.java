@@ -322,18 +322,6 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     }
 
     @Override
-    public boolean isBuiltInFunction( int id )
-    {
-        return registry.isBuiltInFunction( id );
-    }
-
-    @Override
-    public boolean isBuiltInAggregatingFunction( int id )
-    {
-        return registry.isBuiltInAggregatingFunction( id );
-    }
-
-    @Override
     public Set<ProcedureSignature> getAllProcedures()
     {
         return registry.getAllProcedures();

@@ -79,7 +79,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaReadCore
-import org.neo4j.internal.kernel.api.SchemaWrite
 import org.neo4j.internal.kernel.api.TokenPredicate
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenReadSession
@@ -99,7 +98,6 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
@@ -1139,8 +1137,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     CallSupport.callFunction(transactionalContext.tc, id, args, allowed)
 
+  override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
+    CallSupport.callBuiltInFunction(transactionalContext.tc, id, args)
+
   override def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator =
     CallSupport.aggregateFunction(transactionalContext.tc, id, allowed)
+
+  override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
+    CallSupport.builtInAggregateFunction(transactionalContext.tc, id)
 
   private def buildPathFinder(depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                               filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): ShortestPath = {

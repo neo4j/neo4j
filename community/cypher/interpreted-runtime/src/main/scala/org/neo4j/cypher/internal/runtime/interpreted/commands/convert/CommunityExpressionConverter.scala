@@ -292,8 +292,11 @@ case class CommunityExpressionConverter(tokenContext: TokenContext, anonymousVar
         val signature = e.fcnSignature.get
         if (signature.isAggregate)
           commands.expressions.AggregationFunctionInvocation(signature, callArgumentCommands)
+        else if (signature.builtIn)
+          commands.expressions.BuiltInFunctionInvocation(signature, callArgumentCommands.toArray)
         else
-          commands.expressions.FunctionInvocation(signature, callArgumentCommands.toArray)
+          commands.expressions.UserFunctionInvocation(signature, callArgumentCommands.toArray)
+
       case _: internal.expressions.MapProjection => throw new InternalException("`MapProjection` should have been rewritten away")
       case _: internal.expressions.PatternComprehension => throw new InternalException("`PatternComprehension` should have been rewritten away")
       case _: internal.expressions.PatternExpression => throw new InternalException("`PatternExpression` should have been rewritten away")

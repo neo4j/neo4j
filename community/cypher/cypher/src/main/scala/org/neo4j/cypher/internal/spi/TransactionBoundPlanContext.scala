@@ -109,7 +109,7 @@ object TransactionBoundPlanContext {
 
       Some(UserFunctionSignature(name, input, output, deprecationInfo,
         signature.allowed(), description, isAggregate = aggregation,
-        id = fcn.id(), threadSafe = fcn.threadSafe()))
+        id = fcn.id(), signature.isBuiltIn, threadSafe = fcn.threadSafe()))
     }
   }
 }

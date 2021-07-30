@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.net.URL
-
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -68,6 +66,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
+import java.net.URL
 import scala.collection.Iterator
 
 class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
@@ -295,9 +294,15 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     translateException(tokenNameLookup, inner.callFunction(id, args, allowed))
 
+  override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
+    translateException(tokenNameLookup, inner.callBuiltInFunction(id, args))
+
   override def aggregateFunction(id: Int,
                                  allowed: Array[String]): UserDefinedAggregator =
     translateException(tokenNameLookup, inner.aggregateFunction(id, allowed))
+
+  override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
+    translateException(tokenNameLookup, inner.builtInAggregateFunction(id))
 
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean =
     translateException(tokenNameLookup, inner.isLabelSetOnNode(label, node, nodeCursor))

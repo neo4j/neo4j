@@ -19,10 +19,6 @@
  */
 package org.neo4j.fabric.eval
 
-import java.net.URL
-import java.time.Clock
-import java.util.function.Supplier
-
 import org.neo4j.common.DependencyResolver
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.evaluator.EvaluationException
@@ -80,6 +76,9 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
+import java.net.URL
+import java.time.Clock
+import java.util.function.Supplier
 import scala.collection.Iterator
 
 object StaticEvaluation {
@@ -122,6 +121,9 @@ object StaticEvaluation {
 
   private class StaticQueryContext(procedures: GlobalProcedures) extends EmptyQueryContext {
     override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
+      procedures.callFunction(new StaticProcedureContext, id, args)
+
+    override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
       procedures.callFunction(new StaticProcedureContext, id, args)
   }
 
@@ -309,6 +311,8 @@ object StaticEvaluation {
     override def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = notAvailable()
 
     override def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator = notAvailable()
+
+    override def builtInAggregateFunction(id: Int): UserDefinedAggregator = notAvailable()
 
     override def detachDeleteNode(id: Long): Int = notAvailable()
 

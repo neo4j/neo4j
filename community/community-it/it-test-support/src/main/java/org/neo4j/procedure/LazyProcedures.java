@@ -222,20 +222,6 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
-    public boolean isBuiltInFunction( int id )
-    {
-        init();
-        return globalProcedures.isBuiltInFunction( id );
-    }
-
-    @Override
-    public boolean isBuiltInAggregatingFunction( int id )
-    {
-        init();
-        return globalProcedures.isBuiltInAggregatingFunction( id );
-    }
-
-    @Override
     public Set<ProcedureSignature> getAllProcedures()
     {
         init();

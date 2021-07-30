@@ -120,6 +120,8 @@ public interface DbAccess extends EntityById
 
     AnyValue callFunction( int id, AnyValue[] args, String[] allowed );
 
+    AnyValue callBuiltInFunction( int id, AnyValue[] args );
+
     /**
      * @return `Optional.empty` if TxState has no changes.
      *         `Optional.of(true)` if the property was changed.

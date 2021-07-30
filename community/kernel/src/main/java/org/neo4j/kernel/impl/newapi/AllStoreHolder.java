@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -1019,9 +1018,21 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public AnyValue builtInFunctionCall( int id,  AnyValue[] arguments ) throws ProcedureException
+    {
+        return callBuiltInFunction( id, arguments );
+    }
+
+    @Override
     public UserAggregator aggregationFunction( int id ) throws ProcedureException
     {
         return createAggregationFunction( id );
+    }
+
+    @Override
+    public UserAggregator builtInAggregationFunction( int id ) throws ProcedureException
+    {
+        return createBuiltInAggregationFunction( id );
     }
 
     @Override
@@ -1099,7 +1110,7 @@ public class AllStoreHolder extends Read
         ktx.assertOpen();
 
         AccessMode mode = ktx.securityContext().mode();
-        if ( !globalProcedures.isBuiltInFunction( id ) && !mode.allowsExecuteFunction( id ).allowsAccess() )
+        if ( !mode.allowsExecuteFunction( id ).allowsAccess() )
         {
             String message = format( "Executing a user defined function is not allowed for %s.", ktx.securityContext().description() );
             throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException( ktx.securityContext(), message );
@@ -1115,12 +1126,18 @@ public class AllStoreHolder extends Read
         }
     }
 
+    private AnyValue callBuiltInFunction( int id, AnyValue[] input ) throws ProcedureException
+    {
+        ktx.assertOpen();
+        return globalProcedures.callFunction( prepareContext( ktx.securityContext(), ProcedureCallContext.EMPTY ), id, input );
+    }
+
     private UserAggregator createAggregationFunction( int id ) throws ProcedureException
     {
         ktx.assertOpen();
 
         AccessMode mode = ktx.securityContext().mode();
-        if ( !globalProcedures.isBuiltInAggregatingFunction( id ) && !mode.allowsExecuteAggregatingFunction( id ).allowsAccess() )
+        if ( !mode.allowsExecuteAggregatingFunction( id ).allowsAccess() )
         {
             String message = format( "Executing a user defined aggregating function is not allowed for %s.", ktx.securityContext().description() );
             throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException( ktx.securityContext(), message );
@@ -1154,6 +1171,27 @@ public class AllStoreHolder extends Read
                 }
             };
         }
+    }
+
+    private UserAggregator createBuiltInAggregationFunction( int id ) throws ProcedureException
+    {
+        ktx.assertOpen();
+
+        UserAggregator aggregator = globalProcedures.createAggregationFunction( prepareContext( ktx.securityContext(), ProcedureCallContext.EMPTY ), id );
+        return new UserAggregator()
+        {
+            @Override
+            public void update( AnyValue[] input ) throws ProcedureException
+            {
+                aggregator.update( input );
+            }
+
+            @Override
+            public AnyValue result() throws ProcedureException
+            {
+                return aggregator.result();
+            }
+        };
     }
 
     private Context prepareContext( SecurityContext securityContext, ProcedureCallContext procedureContext )

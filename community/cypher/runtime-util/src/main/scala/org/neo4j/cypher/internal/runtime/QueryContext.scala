@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.net.URL
-import java.util.Optional
-
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -64,6 +61,8 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
+import java.net.URL
+import java.util.Optional
 import scala.collection.Iterator
 
 /*
@@ -268,6 +267,8 @@ trait QueryContext extends TokenContext with DbAccess {
   def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]]
 
   def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator
+
+  def builtInAggregateFunction(id: Int): UserDefinedAggregator
 
   def graph(): GraphDatabaseQueryService
 

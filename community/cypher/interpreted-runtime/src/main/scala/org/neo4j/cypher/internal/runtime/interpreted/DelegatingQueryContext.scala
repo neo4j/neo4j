@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.net.URL
-
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -74,6 +72,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
+import java.net.URL
 import scala.collection.Iterator
 
 abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
@@ -371,9 +370,15 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     singleDbHit(inner.callFunction(id, args, allowed))
 
+  override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
+    singleDbHit(inner.callBuiltInFunction(id, args))
+
   override def aggregateFunction(id: Int,
                                  allowed: Array[String]): UserDefinedAggregator =
     singleDbHit(inner.aggregateFunction(id, allowed))
+
+  override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
+    singleDbHit(inner.builtInAggregateFunction(id))
 
   override def detachDeleteNode(node: Long): Int = {
     val deletedRelationships = inner.detachDeleteNode(node)
