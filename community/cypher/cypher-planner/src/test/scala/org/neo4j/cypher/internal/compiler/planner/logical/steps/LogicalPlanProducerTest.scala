@@ -448,7 +448,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       IndexedSeq(),
       None,
       None,
-      ProcedureReadWriteAccess(Array.empty),
+      ProcedureReadWriteAccess,
       id = 0)
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planProcedureCall(ctx.lhs, ResolvedCall(writer, Seq(), IndexedSeq())(pos), ctx.context))
@@ -460,7 +460,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       IndexedSeq(),
       None,
       None,
-      ProcedureReadOnlyAccess(Array.empty),
+      ProcedureReadOnlyAccess,
       id = 1)
 
     shouldRetainProvidedOrder(ctx =>

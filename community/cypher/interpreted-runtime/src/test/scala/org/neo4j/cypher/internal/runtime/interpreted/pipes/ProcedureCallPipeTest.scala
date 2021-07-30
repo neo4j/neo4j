@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.UUID
-
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
@@ -53,6 +51,8 @@ import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values
 import org.scalatest.mockito.MockitoSugar
 
+import java.util.UUID
+
 class ProcedureCallPipeTest
   extends CypherFunSuite
   with PipeTestSupport
@@ -62,7 +62,7 @@ class ProcedureCallPipeTest
   private val ID = 42
   private val procedureName: QualifiedName = QualifiedName(List.empty, "foo")
   private val signature: ProcedureSignature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", CTAny))),
-    None, ProcedureReadOnlyAccess(Array.empty), id = ID)
+    None, ProcedureReadOnlyAccess, id = ID)
   private val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {
@@ -72,14 +72,14 @@ class ProcedureCallPipeTest
     val pipe = ProcedureCallPipe(
       source = lhs,
       signature = signature,
-      callMode = LazyReadOnlyCallMode(emptyStringArray),
+      callMode = LazyReadOnlyCallMode,
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
       resultIndices = Seq(0 -> (("r", "r")))
     )()
 
-    val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
+    val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadOnlyAccess)
 
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       CypherRow.from("a" ->1, "r" -> "take 1/1"),
@@ -95,14 +95,14 @@ class ProcedureCallPipeTest
     val pipe = ProcedureCallPipe(
       source = lhs,
       signature = signature,
-      callMode = EagerReadWriteCallMode(emptyStringArray),
+      callMode = EagerReadWriteCallMode,
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
       resultIndices = Seq(0 -> (("r", "r")))
     )()
 
-    val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
+    val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadWriteAccess)
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       CypherRow.from("a" -> 1, "r" -> "take 1/1"),
       CypherRow.from("a" -> 2, "r" -> "take 1/2"),
@@ -117,14 +117,14 @@ class ProcedureCallPipeTest
     val pipe = ProcedureCallPipe(
       source = lhs,
       signature = signature,
-      callMode = EagerReadWriteCallMode(emptyStringArray),
+      callMode = EagerReadWriteCallMode,
       argExprs = Seq(Variable("a")),
       rowProcessing = PassThroughRow,
       resultSymbols = Seq.empty,
       resultIndices = Seq.empty
     )()
 
-    val qtx = fakeQueryContext(ID, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
+    val qtx = fakeQueryContext(ID, _ => Iterator.empty, ProcedureReadWriteAccess)
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       CypherRow.from("a" -> 1),
       CypherRow.from("a" -> 2)
@@ -143,7 +143,7 @@ class ProcedureCallPipeTest
                                result: Seq[AnyValue] => Iterator[Array[AnyValue]],
                                expectedAccessMode: ProcedureAccessMode): QueryContext = {
 
-    def doIt(id: Int, args: Array[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] = {
+    def doIt(id: Int, args: Array[AnyValue]): Iterator[Array[AnyValue]] = {
       id should equal(ID)
       args.length should be(1)
       result(args)
@@ -155,20 +155,20 @@ class ProcedureCallPipeTest
     Mockito.when(transactionalContext.databaseId).thenReturn(databaseID)
 
     val queryContext = mock[QueryContext]
-    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Array[AnyValue]](), any[Array[String]](), any[ProcedureCallContext])).thenAnswer(
+    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Array[AnyValue]](), any[ProcedureCallContext])).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
-          expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
-          doIt(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1), invocationOnMock.getArgument(2))
+          expectedAccessMode should equal(ProcedureReadOnlyAccess)
+          doIt(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1))
         }
       }
     )
 
-    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Array[AnyValue]](), any[Array[String]](), any[ProcedureCallContext])).thenAnswer(
+    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Array[AnyValue]](), any[ProcedureCallContext])).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
-          expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
-          doIt(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1), invocationOnMock.getArgument(2))
+          expectedAccessMode should equal(ProcedureReadWriteAccess)
+          doIt(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1))
         }
       }
     )

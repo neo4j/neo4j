@@ -1118,30 +1118,30 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     pathFinder.findAllPathsAutoCloseableIterator(entityAccessor.newNodeEntity(left), entityAccessor.newNodeEntity(right))
   }
 
-  override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], allowed: Array[String],
+  override def callReadOnlyProcedure(id: Int, args: Array[AnyValue],
                                      context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    CallSupport.callReadOnlyProcedure(transactionalContext.tc, id, args, allowed, context)
+    CallSupport.callReadOnlyProcedure(transactionalContext.tc, id, args, context)
 
-  override def callReadWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String],
+  override def callReadWriteProcedure(id: Int, args: Array[AnyValue],
                                       context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    CallSupport.callReadWriteProcedure(transactionalContext.tc, id, args, allowed, context)
+    CallSupport.callReadWriteProcedure(transactionalContext.tc, id, args, context)
 
-  override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String],
+  override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue],
                                         context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    CallSupport.callSchemaWriteProcedure(transactionalContext.tc, id, args, allowed, context)
+    CallSupport.callSchemaWriteProcedure(transactionalContext.tc, id, args, context)
 
-  override def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String],
+  override def callDbmsProcedure(id: Int, args: Array[AnyValue],
                                  context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    CallSupport.callDbmsProcedure(transactionalContext.tc, id, args, allowed, context)
+    CallSupport.callDbmsProcedure(transactionalContext.tc, id, args, context)
 
-  override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
-    CallSupport.callFunction(transactionalContext.tc, id, args, allowed)
+  override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
+    CallSupport.callFunction(transactionalContext.tc, id, args)
 
   override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
     CallSupport.callBuiltInFunction(transactionalContext.tc, id, args)
 
-  override def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator =
-    CallSupport.aggregateFunction(transactionalContext.tc, id, allowed)
+  override def aggregateFunction(id: Int): UserDefinedAggregator =
+    CallSupport.aggregateFunction(transactionalContext.tc, id)
 
   override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
     CallSupport.builtInAggregateFunction(transactionalContext.tc, id)

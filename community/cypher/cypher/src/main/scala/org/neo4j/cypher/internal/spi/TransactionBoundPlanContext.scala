@@ -108,7 +108,7 @@ object TransactionBoundPlanContext {
       val description = asOption(signature.description())
 
       Some(UserFunctionSignature(name, input, output, deprecationInfo,
-        signature.allowed(), description, isAggregate = aggregation,
+        description, isAggregate = aggregation,
         id = fcn.id(), signature.isBuiltIn, threadSafe = fcn.threadSafe()))
     }
   }

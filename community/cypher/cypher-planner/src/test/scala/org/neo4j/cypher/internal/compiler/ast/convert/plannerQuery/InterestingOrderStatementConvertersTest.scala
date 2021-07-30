@@ -415,7 +415,6 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
       inputSignature = IndexedSeq.empty,
       outputType = CTDate,
       deprecationInfo = None,
-      allowed = Array.empty[String],
       description = None,
       isAggregate = false,
       id = 12,

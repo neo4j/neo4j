@@ -34,8 +34,7 @@ object CallSupport {
 
   type KernelProcedureCall = Array[AnyValue] => RawIterator[Array[AnyValue], ProcedureException]
 
-  def callFunction(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
-                   allowed: Array[String]): AnyValue = {
+  def callFunction(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue]): AnyValue = {
       transactionalContext.kernelTransaction().procedures().functionCall(id, args)
   }
 
@@ -44,22 +43,22 @@ object CallSupport {
   }
 
   def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
-                            allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+                            context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     callProcedure(args, transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _, context))
 
   def callReadWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
-                             allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+                             context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallWrite(id, _, context))
 
   def callSchemaWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
-                               allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+                               context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallSchema(id, _, context))
 
   def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
-                        allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+                        context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallDbms(id, _, context))
 
-  def aggregateFunction(transactionalContext: TransactionalContext, id: Int, allowed: Array[String]): UserDefinedAggregator = {
+  def aggregateFunction(transactionalContext: TransactionalContext, id: Int): UserDefinedAggregator = {
     userDefinedAggregator(transactionalContext.kernelTransaction().procedures().aggregationFunction(id))
   }
 

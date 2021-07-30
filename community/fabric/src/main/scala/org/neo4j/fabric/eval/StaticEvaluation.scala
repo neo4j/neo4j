@@ -120,7 +120,7 @@ object StaticEvaluation {
   }
 
   private class StaticQueryContext(procedures: GlobalProcedures) extends EmptyQueryContext {
-    override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
+    override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
       procedures.callFunction(new StaticProcedureContext, id, args)
 
     override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
@@ -302,15 +302,15 @@ object StaticEvaluation {
 
     override def lockRelationships(relIds: Long*): Unit = notAvailable()
 
-    override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = notAvailable()
+    override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] = notAvailable()
 
-    override def callReadWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = notAvailable()
+    override def callReadWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] = notAvailable()
 
-    override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = notAvailable()
+    override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] = notAvailable()
 
-    override def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = notAvailable()
+    override def callDbmsProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] = notAvailable()
 
-    override def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator = notAvailable()
+    override def aggregateFunction(id: Int): UserDefinedAggregator = notAvailable()
 
     override def builtInAggregateFunction(id: Int): UserDefinedAggregator = notAvailable()
 
@@ -398,7 +398,7 @@ object StaticEvaluation {
 
     override def relationshipAsMap(id: Long, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): MapValue = notAvailable()
 
-    override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue = notAvailable()
+    override def callFunction(id: Int, args: Array[AnyValue]): AnyValue = notAvailable()
 
     override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int): Value = notAvailable()
 

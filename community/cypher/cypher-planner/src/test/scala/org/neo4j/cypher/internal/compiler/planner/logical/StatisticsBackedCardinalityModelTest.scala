@@ -211,7 +211,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     IndexedSeq(FieldSignature("int", CTInteger)),
     Some(IndexedSeq(FieldSignature("x", CTNode))),
     None,
-    ProcedureReadOnlyAccess(Array.empty),
+    ProcedureReadOnlyAccess,
     id = 0)
 
   test("standalone procedure call should have default cardinality") {

@@ -355,27 +355,26 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                memoryTracker: MemoryTracker): ClosingIterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters, memoryTracker))
 
-  override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    unknownDbHits(inner.callReadOnlyProcedure(id, args, allowed, context))
+  override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    unknownDbHits(inner.callReadOnlyProcedure(id, args, context))
 
-  override def callReadWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    unknownDbHits(inner.callReadWriteProcedure(id, args, allowed, context))
+  override def callReadWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    unknownDbHits(inner.callReadWriteProcedure(id, args, context))
 
-  override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    unknownDbHits(inner.callSchemaWriteProcedure(id, args, allowed, context))
+  override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    unknownDbHits(inner.callSchemaWriteProcedure(id, args, context))
 
-  override def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    unknownDbHits(inner.callDbmsProcedure(id, args, allowed, context))
+  override def callDbmsProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    unknownDbHits(inner.callDbmsProcedure(id, args, context))
 
-  override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
-    singleDbHit(inner.callFunction(id, args, allowed))
+  override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
+    singleDbHit(inner.callFunction(id, args))
 
   override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
     singleDbHit(inner.callBuiltInFunction(id, args))
 
-  override def aggregateFunction(id: Int,
-                                 allowed: Array[String]): UserDefinedAggregator =
-    singleDbHit(inner.aggregateFunction(id, allowed))
+  override def aggregateFunction(id: Int): UserDefinedAggregator =
+    singleDbHit(inner.aggregateFunction(id))
 
   override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
     singleDbHit(inner.builtInAggregateFunction(id))

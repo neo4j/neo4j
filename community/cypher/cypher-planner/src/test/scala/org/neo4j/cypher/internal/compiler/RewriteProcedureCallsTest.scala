@@ -54,7 +54,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
   private val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
   private val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
 
-  private val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(Array.empty[String]), id = 42)
+  private val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
   private val procLookup: QualifiedName => ProcedureSignature = _ => signature
   private val fcnLookup: QualifiedName => Option[UserFunctionSignature] = _ => None
 

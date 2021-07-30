@@ -70,7 +70,6 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
@@ -280,7 +279,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
   private def planHasDBMSProcedure(logicalPlan: LogicalPlan): Boolean =
     logicalPlan.treeExists {
-      case procCall: ProcedureCall if procCall.call.signature.accessMode.isInstanceOf[ProcedureDbmsAccess] => true
+      case procCall: ProcedureCall if procCall.call.signature.accessMode == ProcedureDbmsAccess => true
     }
 
   private def columnNames(logicalPlan: LogicalPlan): Array[String] =

@@ -262,7 +262,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
       IndexedSeq(),
       None,
       None,
-      ProcedureReadWriteAccess(Array.empty),
+      ProcedureReadWriteAccess,
       id = 0)
 
     val reader = ProcedureSignature(
@@ -270,7 +270,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
       IndexedSeq(),
       None,
       None,
-      ProcedureReadOnlyAccess(Array.empty),
+      ProcedureReadOnlyAccess,
       id = 1)
 
     val cfg = plannerBuilder()

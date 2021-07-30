@@ -73,8 +73,8 @@ class TestResolver extends Resolver {
   }
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = name match {
-    case qn@QualifiedName(Seq("test"), "proc1") => ProcedureSignature(qn, IndexedSeq(), None, None, ProcedureReadOnlyAccess(Array()), id = 0)
-    case qn@QualifiedName(Seq("test"), "proc2") => ProcedureSignature(qn, IndexedSeq(FieldSignature("in1", CTInteger)), Some(IndexedSeq(FieldSignature("foo", CTInteger))), None, ProcedureReadOnlyAccess(Array()), id = 0)
+    case qn@QualifiedName(Seq("test"), "proc1") => ProcedureSignature(qn, IndexedSeq(), None, None, ProcedureReadOnlyAccess, id = 0)
+    case qn@QualifiedName(Seq("test"), "proc2") => ProcedureSignature(qn, IndexedSeq(FieldSignature("in1", CTInteger)), Some(IndexedSeq(FieldSignature("foo", CTInteger))), None, ProcedureReadOnlyAccess, id = 0)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???

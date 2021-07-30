@@ -142,7 +142,6 @@ public interface Procedures
      */
     UserAggregator aggregationFunction( int id ) throws ProcedureException;
 
-
     /**
      * Create a read-only built-in aggregation function by id
      * @param id the id of the function

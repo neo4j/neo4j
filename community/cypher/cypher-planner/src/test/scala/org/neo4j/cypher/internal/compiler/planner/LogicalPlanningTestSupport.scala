@@ -367,7 +367,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       inputSignature = IndexedSeq.empty,
       deprecationInfo = None,
       outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),
-      accessMode = ProcedureReadOnlyAccess(Array.empty),
+      accessMode = ProcedureReadOnlyAccess,
       id = 42
     )
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(pos))

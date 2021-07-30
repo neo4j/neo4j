@@ -646,7 +646,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val qualifiedName = QualifiedName(ns.parts, name.name)
     val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
-    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(Array.empty), id = 42)
+    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
     val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
     val call = ResolvedCall(signature, Seq(varFor("a1")), callResults)(pos)
 
@@ -1010,7 +1010,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val functionSignature = UserFunctionSignature(
       QualifiedName(Seq.empty, "datetime"),
       IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
-      BooleanType.instance, None, Array.empty, None, isAggregate = false, 1, builtIn = true
+      BooleanType.instance, None, None, isAggregate = false, 1, builtIn = true
     )
 
     val functionInvocation = FunctionInvocation(

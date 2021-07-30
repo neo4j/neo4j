@@ -279,27 +279,26 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] =
     translateException(tokenNameLookup, inner.getAllConstraints())
 
-  override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    translateIterator(tokenNameLookup, inner.callReadOnlyProcedure(id, args, allowed, context))
+  override def callReadOnlyProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    translateIterator(tokenNameLookup, inner.callReadOnlyProcedure(id, args, context))
 
-  override def callReadWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    translateIterator(tokenNameLookup, inner.callReadWriteProcedure(id, args, allowed, context))
+  override def callReadWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    translateIterator(tokenNameLookup, inner.callReadWriteProcedure(id, args, context))
 
-  override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    translateIterator(tokenNameLookup, inner.callSchemaWriteProcedure(id, args, allowed, context))
+  override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    translateIterator(tokenNameLookup, inner.callSchemaWriteProcedure(id, args, context))
 
-  override def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    translateIterator(tokenNameLookup, inner.callDbmsProcedure(id, args, allowed, context))
+  override def callDbmsProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    translateIterator(tokenNameLookup, inner.callDbmsProcedure(id, args, context))
 
-  override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
-    translateException(tokenNameLookup, inner.callFunction(id, args, allowed))
+  override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
+    translateException(tokenNameLookup, inner.callFunction(id, args))
 
   override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
     translateException(tokenNameLookup, inner.callBuiltInFunction(id, args))
 
-  override def aggregateFunction(id: Int,
-                                 allowed: Array[String]): UserDefinedAggregator =
-    translateException(tokenNameLookup, inner.aggregateFunction(id, allowed))
+  override def aggregateFunction(id: Int): UserDefinedAggregator =
+    translateException(tokenNameLookup, inner.aggregateFunction(id))
 
   override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
     translateException(tokenNameLookup, inner.builtInAggregateFunction(id))

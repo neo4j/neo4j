@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import java.util.Optional
-
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
@@ -57,18 +55,19 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
 
+import java.util.Optional
 import scala.collection.JavaConverters.asScalaBufferConverter
 
 object procsHelpers {
 
   def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
-  def asCypherProcMode(mode: Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
-    case Mode.READ => ProcedureReadOnlyAccess(allowed)
-    case Mode.DEFAULT => ProcedureReadOnlyAccess(allowed)
-    case Mode.WRITE => ProcedureReadWriteAccess(allowed)
-    case Mode.SCHEMA => ProcedureSchemaWriteAccess(allowed)
-    case Mode.DBMS => ProcedureDbmsAccess(allowed)
+  def asCypherProcMode(mode: Mode): ProcedureAccessMode = mode match {
+    case Mode.READ => ProcedureReadOnlyAccess
+    case Mode.DEFAULT => ProcedureReadOnlyAccess
+    case Mode.WRITE => ProcedureReadWriteAccess
+    case Mode.SCHEMA => ProcedureSchemaWriteAccess
+    case Mode.DBMS => ProcedureDbmsAccess
 
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
@@ -106,7 +105,7 @@ object procsHelpers {
     val output = if (signature.isVoid) None else Some(
       signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
     val deprecationInfo = asOption(signature.deprecated())
-    val mode = asCypherProcMode(signature.mode(), signature.allowed())
+    val mode = asCypherProcMode(signature.mode())
     val description = asOption(signature.description())
     val warning = asOption(signature.warning())
 

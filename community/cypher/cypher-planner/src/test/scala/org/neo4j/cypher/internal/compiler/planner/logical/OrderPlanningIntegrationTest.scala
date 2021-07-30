@@ -1412,7 +1412,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       IndexedSeq(),
       None,
       None,
-      ProcedureReadOnlyAccess(Array.empty),
+      ProcedureReadOnlyAccess,
       id = 1)
 
     val nodeCount = 10000

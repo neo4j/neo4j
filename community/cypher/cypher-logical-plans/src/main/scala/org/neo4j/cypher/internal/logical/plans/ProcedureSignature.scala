@@ -52,7 +52,6 @@ case class UserFunctionSignature(name: QualifiedName,
                                  inputSignature: IndexedSeq[FieldSignature],
                                  outputType: CypherType,
                                  deprecationInfo: Option[String],
-                                 allowed: Array[String],
                                  description: Option[String],
                                  isAggregate: Boolean,
                                  id: Int,
@@ -85,22 +84,8 @@ case class FieldSignature(name: String, typ: CypherType, default: Option[AnyValu
   }
 }
 
-sealed trait ProcedureAccessMode {
-  def allowed: Array[String]
-
-  override def hashCode(): Int = this.allowed.toSet.hashCode()
-
-  override def equals(obj: scala.Any): Boolean = {
-    if(obj.getClass != this.getClass) {
-      false
-    } else {
-      val other = obj.asInstanceOf[ProcedureAccessMode]
-      this.allowed.toSet.equals(other.allowed.toSet)
-    }
-  }
-}
-
-case class ProcedureReadOnlyAccess(allowed: Array[String]) extends ProcedureAccessMode
-case class ProcedureReadWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
-case class ProcedureSchemaWriteAccess(allowed: Array[String]) extends ProcedureAccessMode
-case class ProcedureDbmsAccess(allowed: Array[String]) extends ProcedureAccessMode
+sealed trait ProcedureAccessMode
+case object ProcedureReadOnlyAccess extends ProcedureAccessMode
+case object ProcedureReadWriteAccess extends ProcedureAccessMode
+case object ProcedureSchemaWriteAccess extends ProcedureAccessMode
+case object ProcedureDbmsAccess extends ProcedureAccessMode

@@ -55,7 +55,7 @@ case class BuiltInFunctionInvocation(signature: UserFunctionSignature, input: Ar
 }
 
 case class UserFunctionInvocation(signature: UserFunctionSignature, input: Array[Expression]) extends FunctionInvocation(signature, input) {
-  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = query.callFunction(signature.id, argValues, signature.allowed)
+  override protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue = query.callFunction(signature.id, argValues)
 
   override def rewrite(f: Expression => Expression): Expression =
     f(UserFunctionInvocation(signature, input.map(a => a.rewrite(f))))

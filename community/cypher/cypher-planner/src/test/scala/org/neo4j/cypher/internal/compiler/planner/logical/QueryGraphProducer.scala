@@ -83,7 +83,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
 
-    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess(Array.empty[String]), id = 42)
+    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = 42)
     val procLookup: QualifiedName => ProcedureSignature = _ => signature
     val fcnLookup: QualifiedName => Option[UserFunctionSignature] = _ => None
 

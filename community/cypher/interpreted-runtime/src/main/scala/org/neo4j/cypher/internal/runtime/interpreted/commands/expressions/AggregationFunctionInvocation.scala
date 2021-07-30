@@ -61,7 +61,7 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, overr
 
   protected def call(state: QueryState): UserDefinedAggregator = {
     if (signature.builtIn) state.query.builtInAggregateFunction(signature.id)
-    else state.query.aggregateFunction(signature.id, signature.allowed)
+    else state.query.aggregateFunction(signature.id)
   }
 
   override def rewrite(f: Expression => Expression): Expression =

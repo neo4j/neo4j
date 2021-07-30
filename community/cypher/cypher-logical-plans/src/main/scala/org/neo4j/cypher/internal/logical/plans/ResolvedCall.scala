@@ -215,8 +215,8 @@ case class ResolvedCall(signature: ProcedureSignature,
     signature.outputSignature.map { _.map { field => field.name -> field.typ }.toMap }.getOrElse(Map.empty)
 
   override def containsNoUpdates: Boolean = signature.accessMode match {
-    case ProcedureReadOnlyAccess(_) => true
-    case ProcedureDbmsAccess(_) => true
+    case ProcedureReadOnlyAccess => true
+    case ProcedureDbmsAccess => true
     case _ => false
   }
 

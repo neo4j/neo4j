@@ -356,7 +356,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val ns = Namespace(List("my", "proc"))(pos)
     val name = ProcedureName("foo")(pos)
     val qualifiedName = QualifiedName(ns.parts, name.name)
-    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadWriteAccess(Array.empty), id = 42)
+    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadWriteAccess, id = 42)
 
     val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
 
@@ -393,7 +393,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val ns = Namespace(List("my", "proc"))(pos)
     val name = ProcedureName("foo")(pos)
     val qualifiedName = QualifiedName(ns.parts, name.name)
-    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess(Array.empty), id = 42, eager = true)
+    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess, id = 42, eager = true)
 
     val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
 
@@ -430,7 +430,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val ns = Namespace(List("my", "proc"))(pos)
     val name = ProcedureName("foo")(pos)
     val qualifiedName = QualifiedName(ns.parts, name.name)
-    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess(Array.empty), id = 42)
+    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess, id = 42)
 
     val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
 

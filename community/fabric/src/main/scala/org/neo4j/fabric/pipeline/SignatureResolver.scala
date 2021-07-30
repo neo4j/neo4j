@@ -96,7 +96,7 @@ object SignatureResolver {
           typ = asCypherType(s.neo4jType()),
           deprecated = s.isDeprecated))),
       deprecationInfo = signature.deprecated().asScala,
-      accessMode = asCypherProcMode(signature.mode(), signature.allowed()),
+      accessMode = asCypherProcMode(signature.mode()),
       description = signature.description().asScala,
       warning = signature.warning().asScala,
       eager = signature.eager(),
@@ -116,7 +116,6 @@ object SignatureResolver {
         default = s.defaultValue().asScala.map(asCypherValue))),
       outputType = asCypherType(signature.outputType()),
       deprecationInfo = signature.deprecated().asScala,
-      allowed = signature.allowed(),
       description = signature.description().asScala,
       isAggregate = false,
       id = fcn.id(),
@@ -156,12 +155,12 @@ object SignatureResolver {
     case Neo4jTypes.NTAny           => CTAny
   }
 
-  private def asCypherProcMode(mode: Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
-    case Mode.READ    => ProcedureReadOnlyAccess(allowed)
-    case Mode.DEFAULT => ProcedureReadOnlyAccess(allowed)
-    case Mode.WRITE   => ProcedureReadWriteAccess(allowed)
-    case Mode.SCHEMA  => ProcedureSchemaWriteAccess(allowed)
-    case Mode.DBMS    => ProcedureDbmsAccess(allowed)
+  private def asCypherProcMode(mode: Mode): ProcedureAccessMode = mode match {
+    case Mode.READ    => ProcedureReadOnlyAccess
+    case Mode.DEFAULT => ProcedureReadOnlyAccess
+    case Mode.WRITE   => ProcedureReadWriteAccess
+    case Mode.SCHEMA  => ProcedureSchemaWriteAccess
+    case Mode.DBMS    => ProcedureDbmsAccess
 
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)

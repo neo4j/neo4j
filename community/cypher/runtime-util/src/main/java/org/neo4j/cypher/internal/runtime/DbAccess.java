@@ -118,7 +118,7 @@ public interface DbAccess extends EntityById
 
     Value getTxStateRelationshipPropertyOrNull( long relId, int propertyKey );
 
-    AnyValue callFunction( int id, AnyValue[] args, String[] allowed );
+    AnyValue callFunction( int id, AnyValue[] args );
 
     AnyValue callBuiltInFunction( int id, AnyValue[] args );
 

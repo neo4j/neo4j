@@ -74,7 +74,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       IndexedSeq.empty,
       Some(IndexedSeq(FieldSignature("node", CTNode))),
       None,
-      ProcedureReadOnlyAccess(Array.empty),
+      ProcedureReadOnlyAccess,
       id = 0)
 
     val plan = new given {

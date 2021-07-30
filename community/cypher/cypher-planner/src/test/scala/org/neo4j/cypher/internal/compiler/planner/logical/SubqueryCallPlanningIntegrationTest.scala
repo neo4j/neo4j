@@ -395,7 +395,7 @@ class SubqueryCallPlanningIntegrationTest
       .addProcedure(
         procedureSignature("my.println")
           .withInputField("value", CTInteger)
-          .withAccessMode(ProcedureReadWriteAccess(Array.empty))
+          .withAccessMode(ProcedureReadWriteAccess)
           .build()
       )
       .build()

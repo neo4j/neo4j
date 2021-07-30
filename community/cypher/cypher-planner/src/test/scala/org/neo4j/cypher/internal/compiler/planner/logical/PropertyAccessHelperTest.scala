@@ -133,7 +133,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
       inputSignature = Array.empty[FieldSignature],
       outputSignature = Some(IndexedSeq(FieldSignature("label", CTString))),
       deprecationInfo = None,
-      accessMode = ProcedureReadOnlyAccess(Array.empty[String]),
+      accessMode = ProcedureReadOnlyAccess,
       id = 8,
    )))
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) CALL db.labels() YIELD label RETURN count(n.prop)", procedureLookup = lookup)

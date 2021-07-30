@@ -22,15 +22,10 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport.ProcedureSignatureBuilder
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureAccessMode
-import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
-import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
-import org.neo4j.cypher.internal.logical.plans.ProcedureSchemaWriteAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.exceptions.CypherExecutionException
-import org.neo4j.procedure.Mode
 
 trait ProcedureTestSupport {
   def procedureSignature(qualifiedName: String): ProcedureSignatureBuilder = ProcedureSignatureBuilder(qualifiedName)
@@ -43,7 +38,7 @@ object ProcedureTestSupport {
     inputSignature: IndexedSeq[FieldSignature] = IndexedSeq(),
     outputSignature: Option[IndexedSeq[FieldSignature]] = None,
     deprecationInfo: Option[String] = None,
-    accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess(Array.empty),
+    accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess,
   ) {
     def withInputField(name: String, inputType: CypherType): ProcedureSignatureBuilder =
       copy(inputSignature = inputSignature :+ FieldSignature(name, inputType))
