@@ -252,7 +252,7 @@ class SettingTest
                 .build()
                 .description();
 
-        String expected = "setting, a duration (Valid units are: 'ns', 'μs', 'ms', 's', 'm', 'h' and 'd'; default unit is 's') which is minimum `10s`";
+        String expected = "setting, a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`) which is minimum `10s`";
         assertEquals( expected, descriptionWithConstraint );
     }
 
@@ -565,7 +565,7 @@ class SettingTest
         assertThrows( IllegalArgumentException.class, () -> durationSetting.validate( Duration.ofMillis( 1 ), EMPTY ) );
 
         String expected =
-                "setting, a duration (Valid units are: 'ns', 'μs', 'ms', 's', 'm', 'h' and 'd'; default unit is 's') which is minimum `30m` or is `0s`";
+                "setting, a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`) which is minimum `30m` or is `0s`";
         assertEquals( expected, durationSetting.description() );
     }
 

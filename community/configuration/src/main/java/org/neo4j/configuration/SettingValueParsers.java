@@ -447,7 +447,7 @@ public final class SettingValueParsers
         @Override
         public String getDescription()
         {
-            return "a string describing a timezone, either described by offset (e.g. '+02:00') or by name (e.g. 'Europe/Stockholm')";
+            return "a string describing a timezone, either described by offset (e.g. `+02:00`) or by name (e.g. `Europe/Stockholm`)";
         }
 
         @Override
@@ -751,7 +751,7 @@ public final class SettingValueParsers
         @Override
         public String getDescription()
         {
-            return "A simple globbing pattern that can use '*' and '?'.";
+            return "A simple globbing pattern that can use `*` and `?`.";
         }
 
         @Override

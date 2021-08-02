@@ -34,7 +34,7 @@ public final class TimeUtil
 {
     public static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
 
-    public static final String VALID_TIME_DESCRIPTION = "Valid units are: 'ns', 'μs', 'ms', 's', 'm', 'h' and 'd'; default unit is 's'";
+    public static final String VALID_TIME_DESCRIPTION = "Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`";
 
     public static final Function<String,Long> parseTimeMillis = timeWithOrWithoutUnit ->
     {
@@ -112,7 +112,7 @@ public final class TimeUtil
         case "d":
             return DAYS.toNanos( amount );
         default:
-            throw new IllegalArgumentException( "Unrecognized unit '" + unit + "'. " + VALID_TIME_DESCRIPTION );
+            throw new IllegalArgumentException( "Unrecognized unit `" + unit + "`. " + VALID_TIME_DESCRIPTION );
         }
     }
 
