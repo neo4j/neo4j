@@ -842,7 +842,7 @@ class SubqueryCallPlanningIntegrationTest
         |""".stripMargin
 
     val plan = cfg
-      .planWithModifiedParsingConfig(query, _.withSemanticFeature(SemanticFeature.CallSubqueryInTransactions))
+      .planWithModifiedParsingConfig(query, _.withSemanticFeatures(SemanticFeature.CallSubqueryInTransactions))
       .stripProduceResults
 
     plan shouldEqual cfg.subPlanBuilder()
@@ -867,7 +867,7 @@ class SubqueryCallPlanningIntegrationTest
         |""".stripMargin
 
     val plan = cfg
-      .planWithModifiedParsingConfig(query, _.withSemanticFeature(SemanticFeature.CallSubqueryInTransactions))
+      .planWithModifiedParsingConfig(query, _.withSemanticFeatures(SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallCorrelatedSubqueryInTransactions))
       .stripProduceResults
 
     plan shouldEqual cfg.subPlanBuilder()
@@ -892,7 +892,7 @@ class SubqueryCallPlanningIntegrationTest
         |""".stripMargin
 
     val plan = cfg
-      .planWithModifiedParsingConfig(query, _.withSemanticFeature(SemanticFeature.CallSubqueryInTransactions))
+      .planWithModifiedParsingConfig(query, _.withSemanticFeatures(SemanticFeature.CallSubqueryInTransactions))
       .stripProduceResults
 
     plan shouldEqual cfg.subPlanBuilder()
@@ -918,7 +918,7 @@ class SubqueryCallPlanningIntegrationTest
         |""".stripMargin
 
     val plan = cfg
-      .planWithModifiedParsingConfig(query, _.withSemanticFeature(SemanticFeature.CallSubqueryInTransactions))
+      .planWithModifiedParsingConfig(query, _.withSemanticFeatures(SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallCorrelatedSubqueryInTransactions))
       .stripProduceResults
 
     plan shouldEqual cfg.subPlanBuilder()

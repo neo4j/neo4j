@@ -996,7 +996,13 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
 
   override def semanticCheck: SemanticCheck = {
     checkSubquery chain
-      inTransactionsParameters.semanticCheck
+      inTransactionsParameters.foldSemanticCheck {
+        _.semanticCheck chain {
+          when (part.isCorrelated) {
+            requireFeatureSupport("The CALL { WITH ... } IN TRANSACTIONS clause", SemanticFeature.CallCorrelatedSubqueryInTransactions, position)
+          }
+        }
+      }
   }
 
   def checkSubquery: SemanticCheck = { outer: SemanticState =>

@@ -348,10 +348,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     JavaccParsing andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallCorrelatedSubqueryInTransactions) andThen
       AstRewriting() andThen
       RewriteProcedureCalls andThen
-      SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallCorrelatedSubqueryInTransactions) andThen
       Namespacer andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizerTest.getTransformer andThen

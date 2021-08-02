@@ -39,6 +39,9 @@ object SemanticFeature {
   case object CallSubqueryInTransactions extends SemanticFeature with FeatureToString {
     override def name: String = "running subqueries in separate transactions"
   }
+  case object CallCorrelatedSubqueryInTransactions extends SemanticFeature with FeatureToString {
+    override def name: String = "running correlated subqueries in separate transactions"
+  }
 
   case object ExpressionsInViewInvocations extends SemanticFeature
   case object WithInitialQuerySignature extends SemanticFeature

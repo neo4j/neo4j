@@ -36,7 +36,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class SemanticAnalysisTest extends CypherFunSuite {
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
-  private val pipeline = Parsing andThen SemanticAnalysis(warn = true) andThen SemanticAnalysis(warn = false)
+  private def pipelineWithSemanticFeatures(semanticFeatures: SemanticFeature*) =
+    Parsing andThen SemanticAnalysis(warn = true, semanticFeatures:_*) andThen SemanticAnalysis(warn = false, semanticFeatures:_*)
+
+  private val pipeline = pipelineWithSemanticFeatures()
 
   test("should fail for max() with no arguments") {
     val query = "RETURN max() AS max"
@@ -223,11 +226,33 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline =
-      Parsing andThen
-        SemanticAnalysis(warn = true, SemanticFeature.CallSubqueryInTransactions) andThen
-        SemanticAnalysis(warn = false, SemanticFeature.CallSubqueryInTransactions)
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
 
+    context.errors.map(_.msg) shouldBe empty
+  }
+
+  test("CALL { WITH ... } IN TRANSACTIONS") {
+    val query = "WITH 1 AS x CALL { WITH x AS x MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "The CALL { WITH ... } IN TRANSACTIONS clause is not available in this implementation of Cypher due to lack of support for running correlated subqueries in separate transactions."
+    )
+  }
+
+  test("CALL { WITH ... } IN TRANSACTIONS with feature enabled") {
+    val query = "WITH 1 AS x CALL { WITH x AS x MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallCorrelatedSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe empty
