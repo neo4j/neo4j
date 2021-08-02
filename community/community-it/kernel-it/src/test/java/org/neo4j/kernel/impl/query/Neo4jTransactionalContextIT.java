@@ -140,7 +140,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_executing_query_should_use_outer_transaction_id_and_query_text()
+    void contextWithNewTransactionExecutingQueryShouldUseOuterTransactionIdAndQueryText()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -161,7 +161,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_executing_query_should_sum_up_page_hits_faults_from_inner_and_outer_transaction()
+    void contextWithNewTransactionExecutingQueryShouldSumUpPageHitsFaultsFromInnerAndOuterTransaction()
     {
         // Given
 
@@ -196,7 +196,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_executing_query_should_sum_up_page_hits_faults_from_inner_and_outer_transactions_also_when_committed()
+    void contextWithNewTransactionExecutingQueryShouldSumUpPageHitsFaultsFromInnerAndOuterTransactionsAlsoWhenCommitted()
     {
         // Given
 
@@ -246,7 +246,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_kernel_statistics_provider_should_only_see_page_hits_faults_from_current_transactions_in_PROFILE()
+    void contextWithNewTransactionKernelStatisticsProviderShouldOnlySeePageHitsFaultsFromCurrentTransactionsInPROFILE()
     {
         // Given
 
@@ -296,7 +296,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_executing_query_should_sum_up_page_hits_faults_from_inner_and_outer_transactions_also_when_rolled_back()
+    void contextWithNewTransactionExecutingQueryShouldSumUpPageHitsFaultsFromInnerAndOuterTransactionsAlsoWhenRolledBack()
     {
         // Given
 
@@ -346,7 +346,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_executing_query_should_sum_up_active_locks_from_open_inner_and_outer_transactions()
+    void contextWithNewTransactionExecutingQueryShouldSumUpActiveLocksFromOpenInnerAndOuterTransactions()
     {
         // Given
 
@@ -385,7 +385,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_executing_query_should_sum_up_active_locks_from_open_inner_and_outer_transactions_but_not_from_closed_transactions()
+    void contextWithNewTransactionExecutingQueryShouldSumUpActiveLocksFromOpenInnerAndOuterTransactionsButNotFromClosedTransactions()
     {
         // Given
 
@@ -432,7 +432,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_executing_query_should_calculate_high_water_mark_memory_usage_also_when_committed_in_query_snapshot()
+    void contextWithNewTransactionExecutingQueryShouldCalculateHighWaterMarkMemoryUsageAlsoWhenCommittedInQuerySnapshot()
     {
         // Given
         var openHighWaterMark = 3L;
@@ -494,7 +494,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_throws_after_transaction_terminate()
+    void contextWithNewTransactionThrowsAfterTransactionTerminate()
     {
         // Given
         var tx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -508,7 +508,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_terminate_inner_transaction_on_outer_transaction_terminate()
+    void contextWithNewTransactionTerminateInnerTransactionOnOuterTransactionTerminate()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -523,7 +523,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_deregister_inner_transaction_on_inner_context_commit()
+    void contextWithNewTransactionDeregisterInnerTransactionOnInnerContextCommit()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -538,7 +538,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_deregister_inner_transaction_on_inner_context_rollback()
+    void contextWithNewTransactionDeregisterInnerTransactionOnInnerContextRollback()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -553,7 +553,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_deregister_inner_transaction_on_inner_context_close()
+    void contextWithNewTransactionDeregisterInnerTransactionOnInnerContextClose()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -568,7 +568,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_throw_if_inner_transaction_present_on_outer_transaction_commit()
+    void contextWithNewTransactionThrowIfInnerTransactionPresentOnOuterTransactionCommit()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -582,7 +582,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_close_inner_transaction_on_outer_transaction_rollback()
+    void contextWithNewTransactionCloseInnerTransactionOnOuterTransactionRollback()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -598,7 +598,7 @@ class Neo4jTransactionalContextIT
 
     @Disabled( "Strictly speaking this does not need to work, but it would protect us from our own programming mistakes in Cypher" )
     @Test
-    void contextWithNewTransaction_close_inner_context_on_outer_context_rollback()
+    void contextWithNewTransactionCloseInnerContextOnOuterContextRollback()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -613,7 +613,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_close_inner_transaction_on_outer_transaction_close()
+    void contextWithNewTransactionCloseInnerTransactionOnOuterTransactionClose()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -628,7 +628,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_do_not_terminate_outer_transaction_on_inner_transaction_terminate()
+    void contextWithNewTransactionDoNotTerminateOuterTransactionOnInnerTransactionTerminate()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -643,7 +643,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_do_not_close_outer_context_on_inner_context_rollback()
+    void contextWithNewTransactionDoNotCloseOuterContextOnInnerContextRollback()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -658,7 +658,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_close_inner_statement_on_inner_context_commit_close() throws Exception
+    void contextWithNewTransactionCloseInnerStatementOnInnerContextCommitClose() throws Exception
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -682,7 +682,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_close_inner_statement_on_inner_transaction_commit_close() throws Exception
+    void contextWithNewTransactionCloseInnerStatementOnInnerTransactionCommitClose() throws Exception
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -706,7 +706,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_close_inner_statement_on_outer_context_rollback_close() throws Exception
+    void contextWithNewTransactionCloseInnerStatementOnOuterContextRollbackClose() throws Exception
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -731,7 +731,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_terminate_inner_transaction_on_outer_transaction_timeout() throws InterruptedException
+    void contextWithNewTransactionTerminateInnerTransactionOnOuterTransactionTimeout() throws InterruptedException
     {
         // TODO: try to find a way to run this without waiting for 4 seconds (change configuration (?))
         // Given
@@ -751,7 +751,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_should_throw_if_outer_transaction_is_explicit()
+    void contextWithNewTransactionShouldThrowIfOuterTransactionIsExplicit()
     {
         // Given
         var outerTx = graph.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
@@ -765,7 +765,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_procedure_called_from_inner_context_should_use_inner_transaction() throws ProcedureException
+    void contextWithNewTransactionProcedureCalledFromInnerContextShouldUseInnerTransaction() throws ProcedureException
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -787,7 +787,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_listTransactions() throws ProcedureException, InvalidArgumentsException
+    void contextWithNewTransactionListTransactions() throws ProcedureException, InvalidArgumentsException
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -840,7 +840,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransaction_listQueries() throws ProcedureException, InvalidArgumentsException
+    void contextWithNewTransactionListQueries() throws ProcedureException, InvalidArgumentsException
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -885,7 +885,7 @@ class Neo4jTransactionalContextIT
     // PERIODIC COMMIT
 
     @Test
-    void periodic_commit_query_should_sum_up_page_hits_faults_from_first_and_second_transaction_in_query_snapshot()
+    void periodicCommitQueryShouldSumUpPageHitsFaultsFromFirstAndSecondTransactionInQuerySnapshot()
     {
         // Given
 
@@ -929,7 +929,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void periodic_commit_query_should_sum_up_page_hits_faults_from_first_and_second_transaction_in_PROFILE()
+    void periodicCommitQueryShouldSumUpPageHitsFaultsFromFirstAndSecondTransactionInPROFILE()
     {
         // Given
 
@@ -969,7 +969,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void periodic_commit_executing_query_should_be_reused_after_restart()
+    void periodicCommitExecutingQueryShouldBeReusedAfterRestart()
     {
         // Given
 

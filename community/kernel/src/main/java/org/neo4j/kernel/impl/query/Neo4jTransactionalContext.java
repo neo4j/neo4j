@@ -332,7 +332,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     /**
      * Provide statistics using only the page hits/misses of the current transaction.
      */
-    private class TransactionalContextStatisticProvider implements StatisticProvider
+    private static class TransactionalContextStatisticProvider implements StatisticProvider
     {
         private final ExecutionStatistics executionStatistics;
 

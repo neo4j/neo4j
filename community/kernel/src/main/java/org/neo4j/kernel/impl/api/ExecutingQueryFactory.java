@@ -52,7 +52,11 @@ public class ExecutingQueryFactory
     public ExecutingQuery createForStatement( KernelStatement statement, String queryText, MapValue queryParameters )
     {
         KernelTransactionImplementation transaction = statement.getTransaction();
-        ExecutingQuery executingQuery = createUnbound( queryText, queryParameters, transaction.clientInfo(), statement.username(), transaction.getMetaData() );
+        ExecutingQuery executingQuery = createUnbound( queryText,
+                                                       queryParameters,
+                                                       transaction.clientInfo(),
+                                                       statement.username(),
+                                                       transaction.getMetaData() );
         bindToStatement( executingQuery, statement );
         return executingQuery;
     }
