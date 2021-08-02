@@ -36,7 +36,8 @@ import static org.neo4j.configuration.SettingValueParsers.STRING;
 @ServiceProvider
 public class BootloaderSettings implements SettingsDeclaration
 {
-    @Description( "Name of the Windows Service." )
+    @Description( "Name of the Windows Service managing Neo4j when installed using `neo4j install-service`. Only applicable on Windows OS." +
+            " Note: This must be unique for each individual installation." )
     public static final Setting<String> windows_service_name = newBuilder( "dbms.windows_service_name", STRING, "neo4j" ).build();
 
     @Internal
