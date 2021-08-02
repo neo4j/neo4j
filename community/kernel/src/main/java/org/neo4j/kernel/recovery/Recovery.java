@@ -37,6 +37,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -218,7 +218,7 @@ public final class Recovery
     /**
      * Performs recovery of database described by provided layout.
      * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
-     * If recovery is not required nothing will be done to the the database or logs.
+     * If recovery is not required - nothing will be done to the database or logs.
      *
      * @param fs database filesystem
      * @param pageCache page cache used to perform database recovery.
@@ -235,7 +235,7 @@ public final class Recovery
     /**
      * Performs recovery of database described by provided layout.
      * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
-     * If recovery is not required nothing will be done to the the database or logs.
+     * If recovery is not required - nothing will be done to the database or logs.
      *
      * @param fs database filesystem
      * @param pageCache page cache used to perform database recovery.
@@ -248,8 +248,53 @@ public final class Recovery
      * even if the normal "is recovery required" checks says that recovery isn't required.
      * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
+    public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, DatabaseLayout databaseLayout,
+            StorageEngineFactory storageEngineFactory, boolean forceRunRecovery, MemoryTracker memoryTracker ) throws IOException
+    {
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, forceRunRecovery, memoryTracker,
+                NullLogProvider.getInstance() );
+    }
+
+    /**
+     * Performs recovery of database described by provided layout.
+     * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
+     * If recovery is not required - nothing will be done to the database or logs.
+     *
+     * @param fs database filesystem
+     * @param pageCache page cache used to perform database recovery.
+     * @param config custom configuration
+     * @param databaseLayout database to recover layout.
+     * @param memoryTracker memory tracker for recovery to track consumed memory
+     * @param logProvider log provider for recovery loggers
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
+     */
+    public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
+            Config config, DatabaseLayout databaseLayout, MemoryTracker memoryTracker, LogProvider logProvider ) throws IOException
+    {
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine( fs, databaseLayout, pageCache, config ), false, memoryTracker,
+                logProvider );
+    }
+
+    /**
+     * Performs recovery of database described by provided layout.
+     * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
+     * If recovery is not required nothing will be done to the the database or logs.
+     *
+     * @param fs database filesystem
+     * @param pageCache page cache used to perform database recovery.
+     * @param tracers underlying operations tracer
+     * @param config custom configuration
+     * @param databaseLayout database to recover layout.
+     * @param storageEngineFactory storage engine factory
+     * @param forceRunRecovery to force recovery to run even if the usual checks indicates that it's not required.
+     * In specific cases, like after store copy there's always a need for doing a recovery or at least to start the db, checkpoint and shut down,
+     * even if the normal "is recovery required" checks says that recovery isn't required.
+     * @param logProvider log provider used for recovery loggers
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
+     */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config,
-            DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery, MemoryTracker memoryTracker ) throws IOException
+            DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery, MemoryTracker memoryTracker,
+            LogProvider logProvider ) throws IOException
     {
         requireNonNull( fs );
         requireNonNull( pageCache );
@@ -259,7 +304,7 @@ public final class Recovery
         //remove any custom logical logs location
         Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
         performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, StorageEngineFactory.defaultStorageEngine(), forceRunRecovery,
-                NullLogProvider.getInstance(), new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock() );
+                logProvider, new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock() );
     }
 
     /**

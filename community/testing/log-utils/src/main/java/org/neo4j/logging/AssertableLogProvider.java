@@ -187,7 +187,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
             }
             if ( throwable != null )
             {
-                msg = msg + " cause " + throwable.toString();
+                msg = msg + " cause " + throwable;
             }
             return format( "%s @ %s: %s", level, context, msg );
         }

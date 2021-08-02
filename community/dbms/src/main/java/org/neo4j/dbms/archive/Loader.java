@@ -37,6 +37,7 @@ import java.nio.file.Path;
 
 import org.neo4j.commandline.dbms.StoreVersionLoader;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,6 +47,8 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.nio.file.Files.exists;
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
+import static org.neo4j.dbms.archive.printer.ProgressPrinters.emptyPrinter;
+import static org.neo4j.dbms.archive.printer.ProgressPrinters.printStreamPrinter;
 
 public class Loader
 {
@@ -54,12 +57,17 @@ public class Loader
     @VisibleForTesting
     public Loader()
     {
-        progressPrinter = new ArchiveProgressPrinter( null );
+        this( emptyPrinter() );
     }
 
     public Loader( PrintStream output )
     {
-        progressPrinter = new ArchiveProgressPrinter( output );
+        this( printStreamPrinter( output ) );
+    }
+
+    private Loader( OutputProgressPrinter progressPrinter )
+    {
+        this.progressPrinter = new ArchiveProgressPrinter( progressPrinter );
     }
 
     public void load( Path archive, DatabaseLayout databaseLayout ) throws IOException, IncorrectFormat

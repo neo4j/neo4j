@@ -36,10 +36,14 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.commandline.Util;
+import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
+import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.logging.LogProvider;
 
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 import static org.neo4j.dbms.archive.Utils.copy;
 import static org.neo4j.io.fs.FileVisitors.justContinue;
@@ -55,14 +59,24 @@ public class Dumper
 
     public Dumper()
     {
-        operations = new ArrayList<>();
-        progressPrinter = new ArchiveProgressPrinter( null );
+        this( ProgressPrinters.emptyPrinter() );
     }
 
     public Dumper( PrintStream output )
     {
-        operations = new ArrayList<>();
-        progressPrinter = new ArchiveProgressPrinter( output );
+        this( ProgressPrinters.printStreamPrinter( output ) );
+    }
+
+    public Dumper( LogProvider logProvider )
+    {
+        this( ProgressPrinters.logProviderPrinter( logProvider.getLog( Dumper.class ) ) );
+    }
+
+    private Dumper( OutputProgressPrinter progressPrinter )
+    {
+        requireNonNull( progressPrinter );
+        this.operations = new ArrayList<>();
+        this.progressPrinter = new ArchiveProgressPrinter( progressPrinter );
     }
 
     public void dump( Path path, Path archive, CompressionFormat format ) throws IOException

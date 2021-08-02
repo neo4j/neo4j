@@ -19,38 +19,39 @@
  */
 package org.neo4j.dbms.archive;
 
-import java.io.PrintStream;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.ByteUnit;
+
+import static java.util.Objects.requireNonNull;
 
 class ArchiveProgressPrinter
 {
     private final AtomicBoolean printUpdate;
-    private final PrintStream output;
-    private final boolean interactive;
+    private final OutputProgressPrinter progressPrinter;
     private long currentBytes;
     private long currentFiles;
     private boolean done;
     long maxBytes;
     long maxFiles;
 
-    ArchiveProgressPrinter( PrintStream output )
+    ArchiveProgressPrinter( OutputProgressPrinter progressPrinter )
     {
-        this.output = output;
-        printUpdate = new AtomicBoolean();
-        interactive = System.console() != null;
+        requireNonNull( progressPrinter );
+        this.progressPrinter = progressPrinter;
+        this.printUpdate = new AtomicBoolean();
     }
 
     Resource startPrinting()
     {
         ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
-        ScheduledFuture<?> timerFuture = timer.scheduleAtFixedRate( this::printOnNextUpdate, 0, interactive ? 100 : 5_000, TimeUnit.MILLISECONDS );
+        ScheduledFuture<?> timerFuture = timer.scheduleAtFixedRate( this::printOnNextUpdate, 0, 100, TimeUnit.MILLISECONDS );
         return () ->
         {
             timerFuture.cancel( false );
@@ -107,22 +108,19 @@ class ArchiveProgressPrinter
 
     void printProgress()
     {
-        if ( output != null )
+        if ( done )
         {
-            char lineSep = interactive ? '\r' : '\n';
-            if ( done )
-            {
-                output.println( lineSep + "Done: " + currentFiles + " files, " + ByteUnit.bytesToString( currentBytes ) + " processed." );
-            }
-            else if ( maxFiles > 0 && maxBytes > 0 )
-            {
-                double progress = (currentBytes / (double) maxBytes) * 100;
-                output.print( lineSep + "Files: " + currentFiles + '/' + maxFiles + ", data: " + String.format( "%4.1f%%", progress ) );
-            }
-            else
-            {
-                output.print( lineSep + "Files: " + currentFiles + "/?" + ", data: ??.?%" );
-            }
+            progressPrinter.print( "Done: " + currentFiles + " files, " + ByteUnit.bytesToString( currentBytes ) + " processed." );
+            progressPrinter.complete();
+        }
+        else if ( maxFiles > 0 && maxBytes > 0 )
+        {
+            double progress = (currentBytes / (double) maxBytes) * 100;
+            progressPrinter.print( "Files: " + currentFiles + '/' + maxFiles + ", data: " + String.format( "%4.1f%%", progress ) );
+        }
+        else
+        {
+            progressPrinter.print( "Files: " + currentFiles + "/?" + ", data: ??.?%" );
         }
     }
 }

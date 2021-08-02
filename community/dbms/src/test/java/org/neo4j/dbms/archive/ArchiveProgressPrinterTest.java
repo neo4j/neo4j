@@ -24,16 +24,67 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
+import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
+import org.neo4j.dbms.archive.printer.ProgressPrinters;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Log;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.dbms.archive.printer.ProgressPrinters.printStreamPrinter;
 
 class ArchiveProgressPrinterTest
 {
     @Test
-    void progressOutput()
+    void printProgressStreamOutput()
     {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( bout );
-        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter( printStream );
+        OutputProgressPrinter outputPrinter = printStreamPrinter( printStream );
+
+        executeSomeWork( outputPrinter );
+
+        printStream.flush();
+        String output = bout.toString();
+        assertEquals( output,
+                "\nFiles: 1/10, data: " + String.format( "%4.1f%%",  0.5 ) +
+                "\nFiles: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) +
+                "\nFiles: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) +
+                "\nFiles: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) +
+                "\nFiles: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) +
+                "\nDone: 3 files, 305B processed." +
+                        System.lineSeparator()
+        );
+    }
+
+    @Test
+    void printProgressEmptyReporter()
+    {
+        OutputProgressPrinter outputPrinter = ProgressPrinters.emptyPrinter();
+        assertDoesNotThrow( () -> executeSomeWork( outputPrinter ) );
+    }
+
+    @Test
+    void printProgressLogger()
+    {
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log providerLog = logProvider.getLog( ArchiveProgressPrinterTest.class );
+        OutputProgressPrinter outputPrinter = ProgressPrinters.logProviderPrinter( providerLog );
+
+        executeSomeWork( outputPrinter );
+
+        assertEquals( logProvider.serialize(),
+            "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 1/10, data: " + String.format( "%4.1f%%",  0.5 ) + "\n" +
+                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) + "\n" +
+                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) + "\n" +
+                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) + "\n" +
+                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Files: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) + "\n" +
+                   "INFO @ org.neo4j.dbms.archive.ArchiveProgressPrinterTest: Done: 3 files, 305B processed.\n" );
+    }
+
+    private static void executeSomeWork( OutputProgressPrinter outputPrinter )
+    {
+        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter( outputPrinter );
         progressPrinter.maxBytes = 1000;
         progressPrinter.maxFiles = 10;
 
@@ -52,17 +103,5 @@ class ArchiveProgressPrinterTest
         progressPrinter.endFile();
         progressPrinter.done();
         progressPrinter.printProgress();
-
-        printStream.flush();
-        String output = bout.toString();
-        assertEquals( output,
-                "\nFiles: 1/10, data: " + String.format( "%4.1f%%",  0.5 ) +
-                "\nFiles: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) +
-                "\nFiles: 2/10, data: " + String.format( "%4.1f%%", 20.5 ) +
-                "\nFiles: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) +
-                "\nFiles: 3/10, data: " + String.format( "%4.1f%%", 30.5 ) +
-                "\nDone: 3 files, 305B processed." +
-                        System.lineSeparator()
-        );
     }
 }
