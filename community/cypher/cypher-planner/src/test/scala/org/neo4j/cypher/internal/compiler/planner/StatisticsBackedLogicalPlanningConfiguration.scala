@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
 import org.neo4j.cypher.internal.compiler.helpers.TokenContainer
+import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Cardinalities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.ExistenceConstraintDefinition
@@ -656,7 +657,21 @@ class StatisticsBackedLogicalPlanningConfiguration(
     planState(queryString).logicalPlan
   }
 
+  def planWithModifiedParsingConfig(queryString: String, f: ParsingConfig => ParsingConfig): LogicalPlan = {
+    planStateWithModifiedParsingConfig(queryString, f).logicalPlan
+  }
+
   def planState(queryString: String): LogicalPlanState = {
+    planStateWithModifiedParsingConfig(queryString, identity)
+  }
+
+  def planStateWithModifiedParsingConfig(queryString: String, f: ParsingConfig => ParsingConfig): LogicalPlanState = {
+    val cypherCompilerConfig = LogicalPlanningTestSupport2.defaultCypherCompilerConfig
+    val parsingConfig = LogicalPlanningTestSupport2.defaultParsingConfig(cypherCompilerConfig)
+    planState(queryString, f(parsingConfig))
+  }
+
+  private def planState(queryString: String, parsingConfig: ParsingConfig): LogicalPlanState = {
     val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
@@ -680,7 +695,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       executionModel = options.executionModel
     )
     val state = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
-    LogicalPlanningTestSupport2.pipeLine().transform(state, context)
+    LogicalPlanningTestSupport2.pipeLine(parsingConfig).transform(state, context)
   }
 
   def planBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = true, resolver)

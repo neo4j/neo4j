@@ -154,14 +154,22 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
 
-  def pipeLine(pushdownPropertyReads: Boolean = pushdownPropertyReads,
+  val defaultCypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
+
+  def defaultParsingConfig(cypherCompilerConfig: CypherPlannerConfiguration): ParsingConfig =
+    ParsingConfig(
+      literalExtractionStrategy = Never,
+      parameterTypeMapping = Map.empty,
+      useJavaCCParser = cypherCompilerConfig.useJavaCCParser)
+
+  def pipeLine(parsingConfig: ParsingConfig,
+               pushdownPropertyReads: Boolean = pushdownPropertyReads,
                deduplicateNames: Boolean = deduplicateNames,
-               cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults(),
-  ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+              ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
-    val p1 = parsing(ParsingConfig(literalExtractionStrategy = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
+    val p1 = parsing(parsingConfig) andThen
       prepareForCaching andThen
-      planPipeLine(pushdownPropertyReads = pushdownPropertyReads)
+      planPipeLine(pushdownPropertyReads = pushdownPropertyReads, semanticFeatures = parsingConfig.semanticFeatures)
     if (deduplicateNames) {
       p1 andThen NameDeduplication
     } else {
@@ -177,16 +185,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val pushdownPropertyReads: Boolean = LogicalPlanningTestSupport2.pushdownPropertyReads
   val deduplicateNames: Boolean = LogicalPlanningTestSupport2.deduplicateNames
   var queryGraphSolver: QueryGraphSolver = QueryGraphSolverWithIDPConnectComponents.queryGraphSolver()
-  val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
+  val cypherCompilerConfig: CypherPlannerConfiguration = LogicalPlanningTestSupport2.defaultCypherCompilerConfig
 
   val realConfig: RealLogicalPlanningConfiguration = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
   def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
 
-  def pipeLine(deduplicateNames: Boolean = deduplicateNames
-              ): Transformer[PlannerContext, BaseState, LogicalPlanState] = LogicalPlanningTestSupport2.pipeLine(
-    pushdownPropertyReads, deduplicateNames, cypherCompilerConfig
-  )
+  def pipeLine(deduplicateNames: Boolean = deduplicateNames): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+    val parsingConfig = LogicalPlanningTestSupport2.defaultParsingConfig(cypherCompilerConfig)
+    LogicalPlanningTestSupport2.pipeLine(parsingConfig, pushdownPropertyReads, deduplicateNames)
+  }
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
     lazy val semanticTable: SemanticTable = config.updateSemanticTableWithTokens(SemanticTable())
