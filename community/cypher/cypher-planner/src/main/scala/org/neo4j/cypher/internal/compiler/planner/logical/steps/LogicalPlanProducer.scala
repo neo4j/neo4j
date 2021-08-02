@@ -197,6 +197,8 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
@@ -466,15 +468,22 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solvedRight = solveds.get(right.id)
     val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated, yielding, inTransactionsParameters)))
 
-    val plan = if (yielding) {
-      if (!correlated && solvedRight.readOnly) {
-        CartesianProduct(left, right, fromSubquery = true)
+    val plan =
+      if (yielding) {
+        if (inTransactionsParameters.isDefined) {
+          TransactionApply(left, right)
+        } else if (!correlated && solvedRight.readOnly) {
+          CartesianProduct(left, right, fromSubquery = true)
+        } else {
+          Apply(left, right, fromSubquery = true)
+        }
       } else {
-        Apply(left, right, fromSubquery = true)
+        if (inTransactionsParameters.isDefined) {
+          TransactionForeach(left, right)
+        } else {
+          SubqueryForeach(left, right)
+        }
       }
-    } else {
-      SubqueryForeach(left, right)
-    }
 
     val providedOrder = providedOrderOfApply(left, right)
     annotate(plan, solved, providedOrder, context)

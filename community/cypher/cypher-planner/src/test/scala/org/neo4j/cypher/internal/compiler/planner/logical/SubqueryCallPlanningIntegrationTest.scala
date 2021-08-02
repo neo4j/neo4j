@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -827,4 +829,103 @@ class SubqueryCallPlanningIntegrationTest
     )
   }
 
+  test("call unit subquery in transactions") {
+    val cfg = plannerBuilder().setAllNodesCardinality(1000).build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |} IN TRANSACTIONS
+        |RETURN a
+        |""".stripMargin
+
+    val plan = cfg
+      .planWithModifiedParsingConfig(query, _.withSemanticFeature(SemanticFeature.CallSubqueryInTransactions))
+      .stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionForeach()
+      .|.create(createNode("b"))
+      .|.argument()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call correlated unit subquery in transactions") {
+    val cfg = plannerBuilder().setAllNodesCardinality(1000).build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  WITH a
+        |  CREATE (b {prop: a.prop + 1})
+        |} IN TRANSACTIONS
+        |RETURN a
+        |""".stripMargin
+
+    val plan = cfg
+      .planWithModifiedParsingConfig(query, _.withSemanticFeature(SemanticFeature.CallSubqueryInTransactions))
+      .stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionForeach()
+      .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call subquery in transactions") {
+    val cfg = plannerBuilder().setAllNodesCardinality(1000).build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |  RETURN b
+        |} IN TRANSACTIONS
+        |RETURN a, b
+        |""".stripMargin
+
+    val plan = cfg
+      .planWithModifiedParsingConfig(query, _.withSemanticFeature(SemanticFeature.CallSubqueryInTransactions))
+      .stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionApply()
+      .|.create(createNode("b"))
+      .|.argument()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call correlated subquery in transactions") {
+    val cfg = plannerBuilder().setAllNodesCardinality(1000).build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  WITH a
+        |  CREATE (b {prop: a.prop + 1})
+        |  RETURN b
+        |} IN TRANSACTIONS
+        |RETURN a, b
+        |""".stripMargin
+
+    val plan = cfg
+      .planWithModifiedParsingConfig(query, _.withSemanticFeature(SemanticFeature.CallSubqueryInTransactions))
+      .stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionApply()
+      .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
+  }
 }
