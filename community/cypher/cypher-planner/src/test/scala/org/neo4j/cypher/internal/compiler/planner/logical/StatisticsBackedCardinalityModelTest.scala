@@ -507,4 +507,38 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     queryShouldHaveCardinality(config, query,
       labelCardinality * existsSelectivity * uniqueSelectivity)
   }
+
+  test("node by id seek should have cardinality 1") {
+    val allNodesCardinality = 1000
+    val config = plannerBuilder()
+      .setAllNodesCardinality(allNodesCardinality)
+      .build()
+
+    val query = "MATCH (n) WHERE id(n) = 5"
+    queryShouldHaveCardinality(config, query, 1)
+  }
+
+  test("directed relationship by id seek should have cardinality 1") {
+    val allNodesCardinality = 1000
+    val allRelationshipsCardinality = 20
+    val config = plannerBuilder()
+      .setAllNodesCardinality(allNodesCardinality)
+      .setAllRelationshipsCardinality(allRelationshipsCardinality)
+      .build()
+
+    val query = "MATCH ()-[r]->() WHERE id(r) = 5"
+    queryShouldHaveCardinality(config, query, 1)
+  }
+
+  test("undirected relationship by id seek should have cardinality 2") {
+    val allNodesCardinality = 1000
+    val allRelationshipsCardinality = 20
+    val config = plannerBuilder()
+      .setAllNodesCardinality(allNodesCardinality)
+      .setAllRelationshipsCardinality(allRelationshipsCardinality)
+      .build()
+
+    val query = "MATCH ()-[r]-() WHERE id(r) = 5"
+    queryShouldHaveCardinality(config, query, 2)
+  }
 }

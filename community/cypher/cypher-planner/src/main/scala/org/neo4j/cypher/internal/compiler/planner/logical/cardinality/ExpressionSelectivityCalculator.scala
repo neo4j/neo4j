@@ -144,7 +144,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE id(x) =/IN [...]
     case AsIdSeekable(seekable) =>
-      (seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS) / stats.nodesAllCardinality()) getOrElse Selectivity.ONE
+      val lookups = seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS)
+      if (semanticTable.isNode(seekable.ident)) {
+        (lookups / stats.nodesAllCardinality()) getOrElse Selectivity.ONE
+      } else {
+        (lookups / stats.patternStepCardinality(None, None, None)) getOrElse Selectivity.ONE
+      }
 
     // WHERE <expr> = <expr>
     case _: Equals =>

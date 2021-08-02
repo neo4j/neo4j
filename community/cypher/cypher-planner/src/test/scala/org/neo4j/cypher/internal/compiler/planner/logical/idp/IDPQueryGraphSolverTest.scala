@@ -826,6 +826,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           in(id(varFor("r")), listOfInt(42))
         )
       )
+      addTypeToSemanticTable(varFor("r"), CTRelationship)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
       plan should equal(
