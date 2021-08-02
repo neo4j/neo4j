@@ -49,8 +49,6 @@ import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
-import static org.neo4j.configuration.SettingConstraints.ifCluster;
-import static org.neo4j.configuration.SettingConstraints.ifMode;
 import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
@@ -167,7 +165,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "value. For optimal performance this value shouldn't be greater than the number of available processors." )
     public static final Setting<Integer> upgrade_processors = newBuilder( "dbms.upgrade_max_processors", INT, 0 ).addConstraint( min( 0 ) ).dynamic().build();
 
-    @Description( "Database record format. Valid values are `standard`, `aligned`, or `high_limit`. " +
+    @Description( "Database record format. Valid values are blank(no value, default), `standard`, `aligned`, or `high_limit`. " +
+            "Specifying a value will force new databases to that format and existing databases to migrate if `dbms.allow_upgrade=true` is specified. " +
             "The `aligned` format is essentially the `standard` format with some minimal padding at the end of pages such that a single " +
             "record will never cross a page boundary. The `high_limit` format is available for Enterprise Edition only. " +
             "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties. " +
@@ -175,7 +174,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "Certain operations may suffer from a performance penalty of up to 10%, which is why this format is not switched on by default. " +
             "However, if you want to change the configured record format value, you must also set `dbms.allow_upgrade=true`, " +
             "because the setting implies a one-way store format migration." )
-    @DocumentedDefaultValue( "`aligned` for new databases, latest version of current format for existing databases" )
+    @DocumentedDefaultValue( "Blank (no value). New databases will use `aligned`. Existing databases will stay on their current format" )
     public static final Setting<String> record_format = newBuilder( "dbms.record_format", STRING, "" ).build();
 
     @Description( "Whether to allow a system graph upgrade to happen automatically in single instance mode (dbms.mode=SINGLE). " +
