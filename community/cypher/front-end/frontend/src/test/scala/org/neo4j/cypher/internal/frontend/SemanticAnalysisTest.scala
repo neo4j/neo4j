@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext.failWith
@@ -30,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -256,6 +258,21 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe empty
+  }
+
+
+  test("nested CALL { ... } IN TRANSACTIONS") {
+    val query = "CALL { CALL { CREATE (x) } IN TRANSACTIONS } IN TRANSACTIONS RETURN 1 AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("Nested CALL { ... } IN TRANSACTIONS is not supported", InputPosition(7, 1, 8))
+    )
   }
 
   private def initStartState(query: String) =

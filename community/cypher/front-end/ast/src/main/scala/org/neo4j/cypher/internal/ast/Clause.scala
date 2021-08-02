@@ -1001,7 +1001,7 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
           when (part.isCorrelated) {
             requireFeatureSupport("The CALL { WITH ... } IN TRANSACTIONS clause", SemanticFeature.CallCorrelatedSubqueryInTransactions, position)
           }
-        }
+        } chain checkNoNestedCallInTransactions
       }
   }
 
@@ -1044,5 +1044,14 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
   private def declareOutputVariablesInOuterScope(rootScope: Scope): SemanticCheck = {
     val scopeForDeclaringVariables = part.finalScope(rootScope)
     declareVariables(scopeForDeclaringVariables.symbolTable.values)
+  }
+
+  private def checkNoNestedCallInTransactions: SemanticCheck = {
+    val nestedCallInTransactions = part.treeFind[SubqueryCall] {
+      case s if s.inTransactionsParameters.isDefined => true
+    }
+    nestedCallInTransactions.foldSemanticCheck { nestedCallInTransactions =>
+      error("Nested CALL { ... } IN TRANSACTIONS is not supported", nestedCallInTransactions.position)
+    }
   }
 }
