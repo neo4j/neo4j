@@ -185,18 +185,19 @@ public class Neo4jTransactionalContext implements TransactionalContext
         KernelStatement oldStatement = statement;
         KernelTransaction oldKernelTx = transaction.kernelTransaction();
 
-        // (2) Create and register new transaction
+        // (2) Unregister the old transaction from the executing query
+        oldQueryRegistry.unbindExecutingQuery( executingQuery );
+
+        // (3) Create and register new transaction
         kernelTransaction = transactionFactory.beginKernelTransaction( transactionType, securityContext, clientInfo );
         statement = (KernelStatement) kernelTransaction.acquireStatement();
         statement.queryRegistry().bindExecutingQuery( executingQuery );
         transaction.setTransaction( kernelTransaction );
 
-        // (3) Commit and close old transaction (and unregister as a side effect of that)
-        oldQueryRegistry.unbindExecutingQuery( executingQuery );
-
-        // Update statistic provider with new kernel transaction
+        // (4) Update statistic provider with new kernel transaction
         updatePeriodicCommitStatisticProvider( kernelTransaction );
 
+        // (5) commit old transaction
         try
         {
             oldStatement.close();

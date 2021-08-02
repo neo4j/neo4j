@@ -98,11 +98,17 @@ public class ExecutingQuery
      * will be called with the outer transaction first.
      */
     private final Queue<TransactionBinding> openTransactionBindings = new ConcurrentLinkedQueue<>();
+
     /**
-     * Database id of the last transaction binding.
+     * Database id of the outer (first) transaction binding.
      */
     @Nullable
     private NamedDatabaseId namedDatabaseId;
+
+    /**
+     * Transaction id of the outer (first) transaction.
+     */
+    private long outerTransactionId = -1L;
 
     public ExecutingQuery(
             long queryId, ClientConnectionInfo clientConnection, String username, String queryText, MapValue queryParameters,
@@ -192,6 +198,7 @@ public class ExecutingQuery
         if ( this.openTransactionBindings.isEmpty() )
         {
             namedDatabaseId = transactionBinding.namedDatabaseId;
+            outerTransactionId = transactionBinding.transactionId;
         }
         this.openTransactionBindings.add( transactionBinding );
     }
@@ -323,9 +330,6 @@ public class ExecutingQuery
         long elapsedTimeNanos = currentTimeNanos - startTimeNanos;
         cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
         waitTimeNanos += status.waitTimeNanos( currentTimeNanos );
-
-        TransactionBinding outerTransaction = openTransactionBindings.peek();
-        long outerTransactionId = outerTransaction != null ? outerTransaction.transactionId : -1L;
 
         return new QuerySnapshot(
                 this,
