@@ -844,6 +844,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   private val expandConfig: StatisticsBackedLogicalPlanningConfiguration = plannerBuilder()
     .setAllNodesCardinality(100)
     .setRelationshipCardinality("()-[:REL]->()", 1000)
+    .enablePrintCostComparisons()
     .build()
 
   test("should plan relationship type scan with inlined type predicate") {
@@ -981,11 +982,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan shouldEqual expectedPlan
   }
 
-  test("should plan relationship type scan with filter for already bound start node with few relationships") {
+  test("should plan relationship type scan with filter for already bound start node with hint") {
     val query =
       """
-        |MATCH (a) WITH a SKIP 0
-        |MATCH (a)-[r:REL]-(b) RETURN r""".stripMargin
+        |MATCH (a)
+        |WITH a SKIP 0
+        |MATCH (a)-[r:REL]-(b)
+        |USING SCAN r:REL
+        |RETURN r""".stripMargin
 
     val plan = relationshipTypeScanConfig
       .plan(query)
@@ -1002,11 +1006,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan relationship type scan with filter for already end start node with few relationships") {
+  test("should plan relationship type scan with filter for already bound end node with hint") {
     val query =
       """
-        |MATCH (b) WITH b SKIP 0
-        |MATCH (a)-[r:REL]-(b) RETURN r""".stripMargin
+        |MATCH (b)
+        |WITH b SKIP 0
+        |MATCH (a)-[r:REL]-(b)
+        |USING SCAN r:REL
+        |RETURN r""".stripMargin
 
     val plan = relationshipTypeScanConfig
       .plan(query)
@@ -1023,11 +1030,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan relationship type scan with filter for already bound start and end node with few relationships") {
+  test("should plan relationship type scan with filter for already bound start and end node with hint") {
     val query =
       """
-        |MATCH (a), (b) WITH a, b SKIP 0
-        |MATCH (a)-[r:REL]-(b) RETURN r""".stripMargin
+        |MATCH (a), (b)
+        |WITH a, b SKIP 0
+        |MATCH (a)-[r:REL]-(b)
+        |USING SCAN r:REL
+        |RETURN r""".stripMargin
 
     val plan = relationshipTypeScanConfig
       .plan(query)
@@ -1049,8 +1059,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should not plan relationship type scan with filter for already bound start node with many relationships") {
     val query =
       """
-        |MATCH (a) WITH a SKIP 0
-        |MATCH (a)-[r:REL]-(b) RETURN r""".stripMargin
+        |MATCH (a)
+        |WITH a SKIP 0
+        |MATCH (a)-[r:REL]-(b)
+        |RETURN r""".stripMargin
 
     val plan = expandConfig
       .plan(query)
@@ -1065,9 +1077,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan relationship type scan with filter for self loop with few relationships") {
-    val query =
-      """
-        |MATCH (a)-[r:REL]-(a) RETURN r""".stripMargin
+    val query = "MATCH (a)-[r:REL]-(a) RETURN r"
 
     val plan = relationshipTypeScanConfig
       .plan(query)
@@ -1081,11 +1091,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan relationship type scan with filter for self loop for already bound start and end node with few relationships") {
+  test("should plan relationship type scan with filter for self loop for already bound start and end node with hint") {
     val query =
       """
-        |MATCH (a) WITH a SKIP 0
-        |MATCH (a)-[r:REL]-(a) RETURN r""".stripMargin
+        |MATCH (a)
+        |WITH a SKIP 0
+        |MATCH (a)-[r:REL]-(a)
+        |USING SCAN r:REL
+        |RETURN r""".stripMargin
 
     val plan = relationshipTypeScanConfig
       .plan(query)
@@ -1102,22 +1115,19 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should even plan relationship type scan with filter for self loop with many relationships") {
-    val query =
-      """
-        |MATCH (a)-[r:REL]-(a) RETURN r""".stripMargin
+  test("should not plan relationship type scan with filter for self loop with many relationships") {
+    val query = "MATCH (a)-[r:REL]-(a) RETURN r"
 
     val plan = expandConfig
       .plan(query)
       .stripProduceResults
 
-    // The alternative would be AllNodeScan->ExpandInto and ExpandInto is very expensive
-    plan should equal(
-      expandConfig.subPlanBuilder()
-        .filter("a = anon_0")
-        .relationshipTypeScan("(a)-[r:REL]-(anon_0)")
-        .build()
-    )
+    withClue("Used relationshipTypeScan when not expected:") {
+      plan.treeExists {
+        case _: DirectedRelationshipTypeScan => true
+        case _: UndirectedRelationshipTypeScan => true
+      } should be(false)
+    }
   }
 
   test("should plan additional filter after nodeIndexSeek with distance seekable predicate") {

@@ -299,35 +299,53 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(AllNodesScan(idName, argumentIds), solved, ProvidedOrder.empty, context)
   }
 
+  /**
+   * @param idName             the name of the relationship variable
+   * @param relType            the relType to scan
+   * @param patternForLeafPlan the pattern to use for the leaf plan
+   * @param originalPattern    the original pattern, as it appears in the query graph
+   * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead
+   */
   def planRelationshipByTypeScan(idName: String,
                                  relType: RelTypeName,
-                                 leftNode: String,
-                                 rightNode: String,
-                                 pattern: PatternRelationship,
+                                 patternForLeafPlan: PatternRelationship,
+                                 originalPattern: PatternRelationship,
+                                 hiddenSelections: Seq[Expression],
                                  solvedHint: Option[UsingScanHint],
                                  argumentIds: Set[String],
                                  providedOrder: ProvidedOrder,
                                  context: LogicalPlanningContext): LogicalPlan = {
-
-    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .addPatternRelationship(pattern)
-      .addArgumentIds(argumentIds.toIndexedSeq)
-      .addHints(solvedHint)
-    )
-
-    val (firstNode, secondNode) = pattern.dir match {
-      case SemanticDirection.INCOMING => (rightNode, leftNode)
-      case _ => (leftNode, rightNode)
+    def planLeaf: LogicalPlan = {
+      val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+        .addPatternRelationship(patternForLeafPlan)
+        .addArgumentIds(argumentIds.toIndexedSeq)
+        .addHints(solvedHint)
+      )
+      val (firstNode, secondNode) = patternForLeafPlan.inOrder
+      val leafPlan = if (patternForLeafPlan.dir == BOTH) {
+        UndirectedRelationshipTypeScan(idName, firstNode, relType, secondNode, argumentIds, toIndexOrder(providedOrder))
+      } else {
+        DirectedRelationshipTypeScan(idName, firstNode, relType, secondNode, argumentIds, toIndexOrder(providedOrder))
+      }
+      annotate(leafPlan, solved, providedOrder, context)
     }
 
-    val leafPlan = if (pattern.dir == BOTH) {
-      UndirectedRelationshipTypeScan(idName, firstNode, relType, secondNode, argumentIds, toIndexOrder(providedOrder))
-    } else {
-      DirectedRelationshipTypeScan(idName, firstNode, relType, secondNode, argumentIds, toIndexOrder(providedOrder))
+    def planSelection(plan: LogicalPlan): LogicalPlan = {
+      if (hiddenSelections.isEmpty) {
+        plan
+      } else {
+        val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+          .addPatternRelationship(originalPattern)
+          .addArgumentIds(argumentIds.toIndexedSeq)
+          .addHints(solvedHint)
+        )
+        planHiddenSelection(hiddenSelections, plan, solved, context)
+      }
     }
 
-    annotate(leafPlan, solved, providedOrder, context)
+    planSelection(planLeaf)
   }
+
 
   def planRelationshipIndexScan(idName: String,
                                 relationshipType: RelationshipTypeToken,
@@ -515,46 +533,55 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(CartesianProduct(left, right), solved, providedOrder, context)
   }
 
-  def planDirectedRelationshipByIdSeek(idName: String,
-                                       relIds: SeekableArgs,
-                                       startNode: String,
-                                       endNode: String,
-                                       pattern: PatternRelationship,
-                                       argumentIds: Set[String],
-                                       solvedPredicates: Seq[Expression] = Seq.empty,
-                                       context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .addPatternRelationship(pattern)
-      .addPredicates(solvedPredicates: _*)
-      .addArgumentIds(argumentIds.toIndexedSeq)
-    )
-    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
-    val rewrittenRelIds = relIds.mapValues(solver.solve(_))
-    val newArguments = solver.newArguments
-    // Is this ordered by relationship id?
-    val leafPlan = annotate(DirectedRelationshipByIdSeek(idName, rewrittenRelIds, startNode, endNode, argumentIds ++ newArguments), solved, ProvidedOrder.empty, context)
-    solver.rewriteLeafPlan(leafPlan)
-  }
+  /**
+   * @param idName             the name of the relationship variable
+   * @param patternForLeafPlan the pattern to use for the leaf plan
+   * @param originalPattern    the original pattern, as it appears in the query graph
+   * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead
+   */
+  def planRelationshipByIdSeek(idName: String,
+                               relIds: SeekableArgs,
+                               patternForLeafPlan: PatternRelationship,
+                               originalPattern: PatternRelationship,
+                               hiddenSelections: Seq[Expression],
+                               argumentIds: Set[String],
+                               solvedPredicates: Seq[Expression] = Seq.empty,
+                               context: LogicalPlanningContext): LogicalPlan = {
+    def planLeaf: LogicalPlan = {
+      val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+        .addPatternRelationship(patternForLeafPlan)
+        .addPredicates(solvedPredicates: _*)
+        .addArgumentIds(argumentIds.toIndexedSeq)
+      )
+      val (firstNode, secondNode) = patternForLeafPlan.inOrder
+      val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
+      val rewrittenRelIds = relIds.mapValues(solver.solve(_))
+      val newArguments = solver.newArguments
 
-  def planUndirectedRelationshipByIdSeek(idName: String,
-                                         relIds: SeekableArgs,
-                                         leftNode: String,
-                                         rightNode: String,
-                                         pattern: PatternRelationship,
-                                         argumentIds: Set[String],
-                                         solvedPredicates: Seq[Expression] = Seq.empty,
-                                         context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .addPatternRelationship(pattern)
-      .addPredicates(solvedPredicates: _*)
-      .addArgumentIds(argumentIds.toIndexedSeq)
-    )
-    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
-    val rewrittenRelIds = relIds.mapValues(solver.solve(_))
-    val newArguments = solver.newArguments
-    // Is this ordered by relationship id?
-    val leafPlan = annotate(UndirectedRelationshipByIdSeek(idName, rewrittenRelIds, leftNode, rightNode, argumentIds ++ newArguments), solved, ProvidedOrder.empty, context)
-    solver.rewriteLeafPlan(leafPlan)
+      val leafPlan = if (patternForLeafPlan.dir == BOTH) {
+        UndirectedRelationshipByIdSeek(idName, rewrittenRelIds, firstNode, secondNode, argumentIds ++ newArguments)
+      } else {
+        DirectedRelationshipByIdSeek(idName, rewrittenRelIds, firstNode, secondNode, argumentIds ++ newArguments)
+      }
+
+      val annotatedPlan = annotate(leafPlan, solved, ProvidedOrder.empty, context)
+      solver.rewriteLeafPlan(annotatedPlan)
+    }
+
+    def planSelection(plan: LogicalPlan): LogicalPlan = {
+      if (hiddenSelections.isEmpty) {
+        plan
+      } else {
+        val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+          .addPatternRelationship(originalPattern)
+          .addPredicates(solvedPredicates: _*)
+          .addArgumentIds(argumentIds.toIndexedSeq)
+        )
+        planHiddenSelection(hiddenSelections, plan, solved, context)
+      }
+    }
+
+    planSelection(planLeaf)
   }
 
   def planSimpleExpand(left: LogicalPlan,
@@ -625,9 +652,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     case _ => throw new InternalException("Expected a varlength path to be here")
   }
 
-  def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+  private def planHiddenSelection(predicates: Seq[Expression],
+                                  left: LogicalPlan,
+                                  solved: PlannerQueryPart,
+                                  context: LogicalPlanningContext): LogicalPlan = {
     val sortedPredicates = sortPredicatesBySelectivity(left, predicates, context)
-    annotate(Selection(coercePredicatesWithAnds(sortedPredicates), left), solveds.get(left.id), providedOrders.get(left.id).fromLeft, context)
+    annotate(Selection(coercePredicatesWithAnds(sortedPredicates), left), solved, providedOrders.get(left.id).fromLeft, context)
   }
 
   def planNodeByIdSeek(variable: Variable,

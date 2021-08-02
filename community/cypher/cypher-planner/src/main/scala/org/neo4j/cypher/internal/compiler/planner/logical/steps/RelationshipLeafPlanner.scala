@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -32,6 +33,18 @@ import org.neo4j.cypher.internal.util.InputPosition
  */
 object RelationshipLeafPlanner {
 
+  trait RelationshipLeafPlanProvider {
+    /**
+     * @param patternForLeafPlan the pattern to use for the leaf plan
+     * @param originalPattern    the original pattern, as it appears in the query graph
+     * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead
+     * @return the leaf plan including the hidden selections
+     */
+    def getRelationshipLeafPlan(patternForLeafPlan: PatternRelationship,
+                                originalPattern: PatternRelationship,
+                                hiddenSelections: Seq[Expression]): LogicalPlan
+  }
+
   /**
    * Plan a hidden selection on top of a relationship leaf plan, if needed.
    * This is needed if either the start or end node is already bound, or if the start and end node is the same.
@@ -39,36 +52,34 @@ object RelationshipLeafPlanner {
    * @param queryGraph   the query graph
    * @param relationship the relationship
    * @param context      the context
-   * @param planLeafPlan a function that returns the leaf plan, given the names of the left and the right node.
-   * @return the leaf plan, potentially wrapped in a hidden selection.
+   * @param relationshipLeafPlanProvider a RelationshipLeafPlanProvider
+   * @return the leaf plan, with the correct hidden selections.
    */
   def planHiddenSelectionForRelationshipLeafPlan(queryGraph: QueryGraph,
                                                  relationship: PatternRelationship,
                                                  context: LogicalPlanningContext,
-                                                 planLeafPlan: ((String, String)) => LogicalPlan,
+                                                 relationshipLeafPlanProvider: RelationshipLeafPlanProvider,
                                                  ): LogicalPlan = {
     val startNodeAndEndNodeIsSame = relationship.left == relationship.right
     val startOrEndNodeIsBound = relationship.coveredIds.intersect(queryGraph.argumentIds).nonEmpty
     if (!startOrEndNodeIsBound && !startNodeAndEndNodeIsSame) {
-      planLeafPlan(relationship.nodes)
+      relationshipLeafPlanProvider.getRelationshipLeafPlan(relationship, relationship, Seq.empty)
     } else if (startOrEndNodeIsBound) {
       // if start/end node variables are already bound, generate new variable names and plan a Selection after the seek
-      val oldNodes = relationship.nodes
-      val newNodes = generateNewStartEndNodes(oldNodes, queryGraph.argumentIds, context)
+      val newRelationship = generateNewPatternRelationship(relationship, queryGraph.argumentIds, context)
       // For a pattern (a)-[r]-(b), nodePredicates will be something like `a = new_a AND b = new_B`,
       // where `new_a` and `new_b` are the newly generated variable names.
       // This case covers the scenario where (a)-[r]-(a), because the nodePredicate `a = new_a1 AND a = new_a2` implies `new_a1 = new_a2`
-      val nodePredicates = buildNodePredicates(oldNodes, newNodes)
+      val nodePredicates = buildNodePredicates(relationship.nodes, newRelationship.nodes)
 
-      val leafPlan = planLeafPlan(newNodes)
-      context.logicalPlanProducer.planHiddenSelection(nodePredicates, leafPlan, context)
+      relationshipLeafPlanProvider.getRelationshipLeafPlan(newRelationship, relationship, nodePredicates)
     } else {
       // In the case where `startNodeAndEndNodeIsSame == true` we need to generate 1 new variable name for one side of the relationship
       // and plan a Selection after the seek so that both sides are the same
       val newRightNode = context.anonymousVariableNameGenerator.nextName
       val nodePredicate = equalsPredicate(relationship.right, newRightNode)
-      val leafPlan = planLeafPlan((relationship.left, newRightNode))
-      context.logicalPlanProducer.planHiddenSelection(Seq(nodePredicate), leafPlan, context)
+      val newRelationship = relationship.copy(nodes = (relationship.left, newRightNode))
+      relationshipLeafPlanProvider.getRelationshipLeafPlan(newRelationship, relationship, Seq(nodePredicate))
     }
   }
 
@@ -83,6 +94,16 @@ object RelationshipLeafPlanner {
     val newLeft = if (!argumentIds.contains(left)) left else context.anonymousVariableNameGenerator.nextName
     val newRight = if (!argumentIds.contains(right)) right else context.anonymousVariableNameGenerator.nextName
     (newLeft, newRight)
+  }
+
+  /**
+   * Generate new variable names for start and end node of a PatternRelationship, but only for those nodes that are arguments.
+   * Return a PatternRelationship with the updates nodes.
+   */
+  private def generateNewPatternRelationship(oldRelationship: PatternRelationship,
+                                             argumentIds: Set[String],
+                                             context: LogicalPlanningContext): PatternRelationship = {
+    oldRelationship.copy(nodes = generateNewStartEndNodes(oldRelationship.nodes, argumentIds, context))
   }
 
   private def buildNodePredicates(oldNodes: (String, String), newNodes: (String, String)): Seq[Equals] = {

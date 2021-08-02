@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CardinalityModelIntegrationTest
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
@@ -44,6 +46,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .setAllRelationshipsCardinality(relCount + rel2Count)
+      .setRelationshipCardinality("()-[:REL]->()", relCount)
       .setRelationshipCardinality("(:Person)-[:REL]->()", relCount)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()",
@@ -56,6 +59,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .setAllRelationshipsCardinality(relCount + rel2Count)
+      .setRelationshipCardinality("()-[:REL]->()", relCount)
       .setRelationshipCardinality("(:Person)-[:REL]->()", relCount)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()",
@@ -68,6 +72,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
       .setAllRelationshipsCardinality(relCount + rel2Count)
+      .setRelationshipCardinality("()-[:REL]->()", relCount)
       .setRelationshipCardinality("(:Person)-[:REL]->()", relCount)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT $limit MATCH (a)-[:REL]->()",
@@ -393,6 +398,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setLabelCardinality("FOO", fooCount)
       .setLabelCardinality("BAR", barCount)
       .setAllRelationshipsCardinality(relCount)
+      .setRelationshipCardinality("()-[:TYPE]->()", relCount)
       .setRelationshipCardinality("(:FOO)-[:TYPE]->()", relCount)
       .setRelationshipCardinality("()-[:TYPE]->(:BAR)", relCount)
       .setRelationshipCardinality("(:FOO)-[:TYPE]->(:BAR)", relCount)
@@ -540,5 +546,108 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
 
     val query = "MATCH ()-[r]-() WHERE id(r) = 5"
     queryShouldHaveCardinality(config, query, 2)
+  }
+
+  test("relationship type scan on bound start node should correctly calculate cardinality") {
+    val aCardinality = 500
+    val rCardinality = 10
+    val arCardinality = 7
+
+    val config = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", aCardinality)
+      .setAllRelationshipsCardinality(rCardinality)
+      .setRelationshipCardinality("()-[:R]->()", rCardinality)
+      .setRelationshipCardinality("(:A)-[:R]->()", arCardinality)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A)
+        |WITH a, 1 AS foo
+        |MATCH (a)-[r:R]->() USING SCAN r:R
+        |""".stripMargin
+
+    // The leaf plan does not yet check that r's start node is a,
+    // so we want cardinality estimation to take that into account.
+    planShouldHaveCardinality(config, query, {
+      case DirectedRelationshipTypeScan("r", _, _, _, _, _) => true
+    }, aCardinality * rCardinality)
+    // The whole query checks that r's start node is a
+    queryShouldHaveCardinality(config, query, arCardinality)
+  }
+
+  test("relationship type scan with equal start and end node should correctly calculate cardinality") {
+    val aCardinality = 500
+    val rCardinality = 100
+    val araCardinality = 7
+
+    val config = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", aCardinality)
+      .setAllRelationshipsCardinality(rCardinality)
+      .setRelationshipCardinality("()-[:R]->()", rCardinality)
+      .setRelationshipCardinality("(:A)-[:R]->(:A)", araCardinality)
+      .setRelationshipCardinality("(:A)-[:R]->()", araCardinality * 5)
+      .build()
+
+    val query = "MATCH (a:A)-[r:R]->(a)"
+
+    // The leaf plan does not yet check that r's start node is a,
+    // so we want cardinality estimation to take that into account.
+    planShouldHaveCardinality(config, query, {
+      case DirectedRelationshipTypeScan("r", _, _, _, _, _) => true
+    }, rCardinality)
+  }
+
+  test("relationship by id seek on bound start node should correctly calculate cardinality") {
+    val aCardinality = 5
+    val rCardinality = 1000
+    val arCardinality = 700
+
+    val config = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setLabelCardinality("A", aCardinality)
+      .setAllRelationshipsCardinality(rCardinality)
+      .setRelationshipCardinality("()-[:R]->()", rCardinality)
+      .setRelationshipCardinality("(:A)-[:R]->()", arCardinality)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A)
+        |WITH a, 1 AS foo
+        |MATCH (a)-[r:R]->() WHERE id(r) = 5
+        |""".stripMargin
+
+    // The leaf plan does not yet check that r's start node is a,
+    // so we want cardinality estimation to take that into account.
+    planShouldHaveCardinality(config, query, {
+      case DirectedRelationshipByIdSeek("r", _, _, _, _) => true
+    }, aCardinality)
+    // The whole query checks that r's start node is a
+    queryShouldHaveCardinality(config, query, arCardinality * 1.0 / rCardinality)
+  }
+
+  test("relationship by id seek with equal start and end node should correctly calculate cardinality") {
+    val aCardinality = 5
+    val rCardinality = 1000
+    val arCardinality = 700
+
+    val config = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setLabelCardinality("A", aCardinality)
+      .setAllRelationshipsCardinality(rCardinality)
+      .setRelationshipCardinality("()-[:R]->()", rCardinality)
+      .setRelationshipCardinality("(:A)-[:R]->()", arCardinality)
+      .build()
+
+    val query = "MATCH (a)-[r:R]->(a) WHERE id(r) = 5"
+
+    // The leaf plan does not yet check that r's start node is a,
+    // so we want cardinality estimation to take that into account.
+    planShouldHaveCardinality(config, query, {
+      case DirectedRelationshipByIdSeek("r", _, _, _, _) => true
+    }, 1)
   }
 }

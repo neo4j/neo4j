@@ -31,9 +31,6 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
-import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -63,16 +60,11 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
           } else {
             queryGraph.patternRelationships.find(_.name == id) match {
               case Some(relationship) =>
-                val types = relationship.types.toList
-
-                val planSeek = planRelationshipByIdSeek(relationship, _, idValues, Seq(predicate), queryGraph.argumentIds, context)
-                val planFilter = planRelTypeFilter(_, variable, types, context)
-
                 Some(planHiddenSelectionForRelationshipLeafPlan(
                   queryGraph,
                   relationship,
                   context,
-                  planSeek.andThen(planFilter)
+                  planRelationshipByIdSeek(variable, _, _, _, idValues, Seq(predicate), queryGraph.argumentIds, context)
                 ))
 
               case None =>
@@ -83,37 +75,42 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     }
   }
 
-  private def planRelationshipByIdSeek(relationship: PatternRelationship,
-                                       nodes: (String, String),
+  private def planRelationshipByIdSeek(idExpr: Variable,
+                                       patternForLeafPlan: PatternRelationship,
+                                       originalPattern: PatternRelationship,
+                                       hiddenSelections: Seq[Expression],
                                        idValues: SeekableArgs,
                                        predicates: Seq[Expression],
                                        argumentIds: Set[String],
                                        context: LogicalPlanningContext): LogicalPlan = {
-    val (left, right) = nodes
-    val name = relationship.name
-    relationship.dir match {
-      case BOTH     => context.logicalPlanProducer.planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates, context)
-      case INCOMING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, argumentIds, predicates, context)
-      case OUTGOING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates, context)
-    }
+    val name = originalPattern.name
+    val relTypeFilterHiddenSelection = relTypeFilter(idExpr, originalPattern.types.toList)
+    context.logicalPlanProducer.planRelationshipByIdSeek(
+      name,
+      idValues,
+      patternForLeafPlan,
+      originalPattern,
+      hiddenSelections ++ relTypeFilterHiddenSelection,
+      argumentIds,
+      predicates,
+      context
+    )
   }
 
-  private def planRelTypeFilter(plan: LogicalPlan, idExpr: Variable, relTypes: List[RelTypeName], context: LogicalPlanningContext): LogicalPlan = {
+  private def relTypeFilter(idExpr: Variable, relTypes: List[RelTypeName]): Option[Expression] = {
     relTypes match {
       case Seq(tpe) =>
         val relTypeExpr = relTypeAsStringLiteral(tpe)
-        val predicate = Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position)
-        context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan, context)
+        Some(Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position))
 
       case _ :: _ =>
         val relTypeExprs = relTypes.map(relTypeAsStringLiteral)
         val invocation = typeOfRelExpr(idExpr)
         val idPos = idExpr.position
-        val predicate = Ors(relTypeExprs.map { expr => Equals(invocation, expr)(idPos) } )(idPos)
-        context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan, context)
+        Some(Ors(relTypeExprs.map { expr => Equals(invocation, expr)(idPos) } )(idPos))
 
       case _ =>
-        plan
+        None
     }
   }
 

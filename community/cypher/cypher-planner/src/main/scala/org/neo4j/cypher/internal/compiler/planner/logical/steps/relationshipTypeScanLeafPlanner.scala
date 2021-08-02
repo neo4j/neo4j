@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionForRelationshipLeafPlan
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -51,29 +52,29 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
           queryGraph,
           relationship,
           context,
-          planRelationshipTypeScan(relationship, name, _, typ, queryGraph, interestingOrderConfig, context)
+          planRelationshipTypeScan(name, typ, _, _, _, queryGraph, interestingOrderConfig, context)
         ))
 
       case _ => None
     }
   }
 
-  private def planRelationshipTypeScan(relationship: PatternRelationship,
-                                       name: String,
-                                       nodes: (String, String),
+  private def planRelationshipTypeScan(name: String,
                                        typ: RelTypeName,
+                                       patternForLeafPlan: PatternRelationship,
+                                       originalPattern: PatternRelationship,
+                                       hiddenSelections: Seq[Expression],
                                        queryGraph: QueryGraph,
                                        interestingOrderConfig: InterestingOrderConfig,
                                        context: LogicalPlanningContext): LogicalPlan = {
     def providedOrderFor = ResultOrdering.providedOrderForRelationshipTypeScan(interestingOrderConfig.orderToSolve, _, context.providedOrderFactory)
-    val (left, right) = nodes
     context.logicalPlanProducer.planRelationshipByTypeScan(
       name,
       typ,
-      left,
-      right,
-      relationship,
-      hint(queryGraph, relationship),
+      patternForLeafPlan,
+      originalPattern,
+      hiddenSelections,
+      hint(queryGraph, originalPattern),
       queryGraph.argumentIds,
       providedOrderFor(name),
       context
