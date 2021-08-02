@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -46,7 +47,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends Cursor>
-        implements PartitionedScanTestSuite.TestSuite<QUERY,CURSOR>
+        implements PartitionedScanTestSuite.TestSuite<QUERY,IndexReadSession,CURSOR>
 {
     // range for range based queries, other value type ranges are calculated from this for consistency
     // as using an int as source of values, ~half of ints will be covered by this range
@@ -82,7 +83,7 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
     }
 
     abstract static class WithoutData<QUERY extends Query<?>, CURSOR extends Cursor>
-            extends PartitionedScanTestSuite.WithoutData<QUERY,CURSOR>
+            extends PartitionedScanTestSuite.WithoutData<QUERY,IndexReadSession,CURSOR>
     {
         protected final PartitionedScanFactories.PropertyIndex<QUERY,CURSOR> factory;
 
@@ -94,7 +95,7 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
     }
 
     abstract static class WithData<QUERY extends Query<?>, CURSOR extends Cursor>
-            extends PartitionedScanTestSuite.WithData<QUERY,CURSOR>
+            extends PartitionedScanTestSuite.WithData<QUERY,IndexReadSession,CURSOR>
     {
         protected final PartitionedScanFactories.PropertyIndex<QUERY,CURSOR> factory;
 

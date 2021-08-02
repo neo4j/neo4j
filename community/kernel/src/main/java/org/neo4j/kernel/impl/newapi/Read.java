@@ -103,8 +103,8 @@ abstract class Read implements TxStateHolder,
 
         if ( indexSession.reference.schema().entityType() != EntityType.NODE )
         {
-            throw new IndexNotApplicableKernelException(
-                    "Node index seek can only be performed on node indexes: " + index.reference().userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Node index seek can not be performed on index: "
+                                                         + index.reference().userDescription( ktx.tokenRead() ) );
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
@@ -121,8 +121,8 @@ abstract class Read implements TxStateHolder,
         final var descriptor = index.reference();
         if ( descriptor.schema().entityType() != EntityType.NODE )
         {
-            throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " +
-                    descriptor.userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Node index seek can not be performed on index: "
+                                                         + descriptor.userDescription( ktx.tokenRead() ) );
         }
         return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext, query );
     }
@@ -135,8 +135,8 @@ abstract class Read implements TxStateHolder,
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
         if ( indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP )
         {
-            throw new IndexNotApplicableKernelException( "Relationship index seek can only be performed on relationship indexes: " +
-                                                         index.reference().userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Relationship index seek can not be performed on index: "
+                                                         + index.reference().userDescription( ktx.tokenRead() ) );
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
@@ -153,8 +153,8 @@ abstract class Read implements TxStateHolder,
         final var descriptor = index.reference();
         if ( descriptor.schema().entityType() != EntityType.RELATIONSHIP )
         {
-            throw new IndexNotApplicableKernelException( "Relationship index seek can only be performed on relationship indexes: " +
-                                                         descriptor.userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Relationship index seek can not be performed on index: "
+                                                         + descriptor.userDescription( ktx.tokenRead() ) );
         }
         return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext, query );
     }
@@ -212,8 +212,8 @@ abstract class Read implements TxStateHolder,
 
         if ( indexSession.reference.schema().entityType() != EntityType.NODE )
         {
-            throw new IndexNotApplicableKernelException( "Node index scan can only be performed on node indexes: " +
-                                                         index.reference().userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Node index scan can not be performed on index: "
+                                                         + index.reference().userDescription( ktx.tokenRead() ) );
         }
 
         scanIndex( indexSession, (EntityIndexSeekClient) cursor, constraints );
@@ -227,8 +227,8 @@ abstract class Read implements TxStateHolder,
         final var descriptor = index.reference();
         if ( descriptor.schema().entityType() != EntityType.NODE )
         {
-            throw new IndexNotApplicableKernelException( "Node index scan can only be performed on node indexes: " +
-                                                         descriptor.userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Node index scan can not be performed on index: "
+                                                         + descriptor.userDescription( ktx.tokenRead() ) );
         }
 
         return propertyIndexScan( index, desiredNumberOfPartitions, queryContext );
@@ -244,8 +244,8 @@ abstract class Read implements TxStateHolder,
 
         if ( indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP )
         {
-            throw new IndexNotApplicableKernelException( "Relationship index scan can only be performed on relationship indexes: " +
-                                                         index.reference().userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Relationship index scan can not be performed on index: "
+                                                         + index.reference().userDescription( ktx.tokenRead() ) );
         }
 
         scanIndex( indexSession, (EntityIndexSeekClient) cursor, constraints );
@@ -260,8 +260,8 @@ abstract class Read implements TxStateHolder,
         final var descriptor = index.reference();
         if ( descriptor.schema().entityType() != EntityType.RELATIONSHIP )
         {
-            throw new IndexNotApplicableKernelException( "Relationship index scan can only be performed on relationship indexes: " +
-                                                         descriptor.userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Relationship index scan can not be performed on index: "
+                                                         + descriptor.userDescription( ktx.tokenRead() ) );
         }
 
         return propertyIndexScan( index, desiredNumberOfPartitions, queryContext );
@@ -310,8 +310,8 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
         if ( session.reference().schema().entityType() != EntityType.NODE )
         {
-            throw new IndexNotApplicableKernelException( "Node label index scan can not be performed on index " +
-                                                         session.reference().userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Node label index scan can not be performed on index: "
+                                                         + session.reference().userDescription( ktx.tokenRead() ) );
         }
         return tokenIndexScan( session, desiredNumberOfPartitions, cursorContext, query );
     }
@@ -324,8 +324,8 @@ abstract class Read implements TxStateHolder,
 
         if ( session.reference().schema().entityType() != EntityType.NODE )
         {
-            throw new IndexNotApplicableKernelException( "Node label index scan can not be performed on index " +
-                                                         session.reference().userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Node label index scan can not be performed on index: "
+                                                         + session.reference().userDescription( ktx.tokenRead() ) );
         }
 
         var tokenSession = (DefaultTokenReadSession) session;
@@ -385,8 +385,8 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
         if ( session.reference().schema().entityType() != EntityType.RELATIONSHIP )
         {
-            throw new IndexNotApplicableKernelException( "Relationship type index scan can not be performed on index " +
-                                                         session.reference().userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Relationship type index scan can not be performed on index: "
+                                                         + session.reference().userDescription( ktx.tokenRead() ) );
         }
         return tokenIndexScan( session, desiredNumberOfPartitions, cursorContext, query );
     }
@@ -400,8 +400,8 @@ abstract class Read implements TxStateHolder,
 
         if ( session.reference().schema().entityType() != EntityType.RELATIONSHIP )
         {
-            throw new IndexNotApplicableKernelException( "Relationship type index scan can not be performed on index " +
-                                                         session.reference().userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "Relationship type index scan can not be performed on index: "
+                                                         + session.reference().userDescription( ktx.tokenRead() ) );
         }
 
         var tokenSession = (DefaultTokenReadSession) session;
@@ -447,8 +447,8 @@ abstract class Read implements TxStateHolder,
         final var descriptor = index.reference();
         if ( !descriptor.getCapability().supportPartitionedScan( query ) )
         {
-            throw new IndexNotApplicableKernelException( "This index does not support partitioned scan for this query: " +
-                                                         descriptor.userDescription( ktx.tokenRead() ) );
+            throw new IndexNotApplicableKernelException( "This index does not support partitioned scan for this query: "
+                                                         + descriptor.userDescription( ktx.tokenRead() ) );
         }
 
         final var session = (DefaultIndexReadSession) index;

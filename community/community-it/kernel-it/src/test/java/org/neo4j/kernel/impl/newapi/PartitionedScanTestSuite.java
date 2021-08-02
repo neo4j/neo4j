@@ -45,6 +45,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -64,7 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith( {SoftAssertionsExtension.class, RandomExtension.class} )
 @ImpermanentDbmsExtension
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends Cursor>
+abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR extends Cursor>
 {
     @Inject
     private GraphDatabaseService db;
@@ -78,9 +79,9 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
 
     protected EntityIdsMatchingQuery<QUERY> entityIdsMatchingQuery;
     protected int maxNumberOfPartitions;
-    protected PartitionedScanFactory<QUERY,CURSOR> factory;
+    protected PartitionedScanFactory<QUERY,SESSION,CURSOR> factory;
 
-    PartitionedScanTestSuite( TestSuite<QUERY,CURSOR> testSuite )
+    PartitionedScanTestSuite( TestSuite<QUERY,SESSION,CURSOR> testSuite )
     {
         factory = testSuite.getFactory();
     }
@@ -102,16 +103,34 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         return ((TransactionImpl) db.beginTx()).kernelTransaction();
     }
 
+    @Test
+    final void shouldThrowWithEntityTypeComplementSeekOrScan() throws KernelException
+    {
+        try ( var tx = beginTx() )
+        {
+            final var query = entityIdsMatchingQuery.iterator().next().getKey();
+
+            // given  a read session with a mismatched entity type to the seek/scan
+            // when   partitioned scan constructed
+            // then   IndexNotApplicableKernelException should be thrown
+            softly.assertThatThrownBy( () -> factory.getEntityTypeComplimentFactory()
+                                                    .partitionedScan( tx, query, factory.getSession( tx, query ), Integer.MAX_VALUE ),
+                                       "should throw with mismatched entity type seek/scan method, and given index session" )
+                  .isInstanceOf( IndexNotApplicableKernelException.class )
+                  .hasMessageContaining( "can not be performed on index" );
+        }
+    }
+
     @ParameterizedTest
     @ValueSource( ints = {-1, 0} )
-    final void shouldThrowOnNonPositivePartitions( int desiredNumberOfPartitions ) throws KernelException
+    final void shouldThrowWithNonPositivePartitions( int desiredNumberOfPartitions ) throws KernelException
     {
         try ( var tx = beginTx() )
         {
             final var query = entityIdsMatchingQuery.iterator().next().getKey();
 
             // given  an invalid desiredNumberOfPartitions
-            // when   partition scan constructed
+            // when   partitioned scan constructed
             // then   IllegalArgumentException should be thrown
             softly.assertThatThrownBy( () -> factory.partitionedScan( tx, query, desiredNumberOfPartitions ),
                                        "desired number of partitions must be positive" )
@@ -145,10 +164,10 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         tx.dataWrite().nodeCreate();
     }
 
-    abstract static class WithoutData<QUERY extends Query<?>, CURSOR extends Cursor>
-            extends PartitionedScanTestSuite<QUERY,CURSOR>
+    abstract static class WithoutData<QUERY extends Query<?>, SESSION, CURSOR extends Cursor>
+            extends PartitionedScanTestSuite<QUERY,SESSION,CURSOR>
     {
-        WithoutData( TestSuite<QUERY,CURSOR> testSuite )
+        WithoutData( TestSuite<QUERY,SESSION,CURSOR> testSuite )
         {
             super( testSuite );
         }
@@ -175,10 +194,10 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         }
     }
 
-    abstract static class WithData<QUERY extends Query<?>, CURSOR extends Cursor>
-            extends PartitionedScanTestSuite<QUERY,CURSOR>
+    abstract static class WithData<QUERY extends Query<?>, SESSION, CURSOR extends Cursor>
+            extends PartitionedScanTestSuite<QUERY,SESSION,CURSOR>
     {
-        WithData( TestSuite<QUERY,CURSOR> testSuite )
+        WithData( TestSuite<QUERY,SESSION,CURSOR> testSuite )
         {
             super( testSuite );
         }
@@ -475,8 +494,8 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends C
         QUERY get();
     }
 
-    interface TestSuite<QUERY extends Query<?>, CURSOR extends Cursor>
+    interface TestSuite<QUERY extends Query<?>, SESSION, CURSOR extends Cursor>
     {
-        PartitionedScanFactory<QUERY,CURSOR> getFactory();
+        PartitionedScanFactory<QUERY,SESSION,CURSOR> getFactory();
     }
 }

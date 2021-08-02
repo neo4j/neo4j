@@ -25,14 +25,15 @@ import java.util.Objects;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.kernel.impl.newapi.TokenIndexScanPartitionedScanTestSuite.TokenScanQuery;
 
 public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Cursor>
-        implements PartitionedScanTestSuite.TestSuite<TokenScanQuery,CURSER>
+        implements PartitionedScanTestSuite.TestSuite<TokenScanQuery,TokenReadSession,CURSER>
 {
     abstract static class WithoutData<CURSER extends Cursor>
-            extends PartitionedScanTestSuite.WithoutData<TokenScanQuery,CURSER>
+            extends PartitionedScanTestSuite.WithoutData<TokenScanQuery,TokenReadSession,CURSER>
     {
         WithoutData( TokenIndexScanPartitionedScanTestSuite<CURSER> testSuite )
         {
@@ -52,7 +53,7 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
     }
 
     abstract static class WithData<CURSER extends Cursor>
-            extends PartitionedScanTestSuite.WithData<TokenScanQuery,CURSER>
+            extends PartitionedScanTestSuite.WithData<TokenScanQuery,TokenReadSession,CURSER>
     {
         WithData( TokenIndexScanPartitionedScanTestSuite<CURSER> testSuite )
         {

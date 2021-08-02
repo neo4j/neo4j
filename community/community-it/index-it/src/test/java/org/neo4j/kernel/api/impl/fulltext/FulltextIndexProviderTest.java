@@ -1150,7 +1150,7 @@ class FulltextIndexProviderTest
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
             IndexNotApplicableKernelException e =
                     assertThrows( IndexNotApplicableKernelException.class, () -> assertQueryResult( ktx, endsWithQuery( 1, "a" ) ) );
-            assertThat( e.getMessage() ).contains( "Node index seek can only be performed on node indexes" );
+            assertThat( e.getMessage() ).contains( "Node index seek can not be performed on index" );
         }
     }
 
