@@ -491,49 +491,49 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("uncorrelated Subquery should eliminate provided order when rhs contains update") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = false, yielding = true)
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = false, yielding = true, inTransactionsParameters = None)
     )
   }
 
   test("uncorrelated Subquery should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = false, yielding = true)
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = false, yielding = true, inTransactionsParameters = None)
     )
   }
 
   test("correlated Subquery should eliminate provided order when rhs contains update") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = true, yielding = true)
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = true, yielding = true, inTransactionsParameters = None)
     )
   }
 
   test("correlated Subquery should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = true, yielding = true)
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = true, yielding = true, inTransactionsParameters = None)
     )
   }
 
   test("uncorrelated unit Subquery should eliminate provided order when rhs contains update") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = false, yielding = false)
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = false, yielding = false, inTransactionsParameters = None)
     )
   }
 
   test("uncorrelated unit Subquery should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = false, yielding = false)
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = false, yielding = false, inTransactionsParameters = None)
     )
   }
 
   test("correlated unit Subquery should eliminate provided order when rhs contains update") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = true, yielding = false)
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithUpdate, ctx.context, correlated = true, yielding = false, inTransactionsParameters = None)
     )
   }
 
   test("correlated unit Subquery should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = true, yielding = false)
+      ctx.producer.planSubquery(ctx.lhs, ctx.rhsWithoutUpdate, ctx.context, correlated = true, yielding = false, inTransactionsParameters = None)
     )
   }
 

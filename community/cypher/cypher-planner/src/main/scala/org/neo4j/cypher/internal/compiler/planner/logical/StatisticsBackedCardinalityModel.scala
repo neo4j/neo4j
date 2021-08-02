@@ -139,12 +139,12 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     case _: PassthroughAllHorizon =>
       cardinalityAndInput
 
-    case CallSubqueryHorizon(subquery, _, true) =>
+    case CallSubqueryHorizon(subquery, _, true, _) =>
       val subQueryCardinality = apply(subquery, cardinalityAndInput.input, semanticTable, indexPredicateProviderContext)
       // Cardinality of the subquery times current cardinality is the result
       cardinalityAndInput.copy(cardinality = cardinalityAndInput.cardinality * subQueryCardinality)
 
-    case CallSubqueryHorizon(subquery, _, false) =>
+    case CallSubqueryHorizon(subquery, _, false, _) =>
       // Unit subquery call does not affect the driving table
       cardinalityAndInput
   }

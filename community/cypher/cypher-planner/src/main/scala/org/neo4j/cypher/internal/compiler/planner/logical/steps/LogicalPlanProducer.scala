@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -455,10 +456,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(plan, solved, providedOrder, context)
   }
 
-  def planSubquery(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext, correlated: Boolean, yielding: Boolean): LogicalPlan = {
+  def planSubquery(left: LogicalPlan,
+                   right: LogicalPlan,
+                   context: LogicalPlanningContext,
+                   correlated: Boolean,
+                   yielding: Boolean,
+                   inTransactionsParameters: Option[InTransactionsParameters]): LogicalPlan = {
     val solvedLeft = solveds.get(left.id)
     val solvedRight = solveds.get(right.id)
-    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated, yielding)))
+    val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated, yielding, inTransactionsParameters)))
 
     val plan = if (yielding) {
       if (!correlated && solvedRight.readOnly) {

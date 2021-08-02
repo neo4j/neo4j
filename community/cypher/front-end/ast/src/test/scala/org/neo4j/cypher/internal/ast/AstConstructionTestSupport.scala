@@ -410,8 +410,11 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def subqueryCallInTransactions(cs: Clause*): SubqueryCall = {
     val call = subqueryCall(cs:_*)
-    call.copy(inTransactionsParameters = Some(SubqueryCall.InTransactionsParameters()(pos)))(pos)
+    call.copy(inTransactionsParameters = Some(inTransactionsParameters()))(pos)
   }
+
+  def inTransactionsParameters(): SubqueryCall.InTransactionsParameters =
+    SubqueryCall.InTransactionsParameters()(pos)
 
   def create(pattern: PatternElement): Create =
     Create(Pattern(Seq(EveryPath(pattern)))(pos))(pos)

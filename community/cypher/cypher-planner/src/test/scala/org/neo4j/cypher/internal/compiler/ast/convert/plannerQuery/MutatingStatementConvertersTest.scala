@@ -163,6 +163,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     query.horizon shouldEqual CallSubqueryHorizon(
       correlated = true,
       yielding = true,
+      inTransactionsParameters = None,
       callSubquery = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
           argumentIds = Set("n"),
@@ -179,6 +180,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     query.horizon shouldEqual CallSubqueryHorizon(
       correlated = true,
       yielding = false,
+      inTransactionsParameters = None,
       callSubquery = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
           argumentIds = Set("n"),

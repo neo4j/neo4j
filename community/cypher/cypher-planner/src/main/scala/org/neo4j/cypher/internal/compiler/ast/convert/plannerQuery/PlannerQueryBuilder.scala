@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.PlannerQueryBuilder.inlineRelationshipTypePredicates
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
@@ -46,8 +47,11 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
 
-  def withCallSubquery(subquery: PlannerQueryPart, correlated: Boolean, yielding: Boolean): PlannerQueryBuilder = {
-    withHorizon(CallSubqueryHorizon(subquery, correlated, yielding)).withTail(SinglePlannerQuery.empty)
+  def withCallSubquery(subquery: PlannerQueryPart,
+                       correlated: Boolean,
+                       yielding: Boolean,
+                       inTransactionsParameters: Option[InTransactionsParameters]): PlannerQueryBuilder = {
+    withHorizon(CallSubqueryHorizon(subquery, correlated, yielding, inTransactionsParameters)).withTail(SinglePlannerQuery.empty)
   }
 
   def withTail(newTail: SinglePlannerQuery): PlannerQueryBuilder = {

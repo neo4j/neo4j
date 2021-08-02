@@ -442,7 +442,7 @@ object ClauseConverters {
   private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubqueryCall, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
     val subquery = clause.part
     val callSubquery = StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable, anonymousVariableNameGenerator)
-    acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isYielding)
+    acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isYielding, clause.inTransactionsParameters)
   }
 
   private def addCommandClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: CommandClause): PlannerQueryBuilder = {

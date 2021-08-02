@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -98,7 +99,10 @@ case class LoadCSVProjection(variable: String, url: Expression, format: CSVForma
   override def dependingExpressions: Seq[Expression] = Seq(url)
 }
 
-case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boolean, yielding: Boolean) extends QueryHorizon {
+case class CallSubqueryHorizon(callSubquery: PlannerQueryPart,
+                               correlated: Boolean,
+                               yielding: Boolean,
+                               inTransactionsParameters: Option[InTransactionsParameters]) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ callSubquery.returns
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
