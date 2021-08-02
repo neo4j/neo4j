@@ -60,30 +60,21 @@ import org.neo4j.util.VisibleForTesting;
  */
 public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferManger
 {
-    private static final Duration DEFAULT_COLLECTION_INTERVAL = Duration.ofSeconds( 20 );
+    private static final Duration COLLECTION_INTERVAL = Duration.ofSeconds( 20 );
 
     private final JobScheduler jobScheduler;
-    private final Duration collectionInterval;
     private final Bucket[] buckets;
     private final MemoryMonitor memoryMonitor;
     private final int maxPooledBufferCapacity;
 
     private JobHandle<?> collectionJob;
 
-    public NeoByteBufferPool( NeoBufferPoolConfigOverride configOverride, MemoryPools memoryPools, JobScheduler jobScheduler )
+    public NeoByteBufferPool( MemoryPools memoryPools, JobScheduler jobScheduler )
     {
         this.jobScheduler = jobScheduler;
         this.memoryMonitor = crateMemoryMonitor( memoryPools );
-        if ( configOverride.getCollectionInterval() == null )
-        {
-            collectionInterval = DEFAULT_COLLECTION_INTERVAL;
-        }
-        else
-        {
-            collectionInterval = configOverride.getCollectionInterval();
-        }
 
-        var bucketBootstrapper = new BucketBootstrapper( configOverride, memoryMonitor.getMemoryTracker() );
+        var bucketBootstrapper = new BucketBootstrapper( memoryMonitor.getMemoryTracker() );
         buckets = bucketBootstrapper.getBuckets().toArray( new Bucket[0] );
         maxPooledBufferCapacity = bucketBootstrapper.getMaxPooledBufferCapacity();
     }
@@ -105,7 +96,7 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
                 Group.BUFFER_POOL_MAINTENANCE,
                 JobMonitoringParams.systemJob( "Buffer pool maintenance" ),
                 () -> Arrays.stream( buckets ).forEach( Bucket::prunePooledBuffers ),
-                collectionInterval.toSeconds(),
+                COLLECTION_INTERVAL.toSeconds(),
                 TimeUnit.SECONDS );
     }
 

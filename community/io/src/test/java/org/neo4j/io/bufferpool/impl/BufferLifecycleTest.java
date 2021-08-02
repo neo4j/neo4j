@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.memory.MemoryPools;
@@ -49,9 +48,7 @@ class BufferLifecycleTest
     @BeforeEach
     void setUp()
     {
-        var buckets = List.of( "1K:1", "2K:1", "4K:1" );
-        var poolConfig = new NeoBufferPoolConfigOverride( null, buckets );
-        bufferPool = new NeoByteBufferPool( poolConfig, null, jobScheduler )
+        bufferPool = new NeoByteBufferPool( null, jobScheduler )
         {
             MemoryMonitor crateMemoryMonitor( MemoryPools memoryPools )
             {

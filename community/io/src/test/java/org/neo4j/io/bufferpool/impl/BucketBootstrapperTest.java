@@ -21,7 +21,6 @@ package org.neo4j.io.bufferpool.impl;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,39 +32,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BucketBootstrapperTest
 {
-    @Test
-    void testBasicBucketCreation()
-    {
-        var buckets = constructBuckets( "512:1C", "1K:1C" );
-        assertCapacities( buckets, 512, 1024 );
-
-        assertSlices( buckets, 512, 16 );
-        assertSlices( buckets, 1024, 16 );
-    }
 
     @Test
-    void testSliceCalculation()
+    void testDefaultBucketCapacitiesWith2Cpus()
     {
-        var buckets = constructBuckets( "512:0.01C" );
+        var bootstrapper = new TestBucketBootstrapper2();
+        var buckets = bootstrapper.getBuckets();
+        assertCapacities( buckets, 256, 512, kb( 1 ), kb( 2 ), kb( 4 ), kb( 8 ),
+                16896, kb( 32 ), kb( 64 ), kb( 128 ), kb( 256 ), kb( 512 ), kb( 1024 ) );
+
+        assertSlices( buckets, 256, 1 );
         assertSlices( buckets, 512, 1 );
-
-        buckets = constructBuckets( "512:0.1C" );
-        assertSlices( buckets, 512, 2 );
-
-        buckets = constructBuckets( "512:0.125C" );
-        assertSlices( buckets, 512, 2 );
-
-        buckets = constructBuckets( "512:0.13C" );
-        assertSlices( buckets, 512, 3 );
-
-        buckets = constructBuckets( "512:0.2C" );
-        assertSlices( buckets, 512, 4 );
+        assertSlices( buckets, kb( 1 ), 1 );
+        assertSlices( buckets, kb( 2 ), 1 );
+        assertSlices( buckets, kb( 4 ), 1 );
+        assertSlices( buckets, kb( 8 ), 1 );
+        assertSlices( buckets, 16896, 1 );
+        assertSlices( buckets, kb( 32 ), 1 );
+        assertSlices( buckets, kb( 64 ), 1 );
+        assertSlices( buckets, kb( 128 ), 1 );
+        assertSlices( buckets, kb( 256 ), 1 );
+        assertSlices( buckets, kb( 512 ), 1 );
+        assertSlices( buckets, kb( 1024 ), 1 );
     }
 
     @Test
-    void testDefaultBucketCapacities()
+    void testDefaultBucketCapacitiesWith16Cpus()
     {
-        var buckets = constructBuckets();
+        var bootstrapper = new TestBucketBootstrapper16();
+        var buckets = bootstrapper.getBuckets();
         assertCapacities( buckets, 256, 512, kb( 1 ), kb( 2 ), kb( 4 ), kb( 8 ),
                 16896, kb( 32 ), kb( 64 ), kb( 128 ), kb( 256 ), kb( 512 ), kb( 1024 ) );
 
@@ -78,6 +73,29 @@ class BucketBootstrapperTest
         assertSlices( buckets, 16896, 2 );
         assertSlices( buckets, kb( 32 ), 2 );
         assertSlices( buckets, kb( 64 ), 2 );
+        assertSlices( buckets, kb( 128 ), 1 );
+        assertSlices( buckets, kb( 256 ), 1 );
+        assertSlices( buckets, kb( 512 ), 1 );
+        assertSlices( buckets, kb( 1024 ), 1 );
+    }
+
+    @Test
+    void testDefaultBucketCapacitiesWith40Cpus()
+    {
+        var bootstrapper = new TestBucketBootstrapper40();
+        var buckets = bootstrapper.getBuckets();
+        assertCapacities( buckets, 256, 512, kb( 1 ), kb( 2 ), kb( 4 ), kb( 8 ),
+                16896, kb( 32 ), kb( 64 ), kb( 128 ), kb( 256 ), kb( 512 ), kb( 1024 ) );
+
+        assertSlices( buckets, 256, 5 );
+        assertSlices( buckets, 512, 5 );
+        assertSlices( buckets, kb( 1 ), 5 );
+        assertSlices( buckets, kb( 2 ), 5 );
+        assertSlices( buckets, kb( 4 ), 5 );
+        assertSlices( buckets, kb( 8 ), 5 );
+        assertSlices( buckets, 16896, 5 );
+        assertSlices( buckets, kb( 32 ), 5 );
+        assertSlices( buckets, kb( 64 ), 5 );
         assertSlices( buckets, kb( 128 ), 1 );
         assertSlices( buckets, kb( 256 ), 1 );
         assertSlices( buckets, kb( 512 ), 1 );
@@ -98,13 +116,6 @@ class BucketBootstrapperTest
         assertEquals( expectedSliceCount, sliceCount );
     }
 
-    private static List<Bucket> constructBuckets( String... expressions )
-    {
-        var config = new NeoBufferPoolConfigOverride( Duration.ZERO, Arrays.asList( expressions ) );
-        var bootstrapper = new TestBucketBootstrapper( config );
-        return bootstrapper.getBuckets();
-    }
-
     private static void assertCapacities( List<Bucket> buckets, Integer... capacities )
     {
         var bucketCapacities = buckets.stream()
@@ -113,17 +124,38 @@ class BucketBootstrapperTest
         assertEquals( bucketCapacities, Arrays.asList( capacities ) );
     }
 
-    private static class TestBucketBootstrapper extends BucketBootstrapper
+    private abstract static class TestBucketBootstrapper extends BucketBootstrapper
     {
-        TestBucketBootstrapper( NeoBufferPoolConfigOverride config )
+        TestBucketBootstrapper()
         {
-            super( config, EmptyMemoryTracker.INSTANCE );
+            super( EmptyMemoryTracker.INSTANCE );
         }
+    }
 
+    private static class TestBucketBootstrapper2 extends TestBucketBootstrapper
+    {
+        @Override
+        protected int getAvailableCpuCount()
+        {
+            return 2;
+        }
+    }
+
+    private static class TestBucketBootstrapper16 extends TestBucketBootstrapper
+    {
         @Override
         protected int getAvailableCpuCount()
         {
             return 16;
+        }
+    }
+
+    private static class TestBucketBootstrapper40 extends TestBucketBootstrapper
+    {
+        @Override
+        protected int getAvailableCpuCount()
+        {
+            return 40;
         }
     }
 }

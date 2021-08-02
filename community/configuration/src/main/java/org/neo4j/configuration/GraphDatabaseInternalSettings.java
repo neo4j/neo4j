@@ -714,23 +714,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.memory.managed_network_buffers", BOOL, false ).build();
 
     @Internal
-    @Description( "Collection interval for the NeoByteBufferPool" )
-    public static final Setting<Duration> neo_byte_buffer_pool_collection_interval_override =
-            newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.collection_interval_override", DURATION, null ).build();
-
-    @Internal
-    @Description( "The format is <buffer size>:<slice expression>," +
-            "where <buffer size> has format supported by ByteUnit.parse" +
-            "and <slice expression> is either an integer representing" +
-            "an absolute number of slices or a double suffixed by letter 'C'" +
-            "which represents a multiplier of number of cores." +
-            "For instance \"4K:8\" means a bucket for 4k buffers with 8 slices" +
-            "and \"8k:1.5C\" means a bucket for 8k buffers with slices equal to" +
-            "1.5 times the number of available processors." )
-    public static final Setting<List<String>> neo_byte_buffer_pool_buckets_override =
-            newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.buckets_override", listOf( STRING ), List.of() ).build();
-
-    @Internal
     @Description( "The maximum number of cached entries in count store (based) stores " )
     public static final Setting<Integer> counts_store_max_cached_entries =
             newBuilder( "unsupported.dbms.memory.counts_store_max_cached_entries", INT, 1_000_000 ).build();

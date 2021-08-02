@@ -41,7 +41,6 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.internal.collector.RecentQueryBuffer;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
-import org.neo4j.io.bufferpool.impl.NeoBufferPoolConfigOverride;
 import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -435,12 +434,8 @@ public class GlobalModule
         {
             return CentralBufferMangerHolder.EMPTY;
         }
-        var configOverride = new NeoBufferPoolConfigOverride(
-                globalConfig.get( GraphDatabaseInternalSettings.neo_byte_buffer_pool_collection_interval_override ),
-                globalConfig.get( GraphDatabaseInternalSettings.neo_byte_buffer_pool_buckets_override )
-        );
 
-        var bufferPool = new NeoByteBufferPool( configOverride, memoryPools, jobScheduler );
+        var bufferPool = new NeoByteBufferPool( memoryPools, jobScheduler );
         globalLife.add( bufferPool );
         var nettyAllocator = new NettyMemoryManagerWrapper( bufferPool );
         return new CentralBufferMangerHolder( nettyAllocator, bufferPool );

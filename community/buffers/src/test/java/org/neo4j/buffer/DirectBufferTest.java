@@ -23,6 +23,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.io.ByteUnit;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,21 +55,21 @@ abstract class DirectBufferTest extends AbstractDirectBufferTest
     @Test
     void testAllocationOverPooledCapacity()
     {
-        ByteBuf buf = allocate( nettyBufferAllocator, 10_000, 20_000 );
+        ByteBuf buf = allocate( nettyBufferAllocator, 2_000_000, 3_000_000 );
 
-        assertEquals( 10_000, buf.capacity() );
-        assertEquals( 20_000, buf.maxCapacity() );
+        assertEquals( 2_000_000, buf.capacity() );
+        assertEquals( 3_000_000, buf.maxCapacity() );
 
         write( buf, 1000 );
         buf.release();
 
-        assertAcquiredAndReleased( 10_000 );
+        assertAcquiredAndReleased( 2_000_000 );
     }
 
     @Test
     void testBufferGrow()
     {
-        ByteBuf buf = allocate( nettyBufferAllocator, 1500, 30_000 );
+        ByteBuf buf = allocate( nettyBufferAllocator, 1500, 3_000_000 );
         write( buf, 1000 );
         assertEquals( 1500, buf.capacity() );
         write( buf, 1000 );
@@ -75,13 +77,14 @@ abstract class DirectBufferTest extends AbstractDirectBufferTest
         write( buf, 1000 );
         assertEquals( 4096, buf.capacity() );
         write( buf, 10_000 );
-        assertEquals( 16_384, buf.capacity() );
-        write( buf, 10_000 );
-        assertEquals( 30_000, buf.capacity() );
+        assertEquals( 16_896, buf.capacity() );
+        write( buf, 2_000_000 );
+        assertEquals( mb( 2 ), buf.capacity() );
 
         buf.release();
 
-        assertAcquiredAndReleased( 2048, 2048, 4096, 8192, 16_384, 30_000 );
+        assertAcquiredAndReleased( 2048, 2048, 4096, 8192, 16_896, kb( 32 ),  kb( 64 ), kb( 128 ),
+                kb( 256 ),  kb( 512 ), mb( 1 ), mb( 1 ) + kb( 512 ), mb( 2 ) );
     }
 
     @Test
@@ -93,7 +96,17 @@ abstract class DirectBufferTest extends AbstractDirectBufferTest
         assertEquals( Integer.MAX_VALUE, buf.maxCapacity() );
         buf.release();
 
-        assertAcquiredAndReleased( 1024 );
+        assertAcquiredAndReleased( 256 );
+    }
+
+    private static int kb( int value )
+    {
+        return (int) ByteUnit.kibiBytes( value );
+    }
+
+    private static int mb( int value )
+    {
+        return (int) ByteUnit.mebiBytes( value );
     }
 
     public static class DirectBufferAllocationTest extends DirectBufferTest

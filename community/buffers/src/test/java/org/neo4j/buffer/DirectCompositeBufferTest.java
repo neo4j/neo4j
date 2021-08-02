@@ -38,12 +38,12 @@ abstract class DirectCompositeBufferTest extends AbstractDirectBufferTest
         assertEquals( Integer.MAX_VALUE, buf.maxCapacity() );
         assertFalse( buf.isDirect() );
 
-        write( buf, 1000 );
-        assertEquals( 1024, buf.capacity() );
+        write( buf, 200 );
+        assertEquals( 256, buf.capacity() );
 
         buf.release();
 
-        assertAcquiredAndReleased( 1024 );
+        assertAcquiredAndReleased( 256 );
     }
 
     @Test
@@ -51,20 +51,20 @@ abstract class DirectCompositeBufferTest extends AbstractDirectBufferTest
     {
         ByteBuf buf = allocate();
 
-        write( buf, 1000 );
+        write( buf, 200 );
+        assertEquals( 256, buf.capacity() );
+        write( buf, 200 );
+        assertEquals( 512, buf.capacity() );
+        write( buf, 200 );
         assertEquals( 1024, buf.capacity() );
-        write( buf, 1000 );
-        assertEquals( 2048, buf.capacity() );
-        write( buf, 1000 );
-        assertEquals( 4096, buf.capacity() );
         write( buf, 10_000 );
-        assertEquals( 16_384, buf.capacity() );
+        assertEquals( 16_896, buf.capacity() );
         write( buf, 10_000 );
         assertEquals( 32_768, buf.capacity() );
 
         buf.release();
 
-        assertAcquiredAndReleased( 1024, 1024, 2048, 4096, 8192, 16384 );
+        assertAcquiredAndReleased( 256, 256, 512, 1024, 2048, 4096, 16_896, 16_896 );
     }
 
     static class DefaultBufferTest extends DirectCompositeBufferTest

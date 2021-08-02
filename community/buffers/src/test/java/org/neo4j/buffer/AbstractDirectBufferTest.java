@@ -23,13 +23,11 @@ import io.netty.buffer.ByteBuf;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.io.bufferpool.ByteBufferManger;
-import org.neo4j.io.bufferpool.impl.NeoBufferPoolConfigOverride;
 import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
@@ -44,9 +42,7 @@ abstract class AbstractDirectBufferTest
     @BeforeEach
     void setUp()
     {
-        var buckets = List.of("1K:1", "2K:1", "4K:1", "8K:1");
-        var poolConfig = new NeoBufferPoolConfigOverride( Duration.ZERO, buckets );
-        var bufferManger = new NeoByteBufferPool( poolConfig, new MemoryPools(), null );
+        var bufferManger = new NeoByteBufferPool( new MemoryPools(), null );
         tracingPoolWrapper = new TracingPoolWrapper( bufferManger );
         nettyBufferAllocator = new NettyMemoryManagerWrapper( tracingPoolWrapper );
     }

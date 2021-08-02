@@ -23,12 +23,8 @@ import io.netty.buffer.ByteBuf;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-import java.util.List;
-
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.bufferpool.ByteBufferManger;
-import org.neo4j.io.bufferpool.impl.NeoBufferPoolConfigOverride;
 import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPool;
@@ -39,8 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class HeapMemoryMonitoringTest
 {
     private final MemoryPools memoryPools = new MemoryPools();
-    private final NeoBufferPoolConfigOverride configOverride = new NeoBufferPoolConfigOverride( Duration.ZERO, List.of() );
-    private final ByteBufferManger byteBufferManger = new NeoByteBufferPool( configOverride, memoryPools, null );
+    private final ByteBufferManger byteBufferManger = new NeoByteBufferPool( memoryPools, null );
     private final NettyMemoryManagerWrapper nettyBufferAllocator = new NettyMemoryManagerWrapper( byteBufferManger );
     private MemoryPool memoryPool;
 

@@ -37,21 +37,21 @@ class BucketBootstrapper
     // <CPU count>/8 should be more than enough in order not to experience
     // contention for frequently used buffers (read bellow why small = frequently used).
     // Also note that JVM will see hyper threads as cores.
-    private static final double DEFAULT_SMALL_BUFFER_SLICE_COEFFICIENT = 0.125;
+    private static final double SMALL_BUFFER_SLICE_COEFFICIENT = 0.125;
     // Large buffers are expensive to allocate, so there is value in pooling them
     // if there are used repeatedly withing a short time interval,
     // but contention is not expected when working with large buffers.
     // For instance large buffers are expected to be used by store copy and back up in cluster,
     // or when processing a very large transaction, which are operations
     // not generally performed by a large number of threads at the same time.
-    private static final int DEFAULT_LARGE_BUFFER_SLICE_COUNT = 1;
+    private static final int LARGE_BUFFER_SLICE_COUNT = 1;
 
-    private static final int DEFAULT_SMALLEST_POOLED_BUFFER = 256;
+    private static final int SMALLEST_POOLED_BUFFER = 256;
     // 1MB is the largest configurable value for a chunk size for a store copy.
     // Technically, larger buffers could be used, but that should be very rare
     // and we have to put the ceiling for pooled buffer size somewhere.
     // Having to occasionally allocate a large buffer is not a performance tragedy.
-    private static final int DEFAULT_LARGEST_POOLED_BUFFER = (int) ByteUnit.mebiBytes( 1 ); // 1MB
+    private static final int LARGEST_POOLED_BUFFER = (int) ByteUnit.mebiBytes( 1 ); // 1MB
 
     // As mentioned above, larger buffers are expected to be used less frequently than smaller ones.
     // So 'large' does not signify just the size, but means less frequently used in this context.
@@ -63,84 +63,55 @@ class BucketBootstrapper
     // can submit large buffers (Obviously, when the application layer sends a buffer larger
     // that 64K, the high watermark is the size of the buffer and not 64K),
     // but experiments show that 64K is a significant point in buffer use frequency.
-    private static final int DEFAULT_LARGE_BUFFER_THRESHOLD = (int) ByteUnit.kibiBytes( 64 );
+    private static final int LARGE_BUFFER_THRESHOLD = (int) ByteUnit.kibiBytes( 64 );
 
     private final List<Bucket> buckets;
     private final int maxPooledBufferCapacity;
 
-    BucketBootstrapper( NeoBufferPoolConfigOverride configOverride, MemoryTracker memoryTracker )
+    BucketBootstrapper( MemoryTracker memoryTracker )
     {
-        // if the config override does not have an opinion about bucket sizes, use the defaults
-        // targeted mainly at use in network stack
-        if ( configOverride.getBuckets() == null || configOverride.getBuckets().isEmpty() )
-        {
-            buckets = new ArrayList<>();
+        buckets = new ArrayList<>();
 
-            for ( int bufferSize = DEFAULT_SMALLEST_POOLED_BUFFER; bufferSize <= DEFAULT_LARGEST_POOLED_BUFFER; bufferSize <<= 1 )
+        for ( int bufferSize = SMALLEST_POOLED_BUFFER; bufferSize <= LARGEST_POOLED_BUFFER; bufferSize <<= 1 )
+        {
+            int bufferCapacity = bufferSize;
+            if ( bufferCapacity == ByteUnit.kibiBytes( 16 ) )
             {
-                int bufferCapacity = bufferSize;
-                if ( bufferCapacity == ByteUnit.kibiBytes( 16 ) )
-                {
-                    // Let's replace the 16K bucket with a similar one
-                    // more aligned for max SSL packet size.
-                    // In networking, max SSL record is an important buffer size
-                    // as an SSL record cannot be processed in a streaming
-                    // way as it needs to be decrypted and validated in its
-                    // entirety before being sent up the stack.
-                    // The max SSL record is 16K of data + the following extras:
-                    // Max record header = 5
-                    // Max IV = 16
-                    // Max padding = 256
-                    // MAX Mac = 48
-                    // So let's go for 16K plus some nicely rounded extra for headroom:
-                    bufferCapacity = (int) ByteUnit.kibiBytes( 16 ) + 512;
-                }
-
-                buckets.add( createBucket( bufferCapacity, memoryTracker ) );
+                // Let's replace the 16K bucket with a similar one
+                // more aligned for max SSL packet size.
+                // In networking, max SSL record is an important buffer size
+                // as an SSL record cannot be processed in a streaming
+                // way as it needs to be decrypted and validated in its
+                // entirety before being sent up the stack.
+                // The max SSL record is 16K of data + the following extras:
+                // Max record header = 5
+                // Max IV = 16
+                // Max padding = 256
+                // MAX Mac = 48
+                // So let's go for 16K plus some nicely rounded extra for headroom:
+                bufferCapacity = (int) ByteUnit.kibiBytes( 16 ) + 512;
             }
-        }
-        else
-        {
-            buckets = configOverride.getBuckets()
-                            .stream()
-                            .map( bucketConfig -> createBucket( bucketConfig, memoryTracker ) )
-                            .sorted( Comparator.comparingInt( Bucket::getBufferCapacity ) )
-                            .collect( Collectors.toList() );
+
+            buckets.add( createBucket( bufferCapacity, memoryTracker ) );
         }
 
         maxPooledBufferCapacity = buckets.get( buckets.size() - 1 ).getBufferCapacity();
     }
 
-    private Bucket createBucket( NeoBufferPoolConfigOverride.BucketConfig bucketConfig, MemoryTracker memoryTracker )
-    {
-        int sliceCount = getSliceCount( bucketConfig );
-        return new Bucket( bucketConfig.getBufferCapacity(), sliceCount, memoryTracker );
-    }
-
     private Bucket createBucket( int bufferCapacity,  MemoryTracker memoryTracker )
     {
-        int sliceCount = DEFAULT_LARGE_BUFFER_SLICE_COUNT;
-        if ( bufferCapacity <= DEFAULT_LARGE_BUFFER_THRESHOLD )
+        int sliceCount = LARGE_BUFFER_SLICE_COUNT;
+        if ( bufferCapacity <= LARGE_BUFFER_THRESHOLD )
         {
-            sliceCount = calculateSliceCount( DEFAULT_SMALL_BUFFER_SLICE_COEFFICIENT );
+            sliceCount = calculateSmallBufferSliceCount();
         }
 
         return new Bucket( bufferCapacity, sliceCount, memoryTracker );
     }
 
-    private int getSliceCount( NeoBufferPoolConfigOverride.BucketConfig bucketConfig )
+    private int calculateSmallBufferSliceCount()
     {
-        if ( bucketConfig.getSliceCoefficient() != null )
-        {
-            return calculateSliceCount( bucketConfig.getSliceCoefficient() );
-        }
-
-        return bucketConfig.getSliceCount();
-    }
-
-    private int calculateSliceCount( double coefficient )
-    {
-        return (int) Math.ceil( getAvailableCpuCount() * coefficient );
+        return (int) Math.ceil( getAvailableCpuCount() * SMALL_BUFFER_SLICE_COEFFICIENT );
     }
 
     List<Bucket> getBuckets()

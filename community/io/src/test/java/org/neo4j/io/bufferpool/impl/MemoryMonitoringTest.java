@@ -50,9 +50,7 @@ class MemoryMonitoringTest
     @BeforeEach
     void setUp()
     {
-        var buckets = List.of( "1K:1", "2K:1", "4K:1" );
-        var poolConfig = new NeoBufferPoolConfigOverride( null, buckets );
-        bufferPool = new NeoByteBufferPool( poolConfig, memoryPools, jobScheduler );
+        bufferPool = new NeoByteBufferPool( memoryPools, jobScheduler );
         memoryPool = memoryPools.getPools().stream()
                                 .filter( pool -> pool.group() == MemoryGroup.CENTRAL_BYTE_BUFFER_MANAGER )
                                 .findFirst()
