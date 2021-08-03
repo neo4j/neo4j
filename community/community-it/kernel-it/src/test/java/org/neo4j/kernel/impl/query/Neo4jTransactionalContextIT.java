@@ -24,11 +24,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING$;
 import org.neo4j.cypher.internal.runtime.GrowingArray;
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
@@ -37,7 +35,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -728,26 +725,6 @@ class Neo4jTransactionalContextIT
         verifyNoMoreInteractions( innerCloseable );
         verify( outerCloseable ).close();
         verifyNoMoreInteractions( outerCloseable );
-    }
-
-    @Test
-    void contextWithNewTransactionTerminateInnerTransactionOnOuterTransactionTimeout() throws InterruptedException
-    {
-        // TODO: try to find a way to run this without waiting for 4 seconds (change configuration (?))
-        // Given
-        var checkIntervalSeconds = GraphDatabaseSettings.transaction_monitor_check_interval.defaultValue().getSeconds();
-        var timeoutSeconds = 1;
-        var outerTx =
-                graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED, ClientConnectionInfo.EMBEDDED_CONNECTION, timeoutSeconds, TimeUnit.SECONDS );
-        var ctx = createTransactionContext( outerTx );
-        var innerCtx = ctx.contextWithNewTransaction();
-
-        // When
-        var sleepMillis = TimeUnit.SECONDS.toMillis( timeoutSeconds + checkIntervalSeconds + 1 );
-        Thread.sleep( sleepMillis );
-
-        // Then
-        assertTrue( isMarkedForTermination( innerCtx ) );
     }
 
     @Test
