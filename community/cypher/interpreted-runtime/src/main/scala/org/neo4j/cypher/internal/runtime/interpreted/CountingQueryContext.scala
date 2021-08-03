@@ -25,6 +25,6 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 trait CountingQueryContext {
   this: QueryContext =>
 
-  def getStatistics(): QueryStatistics
+  def getStatistics: QueryStatistics
 
 }

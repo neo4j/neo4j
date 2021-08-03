@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.kernel.api.KernelTransaction
 
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ArrayBuffer
@@ -48,9 +49,9 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * @param f the graph creation
    * @return the graph, with entities that are valid in the new transaction
    */
-  def given[T <: AnyRef](f: => T): T = {
+  def given[T <: AnyRef](f: => T, transactionType: KernelTransaction.Type = runtimeTestSupport.getTransactionType): T = {
     val result = f
-    runtimeTestSupport.restartTx()
+    runtimeTestSupport.restartTx(transactionType)
     reattachEntitiesToNewTransaction(result).asInstanceOf[T]
   }
 

@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
@@ -416,6 +417,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def contextWithNewTransaction(): QueryContext = inner.contextWithNewTransaction()
 
   override def close(): Unit = inner.close()
+
+  override def addStatistics(statistics: QueryStatistics): Unit = inner.addStatistics(statistics)
 }
 
 class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]) extends Operations[T, CURSOR] {

@@ -42,7 +42,7 @@ trait Pipe {
     decoratedState.setExecutionContextFactory(rowFactory)
     val innerResult = internalCreateResults(decoratedState)
     state.decorator.afterCreateResults(self.id, decoratedState)
-    state.decorator.decorate(self.id, innerResult, () => state.initialContext)
+    state.decorator.decorate(self.id, decoratedState, innerResult, () => state.initialContext)
   }
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow]
@@ -70,7 +70,7 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     decoratedState.setExecutionContextFactory(rowFactory)
     val result = internalCreateResults(sourceResult, decoratedState)
     state.decorator.afterCreateResults(this.id, decoratedState)
-    state.decorator.decorate(this.id, result, sourceResult).closing(sourceResult)
+    state.decorator.decorate(this.id, decoratedState, result, sourceResult).closing(sourceResult)
   }
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] =

@@ -81,23 +81,18 @@ class Profiler(dbmsInfo: DbmsInfo,
     lastObservedStats = currentStats
   }
 
-  private def updatePageCacheStatistics(pipeId: Id, f: (KernelStatisticProvider, Id) => Unit): Unit = {
-    val context = stats.dbHitsMap(pipeId)
-    val statisticProvider = context.transactionalContext.kernelStatisticProvider
-    f(statisticProvider, pipeId)
-  }
-
-
-  override def decorate(planId: Id, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
+  override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
     val oldCount = stats.rowMap.get(planId).map(_.count).getOrElse(0L)
+
+    val statisticsProvider = state.query.transactionalContext.kernelStatisticProvider
 
     val resultIter =
       new ProfilingIterator(
         iter,
         oldCount,
-        planId,
-        if (trackPageCacheStats) updatePageCacheStatistics(_, startAccountingPageCacheStatsFor) else _ => (),
-        if (trackPageCacheStats) updatePageCacheStatistics(_, stopAccountingPageCacheStatsFor) else _ => ())
+        if (trackPageCacheStats) () => startAccountingPageCacheStatsFor(statisticsProvider, planId) else () => (),
+        if (trackPageCacheStats) () => stopAccountingPageCacheStatsFor(statisticsProvider, planId) else () => (),
+      )
 
     stats.rowMap(planId) = resultIter
     resultIter
@@ -105,10 +100,11 @@ class Profiler(dbmsInfo: DbmsInfo,
 
   override def decorate(planId: Id, state: QueryState): QueryState = {
     stats.setQueryMemoryTracker(state.queryMemoryTracker)
-    val decoratedContext = stats.dbHitsMap.getOrElseUpdate(planId, state.query match {
-      case p: ProfilingPipeQueryContext => new ProfilingPipeQueryContext(p.inner)
-      case _ => new ProfilingPipeQueryContext(state.query)
-    })
+    val counter = stats.dbHitsMap.getOrElseUpdate(planId, Counter())
+    val decoratedContext = state.query match {
+      case p: ProfilingPipeQueryContext => new ProfilingPipeQueryContext(p.inner, counter)
+      case _ => new ProfilingPipeQueryContext(state.query, counter)
+    }
 
     if (trackPageCacheStats) {
       startAccountingPageCacheStatsFor(decoratedContext.transactionalContext.kernelStatisticProvider, planId)
@@ -129,12 +125,12 @@ class Profiler(dbmsInfo: DbmsInfo,
   override def innerDecorator(outerPlanId: Id): PipeDecorator = new PipeDecorator {
     innerProfiler =>
 
-    def innerDecorator(planId: Id): PipeDecorator = innerProfiler
+    override def innerDecorator(planId: Id): PipeDecorator = innerProfiler
 
-    def decorate(planId: Id, state: QueryState): QueryState =
+    override def decorate(planId: Id, state: QueryState): QueryState =
       outerProfiler.decorate(outerPlanId, state)
 
-    def decorate(planId: Id, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = iter
+    override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = iter
 
     override def afterCreateResults(planId: Id, state: QueryState): Unit = outerProfiler.afterCreateResults(outerPlanId, state)
   }
@@ -159,44 +155,55 @@ trait Counter {
   }
 }
 
-final class ProfilingPipeQueryContext(inner: QueryContext)
-  extends DelegatingQueryContext(inner) with Counter {
+object Counter {
+
+  class DefaultCounter extends Counter
+
+  def apply(): Counter = {
+    new DefaultCounter
+  }
+}
+
+final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
+  extends DelegatingQueryContext(inner) {
   self =>
 
+  def count: Long = counter.count
+
   override protected def singleDbHit[A](value: A): A = {
-    increment()
+    counter.increment()
     value
   }
 
   override protected def unknownDbHits[A](value: A): A = {
-    invalidate()
+    counter.invalidate()
     value
   }
 
   override protected def manyDbHits[A](value: ClosingIterator[A]): ClosingIterator[A] = {
-    increment()
+    counter.increment()
     value.map {
       v =>
-        increment()
+        counter.increment()
         v
     }
   }
 
   override protected def manyDbHits(value: ClosingLongIterator): ClosingLongIterator = {
-    increment()
+    counter.increment()
     PrimitiveLongHelper.mapPrimitive(value, { x =>
-      increment()
+      counter.increment()
       x
     })
   }
 
   override protected def manyDbHits(inner: RelationshipIterator): RelationshipIterator = new RelationshipIterator {
-    increment()
+    counter.increment()
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
       inner.relationshipVisit(relationshipId, visitor)
 
     override def next(): Long = {
-      increment()
+      counter.increment()
       inner.next()
     }
 
@@ -264,13 +271,13 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
   }
 
   override protected def manyDbHits(count: Int): Int = {
-    increment(count)
+    counter.increment(count)
     count
   }
 
   abstract class ProfilingCursor(inner: Cursor) extends DefaultCloseListenable with Cursor {
     override def next(): Boolean = {
-      increment()
+      counter.increment()
       inner.next()
     }
 
@@ -286,11 +293,11 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
   class PipeTracer() extends OperatorProfileEvent {
 
     override def dbHit(): Unit = {
-      increment()
+      counter.increment()
     }
 
     override def dbHits(hits: Long): Unit = {
-      increment(hits)
+      counter.increment(hits)
     }
 
     override def row(): Unit = {}
@@ -316,9 +323,8 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
 
 class ProfilingIterator(inner: ClosingIterator[CypherRow],
                         startValue: Long,
-                        pipeId: Id,
-                        startAccouting: Id => Unit,
-                        stopAccounting: Id => Unit) extends ClosingIterator[CypherRow]
+                        startAccounting: () => Unit,
+                        stopAccounting: () => Unit) extends ClosingIterator[CypherRow]
   with Counter {
 
   _count = startValue
@@ -326,17 +332,17 @@ class ProfilingIterator(inner: ClosingIterator[CypherRow],
   override protected[this] def closeMore(): Unit = inner.close()
 
   def innerHasNext: Boolean = {
-    startAccouting(pipeId)
+    startAccounting()
     val hasNext = inner.hasNext
-    stopAccounting(pipeId)
+    stopAccounting()
     hasNext
   }
 
   def next(): CypherRow = {
     increment()
-    startAccouting(pipeId)
+    startAccounting()
     val result = inner.next()
-    stopAccounting(pipeId)
+    stopAccounting()
     result
   }
 }

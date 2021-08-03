@@ -57,6 +57,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.security.LoginContext
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.locking.Locks
@@ -109,17 +110,17 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     lifeSupport.shutdown()
   }
 
-  protected def getTransactionType: Type = Type.EXPLICIT
+  def getTransactionType: Type = Type.EXPLICIT
 
   def startTx(): Unit = {
     _tx = cypherGraphDb.beginTransaction(getTransactionType, LoginContext.AUTH_DISABLED)
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
-  def restartTx(): Unit = {
+  def restartTx(transactionType: KernelTransaction.Type = getTransactionType): Unit = {
     _txContext.close()
     _tx.commit()
-    _tx = cypherGraphDb.beginTransaction(getTransactionType, LoginContext.AUTH_DISABLED)
+    _tx = cypherGraphDb.beginTransaction(transactionType, LoginContext.AUTH_DISABLED)
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 

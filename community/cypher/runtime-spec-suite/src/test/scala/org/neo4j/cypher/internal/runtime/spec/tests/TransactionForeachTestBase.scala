@@ -84,4 +84,40 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .withRows(singleColumn(Seq(1, 2)))
       .withStatistics(nodesCreated = 2, labelsAdded = 2)
   }
+
+  test("statistics should report data creation from subqueries while profiling") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("x")
+      .withRows(singleColumn(Seq(1, 2)))
+      .withStatistics(nodesCreated = 2, labelsAdded = 2)
+  }
+
+  test("Should not throw exception when reading before call subquery") {
+    given {
+      nodeGraph(sizeHint) ++ nodeGraph(2, "X")
+    }
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.allNodeScan("m")
+      .nodeByLabelScan("x", "X")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(query, runtime)
+    noException should be thrownBy consume(runtimeResult)
+  }
 }

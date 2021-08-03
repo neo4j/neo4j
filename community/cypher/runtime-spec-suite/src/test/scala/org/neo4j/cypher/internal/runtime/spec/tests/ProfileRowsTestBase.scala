@@ -21,16 +21,19 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
@@ -1794,6 +1797,40 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(0).rows() shouldBe 2 * aRels.size // produce results
     queryProfile.operatorProfile(1).rows() shouldBe 2 * aRels.size // project endpoints
     queryProfile.operatorProfile(2).rows() shouldBe aRels.size // input
+  }
+
+  test("should profile rows of operations in transactionForeach") {
+    assume(runtime == InterpretedRuntime)
+
+    given (
+      nodeGraph(sizeHint),
+      KernelTransaction.Type.IMPLICIT
+    )
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.allNodeScan("m")
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    queryProfile.operatorProfile(0).rows() shouldBe  2 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe  2 // transactionForeach
+    queryProfile.operatorProfile(2).rows() shouldBe  0 // emptyResult
+    queryProfile.operatorProfile(3).rows() shouldBe  (1 + 2) * sizeHint // create
+    queryProfile.operatorProfile(4).rows() shouldBe  (1 + 2) * sizeHint // allNodeScan
+    queryProfile.operatorProfile(5).rows() shouldBe  2 // unwind
+    queryProfile.operatorProfile(6).rows() shouldBe  1 // argument
   }
 }
 

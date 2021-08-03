@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -39,11 +40,13 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setR
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.interpreted.LegacyDbHitsTestBase
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.kernel.api.KernelTransaction
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  val edition: Edition[CONTEXT],
@@ -843,6 +846,40 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (sizeHint * (1 /* read node */ + 2 * costOfProperty)) // produceresults
+  }
+
+  test("should profile dbHits of populating nodes inside transactionForeach") {
+    assume(runtime == InterpretedRuntime)
+
+    given (
+      nodeGraph(sizeHint),
+      KernelTransaction.Type.IMPLICIT
+    )
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.allNodeScan("m")
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
+    consume(runtimeResult)
+
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val numberOfAllNodeScans = 2
+    val numberOfNodesFoundByAllNodeScans = (1 + 2) * sizeHint
+    // allNodeScan is the 5th operator in the plan
+    val allNodeScanPlanId = 4
+    queryProfile.operatorProfile(allNodeScanPlanId).dbHits() should(
+      be (numberOfNodesFoundByAllNodeScans) or
+        be (numberOfNodesFoundByAllNodeScans + numberOfAllNodeScans)
+      )
   }
 }
 

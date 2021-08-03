@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.InputValues
@@ -30,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.helpers.ArrayUtil
+import org.neo4j.kernel.api.KernelTransaction
 
 abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT], runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
@@ -482,5 +485,32 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
 
     // then
     assertOnMemory(logicalQuery, NO_INPUT, 4, 1)
+  }
+
+  test("should profile memory of operators inside transactionForeach") {
+    assume(runtime == InterpretedRuntime)
+
+    // given
+    given (
+      nodePropertyGraph(SIZE, {
+        case i => Map("prop" -> i)
+      }),
+      KernelTransaction.Type.IMPLICIT
+    )
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.expandInto("(m)-->(m)")
+      .|.allNodeScan("m")
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    assertOnMemory(logicalQuery, NO_INPUT, 4)
   }
 }

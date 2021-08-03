@@ -222,19 +222,21 @@ class ProfilerTest extends CypherFunSuite {
   }
 
   test("should not count rows multiple times when the same pipe is used multiple times") {
+    val queryContext: QueryContext = prepareQueryContext()
     val profiler = new Profiler(DbmsInfo.COMMUNITY, new InterpretedProfileInformation)
+    val state = QueryStateHelper.emptyWith(decorator = profiler, query = queryContext)
 
     val pipe1 = ArgumentPipe()(idGen.id())
     val iter1 = ClosingIterator(Iterator(CypherRow.empty, CypherRow.empty, CypherRow.empty))
 
-    val profiled1 = profiler.decorate(pipe1.id, iter1)
+    val profiled1 = profiler.decorate(pipe1.id, state, iter1)
     profiled1.toList // consume it
     profiled1.asInstanceOf[ProfilingIterator].count should equal(3)
 
     val pipe2 = ArgumentPipe()(idGen.id())
     val iter2 = ClosingIterator(Iterator(CypherRow.empty, CypherRow.empty))
 
-    val profiled2 = profiler.decorate(pipe2.id, iter2)
+    val profiled2 = profiler.decorate(pipe2.id, state, iter2)
     profiled2.toList // consume it
     profiled2.asInstanceOf[ProfilingIterator].count should equal(2)
   }
@@ -273,7 +275,7 @@ class ProfilerTest extends CypherFunSuite {
                              expectedRows: Int,
                              expectedDbHits: Int,
                              expectedPageCacheHits: Int = 0,
-                             expectedPageCacheMisses: Int = 0) {
+                             expectedPageCacheMisses: Int = 0): Unit = {
     val data: OperatorProfile = result.operatorProfile(id.x)
     withClue("DbHits:")(data.dbHits() should equal(expectedDbHits))
     withClue("Rows:")(data.rows should equal(expectedRows))
@@ -281,7 +283,7 @@ class ProfilerTest extends CypherFunSuite {
     withClue("PageCacheMisses:")(data.pageCacheMisses() should equal(expectedPageCacheMisses))
   }
 
-  private def materialize(iterator: Iterator[_]) {
+  private def materialize(iterator: Iterator[_]): Unit = {
     iterator.size
   }
 }

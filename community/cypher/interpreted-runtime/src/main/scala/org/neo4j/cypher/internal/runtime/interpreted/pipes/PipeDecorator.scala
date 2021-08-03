@@ -30,19 +30,47 @@ import org.neo4j.exceptions.Neo4jException
 A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
  */
 trait PipeDecorator {
+  /**
+   * Return a decorated QueryState for the given plan id.
+   *
+   * @param state the original query state to be decorated
+   * @return the decorated query state
+   */
   def decorate(planId: Id, state: QueryState): QueryState
 
   /**
-   * This method should be called after createResults, with the decorated QueryState
+   * This method should be called after createResults, with the decorated QueryState.
+   *
+   * @param state the decorated query state
    */
   def afterCreateResults(planId: Id, state: QueryState): Unit
 
-  def decorate(planId: Id, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow]
+  /**
+   * Return a decorated iterator.
+   *
+   * @param state the decorated query state
+   * @param iter  iterator to decorate
+   * @return the decorated iterator
+   */
+  def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow]
 
   // These two are used for linenumber only
-  def decorate(planId: Id, iter: ClosingIterator[CypherRow], sourceIter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = decorate(planId, iter)
 
-  def decorate(planId: Id, iter: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] = decorate(planId, iter)
+  /**
+   * @param state the decorated query state
+   * @param iter  iterator to decorate
+   * @return the decorated iterator
+   */
+  def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow], sourceIter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] =
+    decorate(planId, state, iter)
+
+  /**
+   * @param state the decorated query state
+   * @param iter  iterator to decorate
+   * @return the decorated iterator
+   */
+  def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] =
+    decorate(planId, state, iter)
 
   /*
    * Returns the inner decorator of this decorator. The inner decorator is used for nested expressions
@@ -52,11 +80,11 @@ trait PipeDecorator {
 }
 
 object NullPipeDecorator extends PipeDecorator {
-  def decorate(planId: Id, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = iter
+  override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = iter
 
-  def decorate(planId: Id, state: QueryState): QueryState = state
+  override def decorate(planId: Id, state: QueryState): QueryState = state
 
-  def innerDecorator(planId: Id): PipeDecorator = NullPipeDecorator
+  override def innerDecorator(planId: Id): PipeDecorator = NullPipeDecorator
 
   override def afterCreateResults(planId: Id, state: QueryState): Unit = {}
 }
@@ -67,18 +95,18 @@ class LinenumberPipeDecorator(private var inner: PipeDecorator = NullPipeDecorat
 
   override def decorate(planId: Id, state: QueryState): QueryState = inner.decorate(planId, state)
 
-  def decorate(planId: Id, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = throw new UnsupportedOperationException("This method should never be called on LinenumberPipeDecorator")
+  override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = throw new UnsupportedOperationException("This method should never be called on LinenumberPipeDecorator")
 
-  override def decorate(planId: Id, iter: ClosingIterator[CypherRow], sourceIter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
+  override def decorate(planId: Id, queryState: QueryState, iter: ClosingIterator[CypherRow], sourceIter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
     val previousContextSupplier = sourceIter match {
       case p: LinenumberIterator => () => p.previousRecord
       case _ => () => None
     }
-    decorate(planId, iter, previousContextSupplier)
+    decorate(planId, queryState, iter, previousContextSupplier)
   }
 
-  override def decorate(planId: Id, iter: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] = {
-    new LinenumberIterator(inner.decorate(planId, iter), previousContextSupplier)
+  override def decorate(planId: Id, queryState: QueryState, iter: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] = {
+    new LinenumberIterator(inner.decorate(planId, queryState, iter), previousContextSupplier)
   }
 
   override def innerDecorator(owningPipe: Id): PipeDecorator = this
