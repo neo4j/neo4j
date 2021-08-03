@@ -324,7 +324,8 @@ public class BatchInserterImpl implements BatchInserter
 
             monitors = new Monitors();
 
-            fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), any -> storeCursors, config, jobScheduler );
+            fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ),
+                    any -> new CachedStoreCursors( neoStores, cursorContext ), config, jobScheduler );
             Dependencies deps = new Dependencies();
             deps.satisfyDependencies( fileSystem, jobScheduler, config, logService, fullScanStoreView, tokenHolders, pageCache, monitors, immediate(),
                                       pageCacheTracer, databaseLayout, readOnlyChecker );
