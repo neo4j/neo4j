@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -137,6 +138,7 @@ class TransactionLogChannelAllocatorIT
 
     @Test
     @EnabledOnOs( OS.LINUX )
+    @Disabled
     void failToPreallocateFileWithOutOfDiskSpaceError() throws IOException
     {
         var unreasonableAllocator = createLogFileAllocator( getUnavailableBytes() );
@@ -150,6 +152,7 @@ class TransactionLogChannelAllocatorIT
 
     @Test
     @EnabledOnOs( OS.LINUX )
+    @Disabled
     void failToPreallocateFileWithOutOfDiskSpaceErrorAndDisabledFailover() throws IOException
     {
         config.setDynamic( dynamic_read_only_failover, false, "test" );

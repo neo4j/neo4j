@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -53,6 +54,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
 @DbmsExtension
 @Isolated
 @EnabledOnOs( OS.LINUX )
+@Disabled
 class DynamicReadOnlyFailoverIT
 {
     private static final String TEST_SCOPE = "preallocation test";
