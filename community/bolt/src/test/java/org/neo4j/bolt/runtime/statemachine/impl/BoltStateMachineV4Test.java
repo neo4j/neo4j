@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
@@ -38,6 +37,7 @@ import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.v3.runtime.ConnectedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
@@ -396,7 +396,7 @@ class BoltStateMachineV4Test
         TransactionStateMachineSPI transactionSPI = mock( TransactionStateMachineSPI.class );
         when( transactionSPI.isPeriodicCommit( any() )).thenReturn( false );
         doThrow( new AuthorizationExpiredException( "Auth expired!" ) )
-                .when( transactionSPI ).beginTransaction( any(), any(), any(), any(), any(), any() );
+                .when( transactionSPI ).beginTransaction( any(), any(), any(), any(), any(), any(), any() );
 
         BoltStateMachine machine = newMachineWithTransactionSPI( transactionSPI );
 

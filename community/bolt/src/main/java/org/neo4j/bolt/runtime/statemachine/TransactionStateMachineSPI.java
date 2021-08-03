@@ -30,17 +30,15 @@ import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.virtual.MapValue;
 
 public interface TransactionStateMachineSPI
 {
     Bookmark newestBookmark( BoltTransaction tx );
 
-    BoltTransaction beginTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
-            Map<String,Object> txMetaData, RoutingContext routingContext );
-
-    BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
-            Map<String,Object> txMetaData, RoutingContext routingContext );
+    BoltTransaction beginTransaction( KernelTransaction.Type transactionType, LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout,
+                                      AccessMode accessMode, Map<String,Object> txMetaData, RoutingContext routingContext );
 
     boolean isPeriodicCommit( String query );
 

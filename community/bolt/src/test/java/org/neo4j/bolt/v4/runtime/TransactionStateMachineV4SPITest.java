@@ -57,10 +57,10 @@ class TransactionStateMachineV4SPITest
         var bookmarks = List.<Bookmark>of( new BookmarkWithDatabaseId( 42, databaseId ) );
 
         // When
-        spi.beginTransaction( null,  bookmarks, null, null, null, null );
+        spi.beginTransaction( null, null, bookmarks, null, null, null, null);
 
         // Then
-        verify( dbSpi ).beginTransaction( any(), any(),any(), eq(bookmarks), any(), any(), any(), any());
+        verify( dbSpi ).beginTransaction( any(), any(), any(), eq(bookmarks), any(), any(), any(), any());
     }
 
     @Test

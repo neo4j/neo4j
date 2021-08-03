@@ -39,13 +39,11 @@ import org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
-
-import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
-import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 public abstract class AbstractTransactionStateMachineSPI implements TransactionStateMachineSPI
 {
@@ -73,18 +71,10 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     }
 
     @Override
-    public BoltTransaction beginTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
-            Map<String,Object> txMetadata, RoutingContext routingContext )
+    public BoltTransaction beginTransaction( KernelTransaction.Type transactionType, LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout,
+                                             AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext )
     {
-        return boltGraphDatabaseServiceSPI.beginTransaction( EXPLICIT, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata,
-                                                             routingContext );
-    }
-
-    @Override
-    public BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
-            Map<String,Object> txMetadata, RoutingContext routingContext )
-    {
-        return boltGraphDatabaseServiceSPI.beginTransaction( IMPLICIT, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata,
+        return boltGraphDatabaseServiceSPI.beginTransaction( transactionType, loginContext, boltChannel.info(), bookmarks, txTimeout, accessMode, txMetadata,
                                                              routingContext );
     }
 

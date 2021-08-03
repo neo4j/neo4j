@@ -63,6 +63,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class TransactionStateMachineTest
@@ -160,7 +161,7 @@ class TransactionStateMachineTest
 
         assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
     }
 
     @Test
@@ -193,7 +194,7 @@ class TransactionStateMachineTest
         doThrow( new RuntimeException( "You shall not pass" ) ).doThrow( new RuntimeException( "Not pass twice" ) ).when( resultHandle ).terminate();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any(), any()) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any() , anyString(), any() ) ).thenReturn( resultHandle );
         when( stateMachineSPI.supportsNestedStatementsInTransaction() ).thenReturn( true ); // V4
 
@@ -216,7 +217,7 @@ class TransactionStateMachineTest
         RuntimeException error = assertThrows( RuntimeException.class, () -> stateMachine.reset() );
 
         assertThat( error.getCause().getMessage() ).isEqualTo( "You shall not pass" );
-        assertThat( error.getSuppressed().length ).isEqualTo( 1 );
+        assertThat( error.getSuppressed() ).hasSize( 1 );
         assertThat( error.getSuppressed()[0].getMessage() ).isEqualTo( "Not pass twice" );
     }
 
@@ -242,7 +243,7 @@ class TransactionStateMachineTest
 
         assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
 
         verify( transaction ).getReasonIfTerminated();
         verify( transaction ).rollback();
@@ -265,7 +266,7 @@ class TransactionStateMachineTest
 
         assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
 
         verify( transaction ).getReasonIfTerminated();
         verify( transaction ).rollback();
@@ -290,7 +291,7 @@ class TransactionStateMachineTest
 
         assertThat( stateMachine.state ).isEqualTo( TransactionStateMachine.State.AUTO_COMMIT );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
 
         verify( transaction ).getReasonIfTerminated();
         verify( transaction ).rollback();
@@ -328,7 +329,7 @@ class TransactionStateMachineTest
         RuntimeException e = assertThrows( RuntimeException.class, () -> stateMachine.run( "SOME STATEMENT", null ) );
         assertEquals( "some error", e.getMessage() );
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
         assertNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -352,7 +353,7 @@ class TransactionStateMachineTest
         } );
         assertEquals( "some error", e.getMessage() );
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
         assertNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -371,7 +372,7 @@ class TransactionStateMachineTest
         } );
         assertEquals( "some error", e.getMessage() );
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
         assertNotNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -380,9 +381,8 @@ class TransactionStateMachineTest
     {
         BoltTransaction transaction = newTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        when( stateMachineSPI.isPeriodicCommit( PERIODIC_COMMIT_QUERY ) ).thenReturn( true );
         final BoltTransaction periodicTransaction = mock( BoltTransaction.class );
-        when( stateMachineSPI.beginPeriodicCommitTransaction( any(), any(), any(), any(), any(), any() )).thenReturn( periodicTransaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any(), any() )).thenReturn( periodicTransaction );
 
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -392,9 +392,8 @@ class TransactionStateMachineTest
         assertEquals( periodicTransaction, stateMachine.ctx.currentTransaction );
 
         InOrder inOrder = inOrder( stateMachineSPI );
-        inOrder.verify( stateMachineSPI ).isPeriodicCommit( PERIODIC_COMMIT_QUERY );
         // implicit transaction was started for periodic query execution
-        inOrder.verify( stateMachineSPI ).beginPeriodicCommitTransaction( any( LoginContext.class ), any(), any(), any(), any(), any() );
+        inOrder.verify( stateMachineSPI ).beginTransaction( eq(IMPLICIT), any( LoginContext.class ), any(), any(), any(), any(), any() );
         // periodic commit query was executed after specific transaction started
         inOrder.verify( stateMachineSPI ).executeQuery( any( BoltQueryExecutor.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ) );
     }
@@ -420,7 +419,7 @@ class TransactionStateMachineTest
         } );
         assertEquals( "some error", e.getMessage() );
 
-        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).hasSize( 0 );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet() ).isEmpty();
         assertNotNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -475,7 +474,7 @@ class TransactionStateMachineTest
         BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
@@ -486,7 +485,7 @@ class TransactionStateMachineTest
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any(), any(), any(), any()) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;

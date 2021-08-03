@@ -42,6 +42,7 @@ import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.memory.HeapEstimator;
@@ -191,7 +192,7 @@ public class TransactionStateMachine implements StatementProcessor
                     State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, List<Bookmark> bookmarks, Duration txTimeout,
                             AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
                     {
-                        beginTransaction( ctx, spi, bookmarks, txTimeout, accessMode, txMetadata, false );
+                        beginTransaction( ctx, spi, bookmarks, txTimeout, accessMode, txMetadata, KernelTransaction.Type.EXPLICIT );
                         return EXPLICIT_TRANSACTION;
                     }
 
@@ -200,15 +201,7 @@ public class TransactionStateMachine implements StatementProcessor
                                Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
                             throws KernelException
                     {
-                        execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ), bookmarks, txTimeout, accessMode, txMetadata );
-                        return AUTO_COMMIT;
-                    }
-
-                    void execute( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, boolean isPeriodicCommit,
-                            List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
-                            throws KernelException
-                    {
-                        beginTransaction( ctx, spi, bookmarks, txTimeout, accessMode, txMetadata, isPeriodicCommit );
+                        beginTransaction( ctx, spi, bookmarks, txTimeout, accessMode, txMetadata, KernelTransaction.Type.IMPLICIT );
 
                         boolean failed = true;
                         try
@@ -217,7 +210,7 @@ public class TransactionStateMachine implements StatementProcessor
 
                             BoltQueryExecutor boltQueryExecutor = ctx.currentTransaction;
 
-                            BoltResultHandle resultHandle = spi.executeQuery( boltQueryExecutor, statement, params);
+                            BoltResultHandle resultHandle = spi.executeQuery( boltQueryExecutor, statement, params );
                             BoltResult result = startExecution( resultHandle );
                             ctx.statementOutcomes.put( statementId, new StatementOutcome( resultHandle, result ) );
 
@@ -233,17 +226,16 @@ public class TransactionStateMachine implements StatementProcessor
                                 closeTransaction( ctx, spi, false );
                             }
                         }
+                        return AUTO_COMMIT;
                     }
 
                     private void beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, List<Bookmark> bookmarks, Duration txTimeout,
-                            AccessMode accessMode, Map<String,Object> txMetadata, boolean isPeriodicCommit )
+                            AccessMode accessMode, Map<String,Object> txMetadata, KernelTransaction.Type transactionType )
                     {
                         try
                         {
-                            ctx.currentTransaction = isPeriodicCommit ?
-                                                     spi.beginPeriodicCommitTransaction( ctx.loginContext, bookmarks,
-                                                                                         txTimeout, accessMode, txMetadata, ctx.routingContext ) :
-                                                     spi.beginTransaction( ctx.loginContext, bookmarks, txTimeout, accessMode, txMetadata, ctx.routingContext);
+                            ctx.currentTransaction =
+                                    spi.beginTransaction( transactionType, ctx.loginContext, bookmarks, txTimeout, accessMode, txMetadata, ctx.routingContext );
                         }
                         catch ( Throwable e )
                         {
