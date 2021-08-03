@@ -52,6 +52,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final InternalTransaction transaction;
     private KernelTransaction kernelTransaction;
     private KernelStatement statement;
+    private long userTransactionId;
     private final ValueMapper<Object> valueMapper;
     private final KernelTransactionFactory transactionFactory;
     private volatile boolean isOpen = true;
@@ -75,6 +76,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.namedDatabaseId = initialStatement.namedDatabaseId();
         this.kernelTransaction = transaction.kernelTransaction();
         this.statement = initialStatement;
+        this.userTransactionId = kernelTransaction.getUserTransactionId();
         this.valueMapper = new DefaultValueMapper( transaction );
         this.transactionFactory = transactionFactory;
 
@@ -119,7 +121,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
             try
             {
                 // Unbind the new transaction/statement from the executingQuery
-                statement.queryRegistry().unbindExecutingQuery( executingQuery );
+                statement.queryRegistry().unbindExecutingQuery( executingQuery, userTransactionId );
                 statement.close();
             }
             finally
@@ -174,11 +176,12 @@ public class Neo4jTransactionalContext implements TransactionalContext
         KernelTransaction oldKernelTx = transaction.kernelTransaction();
 
         // (2) Unregister the old transaction from the executing query
-        oldQueryRegistry.unbindExecutingQuery( executingQuery );
+        oldQueryRegistry.unbindExecutingQuery( executingQuery, userTransactionId );
 
         // (3) Create and register new transaction
         kernelTransaction = transactionFactory.beginKernelTransaction( transactionType, securityContext, clientInfo );
         statement = (KernelStatement) kernelTransaction.acquireStatement();
+        userTransactionId = kernelTransaction.getUserTransactionId();
         statement.queryRegistry().bindExecutingQuery( executingQuery );
         transaction.setTransaction( kernelTransaction );
 

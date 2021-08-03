@@ -55,7 +55,7 @@ public interface QueryRegistry
     /**
      * Unregisters a query that was stopped
      */
-    void unbindExecutingQuery( ExecutingQuery executingQuery );
+    void unbindExecutingQuery( ExecutingQuery executingQuery, long userTransactionId );
 
     /**
      * Registers an already known query with a statement.

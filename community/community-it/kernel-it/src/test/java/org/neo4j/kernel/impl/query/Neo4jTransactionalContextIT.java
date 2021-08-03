@@ -23,15 +23,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING;
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -55,6 +60,8 @@ import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.builtin.QueryId;
 import org.neo4j.procedure.builtin.TransactionId;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -76,6 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -144,6 +152,57 @@ class Neo4jTransactionalContextIT
     void setup()
     {
         transactionFactory = new FacadeKernelTransactionFactory( Config.newBuilder().build(), (GraphDatabaseFacade) graphOps );
+    }
+
+    public static class Procedures
+    {
+        @Context
+        public Transaction transaction;
+
+        @Procedure( name = "test.failingProc" )
+        public void stupidProcedure()
+        {
+            transaction.execute( "CREATE (c {prop: 1 / 0})" );
+        }
+    }
+
+    @Test
+    void nestedQueriesWithExceptionsShouldCleanUpProperly() throws KernelException
+    {
+        // Given
+        graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class ).registerProcedure( Neo4jTransactionalContextIT.Procedures.class );
+
+        var tx = graph.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
+
+        // When
+        // Run a query which calls a procedure which runs an inner query which fails.
+        var exception = assertThrows( QueryExecutionException.class, () -> tx.execute( "CREATE (c) WITH c CALL test.failingProc()" ) );
+
+        // Then
+        assertNoSuppressedExceptions( exception );
+        // all exceptions should reference what actually was the problem
+        assertAllCauses( exception, e -> e.getMessage().contains( "/ by zero" ));
+    }
+
+    private void assertAllCauses( Throwable t, Predicate<Throwable> predicate )
+    {
+        assertTrue( predicate.test( t ), "Predicate failed on " + t );
+        if ( t.getCause() != null )
+        {
+            assertAllCauses( t.getCause(), predicate );
+        }
+    }
+
+    private void assertNoSuppressedExceptions( Throwable t )
+    {
+        if ( t.getSuppressed().length > 0 )
+        {
+            fail( "Expected no suppressed exceptions. Got: " + Arrays.toString( t.getSuppressed() ) );
+        }
+        if ( t.getCause() != null )
+        {
+            assertNoSuppressedExceptions( t.getCause() );
+        }
     }
 
     @Test

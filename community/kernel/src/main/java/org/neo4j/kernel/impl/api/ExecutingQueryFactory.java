@@ -90,9 +90,9 @@ public class ExecutingQueryFactory
         ) );
     }
 
-    public static void unbindFromStatement( ExecutingQuery executingQuery, KernelStatement statement )
+    public static void unbindFromTransaction( ExecutingQuery executingQuery, long userTransactionId )
     {
-        executingQuery.onTransactionUnbound( statement.getTransaction().getUserTransactionId() );
+        executingQuery.onTransactionUnbound( userTransactionId );
     }
 }
 

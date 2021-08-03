@@ -62,9 +62,9 @@ public class StatementQueryRegistry implements QueryRegistry
     }
 
     @Override
-    public void unbindExecutingQuery( ExecutingQuery executingQuery )
+    public void unbindExecutingQuery( ExecutingQuery executingQuery, long userTransactionId )
     {
-        ExecutingQueryFactory.unbindFromStatement( executingQuery, statement );
+        ExecutingQueryFactory.unbindFromTransaction( executingQuery, userTransactionId );
         statement.stopQueryExecution( executingQuery );
     }
 

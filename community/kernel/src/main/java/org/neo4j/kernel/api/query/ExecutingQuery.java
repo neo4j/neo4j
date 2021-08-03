@@ -209,23 +209,25 @@ public class ExecutingQuery
      */
     public void onTransactionUnbound( long userTransactionId )
     {
-        TransactionBinding foundBinding = null;
-        for ( TransactionBinding binding : this.openTransactionBindings )
-        {
-            if ( binding.transactionId == userTransactionId )
-            {
-                foundBinding = binding;
-                break;
-            }
-        }
-        if ( foundBinding != null )
-        {
-            pageFaultsOfClosedTransactions += foundBinding.faultsSupplier.getAsLong();
-            // Write volatile field last
-            //noinspection NonAtomicOperationOnVolatileField (we only have one thread which writes to this field)
-            pageHitsOfClosedTransactions += foundBinding.hitsSupplier.getAsLong();
-            openTransactionBindings.remove( foundBinding );
-        }
+        this.openTransactionBindings
+                .stream()
+                .filter( binding -> binding.transactionId == userTransactionId )
+                .findFirst()
+                .ifPresentOrElse(
+                        foundBinding ->
+                        {
+                            pageFaultsOfClosedTransactions += foundBinding.faultsSupplier.getAsLong();
+                            // Write volatile field last
+                            //noinspection NonAtomicOperationOnVolatileField (we only have one thread which writes to this field)
+                            pageHitsOfClosedTransactions += foundBinding.hitsSupplier.getAsLong();
+                            openTransactionBindings.remove( foundBinding );
+                        },
+                        () ->
+                        {
+                            throw new IllegalStateException(
+                                    "Unbound a transaction that was never bound. ID: " + userTransactionId );
+                        }
+                );
     }
 
     public void onObfuscatorReady( QueryObfuscator queryObfuscator )
