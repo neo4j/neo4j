@@ -37,7 +37,7 @@ class CursorUtilsTest extends CypherFunSuite {
     val nodeCursor = mock[NodeCursor]
     val propertyCursor = mock[PropertyCursor]
     when(nodeCursor.next()).thenReturn(true)
-    when(propertyCursor.seekProperty(1337)).thenReturn(true)
+    when(propertyCursor.next()).thenReturn(true)
     when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
 
     // When
@@ -51,7 +51,7 @@ class CursorUtilsTest extends CypherFunSuite {
     val nodeCursor = mock[NodeCursor]
     val propertyCursor = mock[PropertyCursor]
     when(nodeCursor.next()).thenReturn(true)
-    when(propertyCursor.seekProperty(1339)).thenReturn(false)
+    when(propertyCursor.next()).thenReturn(false)
 
     // When
     val value = nodeGetProperty(mock[Read], nodeCursor, 42L, propertyCursor, 1339)
@@ -70,11 +70,36 @@ class CursorUtilsTest extends CypherFunSuite {
     nodeGetProperty(read, nodeCursor, 42L, mock[PropertyCursor], 1337) shouldBe NO_VALUE
   }
 
+  test("should find a property from a loaded node cursor") {
+    val nodeCursor = mock[NodeCursor]
+    val propertyCursor = mock[PropertyCursor]
+    when(propertyCursor.next()).thenReturn(true)
+    when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
+
+    // When
+    val value = nodeGetProperty(nodeCursor, propertyCursor, 1337)
+
+    // Then
+    value should equal(stringValue("hello"))
+  }
+
+  test("should return NO_VALUE if the loaded node doesn't have property") {
+    val nodeCursor = mock[NodeCursor]
+    val propertyCursor = mock[PropertyCursor]
+    when(propertyCursor.next()).thenReturn(false)
+
+    // When
+    val value = nodeGetProperty(nodeCursor, propertyCursor, 1339)
+
+    // Then
+    value should equal(NO_VALUE)
+  }
+
   test("should find a property from a relationship cursor") {
     val relationshipCursor = mock[RelationshipScanCursor]
     val propertyCursor = mock[PropertyCursor]
     when(relationshipCursor.next()).thenReturn(true)
-    when(propertyCursor.seekProperty(1337)).thenReturn(true)
+    when(propertyCursor.next()).thenReturn(true)
     when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
 
     // When
@@ -88,7 +113,7 @@ class CursorUtilsTest extends CypherFunSuite {
     val relationshipCursor = mock[RelationshipScanCursor]
     val propertyCursor = mock[PropertyCursor]
     when(relationshipCursor.next()).thenReturn(true)
-    when(propertyCursor.seekProperty(1339)).thenReturn(false)
+    when(propertyCursor.next()).thenReturn(false)
 
     // When
     val value = relationshipGetProperty(mock[Read], relationshipCursor, 42L, propertyCursor, 1339)
@@ -105,6 +130,32 @@ class CursorUtilsTest extends CypherFunSuite {
 
     // Expect
     relationshipGetProperty(read, relationshipCursor, 42L, mock[PropertyCursor], 1337) shouldBe NO_VALUE
+  }
+
+  test("should find a property from a loaded relationship cursor") {
+    val relationshipCursor = mock[RelationshipScanCursor]
+    val propertyCursor = mock[PropertyCursor]
+    when(propertyCursor.next()).thenReturn(true)
+    when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
+
+    // When
+    val value = relationshipGetProperty(relationshipCursor, propertyCursor, 1337)
+
+    // Then
+    value should equal(stringValue("hello"))
+  }
+
+  test("should return NO_VALUE if the loaded relationship doesn't have property") {
+    val relationshipCursor = mock[RelationshipScanCursor]
+    val propertyCursor = mock[PropertyCursor]
+    when(relationshipCursor.next()).thenReturn(true)
+    when(propertyCursor.next()).thenReturn(false)
+
+    // When
+    val value = relationshipGetProperty(relationshipCursor, propertyCursor, 1339)
+
+    // Then
+    value should equal(NO_VALUE)
   }
 
   test("should find if a node has a label") {

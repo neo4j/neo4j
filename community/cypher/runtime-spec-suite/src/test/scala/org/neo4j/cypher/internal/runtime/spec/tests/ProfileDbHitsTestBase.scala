@@ -642,8 +642,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // assertions on property dbHits are tricky because in pipelined more dbHits are reported for
     // properties late in the chain, while in interpreted/slotted all property reads cost only 1 dbHit
     queryProfile.operatorProfile(1).dbHits() should
-      (be (sizeHint * (2 * (fusedCostOfGetPropertyChain + costOfProperty) + (fusedCostOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) or // prop is the first prop
-        be (sizeHint * ((fusedCostOfGetPropertyChain + costOfProperty) + 2 * (fusedCostOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty)))) // prop is the second prop
+      (be (sizeHint * (2 * (fusedCostOfGetPropertyChain + costOfProperty) + (fusedCostOfGetPropertyChain + costOfProperty))) or // prop is the first prop
+        be (sizeHint * ((fusedCostOfGetPropertyChain + costOfProperty) + 2 * (fusedCostOfGetPropertyChain + costOfProperty)))) // prop is the second prop
   }
 
   test("should profile dbHits of aggregation") {
@@ -685,7 +685,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint *
       ((fusedCostOfGetPropertyChain + costOfProperty) // first prop in chain
-        + (fusedCostOfGetPropertyChain + costOfPropertyJumpedOverInChain + costOfProperty))) // second prop in chain
+        + (fusedCostOfGetPropertyChain + costOfProperty))) // second prop in chain
   }
 
   test("should profile dbHits of cartesian product") {

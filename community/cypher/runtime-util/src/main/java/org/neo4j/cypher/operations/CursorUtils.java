@@ -27,17 +27,20 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.newapi.Cursors;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
@@ -118,8 +121,24 @@ public final class CursorUtils
                 return NO_VALUE;
             }
         }
-        nodeCursor.properties( propertyCursor );
-        return propertyCursor.seekProperty( prop ) ? propertyCursor.propertyValue() : NO_VALUE;
+        return nodeGetProperty( nodeCursor, propertyCursor, prop );
+    }
+
+    /**
+     * Fetches a given property from a node, where the node has already been loaded.
+     *
+     * @param nodeCursor The node cursor which currently points to the node to get the property from.
+     * @param propertyCursor The property cursor to use to read the property.
+     * @param prop The property key id
+     * @return The value of the property, otherwise {@link Values#NO_VALUE} if not found.
+     */
+    public static Value nodeGetProperty(
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            int prop )
+    {
+        nodeCursor.properties( propertyCursor, PropertySelection.selection( prop ) );
+        return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
     /**
@@ -149,8 +168,25 @@ public final class CursorUtils
         {
            return false;
         }
-        nodeCursor.properties( propertyCursor );
-        return propertyCursor.seekProperty( prop );
+        return nodeHasProperty( nodeCursor, propertyCursor, prop );
+    }
+
+    /**
+     * Checks if a given node has the given property, where the node has already been loaded.
+     *
+     * @param nodeCursor The node cursor which currently points to the node to check property existence for.
+     * @param propertyCursor The property cursor to use
+     * @param prop The id of the property to find
+     * @return {@code true} if node has property otherwise {@code false}.
+     */
+    public static boolean nodeHasProperty(
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            int prop
+    )
+    {
+        nodeCursor.properties( propertyCursor, PropertySelection.onlyKeysSelection( prop ) );
+        return propertyCursor.next();
     }
 
     /**
@@ -274,8 +310,21 @@ public final class CursorUtils
                 return NO_VALUE;
             }
         }
-        relationshipCursor.properties( propertyCursor );
-        return propertyCursor.seekProperty( prop ) ? propertyCursor.propertyValue() : NO_VALUE;
+        return relationshipGetProperty( relationshipCursor, propertyCursor, prop );
+    }
+
+    /**
+     * Fetches a given property from a relationship, where the relationship has already been loaded.
+     *
+     * @param relationshipCursor relationship cursor which currently points to the relationship to get the property from.
+     * @param propertyCursor the property cursor to use to read the property.
+     * @param prop property key id
+     * @return the value of the property, otherwise {@link Values#NO_VALUE} if not found.
+     */
+    public static Value relationshipGetProperty( RelationshipDataAccessor relationshipCursor, PropertyCursor propertyCursor, int prop )
+    {
+        relationshipCursor.properties( propertyCursor, PropertySelection.selection( prop ) );
+        return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
     /**
@@ -305,8 +354,25 @@ public final class CursorUtils
         {
             return false;
         }
-        relationshipCursor.properties( propertyCursor );
-        return propertyCursor.seekProperty( prop );
+        return relationshipHasProperty( relationshipCursor, propertyCursor, prop );
+    }
+
+    /**
+     * Checks if a given relationship has the given property, where the relationship has already been loaded.
+     *
+     * @param relationshipCursor The relationship cursor which currently points to the relationship to check property existence for.
+     * @param propertyCursor The property cursor to use
+     * @param prop The id of the property to find
+     * @return {@code true} if relationship has property otherwise {@code false}.
+     */
+    public static boolean relationshipHasProperty(
+            RelationshipDataAccessor relationshipCursor,
+            PropertyCursor propertyCursor,
+            int prop
+    )
+    {
+        relationshipCursor.properties( propertyCursor, PropertySelection.onlyKeysSelection( prop ) );
+        return propertyCursor.next();
     }
 
     public static RelationshipTraversalCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
