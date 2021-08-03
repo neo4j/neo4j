@@ -23,7 +23,6 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.time.SystemNanoClock;
 
 @ServiceProvider
@@ -46,6 +45,6 @@ public class ForsetiLocksFactory implements LocksFactory
     @Override
     public Locks newInstance( Config config, SystemNanoClock clock )
     {
-        return new ForsetiLockManager( config, clock, ResourceTypes.values() );
+        return new ForsetiLockManager( config, clock );
     }
 }

@@ -33,7 +33,6 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryGroup;
@@ -59,7 +58,7 @@ class ForsetiMemoryTrackingTest
     {
         memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, 0L, null );
         memoryTracker = new LocalMemoryTracker( memoryPool );
-        forsetiLockManager = new ForsetiLockManager( Config.defaults(), Clocks.nanoClock(), ResourceTypes.values() );
+        forsetiLockManager = new ForsetiLockManager( Config.defaults(), Clocks.nanoClock() );
     }
 
     @AfterEach

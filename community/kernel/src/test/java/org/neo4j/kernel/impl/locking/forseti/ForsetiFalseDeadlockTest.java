@@ -48,9 +48,9 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
 
@@ -89,7 +89,7 @@ class ForsetiFalseDeadlockTest
     void shouldManageToTakeSortedLocksWithoutFalseDeadlocks() throws Throwable
     {
         Config config = Config.defaults( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true );
-        ForsetiLockManager manager = new ForsetiLockManager( config, Clocks.nanoClock(), ResourceTypes.values() );
+        ForsetiLockManager manager = new ForsetiLockManager( config, Clocks.nanoClock() );
         AtomicInteger txCount = new AtomicInteger();
         AtomicInteger numDeadlocks = new AtomicInteger();
         Race race = new Race().withEndCondition( () -> txCount.get() > 10000 );
@@ -318,20 +318,7 @@ class ForsetiFalseDeadlockTest
 
         ResourceType createResourceType()
         {
-            return new ResourceType()
-            {
-                @Override
-                public int typeId()
-                {
-                    return 0;
-                }
-
-                @Override
-                public String name()
-                {
-                    return "MyTestResource";
-                }
-            };
+            return () -> "MyTestResource";
         }
 
         void acquireAX( Locks.Client client, ResourceType resourceType )
@@ -429,7 +416,7 @@ class ForsetiFalseDeadlockTest
                     @Override
                     public Locks create( ResourceType resourceType )
                     {
-                        return new ForsetiLockManager( Config.defaults(), Clocks.nanoClock(), resourceType );
+                        return new ForsetiLockManager( Config.defaults(), Clocks.nanoClock() );
                     }
                 };
 

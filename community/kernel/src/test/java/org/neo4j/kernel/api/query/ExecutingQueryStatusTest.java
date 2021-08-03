@@ -117,12 +117,6 @@ class ExecutingQueryStatusTest
             }
 
             @Override
-            public int typeId()
-            {
-                throw new UnsupportedOperationException( "not used" );
-            }
-
-            @Override
             public String name()
             {
                 return name;

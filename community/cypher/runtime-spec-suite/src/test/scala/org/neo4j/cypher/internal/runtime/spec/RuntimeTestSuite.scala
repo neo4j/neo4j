@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.io.File
-import java.io.PrintWriter
-import java.util
-import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherRuntime
@@ -76,15 +72,19 @@ import org.scalactic.TolerantNumerics
 import org.scalactic.source.Position
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Tag
-import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
+import org.scalatest.matchers.MatchResult
 
+import java.io.File
+import java.io.PrintWriter
 import java.time.LocalTime
 import java.time.OffsetTime
 import java.time.chrono.ChronoLocalDate
 import java.time.chrono.ChronoLocalDateTime
 import java.time.chrono.ChronoZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util
+import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -421,7 +421,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
         val (yLock, yType) = y
         val comparison = xLock.compareTo(yLock)
         if (comparison == 0) {
-          Integer.compare(xType.typeId(), yType.typeId())
+          Integer.compare(xType.hashCode(), yType.hashCode()) //Why sort these?
         } else {
           comparison
         }

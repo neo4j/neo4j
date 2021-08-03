@@ -65,7 +65,7 @@ class ForsetiLockManagerTest
     void setUp()
     {
         config = Config.defaults( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true );
-        manager = new ForsetiLockManager( config, Clocks.nanoClock(), ResourceTypes.values() );
+        manager = new ForsetiLockManager( config, Clocks.nanoClock() );
     }
 
     @AfterEach

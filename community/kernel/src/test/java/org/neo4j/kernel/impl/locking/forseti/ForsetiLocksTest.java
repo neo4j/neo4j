@@ -23,7 +23,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.time.SystemNanoClock;
 
@@ -32,7 +31,7 @@ public class ForsetiLocksTest extends LockingCompatibilityTestSuite
     @Override
     protected Locks createLockManager( Config config, SystemNanoClock clock )
     {
-        return new ForsetiLockManager( config, clock, ResourceTypes.values() );
+        return new ForsetiLockManager( config, clock );
     }
 
     @Override

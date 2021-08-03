@@ -19,9 +19,6 @@
  */
 package org.neo4j.lock;
 
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-
 /**
  * Locking types.
  *
@@ -67,45 +64,14 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
  */
 public enum ResourceTypes implements ResourceType
 {
-    NODE( 0 ),
-    RELATIONSHIP( 1 ),
-    // GRAPH_PROPS( 2, LockWaitStrategies.INCREMENTAL_BACKOFF ) - skip it to avoid resource types conflicts
-    // SCHEMA resource type had typeId 3 - skip it to avoid resource types conflicts
-    INDEX_ENTRY( 4 ),
-    // EXPLICIT INDEX resource had type id 5 - skip it to avoid resource types conflicts
-    LABEL( 6 ),
-    RELATIONSHIP_TYPE( 7 ),
-    SCHEMA_NAME( 8 ),
-    RELATIONSHIP_GROUP( 9 ),
-    RELATIONSHIP_DELETE( 10 ),
-    NODE_RELATIONSHIP_GROUP_DELETE( 11 ),
-    DEGREES( 12 );
-
-    private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
-
-    static
-    {
-        for ( ResourceTypes resourceTypes : ResourceTypes.values() )
-        {
-            idToType.put( resourceTypes.typeId, resourceTypes );
-        }
-    }
-
-    private final int typeId;
-
-    ResourceTypes( int typeId )
-    {
-        this.typeId = typeId;
-    }
-
-    @Override
-    public int typeId()
-    {
-        return typeId;
-    }
-
-    public static ResourceType fromId( int typeId )
-    {
-        return idToType.get( typeId );
-    }
+    NODE,
+    RELATIONSHIP,
+    INDEX_ENTRY,
+    LABEL,
+    RELATIONSHIP_TYPE,
+    SCHEMA_NAME,
+    RELATIONSHIP_GROUP,
+    RELATIONSHIP_DELETE,
+    NODE_RELATIONSHIP_GROUP_DELETE,
+    DEGREES,
 }

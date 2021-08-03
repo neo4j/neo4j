@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -154,11 +155,8 @@ public class ForsetiLockManager implements Locks
         boolean isClosed();
     }
 
-    /** Pointers to lock maps, one array per resource type. */
-    private final ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps;
-
-    /** Reverse lookup resource types by id, used for introspection */
-    private final ResourceType[] resourceTypes;
+    /** Global locks **/
+    private final GlobalLocks lockMaps;
 
     /** Counter to keep internal client ids unique, important to be thread safe! */
     private final AtomicLong clientIds = new AtomicLong();
@@ -168,17 +166,9 @@ public class ForsetiLockManager implements Locks
     private volatile boolean closed;
 
     @SuppressWarnings( "unchecked" )
-    public ForsetiLockManager( Config config, SystemNanoClock clock, ResourceType... resourceTypes )
+    public ForsetiLockManager( Config config, SystemNanoClock clock )
     {
-        int maxResourceId = findMaxResourceId( resourceTypes );
-        this.lockMaps = new ConcurrentMap[maxResourceId];
-        this.resourceTypes = new ResourceType[maxResourceId];
-
-        for ( ResourceType type : resourceTypes )
-        {
-            this.lockMaps[type.typeId()] = new ConcurrentHashMap<>( 16, 0.6f, 512 );
-            this.resourceTypes[type.typeId()] = type;
-        }
+        this.lockMaps = new GlobalLocks();
         this.clock = clock;
         this.verboseDeadlocks = config.get( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks );
     }
@@ -200,36 +190,35 @@ public class ForsetiLockManager implements Locks
     @Override
     public void accept( Visitor out )
     {
-        for ( int i = 0; i < lockMaps.length; i++ )
+        lockMaps.visit( ( type, locks ) ->
         {
-            if ( lockMaps[i] != null )
+            for ( Map.Entry<Long,Lock> entry : locks.entrySet() )
             {
-                var resourceType = resourceTypes[i];
-                for ( Map.Entry<Long,Lock> entry : lockMaps[i].entrySet() )
-                {
-                    var lock = entry.getValue();
-                    var description = lock.describeWaitList();
-                    var transactionIds = lock.transactionIds();
-                    int lockIdentityHashCode = System.identityHashCode( lock );
-                    transactionIds.forEach( txId -> out.visit( lock.type(), resourceType, txId, entry.getKey(), description, 0, lockIdentityHashCode ) );
-                }
+                var lock = entry.getValue();
+                var description = lock.describeWaitList();
+                var transactionIds = lock.transactionIds();
+                int lockIdentityHashCode = System.identityHashCode( lock );
+                transactionIds.forEach( txId -> out.visit( lock.type(), type, txId, entry.getKey(), description, 0, lockIdentityHashCode ) );
             }
-        }
+        });
     }
-
-    private static int findMaxResourceId( ResourceType[] resourceTypes )
-    {
-        int max = 0;
-        for ( ResourceType resourceType : resourceTypes )
-        {
-            max = Math.max( resourceType.typeId(), max );
-        }
-        return max + 1;
-    }
-
     @Override
     public void close()
     {
         this.closed = true;
+    }
+
+    static class GlobalLocks
+    {
+        private final ConcurrentMap<ResourceType, ConcurrentMap<Long,ForsetiLockManager.Lock>> lockMaps = new ConcurrentHashMap<>();
+        ConcurrentMap<Long,ForsetiLockManager.Lock> get( ResourceType type )
+        {
+            return lockMaps.computeIfAbsent( type, t -> new ConcurrentHashMap<>( 16, 0.6f, 512 ) );
+        }
+
+        void visit( BiConsumer<ResourceType, ConcurrentMap<Long,ForsetiLockManager.Lock>> visitor )
+        {
+            lockMaps.forEach( visitor );
+        }
     }
 }
