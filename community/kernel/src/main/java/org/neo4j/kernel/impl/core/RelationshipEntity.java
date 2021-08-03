@@ -47,12 +47,14 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 public class RelationshipEntity implements Relationship, RelationshipVisitor<RuntimeException>
 {
@@ -243,20 +245,20 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         return internalTransaction.getRelationshipTypeById( typeId() );
     }
 
-    private PropertyCursor initializePropertyCursor( PropertyCursor properties, KernelTransaction transaction )
+    private PropertyCursor initializePropertyCursor( PropertyCursor properties, KernelTransaction transaction, PropertySelection selection )
     {
         if ( cursor != null && !cursor.isClosed() && cursor.relationshipReference() == id )
         {
             // If this relationship entity instance was instantiated from a node.getRelationships()and the cursor hasn't moved on,
             // then we can use that relationship cursor to get the properties from to avoid looking up and loading the relationship again
-            cursor.properties( properties );
+            cursor.properties( properties, selection );
         }
         else
         {
             // Otherwise fall back to looking up the relationship by ID
             RelationshipScanCursor relationships = transaction.ambientRelationshipCursor();
             singleRelationship( transaction, relationships );
-            relationships.properties( properties );
+            relationships.properties( properties, selection );
         }
         return properties;
     }
@@ -268,7 +270,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         List<String> keys = new ArrayList<>();
         try
         {
-            PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
+            PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction, ALL_PROPERTIES );
             TokenRead token = transaction.tokenRead();
             while ( properties.next() )
             {
@@ -311,22 +313,18 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         }
 
         Map<String,Object> properties = new HashMap<>( itemsToReturn );
-        PropertyCursor propertyCursor = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
-        int propertiesToFind = itemsToReturn;
-        while ( propertiesToFind > 0 && propertyCursor.next() )
+        PropertyCursor propertyCursor = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction,
+                PropertySelection.selection( propertyIds ) );
+        while ( propertyCursor.next() )
         {
             //Do a linear check if this is a property we are interested in.
-            int currentKey = propertyCursor.propertyKey();
-            for ( int i = 0; i < itemsToReturn; i++ )
+            int key = propertyCursor.propertyKey();
+            int i = 0;
+            while ( propertyIds[i] != key )
             {
-                if ( propertyIds[i] == currentKey )
-                {
-                    properties.put( keys[i],
-                            propertyCursor.propertyValue().asObjectCopy() );
-                    propertiesToFind--;
-                    break;
-                }
+                i++;
             }
+            properties.put( keys[i], propertyCursor.propertyValue().asObjectCopy() );
         }
         return properties;
     }
@@ -346,7 +344,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
 
         try
         {
-            initializePropertyCursor( propertyCursor, transaction );
+            initializePropertyCursor( propertyCursor, transaction, ALL_PROPERTIES );
             TokenRead token = transaction.tokenRead();
             while ( propertyCursor.next() )
             {
@@ -375,9 +373,8 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
 
-        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
-        TokenRead token = transaction.tokenRead();
-        if ( !properties.seekProperty( propertyKey ) )
+        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction, PropertySelection.selection( propertyKey ) );
+        if ( !properties.next() )
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
@@ -398,8 +395,8 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
             return defaultValue;
         }
 
-        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
-        return properties.seekProperty( propertyKey ) ? properties.propertyValue().asObjectCopy() : defaultValue;
+        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction, PropertySelection.selection( propertyKey ) );
+        return properties.next() ? properties.propertyValue().asObjectCopy() : defaultValue;
     }
 
     @Override
@@ -417,8 +414,8 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
             return false;
         }
 
-        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction );
-        return properties.seekProperty( propertyKey );
+        PropertyCursor properties = initializePropertyCursor( transaction.ambientPropertyCursor(), transaction, PropertySelection.selection( propertyKey ) );
+        return properties.next();
     }
 
     @Override

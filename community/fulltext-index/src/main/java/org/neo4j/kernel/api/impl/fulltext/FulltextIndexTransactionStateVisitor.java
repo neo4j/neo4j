@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -58,6 +59,7 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
     private final IntIntHashMap propKeyToIndex;
     private final MutableLongSet modifiedEntityIdsInThisTransaction;
     private final TransactionStateLuceneIndexWriter writer;
+    private final PropertySelection indexedPropertySelection;
     private Read read;
     private NodeCursor nodeCursor;
     private PropertyCursor propertyCursor;
@@ -79,6 +81,7 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
         {
             propKeyToIndex.put( propertyIds[i], i );
         }
+        this.indexedPropertySelection = PropertySelection.selection( propertyIds );
     }
 
     FulltextIndexTransactionStateVisitor init( Read read, NodeCursor nodeCursor, RelationshipScanCursor relationshipCursor,
@@ -152,7 +155,7 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
                 TokenSet labels = nodeCursor.labels();
                 if ( schema.isAffected( labels.all() ) )
                 {
-                    nodeCursor.properties( propertyCursor );
+                    nodeCursor.properties( propertyCursor, indexedPropertySelection );
                     indexProperties( id );
                 }
             }
@@ -166,7 +169,7 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
             read.singleRelationship( id, relationshipCursor );
             if ( relationshipCursor.next() && schema.isAffected( new long[]{relationshipCursor.type()} ) )
             {
-                relationshipCursor.properties( propertyCursor );
+                relationshipCursor.properties( propertyCursor, indexedPropertySelection );
                 indexProperties( id );
             }
         }
@@ -177,11 +180,8 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
         while ( propertyCursor.next() )
         {
             int propertyKey = propertyCursor.propertyKey();
-            int index = propKeyToIndex.getIfAbsent( propertyKey, -1 );
-            if ( index != -1 )
-            {
-                propertyValues[index] = propertyCursor.propertyValue();
-            }
+            int index = propKeyToIndex.get( propertyKey );
+            propertyValues[index] = propertyCursor.propertyValue();
         }
         if ( modifiedEntityIdsInThisTransaction.add( id ) )
         {

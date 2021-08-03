@@ -104,6 +104,7 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.KernelVersionRepository;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -407,13 +408,13 @@ public class Operations implements Write, SchemaWrite
 
     private int[] loadSortedNodePropertyKeyList()
     {
-        nodeCursor.properties( propertyCursor );
+        nodeCursor.properties( propertyCursor, PropertySelection.ALL_PROPERTY_KEYS );
         return doLoadSortedPropertyKeyList();
     }
 
     private int[] loadSortedRelationshipPropertyKeyList()
     {
-        relationshipCursor.properties( propertyCursor );
+        relationshipCursor.properties( propertyCursor, PropertySelection.ALL_PROPERTY_KEYS );
         return doLoadSortedPropertyKeyList();
     }
 
@@ -541,7 +542,7 @@ public class Operations implements Write, SchemaWrite
         PropertyIndexQuery.ExactPredicate[] values = new PropertyIndexQuery.ExactPredicate[schemaPropertyIds.length];
 
         int nMatched = 0;
-        nodeCursor.properties( propertyCursor );
+        nodeCursor.properties( propertyCursor, PropertySelection.selection( schemaPropertyIds ) );
         while ( propertyCursor.next() )
         {
             int nodePropertyId = propertyCursor.propertyKey();
@@ -831,36 +832,18 @@ public class Operations implements Write, SchemaWrite
 
     private Value readNodeProperty( int propertyKey )
     {
-        nodeCursor.properties( propertyCursor );
+        nodeCursor.properties( propertyCursor, PropertySelection.selection( propertyKey ) );
 
         //Find out if the property had a value
-        Value existingValue = NO_VALUE;
-        while ( propertyCursor.next() )
-        {
-            if ( propertyCursor.propertyKey() == propertyKey )
-            {
-                existingValue = propertyCursor.propertyValue();
-                break;
-            }
-        }
-        return existingValue;
+        return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
     private Value readRelationshipProperty( int propertyKey )
     {
-        relationshipCursor.properties( propertyCursor );
+        relationshipCursor.properties( propertyCursor, PropertySelection.selection( propertyKey ) );
 
         //Find out if the property had a value
-        Value existingValue = NO_VALUE;
-        while ( propertyCursor.next() )
-        {
-            if ( propertyCursor.propertyKey() == propertyKey )
-            {
-                existingValue = propertyCursor.propertyValue();
-                break;
-            }
-        }
-        return existingValue;
+        return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
     public CursorFactory cursors()

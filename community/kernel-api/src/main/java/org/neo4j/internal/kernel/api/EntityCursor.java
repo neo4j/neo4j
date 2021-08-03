@@ -19,17 +19,19 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.storageengine.api.Reference;
 
-/**
- * Cursor for scanning the properties of a node or relationship.
- */
-public interface PropertyCursor extends Cursor
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
+
+public interface EntityCursor extends Cursor
 {
-    int propertyKey();
+    default void properties( PropertyCursor cursor )
+    {
+        properties( cursor, ALL_PROPERTIES );
+    }
 
-    ValueGroup propertyType();
+    void properties( PropertyCursor cursor, PropertySelection selection );
 
-    Value propertyValue();
+    Reference propertiesReference();
 }

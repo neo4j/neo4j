@@ -23,6 +23,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -52,13 +53,10 @@ public class DefaultNodePropertyAccessor implements NodePropertyAccessor
         nodeCursor.single( nodeId );
         if ( nodeCursor.next() && nodeCursor.hasProperties() )
         {
-            nodeCursor.properties( propertyCursor );
-            while ( propertyCursor.next() )
+            nodeCursor.properties( propertyCursor, PropertySelection.selection( propertyKeyId ) );
+            if ( propertyCursor.next() )
             {
-                if ( propertyCursor.propertyKey() == propertyKeyId )
-                {
-                    return propertyCursor.propertyValue();
-                }
+                return propertyCursor.propertyValue();
             }
         }
         return NO_VALUE;

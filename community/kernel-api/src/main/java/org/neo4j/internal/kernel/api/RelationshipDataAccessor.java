@@ -19,12 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.storageengine.api.Reference;
-
 /**
  * Surface for accessing relationship data.
  */
-public interface RelationshipDataAccessor
+public interface RelationshipDataAccessor extends EntityCursor
 {
     long relationshipReference(); // not sure relationships will have independent references,
     // so exposing this might be leakage.
@@ -35,11 +33,7 @@ public interface RelationshipDataAccessor
 
     void target( NodeCursor cursor );
 
-    void properties( PropertyCursor cursor );
-
     long sourceNodeReference();
 
     long targetNodeReference();
-
-    Reference propertiesReference();
 }

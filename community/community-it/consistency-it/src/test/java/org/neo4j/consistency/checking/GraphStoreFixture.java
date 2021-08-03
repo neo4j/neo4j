@@ -98,6 +98,7 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 public abstract class GraphStoreFixture implements AutoCloseable
 {
@@ -258,7 +259,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             {
                 return null;
             }
-            nodeCursor.properties( propertyCursor );
+            nodeCursor.properties( propertyCursor, ALL_PROPERTIES );
             EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId, true ).withTokens( labels );
             while ( propertyCursor.next() )
             {
@@ -281,7 +282,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
                 return null;
             }
             int type = relCursor.type();
-            relCursor.properties( propertyCursor );
+            relCursor.properties( propertyCursor, ALL_PROPERTIES );
             EntityUpdates.Builder update = EntityUpdates.forEntity( relId, true ).withTokens( type );
             while ( propertyCursor.next() )
             {

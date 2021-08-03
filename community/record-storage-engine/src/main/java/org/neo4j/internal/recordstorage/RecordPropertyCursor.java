@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.LongReference;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.util.Bits;
@@ -59,6 +60,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor
 {
@@ -84,6 +86,8 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private MutableLongSet cycleDetection;
     private EntityType ownerEntityType;
     private RecordLoadOverride loadMode;
+    private PropertySelection selection;
+    private int propertyKey;
 
     RecordPropertyCursor( PropertyStore propertyStore, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
@@ -95,22 +99,23 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     @Override
-    public void initNodeProperties( Reference reference, long ownerReference )
+    public void initNodeProperties( Reference reference, PropertySelection selection, long ownerReference )
     {
-        init( reference, ownerReference, EntityType.NODE );
+        init( reference, selection, ownerReference, EntityType.NODE );
     }
 
     @Override
-    public void initRelationshipProperties( Reference reference, long ownerReference )
+    public void initRelationshipProperties( Reference reference, PropertySelection selection, long ownerReference )
     {
-        init( reference, ownerReference, EntityType.RELATIONSHIP );
+        init( reference, selection, ownerReference, EntityType.RELATIONSHIP );
     }
 
     /**
      * In this implementation property ids are unique among nodes AND relationships so they all init the same way
      * @param reference properties reference, actual property record id.
+     * @param selection which properties to read.
      */
-    private void init( Reference reference, long ownerReference, EntityType ownerEntityType )
+    private void init( Reference reference, PropertySelection selection, long ownerReference, EntityType ownerEntityType )
     {
         if ( getId() != NO_ID )
         {
@@ -136,6 +141,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         this.numSeenPropertyRecords = 0;
         this.cycleDetection = null;
         this.open = true;
+        this.selection = selection;
     }
 
     @Override
@@ -169,7 +175,11 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
                     break;
                 }
 
-                return true;
+                propertyKey = PropertyBlock.keyIndexId( currentBlock() );
+                if ( selection.test( propertyKey ) )
+                {
+                    return true;
+                }
             }
 
             if ( next == NO_ID )
@@ -226,7 +236,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     @Override
     public int propertyKey()
     {
-        return PropertyBlock.keyIndexId( currentBlock() );
+        return propertyKey;
     }
 
     @Override
@@ -287,7 +297,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         PropertyType type = type();
         if ( type == null )
         {
-            return Values.NO_VALUE;
+            return NO_VALUE;
         }
         switch ( type )
         {

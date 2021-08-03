@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -358,7 +359,7 @@ class DefaultRelationshipTraversalCursorTest
             }
 
             @Override
-            public void properties( StoragePropertyCursor propertyCursor )
+            public void properties( StoragePropertyCursor propertyCursor, PropertySelection selection )
             {
                 throw new UnsupportedOperationException( "not implemented" );
             }

@@ -53,7 +53,7 @@ class RelationshipEntityTest
         relationship.getAllProperties( mock( PropertyCursor.class ) );
 
         // then
-        verify( relationshipTraversalCursor ).properties( any() );
+        verify( relationshipTraversalCursor ).properties( any(), any() );
         verify( internalTransaction.kernelTransaction(), never() ).ambientRelationshipCursor();
     }
 

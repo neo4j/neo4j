@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 /**
  * Test read access to committed properties.
@@ -99,7 +100,7 @@ class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
 
                 try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor( NULL, StoreCursors.NULL, INSTANCE ) )
                 {
-                    node.properties( props );
+                    node.properties( props, ALL_PROPERTIES );
                     if ( props.next() )
                     {
                         Value propVal = props.propertyValue();

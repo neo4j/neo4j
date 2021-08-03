@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -374,9 +375,9 @@ public class CachingExpandInto extends DefaultCloseListenable
         }
 
         @Override
-        public void properties( PropertyCursor cursor )
+        public void properties( PropertyCursor cursor, PropertySelection selection )
         {
-           read.relationshipProperties( currentRelationship.id, currentRelationship.properties, cursor );
+            read.relationshipProperties( currentRelationship.id, currentRelationship.properties, selection, cursor );
         }
 
         @Override
@@ -514,9 +515,9 @@ public class CachingExpandInto extends DefaultCloseListenable
         }
 
         @Override
-        public void properties( PropertyCursor cursor )
+        public void properties( PropertyCursor cursor, PropertySelection selection )
         {
-            allRelationships.properties( cursor );
+            allRelationships.properties( cursor, selection );
         }
 
         @Override

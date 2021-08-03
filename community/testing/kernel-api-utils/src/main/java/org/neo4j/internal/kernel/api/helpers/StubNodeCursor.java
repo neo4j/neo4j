@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.LongReference;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
@@ -127,9 +128,9 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     @Override
-    public void properties( PropertyCursor cursor )
+    public void properties( PropertyCursor cursor, PropertySelection selection )
     {
-        ((StubPropertyCursor) cursor).init( nodes.get( offset ).properties );
+        ((StubPropertyCursor) cursor).init( nodes.get( offset ).properties, selection );
     }
 
     @Override

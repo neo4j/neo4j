@@ -40,6 +40,7 @@ import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.state.storeview.GenerateIndexUpdatesStep.GeneratedIndexUpdates;
 import org.neo4j.lock.Lock;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StubStorageCursors;
@@ -139,7 +140,7 @@ class GenerateIndexUpdatesStepTest
             cursor.scan();
             while ( cursor.next() )
             {
-                cursor.properties( propertyCursor );
+                cursor.properties( propertyCursor, PropertySelection.ALL_PROPERTIES );
                 Map<Integer, Value> properties = new HashMap<>();
                 while ( propertyCursor.next() )
                 {

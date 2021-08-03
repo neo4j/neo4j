@@ -32,6 +32,8 @@ import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
+
 abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChunk
 {
     final StoragePropertyCursor storePropertyCursor;
@@ -58,7 +60,7 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
         }
         else
         {
-            record.properties( storePropertyCursor );
+            record.properties( storePropertyCursor, ALL_PROPERTIES );
             while ( storePropertyCursor.next() )
             {
                 // add key as int here as to have the importer use the token id

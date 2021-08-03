@@ -20,6 +20,8 @@
 package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,14 +51,16 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,6 +75,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.LongReference.longReference;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -175,7 +180,7 @@ public class RecordPropertyCursorTest
 
         // when
         RecordPropertyCursor cursor = createCursor();
-        cursor.initNodeProperties( longReference( firstProp ), owner.getId() );
+        cursor.initNodeProperties( longReference( firstProp ), ALL_PROPERTIES, owner.getId() );
         InconsistentDataReadException e = assertThrows( InconsistentDataReadException.class, () ->
         {
             while ( cursor.next() )
@@ -213,7 +218,7 @@ public class RecordPropertyCursorTest
 
         // when
         RecordPropertyCursor cursor = createCursor();
-        cursor.initNodeProperties( longReference( firstProp ), owner.getId() );
+        cursor.initNodeProperties( longReference( firstProp ), ALL_PROPERTIES, owner.getId() );
         InconsistentDataReadException e = assertThrows( InconsistentDataReadException.class, () ->
         {
             while ( cursor.next() )
@@ -228,6 +233,37 @@ public class RecordPropertyCursorTest
         assertThat( e.getMessage(), containsString( "owner NODE:" + owner.getId() ) );
     }
 
+    @Test
+    void shouldOnlyReturnSelectedProperties()
+    {
+        // given
+        Value[] values = createValues( 10, 10 );
+        long firstPropertyId = storeValuesAsPropertyChain( creator, owner, values );
+        int[] selectedKeys = new int[random.nextInt( 1, 3 )];
+        MutableIntObjectMap<Value> valueMapping = IntObjectMaps.mutable.empty();
+        for ( int i = 0; i < selectedKeys.length; i++ )
+        {
+            int prev = i == 0 ? 0 : selectedKeys[i - 1];
+            int stride = random.nextInt( 1, 3 );
+            int key = prev + stride;
+            selectedKeys[i] = key;
+            valueMapping.put( key, values[key] );
+        }
+
+        // when
+        RecordPropertyCursor cursor = createCursor();
+        cursor.initNodeProperties( longReference( firstPropertyId ), PropertySelection.selection( selectedKeys ) );
+        while ( cursor.next() )
+        {
+            int key = cursor.propertyKey();
+            Value expectedValue = valueMapping.remove( key );
+            assertThat( expectedValue ).isEqualTo( expectedValue );
+        }
+
+        // then
+        assertThat( valueMapping.isEmpty() ).isTrue();
+    }
+
     protected RecordPropertyCursor createCursor()
     {
         return new RecordPropertyCursor( neoStores.getPropertyStore(), NULL, INSTANCE );
@@ -237,7 +273,7 @@ public class RecordPropertyCursorTest
     {
         Map<Integer, Value> expectedValues = asMap( values );
         // This is a specific test for RecordPropertyCursor and we know that node/relationships init methods are the same
-        cursor.initNodeProperties( longReference( firstPropertyId ), owner.getId() );
+        cursor.initNodeProperties( longReference( firstPropertyId ), ALL_PROPERTIES, owner.getId() );
         while ( cursor.next() )
         {
             // then

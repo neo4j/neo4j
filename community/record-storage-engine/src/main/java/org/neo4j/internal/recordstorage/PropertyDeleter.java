@@ -50,6 +50,8 @@ import org.neo4j.values.storable.Value;
 import static java.lang.StrictMath.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
+import static org.neo4j.storageengine.api.LongReference.longReference;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 public class PropertyDeleter
 {
@@ -135,13 +137,13 @@ public class PropertyDeleter
                 long[] labelIds = NodeLabelsField.parseLabelsField( node ).get( neoStores.getNodeStore(), storeCursors );
                 message.append(
                         LongStream.of( labelIds ).mapToObj( labelId -> tokenNameLookup.labelGetName( toIntExact( labelId ) ) ).collect( Collectors.toList() ) );
-                propertyCursor.initNodeProperties( node.getNextProp(), node.getId() );
+                propertyCursor.initNodeProperties( longReference( node.getNextProp() ), ALL_PROPERTIES, node.getId() );
             }
             else if ( primitive instanceof RelationshipRecord )
             {
                 RelationshipRecord relationship = (RelationshipRecord) primitive;
                 message.append( format( " with relationship type: %s", tokenNameLookup.relationshipTypeGetName( relationship.getType() ) ) );
-                propertyCursor.initRelationshipProperties( relationship.getNextProp(), relationship.getId() );
+                propertyCursor.initRelationshipProperties( longReference( relationship.getNextProp() ), ALL_PROPERTIES, relationship.getId() );
             }
 
             // Use the cursor to read property values, because it's more flexible in reading data

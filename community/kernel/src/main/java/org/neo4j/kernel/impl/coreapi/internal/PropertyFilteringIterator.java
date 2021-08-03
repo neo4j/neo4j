@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.coreapi.internal;
 
+import java.util.Arrays;
+
 import org.neo4j.graphdb.Entity;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -26,16 +28,17 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.impl.newapi.CursorPredicates;
+import org.neo4j.storageengine.api.PropertySelection;
 
 public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR extends Cursor, ENTITY_CURSOR extends Cursor>
         extends PrefetchingEntityResourceIterator<TOKEN_CURSOR,T>
 {
-
     private final TOKEN_CURSOR entityTokenCursor;
     private final ENTITY_CURSOR entityCursor;
     private final PropertyCursor propertyCursor;
     private final PropertyIndexQuery[] queries;
     private final ResourceTracker resourceTracker;
+    private final PropertySelection propertySelection;
 
     protected PropertyFilteringIterator( TOKEN_CURSOR entityTokenCursor,
                                          ENTITY_CURSOR entityCursor,
@@ -51,6 +54,7 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
         this.queries = queries;
         this.resourceTracker = resourceTracker;
         resourceTracker.registerCloseableResource( this );
+        this.propertySelection = PropertySelection.selection( Arrays.stream( queries ).mapToInt( PropertyIndexQuery::propertyKeyId ).toArray() );
     }
 
     @Override
@@ -82,7 +86,7 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
         singleEntity( entityReference( entityTokenCursor ), entityCursor );
         if ( entityCursor.next() )
         {
-            properties( entityCursor, propertyCursor );
+            properties( entityCursor, propertyCursor, propertySelection );
             return CursorPredicates.propertiesMatch( propertyCursor, queries );
         }
         return false;
@@ -92,5 +96,5 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
 
     protected abstract void singleEntity( long id, ENTITY_CURSOR cursor );
 
-    protected abstract void properties( ENTITY_CURSOR entityCursor, PropertyCursor propertyCursor );
+    protected abstract void properties( ENTITY_CURSOR entityCursor, PropertyCursor propertyCursor, PropertySelection propertySelection );
 }

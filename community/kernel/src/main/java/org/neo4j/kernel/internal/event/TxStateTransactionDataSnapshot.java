@@ -40,13 +40,13 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -56,6 +56,7 @@ import org.neo4j.values.storable.Value;
 import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newArrayList;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -287,7 +288,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             this.relationship.single( relId );
             if ( this.relationship.next() )
             {
-                this.relationship.properties( properties );
+                this.relationship.properties( properties, ALL_PROPERTIES );
                 while ( properties.next() )
                 {
                     try
@@ -311,7 +312,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             node.single( nodeId );
             if ( node.next() )
             {
-                node.properties( properties );
+                node.properties( properties, ALL_PROPERTIES );
                 while ( properties.next() )
                 {
                     try
@@ -442,16 +443,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private static Value committedValue( StoragePropertyCursor properties, StorageEntityCursor cursor, int propertyKey, long ownerReference )
     {
-        cursor.properties( properties );
-        while ( properties.next() )
-        {
-            if ( properties.propertyKey() == propertyKey )
-            {
-                return properties.propertyValue();
-            }
-        }
-
-        return NO_VALUE;
+        cursor.properties( properties, PropertySelection.selection( propertyKey ) );
+        return properties.next() ? properties.propertyValue() : NO_VALUE;
     }
 
     private Value committedValue( RelationshipState relState, int property, StorageRelationshipScanCursor relationship, StoragePropertyCursor properties )

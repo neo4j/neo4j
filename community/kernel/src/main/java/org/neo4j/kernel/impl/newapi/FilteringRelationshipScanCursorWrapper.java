@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 
 import static org.neo4j.io.IOUtils.closeAllSilently;
@@ -145,9 +146,9 @@ public class FilteringRelationshipScanCursorWrapper implements RelationshipScanC
     }
 
     @Override
-    public void properties( PropertyCursor cursor )
+    public void properties( PropertyCursor cursor, PropertySelection selection )
     {
-        delegate.properties( cursor );
+        delegate.properties( cursor, selection );
     }
 
     @Override

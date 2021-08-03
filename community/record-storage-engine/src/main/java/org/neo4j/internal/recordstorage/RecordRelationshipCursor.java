@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -84,9 +85,9 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
     }
 
     @Override
-    public void properties( StoragePropertyCursor propertyCursor )
+    public void properties( StoragePropertyCursor propertyCursor, PropertySelection selection )
     {
-        propertyCursor.initRelationshipProperties( longReference( getNextProp() ) );
+        propertyCursor.initRelationshipProperties( longReference( getNextProp() ), selection );
     }
 
     // used to visit transaction state

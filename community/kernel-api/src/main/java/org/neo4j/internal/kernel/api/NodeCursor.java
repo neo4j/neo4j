@@ -20,13 +20,12 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.storageengine.api.Degrees;
-import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
 /**
  * Cursor for scanning nodes.
  */
-public interface NodeCursor extends Cursor
+public interface NodeCursor extends EntityCursor
 {
     long nodeReference();
 
@@ -38,11 +37,7 @@ public interface NodeCursor extends Cursor
 
     void relationships( RelationshipTraversalCursor relationships, RelationshipSelection selection );
 
-    void properties( PropertyCursor cursor );
-
     long relationshipsReference();
-
-    Reference propertiesReference();
 
     /**
      * @return whether or not this node cursor can decide degree for various relationship selections cheaper than doing a full scan of all relationships.

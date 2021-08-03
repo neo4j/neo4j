@@ -38,6 +38,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -205,9 +206,9 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     }
 
     @Override
-    public void properties( PropertyCursor cursor )
+    public void properties( PropertyCursor cursor, PropertySelection selection )
     {
-        ((DefaultPropertyCursor) cursor).initNode( this, read, read );
+        ((DefaultPropertyCursor) cursor).initNode( this, selection, read, read );
     }
 
     @Override

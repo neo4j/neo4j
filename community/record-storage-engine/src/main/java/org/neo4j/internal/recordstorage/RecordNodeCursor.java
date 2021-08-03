@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -353,10 +354,9 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public void properties( StoragePropertyCursor propertyCursor )
+    public void properties( StoragePropertyCursor propertyCursor, PropertySelection selection )
     {
-        propertyCursor.initNodeProperties( longReference( getNextProp() ) );
-
+        propertyCursor.initNodeProperties( longReference( getNextProp() ), selection );
     }
 
     @Override

@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -244,8 +245,8 @@ public abstract class KernelIntegrationTest
             }
             else
             {
-                cursor.properties( properties );
-                return properties.seekProperty( property ) ? properties.propertyValue() : NO_VALUE;
+                cursor.properties( properties, PropertySelection.selection( property ) );
+                return properties.next() ? properties.propertyValue() : NO_VALUE;
             }
         }
     }

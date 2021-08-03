@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.storageengine.api.PropertySelection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -255,19 +256,14 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             //Node without conflict
             tx.dataRead().singleNode( nodeNotConflicting, nodeCursor );
             assertTrue( nodeCursor.next() );
-            nodeCursor.properties( propertyCursor );
-            assertTrue( hasKey( propertyCursor, property ) );
+            nodeCursor.properties( propertyCursor, PropertySelection.selection( property ) );
+            assertTrue( propertyCursor.next() );
             //Node with conflict
             tx.dataRead().singleNode( nodeConflicting, nodeCursor );
             assertTrue( nodeCursor.next() );
-            nodeCursor.properties( propertyCursor );
-            assertFalse( hasKey( propertyCursor, property ) );
+            nodeCursor.properties( propertyCursor, PropertySelection.selection( property ) );
+            assertFalse( propertyCursor.next() );
         }
-    }
-
-    private static boolean hasKey( PropertyCursor propertyCursor, int key )
-    {
-       return propertyCursor.seekProperty( key );
     }
 
     private static void addConstraints( String... labelProps )

@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -73,9 +74,9 @@ public class RelationshipIndexTxStateUpdaterTest extends IndexTxStateUpdaterTest
         when( relationship.relationshipReference() ).thenReturn( (long) REL_ID );
         doAnswer( invocationOnMock ->
         {
-            ((StubPropertyCursor) invocationOnMock.getArgument( 0 )).init( map );
+            invocationOnMock.getArgument( 0, StubPropertyCursor.class ).init( map, invocationOnMock.getArgument( 1, PropertySelection.class ) );
             return null;
-        } ).when( relationship ).properties( any() );
+        } ).when( relationship ).properties( any(), any() );
 
         relationship.next();
     }

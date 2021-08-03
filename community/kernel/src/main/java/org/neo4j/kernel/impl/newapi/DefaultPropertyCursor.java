@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -36,6 +37,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
 public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor> implements PropertyCursor, Supplier<TokenSet>, RelTypeSupplier
@@ -54,6 +57,8 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
     private TokenSet labels;
     //stores relationship type or NODE if not a relationship
     private int type = NO_TOKEN;
+    private boolean addedInTx;
+    private PropertySelection selection;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor,
                            FullAccessNodeCursor securityNodeCursor, FullAccessRelationshipScanCursor securityRelCursor )
@@ -64,32 +69,33 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         this.securityRelCursor = securityRelCursor;
     }
 
-    void initNode( long nodeReference, Reference reference, Read read, AssertOpen assertOpen )
+    void initNode( long nodeReference, Reference reference, PropertySelection selection, Read read, AssertOpen assertOpen )
     {
         assert nodeReference != NO_ID;
 
-        init( read, assertOpen );
+        init( selection, read, assertOpen );
         this.type = NODE;
-        storeCursor.initNodeProperties( reference );
+        storeCursor.initNodeProperties( reference, selection );
         this.entityReference = nodeReference;
 
         initializeNodeTransactionState( nodeReference, read );
     }
 
-    void initNode( DefaultNodeCursor nodeCursor, Read read, AssertOpen assertOpen )
+    void initNode( DefaultNodeCursor nodeCursor, PropertySelection selection, Read read, AssertOpen assertOpen )
     {
         entityReference = nodeCursor.nodeReference();
         assert entityReference != NO_ID;
 
-        init( read, assertOpen );
+        init( selection, read, assertOpen );
         this.type = NODE;
-        if ( !nodeCursor.currentNodeIsAddedInTx() )
+        this.addedInTx = nodeCursor.currentNodeIsAddedInTx();
+        if ( !addedInTx )
         {
-            storeCursor.initNodeProperties( nodeCursor.storeCursor );
+            storeCursor.initNodeProperties( nodeCursor.storeCursor, selection );
         }
         else
         {
-            storeCursor.initNodeProperties( NO_ID );
+            storeCursor.initNodeProperties( NULL_REFERENCE, ALL_PROPERTIES );
         }
 
         initializeNodeTransactionState( entityReference, read );
@@ -109,30 +115,31 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         }
     }
 
-    void initRelationship( long relationshipReference, Reference reference, Read read, AssertOpen assertOpen )
+    void initRelationship( long relationshipReference, Reference reference, PropertySelection selection, Read read, AssertOpen assertOpen )
     {
         assert relationshipReference != NO_ID;
 
-        init( read, assertOpen );
-        storeCursor.initRelationshipProperties( reference );
+        init( selection, read, assertOpen );
+        storeCursor.initRelationshipProperties( reference, selection );
         this.entityReference = relationshipReference;
 
         initializeRelationshipTransactionState( relationshipReference, read );
     }
 
-    void initRelationship( DefaultRelationshipCursor<?,?> relationshipCursor, Read read, AssertOpen assertOpen )
+    void initRelationship( DefaultRelationshipCursor<?,?> relationshipCursor, PropertySelection selection, Read read, AssertOpen assertOpen )
     {
         entityReference = relationshipCursor.relationshipReference();
         assert entityReference != NO_ID;
 
-        init( read, assertOpen );
-        if ( !relationshipCursor.currentRelationshipIsAddedInTx() )
+        init( selection, read, assertOpen );
+        this.addedInTx = relationshipCursor.currentRelationshipIsAddedInTx();
+        if ( !addedInTx )
         {
-            storeCursor.initRelationshipProperties( relationshipCursor.storeCursor );
+            storeCursor.initRelationshipProperties( relationshipCursor.storeCursor, selection );
         }
         else
         {
-            storeCursor.initRelationshipProperties( NO_ID );
+            storeCursor.initRelationshipProperties( NULL_REFERENCE, selection );
         }
 
         initializeRelationshipTransactionState( entityReference, read );
@@ -155,33 +162,34 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
 
     void initEmptyRelationship( Read read, AssertOpen assertOpen )
     {
-        init( read, assertOpen );
-        storeCursor.initRelationshipProperties( NO_ID );
+        init( ALL_PROPERTIES, read, assertOpen );
+        storeCursor.initRelationshipProperties( NULL_REFERENCE, ALL_PROPERTIES );
         this.entityReference = NO_SUCH_ENTITY;
 
         this.propertiesState = null;
         this.txStateChangedProperties = null;
     }
 
-    private void init( Read read, AssertOpen assertOpen )
+    private void init( PropertySelection selection, Read read, AssertOpen assertOpen )
     {
+        this.selection = selection;
         this.assertOpen = assertOpen;
         this.read = read;
         this.labels = null;
         this.type = NO_TOKEN;
     }
 
-    boolean allowed()
+    boolean allowed( int propertyKey )
     {
         if ( isNode() )
         {
             ensureAccessMode();
-            return accessMode.allowsReadNodeProperty( this, propertyKey() );
+            return accessMode.allowsReadNodeProperty( this, propertyKey );
         }
         else
         {
             ensureAccessMode();
-            return accessMode.allowsReadRelationshipProperty( this, propertyKey() );
+            return accessMode.allowsReadRelationshipProperty( this, propertyKey );
         }
     }
 
@@ -190,30 +198,31 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
     {
         if ( txStateChangedProperties != null )
         {
-            if ( txStateChangedProperties.hasNext() )
+            while ( txStateChangedProperties.hasNext() )
             {
                 txStateValue = txStateChangedProperties.next();
-                if ( tracer != null )
+                if ( selection.test( txStateValue.propertyKeyId() ) )
                 {
-                    tracer.onProperty( propertyKey() );
+                    if ( tracer != null )
+                    {
+                        tracer.onProperty( txStateValue.propertyKeyId() );
+                    }
+                    return true;
                 }
-                return true;
             }
-            else
-            {
-                txStateChangedProperties = null;
-                txStateValue = null;
-            }
+            txStateChangedProperties = null;
+            txStateValue = null;
         }
 
         while ( storeCursor.next() )
         {
-            boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
-            if ( !skip && allowed() )
+            int propertyKey = storeCursor.propertyKey();
+            boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( propertyKey );
+            if ( !skip && allowed( propertyKey ) )
             {
                 if ( tracer != null )
                 {
-                    tracer.onProperty( propertyKey() );
+                    tracer.onProperty( propertyKey );
                 }
                 return true;
             }
@@ -268,23 +277,6 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
 
         assertOpen.assertOpen();
         return value;
-    }
-
-    @Override
-    public boolean seekProperty( int property )
-    {
-        if ( property == NO_TOKEN )
-        {
-            return false;
-        }
-        while ( next() )
-        {
-            if ( property == this.propertyKey() )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

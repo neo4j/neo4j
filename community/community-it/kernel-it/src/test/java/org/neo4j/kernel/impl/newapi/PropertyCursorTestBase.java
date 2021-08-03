@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -264,7 +265,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             node.properties( props );
             assertFalse( props.next(), "no properties by direct method" );
 
-            read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
+            read.nodeProperties( node.nodeReference(), node.propertiesReference(), ALL_PROPERTIES, props );
             assertFalse( props.next(), "no properties via property ref" );
 
             assertFalse( node.next(), "only one node" );
@@ -285,7 +286,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             relationship.properties( props );
             assertFalse( props.next(), "no properties by direct method" );
 
-            read.relationshipProperties( relationship.relationshipReference(), relationship.propertiesReference(), props );
+            read.relationshipProperties( relationship.relationshipReference(), relationship.propertiesReference(), ALL_PROPERTIES, props );
             assertFalse( props.next(), "no properties via property ref" );
 
             assertFalse( relationship.next(), "only one node" );
@@ -460,7 +461,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertEquals( expectedValueType, props.propertyType(), "correct value type " );
             assertFalse( props.next(), "single property" );
 
-            read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
+            read.nodeProperties( node.nodeReference(), node.propertiesReference(), ALL_PROPERTIES, props );
             assertTrue( props.next(), "has properties via property ref" );
             assertEquals( expectedValue, props.propertyValue(), "correct value" );
             assertFalse( props.next(), "single property" );
@@ -485,7 +486,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertEquals( expectedValueType, props.propertyType(), "correct value type " );
             assertFalse( props.next(), "single property" );
 
-            read.relationshipProperties( relationship.relationshipReference(), relationship.propertiesReference(), props );
+            read.relationshipProperties( relationship.relationshipReference(), relationship.propertiesReference(), ALL_PROPERTIES, props );
             assertTrue( props.next(), "has properties via property ref" );
             assertEquals( expectedValue, props.propertyValue(), "correct value" );
             assertFalse( props.next(), "single property" );

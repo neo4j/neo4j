@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageReader;
@@ -414,15 +415,15 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public void nodeProperties( long nodeReference, Reference reference, PropertyCursor cursor )
+    public void nodeProperties( long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor )
     {
-        ((DefaultPropertyCursor) cursor).initNode( nodeReference, reference, this, ktx );
+        ((DefaultPropertyCursor) cursor).initNode( nodeReference, reference, selection, this, ktx );
     }
 
     @Override
-    public void relationshipProperties( long relationshipReference, Reference reference, PropertyCursor cursor )
+    public void relationshipProperties( long relationshipReference, Reference reference, PropertySelection selection, PropertyCursor cursor )
     {
-        ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
+        ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, selection, this, ktx );
     }
 
     private <C extends Cursor> PartitionedScan<C> propertyIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )

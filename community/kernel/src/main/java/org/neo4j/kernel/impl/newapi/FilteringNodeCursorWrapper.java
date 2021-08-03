@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
@@ -153,9 +154,9 @@ public class FilteringNodeCursorWrapper implements NodeCursor
     }
 
     @Override
-    public void properties( PropertyCursor cursor )
+    public void properties( PropertyCursor cursor, PropertySelection selection )
     {
-        delegate.properties( cursor );
+        delegate.properties( cursor, selection );
     }
 
     @Override

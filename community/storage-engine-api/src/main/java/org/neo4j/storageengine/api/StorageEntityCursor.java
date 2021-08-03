@@ -38,7 +38,7 @@ public interface StorageEntityCursor extends StorageCursor
      * Initializes {@link StoragePropertyCursor} for reading properties of this entity.
      * @param propertyCursor {@link StoragePropertyCursor} to initialize.
      */
-    void properties( StoragePropertyCursor propertyCursor );
+    void properties( StoragePropertyCursor propertyCursor, PropertySelection selection );
 
     /**
      * @return reference to the entity this cursor currently is placed at.

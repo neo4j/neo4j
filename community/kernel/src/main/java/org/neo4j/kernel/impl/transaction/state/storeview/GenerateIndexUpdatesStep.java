@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.Lock;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -152,7 +153,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         {
             return;
         }
-        cursor.properties( propertyCursor );
+        cursor.properties( propertyCursor, PropertySelection.ALL_PROPERTIES );
 
         Map<Integer,Value> relevantProperties = new HashMap<>();
 

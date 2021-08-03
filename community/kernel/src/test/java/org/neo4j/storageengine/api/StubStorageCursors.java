@@ -30,6 +30,7 @@ import java.util.function.Function;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -551,9 +552,9 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void properties( StoragePropertyCursor propertyCursor )
+        public void properties( StoragePropertyCursor propertyCursor, PropertySelection selection )
         {
-            propertyCursor.initNodeProperties( propertiesReference() );
+            propertyCursor.initNodeProperties( propertiesReference(), selection );
         }
 
         @Override
@@ -673,9 +674,9 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void properties( StoragePropertyCursor propertyCursor )
+        public void properties( StoragePropertyCursor propertyCursor, PropertySelection selection )
         {
-            propertyCursor.initRelationshipProperties( propertiesReference() );
+            propertyCursor.initRelationshipProperties( propertiesReference(), selection );
         }
 
         @Override
@@ -724,22 +725,23 @@ public class StubStorageCursors implements StorageReader
         private Iterator<Map.Entry<String,Value>> iterator;
 
         @Override
-        public void initNodeProperties( Reference reference, long ownerReference )
+        public void initNodeProperties( Reference reference, PropertySelection selection, long ownerReference )
         {
-            init( reference );
+            init( reference, selection );
         }
 
         @Override
-        public void initRelationshipProperties( Reference reference, long ownerReference )
+        public void initRelationshipProperties( Reference reference, PropertySelection selection, long ownerReference )
         {
-            init( reference );
+            init( reference, selection );
         }
 
-        private void init( Reference reference )
+        private void init( Reference reference, PropertySelection selection )
         {
             long id = ((LongReference) reference).id;
             PropertyData properties = StubStorageCursors.this.propertyData.get( id );
             iterator = properties != null ? properties.properties.entrySet().iterator() : emptyIterator();
+            iterator = Iterators.filter( p -> selection.test( propertyKeyTokenHolder.getIdByName( p.getKey() ) ), iterator );
         }
 
         @Override

@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -249,11 +250,12 @@ public class IndexTxStateUpdater
         // we'll place those values in the map so that other index updates from this change can just used them.
         if ( missing > 0 )
         {
-            entity.properties( propertyCursor );
+            entity.properties( propertyCursor, PropertySelection.selection( indexPropertyIds ) );
             while ( missing > 0 && propertyCursor.next() )
             {
                 int k = ArrayUtils.indexOf( indexPropertyIds, propertyCursor.propertyKey() );
-                if ( k >= 0 && values[k] == NO_VALUE )
+                assert k >= 0;
+                if ( values[k] == NO_VALUE )
                 {
                     int propertyKeyId = indexPropertyIds[k];
                     boolean thisIsTheChangedProperty = propertyKeyId == changedPropertyKeyId;
@@ -278,7 +280,7 @@ public class IndexTxStateUpdater
     {
         long reference();
 
-        void properties( PropertyCursor cursor );
+        void properties( PropertyCursor cursor, PropertySelection propertySelection );
 
         EntityType entityType();
     }
@@ -300,9 +302,9 @@ public class IndexTxStateUpdater
         }
 
         @Override
-        public void properties( PropertyCursor cursor )
+        public void properties( PropertyCursor cursor, PropertySelection propertySelection )
         {
-            node.properties( cursor );
+            node.properties( cursor, propertySelection );
         }
 
         @Override
@@ -329,9 +331,9 @@ public class IndexTxStateUpdater
         }
 
         @Override
-        public void properties( PropertyCursor cursor )
+        public void properties( PropertyCursor cursor, PropertySelection propertySelection )
         {
-            relationship.properties( cursor );
+            relationship.properties( cursor, propertySelection );
         }
 
         @Override

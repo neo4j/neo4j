@@ -333,14 +333,11 @@ public class EntityUpdates
         {
             try ( StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor( cursorContext, storeCursors, memoryTracker ) )
             {
-                cursor.properties( propertyCursor );
+                cursor.properties( propertyCursor, PropertySelection.selection( additionalPropertiesToLoad.toArray() ) );
                 while ( propertyCursor.next() )
                 {
-                    if ( additionalPropertiesToLoad.contains( propertyCursor.propertyKey() ) )
-                    {
-                        additionalPropertiesToLoad.remove( propertyCursor.propertyKey() );
-                        knownProperties.put( propertyCursor.propertyKey(), unchanged( propertyCursor.propertyValue() ) );
-                    }
+                    additionalPropertiesToLoad.remove( propertyCursor.propertyKey() );
+                    knownProperties.put( propertyCursor.propertyKey(), unchanged( propertyCursor.propertyValue() ) );
                 }
             }
         }

@@ -56,6 +56,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -67,6 +68,7 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgo
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 public class NodeEntity implements Node, RelationshipFactory<Relationship>
@@ -312,9 +314,8 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             return defaultValue;
         }
         singleNode( transaction, nodes );
-        nodes.properties( properties );
-
-        return properties.seekProperty( propertyKey ) ? properties.propertyValue().asObjectCopy() : defaultValue;
+        nodes.properties( properties, PropertySelection.selection( propertyKey ) );
+        return properties.next() ? properties.propertyValue().asObjectCopy() : defaultValue;
     }
 
     @Override
@@ -328,7 +329,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             PropertyCursor properties = transaction.ambientPropertyCursor();
             singleNode( transaction, nodes );
             TokenRead token = transaction.tokenRead();
-            nodes.properties( properties );
+            nodes.properties( properties, ALL_PROPERTIES );
             while ( properties.next() )
             {
                 keys.add( token.propertyKeyName( properties.propertyKey() ) );
@@ -373,22 +374,17 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.ambientNodeCursor();
         PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
         singleNode( transaction, nodes );
-        nodes.properties( propertyCursor );
-        int propertiesToFind = itemsToReturn;
-        while ( propertiesToFind > 0 && propertyCursor.next() )
+        nodes.properties( propertyCursor, PropertySelection.selection( propertyIds ) );
+        while ( propertyCursor.next() )
         {
             //Do a linear check if this is a property we are interested in.
-            int currentKey = propertyCursor.propertyKey();
-            for ( int i = 0; i < itemsToReturn; i++ )
+            int key = propertyCursor.propertyKey();
+            int i = 0;
+            while ( propertyIds[i] != key )
             {
-                if ( propertyIds[i] == currentKey )
-                {
-                    properties.put( keys[i],
-                                    propertyCursor.propertyValue().asObjectCopy() );
-                    propertiesToFind--;
-                    break;
-                }
+                i = (i + 1) % propertyIds.length;
             }
+            properties.put( keys[i], propertyCursor.propertyValue().asObjectCopy() );
         }
         return properties;
     }
@@ -412,7 +408,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             {
                 singleNode( transaction, nodes );
             }
-            nodes.properties( propertyCursor );
+            nodes.properties( propertyCursor, ALL_PROPERTIES );
             while ( propertyCursor.next() )
             {
                 properties.put( token.propertyKeyName( propertyCursor.propertyKey() ),
@@ -443,8 +439,8 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.ambientNodeCursor();
         PropertyCursor properties = transaction.ambientPropertyCursor();
         singleNode( transaction, nodes );
-        nodes.properties( properties );
-        if ( !properties.seekProperty( propertyKey ) )
+        nodes.properties( properties, PropertySelection.selection( propertyKey ) );
+        if ( !properties.next() )
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
@@ -469,8 +465,8 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.ambientNodeCursor();
         PropertyCursor properties = transaction.ambientPropertyCursor();
         singleNode( transaction, nodes );
-        nodes.properties( properties );
-        return properties.seekProperty( propertyKey );
+        nodes.properties( properties, PropertySelection.selection( propertyKey ) );
+        return properties.next();
     }
 
     public int compareTo( Object node )

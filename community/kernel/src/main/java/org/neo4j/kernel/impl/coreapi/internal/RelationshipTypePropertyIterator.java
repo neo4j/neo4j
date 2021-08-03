@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 
 public class RelationshipTypePropertyIterator extends PropertyFilteringIterator<Relationship,RelationshipTypeIndexCursor,RelationshipScanCursor>
 {
@@ -57,7 +58,7 @@ public class RelationshipTypePropertyIterator extends PropertyFilteringIterator<
     }
 
     @Override
-    protected void properties( RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor )
+    protected void properties( RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor, PropertySelection propertySelection )
     {
         relationshipScanCursor.properties( propertyCursor );
     }

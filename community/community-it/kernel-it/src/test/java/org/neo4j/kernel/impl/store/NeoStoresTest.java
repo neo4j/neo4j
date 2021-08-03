@@ -126,6 +126,7 @@ import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -255,7 +256,7 @@ public class NeoStoresTest
     {
         try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, StoreCursors.NULL, INSTANCE ) )
         {
-            propertyCursor.initNodeProperties( propertyReference );
+            propertyCursor.initNodeProperties( propertyReference, ALL_PROPERTIES );
             if ( propertyCursor.next() )
             {
                 Value oldValue = propertyCursor.propertyValue();

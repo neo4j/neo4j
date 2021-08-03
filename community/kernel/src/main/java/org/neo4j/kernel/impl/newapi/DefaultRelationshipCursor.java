@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
-import org.neo4j.storageengine.api.LongReference;
-import org.neo4j.storageengine.api.Reference;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.storageengine.api.LongReference;
+import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
@@ -85,9 +86,9 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
     }
 
     @Override
-    public void properties( PropertyCursor cursor )
+    public void properties( PropertyCursor cursor, PropertySelection selection )
     {
-        ((DefaultPropertyCursor) cursor).initRelationship( this, read, read );
+        ((DefaultPropertyCursor) cursor).initRelationship( this, selection, read, read );
     }
 
     @Override

@@ -24,7 +24,7 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.token.api.TokenConstants;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -33,9 +33,11 @@ public class StubPropertyCursor extends DefaultCloseListenable implements Proper
     private int offset = -1;
     private Integer[] keys;
     private Value[] values;
+    private PropertySelection selection;
 
-    public void init( Map<Integer, Value> properties )
+    public void init( Map<Integer,Value> properties, PropertySelection selection )
     {
+        this.selection = selection;
         offset = -1;
         keys = properties.keySet().toArray( new Integer[0] );
         values = properties.values().toArray( new Value[0] );
@@ -44,13 +46,19 @@ public class StubPropertyCursor extends DefaultCloseListenable implements Proper
     @Override
     public boolean next()
     {
-        return ++offset < keys.length;
+        while ( offset + 1 < keys.length )
+        {
+            if ( ++offset < keys.length && selection.test( keys[offset] ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public void closeInternal()
     {
-
     }
 
     @Override
@@ -75,23 +83,6 @@ public class StubPropertyCursor extends DefaultCloseListenable implements Proper
     public Value propertyValue()
     {
         return values[offset];
-    }
-
-    @Override
-    public boolean seekProperty( int property )
-    {
-        if ( property == TokenConstants.NO_TOKEN )
-        {
-            return false;
-        }
-        while ( next() )
-        {
-            if ( property == this.propertyKey() )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

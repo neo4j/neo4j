@@ -24,11 +24,13 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.storageengine.api.Reference;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
+import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 
 public final class Cursors
 {
@@ -156,7 +158,7 @@ public final class Cursors
         }
 
         @Override
-        public void properties( PropertyCursor cursor )
+        public void properties( PropertyCursor cursor, PropertySelection selection )
         {
             ((DefaultPropertyCursor) cursor).initEmptyRelationship( read, read );
         }
@@ -174,9 +176,9 @@ public final class Cursors
         }
 
         @Override
-        public long propertiesReference()
+        public Reference propertiesReference()
         {
-            return NO_SUCH_PROPERTY_KEY;
+            return NULL_REFERENCE;
         }
     }
 }

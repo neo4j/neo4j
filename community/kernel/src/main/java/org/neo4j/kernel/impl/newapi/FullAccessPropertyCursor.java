@@ -30,7 +30,7 @@ class FullAccessPropertyCursor extends DefaultPropertyCursor
     }
 
     @Override
-    final boolean allowed()
+    final boolean allowed( int propertyKeyId )
     {
         return true;
     }

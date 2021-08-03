@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
@@ -405,21 +406,21 @@ public interface Read
      *         the owner of the properties.
      * @param reference
      *         a reference from {@link NodeCursor#propertiesReference()}.
+     * @param selection
      * @param cursor
-     *         the cursor to use for consuming the results.
      */
     // Used by APOC and GDS.
-    void nodeProperties( long nodeReference, Reference reference, PropertyCursor cursor );
+    void nodeProperties( long nodeReference, Reference reference, PropertySelection selection, PropertyCursor cursor );
 
     /**
      * @param relationshipReference
      *         the owner of the properties.
      * @param reference
      *         a reference from {@link RelationshipDataAccessor#propertiesReference()}.
+     * @param selection
      * @param cursor
-     *         the cursor to use for consuming the results.
      */
-    void relationshipProperties( long relationshipReference, Reference reference, PropertyCursor cursor );
+    void relationshipProperties( long relationshipReference, Reference reference, PropertySelection selection, PropertyCursor cursor );
 
     /**
      * Checks if a node was deleted in the current transaction
