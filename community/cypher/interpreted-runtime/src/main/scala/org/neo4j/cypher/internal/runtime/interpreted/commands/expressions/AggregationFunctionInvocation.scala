@@ -29,7 +29,7 @@ import org.neo4j.memory.HeapEstimator.shallowSizeOfInstanceWithObjectReferences
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 
-case class AggregationFunctionInvocation(signature: UserFunctionSignature, override val arguments: IndexedSeq[Expression])
+abstract class AggregationFunctionInvocation(arguments: IndexedSeq[Expression])
   extends AggregationExpression {
 
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
@@ -59,20 +59,34 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, overr
 
   override def children: Seq[AstNode[_]] = arguments
 
-  protected def call(state: QueryState): UserDefinedAggregator = {
-    if (signature.builtIn) state.query.builtInAggregateFunction(signature.id)
-    else state.query.aggregateFunction(signature.id)
-  }
-
-  override def rewrite(f: Expression => Expression): Expression =
-    f(AggregationFunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
+  protected def call(state: QueryState): UserDefinedAggregator
 }
 
 object AggregationFunctionInvocation {
+
+  def apply(signature: UserFunctionSignature, arguments: IndexedSeq[Expression]): AggregationFunctionInvocation = {
+    if (signature.builtIn) BuiltInAggregationFunctionInvocation(signature.id, arguments)
+    else UserAggregationFunctionInvocation(signature.id, arguments)
+  }
+
   // AggregationFunction instances are usually created from nested anonymous classes with some outer context:
   // This should give a low-end approximate.
   final val SHALLOW_SIZE: Long =
     shallowSizeOfInstanceWithObjectReferences(2) + // AggregationFunction: 1 ref + 1 $outer
     shallowSizeOfInstanceWithObjectReferences(1) + // UserDefinedAggregator: 1 ref
     shallowSizeOfInstanceWithObjectReferences(3)   // UserAggregator: 2 refs + 1 this$0 (one is a new SecurityContext, but not counted)
+}
+
+case class UserAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression]) extends AggregationFunctionInvocation(arguments) {
+  override def rewrite(f: Expression => Expression): Expression =
+    f(UserAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f))))
+
+  override protected def call(state: QueryState): UserDefinedAggregator = state.query.aggregateFunction(fcnId)
+}
+
+case class BuiltInAggregationFunctionInvocation(fcnId: Int, arguments: IndexedSeq[Expression]) extends AggregationFunctionInvocation(arguments) {
+  override def rewrite(f: Expression => Expression): Expression =
+    f(BuiltInAggregationFunctionInvocation(fcnId, arguments.map(a => a.rewrite(f))))
+
+  override protected def call(state: QueryState): UserDefinedAggregator = state.query.builtInAggregateFunction(fcnId)
 }
