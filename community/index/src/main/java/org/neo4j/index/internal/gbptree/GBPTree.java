@@ -1040,7 +1040,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * seek across the whole provided range.
      * @throws IOException on error reading from index.
      */
-    public Collection<Seeker.From<KEY,VALUE>> partitionedSeek( KEY fromInclusive, KEY toExclusive, int desiredNumberOfPartitions, CursorContext cursorContext )
+    public Collection<Seeker.WithContext<KEY,VALUE>> partitionedSeek( KEY fromInclusive, KEY toExclusive,
+                                                                      int desiredNumberOfPartitions, CursorContext cursorContext )
             throws IOException
     {
         return partitionedSeekInternal( fromInclusive, toExclusive, desiredNumberOfPartitions, cursorContext, this );
@@ -1087,12 +1088,12 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * The number of partitions will never be higher than the provided {@code desiredNumberOfPartitions}.
      * @param cursorContext underlying page cursor cursorContext for the thread doing the partitioning.
      * @param seekerFactory {@link Seeker.Factory} factory method that create the seekers for each partition.
-     * @return {@link Collection} of {@link Seeker.From wrappers} around {@link Seeker seekers} placed on each partition.
+     * @return {@link Collection} of {@link Seeker.WithContext wrappers} around {@link Seeker seekers} placed on each partition.
      * The number of partitions is given by the size of the collection.
      * @throws IOException on error accessing the index.
      */
-    private Collection<Seeker.From<KEY,VALUE>> partitionedSeekInternal( KEY fromInclusive, KEY toExclusive, int desiredNumberOfPartitions,
-                                                                        CursorContext cursorContext, Seeker.Factory<KEY,VALUE> seekerFactory )
+    private Collection<Seeker.WithContext<KEY,VALUE>> partitionedSeekInternal( KEY fromInclusive, KEY toExclusive, int desiredNumberOfPartitions,
+                                                                               CursorContext cursorContext, Seeker.Factory<KEY,VALUE> seekerFactory )
             throws IOException
     {
         Preconditions.checkArgument( layout.compare( fromInclusive, toExclusive ) <= 0, "Partitioned seek only supports forward seeking for the time being" );
@@ -1126,7 +1127,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         // From the set of splitter keys, create partitions
         KeyPartitioning<KEY> partitioning = new KeyPartitioning<>( layout );
         return partitioning.partition( splitterKeysInRange, fromInclusive, toExclusive, desiredNumberOfPartitions ).stream()
-                           .map( partition -> (Seeker.From<KEY,VALUE>) context -> seekerFactory.seek( partition.getLeft(), partition.getRight(), context ) )
+                           .map( partition -> (Seeker.WithContext<KEY,VALUE>) context ->
+                                   seekerFactory.seek( partition.getLeft(), partition.getRight(), context ) )
                            .collect( Collectors.toUnmodifiableList() );
     }
 
@@ -1150,11 +1152,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             monitor.clear();
             Seeker.Factory<KEY,VALUE> monitoredSeeks =
                     ( fromInclusive, toExclusive, tracer ) -> seekInternal( fromInclusive, toExclusive, tracer, 1, monitor, LEAF_LEVEL );
-            Collection<Seeker.From<KEY,VALUE>> seekersFrom = partitionedSeekInternal( low, high, sampleSize, cursorContext, monitoredSeeks );
-            for ( Seeker.From<KEY,VALUE> seeker : seekersFrom )
+            Collection<Seeker.WithContext<KEY,VALUE>> seekersWithContext = partitionedSeekInternal( low, high, sampleSize, cursorContext, monitoredSeeks );
+            for ( Seeker.WithContext<KEY,VALUE> seeker : seekersWithContext )
             {
                 // Simply make sure the first one is found so that the supplied monitor have been notified about the path down to it
-                try ( Seeker<KEY,VALUE> partition = seeker.from( cursorContext ) )
+                try ( Seeker<KEY,VALUE> partition = seeker.with( cursorContext ) )
                 {
                     partition.next();
                 }

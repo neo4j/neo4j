@@ -102,7 +102,7 @@ class PartitionedSeekTest
             assertThat( visit.numberOfLevels ).as( "depth of tree" ).isEqualTo( 1 );
 
             // when
-            Collection<Seeker.From<MutableLong,MutableLong>> seekers = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4, NULL );
+            Collection<Seeker.WithContext<MutableLong,MutableLong>> seekers = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4, NULL );
 
             // then
             assertThat( seekers.size() ).as( "number of partitions" ).isEqualTo( 1 );
@@ -153,7 +153,7 @@ class PartitionedSeekTest
             long to = random.nextLong( from, high );
 
             // when
-            Collection<Seeker.From<MutableLong,MutableLong>> seekers =
+            Collection<Seeker.WithContext<MutableLong,MutableLong>> seekers =
                     tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
@@ -179,7 +179,7 @@ class PartitionedSeekTest
             long to = random.nextLong( from, high );
 
             // when
-            Collection<Seeker.From<MutableLong,MutableLong>> seekers =
+            Collection<Seeker.WithContext<MutableLong,MutableLong>> seekers =
                     tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
@@ -205,7 +205,7 @@ class PartitionedSeekTest
             long from = random.nextLong( 0, to );
 
             // when
-            Collection<Seeker.From<MutableLong,MutableLong>> seekers =
+            Collection<Seeker.WithContext<MutableLong,MutableLong>> seekers =
                     tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
@@ -236,7 +236,7 @@ class PartitionedSeekTest
             for ( int i = 0; i < stride - 1; i++ )
             {
                 int offset = i + 1;
-                AtomicReference<Collection<Seeker.From<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
+                AtomicReference<Collection<Seeker.WithContext<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
                 Race race = new Race();
                 race.addContestant( throwing( () -> insertEntries( tree, offset, count, stride ) ) );
                 race.addContestant( throwing( () -> partitions.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ), NULL ) ) ) );
@@ -244,9 +244,9 @@ class PartitionedSeekTest
 
                 // then
                 long nextExpected = 0;
-                for ( Seeker.From<MutableLong,MutableLong> partition : partitions.get() )
+                for ( Seeker.WithContext<MutableLong,MutableLong> partition : partitions.get() )
                 {
-                    Seeker<MutableLong,MutableLong> seeker = partition.from( NULL );
+                    Seeker<MutableLong,MutableLong> seeker = partition.with( NULL );
                     while ( seeker.next() )
                     {
                         assertThat( nextExpected++ ).as( "current key is next in the expected sequence" ).isEqualTo( seeker.key().longValue() );
@@ -268,7 +268,7 @@ class PartitionedSeekTest
             for ( int i = stride - 2; i >= 0; i-- )
             {
                 int offset = i + 1;
-                AtomicReference<Collection<Seeker.From<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
+                AtomicReference<Collection<Seeker.WithContext<MutableLong,MutableLong>>> partitions = new AtomicReference<>();
                 Race race = new Race();
                 race.addContestant( throwing( () -> removeEntries( tree, offset, count, stride ) ) );
                 race.addContestant( throwing( () -> partitions.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ), NULL ) ) ) );
@@ -276,9 +276,9 @@ class PartitionedSeekTest
 
                 // then
                 long nextExpected = 0;
-                for ( Seeker.From<MutableLong,MutableLong> partition : partitions.get() )
+                for ( Seeker.WithContext<MutableLong,MutableLong> partition : partitions.get() )
                 {
-                    Seeker<MutableLong,MutableLong> seeker = partition.from( NULL );
+                    Seeker<MutableLong,MutableLong> seeker = partition.with( NULL );
                     while ( seeker.next() )
                     {
                         assertThat( nextExpected++ ).as( "current key is next in the expected sequence" ).isEqualTo( seeker.key().longValue() );
@@ -319,7 +319,7 @@ class PartitionedSeekTest
             int to = insertEntriesUntil( tree, numberOfDesiredLevels, numberOfDesiredRootChildren );
 
             // when
-            Collection<Seeker.From<MutableLong,MutableLong>> seekers =
+            Collection<Seeker.WithContext<MutableLong,MutableLong>> seekers =
                     tree.partitionedSeek( layout.key( 0 ), layout.key( to ), numberOfDesiredPartitions, NULL );
 
             // then
@@ -328,24 +328,25 @@ class PartitionedSeekTest
         }
     }
 
-    private static IntList assertEntriesSingleThreaded( Collection<Seeker.From<MutableLong,MutableLong>> seekersFrom, long from, long to )
+    private static IntList assertEntriesSingleThreaded( Collection<Seeker.WithContext<MutableLong,MutableLong>> seekersWithContext, long from, long to )
     {
-        List<LongList> collectedEntryKeysPerPartition = seekersFrom.stream().map( seekerFrom -> collectAndCheckEntryKeysInPartition( seekerFrom, from, to ) )
-                                                                   .collect( Collectors.toUnmodifiableList() );
+        List<LongList> collectedEntryKeysPerPartition =
+                seekersWithContext.stream().map( seekerWithContext -> collectAndCheckEntryKeysInPartition( seekerWithContext, from, to ) )
+                                  .collect( Collectors.toUnmodifiableList() );
         long closedTo = from == to ? to : (to - 1);
         assertAllExpectedKeysInOrderWithinAClosedRange( collectedEntryKeysPerPartition.stream().flatMapToLong( LongList::primitiveStream ), from, closedTo );
         return getEntryCountsPerPartition( collectedEntryKeysPerPartition.stream() );
     }
 
-    private static IntList assertEntriesMultiThreaded( Collection<Seeker.From<MutableLong,MutableLong>> seekersFrom, long from, long to )
+    private static IntList assertEntriesMultiThreaded( Collection<Seeker.WithContext<MutableLong,MutableLong>> seekersWithContext, long from, long to )
     {
-        LongList[] collectedEntryKeysPerPartition = new LongList[seekersFrom.size()];
-        Iterator<Seeker.From<MutableLong,MutableLong>> seekers = seekersFrom.iterator();
+        LongList[] collectedEntryKeysPerPartition = new LongList[seekersWithContext.size()];
+        Iterator<Seeker.WithContext<MutableLong,MutableLong>> seekers = seekersWithContext.iterator();
         Race race = new Race();
         for ( int i = 0; seekers.hasNext(); i++ )
         {
             int index = i;
-            Seeker.From<MutableLong,MutableLong> seeker = seekers.next();
+            Seeker.WithContext<MutableLong,MutableLong> seeker = seekers.next();
             race.addContestant( () -> collectedEntryKeysPerPartition[index] = collectAndCheckEntryKeysInPartition( seeker, from, to ) );
         }
         race.goUnchecked();
@@ -355,9 +356,9 @@ class PartitionedSeekTest
         return getEntryCountsPerPartition( Arrays.stream( collectedEntryKeysPerPartition ) );
     }
 
-    private static LongList collectAndCheckEntryKeysInPartition( Seeker.From<MutableLong,MutableLong> seeker, long from, long to )
+    private static LongList collectAndCheckEntryKeysInPartition( Seeker.WithContext<MutableLong,MutableLong> seeker, long from, long to )
     {
-        try ( Seeker<MutableLong,MutableLong> partition = seeker.from( NULL ) )
+        try ( Seeker<MutableLong,MutableLong> partition = seeker.with( NULL ) )
         {
             LongList keys = collectEntryKeysInPartition( partition );
             assertAllExpectedKeysInOrderWithinAClosedRange( keys.primitiveStream(), keys.getFirst(), keys.getLast() );
@@ -529,7 +530,7 @@ class PartitionedSeekTest
     @FunctionalInterface
     private interface AssertEntries
     {
-        IntList of( Collection<Seeker.From<MutableLong,MutableLong>> seekersFrom, long from, long to )
+        IntList of( Collection<Seeker.WithContext<MutableLong,MutableLong>> seekersWithContext, long from, long to )
                 throws IOException;
     }
 }

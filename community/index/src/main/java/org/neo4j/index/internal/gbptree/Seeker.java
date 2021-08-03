@@ -81,7 +81,7 @@ public interface Seeker<KEY,VALUE> extends Closeable
         Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive, CursorContext cursorContext ) throws IOException;
     }
 
-    interface From<KEY, VALUE>
+    interface WithContext<KEY, VALUE>
     {
         /**
          * A wrapper for {@link Seeker.Factory#seek }, such to encapsulate the factory, whilst being able to propagate
@@ -91,6 +91,6 @@ public interface Seeker<KEY,VALUE> extends Closeable
          * @return a {@link Seeker} used to iterate over the hits within the specified key range.
          * @throws IOException on error reading from index.
          */
-        Seeker<KEY,VALUE> from( CursorContext cursorContext ) throws IOException;
+        Seeker<KEY,VALUE> with( CursorContext cursorContext ) throws IOException;
     }
 }

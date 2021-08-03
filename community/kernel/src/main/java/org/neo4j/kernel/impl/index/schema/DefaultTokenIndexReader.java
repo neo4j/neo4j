@@ -197,7 +197,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader
     private class NativePartitionedTokenScan implements PartitionedTokenScan
     {
         private final EntityRange range = EntityRange.FULL;
-        private final Iterator<Seeker.From<TokenScanKey,TokenScanValue>> partitions;
+        private final Iterator<Seeker.WithContext<TokenScanKey,TokenScanValue>> partitions;
         private final int numberOfPartitions;
 
         NativePartitionedTokenScan( int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query ) throws IOException
@@ -227,7 +227,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader
             }
             try
             {
-                return new TokenScanValueIndexProgressor( partition.get().from( cursorContext ), client, IndexOrder.NONE, range );
+                return new TokenScanValueIndexProgressor( partition.get().with( cursorContext ), client, IndexOrder.NONE, range );
             }
             catch ( IOException e )
             {
@@ -235,7 +235,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader
             }
         }
 
-        private synchronized Optional<Seeker.From<TokenScanKey,TokenScanValue>> getNextPotentialPartition()
+        private synchronized Optional<Seeker.WithContext<TokenScanKey,TokenScanValue>> getNextPotentialPartition()
         {
             return partitions.hasNext() ? Optional.of( partitions.next() ) : Optional.empty();
         }

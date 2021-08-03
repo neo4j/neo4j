@@ -79,11 +79,11 @@ public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey,NativeIndex
         highest.initValuesAsHighest();
         try
         {
-            Collection<Seeker.From<RangeKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
+            Collection<Seeker.WithContext<RangeKey,NativeIndexValue>> seekersWithContext = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
             Collection<IndexEntriesReader> readers = new ArrayList<>();
-            for ( Seeker.From<RangeKey,NativeIndexValue> seekerFrom : seekers )
+            for ( Seeker.WithContext<RangeKey,NativeIndexValue> seekerWithContext : seekersWithContext )
             {
-                Seeker<RangeKey,NativeIndexValue> seeker = seekerFrom.from( cursorContext );
+                Seeker<RangeKey,NativeIndexValue> seeker = seekerWithContext.with( cursorContext );
                 readers.add( new IndexEntriesReader()
                 {
                     @Override

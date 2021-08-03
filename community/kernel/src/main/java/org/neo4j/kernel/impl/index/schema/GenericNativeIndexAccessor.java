@@ -95,11 +95,11 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey,NativeInde
         highest.initValuesAsHighest();
         try
         {
-            Collection<Seeker.From<BtreeKey,NativeIndexValue>> seekersFrom = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
+            Collection<Seeker.WithContext<BtreeKey,NativeIndexValue>> seekersWithContext = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
             Collection<IndexEntriesReader> readers = new ArrayList<>();
-            for ( Seeker.From<BtreeKey,NativeIndexValue> seekerFrom : seekersFrom )
+            for ( Seeker.WithContext<BtreeKey,NativeIndexValue> seekerWithContext : seekersWithContext )
             {
-                Seeker<BtreeKey,NativeIndexValue> seeker = seekerFrom.from( cursorContext );
+                Seeker<BtreeKey,NativeIndexValue> seeker = seekerWithContext.with( cursorContext );
                 readers.add( new IndexEntriesReader()
                 {
                     @Override

@@ -672,9 +672,9 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             if ( partitionedSeek )
             {
                 Collection<Seeker<KEY,VALUE>> partitions = new ArrayList<>();
-                for ( Seeker.From<KEY,VALUE> seeker : tree.partitionedSeek( from, to, 10, NULL ) )
+                for ( Seeker.WithContext<KEY,VALUE> seeker : tree.partitionedSeek( from, to, 10, NULL ) )
                 {
-                    partitions.add( seeker.from( NULL ) );
+                    partitions.add( seeker.with( NULL ) );
                 }
                 return new PartitionBridgingSeeker<>( partitions );
             }

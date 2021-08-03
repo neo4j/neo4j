@@ -210,7 +210,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     {
         private final PropertyIndexQuery[] query;
         private final boolean filter;
-        private final Iterator<Seeker.From<KEY,VALUE>> partitions;
+        private final Iterator<Seeker.WithContext<KEY,VALUE>> partitions;
         private final int numberOfPartitions;
 
         NativePartitionedValueSeek( int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query ) throws IOException
@@ -247,7 +247,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             }
             try
             {
-                return getIndexProgressor( partition.get().from( cursorContext ), client, filter, query );
+                return getIndexProgressor( partition.get().with( cursorContext ), client, filter, query );
             }
             catch ( IOException e )
             {
@@ -255,7 +255,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             }
         }
 
-        private synchronized Optional<Seeker.From<KEY,VALUE>> getNextPotentialPartition()
+        private synchronized Optional<Seeker.WithContext<KEY,VALUE>> getNextPotentialPartition()
         {
             return partitions.hasNext() ? Optional.of( partitions.next() ) : Optional.empty();
         }
