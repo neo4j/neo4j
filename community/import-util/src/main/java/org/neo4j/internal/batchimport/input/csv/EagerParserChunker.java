@@ -45,7 +45,7 @@ public class EagerParserChunker implements Chunker
     private final Decorator decorator;
 
     public EagerParserChunker( CharReadable reader, IdType idType, Header header, Collector badCollector, Extractors extractors,
-            int chunkSize, Configuration config, Decorator decorator )
+            int chunkSize, Configuration config, Decorator decorator, boolean autoSkipHeaders )
     {
         this.chunkSize = chunkSize;
         this.decorator = decorator;

@@ -106,6 +106,7 @@ class CsvImporter implements Importer
     private final long badTolerance;
     private final boolean normalizeTypes;
     private final boolean verbose;
+    private final boolean autoSkipHeaders;
     private final Map<Set<String>, List<Path[]>> nodeFiles;
     private final Map<String, List<Path[]>> relationshipFiles;
     private final FileSystemAbstraction fileSystem;
@@ -130,6 +131,7 @@ class CsvImporter implements Importer
         this.badTolerance = b.badTolerance;
         this.normalizeTypes = b.normalizeTypes;
         this.verbose = b.verbose;
+        this.autoSkipHeaders = b.autoSkipHeaders;
         this.nodeFiles = requireNonNull( b.nodeFiles );
         this.relationshipFiles = requireNonNull( b.relationshipFiles );
         this.fileSystem = requireNonNull( b.fileSystem );
@@ -154,7 +156,7 @@ class CsvImporter implements Importer
 
             CsvInput input = new CsvInput( nodeData, defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ),
                 relationshipsData, defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType,
-                csvConfig, new CsvInput.PrintingMonitor( stdOut ), memoryTracker );
+                csvConfig, autoSkipHeaders, new CsvInput.PrintingMonitor( stdOut ), memoryTracker );
 
             doImport( input, badCollector );
         }
@@ -407,6 +409,7 @@ class CsvImporter implements Importer
         private long badTolerance;
         private boolean normalizeTypes;
         private boolean verbose;
+        private boolean autoSkipHeaders;
         private final Map<Set<String>, List<Path[]>> nodeFiles = new HashMap<>();
         private final Map<String, List<Path[]>> relationshipFiles = new HashMap<>();
         private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -496,6 +499,12 @@ class CsvImporter implements Importer
         Builder withVerbose( boolean verbose )
         {
             this.verbose = verbose;
+            return this;
+        }
+
+        Builder withAutoSkipHeaders( boolean autoSkipHeaders )
+        {
+            this.autoSkipHeaders = autoSkipHeaders;
             return this;
         }
 

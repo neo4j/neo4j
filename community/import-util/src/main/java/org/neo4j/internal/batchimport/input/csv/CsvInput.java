@@ -74,6 +74,7 @@ public class CsvInput implements Input
     private final Configuration config;
     private final Monitor monitor;
     private final Groups groups;
+    private final boolean autoSkipHeaders;
     private final MemoryTracker memoryTracker;
 
     /**
@@ -92,16 +93,18 @@ public class CsvInput implements Input
     public CsvInput(
             Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Monitor monitor, MemoryTracker memoryTracker )
+            IdType idType, Configuration config, boolean autoSkipHeaders, Monitor monitor, MemoryTracker memoryTracker )
     {
-        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, monitor, new Groups(), memoryTracker );
+        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, autoSkipHeaders, monitor,
+                new Groups(), memoryTracker );
     }
 
     CsvInput(
             Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Monitor monitor, Groups groups, MemoryTracker memoryTracker )
+            IdType idType, Configuration config, boolean autoSkipHeaders, Monitor monitor, Groups groups, MemoryTracker memoryTracker )
     {
+        this.autoSkipHeaders = autoSkipHeaders;
         this.memoryTracker = memoryTracker;
         assertSaneConfiguration( config );
 
@@ -237,7 +240,7 @@ public class CsvInput implements Input
 
     private InputIterator stream( Iterable<DataFactory> data, Header.Factory headerFactory, Collector badCollector )
     {
-        return new CsvGroupInputIterator( data.iterator(), headerFactory, idType, config, badCollector, groups, NO_MONITOR );
+        return new CsvGroupInputIterator( data.iterator(), headerFactory, idType, config, badCollector, groups, autoSkipHeaders, NO_MONITOR );
     }
 
     @Override
@@ -290,7 +293,7 @@ public class CsvInput implements Input
                             header = extractHeader( source, headerFactory, idType, config, groups, monitor );
                         }
                         try ( CsvInputIterator iterator = new CsvInputIterator( source, data.decorator(), header, config,
-                                idType, EMPTY, CsvGroupInputIterator.extractors( config ), groupId );
+                                idType, EMPTY, CsvGroupInputIterator.extractors( config ), groupId, autoSkipHeaders );
                                 InputEntity entity = new InputEntity() )
                         {
                             int entities = 0;

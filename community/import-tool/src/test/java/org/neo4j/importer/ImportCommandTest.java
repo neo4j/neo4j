@@ -66,8 +66,9 @@ class ImportCommandTest
         }
         assertEquals( "USAGE" + lineSeparator() +
                         "" + lineSeparator() +
-                        "import [--expand-commands] [--verbose] [--cache-on-heap[=<true/false>]]" + lineSeparator() +
-                        "       [--high-io[=<true/false>]] [--ignore-empty-strings[=<true/false>]]" + lineSeparator() +
+                        "import [--expand-commands] [--verbose] [--auto-skip-subsequent-headers" + lineSeparator() +
+                        "       [=<true/false>]] [--cache-on-heap[=<true/false>]] [--high-io" + lineSeparator() +
+                        "       [=<true/false>]] [--ignore-empty-strings[=<true/false>]]" + lineSeparator() +
                         "       [--ignore-extra-columns[=<true/false>]] [--legacy-style-quoting" + lineSeparator() +
                         "       [=<true/false>]] [--multiline-fields[=<true/false>]] [--normalize-types" + lineSeparator() +
                         "       [=<true/false>]] [--skip-bad-entries-logging[=<true/false>]]" + lineSeparator() +
@@ -236,7 +237,12 @@ class ImportCommandTest
                         "                               perspective of the importer. The first line must" + lineSeparator() +
                         "                               contain the header. Multiple data sources like" + lineSeparator() +
                         "                               these can be specified in one import, where each" + lineSeparator() +
-                        "                               data source has its own header.", baos.toString().trim() );
+                        "                               data source has its own header." + lineSeparator() +
+                        "      --auto-skip-subsequent-headers[=<true/false>]" + lineSeparator() +
+                        "                             Automatically skip accidental header lines in" + lineSeparator() +
+                        "                               subsequent files in file groups with more than" + lineSeparator() +
+                        "                               one file" + lineSeparator() +
+                        "                               Default: false", baos.toString().trim() );
     }
 
     @Test

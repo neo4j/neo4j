@@ -192,57 +192,67 @@ public class DataFactories
 
     private static final Supplier<ZoneId> DEFAULT_TIME_ZONE = () -> UTC;
 
+    public static Entry[] parseHeaderEntries( CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups, Supplier<ZoneId> defaultTimeZone,
+            HeaderEntryFactory entryFactory, Header.Monitor monitor )
+    {
+        try
+        {
+            Mark mark = new Mark();
+            Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull(),
+                    config.trimStrings(), defaultTimeZone );
+            Extractor<?> idExtractor = idExtractor( idType, extractors );
+            int delimiter = config.delimiter();
+            List<Header.Entry> columns = new ArrayList<>();
+            for ( int i = 0; !mark.isEndOfLine() && dataSeeker.seek( mark, delimiter ); i++ )
+            {
+                String entryString = dataSeeker.tryExtract( mark, extractors.string() )
+                                     ? extractors.string().value() : null;
+                HeaderEntrySpec spec = new HeaderEntrySpec( entryString );
+
+                if ( (spec.name == null && spec.type == null) ||
+                        (spec.type != null && spec.type.equals( Type.IGNORE.name() )) )
+                {
+                    columns.add( new Header.Entry( null, Type.IGNORE, Group.GLOBAL, null, null ) );
+                }
+                else
+                {
+                    columns.add( entryFactory.create( dataSeeker.sourceDescription(), i, spec.name, spec.type, spec.groupName, extractors, idExtractor, groups,
+                            monitor ) );
+                }
+            }
+            return columns.toArray( new Entry[0] );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
     private abstract static class AbstractDefaultFileHeaderParser implements Header.Factory
     {
-        private final boolean createGroups;
         private final Type[] mandatoryTypes;
         private final Supplier<ZoneId> defaultTimeZone;
         private final boolean normalizeTypes;
+        private final HeaderEntryFactory entryFactory;
 
         AbstractDefaultFileHeaderParser( Supplier<ZoneId> defaultTimeZone, boolean createGroups, boolean normalizeTypes, Type... mandatoryTypes )
         {
             this.defaultTimeZone = defaultTimeZone;
-            this.createGroups = createGroups;
             this.normalizeTypes = normalizeTypes;
             this.mandatoryTypes = mandatoryTypes;
+            this.entryFactory = ( sourceDescription, entryIndex, name, type, groupName, extractors, idExtractor, groups, monitor ) ->
+            {
+                Group group = createGroups ? groups.getOrCreate( groupName ) : groups.get( groupName );
+                return entry( sourceDescription, entryIndex, name, type, group, extractors, idExtractor, monitor );
+            };
         }
 
         @Override
         public Header create( CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups, Monitor monitor )
         {
-            try
-            {
-                Mark mark = new Mark();
-                Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull(),
-                        config.trimStrings(), defaultTimeZone );
-                Extractor<?> idExtractor = idExtractor( idType, extractors );
-                int delimiter = config.delimiter();
-                List<Header.Entry> columns = new ArrayList<>();
-                for ( int i = 0; !mark.isEndOfLine() && dataSeeker.seek( mark, delimiter ); i++ )
-                {
-                    String entryString = dataSeeker.tryExtract( mark, extractors.string() )
-                            ? extractors.string().value() : null;
-                    HeaderEntrySpec spec = new HeaderEntrySpec( entryString );
-
-                    if ( (spec.name == null && spec.type == null) ||
-                         (spec.type != null && spec.type.equals( Type.IGNORE.name() )) )
-                    {
-                        columns.add( new Header.Entry( null, Type.IGNORE, Group.GLOBAL, null, null ) );
-                    }
-                    else
-                    {
-                        Group group = createGroups ? groups.getOrCreate( spec.groupName ) : groups.get( spec.groupName );
-                        columns.add( entry( dataSeeker.sourceDescription(), i, spec.name, spec.type, group, extractors, idExtractor, monitor ) );
-                    }
-                }
-                Entry[] entries = columns.toArray( new Entry[0] );
-                validateHeader( entries, dataSeeker );
-                return new Header( entries );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            Entry[] entries = parseHeaderEntries( dataSeeker, config, idType, groups, defaultTimeZone, entryFactory, monitor );
+            validateHeader( entries, dataSeeker );
+            return new Header( entries );
         }
 
         private void validateHeader( Entry[] entries, CharSeeker dataSeeker )
@@ -369,6 +379,12 @@ public class DataFactories
             this.type = type;
             this.groupName = groupName;
         }
+    }
+
+    interface HeaderEntryFactory
+    {
+        Entry create( String sourceDescription, int entryIndex, String name, String type, String groupName, Extractors extractors, Extractor<?> idExtractor,
+                Groups groups, Monitor monitor );
     }
 
     private static class DefaultNodeFileHeaderParser extends AbstractDefaultFileHeaderParser

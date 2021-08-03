@@ -210,6 +210,10 @@ public class ImportCommand extends AbstractCommand
                     "its own header." )
     private List<RelationshipFilesGroup> relationships = new ArrayList<>();
 
+    @Option( names = "--auto-skip-subsequent-headers", arity = "0..1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
+            description = "Automatically skip accidental header lines in subsequent files in file groups with more than one file" )
+    private boolean autoSkipHeaders;
+
     public ImportCommand( ExecutionContext ctx )
     {
         super( ctx );
@@ -244,7 +248,8 @@ public class ImportCommand extends AbstractCommand
                     .withSkipBadEntriesLogging( skipBadEntriesLogging )
                     .withSkipBadRelationships( skipBadRelationships )
                     .withNormalizeTypes( normalizeTypes )
-                    .withVerbose( verbose );
+                    .withVerbose( verbose )
+                    .withAutoSkipHeaders( autoSkipHeaders );
 
             nodes.forEach( n -> {
                 importerBuilder.addNodeFiles( n.key, n.files );

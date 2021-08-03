@@ -95,7 +95,7 @@ class ImportPanicIT
                 DataFactories.datas(), DataFactories.defaultFormatRelationshipFileHeader(),
                 IdType.ACTUAL,
                 csvConfigurationWithLowBufferSize(),
-                CsvInput.NO_MONITOR, INSTANCE );
+                false, CsvInput.NO_MONITOR, INSTANCE );
             var e = assertThrows( InputException.class, () -> importer.doImport( brokenCsvInput ) );
             assertTrue( e.getCause() instanceof DataAfterQuoteException );
         }

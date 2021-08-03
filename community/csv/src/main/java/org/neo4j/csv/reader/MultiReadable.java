@@ -23,6 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.collection.RawIterator;
 
+import static org.neo4j.csv.reader.BufferedCharSeeker.isEolChar;
+
 /**
  * Joins multiple {@link CharReadable} into one. There will never be one read which reads from multiple sources.
  * If the end of one source is reached those (smaller amount of) characters are returned as one read and the next
@@ -131,7 +133,7 @@ public class MultiReadable implements CharReadable
     private void checkNewLineRequirement( char[] array, int lastIndex )
     {
         char lastChar = array[lastIndex];
-        requiresNewLine = lastChar != '\n' && lastChar != '\r';
+        requiresNewLine = !isEolChar( lastChar );
     }
 
     @Override

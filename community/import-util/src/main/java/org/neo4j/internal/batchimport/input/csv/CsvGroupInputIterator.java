@@ -44,12 +44,13 @@ public class CsvGroupInputIterator implements InputIterator
     private final Configuration config;
     private final Collector badCollector;
     private final Groups groups;
+    private final boolean autoSkipHeaders;
     private final Monitor monitor;
     private CsvInputIterator current;
     private int groupId;
 
     public CsvGroupInputIterator( Iterator<DataFactory> source, Header.Factory headerFactory,
-            IdType idType, Configuration config, Collector badCollector, Groups groups, Monitor monitor )
+            IdType idType, Configuration config, Collector badCollector, Groups groups, boolean autoSkipHeaders, Monitor monitor )
     {
         this.source = source;
         this.headerFactory = headerFactory;
@@ -57,6 +58,7 @@ public class CsvGroupInputIterator implements InputIterator
         this.config = config;
         this.badCollector = badCollector;
         this.groups = groups;
+        this.autoSkipHeaders = autoSkipHeaders;
         this.monitor = monitor;
     }
 
@@ -84,7 +86,7 @@ public class CsvGroupInputIterator implements InputIterator
                 }
                 Data data = source.next().create( config );
                 current = new CsvInputIterator( new MultiReadable( data.stream() ), data.decorator(),
-                        headerFactory, idType, config, groups, badCollector, extractors( config ), groupId++, monitor );
+                        headerFactory, idType, config, groups, badCollector, extractors( config ), groupId++, autoSkipHeaders, monitor );
             }
 
             if ( current.next( (CsvInputChunkProxy) chunk ) )

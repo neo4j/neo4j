@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.csv.reader.HeaderSkipper.NO_SKIP;
 
 class ClosestNewLineChunkerTest
 {
@@ -38,7 +39,7 @@ class ClosestNewLineChunkerTest
         CharReadable reader = Readables.wrap( "1234567\n8901234\n5678901234" );
         // (next chunks):                                   ^            ^
         // (actual chunks):                             ^        ^
-        try ( ClosestNewLineChunker source = new ClosestNewLineChunker( reader, 12 ) )
+        try ( ClosestNewLineChunker source = new ClosestNewLineChunker( reader, 12, NO_SKIP ) )
         {
             // WHEN
             Chunk chunk = source.newChunk();
@@ -61,7 +62,7 @@ class ClosestNewLineChunkerTest
         CharReadable reader = Readables.wrap( "1234567\n89012345678901234" );
         // (next chunks):                                   ^
         // (actual chunks):                             ^
-        try ( ClosestNewLineChunker source = new ClosestNewLineChunker( reader, 12 ) )
+        try ( ClosestNewLineChunker source = new ClosestNewLineChunker( reader, 12, NO_SKIP ) )
         {
             // WHEN
             Chunk chunk = source.newChunk();

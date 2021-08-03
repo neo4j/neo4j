@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.PushbackInputStream;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,6 +42,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingFunction;
 
+import static org.neo4j.csv.reader.BufferedCharSeeker.isEolChar;
 import static org.neo4j.csv.reader.CharReadable.EMPTY;
 
 /**
@@ -326,6 +328,32 @@ public class Readables
         };
     }
 
+    public static char[] extractFirstLineFrom( CharReadable source ) throws IOException
+    {
+        return extractFirstLineFrom( ( into, offset ) -> source.read( into, offset, 1 ) > 0 );
+    }
+
+    public static char[] extractFirstLineFrom( char[] data, int offset, int length )
+    {
+        try
+        {
+            return extractFirstLineFrom( ( into, intoOffset ) ->
+            {
+                if ( intoOffset < length )
+                {
+                    into[intoOffset] = data[offset + intoOffset];
+                    return true;
+                }
+                return false;
+            } );
+        }
+        catch ( IOException e )
+        {
+            // Will not happen because we're reading from an array
+            throw new UncheckedIOException( e );
+        }
+    }
+
     /**
      * Extracts the first line, i.e characters until the first newline or end of stream.
      * Reads one character at a time to be sure not to read too far ahead. The stream is left
@@ -335,12 +363,11 @@ public class Readables
      * @return char[] containing characters until the first newline character or end of stream.
      * @throws IOException on I/O reading error.
      */
-    public static char[] extractFirstLineFrom( CharReadable source ) throws IOException
+    public static char[] extractFirstLineFrom( CharSupplier source ) throws IOException
     {
         char[] result = new char[100];
         int cursor = 0;
-        int read;
-        boolean foundEol = false;
+        boolean foundEol;
         do
         {
             // Grow on demand
@@ -350,17 +377,22 @@ public class Readables
             }
 
             // Read one character
-            read = source.read( result, cursor, 1 );
-            if ( read > 0 )
+            if ( !source.next( result, cursor ) )
             {
-                foundEol = BufferedCharSeeker.isEolChar( result[cursor] );
-                if ( !foundEol )
-                {
-                    cursor++;
-                }
+                break;
+            }
+            foundEol = isEolChar( result[cursor] );
+            if ( !foundEol )
+            {
+                cursor++;
             }
         }
-        while ( read > 0 && !foundEol );
+        while ( !foundEol );
         return Arrays.copyOf( result, cursor );
+    }
+
+    interface CharSupplier
+    {
+        boolean next( char[] into, int offset ) throws IOException;
     }
 }

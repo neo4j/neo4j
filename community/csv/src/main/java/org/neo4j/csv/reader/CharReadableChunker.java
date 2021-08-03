@@ -92,6 +92,7 @@ public abstract class CharReadableChunker implements Chunker
     public static class ChunkImpl implements Chunk
     {
         final char[] buffer;
+        private int startOffset;
         private int length;
         private String sourceDescription;
 
@@ -100,8 +101,9 @@ public abstract class CharReadableChunker implements Chunker
             this.buffer = buffer;
         }
 
-        public void initialize( int length, String sourceDescription )
+        public void initialize( int startOffset, int length, String sourceDescription )
         {
+            this.startOffset = startOffset;
             this.length = length;
             this.sourceDescription = sourceDescription;
         }
@@ -109,7 +111,7 @@ public abstract class CharReadableChunker implements Chunker
         @Override
         public int startPosition()
         {
-            return 0;
+            return startOffset;
         }
 
         @Override
@@ -139,7 +141,7 @@ public abstract class CharReadableChunker implements Chunker
         @Override
         public int backPosition()
         {
-            return 0;
+            return startOffset;
         }
     }
 }
