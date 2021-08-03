@@ -32,7 +32,7 @@ import java.util.Iterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
@@ -256,7 +256,7 @@ class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
-        AbstractDynamicStore store = new AbstractDynamicStore( storeFile, idFile, Config.defaults(), IdType.ARRAY_BLOCK,
+        AbstractDynamicStore store = new AbstractDynamicStore( storeFile, idFile, Config.defaults(), RecordIdType.ARRAY_BLOCK,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
                 formats.dynamic(), formats.storeVersion(), DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME, immutable.empty() )
         {

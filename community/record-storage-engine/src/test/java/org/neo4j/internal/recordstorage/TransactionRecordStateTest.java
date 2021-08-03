@@ -39,7 +39,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
@@ -1737,7 +1736,7 @@ class TransactionRecordStateTest
     private TransactionApplierFactory buildApplier( LockService noLockService )
     {
         IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
-        Stream.of( IdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
+        Stream.of( RecordIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
         return new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), noLockService );
     }
 

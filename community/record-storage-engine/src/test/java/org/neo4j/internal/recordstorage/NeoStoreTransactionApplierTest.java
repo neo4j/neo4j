@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
@@ -106,15 +105,15 @@ class NeoStoreTransactionApplierTest
     private final LockService lockService = mock( LockService.class );
 
     private final MetaDataStore metaDataStore = mockedStore( MetaDataStore.class, null );
-    private final NodeStore nodeStore = mockedStore( NodeStore.class, IdType.NODE );
-    private final RelationshipStore relationshipStore = mockedStore( RelationshipStore.class, IdType.RELATIONSHIP );
-    private final PropertyStore propertyStore = mockedStore( PropertyStore.class, IdType.PROPERTY );
-    private final RelationshipGroupStore relationshipGroupStore = mockedStore( RelationshipGroupStore.class, IdType.RELATIONSHIP_GROUP );
-    private final RelationshipTypeTokenStore relationshipTypeTokenStore = mockedStore( RelationshipTypeTokenStore.class, IdType.RELATIONSHIP_TYPE_TOKEN );
-    private final LabelTokenStore labelTokenStore = mockedStore( LabelTokenStore.class, IdType.LABEL_TOKEN );
-    private final PropertyKeyTokenStore propertyKeyTokenStore = mockedStore( PropertyKeyTokenStore.class, IdType.PROPERTY_KEY_TOKEN );
-    private final SchemaStore schemaStore = mockedStore( SchemaStore.class, IdType.SCHEMA );
-    private final DynamicArrayStore dynamicLabelStore = mockedStore( DynamicArrayStore.class, IdType.ARRAY_BLOCK );
+    private final NodeStore nodeStore = mockedStore( NodeStore.class, RecordIdType.NODE );
+    private final RelationshipStore relationshipStore = mockedStore( RelationshipStore.class, RecordIdType.RELATIONSHIP );
+    private final PropertyStore propertyStore = mockedStore( PropertyStore.class, RecordIdType.PROPERTY );
+    private final RelationshipGroupStore relationshipGroupStore = mockedStore( RelationshipGroupStore.class, RecordIdType.RELATIONSHIP_GROUP );
+    private final RelationshipTypeTokenStore relationshipTypeTokenStore = mockedStore( RelationshipTypeTokenStore.class, RecordIdType.RELATIONSHIP_TYPE_TOKEN );
+    private final LabelTokenStore labelTokenStore = mockedStore( LabelTokenStore.class, RecordIdType.LABEL_TOKEN );
+    private final PropertyKeyTokenStore propertyKeyTokenStore = mockedStore( PropertyKeyTokenStore.class, RecordIdType.PROPERTY_KEY_TOKEN );
+    private final SchemaStore schemaStore = mockedStore( SchemaStore.class, RecordIdType.SCHEMA );
+    private final DynamicArrayStore dynamicLabelStore = mockedStore( DynamicArrayStore.class, RecordIdType.ARRAY_BLOCK );
 
     private final long transactionId = 55555;
     private final DynamicRecord one = new DynamicRecord( 1 ).initialize( true, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
@@ -147,7 +146,7 @@ class NeoStoreTransactionApplierTest
         when( transactionToApply.subject() ).thenReturn( AUTH_DISABLED );
     }
 
-    private static <T extends CommonAbstractStore> T mockedStore( Class<T> cls, IdType idType )
+    private static <T extends CommonAbstractStore> T mockedStore( Class<T> cls, RecordIdType idType )
     {
         T store = mock( cls );
         when( store.getIdType() ).thenReturn( idType );
@@ -739,7 +738,7 @@ class NeoStoreTransactionApplierTest
         TransactionApplierFactory base = newApplier( false );
         TransactionApplierFactory indexApplier = newIndexApplier();
         IdGeneratorUpdatesWorkSync idGeneratorUpdatesWorkSync = new IdGeneratorUpdatesWorkSync();
-        Stream.of( IdType.values() ).forEach( idType -> idGeneratorUpdatesWorkSync.add( mock( IdGenerator.class ) ) );
+        Stream.of( RecordIdType.values() ).forEach( idType -> idGeneratorUpdatesWorkSync.add( mock( IdGenerator.class ) ) );
         TransactionApplierFactoryChain applier = new TransactionApplierFactoryChain( w -> w.newBatch( PageCacheTracer.NULL ), base, indexApplier );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.copy().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );

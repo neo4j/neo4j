@@ -36,6 +36,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
+import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -424,6 +425,12 @@ class ParallelRecoveryVisitorTest
 
         @Override
         public StorageReader newReader()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public StoreEntityCounters storeEntityCounters()
         {
             throw new UnsupportedOperationException();
         }

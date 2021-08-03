@@ -47,7 +47,6 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -78,6 +77,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.stats.RecordDatabaseEntityCounters;
+import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockGroup;
@@ -149,6 +150,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final int denseNodeThreshold;
     private final IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
     private final Map<TransactionApplicationMode,TransactionApplierFactoryChain> applierChains = new EnumMap<>( TransactionApplicationMode.class );
+    private final RecordDatabaseEntityCounters storeEntityCounters;
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
@@ -192,7 +194,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, internalLogProvider, cacheTracer, readOnlyChecker );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
-        Stream.of( IdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
+        Stream.of( RecordIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
 
         try
         {
@@ -212,6 +214,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     cacheTracer );
 
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
+            storeEntityCounters = new RecordDatabaseEntityCounters( idGeneratorFactory, countsStore );
         }
         catch ( Throwable failure )
         {
@@ -675,5 +678,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public MetadataProvider metadataProvider()
     {
         return neoStores.getMetaDataStore();
+    }
+
+    @Override
+    public StoreEntityCounters storeEntityCounters()
+    {
+        return storeEntityCounters;
     }
 }

@@ -25,7 +25,8 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
@@ -42,7 +43,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  */
 public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final EnumMap<IdType,ReadOnlyHighIdGenerator> idGenerators = new EnumMap<>( IdType.class );
+    private final Map<IdType,ReadOnlyHighIdGenerator> idGenerators = new HashMap<>();
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,

@@ -36,7 +36,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -448,7 +448,7 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createNodeLabelStore( CursorContext cursorContext )
     {
-        return createDynamicArrayStore( layout.nodeLabelStore(), layout.idNodeLabelStore(), IdType.NODE_LABELS,
+        return createDynamicArrayStore( layout.nodeLabelStore(), layout.idNodeLabelStore(), RecordIdType.NODE_LABELS,
                 GraphDatabaseInternalSettings.label_block_size, cursorContext );
     }
 
@@ -462,7 +462,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createPropertyKeyTokenNamesStore( CursorContext cursorContext )
     {
         return createDynamicStringStore( layout.propertyKeyTokenNamesStore(), layout.idPropertyKeyTokenNamesStore(),
-                IdType.PROPERTY_KEY_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE, cursorContext );
+                RecordIdType.PROPERTY_KEY_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE, cursorContext );
     }
 
     CommonAbstractStore createPropertyStore( CursorContext cursorContext )
@@ -481,7 +481,7 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createPropertyArrayStore( CursorContext cursorContext )
     {
-        return createDynamicArrayStore( layout.propertyArrayStore(), layout.idPropertyArrayStore(), IdType.ARRAY_BLOCK,
+        return createDynamicArrayStore( layout.propertyArrayStore(), layout.idPropertyArrayStore(), RecordIdType.ARRAY_BLOCK,
                 GraphDatabaseInternalSettings.array_block_size, cursorContext );
     }
 
@@ -504,7 +504,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createRelationshipTypeTokenNamesStore( CursorContext cursorContext )
     {
         return createDynamicStringStore( layout.relationshipTypeTokenNamesStore(), layout.idRelationshipTypeTokenNamesStore(),
-                IdType.RELATIONSHIP_TYPE_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE, cursorContext );
+                RecordIdType.RELATIONSHIP_TYPE_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE, cursorContext );
     }
 
     CommonAbstractStore createLabelTokenStore( CursorContext cursorContext )
@@ -517,7 +517,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createSchemaStore( CursorContext cursorContext )
     {
         return initialize(
-                new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, IdType.SCHEMA, idGeneratorFactory, pageCache,
+                new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, RecordIdType.SCHEMA, idGeneratorFactory, pageCache,
                         logProvider,
                         (PropertyStore) getOrOpenStore( StoreType.PROPERTY, cursorContext ),
                         recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), cursorContext );
@@ -531,7 +531,7 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createLabelTokenNamesStore( CursorContext cursorContext )
     {
-        return createDynamicStringStore( layout.labelTokenNamesStore(), layout.idLabelTokenNamesStore(), IdType.LABEL_TOKEN_NAME,
+        return createDynamicStringStore( layout.labelTokenNamesStore(), layout.idLabelTokenNamesStore(), RecordIdType.LABEL_TOKEN_NAME,
                 TokenStore.NAME_STORE_BLOCK_SIZE, cursorContext );
     }
 
@@ -545,23 +545,24 @@ public class NeoStores implements AutoCloseable
 
     private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile, CursorContext cursorContext )
     {
-        return createDynamicStringStore( storeFile, idFile, IdType.STRING_BLOCK, config.get( GraphDatabaseInternalSettings.string_block_size ), cursorContext );
+        return createDynamicStringStore( storeFile, idFile, RecordIdType.STRING_BLOCK, config.get( GraphDatabaseInternalSettings.string_block_size ),
+                cursorContext );
     }
 
-    private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile, IdType idType, int blockSize, CursorContext cursorContext )
+    private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile, RecordIdType idType, int blockSize, CursorContext cursorContext )
     {
         return initialize( new DynamicStringStore( storeFile, idFile, config, idType, idGeneratorFactory,
                 pageCache, logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion(), readOnlyChecker, layout.getDatabaseName(),
                 openOptions ), cursorContext );
     }
 
-    private CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, IdType idType, Setting<Integer> blockSizeProperty,
+    private CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, RecordIdType idType, Setting<Integer> blockSizeProperty,
             CursorContext cursorContext )
     {
         return createDynamicArrayStore( storeFile, idFile, idType, config.get( blockSizeProperty ), cursorContext );
     }
 
-    CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, IdType idType, int blockSize, CursorContext cursorContext )
+    CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, RecordIdType idType, int blockSize, CursorContext cursorContext )
     {
         if ( blockSize <= 0 )
         {

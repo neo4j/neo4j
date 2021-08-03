@@ -30,7 +30,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
@@ -177,7 +177,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     void testGetAllNodes()
     {
-        long highId = getIdGenerator( IdType.NODE ).getHighestPossibleIdInUse();
+        long highId = getIdGenerator( RecordIdType.NODE ).getHighestPossibleIdInUse();
         if ( highId >= 0 && highId < 10000 )
         {
             long count;

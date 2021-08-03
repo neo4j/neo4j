@@ -35,9 +35,9 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.NegativeIdException;
 import org.neo4j.internal.id.ReservedIdException;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -96,7 +96,7 @@ class CommonAbstractStoreTest
     private final Path storeFile = Path.of( "store" );
     private final Path idStoreFile = Path.of( "isStore" );
     private final RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
-    private final IdType idType = IdType.RELATIONSHIP; // whatever
+    private final RecordIdType idType = RecordIdType.RELATIONSHIP; // whatever
 
     @Inject
     private PageCache pageCache;
@@ -151,7 +151,7 @@ class CommonAbstractStoreTest
 
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
 
-        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, idFile, config, IdType.NODE_LABELS, idGeneratorFactory, pageCache,
+        try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, idFile, config, RecordIdType.NODE_LABELS, idGeneratorFactory, pageCache,
                 NullLogProvider.getInstance(), GraphDatabaseInternalSettings.label_block_size.defaultValue(), recordFormats, writable(),
                 databaseLayout.getDatabaseName(), immutable.empty() ) )
         {
@@ -278,7 +278,7 @@ class CommonAbstractStoreTest
         static final String TYPE_DESCRIPTOR = "TheType";
         static final String STORE_VERSION = "v1";
 
-        TheStore( Path file, Path idFile, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+        TheStore( Path file, Path idFile, Config configuration, RecordIdType idType, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
                 LogProvider logProvider, RecordFormat<TheRecord> recordFormat, ImmutableSet<OpenOption> openOptions )
         {
             super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat,

@@ -35,7 +35,7 @@ import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -486,7 +486,7 @@ class CommonAbstractStoreBehaviourTest
 
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
-            super( Path.of( STORE_FILENAME ), Path.of( ID_FILENAME ), config, IdType.NODE,
+            super( Path.of( STORE_FILENAME ), Path.of( ID_FILENAME ), config, RecordIdType.NODE,
                     new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), pageCache, NullLogProvider.getInstance(), "T", format, format,
                     "XYZ", DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         }

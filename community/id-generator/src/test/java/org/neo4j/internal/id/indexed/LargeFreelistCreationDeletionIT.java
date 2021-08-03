@@ -29,7 +29,7 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGenerator.Marker;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -76,7 +76,7 @@ class LargeFreelistCreationDeletionIT
         for ( int r = 0; r < 3; r++ )
         {
             // Create
-            try ( var freelist = new IndexedIdGenerator( pageCache, directory.file( "file.id" ), immediate(), IdType.NODE, false, () -> 0, Long.MAX_VALUE,
+            try ( var freelist = new IndexedIdGenerator( pageCache, directory.file( "file.id" ), immediate(), TestIdType.TEST, false, () -> 0, Long.MAX_VALUE,
                     writable(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
             {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.

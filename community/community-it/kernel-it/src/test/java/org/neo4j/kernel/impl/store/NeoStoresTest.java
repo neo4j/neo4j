@@ -52,6 +52,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.internal.recordstorage.CommandLockVerification;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -198,7 +199,7 @@ public class NeoStoresTest
         {
             try ( NeoStores neoStores = sf.openNeoStores( true ) )
             {
-                neoStores.createDynamicArrayStore( Path.of( "someStore" ), Path.of( "someIdFile" ), IdType.ARRAY_BLOCK, -2, NULL );
+                neoStores.createDynamicArrayStore( Path.of( "someStore" ), Path.of( "someIdFile" ), RecordIdType.ARRAY_BLOCK, -2, NULL );
             }
         } );
         assertEquals( "Block size of dynamic array store should be positive integer.", e.getMessage() );
@@ -846,7 +847,7 @@ public class NeoStoresTest
                 Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
                 CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions )
         {
-            if ( idType == IdType.NODE )
+            if ( RecordIdType.NODE.equals( idType ) )
             {
                 // Return a special id generator which will throw exception on close
                 return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnlyChecker, config,

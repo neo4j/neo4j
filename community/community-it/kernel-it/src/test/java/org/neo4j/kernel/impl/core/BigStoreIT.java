@@ -40,6 +40,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -285,11 +286,11 @@ class BigStoreIT
 
     private void setHighIds( long id )
     {
-        setHighId( IdType.NODE, id );
-        setHighId( IdType.RELATIONSHIP, id );
-        setHighId( IdType.PROPERTY, id );
-        setHighId( IdType.ARRAY_BLOCK, id );
-        setHighId( IdType.STRING_BLOCK, id );
+        setHighId( RecordIdType.NODE, id );
+        setHighId( RecordIdType.RELATIONSHIP, id );
+        setHighId( RecordIdType.PROPERTY, id );
+        setHighId( RecordIdType.ARRAY_BLOCK, id );
+        setHighId( RecordIdType.STRING_BLOCK, id );
     }
 
     private static <T> Collection<T> asSet( Collection<T> collection )

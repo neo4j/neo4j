@@ -55,7 +55,6 @@ import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -67,6 +66,7 @@ import org.neo4j.internal.recordstorage.PropertyTraverser;
 import org.neo4j.internal.recordstorage.RecordAccess;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.RelationshipCreator;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter;
@@ -675,7 +675,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public void createNode( long id, Map<String, Object> properties, Label... labels )
     {
-        IdValidator.assertValidId( IdType.NODE, id, maxNodeId );
+        IdValidator.assertValidId( RecordIdType.NODE, id, maxNodeId );
         var nodeCursor = storeCursors.readCursor( RecordCursorTypes.NODE_CURSOR );
         if ( nodeStore.isInUse( id, nodeCursor ) )
         {

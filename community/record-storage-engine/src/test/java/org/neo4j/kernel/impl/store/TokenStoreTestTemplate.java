@@ -33,7 +33,7 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -92,7 +92,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
 
         RecordFormats formats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
-        nameStore = new DynamicStringStore( namesFile, namesIdFile, config, IdType.LABEL_TOKEN_NAME, generatorFactory, pageCache, logProvider,
+        nameStore = new DynamicStringStore( namesFile, namesIdFile, config, RecordIdType.LABEL_TOKEN_NAME, generatorFactory, pageCache, logProvider,
                 TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion(), writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         store = instantiateStore( file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config );
         nameStore.initialise( true, NULL );

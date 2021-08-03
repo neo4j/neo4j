@@ -32,7 +32,7 @@ import org.neo4j.internal.id.BufferedIdController;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -89,7 +89,7 @@ class IdContextFactoryBuilderTest
 
         ((BufferingIdGeneratorFactory)bufferedGeneratorFactory).initialize( () -> mock( KernelTransactionsSnapshot.class ) );
         Path file = testDirectory.file( "a" );
-        IdType idType = IdType.NODE;
+        RecordIdType idType = RecordIdType.NODE;
         LongSupplier highIdSupplier = () -> 0;
         int maxId = 100;
 
@@ -125,7 +125,7 @@ class IdContextFactoryBuilderTest
         idController.initialize( () -> () -> true );
 
         Path file = testDirectory.file( "b" );
-        IdType idType = IdType.NODE;
+        RecordIdType idType = RecordIdType.NODE;
 
         try ( IdGenerator idGenerator = idGeneratorFactory.create( pageCache, file, idType, 1, false, 100, writable(), config, NULL, immutable.empty() ) )
         {

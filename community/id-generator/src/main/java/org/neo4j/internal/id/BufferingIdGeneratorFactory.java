@@ -25,11 +25,12 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
@@ -42,8 +43,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  */
 public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final BufferingIdGenerator[/*IdType#ordinal as key*/] overriddenIdGenerators =
-            new BufferingIdGenerator[IdType.values().length];
+    private final Map<IdType, BufferingIdGenerator> overriddenIdGenerators = new HashMap<>();
     private Supplier<IdController.ConditionSnapshot> boundaries;
     private final Predicate<IdController.ConditionSnapshot> safeThreshold;
     private final IdGeneratorFactory delegate;
@@ -81,14 +81,14 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     @Override
     public IdGenerator get( IdType idType )
     {
-        IdGenerator generator = overriddenIdGenerators[idType.ordinal()];
+        IdGenerator generator = overriddenIdGenerators.get( idType );
         return generator != null ? generator : delegate.get( idType );
     }
 
     @Override
     public void visit( Consumer<IdGenerator> visitor )
     {
-        Stream.of( overriddenIdGenerators ).forEach( visitor );
+        overriddenIdGenerators.values().forEach( visitor );
     }
 
     @Override
@@ -107,29 +107,17 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     {
         BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator );
         bufferingGenerator.initialize( boundaries, safeThreshold );
-        overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
+        overriddenIdGenerators.put( idType, bufferingGenerator );
         return bufferingGenerator;
     }
 
     public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
     {
-        for ( BufferingIdGenerator generator : overriddenIdGenerators )
-        {
-            if ( generator != null )
-            {
-                generator.maintenance( awaitOngoing, cursorContext );
-            }
-        }
+        overriddenIdGenerators.values().forEach( generator -> generator.maintenance( awaitOngoing, cursorContext ) );
     }
 
     public void clear()
     {
-        for ( BufferingIdGenerator generator : overriddenIdGenerators )
-        {
-            if ( generator != null )
-            {
-                generator.clear();
-            }
-        }
+        overriddenIdGenerators.values().forEach( BufferingIdGenerator::clear );
     }
 }

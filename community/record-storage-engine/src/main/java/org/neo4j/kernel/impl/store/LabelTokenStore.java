@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -56,7 +56,7 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( path, idFile, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
+        super( path, idFile, config, RecordIdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
                 logProvider, nameStore, TYPE_DESCRIPTOR, recordFormats.labelToken(),
                 recordFormats.storeVersion(), readOnlyChecker, databaseName, LABEL_TOKEN_CURSOR, DYNAMIC_LABEL_TOKEN_CURSOR, openOptions );
     }

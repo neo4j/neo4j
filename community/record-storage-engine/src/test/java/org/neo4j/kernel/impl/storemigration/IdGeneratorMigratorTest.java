@@ -29,8 +29,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -105,12 +105,13 @@ class IdGeneratorMigratorTest
         migrator.moveMigratedFiles( upgrade, db, StandardV3_4.STORE_VERSION, Standard.LATEST_STORE_VERSION );
 
         // then
-        assertIdGeneratorContainsIds( db.idNodeStore(), IdType.NODE, 500, 1, 3, nodeStoreStartId );
-        assertIdGeneratorContainsIds( db.idPropertyStringStore(), IdType.STRING_BLOCK, 100, 1, 2, stringStoreStartId );
-        assertIdGeneratorContainsIds( db.idRelationshipStore(), IdType.RELATIONSHIP, 600, 3, 1, relationshipStoreStartId );
+        assertIdGeneratorContainsIds( db.idNodeStore(), RecordIdType.NODE, 500, 1, 3, nodeStoreStartId );
+        assertIdGeneratorContainsIds( db.idPropertyStringStore(), RecordIdType.STRING_BLOCK, 100, 1, 2, stringStoreStartId );
+        assertIdGeneratorContainsIds( db.idRelationshipStore(), RecordIdType.RELATIONSHIP, 600, 3, 1, relationshipStoreStartId );
     }
 
-    private void assertIdGeneratorContainsIds( Path idFilePath, IdType idType, int rounds, int numDeleted, int numCreated, long startingId ) throws IOException
+    private void assertIdGeneratorContainsIds( Path idFilePath, RecordIdType idType, int rounds, int numDeleted, int numCreated, long startingId )
+            throws IOException
     {
         try ( IdGenerator idGenerator = new IndexedIdGenerator( pageCache, idFilePath, immediate(), idType, false, () -> -1, Long.MAX_VALUE, writable(),
                 Config.defaults(), DEFAULT_DATABASE_NAME, CursorContext.NULL ) )

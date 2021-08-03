@@ -29,10 +29,11 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
@@ -50,7 +51,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.id.IdType.STRING_BLOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
@@ -73,7 +73,7 @@ class BufferingIdGeneratorFactoryTest
         pageCache = mock( PageCache.class );
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries );
-        idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE, writable(),
+        idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), TestIdType.TEST, () -> 0L, Integer.MAX_VALUE, writable(),
                 Config.defaults(), NULL, immutable.empty() );
     }
 
@@ -85,20 +85,20 @@ class BufferingIdGeneratorFactoryTest
         {
             marker.markDeleted( 7 );
         }
-        verify( actual.markers[STRING_BLOCK.ordinal()] ).markDeleted( 7 );
-        verify( actual.markers[STRING_BLOCK.ordinal()] ).close();
-        verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
+        verify( actual.markers.get( TestIdType.TEST ) ).markDeleted( 7 );
+        verify( actual.markers.get( TestIdType.TEST ) ).close();
+        verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
 
         // after some maintenance and transaction still not closed
         bufferingIdGeneratorFactory.maintenance( false, NULL );
-        verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
+        verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
         bufferingIdGeneratorFactory.maintenance( false, NULL );
 
         // THEN
-        verify( actual.markers[STRING_BLOCK.ordinal()] ).markFree( 7 );
+        verify( actual.markers.get( TestIdType.TEST ) ).markFree( 7 );
     }
 
     @Test
@@ -109,20 +109,20 @@ class BufferingIdGeneratorFactoryTest
         {
             marker.markDeleted( 7 );
         }
-        verify( actual.markers[STRING_BLOCK.ordinal()] ).markDeleted( 7 );
-        verify( actual.markers[STRING_BLOCK.ordinal()] ).close();
-        verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
+        verify( actual.markers.get( TestIdType.TEST ) ).markDeleted( 7 );
+        verify( actual.markers.get( TestIdType.TEST ) ).close();
+        verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
 
         // after some maintenance and transaction still not closed
         idGenerator.checkpoint( NULL );
-        verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
+        verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
         idGenerator.checkpoint( NULL );
 
         // THEN
-        verify( actual.markers[STRING_BLOCK.ordinal()] ).markFree( 7 );
+        verify( actual.markers.get( TestIdType.TEST ) ).markFree( 7 );
     }
 
     private static class ControllableSnapshotSupplier implements Supplier<ConditionSnapshot>
@@ -143,8 +143,8 @@ class BufferingIdGeneratorFactoryTest
 
     private static class MockedIdGeneratorFactory implements IdGeneratorFactory
     {
-        private final IdGenerator[] generators = new IdGenerator[IdType.values().length];
-        private final Marker[] markers = new Marker[IdType.values().length];
+        private final Map<IdType,IdGenerator> generators = new HashMap<>();
+        private final Map<IdType,Marker> markers = new HashMap<>();
 
         @Override
         public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId,
@@ -152,9 +152,8 @@ class BufferingIdGeneratorFactoryTest
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
             Marker marker = mock( Marker.class );
-            int ordinal = idType.ordinal();
-            generators[ordinal] = idGenerator;
-            markers[ordinal] = marker;
+            generators.put( idType, idGenerator );
+            markers.put( idType, marker );
             when( idGenerator.marker( NULL ) ).thenReturn( marker );
             return idGenerator;
         }
@@ -169,13 +168,13 @@ class BufferingIdGeneratorFactoryTest
         @Override
         public IdGenerator get( IdType idType )
         {
-            return generators[idType.ordinal()];
+            return generators.get( idType );
         }
 
         @Override
         public void visit( Consumer<IdGenerator> visitor )
         {
-            Stream.of( generators ).forEach( visitor );
+            generators.values().forEach( visitor );
         }
 
         @Override

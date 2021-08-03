@@ -36,7 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -112,7 +112,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             Path path,
             Path idFile,
             Config configuration,
-            IdType idType,
+            RecordIdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,

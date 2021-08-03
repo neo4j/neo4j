@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -82,7 +82,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( path, idFile, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.node(),
+        super( path, idFile, config, RecordIdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.node(),
                 NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
         this.dynamicLabelStore = dynamicLabelStore;
     }

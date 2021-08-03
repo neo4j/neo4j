@@ -55,9 +55,9 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RandomSchema;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -100,13 +100,13 @@ import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.token.TokenHolders;
 
 import static java.util.Collections.singleton;
@@ -394,8 +394,8 @@ class RecordStorageMigratorIT
         // Prepare the legacy schema store we'll migrate.
         Path storeFile = databaseLayout.schemaStore();
         Path idFile = databaseLayout.idSchemaStore();
-        SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS,
-                writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
+        SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, RecordIdType.SCHEMA, igf, pageCache, logProvider,
+                StandardV3_4.RECORD_FORMATS, writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         schemaStore35.initialise( false, NULL );
         SplittableRandom rng = new SplittableRandom( randomRule.seed() );
         LongHashSet indexes = new LongHashSet();

@@ -48,20 +48,19 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 import static java.lang.String.format;
-import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -306,7 +305,7 @@ class ReuseStorageSpaceIT
         {
             sizes = new HashMap<>();
             IdGeneratorFactory idGeneratorFactory = db.getDependencyResolver().resolveDependency( IdGeneratorFactory.class );
-            for ( IdType idType : IdType.values() )
+            for ( RecordIdType idType : RecordIdType.values() )
             {
                 sizes.put( idType.name(), idGeneratorFactory.get( idType ).getHighId() );
             }

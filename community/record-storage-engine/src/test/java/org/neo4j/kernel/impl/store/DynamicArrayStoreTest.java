@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -125,7 +125,7 @@ class DynamicArrayStoreTest
     private DynamicArrayStore dynamicArrayStore()
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
-        DynamicArrayStore store = new DynamicArrayStore( storeFile, idFile, Config.defaults(), IdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
+        DynamicArrayStore store = new DynamicArrayStore( storeFile, idFile, Config.defaults(), RecordIdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
                 NullLogProvider.getInstance(), 1, Standard.LATEST_RECORD_FORMATS, writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         store.initialise( true, NULL );
         return store;

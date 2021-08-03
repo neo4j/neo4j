@@ -28,7 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -50,7 +50,7 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( path, idFile, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+        super( path, idFile, config, RecordIdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
                 recordFormats.relationshipGroup(), new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ),
                 recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
     }

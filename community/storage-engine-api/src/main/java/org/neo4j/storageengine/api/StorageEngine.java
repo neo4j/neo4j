@@ -29,6 +29,7 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
+import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
@@ -190,6 +191,11 @@ public interface StorageEngine extends Lifecycle
      * @return an interface for accessing data in the storage.
      */
     StorageReader newReader();
+
+    /**
+     * @return a {@link StoreEntityCounters}, providing access to underlying store entity counters.
+     */
+    StoreEntityCounters storeEntityCounters();
 
     /**
      * @return specific behaviour of transaction state that is optimal for this storage engine.

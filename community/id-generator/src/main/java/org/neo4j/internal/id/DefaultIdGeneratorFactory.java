@@ -25,7 +25,8 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
@@ -42,7 +43,7 @@ import static org.neo4j.internal.id.indexed.LoggingIndexedIdGeneratorMonitor.def
 
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final EnumMap<IdType, IndexedIdGenerator> generators = new EnumMap<>( IdType.class );
+    private final Map<IdType, IndexedIdGenerator> generators = new HashMap<>();
     protected final FileSystemAbstraction fs;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     protected final boolean allowLargeIdCaches;

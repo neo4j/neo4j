@@ -31,8 +31,8 @@ import java.util.List;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -93,7 +93,7 @@ class SchemaStore35Test
         Config config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        store = new SchemaStore35( testDirectory.file( "schema35" ), testDirectory.file( "schema35.db.id" ), config, IdType.SCHEMA,
+        store = new SchemaStore35( testDirectory.file( "schema35" ), testDirectory.file( "schema35.db.id" ), config, RecordIdType.SCHEMA,
                 idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS, writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         store.initialise( true, NULL );
         storeCursors = new SchemaStore35StoreCursors( store, NULL );

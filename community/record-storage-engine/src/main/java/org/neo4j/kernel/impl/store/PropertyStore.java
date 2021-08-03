@@ -36,8 +36,8 @@ import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.InconsistentDataReadException;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordPropertyCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -184,7 +184,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( path, idFile, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
+        super( path, idFile, configuration, RecordIdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
                 recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;

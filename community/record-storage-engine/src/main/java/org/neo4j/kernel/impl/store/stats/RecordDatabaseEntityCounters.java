@@ -21,18 +21,18 @@ package org.neo4j.kernel.impl.store.stats;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
-public class DatabaseEntityCounters implements StoreEntityCounters
+public class RecordDatabaseEntityCounters implements StoreEntityCounters
 {
     private final IdGeneratorFactory idGeneratorFactory;
     private final CountsAccessor countsAccessor;
 
-    public DatabaseEntityCounters( IdGeneratorFactory idGeneratorFactory, CountsAccessor countsAccessor )
+    public RecordDatabaseEntityCounters( IdGeneratorFactory idGeneratorFactory, CountsAccessor countsAccessor )
     {
         this.idGeneratorFactory = idGeneratorFactory;
         this.countsAccessor = countsAccessor;
@@ -41,25 +41,25 @@ public class DatabaseEntityCounters implements StoreEntityCounters
     @Override
     public long nodes()
     {
-        return idGeneratorFactory.get( IdType.NODE ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( RecordIdType.NODE ).getNumberOfIdsInUse();
     }
 
     @Override
     public long relationships()
     {
-        return idGeneratorFactory.get( IdType.RELATIONSHIP ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( RecordIdType.RELATIONSHIP ).getNumberOfIdsInUse();
     }
 
     @Override
     public long properties()
     {
-        return idGeneratorFactory.get( IdType.PROPERTY ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( RecordIdType.PROPERTY ).getNumberOfIdsInUse();
     }
 
     @Override
     public long relationshipTypes()
     {
-        return idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( RecordIdType.RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
     }
 
     @Override

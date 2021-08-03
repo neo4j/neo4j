@@ -29,7 +29,7 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
-import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -50,7 +50,7 @@ import static org.neo4j.test.utils.PageCacheConfig.config;
 @EphemeralPageCacheExtension
 class IndexedIdGeneratorRecoverabilityTest
 {
-    private static final IdType ID_TYPE = IdType.LABEL_TOKEN;
+    private static final TestIdType ID_TYPE = TestIdType.TEST;
 
     private static final String ID_FILE_NAME = "some.id";
 

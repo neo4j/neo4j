@@ -27,7 +27,6 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -79,7 +78,7 @@ class SchemaRuleCommandTest
     void setup()
     {
         IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
-        Stream.of( IdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( mock( IdGenerator.class ) ) );
+        Stream.of( RecordIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( mock( IdGenerator.class ) ) );
         storeApplier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
     }
 

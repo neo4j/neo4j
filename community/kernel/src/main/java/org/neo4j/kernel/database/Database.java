@@ -42,7 +42,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
@@ -105,7 +104,6 @@ import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
-import org.neo4j.kernel.impl.store.stats.DatabaseEntityCounters;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
@@ -491,8 +489,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( indexStatisticsStore );
             databaseDependencies.satisfyDependency( indexProviderMap );
             databaseDependencies.satisfyDependency( forceOperation );
-            databaseDependencies.satisfyDependency(
-                    new DatabaseEntityCounters( this.idGeneratorFactory, databaseDependencies.resolveDependency( CountsAccessor.class ) ) );
+            databaseDependencies.satisfyDependency( storageEngine.storeEntityCounters() );
 
             var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
             this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi );

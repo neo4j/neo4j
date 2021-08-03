@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -44,7 +43,6 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -129,7 +127,7 @@ class ApplyRecoveredTransactionsTest
         when( lockService.acquireNodeLock( anyLong(), any( LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
         when( lockService.acquireRelationshipLock( anyLong(), any( LockType.class ) ) ).thenReturn( LockService.NO_LOCK );
         IdGeneratorUpdatesWorkSync idGeneratorWorkSyncs = new IdGeneratorUpdatesWorkSync();
-        Stream.of( IdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
+        Stream.of( RecordIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
 
         NeoStoreTransactionApplierFactory applier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ),
                 lockService );

@@ -19,9 +19,13 @@
  */
 package org.neo4j.internal.id;
 
-public interface IdType
+public enum TestIdType implements IdType
 {
-    boolean highActivity();
+    TEST;
 
-    String name();
+    @Override
+    public boolean highActivity()
+    {
+        return false;
+    }
 }

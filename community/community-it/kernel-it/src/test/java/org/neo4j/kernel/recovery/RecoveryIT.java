@@ -53,6 +53,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -820,14 +821,14 @@ class RecoveryIT
         assertFalse( isRecoveryRequired( layout ) );
         // Make an ID generator, say for the node store, dirty
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
-        try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, layout.idNodeStore(), IdType.NODE, () -> 0L /*will not be used*/, 10_000,
+        try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, layout.idNodeStore(), RecordIdType.NODE, () -> 0L /*will not be used*/, 10_000,
                 writable(), Config.defaults(), NULL, Sets.immutable.empty() ) )
         {
             // Merely opening a marker will make the backing GBPTree dirty
             idGenerator.marker( NULL ).close();
         }
         assertFalse( isRecoveryRequired( layout ) );
-        assertTrue( idGeneratorIsDirty( layout.idNodeStore(), IdType.NODE ) );
+        assertTrue( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE ) );
 
         // when
         MutableBoolean recoveryRunEvenThoughNoCommitsAfterLastCheckpoint = new MutableBoolean();
@@ -845,7 +846,7 @@ class RecoveryIT
                 Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), null, INSTANCE, Clock.systemUTC() );
 
         // then
-        assertFalse( idGeneratorIsDirty( layout.idNodeStore(), IdType.NODE ) );
+        assertFalse( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE ) );
         assertTrue( recoveryRunEvenThoughNoCommitsAfterLastCheckpoint.booleanValue() );
     }
 
