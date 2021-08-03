@@ -270,7 +270,15 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
 
     enum Type
     {
+        /**
+         * An IMPLICIT transaction is automatically opened together with a query and does not allow multiple queries to be executed in it. The transaction
+         * itself is never returned to the user, and they don't get any control over it. It commits/rollbacks automatically once the query is finished.
+         */
         IMPLICIT,
+        /**
+         * An EXPLICIT transaction is opened by the user, they have control to commit it and roll it back, and they can execute multiple queries in that
+         * transaction.
+         */
         EXPLICIT
     }
 
