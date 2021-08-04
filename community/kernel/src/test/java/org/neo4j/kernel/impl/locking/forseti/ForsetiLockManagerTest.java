@@ -19,40 +19,66 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
+import org.eclipse.collections.api.factory.Sets;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.time.Clocks;
+import org.neo4j.util.concurrent.BinaryLatch;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( RandomExtension.class )
-
 class ForsetiLockManagerTest
 {
     @Inject
     RandomSupport random;
+
+    Config config;
+    ForsetiLockManager manager;
+
+    @BeforeEach
+    void setUp()
+    {
+        config = Config.defaults( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true );
+        manager = new ForsetiLockManager( config, Clocks.nanoClock(), ResourceTypes.values() );
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        manager.close();
+    }
 
     @Test
     void testMultipleClientsSameTxId() throws Throwable
     {
         //This tests an issue where using the same transaction id for two concurrently used clients would livelock
         //Having non-unique transaction ids should not happen and be addressed on its own but the LockManager should still not hang
-        Config config = Config.defaults( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true );
-        ForsetiLockManager manager = new ForsetiLockManager( config, Clocks.nanoClock(), ResourceTypes.values() );
         final int TX_ID = 0;
 
         Race race = new Race();
@@ -73,5 +99,107 @@ class ForsetiLockManagerTest
         } ) );
 
         race.go( 3, TimeUnit.MINUTES ); //Should not timeout (livelock)
+    }
+
+    @Test
+    void shouldHaveCorrectActiveLocks()
+    {
+        try ( Locks.Client client = manager.newClient() )
+        {
+            client.initialize( LeaseService.NoLeaseClient.INSTANCE, 0, EmptyMemoryTracker.INSTANCE, config );
+            takeAndAssertActiveLocks( client );
+        }
+    }
+
+    @Test
+    void shouldHaveCorrectActiveLocksConcurrently() throws Throwable
+    {
+        Race race = new Race();
+        AtomicLong tx = new AtomicLong();
+        AtomicBoolean done = new AtomicBoolean();
+        BinaryLatch start = new BinaryLatch();
+        race.addContestants( 5, throwing( () ->
+        {
+            start.release();
+            while ( !done.get() )
+            {
+                try ( Locks.Client client = manager.newClient() )
+                {
+                    client.initialize( LeaseService.NoLeaseClient.INSTANCE, tx.incrementAndGet(), EmptyMemoryTracker.INSTANCE, config );
+                    long id = random.nextLong( 10 );
+                    if ( random.nextBoolean() )
+                    {
+                        client.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, id );
+                    }
+                    else
+                    {
+                        client.acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP, id );
+                    }
+                    Thread.sleep( 1 );
+                }
+                catch ( Exception ignored )
+                {
+                }
+            }
+        } ) );
+        Race.Async async = race.goAsync();
+        try ( Locks.Client client = manager.newClient() )
+        {
+            client.initialize( LeaseService.NoLeaseClient.INSTANCE, tx.incrementAndGet(), EmptyMemoryTracker.INSTANCE, config );
+            start.await();
+            takeAndAssertActiveLocks( client );
+        }
+        finally
+        {
+            done.set( true );
+        }
+        async.await( 1, TimeUnit.MINUTES );
+    }
+
+    private void takeAndAssertActiveLocks( Locks.Client client )
+    {
+        Map<Long,Integer> exclusiveLocks = new HashMap<>();
+        Map<Long,Integer> sharedLocks = new HashMap<>();
+        for ( int i = 0; i < 10000; i++ )
+        {
+            boolean takeLock = exclusiveLocks.isEmpty() && sharedLocks.isEmpty() || random.nextBoolean();
+            if ( takeLock )
+            {
+                long id = random.nextLong( 10 );
+                if ( random.nextBoolean() )
+                {
+                    client.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, id );
+                    exclusiveLocks.compute( id, ( key, count ) -> count == null ? 1 : count + 1 );
+                }
+                else
+                {
+                    client.acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP, id );
+                    sharedLocks.compute( id, ( key, count ) -> count == null ? 1 : count + 1 );
+                }
+            }
+            else
+            {
+                if ( sharedLocks.isEmpty() || !exclusiveLocks.isEmpty() && random.nextBoolean() )
+                {
+                    Long toRemove = random.among( exclusiveLocks.keySet().toArray( new Long[0] ) );
+                    client.releaseExclusive( ResourceTypes.RELATIONSHIP, toRemove );
+                    exclusiveLocks.compute( toRemove, ( key, count ) -> count == 1 ? null : count - 1 );
+                }
+                else
+                {
+                    Long toRemove = random.among( sharedLocks.keySet().toArray( new Long[0] ) );
+                    client.releaseShared( ResourceTypes.RELATIONSHIP, toRemove );
+                    sharedLocks.compute( toRemove, ( key, count ) -> count == 1 ? null : count - 1 );
+                }
+            }
+
+            int totalLocks = Sets.mutable.withAll( exclusiveLocks.keySet() ).withAll( sharedLocks.keySet() ).size();
+            List<ActiveLock> activeLocks = client.activeLocks().collect( Collectors.toList() );
+
+            assertThat( client.activeLockCount() ).isEqualTo( totalLocks );
+            assertThat( activeLocks.size() ).isEqualTo( client.activeLockCount() );
+            activeLocks.forEach(
+                    lock -> assertThat( lock.lockType().equals( LockType.EXCLUSIVE ) ? exclusiveLocks : sharedLocks ).containsKey( lock.resourceId() ) );
+        }
     }
 }

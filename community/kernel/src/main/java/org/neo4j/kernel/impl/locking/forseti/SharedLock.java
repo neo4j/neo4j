@@ -158,6 +158,12 @@ class SharedLock implements ForsetiLockManager.Lock
     }
 
     @Override
+    public boolean isOwnedBy( ForsetiClient client )
+    {
+        return clientsHoldingThisLock.contains( client );
+    }
+
+    @Override
     public LockType type()
     {
         return isUpdateLock() ? LockType.EXCLUSIVE : LockType.SHARED;

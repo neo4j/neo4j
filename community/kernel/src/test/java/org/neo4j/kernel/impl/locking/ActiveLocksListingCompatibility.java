@@ -136,7 +136,6 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
                         new ActiveLock( NODE, LockType.EXCLUSIVE, 1,1 ),
                         new ActiveLock( NODE, LockType.EXCLUSIVE, 1, 2 ),
                         new ActiveLock( NODE, LockType.EXCLUSIVE, 1, 3 ),
-                        new ActiveLock( NODE, LockType.SHARED, 1, 3 ),
                         new ActiveLock( NODE, LockType.SHARED, 1, 4 ),
                         new ActiveLock( NODE, LockType.SHARED, 1, 5 ) ) ),
                 locks.collect( toSet() ) );

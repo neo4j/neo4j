@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.locking.forseti;
 
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
-import org.eclipse.collections.api.map.primitive.LongIntMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
@@ -94,6 +93,8 @@ public class ForsetiClient implements Locks.Client
 
     /** @see #sharedLockCounts */
     private final HeapTrackingLongIntHashMap[] exclusiveLockCounts;
+
+    private final AtomicLong activeLockCount = new AtomicLong();
 
     /**
      * Time within which any particular lock should be acquired.
@@ -264,6 +265,7 @@ public class ForsetiClient implements Locks.Client
 
                 // Make a local note about the fact that we now hold this lock
                 heldShareLocks.put( resourceId, 1 );
+                activeLockCount.incrementAndGet();
                 memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
             }
         }
@@ -359,6 +361,7 @@ public class ForsetiClient implements Locks.Client
                 heldLocks.put( resourceId, 1 );
                 if ( !upgraded )
                 {
+                    activeLockCount.incrementAndGet();
                     memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
                 }
             }
@@ -419,6 +422,7 @@ public class ForsetiClient implements Locks.Client
             }
 
             heldLocks.put( resourceId, 1 );
+            activeLockCount.incrementAndGet();
             memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
             return true;
         }
@@ -496,6 +500,7 @@ public class ForsetiClient implements Locks.Client
                 }
             }
             heldShareLocks.put( resourceId, 1 );
+            activeLockCount.incrementAndGet();
             memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
             return true;
         }
@@ -614,6 +619,7 @@ public class ForsetiClient implements Locks.Client
                 sharedLocks.close();
             }
         }
+        activeLockCount.set( 0 );
     }
 
     @Override
@@ -682,46 +688,31 @@ public class ForsetiClient implements Locks.Client
     @Override
     public Stream<ActiveLock> activeLocks()
     {
+        // We're iterating the global map instead of the client local maps because this can be called from separate threads
         List<ActiveLock> locks = new ArrayList<>();
-        collectActiveLocks( exclusiveLockCounts, locks, EXCLUSIVE, transactionId );
-        collectActiveLocks( sharedLockCounts, locks, SHARED, transactionId );
+        for ( int typeId = 0; typeId < lockMaps.length; typeId++ )
+        {
+            ResourceType resourceType = ResourceTypes.fromId( typeId );
+            ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps[typeId];
+            if ( lockMap != null )
+            {
+                lockMap.forEach( ( resourceId, lock ) ->
+                {
+                    if ( lock.isOwnedBy( this ) )
+                    {
+                        locks.add( new ActiveLock( resourceType, lock.type(), transactionId, resourceId ) );
+                    }
+                });
+            }
+        }
         return locks.stream();
     }
 
     @Override
     public long activeLockCount()
     {
-        return countLocks( exclusiveLockCounts ) + countLocks( sharedLockCounts );
-    }
-
-    private static void collectActiveLocks(
-            LongIntMap[] counts,
-            List<ActiveLock> locks,
-            LockType lockType,
-            long userTransactionId )
-    {
-        for ( int typeId = 0; typeId < counts.length; typeId++ )
-        {
-            LongIntMap lockCounts = counts[typeId];
-            if ( lockCounts != null )
-            {
-                ResourceType resourceType = ResourceTypes.fromId( typeId );
-                lockCounts.forEachKeyValue( ( resourceId, count ) -> locks.add( new ActiveLock( resourceType, lockType, userTransactionId, resourceId ) ) );
-            }
-        }
-    }
-
-    private static long countLocks( LongIntMap[] lockCounts )
-    {
-        long count = 0;
-        for ( LongIntMap lockCount : lockCounts )
-        {
-            if ( lockCount != null )
-            {
-                count += lockCount.size();
-            }
-        }
-        return count;
+        // We're keeping a threadsafe count instead of using the local lock maps sizes since this can be called from separate threads
+        return activeLockCount.get();
     }
 
     void copyWaitListTo( Set<ForsetiClient> other )
@@ -778,6 +769,7 @@ public class ForsetiClient implements Locks.Client
             lockMap.remove( resourceId );
             memoryTracker.releaseHeap( CONCURRENT_NODE_SIZE );
         }
+        activeLockCount.decrementAndGet();
     }
 
     /** Release a lock locally, and return true if we still hold more references to that lock. */
@@ -820,6 +812,7 @@ public class ForsetiClient implements Locks.Client
             {
                 return false;
             }
+            activeLockCount.incrementAndGet();
             memoryTracker.allocateHeap( CONCURRENT_NODE_SIZE );
 
             try
