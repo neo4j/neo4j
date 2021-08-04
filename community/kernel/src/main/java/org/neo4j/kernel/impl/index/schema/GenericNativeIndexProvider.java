@@ -50,6 +50,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration;
@@ -240,6 +241,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Nat
             Preconditions.requireNoNullElements( queries );
             if ( queries.length == 0
                  || Arrays.stream( queries ).anyMatch( PropertyIndexQuery.GeometryRangePredicate.class::isInstance )
+                 || Arrays.stream( queries ).filter( PropertyIndexQuery.RangePredicate.class::isInstance )
+                          .map( IndexQuery::valueGroup ).anyMatch( ValueGroup.GEOMETRY_ARRAY::equals )
                  || (queries.length > 1 && (Arrays.stream( queries ).anyMatch( PropertyIndexQuery.StringSuffixPredicate.class::isInstance )
                                             || Arrays.stream( queries ).anyMatch( PropertyIndexQuery.StringContainsPredicate.class::isInstance ))) )
             {
