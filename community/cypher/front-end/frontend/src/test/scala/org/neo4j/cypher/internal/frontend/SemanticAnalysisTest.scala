@@ -274,6 +274,30 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
+  test("regular CALL nested in CALL { ... } IN TRANSACTIONS") {
+    val query = "CALL { CALL { CREATE (x) } } IN TRANSACTIONS RETURN 1 AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("CALL { ... } IN TRANSACTIONS nested in a regular CALL") {
+    val query = "CALL { CALL { CREATE (x) } IN TRANSACTIONS } RETURN 1 AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
   private def initStartState(query: String) =
     InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
 
