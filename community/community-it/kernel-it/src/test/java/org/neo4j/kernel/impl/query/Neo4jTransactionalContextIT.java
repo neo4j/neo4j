@@ -102,10 +102,16 @@ class Neo4jTransactionalContextIT
         return ctx.transaction().kernelTransaction().executionStatistics().pageFaults();
     }
 
+    /**
+     * Generate some page cache hits/faults
+     */
     @SuppressWarnings( "ResultOfMethodCallIgnored" )
     private void generatePageCacheHits( TransactionalContext ctx )
     {
+        long previousCacheHits = getPageCacheHits( ctx );
         ctx.transaction().getAllNodes().iterator().stream().count();
+        long laterCacheHits = getPageCacheHits( ctx );
+        assertThat( "Assuming generatePageCacheHits to generate some page cache hits", laterCacheHits, greaterThan( previousCacheHits ) );
     }
 
     private void getLocks( TransactionalContext ctx, String label )
@@ -170,23 +176,18 @@ class Neo4jTransactionalContextIT
         var executingQuery = outerCtx.executingQuery();
 
         // When
-        // Generate some page cache hits/faults
         generatePageCacheHits( outerCtx );
         var outerHits = getPageCacheHits( outerCtx );
         var outerFaults = getPageCacheFaults( outerCtx );
 
         var innerCtx = outerCtx.contextWithNewTransaction();
 
-        // Generate some page cache hits/faults
         generatePageCacheHits( innerCtx );
         var innerHits = getPageCacheHits( innerCtx );
         var innerFaults = getPageCacheFaults( innerCtx );
 
         // Then
         var snapshot = executingQuery.snapshot();
-        // Make sure we are not just summing up 0s
-        assertThat( outerHits, greaterThan( 0L ) );
-        assertThat( innerHits, greaterThan( 0L ) );
         // Actual assertion
         assertThat( snapshot.pageHits(), equalTo( outerHits + innerHits ) );
         assertThat( snapshot.pageFaults(), equalTo( outerFaults + innerFaults ) );
@@ -233,10 +234,6 @@ class Neo4jTransactionalContextIT
 
         // Then
         var snapshot = executingQuery.snapshot();
-        // Make sure we are not just summing up 0s
-        assertThat( outerHits, greaterThan( 0L ) );
-        assertThat( closedInnerHits, greaterThan( 0L ) );
-        assertThat( openInnerHits, greaterThan( 0L ) );
         // Actual assertion
         assertThat( snapshot.pageHits(), equalTo( outerHits + closedInnerHits + openInnerHits ) );
         assertThat( snapshot.pageFaults(), equalTo( outerFaults + closedInnerFaults + openInnerFaults ) );
@@ -259,7 +256,6 @@ class Neo4jTransactionalContextIT
         var outerHits = getPageCacheHits( outerCtx );
         var outerFaults = getPageCacheFaults( outerCtx );
 
-        var closedInnerHits = 0L;
         for ( int i = 0; i < 10; i++ )
         {
             var innerCtx = outerCtx.contextWithNewTransaction();
@@ -268,7 +264,6 @@ class Neo4jTransactionalContextIT
             {
                 generatePageCacheHits( innerCtx );
             }
-            closedInnerHits += getPageCacheHits( innerCtx );
             innerCtx.commit();
         }
 
@@ -281,10 +276,6 @@ class Neo4jTransactionalContextIT
         // Then
         var outerProfileStatisticsProvider = outerCtx.kernelStatisticProvider();
         var innerProfileStatisticsProvider = openInnerCtx.kernelStatisticProvider();
-        // Make sure we are not just summing up 0s
-        assertThat( outerHits, greaterThan( 0L ) );
-        assertThat( closedInnerHits, greaterThan( 0L ) );
-        assertThat( openInnerHits, greaterThan( 0L ) );
         // Actual assertion
         assertThat( outerProfileStatisticsProvider.getPageCacheHits(), equalTo( outerHits ) );
         assertThat( outerProfileStatisticsProvider.getPageCacheMisses(), equalTo( outerFaults ) );
@@ -333,10 +324,6 @@ class Neo4jTransactionalContextIT
 
         // Then
         var snapshot = executingQuery.snapshot();
-        // Make sure we are not just summing up 0s
-        assertThat( outerHits, greaterThan( 0L ) );
-        assertThat( closedInnerHits, greaterThan( 0L ) );
-        assertThat( openInnerHits, greaterThan( 0L ) );
         // Actual assertion
         assertThat( snapshot.pageHits(), equalTo( outerHits + closedInnerHits + openInnerHits ) );
         assertThat( snapshot.pageFaults(), equalTo( outerFaults + closedInnerFaults + openInnerFaults ) );
@@ -896,9 +883,6 @@ class Neo4jTransactionalContextIT
 
         // Then
         var snapshot = executingQuery.snapshot();
-        // Make sure we are not just summing up 0s
-        assertThat( closedTxHits, greaterThan( 0L ) );
-        assertThat( lastHits, greaterThan( 0L ) );
         // Actual assertion
         assertThat( snapshot.transactionId(), equalTo( lastTx.kernelTransaction().getUserTransactionId() ) );
         assertThat( snapshot.pageHits(), equalTo( closedTxHits + lastHits ) );
@@ -937,9 +921,6 @@ class Neo4jTransactionalContextIT
 
         // Then
         var profileStatisticsProvider = ctx.kernelStatisticProvider();
-        // Make sure we are not just summing up 0s
-        assertThat( closedTxHits, greaterThan( 0L ) );
-        assertThat( lastHits, greaterThan( 0L ) );
         // Actual assertion
         assertThat( profileStatisticsProvider.getPageCacheHits(), equalTo( closedTxHits + lastHits ) );
         assertThat( profileStatisticsProvider.getPageCacheMisses(), equalTo( closedTxFaults + lastFaults ) );
