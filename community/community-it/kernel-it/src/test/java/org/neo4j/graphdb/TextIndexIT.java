@@ -36,6 +36,10 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -52,6 +56,8 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.StringSearchMode.CONTAINS;
 import static org.neo4j.graphdb.StringSearchMode.PREFIX;
 import static org.neo4j.graphdb.StringSearchMode.SUFFIX;
+import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.conditions.Conditions.equalityCondition;
 
 @Neo4jLayoutExtension
 public class TextIndexIT
@@ -289,7 +295,56 @@ public class TextIndexIT
             assertThat( tx.findNodes( person, "name", "Smith", CONTAINS ).stream().count() ).isEqualTo( 1 );
             assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
         }
+
         dbms.shutdown();
+    }
+
+    @Test
+    void shouldSampleIndex()
+    {
+        // Given a database with different index types
+        var person = label( "PERSON" );
+        var monitor = new IndexAccessMonitor();
+        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout )
+                .setMonitors( monitor.monitors() )
+                .setConfig( text_indexes_enabled, true )
+                .build();
+        var db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
+
+        // And few nodes
+        try ( var tx = db.beginTx() )
+        {
+            for ( int i = 0; i < 5; i++ )
+            {
+                tx.createNode( person ).setProperty( "name", "name" + i );
+            }
+            tx.commit();
+        }
+
+        // When an index is created
+        createTextIndex( db, person, "idx_name" );
+
+        // And more nodes are updated
+        try ( var tx = db.beginTx() )
+        {
+            tx.createNode( person ).setProperty( "name", "new node" );
+            tx.findNode( person, "name", "name0" ).setProperty( "name", "updated name" );
+            tx.findNode( person, "name", "name1" ).removeProperty( "name" );
+            tx.commit();
+        }
+
+        // Then the index sample is updated
+        var expectedSample = new IndexSample( 5, 5, 7 );
+        assertEventually( () -> indexSample( db, "idx_name" ), equalityCondition( expectedSample ), 1, MINUTES );
+    }
+
+    private void createTextIndex( GraphDatabaseAPI db, Label person, String indexName )
+    {
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().indexFor( person ).on( "name" ).withIndexType( IndexType.TEXT ).withName( indexName ).create();
+            tx.commit();
+        }
     }
 
     private DatabaseManagementService startDbms( FileSystemAbstraction fs, Monitors monitors )
@@ -327,6 +382,15 @@ public class TextIndexIT
         void reset()
         {
             counts.clear();
+        }
+    }
+
+    private IndexSample indexSample( GraphDatabaseAPI db, String indexName )
+    {
+        try ( var tx = db.beginTx() )
+        {
+            var index = (IndexDefinitionImpl) tx.schema().getIndexByName( indexName );
+            return db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ).indexSample( index.getIndexReference().getId() );
         }
     }
 
