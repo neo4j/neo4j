@@ -102,9 +102,7 @@ object CompilationPhases {
                            semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
                            useJavaCCParser: Boolean = false,
                            obfuscateLiterals: Boolean = false
-  ) {
-    def withSemanticFeatures(sf: SemanticFeature*): ParsingConfig = copy(semanticFeatures = semanticFeatures ++ sf)
-  }
+  )
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     val parse = (if (config.useJavaCCParser) JavaccParsing else Parsing)

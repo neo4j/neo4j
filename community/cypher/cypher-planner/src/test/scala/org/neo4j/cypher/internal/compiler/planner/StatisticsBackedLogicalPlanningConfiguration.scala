@@ -25,6 +25,7 @@ import org.neo4j.cypher.graphcounts.Index
 import org.neo4j.cypher.graphcounts.NodeCount
 import org.neo4j.cypher.graphcounts.RelationshipCount
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
@@ -32,7 +33,6 @@ import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
 import org.neo4j.cypher.internal.compiler.helpers.TokenContainer
-import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Cardinalities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.ExistenceConstraintDefinition
@@ -92,6 +92,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       executionModel: ExecutionModel = ExecutionModel.default,
                       useMinimumGraphStatistics: Boolean = false,
                       txStateHasChanges: Boolean = false,
+                      semanticFeatures: Seq[SemanticFeature] = Seq.empty,
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
@@ -436,6 +437,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(options = options.copy(txStateHasChanges = hasChanges))
   }
 
+  def addSemanticFeature(sf: SemanticFeature): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(semanticFeatures = options.semanticFeatures :+ sf))
+  }
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -657,21 +662,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
     planState(queryString).logicalPlan
   }
 
-  def planWithModifiedParsingConfig(queryString: String, f: ParsingConfig => ParsingConfig): LogicalPlan = {
-    planStateWithModifiedParsingConfig(queryString, f).logicalPlan
-  }
-
   def planState(queryString: String): LogicalPlanState = {
-    planStateWithModifiedParsingConfig(queryString, identity)
-  }
-
-  def planStateWithModifiedParsingConfig(queryString: String, f: ParsingConfig => ParsingConfig): LogicalPlanState = {
-    val cypherCompilerConfig = LogicalPlanningTestSupport2.defaultCypherCompilerConfig
-    val parsingConfig = LogicalPlanningTestSupport2.defaultParsingConfig(cypherCompilerConfig)
-    planState(queryString, f(parsingConfig))
-  }
-
-  private def planState(queryString: String, parsingConfig: ParsingConfig): LogicalPlanState = {
     val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
@@ -695,6 +686,12 @@ class StatisticsBackedLogicalPlanningConfiguration(
       executionModel = options.executionModel
     )
     val state = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
+    val parsingConfig = {
+      val cypherCompilerConfig = LogicalPlanningTestSupport2.defaultCypherCompilerConfig
+      val cfg = LogicalPlanningTestSupport2.defaultParsingConfig(cypherCompilerConfig)
+      cfg.copy(semanticFeatures = cfg.semanticFeatures ++ options.semanticFeatures)
+    }
+
     LogicalPlanningTestSupport2.pipeLine(parsingConfig).transform(state, context)
   }
 

@@ -830,7 +830,10 @@ class SubqueryCallPlanningIntegrationTest
   }
 
   test("call unit subquery in transactions") {
-    val cfg = plannerBuilder().setAllNodesCardinality(1000).build()
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .build()
 
     val query =
       """
@@ -841,10 +844,7 @@ class SubqueryCallPlanningIntegrationTest
         |RETURN a
         |""".stripMargin
 
-    val plan = cfg
-      .planWithModifiedParsingConfig(query, _.withSemanticFeatures(SemanticFeature.CallSubqueryInTransactions))
-      .stripProduceResults
-
+    val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .transactionForeach()
       .|.create(createNode("b"))
@@ -854,7 +854,10 @@ class SubqueryCallPlanningIntegrationTest
   }
 
   test("call correlated unit subquery in transactions") {
-    val cfg = plannerBuilder().setAllNodesCardinality(1000).build()
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .build()
 
     val query =
       """
@@ -866,10 +869,7 @@ class SubqueryCallPlanningIntegrationTest
         |RETURN a
         |""".stripMargin
 
-    val plan = cfg
-      .planWithModifiedParsingConfig(query, _.withSemanticFeatures(SemanticFeature.CallSubqueryInTransactions))
-      .stripProduceResults
-
+    val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .transactionForeach()
       .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
@@ -878,8 +878,12 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
-  test("call subquery in transactions") {
-    val cfg = plannerBuilder().setAllNodesCardinality(1000).build()
+  test("call returning subquery in transactions") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .addSemanticFeature(SemanticFeature.CallReturningSubqueryInTransactions)
+      .build()
 
     val query =
       """
@@ -891,10 +895,7 @@ class SubqueryCallPlanningIntegrationTest
         |RETURN a, b
         |""".stripMargin
 
-    val plan = cfg
-      .planWithModifiedParsingConfig(query, _.withSemanticFeatures(SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallReturningSubqueryInTransactions))
-      .stripProduceResults
-
+    val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .transactionApply()
       .|.create(createNode("b"))
@@ -903,8 +904,12 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
-  test("call correlated subquery in transactions") {
-    val cfg = plannerBuilder().setAllNodesCardinality(1000).build()
+  test("call correlated returning subquery in transactions") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .addSemanticFeature(SemanticFeature.CallReturningSubqueryInTransactions)
+      .build()
 
     val query =
       """
@@ -917,10 +922,7 @@ class SubqueryCallPlanningIntegrationTest
         |RETURN a, b
         |""".stripMargin
 
-    val plan = cfg
-      .planWithModifiedParsingConfig(query, _.withSemanticFeatures(SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallReturningSubqueryInTransactions))
-      .stripProduceResults
-
+    val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .transactionApply()
       .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
