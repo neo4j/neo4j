@@ -20,27 +20,30 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
-import org.junit.jupiter.api.parallel.Isolated;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.nativeimpl.AbsentNativeAccess;
+import org.neo4j.internal.nativeimpl.ErrorTranslator;
+import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -51,10 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 
-@DbmsExtension
-@Isolated
-@EnabledOnOs( OS.LINUX )
-@Disabled
+@DbmsExtension( configurationCallback = "configure" )
 class DynamicReadOnlyFailoverIT
 {
     private static final String TEST_SCOPE = "preallocation test";
@@ -67,6 +67,16 @@ class DynamicReadOnlyFailoverIT
     private Config config;
     @Inject
     private Monitors monitors;
+    private FailingNativeAccess nativeAccess;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        Dependencies dependencies = new Dependencies();
+        nativeAccess = new FailingNativeAccess();
+        dependencies.satisfyDependency( nativeAccess );
+        builder.setExternalDependencies( dependencies );
+    }
 
     @Test
     void switchDatabaseToReadOnlyModeOnPreallocationFailure()
@@ -89,6 +99,7 @@ class DynamicReadOnlyFailoverIT
             public void startRotation( long currentLogVersion )
             {
                 config.setDynamic( logical_log_rotation_threshold, getUnavailableBytes(), TEST_SCOPE );
+                nativeAccess.startFailing();
                 super.startRotation( currentLogVersion );
             }
         } );
@@ -187,6 +198,33 @@ class DynamicReadOnlyFailoverIT
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    private static class FailingNativeAccess extends AbsentNativeAccess
+    {
+        private static final int ERROR_CODE = 28;
+        private final AtomicBoolean fail = new AtomicBoolean();
+
+        @Override
+        public ErrorTranslator errorTranslator()
+        {
+            return callResult -> callResult.getErrorCode() == ERROR_CODE;
+        }
+
+        @Override
+        public NativeCallResult tryPreallocateSpace( int fd, long bytes )
+        {
+            if ( fail.get() )
+            {
+                return new NativeCallResult( ERROR_CODE, "20 minutes adventure" );
+            }
+            return super.tryPreallocateSpace( fd, bytes );
+        }
+
+        public void startFailing()
+        {
+            fail.set( true );
         }
     }
 }

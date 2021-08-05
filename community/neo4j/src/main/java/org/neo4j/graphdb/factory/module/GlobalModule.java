@@ -41,6 +41,8 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.internal.collector.RecentQueryBuffer;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
+import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -147,7 +149,6 @@ public class GlobalModule
     private final DependencyResolver externalDependencyResolver;
     private final FileLockerService fileLockerService;
     private final MemoryPools memoryPools;
-    private final RecentQueryBuffer recentQueryBuffer;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
@@ -210,7 +211,7 @@ public class GlobalModule
 
         centralBufferMangerHolder = crateCentralBufferManger();
 
-        recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ),
+        var recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ),
                                                    memoryPools.pool( MemoryGroup.RECENT_QUERY_BUFFER, 0, null ).getPoolMemoryTracker() );
         globalDependencies.satisfyDependency( recentQueryBuffer );
 
@@ -272,6 +273,7 @@ public class GlobalModule
 
         capabilitiesService = loadCapabilities();
         globalDependencies.satisfyDependency( capabilitiesService );
+        globalDependencies.satisfyDependency( tryResolveOrCreate( NativeAccess.class, NativeAccessProvider::getNativeAccess ) );
 
         checkLegacyDefaultDatabase();
     }

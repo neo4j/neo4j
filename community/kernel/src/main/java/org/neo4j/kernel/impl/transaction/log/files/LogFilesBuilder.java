@@ -371,6 +371,10 @@ public class LogFilesBuilder
         {
             return nativeAccess;
         }
+        if ( dependencies != null && dependencies.containsDependency( NativeAccess.class ) )
+        {
+            return dependencies.resolveDependency( NativeAccess.class );
+        }
         return NativeAccessProvider.getNativeAccess();
     }
 

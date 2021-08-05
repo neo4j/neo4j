@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -35,7 +34,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.nativeimpl.LinuxNativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
+import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -137,11 +139,11 @@ class TransactionLogChannelAllocatorIT
     }
 
     @Test
-    @EnabledOnOs( OS.LINUX )
-    @Disabled
     void failToPreallocateFileWithOutOfDiskSpaceError() throws IOException
     {
-        var unreasonableAllocator = createLogFileAllocator( getUnavailableBytes() );
+        var logFileContext = createLogFileContext( getUnavailableBytes(), new PreallocationFailingChannelNativeAccess() );
+        var nativeChannelAccessor = new LogFileChannelNativeAccessor( fileSystem, logFileContext );
+        var unreasonableAllocator = new TransactionLogChannelAllocator( logFileContext, fileHelper, new LogHeaderCache( 10 ), nativeChannelAccessor );
         var exception = assertThrows( RuntimeException.class, () -> unreasonableAllocator.createLogChannel( 10, () -> 1L ) );
         assertThat( exception ).hasRootCauseInstanceOf( ReadOnlyDbException.class )
                 .hasRootCauseMessage( "This Neo4j instance is read only for the database neo4j" );
@@ -151,19 +153,19 @@ class TransactionLogChannelAllocatorIT
     }
 
     @Test
-    @EnabledOnOs( OS.LINUX )
-    @Disabled
     void failToPreallocateFileWithOutOfDiskSpaceErrorAndDisabledFailover() throws IOException
     {
         config.setDynamic( dynamic_read_only_failover, false, "test" );
-        var unreasonableAllocator = createLogFileAllocator( getUnavailableBytes() );
+        var logFileContext = createLogFileContext( getUnavailableBytes(), new PreallocationFailingChannelNativeAccess() );
+        var nativeChannelAccessor = new LogFileChannelNativeAccessor( fileSystem, logFileContext );
+        var unreasonableAllocator = new TransactionLogChannelAllocator( logFileContext, fileHelper, new LogHeaderCache( 10 ), nativeChannelAccessor );
         try ( PhysicalLogVersionedStoreChannel channel = unreasonableAllocator.createLogChannel( 10, () -> 1L ) )
         {
             assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE, channel.size() );
-            assertThat( logProvider.serialize() )
-                    .containsSequence( "Warning! System is running out of disk space. Failed to preallocate log file since disk does " +
-                            "not have enough space left. Please provision more space to avoid that." )
-                    .containsSequence( "Dynamic switchover to read-only mode is disabled. The database will continue execution in the current mode." );
+            assertThat( logProvider.serialize() ).containsSequence(
+                    "Warning! System is running out of disk space. Failed to preallocate log file since disk does " +
+                            "not have enough space left. Please provision more space to avoid that." ).containsSequence(
+                    "Dynamic switchover to read-only mode is disabled. The database will continue execution in the current mode." );
         }
     }
 
@@ -215,11 +217,16 @@ class TransactionLogChannelAllocatorIT
 
     private TransactionLogFilesContext createLogFileContext( long rotationThreshold )
     {
+        return createLogFileContext( rotationThreshold, NativeAccessProvider.getNativeAccess() );
+    }
+
+    private TransactionLogFilesContext createLogFileContext( long rotationThreshold, NativeAccess nativeAccess )
+    {
         return new TransactionLogFilesContext( new AtomicLong( rotationThreshold ), new AtomicBoolean( true ),
                 new VersionAwareLogEntryReader( new TestCommandReaderFactory() ), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem, logProvider, DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
-                NativeAccessProvider.getNativeAccess(), INSTANCE, new Monitors(), true,
+                nativeAccess, INSTANCE, new Monitors(), true,
                 new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), () -> KernelVersion.LATEST,
                 Clock.systemUTC(), DEFAULT_DATABASE_NAME, config );
     }
@@ -237,6 +244,15 @@ class TransactionLogChannelAllocatorIT
         public long getCallCounter()
         {
             return callCounter;
+        }
+    }
+
+    private static class PreallocationFailingChannelNativeAccess extends LinuxNativeAccess
+    {
+        @Override
+        public NativeCallResult tryPreallocateSpace( int fd, long bytes )
+        {
+            return new NativeCallResult( 28, "Sometimes science is more art than science" );
         }
     }
 }
