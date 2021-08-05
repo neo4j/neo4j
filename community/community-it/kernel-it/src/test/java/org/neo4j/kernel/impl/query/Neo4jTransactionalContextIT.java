@@ -223,7 +223,8 @@ class Neo4jTransactionalContextIT
             }
             closedInnerHits += getPageCacheHits( innerCtx );
             closedInnerFaults += getPageCacheFaults( innerCtx );
-            innerCtx.commit();
+            innerCtx.close();
+            innerCtx.transaction().commit();
         }
 
         var openInnerCtx = outerCtx.contextWithNewTransaction();
@@ -264,7 +265,8 @@ class Neo4jTransactionalContextIT
             {
                 generatePageCacheHits( innerCtx );
             }
-            innerCtx.commit();
+            innerCtx.close();
+            innerCtx.transaction().commit();
         }
 
         var openInnerCtx = outerCtx.contextWithNewTransaction();
@@ -396,7 +398,8 @@ class Neo4jTransactionalContextIT
         // Get some locks
         getLocks( innerCtxCommit, "C" );
         var closedInnerActiveLocksCommit = getActiveLockCount( innerCtxCommit );
-        innerCtxCommit.commit();
+        innerCtxCommit.close();
+        innerCtxCommit.transaction().commit();
 
         // Leave open
         var innerCtxOpen = outerCtx.contextWithNewTransaction();
@@ -460,7 +463,8 @@ class Neo4jTransactionalContextIT
                 operatorMemoryTracker.releaseHeap( i );
                 accHighWaterMark = i;
             }
-            innerCtx.commit();
+            innerCtx.close();
+            innerCtx.transaction().commit();
             innerHighWaterMark = Math.max( innerHighWaterMark, accHighWaterMark );
         }
 
@@ -515,7 +519,8 @@ class Neo4jTransactionalContextIT
         var innerCtx = ctx.contextWithNewTransaction();
 
         // When
-        innerCtx.commit();
+        innerCtx.close();
+        innerCtx.transaction().commit();
 
         // Then
         assertFalse( ctx.transaction().hasInnerTransactions() );
@@ -656,8 +661,8 @@ class Neo4jTransactionalContextIT
         innerCtx.statement().registerCloseableResource( innerCloseable );
 
         // When
-        innerCtx.commit();
         innerCtx.close();
+        innerCtx.transaction().commit();
 
         // Then
         verify( innerCloseable ).close();

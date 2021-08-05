@@ -130,19 +130,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public void commit()
-    {
-        try
-        {
-            close();
-        }
-        finally
-        {
-            transaction.commit();
-        }
-    }
-
-    @Override
     public void rollback()
     {
         try
