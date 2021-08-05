@@ -430,8 +430,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     public enum CheckpointPolicy
     {
-        PERIODIC, CONTINUOUS, VOLUMETRIC
+        PERIODIC, CONTINUOUS, VOLUME, VOLUMETRIC
     }
+
     @Description( "Configures the general policy for when check-points should occur. The default policy is the " +
             "'periodic' check-point policy, as specified by the 'dbms.checkpoint.interval.tx' and " +
             "'dbms.checkpoint.interval.time' settings. " +
@@ -465,6 +466,17 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "store files." )
     public static final Setting<Duration> check_point_interval_time =
             newBuilder( "dbms.checkpoint.interval.time", DURATION, ofMinutes( 15 ) ).build();
+
+    @Description( "Configures the volume of transacton logs between check-points. The database will not check-point more often " +
+            "than this (unless check pointing is triggered by a different event), but might check-point less " +
+            "often than this interval, if performing a check-point takes longer time than the configured " +
+            "interval. A check-point is a point in the transaction logs, from which recovery would start from. " +
+            "Longer check-point intervals typically means that recovery will take longer to complete in case " +
+            "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
+            "the database places on the system, as each check-point implies a flushing and forcing of all the " +
+            "store files." )
+    public static final Setting<Long> check_point_interval_volume =
+            newBuilder( "dbms.checkpoint.interval.volume", BYTES, mebiBytes( 250 ) ).addConstraint( min( ByteUnit.kibiBytes( 1 ) ) ).build();
 
     @Description( "Limit the number of IOs the background checkpoint process will consume per second. " +
             "This setting is advisory, is ignored in Neo4j Community Edition, and is followed to " +

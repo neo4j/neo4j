@@ -17,38 +17,53 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.checkpoint;
+package org.neo4j.kernel.impl.transaction.log.checkpoint.volume;
+
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.AbstractCheckPointThreshold;
 
-public class ReachedThreshold extends AbstractCheckPointThreshold
+import static org.neo4j.io.ByteUnit.bytesToString;
+
+public class VolumeCheckPointThreshold extends AbstractCheckPointThreshold
 {
-    ReachedThreshold( String description )
+    private final long volumeBytes;
+    private final long fileSizeBytes;
+    private volatile LogPosition checkpointLogPosition;
+
+    public VolumeCheckPointThreshold( long volumeBytes, long fileSizeBytes )
     {
-        super( description );
+        super( "every " + bytesToString( volumeBytes ) + " of transaction logs." );
+        this.volumeBytes = volumeBytes;
+        this.fileSizeBytes = fileSizeBytes;
     }
 
     @Override
     protected boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion, long lastCommittedTransactionByteOffset )
     {
-        return true;
+        var previousLogPosition = checkpointLogPosition;
+        long files = Math.abs( lastCommittedTransactionLogVersion - previousLogPosition.getLogVersion() );
+        long offset = lastCommittedTransactionByteOffset - previousLogPosition.getByteOffset();
+        long bytesDiff = Math.abs( files * fileSizeBytes + offset );
+        return volumeBytes < bytesDiff;
     }
 
     @Override
     public void initialize( long transactionId, LogPosition logPosition )
     {
-
+        checkpointLogPosition = logPosition;
     }
 
     @Override
     public void checkPointHappened( long transactionId, LogPosition logPosition )
     {
-
+        checkpointLogPosition = logPosition;
     }
 
     @Override
     public long checkFrequencyMillis()
     {
-        return 0;
+        return TimeUnit.SECONDS.toMillis( 1 );
     }
 }

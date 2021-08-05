@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -37,7 +39,7 @@ class CheckPointThresholdDescriptionTest
 
         final AtomicReference<String> calledWith = new AtomicReference<>();
         // When
-        threshold.isCheckPointingNeeded( 42, 99, calledWith::set );
+        threshold.isCheckPointingNeeded( 42, 99, 100, calledWith::set );
 
         // Then
         assertEquals( description, calledWith.get() );
@@ -48,7 +50,7 @@ class CheckPointThresholdDescriptionTest
     {
         AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( false, null );
 
-        assertDoesNotThrow( () -> threshold.isCheckPointingNeeded( 42, 1, s ->
+        assertDoesNotThrow( () -> threshold.isCheckPointingNeeded( 42, 1, 100, s ->
         {
             throw new IllegalStateException( "nooooooooo!" );
         } ) );
@@ -65,13 +67,13 @@ class CheckPointThresholdDescriptionTest
         }
 
         @Override
-        public void initialize( long transactionId )
+        public void initialize( long transactionId, LogPosition logPosition )
         {
 
         }
 
         @Override
-        public void checkPointHappened( long transactionId )
+        public void checkPointHappened( long transactionId, LogPosition logPosition )
         {
 
         }
@@ -83,7 +85,7 @@ class CheckPointThresholdDescriptionTest
         }
 
         @Override
-        protected boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion )
+        protected boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion, long lastCommittedTransactionByteOffset )
         {
             return reached;
         }

@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class CheckPointThresholdTestSupport
 {
     public static final long ARBITRARY_LOG_VERSION = 5;
+    public static final long ARBITRARY_LOG_OFFSET = 128;
 
     protected Config config;
     protected FakeClock clock;

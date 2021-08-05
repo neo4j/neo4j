@@ -2,6 +2,7 @@ org.neo4j.configuration.GraphDatabaseSettings public class extends java.lang.Obj
 org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy>
 org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy::CONTINUOUS org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy public static final
 org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy::PERIODIC org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy public static final
+org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy::VOLUME org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy public static final
 org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy::VOLUMETRIC org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy public static final
 org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy public static
 org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy::values() org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy[] public static
@@ -85,6 +86,7 @@ org.neo4j.configuration.GraphDatabaseSettings::auth_max_failed_attempts org.neo4
 org.neo4j.configuration.GraphDatabaseSettings::bookmark_ready_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_interval_time org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_interval_tx org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::check_point_interval_volume org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_iops_limit org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_policy org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy> public static final
 org.neo4j.configuration.GraphDatabaseSettings::client_side_router_enforce_for_domains org.neo4j.graphdb.config.Setting<java.util.Set<java.lang.String>> public static final

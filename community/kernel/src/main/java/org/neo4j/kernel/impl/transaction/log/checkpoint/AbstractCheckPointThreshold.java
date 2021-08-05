@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 
 /**
  * Abstract class that implement common logic for making the consumer to consume the description of this
- * threshold if {@link #thresholdReached(long, long)} is true.
+ * threshold if {@link #thresholdReached(long, long, long)} is true.
  */
 public abstract class AbstractCheckPointThreshold implements CheckPointThreshold
 {
@@ -35,9 +35,10 @@ public abstract class AbstractCheckPointThreshold implements CheckPointThreshold
     }
 
     @Override
-    public final boolean isCheckPointingNeeded( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion, Consumer<String> consumer )
+    public final boolean isCheckPointingNeeded( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion,
+            long lastCommittedTransactionByteOffset, Consumer<String> consumer )
     {
-        if ( thresholdReached( lastCommittedTransactionId, lastCommittedTransactionLogVersion ) )
+        if ( thresholdReached( lastCommittedTransactionId, lastCommittedTransactionLogVersion, lastCommittedTransactionByteOffset ) )
         {
             consumer.accept( createCheckpointThresholdDescription( description ) );
             return true;
@@ -50,5 +51,6 @@ public abstract class AbstractCheckPointThreshold implements CheckPointThreshold
         return description;
     }
 
-    protected abstract boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion );
+    protected abstract boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion,
+            long lastCommittedTransactionByteOffset );
 }

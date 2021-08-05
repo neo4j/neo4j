@@ -92,7 +92,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public void start()
     {
-        threshold.initialize( metadataProvider.getLastClosedTransactionId() );
+        long[] lastClosedTransaction = metadataProvider.getLastClosedTransaction();
+        LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
+        threshold.initialize( metadataProvider.getLastClosedTransactionId(), logPosition );
     }
 
     @Override
@@ -162,7 +164,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     public long checkPointIfNeeded( TriggerInfo info ) throws IOException
     {
         long[] lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-        if ( threshold.isCheckPointingNeeded( lastClosedTransaction[0], lastClosedTransaction[1], info ) )
+        if ( threshold.isCheckPointingNeeded( lastClosedTransaction[0], lastClosedTransaction[1], lastClosedTransaction[2], info ) )
         {
             try ( Resource lock = mutex.checkPoint() )
             {
@@ -205,7 +207,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              */
             databaseHealth.assertHealthy( IOException.class );
             checkpointAppender.checkPoint( event, logPosition, clock.instant(), checkpointReason );
-            threshold.checkPointHappened( lastClosedTransactionId );
+            threshold.checkPointHappened( lastClosedTransactionId, logPosition );
             long durationMillis = startTime.elapsed( MILLISECONDS );
             msgLog.info( checkpointReason + " checkpoint completed in " + duration( durationMillis ) );
             event.checkpointCompleted( durationMillis );

@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.helpers.Format;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.time.SystemNanoClock;
 
@@ -53,19 +54,19 @@ class TimeCheckPointThreshold extends AbstractCheckPointThreshold
     }
 
     @Override
-    public void initialize( long transactionId )
+    public void initialize( long transactionId, LogPosition logPosition )
     {
         lastCheckPointedTransactionId = transactionId;
     }
 
     @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion )
+    protected boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion, long lastCommittedTransactionByteOffset )
     {
         return lastCommittedTransactionId > lastCheckPointedTransactionId && stopWatch.hasTimedOut( timeout );
     }
 
     @Override
-    public void checkPointHappened( long transactionId )
+    public void checkPointHappened( long transactionId, LogPosition logPosition )
     {
         lastCheckPointedTransactionId = transactionId;
         stopWatch = clock.startStopWatch();
