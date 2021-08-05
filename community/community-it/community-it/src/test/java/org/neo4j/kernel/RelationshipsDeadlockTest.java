@@ -24,7 +24,6 @@ import org.eclipse.collections.impl.factory.Maps;
 import org.eclipse.collections.impl.tuple.primitive.PrimitiveTuples;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -33,6 +32,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,11 +44,12 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
+import org.neo4j.util.concurrent.Futures;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@Disabled( "This test demonstrates a deadlock during concurrent relationship creation." )
 @TestDirectoryExtension
 class RelationshipsDeadlockTest
 {
@@ -127,13 +128,15 @@ class RelationshipsDeadlockTest
                         error.set( e );
                     }
                     stop.set( true );
+                    throw new RuntimeException( e );
                 }
             }
         };
 
+        var futures = new ArrayList<Future<?>>();
         for ( int i = 0; i < THREADS; i++ )
         {
-            executorService.submit( workload );
+            futures.add( executorService.submit( workload ) );
         }
 
         executorService.shutdown();
@@ -143,7 +146,7 @@ class RelationshipsDeadlockTest
         {
             fail( error.get() );
         }
-        fail( "this test must fail" );
+        assertDoesNotThrow( () -> Futures.getAll( futures ) );
     }
 
     private static List<Map<String, Object>> generateRelationshipData()
