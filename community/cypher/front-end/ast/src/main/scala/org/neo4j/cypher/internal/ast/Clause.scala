@@ -998,8 +998,8 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
     checkSubquery chain
       inTransactionsParameters.foldSemanticCheck {
         _.semanticCheck chain {
-          when (part.isCorrelated) {
-            requireFeatureSupport("The CALL { WITH ... } IN TRANSACTIONS clause", SemanticFeature.CallCorrelatedSubqueryInTransactions, position)
+          when (part.isYielding) {
+            requireFeatureSupport("The returning CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallReturningSubqueryInTransactions, position)
           }
         } chain checkNoNestedCallInTransactions
       }

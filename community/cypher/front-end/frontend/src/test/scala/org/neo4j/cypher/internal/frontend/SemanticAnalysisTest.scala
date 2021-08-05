@@ -209,8 +209,8 @@ class SemanticAnalysisTest extends CypherFunSuite {
     }
   }
 
-  test("CALL { ... } IN TRANSACTIONS") {
-    val query = "CALL { MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
+  test("unit CALL { ... } IN TRANSACTIONS") {
+    val query = "CALL { CREATE () } IN TRANSACTIONS RETURN 1 AS result"
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
@@ -222,8 +222,8 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
-  test("CALL { ... } IN TRANSACTIONS with feature enabled") {
-    val query = "CALL { MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
+  test("unit CALL { ... } IN TRANSACTIONS with feature enabled") {
+    val query = "CALL { CREATE () } IN TRANSACTIONS RETURN 1 AS result"
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
@@ -234,8 +234,8 @@ class SemanticAnalysisTest extends CypherFunSuite {
     context.errors.map(_.msg) shouldBe empty
   }
 
-  test("CALL { WITH ... } IN TRANSACTIONS") {
-    val query = "WITH 1 AS x CALL { WITH x AS x MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
+  test("returning CALL { ... } IN TRANSACTIONS") {
+    val query = "CALL { MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
@@ -244,22 +244,21 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
-      "The CALL { WITH ... } IN TRANSACTIONS clause is not available in this implementation of Cypher due to lack of support for running correlated subqueries in separate transactions."
+      "The returning CALL { ... } IN TRANSACTIONS clause is not available in this implementation of Cypher due to lack of support for running returning subqueries in separate transactions."
     )
   }
 
-  test("CALL { WITH ... } IN TRANSACTIONS with feature enabled") {
+  test("returning CALL { ... } IN TRANSACTIONS with feature enabled") {
     val query = "WITH 1 AS x CALL { WITH x AS x MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallCorrelatedSubqueryInTransactions)
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallReturningSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe empty
   }
-
 
   test("nested CALL { ... } IN TRANSACTIONS") {
     val query = "CALL { CALL { CREATE (x) } IN TRANSACTIONS } IN TRANSACTIONS RETURN 1 AS result"
