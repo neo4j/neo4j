@@ -116,9 +116,8 @@ public class LuceneIndexProvider extends IndexProvider
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        return descriptor.isUnique()
-               ? new UniqueLuceneIndexPopulator( luceneIndex, descriptor )
-               : new NonUniqueLuceneIndexPopulator( luceneIndex, samplingConfig );
+
+        return descriptor.isUnique() ? new UniqueLuceneIndexPopulator( luceneIndex, descriptor ) : new NonUniqueLuceneIndexPopulator( luceneIndex );
     }
 
     @Override

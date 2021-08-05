@@ -19,31 +19,25 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
+import java.io.IOException;
+
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 /**
- * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes.
- * Performs sampling using {@link DefaultNonUniqueIndexSampler}.
+ * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes, Performs index sampling.
  */
 public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex>
 {
-    private final IndexSamplingConfig samplingConfig;
-    private final NonUniqueIndexSampler sampler;
 
-    public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
+    public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex )
     {
         super( luceneIndex );
-        this.samplingConfig = samplingConfig;
-        this.sampler = createDefaultSampler();
     }
 
     @Override
@@ -55,23 +49,30 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIn
     @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
     {
-        return new NonUniqueLuceneIndexPopulatingUpdater( writer, sampler );
+        return new NonUniqueLuceneIndexPopulatingUpdater( writer );
     }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        sampler.include( LuceneDocumentStructure.encodedStringValuesForSampling( ((ValueIndexEntryUpdate<?>) update).values() ) );
+        // Samples are built by scanning the index
     }
 
     @Override
     public IndexSample sample( CursorContext cursorContext )
     {
-        return sampler.sample( cursorContext );
-    }
-
-    private DefaultNonUniqueIndexSampler createDefaultSampler()
-    {
-        return new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+        try
+        {
+            luceneIndex.maybeRefreshBlocking();
+            try ( var reader = luceneIndex.getIndexReader();
+                  var sampler = reader.createSampler() )
+            {
+                return sampler.sampleIndex( cursorContext );
+            }
+        }
+        catch ( IOException | IndexNotFoundKernelException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

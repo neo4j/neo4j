@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 /**
@@ -29,40 +27,30 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
  */
 public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpdater
 {
-    private final NonUniqueIndexSampler sampler;
 
-    public NonUniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer, NonUniqueIndexSampler sampler )
+    public NonUniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer )
     {
         super( writer );
-        this.sampler = sampler;
     }
 
     @Override
     protected void added( ValueIndexEntryUpdate<?> update )
     {
-        String encodedValue = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
-        sampler.include( encodedValue );
     }
 
     @Override
     protected void changed( ValueIndexEntryUpdate<?> update )
     {
-        String encodedValueBefore = LuceneDocumentStructure.encodedStringValuesForSampling( update.beforeValues() );
-        sampler.exclude( encodedValueBefore );
-
-        String encodedValueAfter = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
-        sampler.include( encodedValueAfter );
     }
 
     @Override
     protected void removed( ValueIndexEntryUpdate<?> update )
     {
-        String removedValue = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
-        sampler.exclude( removedValue );
     }
 
     @Override
     public void close()
     {
+        //writer is not closed here as it's shared with the populator
     }
 }

@@ -105,13 +105,11 @@ class NonUniqueDatabaseIndexPopulatorTest
     void sampleIncludedUpdates()
     {
         populator = newPopulator();
-
         List<IndexEntryUpdate<?>> updates = Arrays.asList(
                 add( 1, labelSchemaDescriptor, "aaa" ),
                 add( 2, labelSchemaDescriptor, "bbb" ),
                 add( 3, labelSchemaDescriptor, "ccc" ) );
-
-        updates.forEach( populator::includeSample );
+        populator.add( updates, NULL );
 
         IndexSample sample = populator.sample( NULL );
 
@@ -122,13 +120,11 @@ class NonUniqueDatabaseIndexPopulatorTest
     void sampleIncludedUpdatesWithDuplicates()
     {
         populator = newPopulator();
-
         List<IndexEntryUpdate<?>> updates = Arrays.asList(
                 add( 1, labelSchemaDescriptor, "foo" ),
                 add( 2, labelSchemaDescriptor, "bar" ),
                 add( 3, labelSchemaDescriptor, "foo" ) );
-
-        updates.forEach( populator::includeSample );
+        populator.add( updates, NULL );
 
         IndexSample sample = populator.sample( NULL );
 
@@ -159,8 +155,7 @@ class NonUniqueDatabaseIndexPopulatorTest
 
     private NonUniqueLuceneIndexPopulator newPopulator()
     {
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        NonUniqueLuceneIndexPopulator populator = new NonUniqueLuceneIndexPopulator( index, samplingConfig );
+        NonUniqueLuceneIndexPopulator populator = new NonUniqueLuceneIndexPopulator( index );
         populator.create();
         return populator;
     }
