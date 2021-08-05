@@ -29,8 +29,8 @@ import org.neo4j.memory.MemoryTracker
  * Logical description of memory tracking behaviour
  */
 sealed trait MemoryTracking
-case object NO_TRACKING extends MemoryTracking
-case object MEMORY_TRACKING extends MemoryTracking
+case object NO_TRACKING extends MemoryTracking { def instance: MemoryTracking = this }
+case object MEMORY_TRACKING extends MemoryTracking { def instance: MemoryTracking = this }
 case class CUSTOM_MEMORY_TRACKING(decorator: MemoryTracker => MemoryTracker) extends MemoryTracking
 
 /**

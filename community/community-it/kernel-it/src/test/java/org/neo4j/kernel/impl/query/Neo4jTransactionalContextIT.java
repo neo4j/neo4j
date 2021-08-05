@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.cypher.internal.config.MEMORY_TRACKING$;
+import org.neo4j.cypher.internal.config.MEMORY_TRACKING;
 import org.neo4j.cypher.internal.runtime.GrowingArray;
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
 import org.neo4j.graphdb.Label;
@@ -429,7 +429,7 @@ class Neo4jTransactionalContextIT
         var outerTxMemoryTracker = outerTx.kernelTransaction().memoryTracker();
         var outerCtx = createTransactionContext( outerTx );
         var executingQuery = outerCtx.executingQuery();
-        var queryMemoryTracker = QueryMemoryTracker.apply( MEMORY_TRACKING$.MODULE$ );
+        var queryMemoryTracker = QueryMemoryTracker.apply( MEMORY_TRACKING.instance() );
         var outerTxMemoryTrackerForOperatorProvider = queryMemoryTracker.newMemoryTrackerForOperatorProvider( outerTxMemoryTracker );
 
         // We allocate memory through the same operator id, so it is easy for us to calculate how much memory the GrowingArray of MemoryTrackerPerOperator takes
