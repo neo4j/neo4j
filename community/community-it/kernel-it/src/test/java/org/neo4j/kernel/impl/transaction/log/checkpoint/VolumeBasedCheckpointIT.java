@@ -46,6 +46,8 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 @TestDirectoryExtension
 class VolumeBasedCheckpointIT
 {
+    private static final int WAIT_TIMEOUT_SECONDS = 300;
+
     @Inject
     private TestDirectory testDirectory;
     private DatabaseManagementService dbms;
@@ -75,7 +77,7 @@ class VolumeBasedCheckpointIT
             transaction.commit();
         }
 
-        await().atMost( ofSeconds( 30 ) ).untilAsserted(
+        await().atMost( ofSeconds( WAIT_TIMEOUT_SECONDS ) ).untilAsserted(
                 () -> assertThat( checkPointer.lastCheckPointedTransactionId() ).isGreaterThan( lastCheckpointedTransactionId ) );
     }
 
@@ -100,7 +102,7 @@ class VolumeBasedCheckpointIT
             }
         }
 
-        await().atMost( ofSeconds( 30 ) ).untilAsserted(
+        await().atMost( ofSeconds( WAIT_TIMEOUT_SECONDS ) ).untilAsserted(
                 () -> assertThat( checkPointer.lastCheckPointedTransactionId() ).isGreaterThan( lastCheckpointedTransactionId ) );
     }
 
@@ -128,7 +130,7 @@ class VolumeBasedCheckpointIT
             transaction.commit();
         }
 
-        await().atMost( ofSeconds( 30 ) ).untilAsserted(
+        await().atMost( ofSeconds( WAIT_TIMEOUT_SECONDS ) ).untilAsserted(
                 () -> assertThat( checkPointer.lastCheckPointedTransactionId() ).isGreaterThan( lastCheckpointedTransactionId ) );
     }
 
