@@ -175,7 +175,7 @@ public class SecurityLogHelper
             assertEquals( expected.expectedSource, map.get( "source" ), "'source' mismatch" );
             assertEquals( expected.expectedDatabase, map.get( "database" ), "'database' mismatch" );
             assertEquals( expected.expectedUser, map.get( "username" ), "'user' mismatch" );
-            assertEquals( expected.expectedMessage, map.get( "message" ), "'message' mismatch" );
+            assertMessage( expected, map.get( "message" ) );
         }
     }
 
@@ -244,13 +244,29 @@ public class SecurityLogHelper
             {
                 assertEquals( expected.expectedUser, matcher.group( "user" ), "'user' mismatch" );
             }
-            assertEquals( expected.expectedMessage, matcher.group( "message" ), "'message' mismatch" );
+            assertMessage( expected, matcher.group( "message" ) );
         }
     }
 
     public static LogLineContent line()
     {
         return new LogLineContent();
+    }
+
+    private static void assertMessage( LogLineContent expected, String message )
+    {
+        if ( expected.expectedMessage != null )
+        {
+            assertEquals( expected.expectedMessage, message, "'message' mismatch" );
+        }
+        else if ( expected.messagePrefix != null )
+        {
+            assertThat( message ).describedAs( "'message prefix' mismatch" ).startsWith( expected.messagePrefix );
+        }
+        else
+        {
+            throw new IllegalStateException( "Missing expected message or message prefix criteria" );
+        }
     }
 
     public static class LogLineContent
@@ -260,6 +276,7 @@ public class SecurityLogHelper
         private String expectedDatabase;
         private String expectedUser;
         private String expectedMessage;
+        private String messagePrefix;
 
         public LogLineContent level( Level level )
         {
@@ -290,6 +307,12 @@ public class SecurityLogHelper
             return this;
         }
 
+        public LogLineContent messagePrefix( String messagePrefix )
+        {
+            this.messagePrefix = messagePrefix;
+            return this;
+        }
+
         @Override
         public String toString()
         {
@@ -299,6 +322,7 @@ public class SecurityLogHelper
                    ", expectedDatabase='" + expectedDatabase + '\'' +
                    ", expectedUser='" + expectedUser + '\'' +
                    ", expectedMessage='" + expectedMessage + '\'' +
+                   ", messagePrefix='" + messagePrefix + '\'' +
                    '}';
         }
     }
