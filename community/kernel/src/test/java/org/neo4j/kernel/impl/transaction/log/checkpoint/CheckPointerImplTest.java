@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
+import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.time.Clocks;
@@ -503,7 +504,7 @@ class CheckPointerImplTest
 
     private void mockTxIdStore()
     {
-        long[] triggerCommittedTransaction = {transactionId, logPosition.getLogVersion(), logPosition.getByteOffset()};
+        var triggerCommittedTransaction = new ClosedTransactionMetadata( transactionId, logPosition );
         when( metadataProvider.getLastClosedTransaction() ).thenReturn( triggerCommittedTransaction );
         when( metadataProvider.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
     }

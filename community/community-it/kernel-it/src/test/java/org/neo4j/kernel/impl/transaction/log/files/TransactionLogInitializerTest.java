@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
@@ -56,7 +58,7 @@ class TransactionLogInitializerTest
         var metaStore = mock( MetadataProvider.class );
         var txn = new TransactionId( 3, -1322858814, currentTimeMillis() );
         when( metaStore.getStoreId() ).thenReturn( new StoreId( versionStringToLong( LATEST_STORE_VERSION ) ) );
-        when( metaStore.getLastClosedTransaction() ).thenReturn( new long[]{txn.transactionId(), 0, 1613} );
+        when( metaStore.getLastClosedTransaction() ).thenReturn( new ClosedTransactionMetadata( txn.transactionId(), new LogPosition( 0, 1613 ) ) );
         when( metaStore.getLastCommittedTransaction() ).thenReturn( txn );
         when( metaStore.getLastCommittedTransactionId() ).thenReturn( txn.transactionId() );
         when( metaStore.getLastClosedTransactionId() ).thenReturn( txn.transactionId() );

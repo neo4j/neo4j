@@ -168,7 +168,7 @@ class TransactionLogsRecoveryTest
 
         writeSomeData( file, pair ->
         {
-            LogEntryWriter writer = pair.first();
+            LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
             LogPositionMarker marker = new LogPositionMarker();
 
@@ -290,7 +290,7 @@ class TransactionLogsRecoveryTest
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeDataWithVersion( file, pair ->
         {
-            LogEntryWriter writer = pair.first();
+            LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // last committed tx
@@ -355,7 +355,7 @@ class TransactionLogsRecoveryTest
 
         writeSomeData( file, pair ->
         {
-            LogEntryWriter writer = pair.first();
+            LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // incomplete tx
@@ -380,7 +380,7 @@ class TransactionLogsRecoveryTest
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeData( file, pair ->
         {
-            LogEntryWriter writer = pair.first();
+            LogEntryWriter<?> writer = pair.first();
             writer.writeStartEntry( 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY );
             writer.writeCommitEntry( 1L, 2L );
             Consumer<LogPositionMarker> other = pair.other();
@@ -406,7 +406,7 @@ class TransactionLogsRecoveryTest
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeData( file, pair ->
         {
-            LogEntryWriter writer = pair.first();
+            LogEntryWriter<?> writer = pair.first();
             writer.writeStartEntry( 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY );
             writer.writeCommitEntry( 1L, 2L );
             Consumer<LogPositionMarker> other = pair.other();
@@ -436,7 +436,7 @@ class TransactionLogsRecoveryTest
 
         writeSomeData( file, pair ->
         {
-            LogEntryWriter writer = pair.first();
+            LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // last committed tx
@@ -471,7 +471,7 @@ class TransactionLogsRecoveryTest
         final long commitTimestamp = 5;
         writeSomeData( file, pair ->
         {
-            LogEntryWriter writer = pair.first();
+            LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // last committed tx
@@ -487,11 +487,12 @@ class TransactionLogsRecoveryTest
 
         // THEN
         assertTrue( recoveryRequired );
-        long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
-        assertEquals( transactionId, lastClosedTransaction[0] );
+        var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+        LogPosition logPosition = lastClosedTransaction.getLogPosition();
+        assertEquals( transactionId, lastClosedTransaction.getTransactionId() );
         assertEquals( commitTimestamp, transactionIdStore.getLastCommittedTransaction().commitTimestamp() );
-        assertEquals( logVersion, lastClosedTransaction[1] );
-        assertEquals( marker.getByteOffset(), lastClosedTransaction[2] );
+        assertEquals( logVersion, logPosition.getLogVersion() );
+        assertEquals( marker.getByteOffset(), logPosition.getByteOffset() );
     }
 
     @Test
@@ -525,7 +526,7 @@ class TransactionLogsRecoveryTest
         final long commitTimestamp = 5;
         writeSomeData( file, pair ->
         {
-            LogEntryWriter writer = pair.first();
+            LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
 
             // last committed tx
@@ -592,12 +593,12 @@ class TransactionLogsRecoveryTest
         return recoveryRequired.get();
     }
 
-    private void writeSomeData( Path file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
+    private void writeSomeData( Path file, Visitor<Pair<LogEntryWriter<?>,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
         writeSomeDataWithVersion( file, visitor, KernelVersion.LATEST );
     }
 
-    private void writeSomeDataWithVersion( Path file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor,
+    private void writeSomeDataWithVersion( Path file, Visitor<Pair<LogEntryWriter<?>,Consumer<LogPositionMarker>>,IOException> visitor,
             KernelVersion version ) throws IOException
     {
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
@@ -618,7 +619,7 @@ class TransactionLogsRecoveryTest
                     throw new RuntimeException( e );
                 }
             };
-            LogEntryWriter first = new LogEntryWriter( writableLogChannel, version );
+            LogEntryWriter<?> first = new LogEntryWriter<>( writableLogChannel, version );
             visitor.visit( Pair.of( first, consumer ) );
         }
     }

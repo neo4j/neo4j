@@ -99,11 +99,12 @@ public class DefaultRecoveryService implements RecoveryService
             // this information influencing checkpoint that will be created and if we will not gonna do that
             // it will still reference old offset from logs that are gone and as result log position in checkpoint record will be incorrect
             // and that can cause partial next recovery.
-            long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
-            long logVersion = lastClosedTransaction[1];
+            var lastClosedTransactionData = transactionIdStore.getLastClosedTransaction();
+            long logVersion = lastClosedTransactionData.getLogPosition().getLogVersion();
             log.warn( "Recovery detected that transaction logs were missing. " +
                     "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
-            transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true, cursorContext );
+            transactionIdStore.resetLastClosedTransaction( lastClosedTransactionData.getTransactionId(), logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true,
+                    cursorContext );
             logVersionRepository.setCurrentLogVersion( logVersion, cursorContext );
             long checkpointLogVersion = logVersionRepository.getCheckpointLogVersion();
             if ( checkpointLogVersion < 0 )

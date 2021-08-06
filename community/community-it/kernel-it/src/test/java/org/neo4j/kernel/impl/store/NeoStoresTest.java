@@ -72,10 +72,12 @@ import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Health;
+import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.Reference;
@@ -105,7 +107,6 @@ import org.neo4j.values.storable.Values;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -449,7 +450,7 @@ public class NeoStoresTest
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getLastClosedTransactionId() );
             assertEquals( recordVersion, metaDataStore.getStoreVersion() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
-            assertArrayEquals( new long[]{FIELD_NOT_PRESENT, 44, 43}, metaDataStore.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( FIELD_NOT_PRESENT, new LogPosition( 44, 43 ) ), metaDataStore.getLastClosedTransaction() );
         }
     }
 
@@ -559,7 +560,7 @@ public class NeoStoresTest
             assertEquals( new TransactionId( 10, 11, BASE_TX_COMMIT_TIMESTAMP ),
                     metaDataStore.getUpgradeTransaction() );
             assertEquals( 12, metaDataStore.getUpgradeTime() );
-            assertArrayEquals( new long[]{6, 44, 43}, metaDataStore.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 6, new LogPosition( 44, 43 ) ), metaDataStore.getLastClosedTransaction() );
         }
 
         MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13, databaseLayout.getDatabaseName(), NULL );
@@ -590,7 +591,7 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 42, 6666, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertArrayEquals( new long[]{40, 0, CURRENT_FORMAT_LOG_HEADER_SIZE}, store.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 40, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ) ), store.getLastClosedTransaction() );
         }
     }
 
@@ -650,7 +651,7 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertArrayEquals( new long[]{40, 0, CURRENT_FORMAT_LOG_HEADER_SIZE}, store.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 40, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ) ), store.getLastClosedTransaction() );
         }
     }
 

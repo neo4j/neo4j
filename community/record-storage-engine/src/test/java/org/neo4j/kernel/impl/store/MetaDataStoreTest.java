@@ -56,8 +56,10 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -70,7 +72,6 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -274,7 +275,7 @@ class MetaDataStoreTest
             metaDataStore.resetLastClosedTransaction( 3, 4, 5, true, NULL );
 
             assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
-            assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 3, new LogPosition( 4, 5 ) ), metaDataStore.getLastClosedTransaction() );
             try ( var cursor = metaDataStore.openPageCursorForReading( 0, NULL ) )
             {
                 MetaDataRecord record =
@@ -292,7 +293,7 @@ class MetaDataStoreTest
             metaDataStore.resetLastClosedTransaction( 3, 4, 5, false, NULL );
 
             assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
-            assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 3, new LogPosition( 4, 5 ) ), metaDataStore.getLastClosedTransaction() );
             try ( var cursor = metaDataStore.openPageCursorForReading( 0, NULL ) )
             {
                 MetaDataRecord record =
@@ -318,17 +319,17 @@ class MetaDataStoreTest
         long byteOffset = 777L;
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
-            long[] originalClosedTransaction = metaDataStore.getLastClosedTransaction();
-            long transactionId = originalClosedTransaction[0] + 1;
+            long transactionId = metaDataStore.getLastClosedTransaction().getTransactionId() + 1;
 
             // WHEN
             metaDataStore.transactionClosed( transactionId, version, byteOffset, NULL );
             // long[] with the highest offered gap-free number and its meta data.
-            long[] closedTransactionFlags = metaDataStore.getLastClosedTransaction();
+            var closedTransaction = metaDataStore.getLastClosedTransaction();
 
             //EXPECT
-            assertEquals( version, closedTransactionFlags[1] );
-            assertEquals( byteOffset, closedTransactionFlags[2] );
+            LogPosition logPosition = closedTransaction.getLogPosition();
+            assertEquals( version, logPosition.getLogVersion() );
+            assertEquals( byteOffset, logPosition.getByteOffset() );
 
             // WHEN
         }
@@ -336,9 +337,10 @@ class MetaDataStoreTest
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
             // EXPECT
-            long[] lastClosedTransactionFlags = metaDataStore.getLastClosedTransaction();
-            assertEquals( version, lastClosedTransactionFlags[1] );
-            assertEquals( byteOffset, lastClosedTransactionFlags[2] );
+            var lastClosedTransaction = metaDataStore.getLastClosedTransaction();
+            LogPosition logPosition = lastClosedTransaction.getLogPosition();
+            assertEquals( version, logPosition.getLogVersion() );
+            assertEquals( byteOffset, logPosition.getByteOffset() );
         }
     }
 
@@ -532,8 +534,8 @@ class MetaDataStoreTest
 
             race.addContestants( 3, () ->
             {
-                long[] transaction = store.getLastClosedTransaction();
-                assertLogVersionEqualsByteOffset( transaction[0], transaction[1], "API" );
+                var transaction = store.getLastClosedTransaction();
+                assertLogVersionEqualsByteOffset( transaction.getTransactionId(), transaction.getLogPosition().getLogVersion(), "API" );
                 apiReadCount.incrementAndGet();
             } );
             race.go();

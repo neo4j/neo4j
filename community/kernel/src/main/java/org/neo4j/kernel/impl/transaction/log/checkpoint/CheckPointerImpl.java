@@ -92,9 +92,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public void start()
     {
-        long[] lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-        LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
-        threshold.initialize( metadataProvider.getLastClosedTransactionId(), logPosition );
+        var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
+        threshold.initialize( lastClosedTransaction.getTransactionId(), lastClosedTransaction.getLogPosition() );
     }
 
     @Override
@@ -163,9 +162,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long checkPointIfNeeded( TriggerInfo info ) throws IOException
     {
-        long[] lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-        LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
-        if ( threshold.isCheckPointingNeeded( lastClosedTransaction[0], logPosition, info ) )
+        var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
+        if ( threshold.isCheckPointingNeeded( lastClosedTransaction.getTransactionId(), lastClosedTransaction.getLogPosition(), info ) )
         {
             try ( Resource lock = mutex.checkPoint() )
             {
@@ -183,10 +181,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CHECKPOINT_TAG ), versionContext );
               LogCheckPointEvent event = databaseTracer.beginCheckPoint() )
         {
-            long[] lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-            long lastClosedTransactionId = lastClosedTransaction[0];
+            var lastClosedTxData = metadataProvider.getLastClosedTransaction();
+            long lastClosedTransactionId = lastClosedTxData.getTransactionId();
             versionContext.initWrite( lastClosedTransactionId );
-            LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
+            LogPosition logPosition = lastClosedTxData.getLogPosition();
             String checkpointReason = triggerInfo.describe( lastClosedTransactionId );
             /*
              * Check kernel health before going into waiting for transactions to be closed, to avoid

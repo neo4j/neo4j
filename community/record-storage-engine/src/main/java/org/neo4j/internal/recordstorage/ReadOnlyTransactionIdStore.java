@@ -28,6 +28,8 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -41,8 +43,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
 {
     private final long transactionId;
     private final int transactionChecksum;
-    private final long logVersion;
-    private final long byteOffset;
+    private final LogPosition logPosition;
 
     public ReadOnlyTransactionIdStore( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, CursorContext cursorContext )
             throws IOException
@@ -63,8 +64,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
 
         this.transactionId = id;
         this.transactionChecksum = checksum;
-        this.logVersion = logVersion;
-        this.byteOffset = byteOffset;
+        this.logPosition = new LogPosition( logVersion, byteOffset );
     }
 
     @Override
@@ -110,9 +110,9 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public long[] getLastClosedTransaction()
+    public ClosedTransactionMetadata getLastClosedTransaction()
     {
-        return new long[]{transactionId, logVersion, byteOffset};
+        return new ClosedTransactionMetadata( transactionId, logPosition );
     }
 
     @Override

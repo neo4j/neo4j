@@ -46,7 +46,9 @@ import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
@@ -996,11 +998,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public long[] getLastClosedTransaction()
+    public ClosedTransactionMetadata getLastClosedTransaction()
     {
         assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
-        return lastClosedTx.get();
+        long[] longs = lastClosedTx.get();
+        return new ClosedTransactionMetadata( longs[0], new LogPosition( longs[1], longs[2] ) );
     }
 
     /**

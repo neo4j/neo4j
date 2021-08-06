@@ -117,13 +117,8 @@ public interface TransactionIdStore
      * transaction id as well as the log position following the commit entry in the transaction log.
      *
      * @return transaction information about the last closed (highest gap-free) transaction.
-     * <pre>
-     * [0]: transaction id
-     * [1]: log version
-     * [2]: byte offset into that log version
-     * </pre>
      */
-    long[] getLastClosedTransaction();
+    ClosedTransactionMetadata getLastClosedTransaction();
 
     /**
      * Used by recovery, where last committed/closed transaction ids are set.

@@ -94,11 +94,11 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -851,7 +851,7 @@ class RecoveryCorruptedTransactionLogIT
     private static long getLastClosedTransactionOffset( GraphDatabaseAPI database )
     {
         MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
-        return metaDataStore.getLastClosedTransaction()[2];
+        return metaDataStore.getLastClosedTransaction().getLogPosition().getByteOffset();
     }
 
     private LogFiles buildDefaultLogFiles( StoreId storeId ) throws IOException

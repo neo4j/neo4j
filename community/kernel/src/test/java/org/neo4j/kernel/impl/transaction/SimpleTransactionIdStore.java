@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
@@ -109,9 +111,10 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public long[] getLastClosedTransaction()
+    public ClosedTransactionMetadata getLastClosedTransaction()
     {
-        return closedTransactionId.get();
+        long[] data = closedTransactionId.get();
+        return new ClosedTransactionMetadata( data[0], new LogPosition( data[1], data[2] ) );
     }
 
     @Override
