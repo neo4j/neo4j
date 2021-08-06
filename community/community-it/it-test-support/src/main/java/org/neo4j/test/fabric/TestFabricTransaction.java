@@ -133,24 +133,6 @@ public class TestFabricTransaction implements InternalTransaction
     }
 
     @Override
-    public void addInnerTransaction( InternalTransaction innerTransaction )
-    {
-        throw new UnsupportedOperationException( "Nesting inside fabric transactions is not supported at the moment." );
-    }
-
-    @Override
-    public void removeInnerTransaction( InternalTransaction innerTransaction )
-    {
-        throw new UnsupportedOperationException( "Nesting inside fabric transactions is not supported at the moment." );
-    }
-
-    @Override
-    public boolean hasInnerTransactions()
-    {
-        throw new UnsupportedOperationException( "Nesting inside fabric transactions is not supported at the moment." );
-    }
-
-    @Override
     public void commit()
     {
         try

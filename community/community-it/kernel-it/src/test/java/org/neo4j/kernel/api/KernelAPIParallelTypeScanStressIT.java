@@ -35,15 +35,21 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
+import org.neo4j.token.TokenHolders;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @DbmsExtension
@@ -52,6 +58,12 @@ class KernelAPIParallelTypeScanStressIT
 {
     private static final int N_THREADS = 10;
     private static final int N_RELS = 10_000;
+
+    // the following static fields are needed to create a fake internal transaction
+    private static final TokenHolders tokenHolders = mock( TokenHolders.class );
+    private static final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
+    private static final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
+    private static final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
 
     @Inject
     private GraphDatabaseAPI db;
@@ -88,6 +100,7 @@ class KernelAPIParallelTypeScanStressIT
 
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
+            new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, tx, null, null );
             types[0] = createRelationships( tx, N_RELS, "TYPE1" );
             types[1] = createRelationships( tx, N_RELS, "TYPE2" );
             types[2] = createRelationships( tx, N_RELS, "TYPE3" );

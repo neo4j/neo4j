@@ -509,6 +509,10 @@ public class Database extends LifecycleAdapter
             life.start();
 
             registerUpgradeListener();
+            DatabaseLinkedTransactionsHandler terminationHandler =
+                    new DatabaseLinkedTransactionsHandler( databaseDependencies.resolveDependency( KernelTransactions.class ) );
+            databaseTransactionEventListeners.registerTransactionEventListener( terminationHandler );
+            databaseDependencies.satisfyDependency( terminationHandler );
             eventListeners.databaseStart( namedDatabaseId );
 
             /*

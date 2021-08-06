@@ -25,21 +25,22 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * An event handler interface for transaction events. Once it has been
  * registered at a {@link DatabaseManagementService} instance it will receive events
  * about what has happened in each transaction which is about to be committed
  * and has any data that is accessible via {@link TransactionData}.
- * Handlers won't get notified about transactions which hasn't performed any
+ * Handlers won't get notified about transactions which haven't performed any
  * write operation or won't be committed (either if
  * {@link Transaction#commit()} hasn't been called or the transaction has been
- * rolled back, {@link Transaction#rollback()}.
+ * rolled back, {@link Transaction#rollback()}).
  * <p>
  * Right before a transaction is about to be committed the
  * {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} method is called with the entire diff
  * of modifications made in the transaction. At this point the transaction is
- * still running so changes can still be made. However there's no guarantee that
+ * still running so changes can still be made. However, there's no guarantee that
  * other handlers will see such changes since the order in which handlers are
  * executed is undefined. This method can also throw an exception and will, in
  * such a case, prevent the transaction from being committed.
@@ -121,4 +122,30 @@ public interface TransactionEventListener<T>
      * @param databaseService underlying database service
      */
     void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService );
+
+    /**
+     * Invoked before the transaction is marked as terminated.
+     *
+     * @param transactionId user id of the transaction to be terminated
+     * @param reason        the status code for why the transaction was terminated
+     */
+    default void beforeTerminate( long transactionId, Status reason )
+    {
+    }
+
+    /**
+     * Invoked before the transaction is closed.
+     *
+     * If this method throws an exception the transaction will be rolled back
+     * and a {@link TransactionFailureException} or a {@link TransientFailureException} will be thrown from
+     * {@link Transaction#close()}.
+     *
+     * @param transactionId user id of the transaction to be terminated
+     * @param canCommit {@code true if the transaction is about to commit}, {@code false} otherwise
+     *
+     * @throws Exception to indicate that the transaction should be rolled back.
+     */
+    default void beforeCloseTransaction( long transactionId, boolean canCommit ) throws Exception
+    {
+    }
 }

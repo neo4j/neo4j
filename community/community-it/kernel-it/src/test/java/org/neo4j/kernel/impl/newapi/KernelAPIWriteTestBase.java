@@ -30,10 +30,16 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
+import org.neo4j.token.TokenHolders;
 
+import static org.mockito.Mockito.mock;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 /**
@@ -55,6 +61,12 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
 {
     protected static KernelAPIWriteTestSupport testSupport;
     protected static GraphDatabaseService graphDb;
+
+    // the following static fields are needed to create a fake internal transaction
+    private static final TokenHolders tokenHolders = mock( TokenHolders.class );
+    private static final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
+    private static final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
+    private static final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
 
     @Inject
     private TestDirectory testDirectory;
@@ -102,6 +114,8 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     protected static KernelTransaction beginTransaction( LoginContext loginContext ) throws TransactionFailureException
     {
         Kernel kernel = testSupport.kernelToTest();
-        return kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );
+        KernelTransaction kernelTransaction = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );
+        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+        return kernelTransaction;
     }
 }

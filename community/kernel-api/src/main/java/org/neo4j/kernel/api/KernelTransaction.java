@@ -487,6 +487,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      */
     String getDatabaseName();
 
+    /**
+     * Whether this transaction can be committed or must instead be rolled back on close().
+     */
+    boolean canCommit();
+
     interface KernelTransactionMonitor
     {
         /**

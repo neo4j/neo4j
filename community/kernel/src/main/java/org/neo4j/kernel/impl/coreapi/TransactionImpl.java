@@ -25,9 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -48,7 +46,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -72,7 +69,6 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
@@ -116,7 +112,6 @@ import static java.util.Collections.emptyMap;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.nodeMatchProperties;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.relationshipMatchProperties;
 import static org.neo4j.util.Preconditions.checkArgument;
@@ -133,7 +128,6 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private final QueryExecutionEngine executionEngine;
     private final Consumer<Status> terminationCallback;
     private final TransactionExceptionMapper exceptionMapper;
-    private final Queue<InternalTransaction> innerTransactions = new ConcurrentLinkedQueue<>();
     /**
      * Tracker of resources in use by the Core API.
      * <p>
@@ -172,10 +166,6 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
     public void commit( KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor )
     {
-        if ( hasInnerTransactions() )
-        {
-            throw exceptionMapper.mapException( new TransactionFailureException( TransactionCommitFailed ) );
-        }
         safeTerminalOperation( transaction ->
         {
             try ( transaction )
@@ -620,7 +610,6 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             terminationCallback.accept( reason );
         }
-        innerTransactions.forEach( InternalTransaction::terminate );
     }
 
     @Override
@@ -668,24 +657,6 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         closeCallbacks.add( callback );
     }
 
-    @Override
-    public void addInnerTransaction( InternalTransaction innerTransaction )
-    {
-        innerTransactions.add( innerTransaction );
-    }
-
-    @Override
-    public void removeInnerTransaction( InternalTransaction innerTransaction )
-    {
-        innerTransactions.remove( innerTransaction );
-    }
-
-    @Override
-    public boolean hasInnerTransactions()
-    {
-        return !innerTransactions.isEmpty();
-    }
-
     private void safeTerminalOperation( TransactionalOperation operation )
     {
         try
@@ -694,8 +665,6 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             {
                 throw new NotInTransactionException( "The transaction has been closed." );
             }
-
-            innerTransactions.forEach( Transaction::close );
 
             coreApiResourceTracker.closeAllCloseableResources();
 

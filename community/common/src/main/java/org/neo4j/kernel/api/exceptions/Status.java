@@ -144,6 +144,8 @@ public interface Status
                 "The database was unable to commit the transaction." ),
         TransactionLogError( DatabaseError,
                 "The database was unable to write transaction to log." ),
+        LinkedTransactionError( DatabaseError,
+                "The transaction was terminated because another transaction executing the same query encountered an error." ),
 
         // transient errors
         BookmarkTimeout( TransientError,

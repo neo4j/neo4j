@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.database.DatabaseLinkedTransactionsHandler;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -210,12 +211,16 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         // Create new InternalTransaction, creates new KernelTransaction
         InternalTransaction newTransaction = graph.beginTransaction( transactionType, securityContext, clientInfo );
-        transaction.addInnerTransaction(newTransaction);
+        DatabaseLinkedTransactionsHandler terminationHandler =
+                graph.getDependencyResolver().resolveDependency( DatabaseLinkedTransactionsHandler.class );
+        long newTransactionId = newTransaction.kernelTransaction().getUserTransactionId();
+        long outerTransactionId = kernelTransaction.getUserTransactionId();
+        terminationHandler.registerInnerTransaction( newTransactionId, outerTransactionId );
 
         KernelStatement newStatement = (KernelStatement) newTransaction.kernelTransaction().acquireStatement();
         // Bind the new transaction/statement to the executingQuery
         newStatement.queryRegistry().bindExecutingQuery( executingQuery );
-        newTransaction.addCloseCallback(() -> transaction.removeInnerTransaction(newTransaction));
+        newTransaction.addCloseCallback(() -> terminationHandler.removeInnerTransaction( newTransactionId, outerTransactionId ));
 
         return new Neo4jTransactionalContext(
                 graph,

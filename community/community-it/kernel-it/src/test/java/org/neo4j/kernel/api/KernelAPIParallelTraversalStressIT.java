@@ -27,11 +27,17 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.token.TokenHolders;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.api.KernelAPIParallelStress.parallelStressInTx;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
@@ -43,6 +49,12 @@ class KernelAPIParallelTraversalStressIT
     private static final int N_THREADS = 10;
     private static final int N_NODES = 10_000;
     private static final int N_RELATIONSHIPS = 4 * N_NODES;
+
+    // the following static fields are needed to create a fake internal transaction
+    private static final TokenHolders tokenHolders = mock( TokenHolders.class );
+    private static final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
+    private static final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
+    private static final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
 
     @Inject
     private GraphDatabaseAPI db;
@@ -73,6 +85,7 @@ class KernelAPIParallelTraversalStressIT
             {
                 setup.commit();
                 setup = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
+                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup, null, null );
             }
         }
 
@@ -89,6 +102,7 @@ class KernelAPIParallelTraversalStressIT
             {
                 setup.commit();
                 setup = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
+                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup, null, null );
             }
         }
 

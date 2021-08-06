@@ -163,6 +163,7 @@ org.neo4j.kernel.api.exceptions.Status.Transaction::Interrupted org.neo4j.kernel
 org.neo4j.kernel.api.exceptions.Status.Transaction::InvalidBookmark org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::InvalidBookmarkMixture org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::LeaseExpired org.neo4j.kernel.api.exceptions.Status.Transaction public static final
+org.neo4j.kernel.api.exceptions.Status.Transaction::LinkedTransactionError org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::LockAcquisitionTimeout org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::LockClientStopped org.neo4j.kernel.api.exceptions.Status.Transaction public static final
 org.neo4j.kernel.api.exceptions.Status.Transaction::MaximumTransactionLimitReached org.neo4j.kernel.api.exceptions.Status.Transaction public static final

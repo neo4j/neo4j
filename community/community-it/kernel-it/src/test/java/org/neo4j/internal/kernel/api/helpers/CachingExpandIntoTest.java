@@ -38,6 +38,10 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.Degrees;
@@ -45,12 +49,14 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.token.TokenHolders;
 
 import static java.util.Arrays.stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.factory.primitive.LongSets.immutable;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -68,6 +74,12 @@ class CachingExpandIntoTest
 
     private static final int DENSE_THRESHOLD = 10;
 
+    // the following static fields are needed to create a fake internal transaction
+    private static final TokenHolders tokenHolders = mock( TokenHolders.class );
+    private static final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
+    private static final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
+    private static final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
+
     @ExtensionCallback
     void config( TestDatabaseManagementServiceBuilder builder )
     {
@@ -76,7 +88,9 @@ class CachingExpandIntoTest
 
     private KernelTransaction transaction() throws TransactionFailureException
     {
-        return kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        KernelTransaction kernelTransaction = kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+        return kernelTransaction;
     }
 
     @Test
@@ -397,8 +411,8 @@ class CachingExpandIntoTest
                 CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER );
 
                 read.singleNode( node, nodes );
-                assertThat( nodes.next() ).isEqualTo( true );
-                assertThat( nodes.supportsFastDegreeLookup() ).isEqualTo( true );
+                assertThat( nodes.next() ).isTrue();
+                assertThat( nodes.supportsFastDegreeLookup() ).isTrue();
                 Degrees degrees = nodes.degrees( ALL_RELATIONSHIPS );
                 assertThat( degrees.outgoingDegree() ).isEqualTo( 45 );
                 assertThat( degrees.incomingDegree() ).isEqualTo( 2 );
@@ -437,8 +451,8 @@ class CachingExpandIntoTest
             {
                 CachingExpandInto expand = new CachingExpandInto( tx.dataRead(), OUTGOING, MEMORY_TRACKER );
                 read.singleNode( node, nodes );
-                assertThat( nodes.next() ).isEqualTo( true );
-                assertThat( nodes.supportsFastDegreeLookup() ).isEqualTo( true );
+                assertThat( nodes.next() ).isTrue();
+                assertThat( nodes.supportsFastDegreeLookup() ).isTrue();
                 Degrees degrees = nodes.degrees( ALL_RELATIONSHIPS );
                 assertThat( degrees.outgoingDegree( out ) ).isEqualTo( 2 );
                 assertThat( degrees.outgoingDegree( in ) ).isEqualTo( 0 );

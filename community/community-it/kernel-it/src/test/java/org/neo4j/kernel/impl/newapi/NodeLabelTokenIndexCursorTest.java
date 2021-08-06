@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.EntityType;
@@ -30,6 +31,7 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -47,10 +49,28 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
         return new WriteTestSupport();
     }
 
-    private int labelOne = 1;
-    private int labelTwo = 2;
-    private int labelThree = 3;
-    private int labelFirst = 4;
+    private final String labelOneName = "Label1";
+    private final String labelTwoName = "Label2";
+    private final String labelThreeName = "Label3";
+    private final String labelFirstName = "Label4";
+
+    private int labelOne;
+    private int labelTwo;
+    private int labelThree;
+    private int labelFirst;
+
+    @BeforeAll
+    void setupClass() throws Exception
+    {
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            TokenWrite tokenWrite = tx.tokenWrite();
+            labelOne = tokenWrite.labelGetOrCreateForName( labelOneName );
+            labelTwo = tokenWrite.labelGetOrCreateForName( labelTwoName );
+            labelThree = tokenWrite.labelGetOrCreateForName( labelThreeName );
+            labelFirst = tokenWrite.labelGetOrCreateForName( labelFirstName );
+        }
+    }
 
     @Test
     void shouldFindNodesByLabel() throws Exception

@@ -402,4 +402,10 @@ public class StubKernelTransaction implements KernelTransaction
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
+
+    @Override
+    public boolean canCommit()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
 }

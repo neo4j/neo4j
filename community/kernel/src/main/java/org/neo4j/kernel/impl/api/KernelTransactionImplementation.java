@@ -384,6 +384,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return success;
     }
 
+    @Override
+    public boolean canCommit()
+    {
+        return success && !failure && terminationReason == null;
+    }
+
     public void failure()
     {
         failure = true;
@@ -473,6 +479,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( canBeTerminated() )
         {
+            eventListeners.beforeTerminate( this, reason);
             failure = true;
             terminationReason = reason;
             if ( lockClient != null )
@@ -682,15 +689,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         closing = true;
         try
         {
-            if ( failure || !success || isTerminated() )
+            eventListeners.beforeCloseTransaction( this );
+            if ( canCommit() )
+            {
+                return commitTransaction();
+            }
+            else
             {
                 rollback( null );
                 failOnNonExplicitRollbackIfNeeded();
                 return ROLLBACK_ID;
-            }
-            else
-            {
-                return commitTransaction();
             }
         }
         catch ( TransactionFailureException e )

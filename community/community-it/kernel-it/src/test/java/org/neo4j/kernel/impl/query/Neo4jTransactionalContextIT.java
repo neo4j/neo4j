@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.query.QueryObfuscator;
+import org.neo4j.kernel.database.DatabaseLinkedTransactionsHandler;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
@@ -69,6 +70,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -518,12 +520,15 @@ class Neo4jTransactionalContextIT
         var ctx = createTransactionContext( outerTx );
         var innerCtx = ctx.contextWithNewTransaction();
 
+        DatabaseLinkedTransactionsHandler terminationHandler =
+                graph.getDependencyResolver().resolveDependency( DatabaseLinkedTransactionsHandler.class );
+
         // When
         innerCtx.close();
         innerCtx.transaction().commit();
 
         // Then
-        assertFalse( ctx.transaction().hasInnerTransactions() );
+        assertFalse( terminationHandler.hasInnerTransaction( ctx.kernelTransaction().getUserTransactionId() ) );
     }
 
     @Test
@@ -534,11 +539,14 @@ class Neo4jTransactionalContextIT
         var ctx = createTransactionContext( outerTx );
         var innerCtx = ctx.contextWithNewTransaction();
 
+        DatabaseLinkedTransactionsHandler terminationHandler =
+                graph.getDependencyResolver().resolveDependency( DatabaseLinkedTransactionsHandler.class );
+
         // When
         innerCtx.rollback();
 
         // Then
-        assertFalse( ctx.transaction().hasInnerTransactions() );
+        assertFalse( terminationHandler.hasInnerTransaction( ctx.kernelTransaction().getUserTransactionId() ) );
     }
 
     @Test
@@ -549,11 +557,14 @@ class Neo4jTransactionalContextIT
         var ctx = createTransactionContext( outerTx );
         var innerCtx = ctx.contextWithNewTransaction();
 
+        DatabaseLinkedTransactionsHandler terminationHandler =
+                graph.getDependencyResolver().resolveDependency( DatabaseLinkedTransactionsHandler.class );
+
         // When
         innerCtx.transaction().close();
 
         // Then
-        assertFalse( ctx.transaction().hasInnerTransactions() );
+        assertFalse( terminationHandler.hasInnerTransaction( ctx.kernelTransaction().getUserTransactionId() ) );
     }
 
     @Test
@@ -562,7 +573,9 @@ class Neo4jTransactionalContextIT
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var ctx = createTransactionContext( outerTx );
-        ctx.contextWithNewTransaction();
+        var innerCtx = ctx.contextWithNewTransaction();
+
+        ctx.close();
 
         // Then
         assertThrows( TransactionFailureException.class,
@@ -571,7 +584,27 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransactionCloseInnerTransactionOnOuterTransactionRollback()
+    void contextWithNewTransactionDoesNotThrowIfInnerTransactionDeregisteredOnOuterTransactionCommit()
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var ctx = createTransactionContext( outerTx );
+        var innerCtx = ctx.contextWithNewTransaction();
+        var innerTx = innerCtx.transaction();
+
+        innerCtx.close();
+        innerTx.commit();
+        ctx.close();
+
+        // Then
+        assertDoesNotThrow(
+                // When
+                outerTx::commit
+        );
+    }
+
+    @Test
+    void contextWithNewTransactionTerminateInnerTransactionOnOuterTransactionRollback()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -582,7 +615,7 @@ class Neo4jTransactionalContextIT
         outerTx.rollback();
 
         // Then
-        assertFalse( innerCtx.transaction().isOpen() );
+        assertTrue( isMarkedForTermination( innerCtx ) );
     }
 
     @Disabled( "Strictly speaking this does not need to work, but it would protect us from our own programming mistakes in Cypher" )
@@ -602,7 +635,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void contextWithNewTransactionCloseInnerTransactionOnOuterTransactionClose()
+    void contextWithNewTransactionTerminateInnerTransactionOnOuterTransactionClose()
     {
         // Given
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
@@ -613,7 +646,7 @@ class Neo4jTransactionalContextIT
         outerTx.close();
 
         // Then
-        assertFalse( innerCtx.transaction().isOpen() );
+        assertTrue( isMarkedForTermination( innerCtx ) );
     }
 
     @Test
@@ -692,31 +725,6 @@ class Neo4jTransactionalContextIT
         verify( innerCloseable ).close();
         verifyNoMoreInteractions( innerCloseable );
         verifyNoInteractions( outerCloseable );
-    }
-
-    @Test
-    void contextWithNewTransactionCloseInnerStatementOnOuterContextRollbackClose() throws Exception
-    {
-        // Given
-        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
-        var outerCtx = createTransactionContext( outerTx );
-        var innerCtx = outerCtx.contextWithNewTransaction();
-
-        var outerCloseable = mock( AutoCloseable.class );
-        var innerCloseable = mock( AutoCloseable.class );
-
-        outerCtx.statement().registerCloseableResource( outerCloseable );
-        innerCtx.statement().registerCloseableResource( innerCloseable );
-
-        // When
-        outerTx.rollback();
-        outerTx.close();
-
-        // Then
-        verify( innerCloseable ).close();
-        verifyNoMoreInteractions( innerCloseable );
-        verify( outerCloseable ).close();
-        verifyNoMoreInteractions( outerCloseable );
     }
 
     @Test

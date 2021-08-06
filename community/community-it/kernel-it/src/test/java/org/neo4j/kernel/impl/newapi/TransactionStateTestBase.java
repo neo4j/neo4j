@@ -101,11 +101,11 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         try ( KernelTransaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            p1 = tx.tokenWrite().propertyKeyCreateForName( "p1", false );
-            p2 = tx.tokenWrite().propertyKeyCreateForName( "p2", false );
-            p3 = tx.tokenWrite().propertyKeyCreateForName( "p3", false );
-            p4 = tx.tokenWrite().propertyKeyCreateForName( "p4", false );
-            p5 = tx.tokenWrite().propertyKeyCreateForName( "p5", false );
+            p1 = tx.tokenWrite().propertyKeyGetOrCreateForName( "p1" );
+            p2 = tx.tokenWrite().propertyKeyGetOrCreateForName( "p2" );
+            p3 = tx.tokenWrite().propertyKeyGetOrCreateForName( "p3" );
+            p4 = tx.tokenWrite().propertyKeyGetOrCreateForName( "p4" );
+            p5 = tx.tokenWrite().propertyKeyGetOrCreateForName( "p5" );
             tx.dataWrite().nodeSetProperty( node, p1, Values.of( 1 ) );
             tx.dataWrite().nodeSetProperty( node, p3, Values.of( 3 ) );
             tx.dataWrite().nodeSetProperty( node, p4, Values.of( 4 ) );

@@ -1110,5 +1110,11 @@ class QueryExecutionLocksIT
         {
             return null;
         }
+
+        @Override
+        public boolean canCommit()
+        {
+            return internal.canCommit();
+        }
     }
 }
