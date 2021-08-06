@@ -34,12 +34,12 @@ import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -86,9 +86,9 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
         }
         this.propertyRecord = propertyStore.newRecord();
         this.propertyIds = new BatchingIdGetter( propertyStore );
-        this.stringPropertyIds = new BatchingIdGetter( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordsPerPage() );
+        this.stringPropertyIds = new BatchingIdGetter( propertyStore.getStringStore() );
         this.dynamicStringRecordAllocator = new StandardDynamicRecordAllocator( stringPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
-        this.arrayPropertyIds = new BatchingIdGetter( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordsPerPage() );
+        this.arrayPropertyIds = new BatchingIdGetter( propertyStore.getArrayStore() );
         this.dynamicArrayRecordAllocator = new StandardDynamicRecordAllocator( arrayPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
         this.propertyUpdateCursor = propertyStore.openPageCursorForWriting( 0, cursorContext );
     }
@@ -218,7 +218,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
         // Free unused property ids still in the last pre-allocated batch
         try ( Marker marker = store.getIdGenerator().marker( cursorContext ) )
         {
-            idBatch.visitUnused( marker::markDeleted, cursorContext );
+            idBatch.visitUnused( marker::markDeleted );
         }
     }
 }

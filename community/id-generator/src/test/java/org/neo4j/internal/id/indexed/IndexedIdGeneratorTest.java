@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
@@ -59,7 +58,6 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdGenerator.Marker;
-import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.id.TestIdType;
@@ -79,6 +77,7 @@ import org.neo4j.test.utils.TestDirectory;
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
+import static java.util.Comparator.comparingLong;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -236,9 +235,9 @@ class IndexedIdGeneratorTest
         // when
         int firstSize = 2;
         int secondSize = 4;
-        long firstId = idGenerator.nextConsecutiveIdRange( firstSize, NULL );
+        long firstId = idGenerator.nextConsecutiveIdRange( firstSize, true, NULL );
         assertThat( firstId ).isEqualTo( 0 );
-        long secondId = idGenerator.nextConsecutiveIdRange( secondSize, NULL );
+        long secondId = idGenerator.nextConsecutiveIdRange( secondSize, true, NULL );
         assertThat( secondId ).isEqualTo( firstId + firstSize );
         markUsed( firstId, firstSize );
         markUsed( secondId, secondSize );
@@ -249,16 +248,16 @@ class IndexedIdGeneratorTest
         idGenerator.maintenance( true, NULL );
 
         // then
-        assertThat( idGenerator.nextConsecutiveIdRange( 4, NULL ) ).isEqualTo( 0 );
-        assertThat( idGenerator.nextConsecutiveIdRange( 4, NULL ) ).isEqualTo( 6 );
-        assertThat( idGenerator.nextConsecutiveIdRange( 2, NULL ) ).isEqualTo( 4 );
+        assertThat( idGenerator.nextConsecutiveIdRange( 4, true, NULL ) ).isEqualTo( 0 );
+        assertThat( idGenerator.nextConsecutiveIdRange( 4, true, NULL ) ).isEqualTo( 6 );
+        assertThat( idGenerator.nextConsecutiveIdRange( 2, true, NULL ) ).isEqualTo( 4 );
     }
 
-    @ParameterizedTest
-    @ValueSource( ints = {1, 2, 4, 8, 16} )
-    void shouldStayConsistentAndNotLoseIdsInConcurrent_Allocate_Delete_Free( int maxSlotSize ) throws Throwable
+    @Test
+    void shouldStayConsistentAndNotLoseIdsInConcurrent_Allocate_Delete_Free() throws Throwable
     {
         // given
+        int maxSlotSize = 4;
         open( Config.defaults( strictly_prioritize_id_freelist, true ), NO_MONITOR, writable(),
                 evenSlotDistribution( powerTwoSlotSizesDownwards( maxSlotSize ) ) );
         idGenerator.start( NO_FREE_IDS, NULL );
@@ -925,14 +924,12 @@ class IndexedIdGeneratorTest
         open();
         AtomicInteger numAllocations = new AtomicInteger();
         Race race = new Race().withEndCondition( () -> numAllocations.get() >= 10_000 );
-        Collection<IdRange> allocations = ConcurrentHashMap.newKeySet();
+        Collection<long[]> allocations = ConcurrentHashMap.newKeySet();
         race.addContestants( 4, () ->
         {
             int size = ThreadLocalRandom.current().nextInt( 10, 1_000 );
-            IdRange idRange = idGenerator.nextIdBatch( size, true, NULL );
-            assertEquals( 0, idRange.getDefragIds().length );
-            assertEquals( size, idRange.getRangeLength() );
-            allocations.add( idRange );
+            long batchStartId = idGenerator.nextConsecutiveIdRange( size, false, NULL );
+            allocations.add( new long[]{batchStartId, size} );
             numAllocations.incrementAndGet();
         } );
 
@@ -940,19 +937,18 @@ class IndexedIdGeneratorTest
         race.goUnchecked();
 
         // then
-        IdRange[] sortedAllocations = allocations.toArray( new IdRange[allocations.size()] );
-        Arrays.sort( sortedAllocations, Comparator.comparingLong( IdRange::getRangeStart ) );
+        long[][] sortedAllocations = allocations.toArray( new long[allocations.size()][] );
+        Arrays.sort( sortedAllocations, comparingLong( a -> a[0] ) );
         long prevEndExclusive = 0;
-        for ( IdRange allocation : sortedAllocations )
+        for ( long[] allocation : sortedAllocations )
         {
-            assertEquals( prevEndExclusive, allocation.getRangeStart() );
-            prevEndExclusive = allocation.getRangeStart() + allocation.getRangeLength();
+            assertEquals( prevEndExclusive, allocation[0] );
+            prevEndExclusive = allocation[0] + allocation[1];
         }
     }
 
-    @ValueSource( booleans = {true, false} )
-    @ParameterizedTest
-    void shouldNotAllocateReservedIdsInBatchedAllocation( boolean consecutive ) throws IOException
+    @Test
+    void shouldNotAllocateReservedIdsInBatchedAllocation() throws IOException
     {
         // given
         open();
@@ -960,14 +956,11 @@ class IndexedIdGeneratorTest
         idGenerator.setHighId( IdValidator.INTEGER_MINUS_ONE - 100 );
 
         // when
-        IdRange batch = idGenerator.nextIdBatch( 200, consecutive, NULL );
+        int numberOfIds = 200;
+        long batchStartId = idGenerator.nextConsecutiveIdRange( numberOfIds, false, NULL );
 
         // then
-        assertFalse( IdValidator.hasReservedIdInRange( batch.getRangeStart(), batch.getRangeStart() + batch.getRangeLength() ) );
-        for ( long defragId : batch.getDefragIds() )
-        {
-            assertFalse( IdValidator.isReservedId( defragId ) );
-        }
+        assertFalse( IdValidator.hasReservedIdInRange( batchStartId, batchStartId + numberOfIds ) );
     }
 
     @Test
@@ -1032,8 +1025,9 @@ class IndexedIdGeneratorTest
         }
     }
 
-    @Test
-    void shouldAllocateRangesFromHighIdConcurrently() throws IOException
+    @ValueSource( booleans = {true, false} )
+    @ParameterizedTest
+    void shouldAllocateRangesFromHighIdConcurrently( boolean favorSamePage ) throws IOException
     {
         // given
         int[] slotSizes = {1, 2, 4, 8};
@@ -1051,9 +1045,12 @@ class IndexedIdGeneratorTest
         race.addContestants( 4, t -> () ->
         {
             int size = ThreadLocalRandom.current().nextInt( 1, 8 );
-            long startId = idGenerator.nextConsecutiveIdRange( size, NULL );
+            long startId = idGenerator.nextConsecutiveIdRange( size, favorSamePage, NULL );
             long endId = startId + size - 1;
-            assertThat( startId / IDS_PER_ENTRY ).isEqualTo( endId / IDS_PER_ENTRY );
+            if ( favorSamePage )
+            {
+                assertThat( startId / IDS_PER_ENTRY ).isEqualTo( endId / IDS_PER_ENTRY );
+            }
             for ( long id = startId; id <= endId; id++ )
             {
                 allocatedIds[t].set( (int) id );
@@ -1074,23 +1071,23 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void shouldSkipLastIdsOfRangeIfAllocatingFromHighIdAcrossRangeBoundary() throws IOException
+    void shouldSkipLastIdsOfRangeIfAllocatingFromHighIdAcrossPageBoundary() throws IOException
     {
         // given
         open( Config.defaults(), NO_MONITOR, writable(), diminishingSlotDistribution( powerTwoSlotSizesDownwards( 64 ) ) );
         idGenerator.start( NO_FREE_IDS, NULL );
-        long preId1 = idGenerator.nextConsecutiveIdRange( 64, NULL );
-        long preId2 = idGenerator.nextConsecutiveIdRange( 32, NULL );
-        long preId3 = idGenerator.nextConsecutiveIdRange( 16, NULL );
+        long preId1 = idGenerator.nextConsecutiveIdRange( 64, true, NULL );
+        long preId2 = idGenerator.nextConsecutiveIdRange( 32, true, NULL );
+        long preId3 = idGenerator.nextConsecutiveIdRange( 16, true, NULL );
         assertThat( preId1 ).isEqualTo( 0 );
         assertThat( preId2 ).isEqualTo( 64 );
         assertThat( preId3 ).isEqualTo( 64 + 32 );
 
         // when
-        long id = idGenerator.nextConsecutiveIdRange( 32, NULL );
+        long id = idGenerator.nextConsecutiveIdRange( 32, true, NULL );
 
         // then
-        long postId = idGenerator.nextConsecutiveIdRange( 8, NULL );
+        long postId = idGenerator.nextConsecutiveIdRange( 8, true, NULL );
         assertThat( id ).isEqualTo( 128 );
         assertThat( postId ).isEqualTo( 128 + 32 );
     }
@@ -1247,7 +1244,7 @@ class IndexedIdGeneratorTest
                 if ( allocations.size() < maxAllocationsAhead )
                 {
                     int size = rng.nextInt( maxSlotSize ) + 1;
-                    long id = idGenerator.nextConsecutiveIdRange( size, NULL );
+                    long id = idGenerator.nextConsecutiveIdRange( size, true, NULL );
                     Allocation allocation = new Allocation( id, size );
                     allocation.markAsInUse( expectedInUse );
                     allocations.add( allocation );

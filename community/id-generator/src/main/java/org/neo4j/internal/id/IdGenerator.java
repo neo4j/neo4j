@@ -30,25 +30,28 @@ import org.neo4j.util.VisibleForTesting;
 public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 {
     /**
-     * Allocates multiple IDs in one call.
+     * Allocates an ID which is available to use. The returned ID can be either of:
+     * <ul>
+     *     <li>a new ID, allocated as the previously highest allocated plus one, or</li>
+     *     <li>a reused ID, i.e. an ID which has been used, has become deleted and now available again</li>
+     * </ul>
      *
-     * @param size the number of IDs to allocate.
-     * @param forceConsecutiveAllocation if {@code true} the returned {@link IdRange} will guarantee that the allocation is a range of IDs
-     * where all IDs are consecutive, i.e. an empty {@link IdRange#getDefragIds()}. If {@code false} there may be some of the allocated IDs
-     * non-consecutive, i.e. returned as part of {@link IdRange#getDefragIds()}.
-     * @param cursorContext for page accesses context.
-     * @return an {@link IdRange} containing the allocated IDs.
+     * @param cursorContext for tracking cursor interaction.
+     * @return an ID available to use, guaranteed not used anywhere else.
      */
-    IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext );
+    @Override
+    long nextId( CursorContext cursorContext );
 
     /**
      * Allocates a range of IDs that are guaranteed to be consecutive where the returned id represents the first i.e. lowest of them.
      *
      * @param numberOfIds the number of consecutive IDs to allocate in this range.
+     * @param favorSamePage if {@code true} favors an allocation where all IDs are on the same page (if ID generator has notion about number of IDs per page),
+     * otherwise {@code false} if the range is allowed to cross page boundaries.
      * @param cursorContext for tracing page accesses.
      * @return the first id in the consecutive range.
      */
-    long nextConsecutiveIdRange( int numberOfIds, CursorContext cursorContext );
+    long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext );
 
     /**
      * @param id the highest in use + 1
@@ -135,15 +138,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext )
+        public long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext )
         {
-            return delegate.nextIdBatch( size, forceConsecutiveAllocation, cursorContext );
-        }
-
-        @Override
-        public long nextConsecutiveIdRange( int numberOfIds, CursorContext cursorContext )
-        {
-            return delegate.nextConsecutiveIdRange( numberOfIds, cursorContext );
+            return delegate.nextConsecutiveIdRange( numberOfIds, favorSamePage, cursorContext );
         }
 
         @Override

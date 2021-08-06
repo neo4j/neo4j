@@ -20,15 +20,14 @@
 package org.neo4j.internal.id.indexed;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -55,7 +54,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrder;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
@@ -109,7 +108,7 @@ public class IndexedIdGenerator implements IdGenerator
 
         void clearedCache();
 
-        void skippedIdsAtHighId( int numberOfIds );
+        void skippedIdsAtHighId( long firstSkippedId, int numberOfIds );
 
         class Adapter implements Monitor
         {
@@ -194,7 +193,7 @@ public class IndexedIdGenerator implements IdGenerator
             }
 
             @Override
-            public void skippedIdsAtHighId( int numberOfIds )
+            public void skippedIdsAtHighId( long firstSkippedId, int numberOfIds )
             {
             }
 
@@ -325,7 +324,8 @@ public class IndexedIdGenerator implements IdGenerator
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
     private final Monitor monitor;
-    private boolean strictlyPrioritizeFreelist;
+    private final boolean strictlyPrioritizeFreelist;
+    private final int biggestSlotSize;
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
             boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, DatabaseReadOnlyChecker readOnlyChecker, Config config, String databaseName,
@@ -336,7 +336,9 @@ public class IndexedIdGenerator implements IdGenerator
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
         this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
-        this.cache = new IdCache( slotDistribution.slots( cacheCapacity ) );
+        IdSlotDistribution.Slot[] slots = slotDistribution.slots( cacheCapacity );
+        this.cache = new IdCache( slots );
+        this.biggestSlotSize = Arrays.stream( slots ).map( IdSlotDistribution.Slot::slotSize ).max( naturalOrder() ).orElseThrow();
         this.maxId = maxId;
         this.monitor = monitor;
         this.defaultMerger = new IdRangeMerger( false, monitor );
@@ -428,25 +430,31 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public long nextConsecutiveIdRange( int numberOfIds, CursorContext cursorContext )
+    public long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext )
     {
         prepareIdAllocation( cursorContext );
-        long id = cache.takeOrDefault( NO_ID, numberOfIds, scanner::queueWastedCachedId );
-        if ( id != NO_ID )
+
+        if ( numberOfIds <= biggestSlotSize )
         {
-            monitor.allocatedFromReused( id, numberOfIds );
-            return id;
+            long id = cache.takeOrDefault( NO_ID, numberOfIds, scanner::queueWastedCachedId );
+            if ( id != NO_ID )
+            {
+                monitor.allocatedFromReused( id, numberOfIds );
+                return id;
+            }
         }
 
         long readHighId;
         long endId;
-        int skipped = 0;
+        int skipped;
+        long id;
         do
         {
             readHighId = highId.get();
             id = readHighId;
             endId = readHighId + numberOfIds - 1;
-            if ( layout.idRangeIndex( readHighId ) != layout.idRangeIndex( endId ) )
+            skipped = 0;
+            if ( favorSamePage && layout.idRangeIndex( readHighId ) != layout.idRangeIndex( endId ) )
             {
                 // The page boundary was crossed. Go to the beginning of the next page
                 long newId = layout.idRangeIndex( endId ) * idsPerEntry;
@@ -456,7 +464,7 @@ public class IndexedIdGenerator implements IdGenerator
             }
             IdValidator.assertIdWithinMaxCapacity( idType, endId, maxId );
         }
-        while ( !highId.compareAndSet( readHighId, endId + 1 ) );
+        while ( !highId.compareAndSet( readHighId, endId + 1 ) || IdValidator.hasReservedIdInRange( id, endId + 1 ) );
         monitor.allocatedFromHigh( id, numberOfIds );
         if ( skipped > 0 )
         {
@@ -472,62 +480,9 @@ public class IndexedIdGenerator implements IdGenerator
             // OK, so the skipped IDs will be marked as deleted, but will never be picked up by the ID scanner in this generation/session
             // and therefore temporarily wasted until next restart.
             scanner.queueSkippedHighId( readHighId, skipped );
-            monitor.skippedIdsAtHighId( skipped );
+            monitor.skippedIdsAtHighId( id, numberOfIds );
         }
         return id;
-    }
-
-    @Override
-    public org.neo4j.internal.id.IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext )
-    {
-        prepareIdAllocation( cursorContext );
-
-        if ( forceConsecutiveAllocation )
-        {
-            long startId;
-            do
-            {
-                startId = highId.getAndAdd( size );
-            }
-            while ( IdValidator.hasReservedIdInRange( startId, startId + size ) );
-            return new org.neo4j.internal.id.IdRange( EMPTY_LONG_ARRAY, startId, size );
-        }
-
-        long prev = -1;
-        long startOfRange = -1;
-        int rangeLength = 0;
-        MutableLongList other = null;
-        for ( int i = 0; i < size; i++ )
-        {
-            long id = nextId( cursorContext );
-            if ( other != null )
-            {
-                other.add( id );
-            }
-            else
-            {
-                if ( i == 0 )
-                {
-                    prev = id;
-                    startOfRange = id;
-                    rangeLength = 1;
-                }
-                else
-                {
-                    if ( id == prev + 1 )
-                    {
-                        prev = id;
-                        rangeLength++;
-                    }
-                    else
-                    {
-                        other = LongLists.mutable.empty();
-                        other.add( id );
-                    }
-                }
-            }
-        }
-        return new org.neo4j.internal.id.IdRange( other != null ? other.toArray() : EMPTY_LONG_ARRAY, startOfRange, rangeLength );
     }
 
     @Override

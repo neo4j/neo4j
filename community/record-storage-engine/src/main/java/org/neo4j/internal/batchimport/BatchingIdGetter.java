@@ -24,79 +24,59 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import java.util.function.LongConsumer;
 
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdRange;
-import org.neo4j.internal.id.IdRangeIterator;
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-import static java.lang.String.format;
-import static org.neo4j.internal.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 /**
  * Exposes batches of ids from a {@link RecordStore} as a {@link LongIterator}.
- * It makes use of {@link IdGenerator#nextIdBatch(int, boolean, CursorContext)} (with default batch size the number of records per page)
+ * It makes use of {@link IdGenerator#nextConsecutiveIdRange(int, boolean, CursorContext)} (with default batch size the number of records per page)
  * and caches that batch, exhausting it in {@link #nextId(CursorContext)} before getting next batch.
  */
 public class BatchingIdGetter implements IdSequence
 {
-    private static final long NO_ID_EXPECTATION = -1;
-
     private final IdGenerator source;
-    private IdRangeIterator batch;
     private final int batchSize;
-    private long idExpectation = NO_ID_EXPECTATION;
+    private long currentBatchStartId = NO_ID;
+    private int currentBatchIndex;
 
     BatchingIdGetter( CommonAbstractStore<? extends AbstractBaseRecord,?> source )
     {
-        this( source, source.getRecordsPerPage() );
-    }
-
-    BatchingIdGetter( CommonAbstractStore<? extends AbstractBaseRecord,?> source, int batchSize )
-    {
         this.source = source.getIdGenerator();
-        this.batchSize = batchSize;
+        this.batchSize = source.getRecordsPerPage();
     }
 
     @Override
     public long nextId( CursorContext cursorContext )
     {
-        long id;
-        if ( batch == null || (id = batch.nextId( cursorContext )) == VALUE_REPRESENTING_NULL )
+        long id = nextIdFromCurrentBatch();
+        if ( id != NO_ID )
         {
-            idExpectation = NO_ID_EXPECTATION;
-            IdRange idRange = source.nextIdBatch( batchSize, true, cursorContext );
-            while ( IdValidator.hasReservedIdInRange( idRange.getRangeStart(), idRange.getRangeStart() + idRange.getRangeLength() ) )
-            {
-                idRange = source.nextIdBatch( batchSize, true, cursorContext );
-            }
-            batch = new IdRangeIterator( idRange );
-            id = batch.nextId( cursorContext );
+            return id;
         }
-        if ( idExpectation != NO_ID_EXPECTATION )
-        {
-            if ( id != idExpectation )
-            {
-                throw new IllegalStateException(
-                        format( "Id generator allocated range with non-consecutive IDs, expected:%d, but got:%d", idExpectation, id ) );
-            }
-        }
-        idExpectation = id + 1;
-        return id;
+
+        currentBatchStartId = source.nextConsecutiveIdRange( batchSize, false, cursorContext );
+        currentBatchIndex = 0;
+        return nextIdFromCurrentBatch();
     }
 
-    void visitUnused( LongConsumer visitor, CursorContext cursorContext )
+    private long nextIdFromCurrentBatch()
     {
-        if ( batch != null )
+        return currentBatchStartId == NO_ID || currentBatchIndex == batchSize
+               ? NO_ID
+               : currentBatchStartId + currentBatchIndex++;
+    }
+
+    void visitUnused( LongConsumer visitor )
+    {
+        long id;
+        while ( (id = nextIdFromCurrentBatch()) != NO_ID )
         {
-            long unusedId;
-            while ( (unusedId = batch.nextId( cursorContext )) != VALUE_REPRESENTING_NULL )
-            {
-                visitor.accept( unusedId );
-            }
+            visitor.accept( id );
         }
     }
 }

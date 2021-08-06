@@ -207,7 +207,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     }
 
     @Override
-    public void skippedIdsAtHighId( int numberOfIds )
+    public void skippedIdsAtHighId( long readHighId, int numberOfIds )
     {
     }
 

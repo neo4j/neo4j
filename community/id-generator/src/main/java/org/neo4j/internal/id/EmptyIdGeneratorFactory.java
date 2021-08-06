@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.util.Collections.emptyList;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
 public class EmptyIdGeneratorFactory implements IdGeneratorFactory
 {
@@ -91,12 +90,6 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
 
         private EmptyIdGenerator()
         {
-        }
-
-        @Override
-        public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext )
-        {
-            return new IdRange( EMPTY_LONG_ARRAY, EMPTY_ID, EMPTY_ID );
         }
 
         @Override
@@ -184,7 +177,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public long nextConsecutiveIdRange( int numberOfIds, CursorContext cursorContext )
+        public long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext )
         {
             return EMPTY_ID;
         }

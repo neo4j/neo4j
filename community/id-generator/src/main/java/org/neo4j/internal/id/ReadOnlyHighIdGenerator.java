@@ -114,13 +114,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public long nextConsecutiveIdRange( int numberOfIds, CursorContext cursorContext )
-    {
-        throw new UnsupportedOperationException( "Should not be required" );
-    }
-
-    @Override
-    public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext ignored )
+    public long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
