@@ -26,9 +26,9 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
+import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING;
-import org.neo4j.cypher.internal.runtime.GrowingArray;
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -435,8 +435,8 @@ class Neo4jTransactionalContextIT
         // We allocate memory through the same operator id, so it is easy for us to calculate how much memory the GrowingArray of MemoryTrackerPerOperator takes
         var operatorId = 0;
         var localMem = new LocalMemoryTracker();
-        var ga = new GrowingArray<>( localMem );
-        ga.computeIfAbsent( operatorId, Object::new );
+        var ga = HeapTrackingArrayList.newArrayList( localMem );
+        ga.add( new Object() );
         var growingArraySize = localMem.heapHighWaterMark();
 
         // Start query execution
