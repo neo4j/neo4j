@@ -29,7 +29,7 @@ public class ReachedThreshold extends AbstractCheckPointThreshold
     }
 
     @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion, long lastCommittedTransactionByteOffset )
+    protected boolean thresholdReached( long lastCommittedTransactionId, LogPosition logPosition )
     {
         return true;
     }

@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingImpl;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -43,6 +44,7 @@ public class CheckPointThresholdTestSupport
 {
     public static final long ARBITRARY_LOG_VERSION = 5;
     public static final long ARBITRARY_LOG_OFFSET = 128;
+    public static final LogPosition ARBITRARY_LOG_POSITION = new LogPosition( ARBITRARY_LOG_VERSION, ARBITRARY_LOG_OFFSET );
 
     protected Config config;
     protected FakeClock clock;

@@ -164,7 +164,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     public long checkPointIfNeeded( TriggerInfo info ) throws IOException
     {
         long[] lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-        if ( threshold.isCheckPointingNeeded( lastClosedTransaction[0], lastClosedTransaction[1], lastClosedTransaction[2], info ) )
+        LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
+        if ( threshold.isCheckPointingNeeded( lastClosedTransaction[0], logPosition, info ) )
         {
             try ( Resource lock = mutex.checkPoint() )
             {

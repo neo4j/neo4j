@@ -52,13 +52,11 @@ public interface CheckPointThreshold
      * This method can be used for querying the threshold about the necessity of a check point.
      *
      * @param lastCommittedTransactionId the latest transaction committed id
-     * @param lastCommittedTransactionLogVersion log version the latest closed transaction is in
-     * @param lastCommittedTransactionByteOffset byte offset of the latest closed transaction in log version file
+     * @param logPosition the latest closed transaction log position
      * @param consumer will be called with the description about this threshold only if the return value is true
      * @return true is a check point is needed, false otherwise.
      */
-    boolean isCheckPointingNeeded( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion, long lastCommittedTransactionByteOffset,
-            Consumer<String> consumer );
+    boolean isCheckPointingNeeded( long lastCommittedTransactionId, LogPosition logPosition, Consumer<String> consumer );
 
     /**
      * This method notifies the threshold that a check point has happened. This must be called every time a check point
@@ -73,7 +71,7 @@ public interface CheckPointThreshold
 
     /**
      * Return a desired checking frequency, as a number of milliseconds between calls to
-     * {@link #isCheckPointingNeeded(long, long, long, Consumer)}.
+     * {@link #isCheckPointingNeeded(long, LogPosition, Consumer)}.
      *
      * @return A desired scheduling frequency in milliseconds.
      */
@@ -118,11 +116,11 @@ public interface CheckPointThreshold
             }
 
             @Override
-            public boolean isCheckPointingNeeded( long transactionId, long transactionLogVersion, long transactionByteOffset, Consumer<String> consumer )
+            public boolean isCheckPointingNeeded( long transactionId, LogPosition logPosition, Consumer<String> consumer )
             {
                 for ( CheckPointThreshold threshold : thresholds )
                 {
-                    if ( threshold.isCheckPointingNeeded( transactionId, transactionLogVersion, transactionByteOffset, consumer ) )
+                    if ( threshold.isCheckPointingNeeded( transactionId, logPosition, consumer ) )
                     {
                         return true;
                     }

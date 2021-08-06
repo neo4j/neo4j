@@ -39,7 +39,8 @@ class CheckPointThresholdDescriptionTest
 
         final AtomicReference<String> calledWith = new AtomicReference<>();
         // When
-        threshold.isCheckPointingNeeded( 42, 99, 100, calledWith::set );
+        LogPosition logPosition = new LogPosition( 99, 100 );
+        threshold.isCheckPointingNeeded( 42, logPosition, calledWith::set );
 
         // Then
         assertEquals( description, calledWith.get() );
@@ -50,7 +51,8 @@ class CheckPointThresholdDescriptionTest
     {
         AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( false, null );
 
-        assertDoesNotThrow( () -> threshold.isCheckPointingNeeded( 42, 1, 100, s ->
+        LogPosition logPosition = new LogPosition( 1, 100 );
+        assertDoesNotThrow( () -> threshold.isCheckPointingNeeded( 42, logPosition, s ->
         {
             throw new IllegalStateException( "nooooooooo!" );
         } ) );
@@ -85,7 +87,7 @@ class CheckPointThresholdDescriptionTest
         }
 
         @Override
-        protected boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion, long lastCommittedTransactionByteOffset )
+        protected boolean thresholdReached( long lastCommittedTransactionId, LogPosition logPosition )
         {
             return reached;
         }

@@ -40,11 +40,11 @@ public class VolumeCheckPointThreshold extends AbstractCheckPointThreshold
     }
 
     @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId, long lastCommittedTransactionLogVersion, long lastCommittedTransactionByteOffset )
+    protected boolean thresholdReached( long lastCommittedTransactionId, LogPosition logPosition )
     {
         var previousLogPosition = checkpointLogPosition;
-        long files = Math.abs( lastCommittedTransactionLogVersion - previousLogPosition.getLogVersion() );
-        long offset = lastCommittedTransactionByteOffset - previousLogPosition.getByteOffset();
+        long files = Math.abs( logPosition.getLogVersion() - previousLogPosition.getLogVersion() );
+        long offset = logPosition.getByteOffset() - previousLogPosition.getByteOffset();
         long bytesDiff = Math.abs( files * fileSizeBytes + offset );
         return volumeBytes < bytesDiff;
     }
