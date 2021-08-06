@@ -504,8 +504,9 @@ class CheckPointerImplTest
 
     private void mockTxIdStore()
     {
-        var triggerCommittedTransaction = new ClosedTransactionMetadata( transactionId, logPosition );
-        when( metadataProvider.getLastClosedTransaction() ).thenReturn( triggerCommittedTransaction );
+        var initialCommitted = new ClosedTransactionMetadata( initialTransactionId, logPosition );
+        var otherCommitted = new ClosedTransactionMetadata( transactionId, logPosition );
+        when( metadataProvider.getLastClosedTransaction() ).thenReturn( initialCommitted, otherCommitted );
         when( metadataProvider.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
     }
 
