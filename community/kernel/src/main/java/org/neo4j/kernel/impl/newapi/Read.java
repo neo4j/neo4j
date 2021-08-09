@@ -65,6 +65,7 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -83,12 +84,14 @@ abstract class Read implements TxStateHolder,
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
     final KernelTransactionImplementation ktx;
+    private final StorageLocks storageLocks;
 
-    Read( StorageReader storageReader, DefaultPooledCursors cursors, KernelTransactionImplementation ktx )
+    Read( StorageReader storageReader, DefaultPooledCursors cursors, KernelTransactionImplementation ktx, StorageLocks storageLocks )
     {
         this.storageReader = storageReader;
         this.cursors = cursors;
         this.ktx = ktx;
+        this.storageLocks = storageLocks;
     }
 
     @Override
@@ -479,48 +482,42 @@ abstract class Read implements TxStateHolder,
     @Override
     public void acquireExclusiveNodeLock( long... ids )
     {
-        acquireExclusiveLock( ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids );
-        acquireExclusiveLock( ResourceTypes.NODE, ids );
+        storageLocks.acquireExclusiveNodeLock( ktx.lockTracer(), ids );
         ktx.assertOpen();
     }
 
     @Override
     public void acquireExclusiveRelationshipLock( long... ids )
     {
-        acquireExclusiveLock( ResourceTypes.RELATIONSHIP_DELETE, ids );
-        acquireExclusiveLock( ResourceTypes.RELATIONSHIP, ids );
+        storageLocks.acquireExclusiveRelationshipLock( ktx.lockTracer(), ids );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseExclusiveNodeLock( long... ids )
     {
-        releaseExclusiveLock( ResourceTypes.NODE, ids );
-        releaseExclusiveLock( ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids );
+        storageLocks.releaseExclusiveNodeLock( ids );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseExclusiveRelationshipLock( long... ids )
     {
-        releaseExclusiveLock( ResourceTypes.RELATIONSHIP, ids );
-        releaseExclusiveLock( ResourceTypes.RELATIONSHIP_DELETE, ids );
+        storageLocks.releaseExclusiveRelationshipLock( ids );
         ktx.assertOpen();
     }
 
     @Override
     public void acquireSharedNodeLock( long... ids )
     {
-        acquireSharedLock( ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids );
-        acquireSharedLock( ResourceTypes.NODE, ids );
+        storageLocks.acquireSharedNodeLock( ktx.lockTracer(), ids );
         ktx.assertOpen();
     }
 
     @Override
     public void acquireSharedRelationshipLock( long... ids )
     {
-        acquireSharedLock( ResourceTypes.RELATIONSHIP_DELETE, ids );
-        acquireSharedLock( ResourceTypes.RELATIONSHIP, ids );
+        storageLocks.acquireSharedRelationshipLock( ktx.lockTracer(), ids );
         ktx.assertOpen();
     }
 
@@ -541,16 +538,14 @@ abstract class Read implements TxStateHolder,
     @Override
     public void releaseSharedNodeLock( long... ids )
     {
-        releaseSharedLock( ResourceTypes.NODE, ids );
-        releaseSharedLock( ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids );
+        storageLocks.releaseSharedNodeLock( ids );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedRelationshipLock( long... ids )
     {
-        releaseSharedLock( ResourceTypes.RELATIONSHIP, ids );
-        releaseSharedLock( ResourceTypes.RELATIONSHIP_DELETE, ids );
+        storageLocks.releaseSharedRelationshipLock( ids );
         ktx.assertOpen();
     }
 
@@ -588,22 +583,22 @@ abstract class Read implements TxStateHolder,
         ktx.lockClient().acquireShared( ktx.lockTracer(), resource, resourceId );
     }
 
-    private void acquireExclusiveLock( ResourceTypes types, long... ids )
+    private void acquireExclusiveLock( ResourceType type, long... ids )
     {
-        ktx.lockClient().acquireExclusive( ktx.lockTracer(), types, ids );
+        ktx.lockClient().acquireExclusive( ktx.lockTracer(), type, ids );
     }
 
-    private void releaseExclusiveLock( ResourceTypes types, long... ids )
+    private void releaseExclusiveLock( ResourceType type, long... ids )
     {
-        ktx.lockClient().releaseExclusive( types, ids );
+        ktx.lockClient().releaseExclusive( type, ids );
     }
 
-    private void acquireSharedLock( ResourceTypes types, long... ids )
+    private void acquireSharedLock( ResourceType type, long... ids )
     {
-        ktx.lockClient().acquireShared( ktx.lockTracer(), types, ids );
+        ktx.lockClient().acquireShared( ktx.lockTracer(), type, ids );
     }
 
-    private void releaseSharedLock( ResourceTypes types, long... ids )
+    private void releaseSharedLock( ResourceType types, long... ids )
     {
         ktx.lockClient().releaseShared( types, ids );
     }

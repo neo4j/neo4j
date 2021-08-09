@@ -71,6 +71,7 @@ import org.neo4j.logging.SecurityLogHelper;
 import org.neo4j.logging.log4j.LogExtended;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -115,6 +116,7 @@ abstract class OperationsTest
     protected CommandCreationContext creationContext;
     protected SecurityLogHelper logHelper;
     protected CommunitySecurityLog securityLog;
+    protected StorageLocks storageLocks;
     protected static final String DB_NAME = "db.test";
     private StoreCursors storeCursors;
 
@@ -158,8 +160,9 @@ abstract class OperationsTest
         Dependencies dependencies = new Dependencies();
         var facade = mock( GraphDatabaseFacade.class );
         dependencies.satisfyDependency( facade );
-        allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock( GlobalProcedures.class ), mock( SchemaState.class ), indexingService,
-                mock( IndexStatisticsStore.class ), dependencies, INSTANCE );
+        storageLocks = mock( StorageLocks.class );
+        allStoreHolder = new AllStoreHolder( storageReader, transaction, storageLocks, cursors, mock( GlobalProcedures.class ),
+                mock( SchemaState.class ), indexingService, mock( IndexStatisticsStore.class ), dependencies, INSTANCE );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         tokenHolders = mockedTokenHolders();
         creationContext = mock( CommandCreationContext.class );
@@ -170,13 +173,13 @@ abstract class OperationsTest
         when( indexingProvidersService.getFulltextProvider() ).thenReturn( FulltextIndexProviderFactory.DESCRIPTOR );
         when( indexingProvidersService.indexProviderByName( "provider-1.0" ) ).thenReturn( new IndexProviderDescriptor( "provider", "1.0" ) );
         when( indexingProvidersService.completeConfiguration( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
-        operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext,
-                 transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
+        operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext, storageLocks,
+                transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
                 constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE,
                 () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
         operations.initialize( NULL );
 
-        this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot, creationContext );
+        this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot, creationContext, storageLocks );
     }
 
     @AfterEach

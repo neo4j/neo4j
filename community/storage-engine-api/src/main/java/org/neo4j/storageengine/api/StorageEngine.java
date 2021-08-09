@@ -61,6 +61,8 @@ public interface StorageEngine extends Lifecycle
      */
     StoreCursors createStorageCursors( CursorContext initialContext );
 
+    StorageLocks createStorageLocks( ResourceLocker locker );
+
     /**
      * Adds an {@link IndexUpdateListener} which will receive streams of index updates from changes that gets
      * {@link #apply(CommandsToApply, TransactionApplicationMode) applied} to this storage engine.

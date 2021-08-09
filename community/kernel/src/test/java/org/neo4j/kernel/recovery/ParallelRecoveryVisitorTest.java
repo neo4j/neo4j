@@ -58,6 +58,7 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
@@ -351,6 +352,12 @@ class ParallelRecoveryVisitorTest
         public StoreCursors createStorageCursors( CursorContext initialContext )
         {
             return StoreCursors.NULL;
+        }
+
+        @Override
+        public StorageLocks createStorageLocks( ResourceLocker locker )
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override

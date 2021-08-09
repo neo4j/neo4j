@@ -105,6 +105,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -124,7 +125,6 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
-import static org.neo4j.lock.ResourceTypes.DEGREES;
 import static org.neo4j.lock.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.lock.ResourceTypes.SCHEMA_NAME;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -143,6 +143,7 @@ public class Operations implements Write, SchemaWrite
     private final AllStoreHolder allStoreHolder;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
+    private final StorageLocks storageLocks;
     private final KernelToken token;
     private final IndexTxStateUpdater updater;
     private final DefaultPooledCursors cursors;
@@ -161,13 +162,13 @@ public class Operations implements Write, SchemaWrite
     private final boolean textIndexesEnabled;
 
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
-            KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
-            ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config,
-            MemoryTracker memoryTracker, KernelVersionRepository kernelVersionRepository,
-            DbmsRuntimeRepository dbmsRuntimeRepository )
+            StorageLocks storageLocks, KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors,
+            ConstraintIndexCreator constraintIndexCreator, ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config,
+            MemoryTracker memoryTracker, KernelVersionRepository kernelVersionRepository, DbmsRuntimeRepository dbmsRuntimeRepository )
     {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
+        this.storageLocks = storageLocks;
         this.token = token;
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
@@ -180,7 +181,7 @@ public class Operations implements Write, SchemaWrite
         this.kernelVersionRepository = kernelVersionRepository;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.additionLockVerification = config.get( additional_lock_verification );
-        this.textIndexesEnabled  = config.get( text_indexes_enabled );
+        this.textIndexesEnabled = config.get( text_indexes_enabled );
     }
 
     public void initialize( CursorContext cursorContext )
@@ -257,7 +258,7 @@ public class Operations implements Write, SchemaWrite
     public int nodeDetachDelete( long nodeId )
     {
         ktx.assertOpen();
-        commandCreationContext.acquireNodeDeletionLock( ktx.txState(), ktx.lockClient(), ktx.lockTracer(), nodeId );
+        storageLocks.acquireNodeDeletionLock( ktx.txState(), ktx.lockTracer(), nodeId );
         NodeCursor nodeCursor = ktx.ambientNodeCursor();
         ktx.dataRead().singleNode( nodeId, nodeCursor );
         int deletedRelationships = 0;
@@ -290,7 +291,7 @@ public class Operations implements Write, SchemaWrite
 
         sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
         sharedTokenSchemaLock( ResourceTypes.RELATIONSHIP_TYPE );
-        commandCreationContext.acquireRelationshipCreationLock( ktx.txState(), ktx.lockClient(), ktx.lockTracer(), sourceNode, targetNode );
+        storageLocks.acquireRelationshipCreationLock( ktx.txState(), ktx.lockTracer(), sourceNode, targetNode );
 
         assertNodeExists( sourceNode );
         assertNodeExists( targetNode );
@@ -320,7 +321,7 @@ public class Operations implements Write, SchemaWrite
         }
         sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipCursor.type() );
         sharedTokenSchemaLock( ResourceTypes.RELATIONSHIP_TYPE );
-        commandCreationContext.acquireRelationshipDeletionLock( txState, ktx.lockClient(), ktx.lockTracer(),
+        storageLocks.acquireRelationshipDeletionLock( txState, ktx.lockTracer(),
                 relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference(), relationship );
 
         if ( !allStoreHolder.relationshipExists( relationship ) )
@@ -341,7 +342,7 @@ public class Operations implements Write, SchemaWrite
         sharedSchemaLock( ResourceTypes.LABEL, nodeLabel );
         sharedTokenSchemaLock( ResourceTypes.LABEL );
         acquireExclusiveNodeLock( node );
-        acquireExclusiveDegreesLock( node );
+        storageLocks.acquireNodeLabelChangeLock( ktx.lockTracer(), node, nodeLabel );
 
         singleNode( node );
 
@@ -475,7 +476,7 @@ public class Operations implements Write, SchemaWrite
 
         if ( lock )
         {
-            commandCreationContext.acquireNodeDeletionLock( ktx.txState(), ktx.lockClient(), ktx.lockTracer(), node );
+            storageLocks.acquireNodeDeletionLock( ktx.txState(), ktx.lockTracer(), node );
         }
 
         allStoreHolder.singleNode( node, nodeCursor );
@@ -631,7 +632,7 @@ public class Operations implements Write, SchemaWrite
     public boolean nodeRemoveLabel( long node, int labelId ) throws EntityNotFoundException
     {
         acquireExclusiveNodeLock( node );
-        acquireExclusiveDegreesLock( node );
+        storageLocks.acquireNodeLabelChangeLock( ktx.lockTracer(), node, labelId );
         ktx.assertOpen();
 
         singleNode( node );
@@ -657,20 +658,6 @@ public class Operations implements Write, SchemaWrite
                                    storageReader.valueIndexesGetRelated( new long[]{labelId}, existingPropertyKeyIds, NODE ) );
         }
         return true;
-    }
-
-    private void acquireExclusiveDegreesLock( long node )
-    {
-        // This is done for e.g. NODE ADD/REMOVE label where we need a stable degree to tell the counts store. Acquiring this lock
-        // will prevent any RELATIONSHIP CREATE/DELETE to happen on this node until this transaction is committed.
-        // What would happen w/o this lock (simplest scenario):
-        // T1: Start TX, add label L on node N, which currently has got 5 relationships
-        // T2: Start TX, create another relationship on N
-        // T1: Go into commit where commands are created and for the added label the relationship degrees are read and placed in a counts command
-        // T2: Go into commit and fully complete commit, i.e. before T1. N now has 6 relationships
-        // T1: Complete the commit
-        // --> N has 6 relationships, but counts store says that it has 5
-        ktx.lockClient().acquireExclusive( ktx.lockTracer(), DEGREES, node );
     }
 
     @Override

@@ -97,6 +97,7 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
@@ -326,6 +327,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreCursors createStorageCursors( CursorContext cursorContext )
     {
         return new CachedStoreCursors( neoStores, cursorContext );
+    }
+
+    @Override
+    public StorageLocks createStorageLocks( ResourceLocker locker )
+    {
+        return new RecordStorageLocks( locker );
     }
 
     @Override

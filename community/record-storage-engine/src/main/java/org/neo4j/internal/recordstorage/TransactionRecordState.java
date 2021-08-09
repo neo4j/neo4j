@@ -72,9 +72,9 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combinedKeyOnGroupAndDirection;
+import static org.neo4j.internal.recordstorage.RecordResourceTypes.RELATIONSHIP_GROUP;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations performed in the transaction.

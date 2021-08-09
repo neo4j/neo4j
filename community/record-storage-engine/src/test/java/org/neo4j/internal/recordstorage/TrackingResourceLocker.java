@@ -37,7 +37,6 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -185,7 +184,7 @@ class TrackingResourceLocker implements ResourceLocker
         assertThat( hasLock( resourceType, lockType, resourceId ) ).as( "Lock[%s,%s,%d]", resourceType, lockType, resourceId ).isTrue();
     }
 
-    void assertNoLock( ResourceTypes resourceType, LockType lockType, long resourceId )
+    void assertNoLock( ResourceType resourceType, LockType lockType, long resourceId )
     {
         assertThat( hasLock( resourceType, lockType, resourceId ) ).as( "Lock[%s,%s,%d]", resourceType, lockType, resourceId ).isFalse();
     }

@@ -120,6 +120,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -174,6 +175,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ClockContext clocks;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final ConstraintSemantics constraintSemantics;
+    private final StorageLocks storageLocks;
     private CursorContext cursorContext;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
@@ -265,17 +267,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
         this.transactionalCursors = storageEngine.createStorageCursors( CursorContext.NULL );
+        this.storageLocks = storageEngine.createStorageLocks( lockClient );
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, transactionalCursors, config );
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler( securityLog );
-        this.allStoreHolder =
-                new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, indexStatisticsStore,
-                        dependencies, memoryTracker );
+        this.allStoreHolder = new AllStoreHolder( storageReader, this, storageLocks, cursors, globalProcedures, schemaState,
+                indexingService, indexStatisticsStore, dependencies, memoryTracker );
         this.operations =
                 new Operations(
                         allStoreHolder,
                         storageReader,
                         new IndexTxStateUpdater( storageReader, allStoreHolder, indexingService ),
                         commandCreationContext,
+                        storageLocks,
                         this,
                         new KernelToken( storageReader, commandCreationContext, this, tokenHolders ),
                         cursors,

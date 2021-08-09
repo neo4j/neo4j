@@ -59,6 +59,7 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
@@ -414,7 +415,7 @@ class DefaultRelationshipTraversalCursorTest
     {
         TestRead( KernelTransactionImplementation ktx )
         {
-            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), ktx );
+            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), ktx, mock( StorageLocks.class ) );
         }
 
         @Override

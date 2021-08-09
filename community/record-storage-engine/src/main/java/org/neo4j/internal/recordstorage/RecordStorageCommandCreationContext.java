@@ -40,7 +40,7 @@ import static java.lang.Math.toIntExact;
 /**
  * Holds commit data structures for creating records in a {@link NeoStores}.
  */
-class RecordStorageCommandCreationContext extends CommandCreationLocking implements CommandCreationContext
+class RecordStorageCommandCreationContext implements CommandCreationContext
 {
     private final NeoStores neoStores;
     private final Config config;

@@ -61,12 +61,13 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static java.lang.Integer.min;
 import static java.util.Collections.singletonList;
@@ -84,6 +85,8 @@ import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.rel
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleCreate;
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleDelete;
 import static org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor.NULL_MONITOR;
+import static org.neo4j.internal.recordstorage.RecordResourceTypes.RELATIONSHIP_DELETE;
+import static org.neo4j.internal.recordstorage.RecordResourceTypes.RELATIONSHIP_GROUP;
 import static org.neo4j.internal.recordstorage.RelationshipChainVisitor.relationshipCollector;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
@@ -92,8 +95,6 @@ import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_DELETE;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
@@ -415,11 +416,11 @@ class RelationshipModifierTest
             ResourceLocker locks )
     {
         // Acquire the "external" locks that the RelationshipModifier rely on when making decisions internally
-        CommandCreationLocking context = new CommandCreationLocking();
+        StorageLocks context = new RecordStorageLocks( locks );
         modifications.creations().forEach(
-                ( id, type, start, end, addedProperties ) -> context.acquireRelationshipCreationLock( txState, locks, NONE, start, end ) );
+                ( id, type, start, end, addedProperties ) -> context.acquireRelationshipCreationLock( txState, NONE, start, end ) );
         modifications.deletions().forEach(
-                ( id, type, start, end, noProperties ) -> context.acquireRelationshipDeletionLock( txState, locks, NONE, start, end, id ) );
+                ( id, type, start, end, noProperties ) -> context.acquireRelationshipDeletionLock( txState, NONE, start, end, id ) );
 
         RecordAccessSet changes = store.newRecordChanges( loadMonitor, readMonitor );
         modifier.modifyRelationships( modifications, changes, groupUpdater, locks, NONE );

@@ -37,11 +37,11 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.internal.recordstorage.LockVerificationMonitor.assertRecordsEquals;
 import static org.neo4j.internal.recordstorage.LockVerificationMonitor.assertSchemaLocked;
+import static org.neo4j.internal.recordstorage.RecordResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.internal.recordstorage.RecordResourceTypes.RELATIONSHIP_GROUP;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.ResourceTypes.NODE;
-import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
 /**
  * Merely a helper during development to ensure that commands generated are sufficiently locked, now that we're experimenting with

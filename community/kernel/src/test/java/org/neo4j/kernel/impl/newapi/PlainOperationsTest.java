@@ -71,6 +71,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.token.api.NamedToken;
@@ -124,7 +125,7 @@ public class PlainOperationsTest extends OperationsTest
         long rId = operations.relationshipCreate( sourceNode, relationshipType, targetNode );
 
         // then
-        order.verify( creationContext ).acquireRelationshipCreationLock( txState, locks, LockTracer.NONE, sourceNode, targetNode );
+        order.verify( storageLocks ).acquireRelationshipCreationLock( txState, LockTracer.NONE, sourceNode, targetNode );
         order.verify( txState ).relationshipDoCreate( rId, relationshipType, sourceNode, targetNode );
     }
 
@@ -140,8 +141,8 @@ public class PlainOperationsTest extends OperationsTest
         operations.relationshipCreate( lowId, relationshipLabel, highId );
 
         // THEN
-        InOrder lockingOrder = inOrder( creationContext );
-        lockingOrder.verify( creationContext ).acquireRelationshipCreationLock( txState, locks, LockTracer.NONE, lowId, highId );
+        InOrder lockingOrder = inOrder( creationContext, storageLocks );
+        lockingOrder.verify( storageLocks ).acquireRelationshipCreationLock( txState, LockTracer.NONE, lowId, highId );
         lockingOrder.verify( creationContext ).reserveRelationship( lowId );
         lockingOrder.verifyNoMoreInteractions();
         reset( creationContext );
@@ -150,8 +151,8 @@ public class PlainOperationsTest extends OperationsTest
         operations.relationshipCreate( highId, relationshipLabel, lowId );
 
         // THEN
-        InOrder lowLockingOrder = inOrder( creationContext );
-        lowLockingOrder.verify( creationContext ).acquireRelationshipCreationLock( txState, locks, LockTracer.NONE, highId, lowId );
+        InOrder lowLockingOrder = inOrder( creationContext, storageLocks );
+        lowLockingOrder.verify( storageLocks ).acquireRelationshipCreationLock( txState, LockTracer.NONE, highId, lowId );
         lowLockingOrder.verify( creationContext ).reserveRelationship( highId );
         lowLockingOrder.verifyNoMoreInteractions();
     }
@@ -172,10 +173,10 @@ public class PlainOperationsTest extends OperationsTest
         operations.relationshipDelete( relationshipId );
 
         // THEN
-        InOrder lockingOrder = inOrder( creationContext );
-        lockingOrder.verify( creationContext ).acquireRelationshipDeletionLock( txState, locks, LockTracer.NONE, lowId, highId, relationshipId );
+        InOrder lockingOrder = inOrder( storageLocks );
+        lockingOrder.verify( storageLocks ).acquireRelationshipDeletionLock( txState, LockTracer.NONE, lowId, highId, relationshipId );
         lockingOrder.verifyNoMoreInteractions();
-        reset( creationContext );
+        reset( storageLocks );
 
         // and GIVEN
         setStoreRelationship( relationshipId, highId, lowId, relationshipLabel );
@@ -184,8 +185,8 @@ public class PlainOperationsTest extends OperationsTest
         operations.relationshipDelete( relationshipId );
 
         // THEN
-        InOrder highLowIdOrder = inOrder( creationContext );
-        highLowIdOrder.verify( creationContext ).acquireRelationshipDeletionLock( txState, locks, LockTracer.NONE, highId, lowId, relationshipId );
+        InOrder highLowIdOrder = inOrder( storageLocks );
+        highLowIdOrder.verify( storageLocks ).acquireRelationshipDeletionLock( txState, LockTracer.NONE, highId, lowId, relationshipId );
         highLowIdOrder.verifyNoMoreInteractions();
     }
 
@@ -349,7 +350,7 @@ public class PlainOperationsTest extends OperationsTest
         operations.nodeDelete( 123 );
 
         //THEN
-        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, 123 );
+        order.verify( storageLocks ).acquireNodeDeletionLock( txState, LockTracer.NONE, 123 );
         order.verify( txState ).nodeDoDelete( 123 );
     }
 
@@ -748,7 +749,7 @@ public class PlainOperationsTest extends OperationsTest
 
         operations.nodeDetachDelete( nodeId );
 
-        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
+        order.verify( storageLocks ).acquireNodeDeletionLock( txState, LockTracer.NONE, nodeId );
         order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
         order.verify( txState ).nodeDoDelete( nodeId );
     }
@@ -766,7 +767,7 @@ public class PlainOperationsTest extends OperationsTest
 
         operations.nodeDetachDelete( nodeId );
 
-        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
+        order.verify( storageLocks ).acquireNodeDeletionLock( txState, LockTracer.NONE, nodeId );
         order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
         order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, 2L );
         order.verify( txState ).nodeDoDelete( nodeId );
@@ -788,8 +789,8 @@ public class PlainOperationsTest extends OperationsTest
         operations.nodeDelete( nodeId );
 
         // then
-        InOrder order = inOrder( locks, creationContext );
-        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
+        InOrder order = inOrder( locks, creationContext, storageLocks );
+        order.verify( storageLocks ).acquireNodeDeletionLock( txState, LockTracer.NONE, nodeId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, TOKEN_INDEX_RESOURCE_ID );
         order.verifyNoMoreInteractions();
@@ -814,8 +815,8 @@ public class PlainOperationsTest extends OperationsTest
         operations.nodeDetachDelete( nodeId );
 
         // then
-        InOrder order = inOrder( locks, creationContext );
-        order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
+        InOrder order = inOrder( locks, creationContext, storageLocks );
+        order.verify( storageLocks ).acquireNodeDeletionLock( txState, LockTracer.NONE, nodeId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, TOKEN_INDEX_RESOURCE_ID );
         order.verifyNoMoreInteractions();
@@ -927,10 +928,11 @@ public class PlainOperationsTest extends OperationsTest
         when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         when( ktx.securityAuthorizationHandler() ).thenReturn( new SecurityAuthorizationHandler( CommunitySecurityLog.NULL_LOG ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
-        Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
-                                                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
-                                                mock( ConstraintIndexCreator.class ), mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ),
-                                                Config.defaults(), INSTANCE, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
+        Operations operations =
+                new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ), commandCreationContext,
+                        mock( StorageLocks.class ), ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
+                        mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST,
+                        mock( DbmsRuntimeRepository.class ) );
 
         // when
         operations.nodeCreate();
@@ -957,10 +959,11 @@ public class PlainOperationsTest extends OperationsTest
         when( cursors.allocateFullAccessNodeCursor( NULL ) ).thenReturn( mock( FullAccessNodeCursor.class ) );
         when( cursors.allocateFullAccessPropertyCursor( NULL, INSTANCE ) ).thenReturn( mock( FullAccessPropertyCursor.class ) );
 
-        Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
-                                                commandCreationContext, ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
-                                                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ),
-                                                Config.defaults(), INSTANCE, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
+        Operations operations =
+                new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ), commandCreationContext,
+                        mock( StorageLocks.class ), ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
+                        mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST,
+                        mock( DbmsRuntimeRepository.class ) );
         operations.initialize( NULL );
 
         // when
@@ -987,11 +990,10 @@ public class PlainOperationsTest extends OperationsTest
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
         when( allStoreHolder.nodeExists( anyLong() ) ).thenReturn( true );
-        Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
-                                                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
-                                                mock( ConstraintIndexCreator.class ),
-                                                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(),
-                                                INSTANCE, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
+        Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ), commandCreationContext,
+                mock( StorageLocks.class ), ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST,
+                mock( DbmsRuntimeRepository.class ) );
 
         // when
         operations.relationshipCreate( 0, 1, 2 );
@@ -1018,10 +1020,10 @@ public class PlainOperationsTest extends OperationsTest
         when( allStoreHolder.index( any(), any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
         when( allStoreHolder.indexGetForName( any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
         when( allStoreHolder.constraintsGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
-        Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
-                                                commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
-                                                mock( ConstraintIndexCreator.class ), mock( ConstraintSemantics.class ), indexingProvidersService,
-                                                Config.defaults(), INSTANCE, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
+        Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ), commandCreationContext,
+                mock( StorageLocks.class ), ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
+                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE, () -> KernelVersion.LATEST,
+                mock( DbmsRuntimeRepository.class ) );
 
         // when
         operations.indexCreate( IndexPrototype.forSchema( schema ).withName( "name" ) );

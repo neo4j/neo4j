@@ -79,6 +79,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CountsDelta;
+import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.txstate.DiffSets;
@@ -104,12 +105,12 @@ public class AllStoreHolder extends Read
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
 
-    public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, DefaultPooledCursors cursors, GlobalProcedures globalProcedures,
-                           SchemaState schemaState, IndexingService indexingService,
-                           IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies,
-                           MemoryTracker memoryTracker )
+    public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, StorageLocks storageLocks,
+            DefaultPooledCursors cursors, GlobalProcedures globalProcedures, SchemaState schemaState, IndexingService indexingService,
+            IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, MemoryTracker memoryTracker )
     {
-        super( storageReader, cursors, ktx );
+
+        super( storageReader, cursors, ktx, storageLocks );
         this.globalProcedures = globalProcedures;
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>( index -> indexingService.getIndexProxy( index ).newValueReader() );
