@@ -132,11 +132,7 @@ public class DatabaseTransactionEventListeners extends LifecycleAdapter
         }
         finally
         {
-            if ( txData instanceof TxStateTransactionDataSnapshot )
-            {
-                ((TxStateTransactionDataSnapshot) txData).close();
-            }
-            // else if could be EMPTY_DATA as well, and we don't want the user-facing TransactionData interface to have close() on it
+            closeTxDataSnapshot( txData );
         }
     }
 
@@ -149,11 +145,27 @@ public class DatabaseTransactionEventListeners extends LifecycleAdapter
         }
 
         TransactionData txData = listenersState.getTxData();
-        for ( ListenerState listenerState : listenersState.getStates() )
+        try
         {
-            TransactionEventListener listener = listenerState.getListener();
-            listener.afterRollback( txData, listenerState.getState(), databaseFacade );
+            for ( ListenerState listenerState : listenersState.getStates() )
+            {
+                TransactionEventListener listener = listenerState.getListener();
+                listener.afterRollback( txData, listenerState.getState(), databaseFacade );
+            }
         }
+        finally
+        {
+            closeTxDataSnapshot( txData );
+        }
+    }
+
+    private void closeTxDataSnapshot( TransactionData txData )
+    {
+        if ( txData instanceof TxStateTransactionDataSnapshot )
+        {
+            ((TxStateTransactionDataSnapshot) txData).close();
+        }
+        // else it could be EMPTY_DATA as well, and we don't want the user-facing TransactionData interface to have close() on it
     }
 
     private static boolean canInvokeBeforeCommitListeners( Collection<TransactionEventListener<?>> listeners, ReadableTransactionState state )

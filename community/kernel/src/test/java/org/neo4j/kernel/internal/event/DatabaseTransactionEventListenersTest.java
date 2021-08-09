@@ -22,15 +22,26 @@ package org.neo4j.kernel.internal.event;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import org.neo4j.graphdb.event.TransactionEventListener;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.core.RelationshipEntity;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 class DatabaseTransactionEventListenersTest
 {
@@ -66,5 +77,46 @@ class DatabaseTransactionEventListenersTest
         //Then
         verify( globalListeners ).unregisterTransactionEventListener( databaseId.name(), secondListener );
         verifyNoMoreInteractions( globalListeners );
+    }
+
+    @Test
+    void shouldCloseTxSnapshotAfterCommit()
+    {
+        shouldCloseTxSnapshot( DatabaseTransactionEventListeners::afterCommit );
+    }
+
+    @Test
+    void shouldCloseTxSnapshotAfterRollback()
+    {
+        shouldCloseTxSnapshot( DatabaseTransactionEventListeners::afterRollback );
+    }
+
+    private void shouldCloseTxSnapshot( BiConsumer<DatabaseTransactionEventListeners,TransactionListenersState> txAction )
+    {
+        // Given
+        GlobalTransactionEventListeners globalListeners = new GlobalTransactionEventListeners();
+        NamedDatabaseId databaseId = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
+        DatabaseTransactionEventListeners listeners = new DatabaseTransactionEventListeners( mock( GraphDatabaseFacade.class ), globalListeners, databaseId );
+        TransactionEventListener<?> listener = mock( TransactionEventListener.class );
+        listeners.registerTransactionEventListener( listener );
+
+        TxState txState = new TxState();
+        txState.relationshipDoCreate( 1, 2, 3, 4 );
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        InternalTransaction internalTransaction = mock( InternalTransaction.class );
+        when( kernelTransaction.memoryTracker() ).thenReturn( EmptyMemoryTracker.INSTANCE );
+        when( kernelTransaction.internalTransaction() ).thenReturn( internalTransaction );
+        StorageReader storageReader = mock( StorageReader.class );
+        StorageRelationshipScanCursor relationshipScanCursor = mock( StorageRelationshipScanCursor.class );
+        when( storageReader.allocateRelationshipScanCursor( any(), any() ) ).thenReturn( relationshipScanCursor );
+        when( internalTransaction.newRelationshipEntity( anyLong() ) ).then(
+                invocationOnMock -> new RelationshipEntity( internalTransaction, invocationOnMock.getArgument( 0, Long.class ) ) );
+
+        // When
+        TransactionListenersState state = listeners.beforeCommit( txState, kernelTransaction, storageReader );
+        txAction.accept( listeners, state );
+
+        // Then
+        verify( relationshipScanCursor ).close();
     }
 }
