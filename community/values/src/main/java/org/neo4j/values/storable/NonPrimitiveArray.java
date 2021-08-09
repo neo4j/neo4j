@@ -89,20 +89,13 @@ public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends
 
     final int compareToNonPrimitiveArray( NonPrimitiveArray<T> other )
     {
-        int i = 0;
-        int x = 0;
+        int compare = 0;
         int length = Math.min( this.length(), other.length() );
-
-        while ( x == 0 && i < length )
+        for ( int index = 0; compare == 0 && index < length; index++ )
         {
-            x = this.value()[i].compareTo( other.value()[i] );
-            i++;
+            compare = this.value()[index].compareTo( other.value()[index] );
         }
-        if ( x == 0 )
-        {
-            x = this.length() - other.length();
-        }
-        return x;
+        return compare == 0 ? Integer.compare( this.length(), other.length() ) : compare;
     }
 
     @Override

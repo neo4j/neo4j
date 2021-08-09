@@ -37,6 +37,7 @@ import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNullElse;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.utf8Value;
 
@@ -76,17 +77,17 @@ public abstract class PropertyIndexQuery implements IndexQuery
      * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
     public static RangePredicate<?> range( int propertyKeyId,
-                                        Number from, boolean fromInclusive,
-                                        Number to, boolean toInclusive )
+                                           Number from, boolean fromInclusive,
+                                           Number to, boolean toInclusive )
     {
         return NumberRangePredicate.create( propertyKeyId,
-                                         from == null ? null : Values.numberValue( from ), fromInclusive,
-                                         to == null ? null : Values.numberValue( to ), toInclusive );
+                                            from == null ? null : Values.numberValue( from ), fromInclusive,
+                                            to == null ? null : Values.numberValue( to ), toInclusive );
     }
 
     public static RangePredicate<?> range( int propertyKeyId,
-                                        String from, boolean fromInclusive,
-                                        String to, boolean toInclusive )
+                                           String from, boolean fromInclusive,
+                                           String to, boolean toInclusive )
     {
         return new TextRangePredicate( propertyKeyId,
                                        from == null ? null : Values.stringValue( from ), fromInclusive,
@@ -94,32 +95,31 @@ public abstract class PropertyIndexQuery implements IndexQuery
     }
 
     public static <VALUE extends Value> RangePredicate<?> range( int propertyKeyId,
-                                                              VALUE from, boolean fromInclusive,
-                                                              VALUE to, boolean toInclusive )
+                                                                 VALUE from, boolean fromInclusive,
+                                                                 VALUE to, boolean toInclusive )
     {
         if ( from == null && to == null )
         {
             throw new IllegalArgumentException( "Cannot create RangePredicate without at least one bound" );
         }
 
-        ValueGroup valueGroup = from != null ? from.valueGroup() : to.valueGroup();
+        ValueGroup valueGroup = requireNonNullElse( from, to ).valueGroup();
         switch ( valueGroup )
         {
         case NUMBER:
             return NumberRangePredicate.create( propertyKeyId,
-                                             (NumberValue)from, fromInclusive,
-                                             (NumberValue)to, toInclusive );
+                                                (NumberValue) from, fromInclusive,
+                                                (NumberValue) to, toInclusive );
 
         case TEXT:
             return new TextRangePredicate( propertyKeyId,
-                                           (TextValue)from, fromInclusive,
-                                           (TextValue)to, toInclusive );
+                                           (TextValue) from, fromInclusive,
+                                           (TextValue) to, toInclusive );
 
         case GEOMETRY:
-            PointValue pFrom = (PointValue)from;
-            PointValue pTo = (PointValue)to;
-            CoordinateReferenceSystem crs = pFrom != null ? pFrom.getCoordinateReferenceSystem() : pTo.getCoordinateReferenceSystem();
-            return new GeometryRangePredicate( propertyKeyId, crs, pFrom, fromInclusive, pTo, toInclusive );
+            return new GeometryRangePredicate( propertyKeyId,
+                                               (PointValue) from, fromInclusive,
+                                               (PointValue) to, toInclusive );
 
         default:
             return new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
@@ -135,7 +135,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
         {
             throw new IllegalArgumentException( "Cannot create GeometryRangePredicate without a specified CRS" );
         }
-        return new RangePredicate<>( propertyKeyId, valueGroup, null, true, null, true );
+        return new RangePredicate<>( propertyKeyId, valueGroup );
     }
 
     /**
@@ -144,7 +144,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
      */
     public static RangePredicate<?> range( int propertyKeyId, CoordinateReferenceSystem crs )
     {
-        return new GeometryRangePredicate( propertyKeyId, crs, null, true, null, true );
+        return new GeometryRangePredicate( propertyKeyId, crs );
     }
 
     /**
@@ -351,6 +351,11 @@ public abstract class PropertyIndexQuery implements IndexQuery
             this.toInclusive = toInclusive;
         }
 
+        RangePredicate( int propertyKeyId, ValueGroup valueGroup )
+        {
+            this( propertyKeyId, valueGroup, null, true, null, true );
+        }
+
         @Override
         public IndexQueryType type()
         {
@@ -360,28 +365,24 @@ public abstract class PropertyIndexQuery implements IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
-            if ( value == null || value == NO_VALUE )
+            if ( value == null || value == NO_VALUE || value.valueGroup() != valueGroup )
             {
                 return false;
             }
-            if ( value.valueGroup() == valueGroup )
+            if ( from != null )
             {
-                if ( from != null )
+                int compare = Values.COMPARATOR.compare( value, from );
+                if ( compare < 0 || !fromInclusive && compare == 0 )
                 {
-                    int compare = Values.COMPARATOR.compare( value, from );
-                    if ( compare < 0 || !fromInclusive && compare == 0 )
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-                if ( to != null )
-                {
-                    int compare = Values.COMPARATOR.compare( value, to );
-                    return compare <= 0 && (toInclusive || compare != 0);
-                }
-                return true;
             }
-            return false;
+            if ( to != null )
+            {
+                int compare = Values.COMPARATOR.compare( value, to );
+                return compare <= 0 && (toInclusive || compare != 0);
+            }
+            return true;
         }
 
         @Override
@@ -423,30 +424,43 @@ public abstract class PropertyIndexQuery implements IndexQuery
     {
         private final CoordinateReferenceSystem crs;
 
-        private GeometryRangePredicate( int propertyKeyId, CoordinateReferenceSystem crs, PointValue from, boolean fromInclusive, PointValue to,
-                                        boolean toInclusive )
+        private GeometryRangePredicate( int propertyKeyId, CoordinateReferenceSystem crs,
+                                        PointValue from, boolean fromInclusive,
+                                        PointValue to, boolean toInclusive )
         {
             super( propertyKeyId, ValueGroup.GEOMETRY, from, fromInclusive, to, toInclusive );
             this.crs = crs;
         }
 
+        private GeometryRangePredicate( int propertyKeyId,
+                                        PointValue from, boolean fromInclusive,
+                                        PointValue to, boolean toInclusive )
+        {
+            this( propertyKeyId, requireNonNullElse( from, to ).getCoordinateReferenceSystem(),
+                  from, fromInclusive, to, toInclusive );
+        }
+
+        private GeometryRangePredicate( int propertyKeyId, CoordinateReferenceSystem crs )
+        {
+            this( propertyKeyId, crs, null, true, null, true );
+        }
+
         @Override
         public boolean acceptsValue( Value value )
         {
-            if ( value == null )
+            if ( !(value instanceof PointValue) )
             {
                 return false;
             }
-            if ( value instanceof PointValue )
+
+            final var point = (PointValue) value;
+            if ( !point.getCoordinateReferenceSystem().equals( crs ) )
             {
-                PointValue point = (PointValue) value;
-                if ( point.getCoordinateReferenceSystem().equals( crs ) )
-                {
-                    Boolean within = point.withinRange( from, fromInclusive, to, toInclusive );
-                    return within == null ? false : within;
-                }
+                return false;
             }
-            return false;
+
+            final var within = point.withinRange( from, fromInclusive, to, toInclusive );
+            return within != null && within;
         }
 
         public CoordinateReferenceSystem crs()

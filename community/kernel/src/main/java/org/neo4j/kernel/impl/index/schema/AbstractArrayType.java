@@ -109,11 +109,10 @@ abstract class AbstractArrayType<T> extends Type
             return Boolean.compare( left.isHighestArray, right.isHighestArray );
         }
 
-        int index = 0;
         int compare = 0;
         int length = min( left.arrayLength, right.arrayLength );
 
-        for ( ; compare == 0 && index < length; index++ )
+        for ( int index = 0; compare == 0 && index < length; index++ )
         {
             compare = arrayElementComparator.compare( left, right, index );
         }
