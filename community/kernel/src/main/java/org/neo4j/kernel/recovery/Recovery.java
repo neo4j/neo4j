@@ -74,7 +74,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
@@ -345,7 +345,7 @@ public final class Recovery
         DatabaseReadOnlyChecker readOnlyChecker = writable();
 
         DatabaseSchemaState schemaState = new DatabaseSchemaState( logProvider );
-        JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
+        JobScheduler scheduler = recoveryLife.add( JobSchedulerFactory.createInitialisedScheduler() );
 
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
         DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, recoveryLog );
@@ -354,12 +354,16 @@ public final class Recovery
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE ) );
 
-        RecoveryCleanupWorkCollector recoveryCleanupCollector =
-                new GroupingRecoveryCleanupWorkCollector( scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK, databaseLayout.getDatabaseName() );
-        DatabaseExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
+        RecoveryCleanupWorkCollector recoveryCleanupCollector = recoveryLife.add(
+                new GroupingRecoveryCleanupWorkCollector( scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK, databaseLayout.getDatabaseName() ) );
+
+        DatabaseExtensions extensions = recoveryLife.add( instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
                                                                        DbmsInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, readOnlyChecker,
-                                                                       extensionFactories, tracers.getPageCacheTracer() );
-        DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
+                                                                       extensionFactories, tracers.getPageCacheTracer() ) );
+
+        var indexProviderMap = recoveryLife.add( StaticIndexProviderMapFactory.create(
+                recoveryLife, config, databasePageCache, fs, logService, monitors, readOnlyChecker, DbmsInfo.TOOL, recoveryCleanupCollector,
+                tracers.getPageCacheTracer(), databaseLayout, tokenHolders, scheduler, extensions ) );
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
                 getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE,
@@ -419,10 +423,6 @@ public final class Recovery
         CheckPointerImpl checkPointer =
                 new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, checkpointAppender,
                         databaseHealth, logProvider, tracers, IOController.DISABLED, new StoreCopyCheckPointMutex(), versionContextSupplier, clock );
-        recoveryLife.add( scheduler );
-        recoveryLife.add( recoveryCleanupCollector );
-        recoveryLife.add( extensions );
-        recoveryLife.add( indexProviderMap );
         recoveryLife.add( storageEngine );
         recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logFiles, recoveryLog ) );
         recoveryLife.add( logFiles );

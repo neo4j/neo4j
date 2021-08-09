@@ -83,7 +83,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPro
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 
-public class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
+public class FulltextIndexProvider extends IndexProvider
 {
     private final FileSystemAbstraction fileSystem;
     private final Config config;
@@ -354,13 +354,11 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         return indexConfig;
     }
 
-    @Override
     public void awaitRefresh()
     {
         indexUpdateSink.awaitUpdateApplication();
     }
 
-    @Override
     public Stream<AnalyzerProvider> listAvailableAnalyzers()
     {
         return Services.loadAll( AnalyzerProvider.class ).stream();

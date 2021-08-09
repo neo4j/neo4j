@@ -39,8 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -63,13 +63,10 @@ import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.extension.DatabaseExtensions;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.ExtensionFailureStrategies;
-import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
@@ -84,6 +81,7 @@ import org.neo4j.test.extension.Threading;
 import org.neo4j.test.extension.ThreadingExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
+import org.neo4j.token.TokenHolders;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -94,7 +92,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -317,22 +314,16 @@ public class DatabaseCompositeIndexAccessorTest
     }
 
     private static Iterable<IndexProvider> getIndexProviders( PageCache pageCache, JobScheduler jobScheduler, FileSystemAbstraction fileSystem,
-            TestDirectory testDirectory ) throws IOException
+            TestDirectory testDirectory )
     {
-        Collection<ExtensionFactory<?>> indexProviderFactories = Arrays.asList(
+        Collection<AbstractIndexProviderFactory<?>> indexProviderFactories = Arrays.asList(
                 new GenericNativeIndexProviderFactory(),
                 new NativeLuceneFusionIndexProviderFactory30() );
-
-        Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( pageCache, jobScheduler, fileSystem, new SimpleLogService( logProvider ), new Monitors(), CONFIG,
-                                  RecoveryCleanupWorkCollector.ignore(), DatabaseLayout.ofFlat( testDirectory.homePath() ), PageCacheTracer.NULL, writable() );
-        testDirectory.prepareDirectory( DatabaseCompositeIndexAccessorTest.class, "null" );
-        Config config = Config.defaults( neo4j_home, testDirectory.homePath() );
-        DatabaseExtensionContext context = new DatabaseExtensionContext( DatabaseLayout.of( config ), DbmsInfo.UNKNOWN, deps );
-        DatabaseExtensions extensions = new DatabaseExtensions( context, indexProviderFactories, deps, ExtensionFailureStrategies.fail() );
-
-        extensions.init();
-        return deps.resolveTypeDependencies( IndexProvider.class );
+        return indexProviderFactories.stream().map( f -> f.create( pageCache, fileSystem, new SimpleLogService( logProvider ),
+                                                                   new Monitors(), CONFIG, writable(), DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(),
+                                                                   PageCacheTracer.NULL, DatabaseLayout.ofFlat( testDirectory.homePath() ),
+                                                                   new TokenHolders( null, null, null ),
+                                                                   jobScheduler ) ).collect( Collectors.toList() );
     }
 
     private static IndexAccessor indexAccessor( IndexProvider provider, IndexDescriptor descriptor ) throws IOException

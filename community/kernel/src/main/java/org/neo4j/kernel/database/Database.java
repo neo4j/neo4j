@@ -70,6 +70,8 @@ import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.impl.fulltext.DefaultFulltextAdapter;
+import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
@@ -131,7 +133,7 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransacti
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -142,6 +144,7 @@ import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
@@ -361,6 +364,7 @@ public class Database extends LifecycleAdapter
 
             life.add( new PageCacheLifecycle( databasePageCache ) );
             life.add( initializeExtensions( databaseDependencies ) );
+            life.add( initializeIndexProviderMap( databaseDependencies ) );
 
             DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply( databaseLayout );
             life.add( watcherService );
@@ -644,10 +648,23 @@ public class Database extends LifecycleAdapter
         extensionsLife.add( new DatabaseExtensions( new DatabaseExtensionContext( databaseLayout, dbmsInfo, dependencies ), extensionFactories,
                 dependencies, fail() ) );
 
-        indexProviderMap = extensionsLife.add( new DefaultIndexProviderMap( dependencies, databaseConfig ) );
-        dependencies.satisfyDependency( indexProviderMap );
         extensionsLife.init();
         return extensionsLife;
+    }
+
+    private Lifecycle initializeIndexProviderMap( Dependencies dependencies )
+    {
+        var indexProvidersLife = new LifeSupport();
+
+        var indexProviderMap = StaticIndexProviderMapFactory.create(
+                indexProvidersLife, databaseConfig, databasePageCache, fs, databaseLogService, databaseMonitors, readOnlyDatabaseChecker, dbmsInfo,
+                recoveryCleanupWorkCollector, tracers.getPageCacheTracer(), databaseLayout, tokenHolders, scheduler, dependencies );
+        this.indexProviderMap = indexProvidersLife.add( indexProviderMap );
+        dependencies.satisfyDependency( this.indexProviderMap );
+        // fulltextadapter for FulltextProcedures
+        dependencies.satisfyDependency( new DefaultFulltextAdapter( (FulltextIndexProvider) this.indexProviderMap.getFulltextProvider() ) );
+        indexProvidersLife.init();
+        return indexProvidersLife;
     }
 
     /**

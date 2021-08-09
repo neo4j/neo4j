@@ -21,75 +21,59 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.Path;
 
-import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.internal.LogService;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
-@RecoveryExtension
-@ServiceProvider
-public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndexProviderFactory.Dependencies>
+public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<FulltextIndexProvider>
 {
     private static final String KEY = "fulltext";
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, "1.0" );
 
-    public interface Dependencies
+    @Override
+    protected Class<?> loggingClass()
     {
-        Config getConfig();
-
-        FileSystemAbstraction fileSystem();
-
-        JobScheduler scheduler();
-
-        TokenHolders tokenHolders();
-
-        LogService getLogService();
-
-        DatabaseReadOnlyChecker readOnlyChecker();
+        return FulltextIndexProvider.class;
     }
 
-    public FulltextIndexProviderFactory()
+    @Override
+    public IndexProviderDescriptor descriptor()
     {
-        super( ExtensionType.DATABASE, KEY );
+        return DESCRIPTOR;
+    }
+
+    @Override
+    protected FulltextIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
+                                                    Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
+                                                    RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
+                                                    PageCacheTracer pageCacheTracer, Log log, TokenHolders tokenHolders,
+                                                    JobScheduler scheduler )
+    {
+        boolean ephemeral = config.get( GraphDatabaseInternalSettings.ephemeral_lucene );
+        DirectoryFactory directoryFactory = directoryFactory( ephemeral );
+        IndexDirectoryStructure.Factory directoryStructureFactory = subProviderDirectoryStructure( databaseLayout.databaseDirectory() );
+        return new FulltextIndexProvider( DESCRIPTOR, directoryStructureFactory, fs, config, tokenHolders,
+                                          directoryFactory, readOnlyDatabaseChecker, scheduler, log );
     }
 
     private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( Path storeDir )
     {
         return directoriesByProvider( storeDir );
-    }
-
-    @Override
-    public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-    {
-        Config config = dependencies.getConfig();
-        boolean ephemeral = config.get( GraphDatabaseInternalSettings.ephemeral_lucene );
-        FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral );
-        JobScheduler scheduler = dependencies.scheduler();
-        IndexDirectoryStructure.Factory directoryStructureFactory = subProviderDirectoryStructure( context.directory() );
-        TokenHolders tokenHolders = dependencies.tokenHolders();
-        Log log = dependencies.getLogService().getInternalLog( FulltextIndexProvider.class );
-        var readOnlyChecker = dependencies.readOnlyChecker();
-
-        return new FulltextIndexProvider(
-                DESCRIPTOR, directoryStructureFactory, fileSystemAbstraction, config, tokenHolders,
-                directoryFactory, readOnlyChecker, scheduler, log );
     }
 }

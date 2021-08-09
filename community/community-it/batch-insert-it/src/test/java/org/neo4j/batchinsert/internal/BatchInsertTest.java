@@ -38,13 +38,13 @@ import java.util.stream.Stream;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -58,7 +58,6 @@ import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -67,17 +66,9 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -86,17 +77,14 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -104,12 +92,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -120,11 +102,8 @@ import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
-import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -699,7 +678,7 @@ class BatchInsertTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldRepopulatePreexistingIndexed( int denseNodeThreshold ) throws Throwable
+    void shouldRepopulatePreexistingIndexes( int denseNodeThreshold ) throws Throwable
     {
         // GIVEN
         var db = instantiateGraphDatabaseService( denseNodeThreshold );
@@ -726,40 +705,17 @@ class BatchInsertTest
 
         managementService.shutdown();
 
-        long jakewins = nodeId;
-
-        IndexPopulator populator = mock( IndexPopulator.class );
-        IndexProvider provider = mock( IndexProvider.class );
-        IndexAccessor accessor = mock( IndexAccessor.class );
-
-        when( provider.getProviderDescriptor() ).thenReturn( GenericNativeIndexProvider.DESCRIPTOR );
-        when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
-        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
-                .thenReturn( populator );
-        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
-                .thenReturn( accessor );
-
-        BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( GenericNativeIndexProvider.DESCRIPTOR.getKey(), provider ), provider.getProviderDescriptor(),
-                denseNodeThreshold );
+        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
 
         long boggle = inserter.createNode( map( "handle", "b0ggl3" ), label( "Hacker" ) );
 
-        // WHEN
-        inserter.shutdown();
-
-        // THEN
-        verify( provider ).init();
-        verify( provider ).start();
-        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
-        verify( populator ).create();
-        verify( populator ).add( argThat( c -> c.contains( add( jakewins, () -> schema, Values.of( "Jakewins" ) ) ) &&
-                                               c.contains( add( boggle, () -> schema, Values.of( "b0ggl3" ) ) ) ), any( CursorContext.class ) );
-        verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( populator ).close( eq( true ), any() );
-        verify( provider ).stop();
-        verify( provider ).shutdown();
+        db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
+        try ( var tx = db.beginTx() )
+        {
+            assertThat( tx.findNodes( label( "Hacker" ) ).stream() ).hasSize( 2 );
+            assertThat( tx.findNodes( label( "Hacker" ), "handle", "b0ggl3" ).stream().map( Entity::getId ) ).containsExactly( boggle );
+        }
+        managementService.shutdown();
     }
 
     @ParameterizedTest
@@ -1186,7 +1142,7 @@ class BatchInsertTest
         Config configuration = configuration( denseNodeThreshold );
         configuration.set( GraphDatabaseSettings.default_schema_provider, providerDescriptor.name() );
         return BatchInserters.inserter(
-                databaseLayout, fs, configuration, asList( provider, new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) );
+                databaseLayout, fs, configuration );
     }
 
     private GraphDatabaseAPI switchToEmbeddedGraphDatabaseService( BatchInserter inserter, int denseNodeThreshold )
@@ -1202,21 +1158,6 @@ class BatchInsertTest
         managementService = factory.impermanent()
                                    // Shouldn't be necessary to set dense node threshold since it's a stick config
                                    .setConfig( configuration( denseNodeThreshold ) ).build();
-        return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-    }
-
-    private GraphDatabaseAPI instantiateGraphDatabaseServiceWithProvider( ExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor,
-                                                                          int denseNodeThreshold )
-    {
-        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( databaseLayout );
-        factory.setFileSystem( fs );
-        Config configuration = configuration( denseNodeThreshold );
-        configuration.set( GraphDatabaseSettings.default_schema_provider, providerDescriptor.name() );
-        managementService = factory.impermanent()
-                                   .removeExtensions( INDEX_PROVIDERS_FILTER )
-                                   .addExtension( provider )
-                                   .addExtension( new TokenIndexProviderFactory() )
-                                   .setConfig( configuration ).build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -41,14 +41,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
-import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.service.Services;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
@@ -120,7 +118,7 @@ class BatchInserterImplTest
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
         var databaseTracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
-        try ( var inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, loadExtensions(), databaseTracers ) )
+        try ( var inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, databaseTracers ) )
         {
             for ( int i = 0; i < 10; i++ )
             {
@@ -191,10 +189,5 @@ class BatchInserterImplTest
         {
             dbms.shutdown();
         }
-    }
-
-    private static Iterable loadExtensions()
-    {
-        return Services.loadAll( ExtensionFactory.class );
     }
 }

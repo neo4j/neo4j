@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.Path;
 
-import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -31,18 +30,15 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
-@ServiceProvider
-public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFactory
+public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFactory<GenericNativeIndexProvider>
 {
-    public GenericNativeIndexProviderFactory()
-    {
-        super( GenericNativeIndexProvider.KEY );
-    }
-
     @Override
     protected Class<?> loggingClass()
     {
@@ -56,12 +52,14 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
     }
 
     @Override
-    protected GenericNativeIndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
-            String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
+    protected GenericNativeIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors,
+                                                         String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
+                                                         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                                                         DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, Log log,
+                                                         TokenHolders tokenHolders, JobScheduler scheduler )
     {
-        return create( pageCache, storeDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, pageCacheTracer,
-                databaseLayout.getDatabaseName() );
+        return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
+                       pageCacheTracer, databaseLayout.getDatabaseName() );
     }
 
     public static GenericNativeIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,

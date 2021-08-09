@@ -27,8 +27,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.service.Services;
 
 import static java.lang.Boolean.FALSE;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
@@ -55,42 +53,23 @@ public final class BatchInserters
 
     public static BatchInserter inserter( DatabaseLayout databaseLayout, FileSystemAbstraction fs ) throws IOException
     {
-        return inserter( databaseLayout, fs, Config.defaults( preallocate_logical_logs, FALSE ), loadExtension() );
+        return inserter( databaseLayout, fs, Config.defaults( preallocate_logical_logs, FALSE ) );
     }
 
     public static BatchInserter inserter( DatabaseLayout databaseLayout, Config config ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        BatchInserter inserter = inserter( databaseLayout, fileSystem, config, loadExtension() );
+        BatchInserter inserter = inserter( databaseLayout, fileSystem, config );
         return new FileSystemClosingBatchInserter( inserter, fileSystem );
     }
 
     public static BatchInserter inserter( DatabaseLayout databaseLayout, FileSystemAbstraction fs, Config config ) throws IOException
     {
-        return inserter( databaseLayout, fs, config, loadExtension() );
-    }
-
-    public static BatchInserter inserter( DatabaseLayout databaseLayout,
-            Config config, Iterable<ExtensionFactory<?>> extensions ) throws IOException
-    {
-        DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        BatchInserterImpl inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, extensions, EMPTY );
-        return new FileSystemClosingBatchInserter( inserter, fileSystem );
-    }
-
-    public static BatchInserter inserter( DatabaseLayout layout, FileSystemAbstraction fileSystem, Config config,
-            Iterable<ExtensionFactory<?>> extensions ) throws IOException
-    {
-        return new BatchInserterImpl( layout, fileSystem, config, extensions, EMPTY );
+        return new BatchInserterImpl( databaseLayout, fs, config, EMPTY );
     }
 
     private static DefaultFileSystemAbstraction createFileSystem()
     {
         return new DefaultFileSystemAbstraction();
-    }
-
-    private static Iterable loadExtension()
-    {
-        return Services.loadAll( ExtensionFactory.class );
     }
 }

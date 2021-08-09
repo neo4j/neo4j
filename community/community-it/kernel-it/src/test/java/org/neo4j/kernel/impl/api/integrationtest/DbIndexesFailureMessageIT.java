@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -33,7 +34,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -48,12 +48,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION;
-import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -102,7 +100,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         assertEquals( stringValue( "NODE" ), result[6] );
         assertEquals( VirtualValues.list( stringValue( labelName ) ), result[7] );
         assertEquals( VirtualValues.list( stringValue( propertyKey ) ), result[8] );
-        assertEquals( stringValue( NATIVE_BTREE10.providerName() ), result[9] );
+        assertEquals( stringValue( FailingGenericNativeIndexProviderFactory.DESCRIPTOR.name() ), result[9] );
         assertMapsEqual( index.getIndexConfig().asMap(), (MapValue)result[10] );
         assertThat( ((TextValue) result[11]).stringValue() ).contains( "java.lang.RuntimeException: Fail on update during population" );
         assertEquals( 12, result.length );
@@ -140,9 +138,8 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
     protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( Path databaseRootDir )
     {
         return super.createGraphDatabaseFactory( databaseRootDir )
-                .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .noOpSystemGraphInitializer()
                 .addExtension( new FailingGenericNativeIndexProviderFactory( POPULATION ) )
-                .addExtension( new TokenIndexProviderFactory() );
+                .setConfig( GraphDatabaseSettings.default_schema_provider, FailingGenericNativeIndexProviderFactory.DESCRIPTOR.name() );
     }
 }

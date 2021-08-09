@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.nio.file.Path;
 
-import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
@@ -34,27 +33,23 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
-@ServiceProvider
-public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProviderFactory
+public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProviderFactory<FusionIndexProvider>
 {
     public static final String KEY = NATIVE30.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE30.providerVersion() );
-
-    public NativeLuceneFusionIndexProviderFactory30()
-    {
-        super( KEY );
-    }
 
     @Override
     protected Class<?> loggingClass()
@@ -69,12 +64,14 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
     }
 
     @Override
-    protected IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
-            Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
+    protected FusionIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
+                                                  Config config, DatabaseReadOnlyChecker readOnlyChecker,
+                                                  RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                                                  DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, Log log,
+                                                  TokenHolders tokenHolders, JobScheduler scheduler )
     {
-        return create( pageCache, storeDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, pageCacheTracer,
-                databaseLayout.getDatabaseName() );
+        return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
+                       pageCacheTracer, databaseLayout.getDatabaseName() );
     }
 
     @VisibleForTesting

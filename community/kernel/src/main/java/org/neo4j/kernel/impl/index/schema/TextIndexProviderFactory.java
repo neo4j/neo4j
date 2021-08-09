@@ -19,51 +19,48 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.recovery.RecoveryExtension;
+import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
-@ServiceProvider
-@RecoveryExtension
-public class TextIndexProviderFactory extends ExtensionFactory<TextIndexProviderFactory.Dependencies>
+public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextIndexProvider>
 {
     private static final String KEY = "text";
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, "1.0" );
 
-    public interface Dependencies
+    @Override
+    protected Class<?> loggingClass()
     {
-        Config getConfig();
-
-        FileSystemAbstraction fileSystem();
-
-        Monitors monitors();
-
-        DatabaseReadOnlyChecker readOnlyChecker();
-    }
-
-    public TextIndexProviderFactory()
-    {
-        super( ExtensionType.DATABASE, KEY );
+        return TextIndexProvider.class;
     }
 
     @Override
-    public Lifecycle newInstance( ExtensionContext context, TextIndexProviderFactory.Dependencies dependencies )
+    public IndexProviderDescriptor descriptor()
     {
-        FileSystemAbstraction fs = dependencies.fileSystem();
-        IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( context.directory() );
-        return IndexProviderFactoryUtil
-                .textProvider( fs, directoryStructure, dependencies.monitors(), dependencies.getConfig(), dependencies.readOnlyChecker() );
+        return DESCRIPTOR;
+    }
+
+    @Override
+    protected TextIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
+                                                Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
+                                                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
+                                                PageCacheTracer pageCacheTracer, Log log, TokenHolders tokenHolders, JobScheduler scheduler )
+    {
+        IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() );
+        return IndexProviderFactoryUtil.textProvider( fs, directoryStructure, monitors, config, readOnlyDatabaseChecker );
     }
 }

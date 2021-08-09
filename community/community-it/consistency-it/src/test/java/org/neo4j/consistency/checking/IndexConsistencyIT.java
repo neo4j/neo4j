@@ -46,9 +46,9 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.extension.DbmsExtension;
@@ -79,7 +79,7 @@ class IndexConsistencyIT
     @Inject
     private CheckPointer checkPointer;
     @Inject
-    private DefaultIndexProviderMap indexProviderMap;
+    private IndexProviderMap indexProviderMap;
 
     @Inject
     private RandomSupport random;

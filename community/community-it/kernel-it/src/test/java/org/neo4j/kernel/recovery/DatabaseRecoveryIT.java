@@ -76,8 +76,6 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
-import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -113,7 +111,6 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Long.max;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -825,7 +822,7 @@ class DatabaseRecoveryIT
         }
         managementService = new TestDatabaseManagementServiceBuilder( homeDir )
                 .setFileSystem( fs )
-                .setExtensions( asList( new IndexExtensionFactory( indexProvider ), new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) )
+                .addExtension( new IndexExtensionFactory( indexProvider ) )
                 .impermanent()
                 .noOpSystemGraphInitializer()
                 .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
@@ -849,7 +846,7 @@ class DatabaseRecoveryIT
         return new TestDatabaseManagementServiceBuilder( homeDir ).setInternalLogProvider( logProvider ).build();
     }
 
-    public class UpdateCapturingIndexProvider extends IndexProvider.Delegating
+    public static class UpdateCapturingIndexProvider extends IndexProvider.Delegating
     {
         private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
         private final Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates;
@@ -876,7 +873,7 @@ class DatabaseRecoveryIT
         }
     }
 
-    public class UpdateCapturingIndexAccessor extends IndexAccessor.Delegating
+    public static class UpdateCapturingIndexAccessor extends IndexAccessor.Delegating
     {
         private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema.tracking;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -28,19 +29,22 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.BuiltInDelegatingIndexProviderFactory;
 
 public class TrackingIndexExtensionFactory extends ExtensionFactory<TrackingIndexExtensionFactory.Dependencies>
 {
     private final ConcurrentHashMap<String,TrackingReadersIndexProvider> indexProvider = new ConcurrentHashMap<>();
-    private final AbstractIndexProviderFactory delegate;
+    private final BuiltInDelegatingIndexProviderFactory delegate;
 
-    public TrackingIndexExtensionFactory( AbstractIndexProviderFactory delegate )
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "tracking-index", "0.5" );
+
+    public TrackingIndexExtensionFactory( AbstractIndexProviderFactory<?> delegate )
     {
-        super( ExtensionType.DATABASE, "trackingIndex" );
-        this.delegate = delegate;
+        super( ExtensionType.DATABASE, DESCRIPTOR.getKey() );
+        this.delegate = new BuiltInDelegatingIndexProviderFactory( delegate, DESCRIPTOR );
     }
 
-    public interface Dependencies extends AbstractIndexProviderFactory.Dependencies
+    public interface Dependencies extends BuiltInDelegatingIndexProviderFactory.Dependencies
     {
         Database database();
     }

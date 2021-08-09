@@ -26,6 +26,7 @@ import java.util.EnumSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -33,13 +34,10 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
@@ -59,10 +57,12 @@ import static java.util.Arrays.copyOfRange;
  *     .newEmbeddedDatabase( dir );
  * </pre>
  */
-public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<AbstractIndexProviderFactory.Dependencies>
+public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingIndexProviderFactory
 {
     public static final String INITIAL_STATE_FAILURE_MESSAGE = "Override initial state as failed";
     public static final String POPULATION_FAILURE_MESSAGE = "Fail on update during population";
+
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "failing-provider", "0.1" );
 
     public enum FailureType
     {
@@ -71,29 +71,22 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
         SKIP_ONLINE_UPDATES
     }
 
-    private final GenericNativeIndexProviderFactory actual;
     private final EnumSet<FailureType> failureTypes;
 
     public FailingGenericNativeIndexProviderFactory( FailureType... failureTypes )
     {
-        this( new GenericNativeIndexProviderFactory(), failureTypes );
-    }
-
-    private FailingGenericNativeIndexProviderFactory( GenericNativeIndexProviderFactory actual, FailureType... failureTypes )
-    {
-        super( ExtensionType.DATABASE, actual.getName() );
+        super( new GenericNativeIndexProviderFactory(), DESCRIPTOR );
         if ( failureTypes.length == 0 )
         {
             throw new IllegalArgumentException( "At least one failure type, otherwise there's no point in this provider" );
         }
-        this.actual = actual;
         this.failureTypes = EnumSet.of( failureTypes[0], copyOfRange( failureTypes, 1, failureTypes.length ) );
     }
 
     @Override
-    public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
+    public IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
     {
-        IndexProvider actualProvider = actual.newInstance( context, dependencies );
+        var actualProvider = super.newInstance( context, dependencies );
         return new IndexProvider.Delegating( actualProvider )
         {
             @Override

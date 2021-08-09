@@ -26,14 +26,9 @@ import java.io.IOException;
 import org.neo4j.batchinsert.internal.FileSystemClosingBatchInserter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
@@ -55,7 +50,6 @@ class BatchInsertersTest
     {
         verifyInserterFileSystemClose( inserter( databaseLayout ) );
         verifyInserterFileSystemClose( inserter( databaseLayout, getConfig() ) );
-        verifyInserterFileSystemClose( inserter( databaseLayout, getConfig(), getExtensions() ) );
     }
 
     @Test
@@ -65,13 +59,7 @@ class BatchInsertersTest
         {
             verifyProvidedFileSystemOpenAfterShutdown( inserter( databaseLayout, fs ), fs );
             verifyProvidedFileSystemOpenAfterShutdown( inserter( databaseLayout, fs, getConfig() ), fs );
-            verifyProvidedFileSystemOpenAfterShutdown( inserter( databaseLayout, fs, getConfig(), getExtensions() ), fs );
         }
-    }
-
-    private static Iterable<ExtensionFactory<?>> getExtensions()
-    {
-        return Iterables.asIterable( new GenericNativeIndexProviderFactory(), new TokenIndexProviderFactory(), new TextIndexProviderFactory() );
     }
 
     private static Config getConfig()

@@ -44,7 +44,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.LazyProcedures;
@@ -62,7 +61,6 @@ import static java.lang.Boolean.FALSE;
 public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilder
 {
     private static final Path EPHEMERAL_PATH = Path.of( "/target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-    public static final Predicate<ExtensionFactory<?>> INDEX_PROVIDERS_FILTER = extension -> extension instanceof AbstractIndexProviderFactory;
     public static final String FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME = "fabric_in_embedded_test_transactions";
     public static final boolean FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_DEFAULT_VALUE = false;
 

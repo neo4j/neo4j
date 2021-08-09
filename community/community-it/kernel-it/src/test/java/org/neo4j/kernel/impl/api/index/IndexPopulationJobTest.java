@@ -69,7 +69,6 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -106,11 +105,11 @@ import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.kernel.api.IndexMonitor.NO_MONITOR;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.internal.kernel.api.IndexMonitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -831,7 +830,7 @@ class IndexPopulationJobTest
     private IndexPopulator indexPopulator( IndexPrototype prototype )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( DefaultIndexProviderMap.class ).getDefaultProvider();
+        IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
         IndexDescriptor indexDescriptor = prototype.withName( "index_21" ).materialise( 21 );
         indexDescriptor = indexProvider.completeConfiguration( indexDescriptor );
         return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );

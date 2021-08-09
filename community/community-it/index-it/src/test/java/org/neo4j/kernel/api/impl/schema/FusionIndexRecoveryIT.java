@@ -37,40 +37,37 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.BuiltInDelegatingIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asUniqueSet;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.DESCRIPTOR;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
-class LuceneIndexRecoveryIT
+class FusionIndexRecoveryIT
 {
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "initially-populating", "0.2" );
+
     private static final String NUM_BANANAS_KEY = "number_of_bananas_owned";
     private static final Label myLabel = label( "MyLabel" );
 
@@ -100,7 +97,7 @@ class LuceneIndexRecoveryIT
     void addShouldBeIdempotentWhenDoingRecovery()
     {
         // Given
-        startDb( createLuceneIndexFactory() );
+        startDb();
 
         IndexDefinition index = createIndex( myLabel );
         waitForIndex( index );
@@ -116,7 +113,7 @@ class LuceneIndexRecoveryIT
         killDb();
 
         // When
-        startDb( createLuceneIndexFactory() );
+        startDb();
 
         // Then
         try ( Transaction tx = db.beginTx() )
@@ -130,7 +127,7 @@ class LuceneIndexRecoveryIT
     void changeShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
-        startDb( createLuceneIndexFactory() );
+        startDb();
 
         IndexDefinition indexDefinition = createIndex( myLabel );
         waitForIndex( indexDefinition );
@@ -144,7 +141,7 @@ class LuceneIndexRecoveryIT
         killDb();
 
         // When
-        startDb( createLuceneIndexFactory() );
+        startDb();
 
         // Then
         assertEquals( 0, doIndexLookup( myLabel, "12" ).size() );
@@ -155,7 +152,7 @@ class LuceneIndexRecoveryIT
     void removeShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
-        startDb( createLuceneIndexFactory() );
+        startDb();
 
         IndexDefinition indexDefinition = createIndex( myLabel );
         waitForIndex( indexDefinition );
@@ -169,7 +166,7 @@ class LuceneIndexRecoveryIT
         killDb();
 
         // When
-        startDb( createLuceneIndexFactory() );
+        startDb();
 
         // Then
         assertEquals( 0, doIndexLookup( myLabel, "12" ).size() );
@@ -211,7 +208,7 @@ class LuceneIndexRecoveryIT
     void shouldNotUpdateTwiceDuringRecovery()
     {
         // Given
-        startDb( createLuceneIndexFactory() );
+        startDb();
 
         IndexDefinition indexDefinition = createIndex( myLabel );
         waitForIndex( indexDefinition );
@@ -223,11 +220,16 @@ class LuceneIndexRecoveryIT
         killDb();
 
         // When
-        startDb( createLuceneIndexFactory() );
+        startDb();
 
         // Then
         assertEquals( 0, doIndexLookup( myLabel, "12" ).size() );
         assertEquals( 1, doIndexLookup( myLabel, "14" ).size() );
+    }
+
+    private void startDb()
+    {
+        startDb( null );
     }
 
     private void startDb( ExtensionFactory<?> indexProviderFactory )
@@ -238,10 +240,17 @@ class LuceneIndexRecoveryIT
         }
 
         TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
-        factory.setFileSystem( fs );
-        factory.setExtensions( asList( indexProviderFactory, new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) );
-        managementService = factory.impermanent()
-                .setConfig( default_schema_provider, DESCRIPTOR.name() ).build();
+        factory.setFileSystem( fs ).impermanent();
+        if ( indexProviderFactory != null )
+        {
+            factory.addExtension( indexProviderFactory )
+                   .setConfig( default_schema_provider, DESCRIPTOR.name() );
+        }
+        else
+        {
+            factory.setConfig( default_schema_provider, NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name() );
+        }
+        managementService = factory.build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -323,47 +332,24 @@ class LuceneIndexRecoveryIT
         }
     }
 
-    private ExtensionFactory<AbstractIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
+    private ExtensionFactory<?> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
-        return new PopulatingTestLuceneIndexExtension();
-    }
-
-    // Creates a lucene index factory with the shared in-memory directory
-    private ExtensionFactory<AbstractIndexProviderFactory.Dependencies> createLuceneIndexFactory()
-    {
-        return new TestLuceneIndexExtension();
+        return new InitiallyPopulatingExtension();
     }
 
     @RecoveryExtension
-    private class TestLuceneIndexExtension extends ExtensionFactory<AbstractIndexProviderFactory.Dependencies>
+    private static class InitiallyPopulatingExtension extends BuiltInDelegatingIndexProviderFactory
     {
-
-        TestLuceneIndexExtension()
+        InitiallyPopulatingExtension()
         {
-            super( ExtensionType.DATABASE, DESCRIPTOR.getKey() );
+            super( new NativeLuceneFusionIndexProviderFactory30(), DESCRIPTOR );
         }
 
         @Override
-        public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
+        public IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
         {
-            return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ), new Monitors(),
-                    dependencies.getConfig(), dependencies.readOnlyChecker() );
-        }
-    }
-
-    @RecoveryExtension
-    private class PopulatingTestLuceneIndexExtension extends ExtensionFactory<AbstractIndexProviderFactory.Dependencies>
-    {
-        PopulatingTestLuceneIndexExtension()
-        {
-            super( ExtensionType.DATABASE, DESCRIPTOR.getKey() );
-        }
-
-        @Override
-        public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
-        {
-            return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ),
-                    new Monitors(), dependencies.getConfig(), dependencies.readOnlyChecker() )
+            var actualProvider = super.newInstance( context, dependencies );
+            return new IndexProvider.Delegating( actualProvider )
             {
                 @Override
                 public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
@@ -373,4 +359,5 @@ class LuceneIndexRecoveryIT
             };
         }
     }
+
 }

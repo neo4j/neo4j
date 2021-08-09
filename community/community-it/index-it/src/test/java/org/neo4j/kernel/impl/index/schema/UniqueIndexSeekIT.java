@@ -48,7 +48,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -70,10 +69,10 @@ class UniqueIndexSeekIT
 
     @ParameterizedTest
     @MethodSource( "indexProviderFactories" )
-    void uniqueIndexSeekDoNotLeakIndexReaders( AbstractIndexProviderFactory providerFactory ) throws KernelException
+    void uniqueIndexSeekDoNotLeakIndexReaders( AbstractIndexProviderFactory<?> providerFactory ) throws KernelException
     {
         TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory( providerFactory );
-        GraphDatabaseAPI database = createDatabase( indexExtensionFactory, providerFactory.descriptor() );
+        GraphDatabaseAPI database = createDatabase( indexExtensionFactory, TrackingIndexExtensionFactory.DESCRIPTOR );
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         Config config = dependencyResolver.resolveDependency( Config.class );
         try
@@ -99,7 +98,7 @@ class UniqueIndexSeekIT
         }
     }
 
-    private static Stream<AbstractIndexProviderFactory> indexProviderFactories()
+    private static Stream<AbstractIndexProviderFactory<?>> indexProviderFactories()
     {
         return Stream.of(
                 new NativeLuceneFusionIndexProviderFactory30(),
@@ -109,7 +108,7 @@ class UniqueIndexSeekIT
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory, IndexProviderDescriptor descriptor )
     {
         managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
-                .setExtensions( asList( indexExtensionFactory, new TokenIndexProviderFactory(), new TextIndexProviderFactory() ) )
+                .addExtension( indexExtensionFactory )
                 .setConfig( default_schema_provider, descriptor.name() )
                 .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

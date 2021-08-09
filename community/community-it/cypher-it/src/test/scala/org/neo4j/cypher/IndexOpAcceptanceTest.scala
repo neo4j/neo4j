@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.configuration.GraphDatabaseSettings
+
 import java.io.File
 import java.util.concurrent.TimeUnit
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -32,7 +34,6 @@ import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION
-import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.test.utils.TestDirectory
 
@@ -121,9 +122,8 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     // Build a properly failing index provider which is a wrapper around the default provider, but which throws exception
     // in its populator when trying to add updates to it
     val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
-    dbFactory.removeExtensions(TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER)
     dbFactory.addExtension(providerFactory)
-    dbFactory.addExtension(new TokenIndexProviderFactory)
+    dbFactory.setConfig( GraphDatabaseSettings.default_schema_provider, FailingGenericNativeIndexProviderFactory.DESCRIPTOR.name() )
     managementService = dbFactory.build()
     graph = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     eengine = createEngine(graph)

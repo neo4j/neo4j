@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.Path;
 
-import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -31,16 +30,13 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.token.TokenHolders;
 
-@ServiceProvider
-public class TokenIndexProviderFactory extends AbstractIndexProviderFactory
+public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<TokenIndexProvider>
 {
-    public TokenIndexProviderFactory()
-    {
-        super( TokenIndexProvider.DESCRIPTOR.name() );
-    }
-
     @Override
     protected Class<?> loggingClass()
     {
@@ -54,11 +50,14 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory
     }
 
     @Override
-    protected TokenIndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
-            String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
+    protected TokenIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors,
+                                                 String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
+                                                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                                                 DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, Log log,
+                                                 TokenHolders tokenHolders, JobScheduler scheduler )
     {
-        return create( pageCache, storeDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, databaseLayout, pageCacheTracer );
+        return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
+                       databaseLayout, pageCacheTracer );
     }
 
     public static TokenIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,

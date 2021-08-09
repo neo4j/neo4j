@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.nio.file.Path;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -31,73 +29,41 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.token.TokenHolders;
 
-@RecoveryExtension
-public abstract class AbstractIndexProviderFactory extends ExtensionFactory<AbstractIndexProviderFactory.Dependencies>
+public abstract class AbstractIndexProviderFactory<T extends IndexProvider>
 {
-    protected AbstractIndexProviderFactory( String key )
-    {
-        super( ExtensionType.DATABASE, key );
-    }
 
-    @Override
-    public IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
+    public T create( PageCache pageCache, FileSystemAbstraction fs, LogService logService, Monitors monitors,
+                     Config config, DatabaseReadOnlyChecker readOnlyChecker, DbmsInfo dbmsInfo,
+                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer,
+                     DatabaseLayout databaseLayout, TokenHolders tokenHolders, JobScheduler scheduler )
     {
-        PageCache pageCache = dependencies.pageCache();
-        Path databaseDir = context.directory();
-        FileSystemAbstraction fs = dependencies.fileSystem();
-        Log log = dependencies.getLogService().getInternalLogProvider().getLog( loggingClass() );
-        Monitors monitors = dependencies.monitors();
-        String monitorTag = descriptor().toString();
-        monitors.addMonitorListener( new LoggingMonitor( log ), monitorTag );
-        Config config = dependencies.getConfig();
-        var readOnlyChecker = dependencies.readOnlyChecker();
-        if ( OperationalMode.SINGLE != context.dbmsInfo().operationalMode )
+        if ( OperationalMode.SINGLE != dbmsInfo.operationalMode )
         {
             // if running as part of cluster indexes should be writable to allow catchup process to accept transactions
             readOnlyChecker = DatabaseReadOnlyChecker.writable();
         }
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
-        PageCacheTracer pageCacheTracer = dependencies.pageCacheTracer();
-        DatabaseLayout databaseLayout = dependencies.databaseLayout();
-        return internalCreate( pageCache, databaseDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, databaseLayout,
-                pageCacheTracer );
+        Log log = logService.getInternalLogProvider().getLog( loggingClass() );
+        String monitorTag = descriptor().toString();
+        monitors.addMonitorListener( new LoggingMonitor( log ), monitorTag );
+        return internalCreate( pageCache, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, databaseLayout,
+                               pageCacheTracer, log, tokenHolders, scheduler );
     }
 
     protected abstract Class<?> loggingClass();
 
     public abstract IndexProviderDescriptor descriptor();
 
-    protected abstract IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs,
-            Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer );
+    protected abstract T internalCreate( PageCache pageCache, FileSystemAbstraction fs,
+                                         Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
+                                         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
+                                         PageCacheTracer pageCacheTracer, Log log, TokenHolders tokenHolders, JobScheduler scheduler );
 
-    public interface Dependencies
-    {
-        PageCache pageCache();
-
-        FileSystemAbstraction fileSystem();
-
-        LogService getLogService();
-
-        Monitors monitors();
-
-        Config getConfig();
-
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector();
-
-        DatabaseLayout databaseLayout();
-
-        PageCacheTracer pageCacheTracer();
-
-        DatabaseReadOnlyChecker readOnlyChecker();
-    }
 }

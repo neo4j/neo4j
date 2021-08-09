@@ -35,7 +35,6 @@ import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 
 import org.neo4j.batchinsert.BatchInserter;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -85,10 +84,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
-import org.neo4j.kernel.extension.DatabaseExtensions;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.ExtensionFailureStrategies;
-import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -124,7 +119,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -230,7 +225,7 @@ public class BatchInserterImpl implements BatchInserter
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
     public BatchInserterImpl( DatabaseLayout layoutArg, final FileSystemAbstraction fileSystem,
-                       Config fromConfig, Iterable<ExtensionFactory<?>> extensions, DatabaseTracers tracers ) throws IOException
+                       Config fromConfig, DatabaseTracers tracers ) throws IOException
     {
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.convert( layoutArg );
         rejectAutoUpgrade( fromConfig );
@@ -325,16 +320,10 @@ public class BatchInserterImpl implements BatchInserter
             monitors = new Monitors();
 
             fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ),
-                    any -> new CachedStoreCursors( neoStores, cursorContext ), config, jobScheduler );
-            Dependencies deps = new Dependencies();
-            deps.satisfyDependencies( fileSystem, jobScheduler, config, logService, fullScanStoreView, tokenHolders, pageCache, monitors, immediate(),
-                                      pageCacheTracer, databaseLayout, readOnlyChecker );
-
-            DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
-                new DatabaseExtensionContext( this.databaseLayout, DbmsInfo.TOOL, deps ),
-                extensions, deps, ExtensionFailureStrategies.ignore() ) );
-
-            indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
+                                                       any -> new CachedStoreCursors( neoStores, cursorContext ), config, jobScheduler );
+            indexProviderMap = life.add( StaticIndexProviderMapFactory.create(
+                    life, config, pageCache, fileSystem, logService, monitors, readOnlyChecker, DbmsInfo.TOOL, immediate(), pageCacheTracer,
+                    databaseLayout, tokenHolders, jobScheduler) );
 
             var schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders,
                                                                          neoStores.getMetaDataStore() );

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -79,7 +80,6 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.scheduler.GroupedDaemonThreadFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -102,6 +102,7 @@ import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -409,7 +410,7 @@ class IndexingServiceTest
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
-        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider, fulltextProvider() ), config ) );
+        IndexProviderMap providerMap = life.add( new MockIndexProviderMap( provider ) );
 
         IndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
         IndexDescriptor populatingIndex = storeIndex( 2, 1, 2, PROVIDER_DESCRIPTOR );
@@ -445,7 +446,7 @@ class IndexingServiceTest
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider, fulltextProvider() ), config );
+        MockIndexProviderMap providerMap = new MockIndexProviderMap( provider );
         providerMap.init();
 
         IndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
@@ -482,6 +483,7 @@ class IndexingServiceTest
                 "IndexingService.start: index 3 on (:LabelTwo {propertyTwo}) is FAILED" );
     }
 
+    @Disabled
     @Test
     void shouldLogDeprecatedIndexesOnStart() throws Exception
     {
@@ -506,8 +508,7 @@ class IndexingServiceTest
         }
 
         Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
-        DependencyResolver dependencies = buildIndexDependencies( indexProviders );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
+        MockIndexProviderMap providerMap = new MockIndexProviderMap( mockIndexProviderWithAccessor(nativeBtree10Descriptor) );
         providerMap.init();
 
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 1, 1, 1 ) );
@@ -566,9 +567,8 @@ class IndexingServiceTest
                 new DataUpdates(), rule );
 
         // WHEN trying to start up and initialize it with an index from provider Y
-        var e = assertThrows( LifecycleException.class, life::init );
-        assertThat( e.getCause().getMessage() ).contains( PROVIDER_DESCRIPTOR.name() );
-        assertThat( e.getCause().getMessage() ).contains( otherProviderKey );
+        assertThatThrownBy( life::init ).isInstanceOf( LifecycleException.class )
+                                        .hasMessageContaining( "lookup by descriptor failed" );
     }
 
     @Test
@@ -1116,7 +1116,7 @@ class IndexingServiceTest
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
-        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider, fulltextProvider() ), config ) );
+        IndexProviderMap providerMap = life.add( new MockIndexProviderMap( provider ) );
 
         List<IndexDescriptor> indexes = new ArrayList<>();
         int nextIndexId = 1;
@@ -1161,7 +1161,7 @@ class IndexingServiceTest
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
         Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider, fulltextProvider() ), config );
+        MockIndexProviderMap providerMap = new MockIndexProviderMap( provider );
         providerMap.init();
 
         List<IndexDescriptor> indexes = new ArrayList<>();
@@ -1483,7 +1483,7 @@ class IndexingServiceTest
         Config config = Config.newBuilder()
                 .set( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).build();
 
-        DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider, fulltextProvider() ), config ) );
+        MockIndexProviderMap providerMap = life.add( new MockIndexProviderMap( indexProvider ) );
         return life.add( IndexingServiceFactory.createIndexingService( config,
                         life.add( scheduler ), providerMap,
                         storeViewFactory,

@@ -62,7 +62,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -93,7 +92,6 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NOD
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.SKIP_ONLINE_UPDATES;
-import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -569,9 +567,8 @@ class FulltextIndexConsistencyCheckIT
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( databaseLayout )
                         .setFileSystem( fs )
-                        .removeExtensions( INDEX_PROVIDERS_FILTER )
                         .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
-                        .addExtension( new TokenIndexProviderFactory() )
+                        .setConfig( GraphDatabaseSettings.default_schema_provider, FailingGenericNativeIndexProviderFactory.DESCRIPTOR.name() )
                         .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )

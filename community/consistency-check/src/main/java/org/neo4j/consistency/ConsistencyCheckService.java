@@ -54,14 +54,13 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.DuplicatingLog;
@@ -253,15 +252,17 @@ public class ConsistencyCheckService
         Monitors monitors = new Monitors();
         JobScheduler jobScheduler = life.add( JobSchedulerFactory.createInitialisedScheduler() );
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                                                      new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
+                                                      new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         final RecoveryCleanupWorkCollector workCollector = RecoveryCleanupWorkCollector.ignore();
-        DatabaseExtensions extensions = life.add( instantiateExtensions( databaseLayout,
-                fileSystem, config, new SimpleLogService( logProvider ), pageCache, jobScheduler,
+        var extensions = life.add( instantiateExtensions(
+                databaseLayout, fileSystem, config, new SimpleLogService( logProvider ), pageCache, jobScheduler,
                 workCollector,
-                TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational mode, which is important.
+                TOOL,// We use TOOL context because it's true, and also because it uses the 'single' operational mode, which is important.
                 monitors, tokenHolders, pageCacheTracer, readOnlyChecker ) );
-        DefaultIndexProviderMap indexes = life.add( new DefaultIndexProviderMap( extensions, config ) );
+        var indexes = life.add( StaticIndexProviderMapFactory.create(
+                life, config, pageCache, fileSystem, new SimpleLogService( logProvider ), monitors, readOnlyChecker, TOOL, workCollector,
+                pageCacheTracer, databaseLayout, tokenHolders, jobScheduler, extensions ) );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
