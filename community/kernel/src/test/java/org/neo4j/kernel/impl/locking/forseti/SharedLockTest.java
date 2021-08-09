@@ -46,6 +46,7 @@ class SharedLockTest
         // Then
         assertThat( lock.numberOfHolders() ).isEqualTo( 2 );
         assertThat( lock.isUpdateLock() ).isEqualTo( true );
+        assertThat( lock.type() ).isEqualTo( LockType.SHARED );
     }
 
     @Test
