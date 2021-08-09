@@ -19,7 +19,11 @@
  */
 package org.neo4j.io.pagecache.tracing.cursor;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -34,6 +38,13 @@ import static org.neo4j.util.FeatureToggles.flag;
 
 public class DefaultPageCursorTracer implements PageCursorTracer
 {
+    /**
+     * On encountering a mismatching counts check error in a test this debugging is useful to trace down which exact pin it's about.
+     * Just flip DEBUG_PINS = true.
+     */
+    private static final boolean DEBUG_PINS = false;
+    private static final ConcurrentMap<PinEvent,Exception> PIN_DEBUG_MAP = DEBUG_PINS ? new ConcurrentHashMap<>() : null;
+
     private static final boolean CHECK_REPORTED_COUNTERS = flag( DefaultPageCursorTracer.class, "CHECK_REPORTED_COUNTERS", false );
 
     private long pins;
@@ -150,7 +161,22 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     {
         return "PageCursorTracer{" + "pins=" + pins + ", unpins=" + unpins + ", hits=" + hits + ", faults=" + faults + ", bytesRead=" + bytesRead +
                 ", bytesWritten=" + bytesWritten + ", evictions=" + evictions + ", evictionExceptions=" + evictionExceptions + ", flushes=" + flushes +
-                ", merges=" + merges + ", tag='" + tag + '\'' + '}';
+                ", merges=" + merges + ", tag='" + tag + '\'' + (DEBUG_PINS ? ", current (yet unpinned) pins:" + currentPins() : "" ) + '}';
+    }
+
+    private String currentPins()
+    {
+        assert DEBUG_PINS;
+        ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
+        try ( PrintStream out = new PrintStream( byteArrayOut ) )
+        {
+            PIN_DEBUG_MAP.forEach( ( pin, stackTrace ) ->
+            {
+                out.println();
+                stackTrace.printStackTrace( out );
+            } );
+        }
+        return byteArrayOut.toString();
     }
 
     private void reset()
@@ -237,8 +263,18 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         pins++;
-        pinTracingEvent.eventHits = 1;
-        return pinTracingEvent;
+        if ( DEBUG_PINS )
+        {
+            DefaultPinEvent event = new DefaultPinEvent();
+            event.eventHits = 1;
+            PIN_DEBUG_MAP.put( event, new Exception() );
+            return event;
+        }
+        else
+        {
+            pinTracingEvent.eventHits = 1;
+            return pinTracingEvent;
+        }
     }
 
     private final EvictionEvent evictionEvent = new EvictionEvent()
@@ -372,6 +408,10 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         public void done()
         {
             unpins++;
+            if ( DEBUG_PINS )
+            {
+                PIN_DEBUG_MAP.remove( this );
+            }
         }
     }
 }
