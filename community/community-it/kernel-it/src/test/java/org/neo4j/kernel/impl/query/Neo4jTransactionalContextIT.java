@@ -55,10 +55,12 @@ import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.procedure.builtin.QueryId;
 import org.neo4j.procedure.builtin.TransactionId;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -857,6 +859,36 @@ class Neo4jTransactionalContextIT
         assertThat( transactionIds, equalTo( Collections.singletonList( expectedTransactionId ) ) );
         assertThat( queries, equalTo( Collections.singletonList( queryText ) ) );
         assertThat( queryIds, equalTo( Collections.singletonList( expectedQueryId ) ) );
+    }
+
+    @Test
+    void contextWithNewTransactionKillQuery() throws ProcedureException, InvalidArgumentsException
+    {
+        // Given
+        var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var queryText = "<query text>";
+        var ctx = Neo4jTransactionalContextFactory
+                .create( () -> graph, transactionFactory )
+                .newContext( outerTx, queryText, MapValue.EMPTY );
+
+        // We need to be done with parsing and provide an obfuscator to see the query text in the procedure
+        ctx.executingQuery().onObfuscatorReady( QueryObfuscator.PASSTHROUGH );
+
+        var innerCtx = ctx.contextWithNewTransaction();
+        var innerTx = innerCtx.transaction();
+
+        var procedureRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        var listQueries = procedureRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "killQuery" ) );
+        var procedureId = listQueries.id();
+        var procContext = new ProcedureCallContext( procedureId, new String[]{}, false, "", false );
+
+        // When
+        TextValue argument = Values.stringValue( new QueryId( ctx.executingQuery().internalQueryId() ).toString() );
+        innerCtx.kernelTransaction().procedures().procedureCallDbms( procedureId, new AnyValue[]{argument}, procContext );
+
+        // Then
+        assertTrue( innerTx.terminationReason().isPresent() );
+        assertTrue( outerTx.terminationReason().isPresent() );
     }
 
     // PERIODIC COMMIT

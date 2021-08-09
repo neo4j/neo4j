@@ -522,6 +522,75 @@ public class BuiltInDbmsProcedures
 
         List<QueryTerminationResult> result = new ArrayList<>( queryIds.size() );
 
+        killFabricTransactions( queryIds, result );
+
+        killNonFabricTransactions( databaseManager, queryIds, result );
+
+        // Add error about the rest
+        for ( QueryId queryId : queryIds.values() )
+        {
+            result.add( new QueryFailedTerminationResult( queryId, "n/a", "No Query found with this id" ) );
+        }
+
+        return result.stream();
+    }
+
+    /**
+     * Helper class for {@link #killNonFabricTransactions}
+     */
+    private static class TransactionQueryTriple
+    {
+        KernelTransactionHandle txnHandle;
+        long queryId;
+        QueryId queryIdObj;
+
+        TransactionQueryTriple( KernelTransactionHandle transactionHandle, long queryId )
+        {
+            this.txnHandle = transactionHandle;
+            this.queryId = queryId;
+        }
+
+        public TransactionQueryTriple withQueryIdObject( QueryId queryIdObject )
+        {
+            this.queryIdObj = queryIdObject;
+            return this;
+        }
+    }
+
+    public static <K, V> Optional<V> getOptional( Map<K,V> map, K key )
+    {
+        return Optional.ofNullable( map.get( key ) );
+    }
+
+    private void killNonFabricTransactions( DatabaseManager<DatabaseContext> databaseManager, Map<Long,QueryId> queryIds, List<QueryTerminationResult> result )
+    {
+        for ( Map.Entry<NamedDatabaseId,DatabaseContext> databaseEntry : databaseManager.registeredDatabases().entrySet() )
+        {
+            NamedDatabaseId databaseId = databaseEntry.getKey();
+            DatabaseContext databaseContext = databaseEntry.getValue();
+            if ( databaseContext.database().isStarted() )
+            {
+                getExecutingTransactions( databaseContext )
+                        .stream()
+                        .flatMap( tx -> tx.executingQuery().stream().map(
+                                query -> new TransactionQueryTriple( tx, query.internalQueryId() )
+                        ) )
+                        .flatMap( triple -> getOptional( queryIds, triple.queryId ).stream().map( triple::withQueryIdObject ) )
+                        // We need this to eagerize the stream here. Otherwise, we may have removed the queryId from queryIds before getting to the
+                        // second triple for that query.
+                        .collect( toList() )
+                        .forEach( triple ->
+                                  {
+                                      result.add( killQueryTransaction( triple.queryIdObj, triple.txnHandle, databaseId ) );
+                                      queryIds.remove( triple.queryId );
+                                  }
+                        );
+            }
+        }
+    }
+
+    private void killFabricTransactions( Map<Long,QueryId> queryIds, List<QueryTerminationResult> result )
+    {
         for ( FabricTransaction tx : getFabricTransactions() )
         {
             for ( ExecutingQuery query : getActiveFabricQueries( tx ) )
@@ -533,34 +602,6 @@ public class BuiltInDbmsProcedures
                 }
             }
         }
-
-        for ( Map.Entry<NamedDatabaseId,DatabaseContext> databaseEntry : databaseManager.registeredDatabases().entrySet() )
-        {
-            NamedDatabaseId databaseId = databaseEntry.getKey();
-            DatabaseContext databaseContext = databaseEntry.getValue();
-            if ( databaseContext.database().isStarted() )
-            {
-                for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
-                {
-                    if ( tx.executingQuery().isPresent() )
-                    {
-                        QueryId givenQueryId = queryIds.remove( tx.executingQuery().get().internalQueryId() );
-                        if ( givenQueryId != null )
-                        {
-                            result.add( killQueryTransaction( givenQueryId, tx, databaseId ) );
-                        }
-                    }
-                }
-            }
-        }
-
-        // Add error about the rest
-        for ( QueryId queryId : queryIds.values() )
-        {
-            result.add( new QueryFailedTerminationResult( queryId, "n/a", "No Query found with this id" ) );
-        }
-
-        return result.stream();
     }
 
     @SystemProcedure
