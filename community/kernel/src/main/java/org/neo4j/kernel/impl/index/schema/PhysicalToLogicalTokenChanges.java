@@ -30,26 +30,25 @@ class PhysicalToLogicalTokenChanges
     }
 
     /**
-     * Converts physical before/after state to logical remove/add state. This conversion reuses the existing
-     * long[] arrays in {@link TokenIndexEntryUpdate}, 'before' is used for removals and 'values' is used for adds,
-     * by shuffling numbers around and possible terminates them with -1 because the logical change set will be
+     * Converts physical before/after state to logical remove/add state. This conversion copies the existing
+     * long[] arrays from {@link TokenIndexEntryUpdate} and in the end possibly terminates them with -1 because the logical change set will be
      * equally big or smaller than the physical change set.
      *
      * @param update {@link TokenIndexEntryUpdate} containing physical before/after state.
      */
-    static void convertToAdditionsAndRemovals( TokenIndexEntryUpdate<?> update )
+    static LogicalTokenUpdates convertToAdditionsAndRemovals( TokenIndexEntryUpdate<?> update )
     {
         int beforeLength = update.beforeValues().length;
         int afterLength = update.values().length;
 
-        int bc = 0;
+        int rc = 0;
         int ac = 0;
-        long[] before = update.beforeValues();
-        long[] after = update.values();
+        long[] removals = update.beforeValues().clone();
+        long[] additions = update.values().clone();
         for ( int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; )
         {
-            long beforeId = bi < beforeLength ? requireNonNegative( before[bi] ) : -1;
-            long afterId = ai < afterLength ? requireNonNegative( after[ai] ) : -1;
+            long beforeId = bi < beforeLength ? requireNonNegative( removals[bi] ) : -1;
+            long afterId = ai < afterLength ? requireNonNegative( additions[ai] ) : -1;
             if ( beforeId == afterId )
             {   // no change
                 bi++;
@@ -62,9 +61,9 @@ class PhysicalToLogicalTokenChanges
                 while ( smaller( beforeId, afterId ) && bi < beforeLength )
                 {
                     // looks like there's an id in before which isn't in after ==> REMOVE
-                    update.beforeValues()[bc++] = beforeId;
+                    removals[rc++] = beforeId;
                     bi++;
-                    beforeId = bi < beforeLength ? before[bi] : -1;
+                    beforeId = bi < beforeLength ? removals[bi] : -1;
                 }
             }
             else if ( smaller( afterId, beforeId ) )
@@ -72,15 +71,16 @@ class PhysicalToLogicalTokenChanges
                 while ( smaller( afterId, beforeId ) && ai < afterLength )
                 {
                     // looks like there's an id in after which isn't in before ==> ADD
-                    update.values()[ac++] = afterId;
+                    additions[ac++] = afterId;
                     ai++;
-                    afterId = ai < afterLength ? after[ai] : -1;
+                    afterId = ai < afterLength ? additions[ai] : -1;
                 }
             }
         }
 
-        terminateWithMinusOneIfNeeded( update.beforeValues(), bc );
-        terminateWithMinusOneIfNeeded( update.values(), ac );
+        terminateWithMinusOneIfNeeded( removals, rc );
+        terminateWithMinusOneIfNeeded( additions, ac );
+        return new LogicalTokenUpdates( update.txId(), update.getEntityId(), removals, additions );
     }
 
     private static boolean smaller( long id, long otherId )
@@ -93,6 +93,48 @@ class PhysicalToLogicalTokenChanges
         if ( actualLength < tokenIds.length )
         {
             tokenIds[actualLength] = -1;
+        }
+    }
+
+    static class LogicalTokenUpdates implements Comparable<LogicalTokenUpdates>
+    {
+        private final long txId;
+        private final long entityId;
+        private final long[] removals;
+        private final long[] additions;
+
+        LogicalTokenUpdates( long txId, long entityId, long[] removals, long[] additions )
+        {
+            this.txId = txId;
+            this.entityId = entityId;
+            this.removals = removals;
+            this.additions = additions;
+        }
+
+        long txId()
+        {
+            return txId;
+        }
+
+        long entityId()
+        {
+            return entityId;
+        }
+
+        long[] removals()
+        {
+            return removals;
+        }
+
+        long[] additions()
+        {
+            return additions;
+        }
+
+        @Override
+        public int compareTo( LogicalTokenUpdates o )
+        {
+            return Long.compare( entityId, o.entityId );
         }
     }
 }

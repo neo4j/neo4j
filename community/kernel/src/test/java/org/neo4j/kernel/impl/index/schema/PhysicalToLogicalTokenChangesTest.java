@@ -95,9 +95,9 @@ class PhysicalToLogicalTokenChangesTest
     private static void convertAndAssert( long[] before, long[] after, long[] expectedRemoved, long[] expectedAdded )
     {
         TokenIndexEntryUpdate<?> update = TokenIndexEntryUpdate.change( 0, null, before, after );
-        PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update );
-        assertThat( truncate( update.beforeValues() ) ).containsExactly( expectedRemoved );
-        assertThat( truncate( update.values() ) ).containsExactly( expectedAdded );
+        PhysicalToLogicalTokenChanges.LogicalTokenUpdates logicalTokenUpdates = PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update );
+        assertThat( truncate( logicalTokenUpdates.removals() ) ).containsExactly( expectedRemoved );
+        assertThat( truncate( logicalTokenUpdates.additions() ) ).containsExactly( expectedAdded );
     }
 
     private void assertIAE( long[] before, long[] after )

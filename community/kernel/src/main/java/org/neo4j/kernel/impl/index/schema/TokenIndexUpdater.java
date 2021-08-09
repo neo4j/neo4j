@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
-import java.util.Comparator;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
@@ -29,6 +28,8 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.impl.index.schema.PhysicalToLogicalTokenChanges.LogicalTokenUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
@@ -55,12 +56,6 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
  */
 class TokenIndexUpdater implements IndexUpdater
 {
-    /**
-     * {@link Comparator} for sorting the entity id ranges, used in batches to apply updates in sorted order.
-     */
-    private static final Comparator<TokenIndexEntryUpdate<?>> UPDATE_SORTER =
-            Comparator.comparingLong( TokenIndexEntryUpdate::getEntityId );
-
     /**
      * {@link ValueMerger} used for adding token->entity mappings, see {@link TokenScanValue#add(TokenScanValue)}.
      */
@@ -95,7 +90,7 @@ class TokenIndexUpdater implements IndexUpdater
      * to place new updates is {@link #pendingUpdatesCursor}. The constructor set the length of this queue
      * and the length defines the maximum batch size.
      */
-    private final TokenIndexEntryUpdate<?>[] pendingUpdates;
+    private final LogicalTokenUpdates[] pendingUpdates;
 
     /**
      * Cursor into {@link #pendingUpdates}, where to place new {@link #process(IndexEntryUpdate) updates}.
@@ -124,7 +119,7 @@ class TokenIndexUpdater implements IndexUpdater
 
     TokenIndexUpdater( int batchSize, TokenIndex.WriteMonitor monitor )
     {
-        this.pendingUpdates = new TokenIndexEntryUpdate[batchSize];
+        this.pendingUpdates = new LogicalTokenUpdates[batchSize];
         this.addMerger = new AddMerger( monitor );
         this.removeMerger = ( existingKey, newKey, existingValue, newValue ) ->
         {
@@ -162,14 +157,14 @@ class TokenIndexUpdater implements IndexUpdater
     public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
     {
         assertOpen();
-        TokenIndexEntryUpdate<?> tokenUpdate = asTokenUpdate( update );
         if ( pendingUpdatesCursor == pendingUpdates.length )
         {
             flushPendingChanges();
         }
 
-        pendingUpdates[pendingUpdatesCursor++] = tokenUpdate;
-        PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( tokenUpdate );
+        TokenIndexEntryUpdate<?> tokenUpdate = asTokenUpdate( update );
+        LogicalTokenUpdates logicalTokenUpdate = PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( tokenUpdate );
+        pendingUpdates[pendingUpdatesCursor++] = logicalTokenUpdate;
         checkNextTokenId( tokenUpdate.beforeValues() );
         checkNextTokenId( tokenUpdate.values() );
     }
@@ -184,7 +179,7 @@ class TokenIndexUpdater implements IndexUpdater
 
     private void flushPendingChanges()
     {
-        Arrays.sort( pendingUpdates, 0, pendingUpdatesCursor, UPDATE_SORTER );
+        Arrays.sort( pendingUpdates, 0, pendingUpdatesCursor );
         monitor.flushPendingUpdates();
         long currentTokenId = lowestTokenId;
         value.clear();
@@ -194,10 +189,10 @@ class TokenIndexUpdater implements IndexUpdater
             long nextTokenId = Long.MAX_VALUE;
             for ( int i = 0; i < pendingUpdatesCursor; i++ )
             {
-                TokenIndexEntryUpdate<?> update = pendingUpdates[i];
-                long entityId = update.getEntityId();
-                nextTokenId = extractChange( update.values(), currentTokenId, entityId, nextTokenId, true, update.txId() );
-                nextTokenId = extractChange( update.beforeValues(), currentTokenId, entityId, nextTokenId, false, update.txId() );
+                LogicalTokenUpdates update = pendingUpdates[i];
+                long entityId = update.entityId();
+                nextTokenId = extractChange( update.additions(), currentTokenId, entityId, nextTokenId, true, update.txId() );
+                nextTokenId = extractChange( update.removals(), currentTokenId, entityId, nextTokenId, false, update.txId() );
             }
             currentTokenId = nextTokenId;
         }
