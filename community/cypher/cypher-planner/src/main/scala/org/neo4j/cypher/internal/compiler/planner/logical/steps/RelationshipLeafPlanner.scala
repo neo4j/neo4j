@@ -55,7 +55,7 @@ object RelationshipLeafPlanner {
    * @param relationshipLeafPlanProvider a RelationshipLeafPlanProvider
    * @return the leaf plan, with the correct hidden selections.
    */
-  def planHiddenSelectionForRelationshipLeafPlan(queryGraph: QueryGraph,
+  def planHiddenSelectionAndRelationshipLeafPlan(queryGraph: QueryGraph,
                                                  relationship: PatternRelationship,
                                                  context: LogicalPlanningContext,
                                                  relationshipLeafPlanProvider: RelationshipLeafPlanProvider,

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionForRelationshipLeafPlan
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionAndRelationshipLeafPlan
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -60,7 +60,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
           } else {
             queryGraph.patternRelationships.find(_.name == id) match {
               case Some(relationship) =>
-                Some(planHiddenSelectionForRelationshipLeafPlan(
+                Some(planHiddenSelectionAndRelationshipLeafPlan(
                   queryGraph,
                   relationship,
                   context,
