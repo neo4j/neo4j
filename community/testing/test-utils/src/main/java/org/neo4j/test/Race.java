@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -169,6 +170,11 @@ public class Race
     public void addContestant( Runnable contestant, int maxNumberOfRuns )
     {
         contestants.add( new Contestant( contestant, contestants.size(), maxNumberOfRuns ) );
+    }
+
+    public void shuffleContestants()
+    {
+        Collections.shuffle( contestants );
     }
 
     /**
