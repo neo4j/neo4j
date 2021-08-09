@@ -304,7 +304,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
    * @param relType            the relType to scan
    * @param patternForLeafPlan the pattern to use for the leaf plan
    * @param originalPattern    the original pattern, as it appears in the query graph
-   * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead
+   * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead.
+   *                           Must not contain any pattern expressions or pattern comprehensions.
    */
   def planRelationshipByTypeScan(idName: String,
                                  relType: RelTypeName,
@@ -339,7 +340,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
           .addArgumentIds(argumentIds.toIndexedSeq)
           .addHints(solvedHint)
         )
-        planHiddenSelection(hiddenSelections, plan, solved, context)
+        planSelectionWithGivenSolved(plan, hiddenSelections, solved, context)
       }
     }
 
@@ -537,7 +538,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
    * @param idName             the name of the relationship variable
    * @param patternForLeafPlan the pattern to use for the leaf plan
    * @param originalPattern    the original pattern, as it appears in the query graph
-   * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead
+   * @param hiddenSelections   selections that make the leaf plan solve the originalPattern instead.
+   *                           Must not contain any pattern expressions or pattern comprehensions.
    */
   def planRelationshipByIdSeek(idName: String,
                                relIds: SeekableArgs,
@@ -577,7 +579,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
           .addPredicates(solvedPredicates: _*)
           .addArgumentIds(argumentIds.toIndexedSeq)
         )
-        planHiddenSelection(hiddenSelections, plan, solved, context)
+        planSelectionWithGivenSolved(plan, hiddenSelections, solved, context)
       }
     }
 
@@ -650,14 +652,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         relationshipPredicate = rewrittenRelationshipPredicate), solved, providedOrders.get(source.id).fromLeft, context)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
-  }
-
-  private def planHiddenSelection(predicates: Seq[Expression],
-                                  left: LogicalPlan,
-                                  solved: PlannerQueryPart,
-                                  context: LogicalPlanningContext): LogicalPlan = {
-    val sortedPredicates = sortPredicatesBySelectivity(left, predicates, context)
-    annotate(Selection(coercePredicatesWithAnds(sortedPredicates), left), solved, providedOrders.get(left.id).fromLeft, context)
   }
 
   def planNodeByIdSeek(variable: Variable,
@@ -878,6 +872,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     }
 
     newPlan
+  }
+
+  /**
+   * Plan a selection with `solved` already given.
+   * The predicates are not run through the [[PatternExpressionSolver]], so they must not contain any pattern expressions or pattern comprehensions.
+   */
+  private def planSelectionWithGivenSolved(source: LogicalPlan,
+                                           predicates: Seq[Expression],
+                                           solved: PlannerQueryPart,
+                                           context: LogicalPlanningContext): Selection = {
+    val sortedPredicates = sortPredicatesBySelectivity(source, predicates, context)
+    annotate(Selection(coercePredicatesWithAnds(sortedPredicates), source), solved, providedOrders.get(source.id).fromLeft, context)
   }
 
   // Using the solver for `expr` in all SemiApply-like plans is kinda stupid.
