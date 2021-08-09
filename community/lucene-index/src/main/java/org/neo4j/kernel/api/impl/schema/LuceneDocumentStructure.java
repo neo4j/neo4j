@@ -249,8 +249,11 @@ public class LuceneDocumentStructure
 
             for ( int i = 0; i < values.length; i++ )
             {
-                Field reusableField = getFieldWithValue( i, values[i] );
-                document.add( reusableField );
+                if ( values[i].valueGroup() == ValueGroup.TEXT )
+                {
+                    Field reusableField = getFieldWithValue( i, values[i] );
+                    document.add( reusableField );
+                }
             }
         }
 
@@ -263,10 +266,6 @@ public class LuceneDocumentStructure
 
         private Field getFieldWithValue( int propertyNumber, Value value )
         {
-            if ( value.valueGroup() != ValueGroup.TEXT )
-            {
-                throw new IllegalArgumentException( "Only text values can be stored in a Lucene index, but we tried to store: " + value );
-            }
             int reuseId = propertyNumber * ValueEncoding.values().length + ValueEncoding.String.ordinal();
             String key = ValueEncoding.String.key( propertyNumber );
             Field reusableField = reusableValueFields[reuseId];

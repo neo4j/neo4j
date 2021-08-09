@@ -44,6 +44,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
 import static java.util.Arrays.stream;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -57,6 +58,7 @@ import static org.neo4j.graphdb.StringSearchMode.CONTAINS;
 import static org.neo4j.graphdb.StringSearchMode.PREFIX;
 import static org.neo4j.graphdb.StringSearchMode.SUFFIX;
 import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.conditions.Conditions.condition;
 import static org.neo4j.test.conditions.Conditions.equalityCondition;
 
 @Neo4jLayoutExtension
@@ -334,8 +336,38 @@ public class TextIndexIT
         }
 
         // Then the index sample is updated
-        var expectedSample = new IndexSample( 5, 5, 7 );
-        assertEventually( () -> indexSample( db, "idx_name" ), equalityCondition( expectedSample ), 1, MINUTES );
+        assertEventually( () -> indexSample( db, "idx_name" ), condition(
+                sample -> sample.indexSize() == 5 && sample.sampleSize() >= 5 && sample.uniqueValues() >= 5 ), 1, MINUTES );
+        dbms.shutdown();
+    }
+
+    @Test
+    void shouldNotIndexNonTextProperties()
+    {
+        // Given
+        var person = label( "PERSON" );
+        var monitor = new IndexAccessMonitor();
+        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout )
+                .setMonitors( monitor.monitors() )
+                .setConfig( text_indexes_enabled, true )
+                .build();
+        var db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
+        createTextIndex( db, person, "idx_name" );
+
+        // When a non text property is indexed
+        try ( var tx = db.beginTx() )
+        {
+            tx.createNode( person ).setProperty( "name", 42 );
+            tx.commit();
+        }
+
+        // Then it is not indexed
+        try ( var tx = db.beginTx() )
+        {
+            assertThat( tx.findNode( person, "name", 42 ) ).isNull();
+            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
+        }
+        dbms.shutdown();
     }
 
     private void createTextIndex( GraphDatabaseAPI db, Label person, String indexName )

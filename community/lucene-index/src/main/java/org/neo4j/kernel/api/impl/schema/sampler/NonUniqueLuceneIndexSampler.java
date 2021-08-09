@@ -78,6 +78,10 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
                             BytesRef termsRef;
                             while ( (termsRef = termsEnum.next()) != null )
                             {
+                               // Note from Lucene docs:
+                               // "Once a document is deleted it will not appear in search results.
+                               // The presence of this document may still be reflected in the docFreq statistics, and thus alter search scores,
+                               // though this will be corrected eventually as segments containing deletions are merged."
                                 sampler.include( termsRef.utf8ToString(), termsEnum.docFreq() );
                                 checkCancellation( task );
                             }
