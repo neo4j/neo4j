@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -64,6 +65,12 @@ class CypherShellMultiDatabaseIntegrationTest
 
         // Multiple databases are only available from 4.0
         assumeTrue( majorVersion( shell.getServerVersion() ) >= 4 );
+    }
+
+    @AfterEach
+    void cleanUp()
+    {
+        shell.disconnect();
     }
 
     @Test

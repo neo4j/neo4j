@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +27,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
@@ -100,6 +102,14 @@ class MainIntegrationTest
         connectionConfig = sac.connectionConfig;
     }
 
+    @AfterEach
+    void cleanUp() throws IOException
+    {
+        shell.disconnect();
+        printStream.close();
+        inputStream.close();
+    }
+
     private void ensureUser() throws Exception
     {
         if ( majorVersion( shell.getServerVersion() ) >= 4 )
@@ -133,8 +143,15 @@ class MainIntegrationTest
         cliArgs.setPassword( "neo", "" );
         cliArgs.setDatabase( "system" );
         ShellAndConnection sac = getShell( cliArgs );
-        main.connectMaybeInteractively( sac.shell, sac.connectionConfig, true, false, true );
-        sac.shell.execute( "START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME );
+        try
+        {
+            main.connectMaybeInteractively( sac.shell, sac.connectionConfig, true, false, true );
+            sac.shell.execute( "START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME );
+        }
+        finally
+        {
+            sac.shell.disconnect();
+        }
     }
 
     @Test
@@ -421,12 +438,20 @@ class MainIntegrationTest
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
         CypherShell shell = interactiveShell( linePrinter );
 
-        // when
-        shell.execute( ":source " + fileFromResource( "single.cypher" ) );
-        exit( shell );
+        try
+        {
+            // when
+            shell.execute(":source " + fileFromResource("single.cypher"));
+            exit(shell);
 
-        // then
-        assertEquals( format( "result%n42%n" ), linePrinter.result() );
+            // then
+            assertEquals(format("result%n42%n"), linePrinter.result());
+        }
+        finally
+        {
+            shell.disconnect();
+        }
+
     }
 
     @Test
@@ -436,14 +461,21 @@ class MainIntegrationTest
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
         CypherShell shell = interactiveShell( linePrinter );
 
-        // when
-        shell.execute( ":source " + fileFromResource( "multiple.cypher" ) );
-        exit( shell );
+        try
+        {
+            // when
+            shell.execute(":source " + fileFromResource("multiple.cypher"));
+            exit(shell);
 
-        // then
-        assertEquals( format( "result%n42%n" +
-                              "result%n1337%n" +
-                              "result%n\"done\"%n" ), linePrinter.result() );
+            // then
+            assertEquals(format("result%n42%n" +
+                    "result%n1337%n" +
+                    "result%n\"done\"%n"), linePrinter.result());
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     @Test
@@ -453,12 +485,19 @@ class MainIntegrationTest
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
         CypherShell shell = interactiveShell( linePrinter );
 
-        // when
-        shell.execute( ":source " + fileFromResource( "empty.cypher" ) );
-        exit( shell );
+        try
+        {
+            // when
+            shell.execute(":source " + fileFromResource("empty.cypher"));
+            exit(shell);
 
-        // then
-        assertEquals( "", linePrinter.result() );
+            // then
+            assertEquals("", linePrinter.result());
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     @Test
@@ -468,9 +507,16 @@ class MainIntegrationTest
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
         CypherShell shell = interactiveShell( linePrinter );
 
-        // then
-        var exception = assertThrows( ClientException.class, () -> shell.execute( ":source " + fileFromResource( "invalid.cypher" ) ) );
-        assertThat( exception.getMessage(), containsString( "Invalid input 'T" ) );
+        try
+        {
+            // then
+            var exception = assertThrows(ClientException.class, () -> shell.execute(":source " + fileFromResource("invalid.cypher")));
+            assertThat(exception.getMessage(), containsString("Invalid input 'T"));
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     @Test
@@ -480,10 +526,17 @@ class MainIntegrationTest
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
         CypherShell shell = interactiveShell( linePrinter );
 
-        // expect
-        var exception = assertThrows( CommandException.class, () -> shell.execute( ":source what.cypher" ) );
-        assertThat( exception.getMessage(), containsString( "Cannot find file: 'what.cypher'" ) );
-        assertThat( exception.getCause(), instanceOf( FileNotFoundException.class ) );
+        try
+        {
+            // expect
+            var exception = assertThrows( CommandException.class, () -> shell.execute( ":source what.cypher" ) );
+            assertThat( exception.getMessage(), containsString( "Cannot find file: 'what.cypher'" ) );
+            assertThat( exception.getCause(), instanceOf( FileNotFoundException.class ) );
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     @Test
@@ -710,8 +763,15 @@ class MainIntegrationTest
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
         ShellAndConnection sac = getShell( cliArgs, linePrinter );
         CypherShell shell = sac.shell;
-        main.runShell( cliArgs, shell, logger );
-        return linePrinter.result();
+        try
+        {
+            main.runShell(cliArgs, shell, logger);
+            return linePrinter.result();
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     private String fileFromResource( String filename )
@@ -723,9 +783,17 @@ class MainIntegrationTest
     {
         PrettyConfig prettyConfig = new PrettyConfig( new CliArgs() );
         CypherShell shell = new CypherShell( linePrinter, prettyConfig, true, new ShellParameterMap() );
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-        shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
-        return shell;
+        try
+        {
+            main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
+            shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
+            return shell;
+        }
+        catch ( Exception e )
+        {
+            shell.disconnect();
+            throw e;
+        }
     }
 
     private static ShellAndConnection getShell( CliArgs cliArgs )

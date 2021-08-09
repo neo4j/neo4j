@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +46,6 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     @BeforeEach
     void setUp() throws Exception
     {
-        linePrinter.clear();
         shell = new CypherShell( linePrinter, new PrettyConfig( Format.VERBOSE, true, 1000 ), false, new ShellParameterMap() );
         rollbackCommand = new Rollback( shell );
         commitCommand = new Commit( shell );
@@ -53,6 +53,13 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
 
         connect( "neo" );
         shell.execute( "MATCH (n) DETACH DELETE (n)" );
+    }
+
+    @AfterEach
+    void cleanUp()
+    {
+        shell.disconnect();
+        linePrinter.clear();
     }
 
     @Test

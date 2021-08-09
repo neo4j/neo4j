@@ -42,38 +42,66 @@ class CypherShellProtocolIntegrationTest
     void shouldConnectWithBoltProtocol() throws Exception
     {
         CypherShell shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
-        shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
-        assertTrue( shell.isConnected() );
+        try
+        {
+            shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
+            assertTrue(shell.isConnected());
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     @Test
     void shouldConnectWithNeo4jProtocol() throws Exception
     {
         CypherShell shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
-        // This should work even on older databases without the neo4j protocol, by falling back to bolt
-        shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
-        assertTrue( shell.isConnected() );
+        try
+        {
+            // This should work even on older databases without the neo4j protocol, by falling back to bolt
+            shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
+            assertTrue( shell.isConnected() );
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     @Test
     void shouldConnectWithBoltSSCProtocol() throws Exception
     {
         CypherShell shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
-        // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
-        onlyIn3_2to3_6( shell );
-        shell.connect( new ConnectionConfig( "bolt+ssc", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
-        assertTrue( shell.isConnected() );
+        try
+        {
+            // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
+            onlyIn3_2to3_6( shell );
+            shell.connect( new ConnectionConfig( "bolt+ssc", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
+            assertTrue( shell.isConnected() );
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     @Test
     void shouldConnectWithNeo4jSSCProtocol() throws Exception
     {
         CypherShell shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
-        // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
-        onlyIn3_2to3_6( shell );
-        // This should work by falling back to bolt+ssc
-        shell.connect( new ConnectionConfig( "neo4j+ssc", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
-        assertTrue( shell.isConnected() );
+        try
+        {
+            // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
+            onlyIn3_2to3_6( shell );
+            // This should work by falling back to bolt+ssc
+            shell.connect( new ConnectionConfig( "neo4j+ssc", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
+            assertTrue( shell.isConnected() );
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     // Here should be tests for "neo4j+s" and "bolt+s", but we don't have the infrastructure for those.

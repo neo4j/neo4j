@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +43,12 @@ class CypherShellFailureIntegrationTest extends CypherShellIntegrationTest
     {
         linePrinter.clear();
         shell = new CypherShell( linePrinter, new PrettyConfig( Format.VERBOSE, true, 1000 ), false, new ShellParameterMap() );
+    }
+
+    @AfterEach
+    void cleanUp()
+    {
+        shell.disconnect();
     }
 
     @Test

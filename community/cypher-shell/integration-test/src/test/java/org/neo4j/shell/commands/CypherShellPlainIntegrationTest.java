@@ -50,7 +50,14 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     @AfterEach
     void tearDown() throws Exception
     {
-        shell.execute( "MATCH (n) DETACH DELETE (n)" );
+        try
+        {
+            shell.execute( "MATCH (n) DETACH DELETE (n)" );
+        }
+        finally
+        {
+            shell.disconnect();
+        }
     }
 
     @Test
