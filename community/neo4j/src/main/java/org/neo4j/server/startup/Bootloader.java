@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.startup;
 
-import org.apache.commons.exec.util.StringUtils;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -129,7 +127,7 @@ class Bootloader
         if ( dryRun )
         {
             List<String> args = os.buildStandardStartArguments();
-            String cmd = args.stream().map( StringUtils::quoteArgument ).collect( Collectors.joining( " " ) );
+            String cmd = args.stream().map( Bootloader::quoteArgument ).collect( Collectors.joining( " " ) );
             ctx.out.println( cmd );
             return EXIT_CODE_OK;
         }
@@ -267,5 +265,37 @@ class Bootloader
         {
             return e.getExitCode(); //NOTE! This is not the generic BootFailureException, it indicates a process non-zero exit, not bootloader failure.
         }
+    }
+
+    /**
+     *  This is written with inspiration from apache commons-exec `StringUtils.quoteArgument()`.
+     *  That implementation contains a bug (fixed here) that could trim away quotes erroneously in the start or end of string
+     *  E.g turn "a partly 'quoted string'" to " a partly 'quoted string" missing the last single quote.
+     */
+    private static String quoteArgument( String arg )
+    {
+
+        final String singleQuote = "'";
+        final String doubleQuote = "\"";
+        arg = arg.trim();
+        while ( arg.length() > 2 &&
+                (arg.startsWith( singleQuote ) && arg.endsWith( singleQuote ) || arg.startsWith( doubleQuote ) && arg.endsWith( doubleQuote )) )
+        {
+            arg = arg.substring( 1, arg.length() - 1 );
+        }
+
+        if ( arg.contains( doubleQuote ) )
+        {
+            if ( arg.contains( singleQuote ) )
+            {
+                throw new BootFailureException( "`" + arg + "` contains both single and double quotes. Can not be correctly quoted for commandline." );
+            }
+            arg = singleQuote + arg + singleQuote;
+        }
+        else if ( arg.contains( singleQuote ) || arg.contains( " " ) )
+        {
+            arg = doubleQuote + arg + doubleQuote;
+        }
+        return arg;
     }
 }

@@ -329,16 +329,30 @@ class Neo4jCommandTest
             addConf( BootloaderSettings.additional_jvm, "\"-Dbaz=/path/with spaces/and double qoutes\"" );
             addConf( BootloaderSettings.additional_jvm, "-Dqux=/path/with spaces/and unmatched \" qoute" );
             addConf( BootloaderSettings.additional_jvm, "-Dcorge=/path/with/no/spaces" );
+            addConf( BootloaderSettings.additional_jvm, "-Dgrault=/path/with/part/'quoted'" );
+            addConf( BootloaderSettings.additional_jvm, "-Dgarply=\"/path/with/part/quoted\"" );
+            addConf( BootloaderSettings.additional_jvm, "\"\"-Dwaldo=redundant quoting removed\"\"" );
             assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( 0 );
             assertThat( out.toString() ).contains(
                     "\"-Dfoo=/path/with spaces/\"",
                     "\"-Dbar=/path/with spaces/and single qoutes\"",
                     "\"-Dbaz=/path/with spaces/and double qoutes\"",
                     "'-Dqux=/path/with spaces/and unmatched \" qoute'",
-                    "-Dcorge=/path/with/no/spaces"
+                    "-Dcorge=/path/with/no/spaces",
+                    "-Dgrault=/path/with/part/'quoted'",
+                    "'-Dgarply=\"/path/with/part/quoted\"'",
+                    "\"-Dwaldo=redundant quoting removed\""
             );
 
             assertThat( out.toString() ).doesNotContain( "\"-Dcorge=/path/with/no/spaces\"" );
+        }
+
+        @Test
+        void shouldComplainOnIncorrectQuotingOnDryRun()
+        {
+            addConf( BootloaderSettings.additional_jvm, "-Dfoo=some\"partly'quoted'\"data" );
+            assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( 1);
+            assertThat( err.toString() ).contains( "contains both single and double quotes" );
         }
 
         @Nested
