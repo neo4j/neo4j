@@ -168,6 +168,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     {
         safeTerminalOperation( transaction ->
         {
+            // this try-with-resource automatically calls transaction.close() after being done.
             try ( transaction )
             {
                 transaction.commit( kernelTransactionMonitor );
@@ -182,6 +183,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             safeTerminalOperation( transaction ->
             {
+                // this try-with-resource automatically calls transaction.close() after being done.
                 try ( transaction )
                 {
                     transaction.rollback();
