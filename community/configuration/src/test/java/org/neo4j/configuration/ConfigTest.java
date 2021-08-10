@@ -942,6 +942,23 @@ class ConfigTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
+    void shouldHandleQuotesCorrectlyInCommandExpansion() throws IOException
+    {
+        Path confFile = testDirectory.file( "test.conf" );
+        Files.createFile( confFile );
+        Files.write( confFile, List.of( format("%s=$(bash -c \"echo '1'\")", TestSettings.stringSetting.name() ) ) );
+
+        setPosixFilePermissions( confFile, permittedFilePermissionsForCommandExpansion );
+
+        //Given
+        Config config = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile ).build();
+
+        //Then
+        assertEquals( "1", config.get( TestSettings.stringSetting ) );
+    }
+
+    @Test
     void shouldNotEvaluateWithIncorrectFilePermission() throws IOException
     {
         assumeUnixOrWindows();

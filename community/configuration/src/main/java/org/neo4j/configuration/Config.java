@@ -19,10 +19,10 @@
  */
 package org.neo4j.configuration;
 
-import org.apache.commons.exec.CommandLine;
-import org.apache.commons.exec.util.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.commons.text.StringTokenizer;
+import org.apache.commons.text.matcher.StringMatcherFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -810,16 +810,8 @@ public class Config implements Configuration
         Process process = null;
         try
         {
-            String[] commands = CommandLine.parse( command ).toStrings();
-            //Unquote the arguments, as ProcessBuilder does not handle that
-            for ( int i = 1; i < commands.length; i++ )
-            {
-                String arg = commands[i];
-                if ( StringUtils.isQuoted( arg ) )
-                {
-                    commands[i] = arg.substring( 1, arg.length() - 1 );
-                }
-            }
+            String[] commands =
+                    new StringTokenizer( command, StringMatcherFactory.INSTANCE.splitMatcher(), StringMatcherFactory.INSTANCE.quoteMatcher() ).getTokenArray();
             process = new ProcessBuilder( commands ).start();
             BufferedReader out = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
             BufferedReader err = new BufferedReader( new InputStreamReader( process.getErrorStream() ) );
