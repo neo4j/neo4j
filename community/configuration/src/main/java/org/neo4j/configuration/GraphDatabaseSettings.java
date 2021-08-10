@@ -448,8 +448,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Configures the transaction interval between check-points. The database will not check-point more " +
             "often  than this (unless check pointing is triggered by a different event), but might check-point " +
             "less often than this interval, if performing a check-point takes longer time than the configured " +
-            "interval. A check-point is a point in the transaction logs, from which recovery would start from. " +
-            "Longer check-point intervals typically means that recovery will take longer to complete in case " +
+            "interval. A check-point is a point in the transaction logs, which recovery would start from. " +
+            "Longer check-point intervals typically mean that recovery will take longer to complete in case " +
             "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
             "the database places on the system, as each check-point implies a flushing and forcing of all the " +
             "store files.  The default is '100000' for a check-point every 100000 transactions." )
@@ -459,8 +459,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Configures the time interval between check-points. The database will not check-point more often " +
             "than this (unless check pointing is triggered by a different event), but might check-point less " +
             "often than this interval, if performing a check-point takes longer time than the configured " +
-            "interval. A check-point is a point in the transaction logs, from which recovery would start from. " +
-            "Longer check-point intervals typically means that recovery will take longer to complete in case " +
+            "interval. A check-point is a point in the transaction logs, which recovery would start from. " +
+            "Longer check-point intervals typically mean that recovery will take longer to complete in case " +
             "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
             "the database places on the system, as each check-point implies a flushing and forcing of all the " +
             "store files." )
@@ -470,8 +470,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Configures the volume of transacton logs between check-points. The database will not check-point more often " +
             "than this (unless check pointing is triggered by a different event), but might check-point less " +
             "often than this interval, if performing a check-point takes longer time than the configured " +
-            "interval. A check-point is a point in the transaction logs, from which recovery would start from. " +
-            "Longer check-point intervals typically means that recovery will take longer to complete in case " +
+            "interval. A check-point is a point in the transaction logs, which recovery would start from. " +
+            "Longer check-point intervals typically mean that recovery will take longer to complete in case " +
             "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
             "the database places on the system, as each check-point implies a flushing and forcing of all the " +
             "store files." )

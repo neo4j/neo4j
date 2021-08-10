@@ -107,7 +107,7 @@ class VolumeBasedCheckpointIT
     }
 
     @Test
-    void checkpointOnVolumeSplittedBetweenLogFiles()
+    void checkpointOnVolumeSplitBetweenLogFiles()
     {
         Config volumeCheckpointConfig = Config.newBuilder().set( check_point_policy, VOLUME ).set( check_point_interval_volume, kibiBytes( 180 ) ).set(
                 GraphDatabaseSettings.logical_log_rotation_threshold, kibiBytes( 128 ) ).build();
