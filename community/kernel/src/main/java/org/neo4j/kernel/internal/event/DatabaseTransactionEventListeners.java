@@ -161,11 +161,10 @@ public class DatabaseTransactionEventListeners extends LifecycleAdapter
 
     private void closeTxDataSnapshot( TransactionData txData )
     {
-        if ( txData instanceof TxStateTransactionDataSnapshot )
-        {
-            ((TxStateTransactionDataSnapshot) txData).close();
-        }
-        // else it could be EMPTY_DATA as well, and we don't want the user-facing TransactionData interface to have close() on it
+        // We don't want the user-facing TransactionData interface to have close() on it, which is why the exposed object is
+        // of type TransactionData, but internally we know that it's a specific implementation of it
+        assert txData instanceof TxStateTransactionDataSnapshot;
+        ((TxStateTransactionDataSnapshot) txData).close();
     }
 
     private static boolean canInvokeBeforeCommitListeners( Collection<TransactionEventListener<?>> listeners, ReadableTransactionState state )
