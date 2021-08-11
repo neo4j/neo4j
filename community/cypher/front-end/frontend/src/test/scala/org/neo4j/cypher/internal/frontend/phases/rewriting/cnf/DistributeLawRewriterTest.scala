@@ -17,15 +17,17 @@
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.mockito.Mockito.verify
-import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.annotation.tailrec
+
 class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport {
 
-  val monitor = mock[AstRewritingMonitor]
+  val monitor: AstRewritingMonitor = mock[AstRewritingMonitor]
   val rewriter: Rewriter = distributeLawsRewriter()(monitor)
 
   test("(P or (Q and R))  iff  (P or Q) and (P or R)") {
@@ -65,7 +67,8 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
     if (result == fullOr) verify(monitor).abortedRewriting(fullOr)
   }
 
-  private def combineUntilLimit(start: Or, limit: Int): Or =
+  @tailrec
+  private def combineUntilLimit(start: Expression, limit: Int): Expression =
     if (limit > 0)
       combineUntilLimit(or(start, and(P, Q)), limit - 1)
     else

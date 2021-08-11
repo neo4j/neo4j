@@ -50,16 +50,28 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
 
   private def computeReplacement: Expression => Expression = {
     case n@Not(Not(innerExpression)) => simplifyToInnerExpression(n, innerExpression)
-    case Ands(exps) if exps.isEmpty => throw new IllegalStateException("Found an instance of Ands with empty expressions")
-    case Ors(exps) if exps.isEmpty => throw new IllegalStateException("Found an instance of Ors with empty expressions")
+    case Ands(exps)   if exps.isEmpty => throw new IllegalStateException("Found an instance of Ands with empty expressions")
+    case Ors(exps)    if exps.isEmpty => throw new IllegalStateException("Found an instance of Ors with empty expressions")
+    case p@Ands(exps) if exps.contains(F) => False()(p.position)
+    case p@Ors(exps)  if exps.contains(T) => True()(p.position)
+    case p@Ands(exps) if exps.size == 1   => simplifyToInnerExpression(p, exps.head)
+    case p@Ors(exps)  if exps.size == 1   => simplifyToInnerExpression(p, exps.head)
     case p@Ands(exps) if exps.contains(T) =>
       val nonTrue = exps.filterNot(T == _)
-      if (nonTrue.isEmpty) True()(p.position) else Ands(nonTrue)(p.position)
+      if (nonTrue.isEmpty)
+        True()(p.position)
+      else if(nonTrue.size == 1)
+        simplifyToInnerExpression(p, nonTrue.head)
+      else
+        Ands(nonTrue)(p.position)
     case p@Ors(exps) if exps.contains(F) =>
       val nonFalse = exps.filterNot(F == _)
-      if (nonFalse.isEmpty) False()(p.position) else Ors(nonFalse)(p.position)
-    case p@Ors(exps) if exps.contains(T) => True()(p.position)
-    case p@Ands(exps) if exps.contains(F) => False()(p.position)
+      if (nonFalse.isEmpty)
+        False()(p.position)
+      else if(nonFalse.size == 1)
+        simplifyToInnerExpression(p, nonFalse.head)
+      else
+        Ors(nonFalse)(p.position)
     case expression => expression
   }
 
@@ -92,9 +104,9 @@ case object simplifyPredicates extends StepSequencer.Step with PlanPipelineTrans
   }
 
   /**
-   * We intend to remove {@code outerExpression} from the AST and replace it with {@code innerExpression}.
+   * We intend to remove `outerExpression` from the AST and replace it with `innerExpression`.
    *
-   * While {@code outerExpression} would have converted the value to boolean, we check here whether that information would be lost.
+   * While `outerExpression` would have converted the value to boolean, we check here whether that information would be lost.
    */
   private def needsToBeExplicitlyCoercedToBoolean(semanticState: SemanticState, outerExpression: BooleanExpression, innerExpression: Expression) = {
     val expectedToBeBoolean = semanticState.expressionType(outerExpression).expected.exists(_.contains(CTBoolean))

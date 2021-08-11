@@ -89,6 +89,30 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
     )
   }
 
+  test("should be able to simplify conjunction/disjunction with boolean literal") {
+    and(P, TRUE) <=> bool(P)
+    and(P, FALSE) <=> FALSE
+    or(P, TRUE) <=> TRUE
+    or(P, FALSE) <=> bool(P)
+
+    and(TRUE, P) <=> bool(P)
+    and(FALSE, P) <=> FALSE
+    or(TRUE, P) <=> TRUE
+    or(FALSE, P) <=> bool(P)
+  }
+
+  test("should be able to simplify nested conjunction/disjunction with boolean literal") {
+    and(and(P, Q), TRUE) <=> ands(P, Q)
+    and(and(P, Q), FALSE) <=> FALSE
+    or(and(P, Q), TRUE) <=> TRUE
+    or(and(P, Q), FALSE) <=> ands(P, Q)
+
+    and(TRUE, and(P, Q)) <=> ands(P, Q)
+    and(FALSE, and(P, Q)) <=> FALSE
+    or(TRUE, and(P, Q)) <=> TRUE
+    or(FALSE, and(P, Q)) <=> ands(P, Q)
+  }
+
   test("aborts cnf-rewriting for the worst case scenarios") {
     /* GIVEN A PATHOLOGICAL CASE FOR CNF
     When we get predicates in certain shapes, the normalized form for the predicate is so large it becomes
