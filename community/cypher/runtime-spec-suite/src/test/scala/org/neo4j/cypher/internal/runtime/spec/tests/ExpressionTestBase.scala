@@ -212,7 +212,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasProp")
-      .projection("EXISTS(x.prop) AS hasProp")
+      .projection("x.prop IS NOT NULL AS hasProp")
       .allNodeScan("x")
       .build()
 
@@ -233,7 +233,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasProp")
-      .projection("EXISTS(x.prop) AS hasProp")
+      .projection("x.prop IS NOT NULL AS hasProp")
       .nodeByLabelScan("x", "Label", IndexOrderNone)
       .build()
 
@@ -257,7 +257,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasProp")
-      .projection("EXISTS(x.prop) AS hasProp")
+      .projection("x.prop IS NOT NULL AS hasProp")
       .nodeIndexOperator("x:Label(other)")
       .build()
 
@@ -283,7 +283,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasProp")
-      .projection("exists(r.prop) AS hasProp")
+      .projection("r.prop IS NOT NULL AS hasProp")
       .expandAll("(n)-[r]->(m)")
       .allNodeScan("n")
       .build(readOnly = false)
@@ -311,7 +311,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasProp")
       .apply()
-      .|.projection("exists(r.prop) AS hasProp")
+      .|.projection("r.prop IS NOT NULL AS hasProp")
       .|.argument("r")
       .nonFuseable()
       .expandAll("(n)-[r]->(m)")

@@ -342,11 +342,20 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(nodeIndexSeek("n:Awesome(prop)"))
   }
 
-  test("should plan unique index scan for exists(n.prop)") {
+  test("should plan index scan for n.prop IS NOT NULL") {
+    val plan = new given {
+      indexOn("Awesome", "prop")
+      cost = nodeIndexScanCost
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n"
+
+    plan._2 should equal(nodeIndexSeek("n:Awesome(prop)"))
+  }
+
+  test("should plan unique index scan for n.prop IS NOT NULL") {
     val plan = new given {
       uniqueIndexOn("Awesome", "prop")
       cost = nodeIndexScanCost
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE exists(n.prop) RETURN n"
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n"
 
     plan._2 should equal(nodeIndexSeek("n:Awesome(prop)"))
   }

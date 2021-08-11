@@ -502,7 +502,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("still_there")
-      .projection("exists(r.num) AS still_there")
+      .projection("r.num IS NOT NULL AS still_there")
       .eager()
       .setRelationshipProperty("r", "num", "NULL")
       .expandAll("(n)-[r]->(m)")
