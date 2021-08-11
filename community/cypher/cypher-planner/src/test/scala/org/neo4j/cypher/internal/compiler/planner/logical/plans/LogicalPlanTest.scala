@@ -76,4 +76,24 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
     p4 should equal(p5)
     p4 should not equal(p6)
   }
+
+  test("leftmostLeaf should return left most leaf") {
+    // given
+    val p1 = Argument()
+    val p2 = Argument()
+    val p3 = Argument()
+    val p4 = Argument()
+    val p5 = Apply(p1, p2)
+    val p6 = Apply(p3, p4)
+
+    // when
+    val p7 = CartesianProduct(p5, p6)
+    // then
+    p7.leftmostLeaf should equal(p1)
+
+    // when
+    val p8 = CartesianProduct(p6, p5)
+    // then
+    p8.leftmostLeaf should equal(p3)
+  }
 }

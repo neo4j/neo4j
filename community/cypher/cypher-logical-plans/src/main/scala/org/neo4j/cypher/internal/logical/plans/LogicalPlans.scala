@@ -174,15 +174,4 @@ object LogicalPlans {
     }
     acc
   }
-
-  /**
-   * Return the left-most leaf of a given plan.
-   */
-  def leftLeaf(plan: LogicalPlan): LogicalPlan = {
-    var x = plan
-    while (x.lhs.nonEmpty) {
-      x = x.lhs.get
-    }
-    x
-  }
 }

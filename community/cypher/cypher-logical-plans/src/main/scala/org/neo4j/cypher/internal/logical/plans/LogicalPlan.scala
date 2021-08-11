@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.exceptions.InternalException
 
 import java.lang.reflect.Method
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayStack
 import scala.util.hashing.MurmurHash3
@@ -109,7 +110,11 @@ abstract class LogicalPlan(idGen: IdGen)
       if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => TraverseChildren(acc :+ plan)
   }
 
-  def leftmostLeaf: LogicalPlan = lhs.map(_.leftmostLeaf).getOrElse(this)
+  @tailrec
+  final def leftmostLeaf: LogicalPlan = lhs match {
+    case Some(plan) => plan.leftmostLeaf
+    case None       => this
+  }
 
   def copyPlanWithIdGen(idGen: IdGen): LogicalPlan = {
     try {
