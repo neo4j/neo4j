@@ -805,9 +805,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(0).rows() shouldBe nodeCount // produce results
     queryProfile.operatorProfile(1).rows() shouldBe nodeCount // apply
     queryProfile.operatorProfile(2).rows() shouldBe nodeCount // limit
-    // Depending on morsel size, the limit might or might not cancel the second row of the expand.
+    // Depending on morsel size, the limit may or may not cancel the second row of the expand (which may be fused with argument).
     queryProfile.operatorProfile(3).rows() should (be >= 1L* nodeCount and be <= 2L*nodeCount) // expand
-    queryProfile.operatorProfile(4).rows() shouldBe nodeCount // argument
+    queryProfile.operatorProfile(4).rows() should (be >= nodeCount/2L and be <= 1L*nodeCount) // argument
     queryProfile.operatorProfile(5).rows() shouldBe nodeCount  // all node scan
   }
 
@@ -834,9 +834,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(0).rows() shouldBe nodeCount // produce results
     queryProfile.operatorProfile(1).rows() shouldBe nodeCount // conditionalApply
     queryProfile.operatorProfile(2).rows() shouldBe nodeCount // limit
-    // Depending on morsel size, the limit might or might not cancel the second row of the expand.
+    // Depending on morsel size, the limit may or may not cancel the second row of the expand (which may be fused with argument).
     queryProfile.operatorProfile(3).rows() should (be >= 1L* nodeCount and be <= 2L*nodeCount) // expand
-    queryProfile.operatorProfile(4).rows() shouldBe nodeCount // argument
+    queryProfile.operatorProfile(4).rows() should (be >= nodeCount/2L and be <= 1L*nodeCount) // argument
     queryProfile.operatorProfile(5).rows() shouldBe nodeCount  // all node scan for x
   }
 
