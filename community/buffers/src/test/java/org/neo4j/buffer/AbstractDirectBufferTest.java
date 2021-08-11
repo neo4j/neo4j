@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.io.bufferpool.ByteBufferManger;
@@ -32,7 +31,7 @@ import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 abstract class AbstractDirectBufferTest
 {
@@ -63,12 +62,12 @@ abstract class AbstractDirectBufferTest
 
     private void assertAcquired( Integer... capacities )
     {
-        assertEquals( Arrays.asList( capacities ), tracingPoolWrapper.acquired );
+        assertThat( tracingPoolWrapper.acquired ).contains( capacities );
     }
 
     private void assertReleased( Integer... capacities )
     {
-        assertEquals( Arrays.asList( capacities ), tracingPoolWrapper.released );
+        assertThat( tracingPoolWrapper.released ).contains( capacities );
     }
 
     static class TracingPoolWrapper implements ByteBufferManger
