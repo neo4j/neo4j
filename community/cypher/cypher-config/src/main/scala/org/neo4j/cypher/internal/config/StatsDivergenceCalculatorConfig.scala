@@ -19,11 +19,26 @@
  */
 package org.neo4j.cypher.internal.config
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherReplanAlgorithm
+
+/**
+ *
+ * @param algorithm the replan algorithm.
+ *                  See[[org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_replan_algorithm]]
+ * @param initialThreshold The initial threshold for statistics above which a plan is considered stale.
+ *                         See [[org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold]]
+ * @param targetThreshold The target threshold for statistics above which a plan is considered stale.
+ *                        See [[org.neo4j.configuration.GraphDatabaseInternalSettings.query_statistics_divergence_target]]
+ * @param minReplanInterval The minimum time between possible cypher query replanning events.
+ *                          See [[org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval]]
+ * @param targetReplanInterval The minimum time between two replanning events will move towards this value over time.
+ *                             See [[org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_replan_interval_target]]
+ */
 case class StatsDivergenceCalculatorConfig(
-  name: String,
-  initialThreshold: Double,
-  targetThreshold: Double,
-  initialMillis: Long,
-  targetMillis: Long,
+                                            algorithm: CypherReplanAlgorithm,
+                                            initialThreshold: Double,
+                                            targetThreshold: Double,
+                                            minReplanInterval: Long,
+                                            targetReplanInterval: Long,
 )
 

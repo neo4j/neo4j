@@ -19,29 +19,32 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherReplanAlgorithm
 import org.neo4j.cypher.internal.config.StatsDivergenceCalculatorConfig
 
 object StatsDivergenceCalculator {
-  val inverse = "inverse"
-  val exponential = "exponential"
-  val none = "none"
   val similarityTolerance = 0.0001
 
   def divergenceCalculatorFor(config: StatsDivergenceCalculatorConfig): StatsDivergenceCalculator = {
-    val StatsDivergenceCalculatorConfig(name, initialThreshold, targetThreshold, initialMillis, targetMillis) = config
-    divergenceCalculatorFor(name, initialThreshold, targetThreshold, initialMillis, targetMillis)
+    val StatsDivergenceCalculatorConfig(algorithm, initialThreshold, targetThreshold, minReplanInterval, targetReplanInterval) = config
+    divergenceCalculatorFor(algorithm, initialThreshold, targetThreshold, minReplanInterval, targetReplanInterval)
   }
 
-  def divergenceCalculatorFor(name: String, initialThreshold: Double, targetThreshold: Double, initialMillis: Long, targetMillis: Long): StatsDivergenceCalculator = {
-    if (targetThreshold <= similarityTolerance || initialThreshold - targetThreshold <= similarityTolerance || targetMillis <= initialMillis) {
+  def divergenceCalculatorFor(algorithm: CypherReplanAlgorithm,
+                              initialThreshold: Double,
+                              targetThreshold: Double,
+                              minReplanInterval: Long,
+                              targetReplanInterval: Long): StatsDivergenceCalculator = {
+    if (targetThreshold <= similarityTolerance || initialThreshold - targetThreshold <= similarityTolerance || targetReplanInterval <= minReplanInterval) {
       // Input values that disable the threshold decay algorithm
-      StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
+      StatsDivergenceNoDecayCalculator(initialThreshold, minReplanInterval)
     } else {
       // Input is valid, select decay algorithm, the GraphDatabaseSettings will limit the possible values
-      name.toLowerCase match {
-        case "none" => StatsDivergenceNoDecayCalculator(initialThreshold, initialMillis)
-        case "exponential" => StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
-        case _ => StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, initialMillis, targetMillis)
+      algorithm match {
+        case CypherReplanAlgorithm.NONE => StatsDivergenceNoDecayCalculator(initialThreshold, minReplanInterval)
+        case CypherReplanAlgorithm.EXPONENTIAL => StatsDivergenceExponentialDecayCalculator(initialThreshold, targetThreshold, minReplanInterval, targetReplanInterval)
+        case CypherReplanAlgorithm.INVERSE |
+             CypherReplanAlgorithm.DEFAULT => StatsDivergenceInverseDecayCalculator(initialThreshold, targetThreshold, minReplanInterval, targetReplanInterval)
       }
     }
   }
@@ -51,34 +54,34 @@ object StatsDivergenceCalculator {
 }
 
 sealed trait StatsDivergenceCalculator {
-  val initialThreshold: Double
-  val initialMillis: Long
+  def initialThreshold: Double
+  def minReplanInterval: Long
 
-  def shouldCheck(currentTimeMillis: Long, lastCheckTimeMillis: Long): Boolean = currentTimeMillis - initialMillis >= lastCheckTimeMillis
+  def shouldCheck(currentTimeMillis: Long, lastCheckTimeMillis: Long): Boolean = currentTimeMillis - lastCheckTimeMillis >= minReplanInterval
 
   def decay(millisSincePreviousReplan: Long): Double
 }
 
-case class StatsDivergenceInverseDecayCalculator(initialThreshold: Double, targetThreshold: Double, initialMillis: Long, targetMillis: Long) extends StatsDivergenceCalculator {
-  val decayFactor: Double = (initialThreshold / targetThreshold - 1.0) / (targetMillis - initialMillis)
+case class StatsDivergenceInverseDecayCalculator(initialThreshold: Double, targetThreshold: Double, minReplanInterval: Long, targetReplanInterval: Long) extends StatsDivergenceCalculator {
+  val decayFactor: Double = (initialThreshold / targetThreshold - 1.0) / (targetReplanInterval - minReplanInterval)
 
   def decay(millisSincePreviousReplan: Long): Double = {
-    // Note that this equation has a possible singularity for very steep decays, when millisSincePreviousReplan < initialMillis
-    // However, that will never happen because of the 'tooSoon' test above
-    initialThreshold / (1.0 + decayFactor * (millisSincePreviousReplan - initialMillis))
+    // Note that this equation has a possible singularity for very steep decays, when millisSincePreviousReplan < minReplanInterval
+    // However, that will never happen because of the 'shouldCheck' test above
+    initialThreshold / (1.0 + decayFactor * (millisSincePreviousReplan - minReplanInterval))
   }
 }
 
-case class StatsDivergenceExponentialDecayCalculator(initialThreshold: Double, targetThreshold: Double, initialMillis: Long, targetMillis: Long) extends StatsDivergenceCalculator {
-  val decayFactor: Double = (Math.log(initialThreshold) - Math.log(targetThreshold)) / (targetMillis - initialMillis)
+case class StatsDivergenceExponentialDecayCalculator(initialThreshold: Double, targetThreshold: Double, minReplanInterval: Long, targetReplanInterval: Long) extends StatsDivergenceCalculator {
+  val decayFactor: Double = (Math.log(initialThreshold) - Math.log(targetThreshold)) / (targetReplanInterval - minReplanInterval)
 
   def decay(millisSincePreviousReplan: Long): Double = {
-    val exponent = -1.0 * decayFactor * (millisSincePreviousReplan - initialMillis)
+    val exponent = -1.0 * decayFactor * (millisSincePreviousReplan - minReplanInterval)
     initialThreshold * Math.exp(exponent)
   }
 }
 
-case class StatsDivergenceNoDecayCalculator(initialThreshold: Double, initialMillis: Long) extends StatsDivergenceCalculator {
+case class StatsDivergenceNoDecayCalculator(initialThreshold: Double, minReplanInterval: Long) extends StatsDivergenceCalculator {
   def decay(millisSinceThreshold: Long): Double = {
     initialThreshold
   }

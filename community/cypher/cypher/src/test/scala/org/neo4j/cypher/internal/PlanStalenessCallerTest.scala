@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
-
 import org.mockito.Mockito.when
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherReplanAlgorithm
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.GraphStatisticsSnapshot
@@ -35,13 +35,13 @@ import org.neo4j.time.FakeClock
 
 class PlanStalenessCallerTest extends CypherFunSuite {
 
-  private val divergenceCalculators = Seq(StatsDivergenceCalculator.none, StatsDivergenceCalculator.inverse, StatsDivergenceCalculator.exponential)
+  private val divergenceCalculators = Seq(CypherReplanAlgorithm.NONE, CypherReplanAlgorithm.INVERSE, CypherReplanAlgorithm.EXPONENTIAL)
 
   test("should be stale if statistics increase enough to pass the threshold") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.1, 0.05, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.1, 0.05, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 6.0)
       val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
@@ -53,10 +53,10 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   test("should be stale if statistics decrease enough to pass the threshold") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.1, 0.05, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.1, 0.05, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 4.0)
       val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
@@ -68,10 +68,10 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   test("should not be stale if stats have increased but not enough to pass the threshold") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.5, 0.1, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.5, 0.1, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 6.0)
       val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
@@ -83,10 +83,10 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   test("should not be stale if stats have decreased but not enough to pass the threshold") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.5, 0.1, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.5, 0.1, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 4.0)
       val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, TransactionIdSupplier(42), not_used, null)
@@ -98,11 +98,11 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   test("should not be stale if txId didn't change") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
 
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.5, 0.1, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.5, 0.1, 1000, 100000)
 
       // even with sufficient stats change we will remain stale
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 15.0)
@@ -115,10 +115,10 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   test("should not be stale if life time has not expired") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.5, 0.1, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.5, 0.1, 1000, 100000)
 
       // even with sufficient stats change we will remain stale
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 15.0)
@@ -131,10 +131,10 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   test("should update the timestamp if the life time is expired but transaction has not changed") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.5, 0.1, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.5, 0.1, 1000, 100000)
 
       // even with sufficient stats change we will remain stale
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 15.0)
@@ -151,10 +151,10 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   test("should update the timestamp and the txId if the life time is expired the txId is old but stats has not changed over the threshold") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.1, 0.05, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.1, 0.05, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 5.0)
       val idSupplier = TransactionIdSupplier(23)
@@ -169,10 +169,10 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   test("should be stale if statistics increase enough to pass the decayed threshold") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.5, 0.1, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.5, 0.1, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 6.0)
       val idSupplier = TransactionIdSupplier(23)
@@ -184,7 +184,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
       clock.forward(100, SECONDS)
       idSupplier.id = 73
       val result = planStalenessCaller.staleness(fingerprintRef, stats)
-      if (name == StatsDivergenceCalculator.none)
+      if (algorithm == CypherReplanAlgorithm.NONE)
         result shouldBe NotStale
       else
         result shouldBe a[Stale]
@@ -192,10 +192,10 @@ class PlanStalenessCallerTest extends CypherFunSuite {
   }
 
   test("should be stale if statistics decrease enough to pass the decayed threshold") {
-    testAll { (name, clock) =>
+    testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
-      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(name, 0.5, 0.1, 1000, 100000)
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.5, 0.1, 1000, 100000)
 
       val stats: GraphStatistics = nodesWithLabelCardinality(21, 4.0)
       val idSupplier = TransactionIdSupplier(23)
@@ -207,16 +207,16 @@ class PlanStalenessCallerTest extends CypherFunSuite {
       clock.forward(100, SECONDS)
       idSupplier.id = 73
       val result = planStalenessCaller.staleness(fingerprintRef, stats)
-      if (name == StatsDivergenceCalculator.none)
+      if (algorithm == CypherReplanAlgorithm.NONE)
         result shouldBe NotStale
       else
         result shouldBe a[Stale]
     }
   }
 
-  def testAll(f: (String, FakeClock) => Unit): Unit = {
-    for (name <- divergenceCalculators)
-      withClue(s"For divergence calculator '$name': ") { f(name, Clocks.fakeClock()) }
+  def testAll(f: (CypherReplanAlgorithm, FakeClock) => Unit): Unit = {
+    for (algorithm <- divergenceCalculators)
+      withClue(s"For divergence calculator '$algorithm': ") { f(algorithm, Clocks.fakeClock()) }
   }
 
   private def nodesWithLabelCardinality(labelId: Int, cardinality: Double): GraphStatistics = {

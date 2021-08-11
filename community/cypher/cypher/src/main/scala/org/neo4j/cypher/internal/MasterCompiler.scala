@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherReplanAlgorithm
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
-import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.graphdb.Notification
@@ -36,7 +36,7 @@ object MasterCompiler {
   val CLOCK: Clock = Clock.systemUTC()
   val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.5
   val DEFAULT_STATISTICS_DIVERGENCE_TARGET = 0.1
-  val DEFAULT_DIVERGENCE_ALGORITHM: String = StatsDivergenceCalculator.inverse
+  val DEFAULT_DIVERGENCE_ALGORITHM: CypherReplanAlgorithm = CypherReplanAlgorithm.INVERSE
   val DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD = 10000
 }
 

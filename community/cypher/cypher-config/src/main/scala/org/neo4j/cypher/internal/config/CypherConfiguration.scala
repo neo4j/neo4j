@@ -41,15 +41,15 @@ object CypherConfiguration {
   def statsDivergenceFromConfig(config: Config): StatsDivergenceCalculatorConfig = {
     val divergenceThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue()
     val targetThreshold = config.get(GraphDatabaseInternalSettings.query_statistics_divergence_target).doubleValue()
-    val minReplanTime = config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue()
-    val targetReplanTime = config.get(GraphDatabaseInternalSettings.cypher_replan_interval_target).toMillis.longValue()
-    val divergenceAlgorithm = config.get(GraphDatabaseInternalSettings.cypher_replan_algorithm).toString
+    val minReplanInterval = config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue()
+    val targetReplanInterval = config.get(GraphDatabaseInternalSettings.cypher_replan_interval_target).toMillis.longValue()
+    val divergenceAlgorithm = config.get(GraphDatabaseInternalSettings.cypher_replan_algorithm)
     StatsDivergenceCalculatorConfig(
       divergenceAlgorithm,
       divergenceThreshold,
       targetThreshold,
-      minReplanTime,
-      targetReplanTime)
+      minReplanInterval,
+      targetReplanInterval)
   }
 }
 
