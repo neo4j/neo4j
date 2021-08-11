@@ -25,8 +25,12 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+<<<<<<< HEAD
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+=======
+import org.neo4j.cypher.internal.logical.plans.Merge
+>>>>>>> 04eb1fe4017... Fix slot allocation for optionalExpand predicate
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -62,17 +66,9 @@ case object unnestOptional extends Rewriter {
     case apply@Apply(lhs,
     Optional(
     Selection(predicate,
-    e@Expand(_: Argument, _, _, _, to, relName, _)), _)) if predicateSafeToMove(predicate, to, relName)=>
+    e@Expand(_: Argument, _, _, _, _, _, _)), _)) =>
       optionalExpand(e, lhs)(Some(predicate))(SameId(apply.id))
   })
-
-  //It is not safe to move a nested plan predicate that will use identifiers introduced by the optional expand since
-  //slot allocation expects the predicate to be evaluated on the input row.
-  //TODO: in reality the predicate is evaluated on the output row, fix slot allocation to reflect this.
-  private def predicateSafeToMove(predicate: Expression, toNode: String, relName: String): Boolean = !predicate.treeExists {
-    case plan: NestedPlanExpression =>
-      plan.plan.availableSymbols(toNode) || plan.plan.availableSymbols(relName)
-  }
 
   private def optionalExpand(e: Expand, lhs: LogicalPlan): Option[Expression] => IdGen => OptionalExpand =
     predicate => idGen => OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.mode, predicate)(idGen)
