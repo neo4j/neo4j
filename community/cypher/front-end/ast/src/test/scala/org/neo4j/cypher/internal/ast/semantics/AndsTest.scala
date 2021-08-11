@@ -30,6 +30,6 @@ class AndsTest extends SemanticFunSuite {
     val result = SemanticExpressionCheck.simple(ands)(SemanticState.clean)
 
     result.errors shouldBe empty
-    assert(result.state.typeTable.size === 3)
+    result.state.typeTable.keySet should contain allOf(dummyExpr1, dummyExpr2, dummyExpr3, ands)
   }
 }

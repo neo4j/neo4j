@@ -52,6 +52,10 @@ case class Ands(exprs: Seq[Expression])(val position: InputPosition) extends Boo
 
   private val exprSet = exprs.toSet
 
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector.fill(exprs.size)(CTBoolean), outputType = CTBoolean)
+  )
+
   override def equals(other: Any): Boolean =
     other match {
       case that: Ands => (that canEqual this) && (exprSet == that.exprSet)
@@ -78,6 +82,10 @@ case class Ors(exprs: Seq[Expression])(val position: InputPosition) extends Bool
   override def canonicalOperatorSymbol = "OR"
 
   private val exprSet = exprs.toSet
+
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector.fill(exprs.size)(CTBoolean), outputType = CTBoolean)
+  )
 
   override def equals(other: Any): Boolean =
     other match {

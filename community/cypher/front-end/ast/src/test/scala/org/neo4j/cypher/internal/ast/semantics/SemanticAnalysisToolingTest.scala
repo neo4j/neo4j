@@ -16,8 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.DummyExpression
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTNumber
@@ -25,11 +29,11 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SemanticAnalysisToolingTest extends CypherFunSuite {
+class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val expression = DummyExpression(CTAny)
+  val expression: Expression = DummyExpression(CTAny)
 
-  val toTest = new SemanticAnalysisTooling {}
+  val toTest: SemanticAnalysisTooling = new SemanticAnalysisTooling {}
 
   test("shouldReturnCalculatedType") {
     SemanticState.clean.expressionType(expression).actual should equal(TypeSpec.all)
@@ -71,5 +75,17 @@ class SemanticAnalysisToolingTest extends CypherFunSuite {
     assert(result.errors.head.position === expression.position)
     assert(result.errors.head.msg == "Type mismatch: lhs was String yet rhs was Integer or Node")
     assert(toTest.types(expression)(result.state).isEmpty)
+  }
+
+  test("should infer the right type for arguments of Ands") {
+    // Given
+    val varExpr = varFor("x")
+    val expression = ands(varExpr)
+
+    // When
+    val checkResult = SemanticExpressionCheck.check(SemanticContext.Simple, expression).apply(SemanticState.clean)
+
+    // Then
+    checkResult.state.typeTable.get(varExpr).get.expected should be(Some(CTBoolean.covariant))
   }
 }

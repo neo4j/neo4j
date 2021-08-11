@@ -221,10 +221,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           checkTypes(x, x.signatures)
 
       case x:Ands =>
-        check(ctx, x.exprs, x +: parents)
+        check(ctx, x.exprs, x +: parents) chain
+          checkTypes(x, x.signatures)
 
       case x:Ors =>
-        check(ctx, x.exprs, x +: parents)
+        check(ctx, x.exprs, x +: parents) chain
+          checkTypes(x, x.signatures)
 
       case x:In =>
         check(ctx, x.lhs, x +: parents) chain
