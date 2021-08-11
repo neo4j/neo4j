@@ -19,12 +19,19 @@
  */
 package org.neo4j.cypher.internal
 
-import java.time.Clock
-
 import org.neo4j.cypher.internal.planner.spi.GraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 
-case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot) {
+import java.time.Clock
+
+/**
+ *
+ * @param creationTimeMillis  time of creation
+ * @param lastCheckTimeMillis time this fingerprint was last checked
+ * @param lastCommittedTxId   highest seen committed transaction id when this fingerprint was created.
+ * @param snapshot            a snapshot of the statistics used to compute the plan in a cache
+ */
+case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, lastCommittedTxId: Long, snapshot: GraphStatisticsSnapshot) {
   if (snapshot.statsValues.isEmpty) {
     throw new IllegalArgumentException("Cannot create plan fingerprint with empty graph statistics snapshot")
   }
@@ -34,8 +41,8 @@ object PlanFingerprint {
   def apply(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot): PlanFingerprint =
     PlanFingerprint(creationTimeMillis, creationTimeMillis, txId, snapshot)
 
-  def take(clock: Clock, txIdProvider: () => Long, graphStatistics: InstrumentedGraphStatistics): PlanFingerprint =
-    PlanFingerprint(clock.millis(), txIdProvider(), graphStatistics.snapshot.freeze)
+  def take(clock: Clock, lastCommittedTxIdProvider: () => Long, graphStatistics: InstrumentedGraphStatistics): PlanFingerprint =
+    PlanFingerprint(clock.millis(), lastCommittedTxIdProvider(), graphStatistics.snapshot.freeze)
 }
 
 class PlanFingerprintReference(var fingerprint: PlanFingerprint)

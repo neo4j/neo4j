@@ -313,7 +313,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override val statistics: InstrumentedGraphStatistics = graphStatistics
 
-  override val txIdProvider: LastCommittedTxIdProvider = LastCommittedTxIdProvider(tc.graph)
+  override val lastCommittedTxIdProvider: LastCommittedTxIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name)
 

@@ -132,7 +132,7 @@ class CypherPlannerTest extends CypherFunSuite {
       )
       override def getPropertiesWithExistenceConstraint: Set[String] = Set.empty
       override def canLookupNodesByLabel: Boolean = true
-      override def txIdProvider: () => Long = getTx
+      override def lastCommittedTxIdProvider: () => Long = getTx
     }
 
     CypherPlanner.customPlanContextCreator = Some((_, _, _) => planContext)

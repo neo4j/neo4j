@@ -37,11 +37,11 @@ import java.time.Clock
 /**
  * Cache which stores logical plans indexed by an AST statement.
  *
- * @param maximumSize Maximum size of this cache
- * @param tracer Traces cache activity
- * @param clock Clock used to compute logical plan staleness
- * @param divergence Statistics divergence calculator used to compute logical plan staleness
- * @param lastCommittedTxIdProvider Transation id provider used to compute logical plan staleness
+ * @param maximumSize               Maximum size of this cache
+ * @param tracer                    Traces cache activity
+ * @param clock                     Clock used to compute logical plan staleness
+ * @param divergence                Statistics divergence calculator used to compute logical plan staleness
+ * @param lastCommittedTxIdProvider Last committed transaction id provider used to compute logical plan staleness
  * @tparam STATEMENT Type of AST statement used as key
  */
 class AstLogicalPlanCache[STATEMENT <: AnyRef](override val cacheFactory: CaffeineCacheFactory,
@@ -62,7 +62,7 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val cacheFactory: Caffei
 
   def logStalePlanRemovalMonitor(log: Log): CacheTracer[STATEMENT] =
     new CacheTracer[STATEMENT] {
-      override def queryCacheStale(key: STATEMENT, secondsSinceReplan: Int, metaData: String, maybeReason: Option[String]) {
+      override def queryCacheStale(key: STATEMENT, secondsSinceReplan: Int, metaData: String, maybeReason: Option[String]): Unit = {
         log.debug(s"Discarded stale plan from the plan cache after $secondsSinceReplan " +
           s"seconds${maybeReason.fold("")(r => s". Reason: $r")}. Metadata: $metaData")
       }
@@ -80,11 +80,18 @@ class AstLogicalPlanCache[STATEMENT <: AnyRef](override val cacheFactory: Caffei
 }
 
 object AstLogicalPlanCache {
+  /**
+   * @param clock                     Clock for measuring elapsed time.
+   * @param divergence                Computes is the plan i stale depending on changes in the underlying
+   *                                  statistics, and how much time has passed.
+   * @param lastCommittedTxIdProvider Reports the id of the latest committed transaction.
+   * @return a [[PlanStalenessCaller]]
+   */
   def stalenessCaller(clock: Clock,
                       divergence: StatsDivergenceCalculator,
-                      txIdProvider: () => Long,
+                      lastCommittedTxIdProvider: () => Long,
                       log: Log): PlanStalenessCaller[CacheableLogicalPlan] = {
-    new DefaultPlanStalenessCaller[CacheableLogicalPlan](clock, divergence, txIdProvider, (state, _) => state.reusability, log)
+    new DefaultPlanStalenessCaller[CacheableLogicalPlan](clock, divergence, lastCommittedTxIdProvider, (state, _) => state.reusability, log)
   }
 }
 

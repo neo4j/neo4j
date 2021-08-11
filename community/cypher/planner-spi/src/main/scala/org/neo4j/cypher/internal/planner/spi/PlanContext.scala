@@ -100,7 +100,10 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
   def getPropertiesWithExistenceConstraint: Set[String]
 
-  def txIdProvider: () => Long
+  /**
+   * @return a provider for the highest seen committed transaction id.
+   */
+  def lastCommittedTxIdProvider: () => Long
 
   def statistics: InstrumentedGraphStatistics
 

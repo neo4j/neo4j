@@ -55,8 +55,8 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def statistics: InstrumentedGraphStatistics =
     translateException(tokenNameLookup, inner.statistics)
 
-  override def txIdProvider: () => Long = {
-    val innerTxProvider = translateException(tokenNameLookup, inner.txIdProvider)
+  override def lastCommittedTxIdProvider: () => Long = {
+    val innerTxProvider = translateException(tokenNameLookup, inner.lastCommittedTxIdProvider)
     () => translateException(tokenNameLookup, innerTxProvider())
   }
 

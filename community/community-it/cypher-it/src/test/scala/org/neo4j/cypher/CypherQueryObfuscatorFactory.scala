@@ -109,7 +109,7 @@ class CypherQueryObfuscatorFactory {
     override def hasRelationshipPropertyExistenceConstraint(relationshipTypeName: String, propertyKey: String): Nothing = fail()
     override def getRelationshipPropertiesWithExistenceConstraint(relationshipTypeName: String): Nothing = fail()
     override def getPropertiesWithExistenceConstraint: Nothing = fail()
-    override def txIdProvider: Nothing = fail()
+    override def lastCommittedTxIdProvider: Nothing = fail()
     override def statistics: Nothing = fail()
     override def notificationLogger(): Nothing = fail()
     override def functionSignature(name: QualifiedName): Nothing = fail()

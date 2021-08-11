@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.storageengine.api.TransactionIdStore
 
+/**
+ * A provider for the highest seen committed transaction id.
+ */
 case class LastCommittedTxIdProvider(db: GraphDatabaseQueryService) extends (() => Long) {
 
   override def apply(): Long = {

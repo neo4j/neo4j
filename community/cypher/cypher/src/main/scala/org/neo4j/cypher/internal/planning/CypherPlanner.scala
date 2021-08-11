@@ -162,6 +162,8 @@ object ParsedQueriesCacheKey {
 
 /**
  * Cypher planner, which either parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]] or just plans [[FullyParsedQuery]].
+ *
+ * @param lastCommittedTxIdProvider Last committed transaction id provider used to compute logical plan staleness
  */
 case class CypherPlanner(config: CypherPlannerConfiguration,
                          clock: Clock,
@@ -170,7 +172,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                          cacheFactory: CaffeineCacheFactory,
                          plannerOption: CypherPlannerOption,
                          updateStrategy: CypherUpdateStrategy,
-                         txIdProvider: () => Long,
+                         lastCommittedTxIdProvider: () => Long,
                          compatibilityMode: CypherCompatibilityVersion
     ) {
 
@@ -186,7 +188,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       cacheTracer,
       clock,
       config.statsDivergenceCalculator,
-      txIdProvider,
+      lastCommittedTxIdProvider,
       log)
 
   monitors.addMonitorListener(planCache.logStalePlanRemovalMonitor(log), "cypher")
@@ -424,7 +426,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         }
       case _ if SchemaCommandRuntime.isApplicable(logicalPlanState) => (FineToReuse, shouldBeCached)
       case _ =>
-        val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
+        val fingerprint = PlanFingerprint.take(clock, planContext.lastCommittedTxIdProvider, planContext.statistics)
         val fingerprintReference = new PlanFingerprintReference(fingerprint)
         (MaybeReusable(fingerprintReference), shouldBeCached)
     }

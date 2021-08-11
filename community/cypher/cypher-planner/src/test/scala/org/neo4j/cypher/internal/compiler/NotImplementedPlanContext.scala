@@ -60,7 +60,7 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def getPropertiesWithExistenceConstraint: Set[String] = ???
 
-  override def txIdProvider: () => Long = ???
+  override def lastCommittedTxIdProvider: () => Long = ???
 
   override def statistics: InstrumentedGraphStatistics = ???
 

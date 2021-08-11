@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.internal
 
-import java.time.Clock
-
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.spi.TransactionBoundGraphStatistics
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
 
+import java.time.Clock
+
 /**
  * Decides whether a plan is stale or not, depending on it's fingerprint.
  *
- * @param clock Clock for measuring elapsed time.
- * @param divergenceCalculator Computes is the plan i stale depending on changes in the underlying
- *                   statistics, and how much time has passed.
+ * @param clock                     Clock for measuring elapsed time.
+ * @param divergenceCalculator      Computes is the plan i stale depending on changes in the underlying
+ *                                  statistics, and how much time has passed.
  * @param lastCommittedTxIdProvider Reports the id of the latest committed transaction.
  */
 class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
@@ -57,12 +57,9 @@ class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
   private[internal] def staleness(ref: PlanFingerprintReference, statistics: => GraphStatistics): Staleness = {
     val f = ref.fingerprint
     lazy val currentTimeMillis = clock.millis()
-    // TODO: remove this tx-id stuff.
-    // Cannot understand why that would work? The last committed id cannot be this tx,
-    // because for us to plan a query this tx has to be open, e.g. not committed.
-    lazy val currentTxId = lastCommittedTxIdProvider()
+    lazy val lastCommittedTxId = lastCommittedTxIdProvider()
 
-    if (divergenceCalculator.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) && currentTxId != f.txId) {
+    if (divergenceCalculator.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) && lastCommittedTxId != f.lastCommittedTxId) {
       //check if we have diverged?
       val threshold = divergenceCalculator.decay(currentTimeMillis - f.creationTimeMillis)
       val divergence = f.snapshot.diverges(f.snapshot.recompute(statistics))
@@ -72,7 +69,7 @@ class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
             s"which is a divergence of ${divergence.divergence} which is greater than " +
             s"threshold $threshold"))
       } else {
-        ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId)
+        ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis, lastCommittedTxId = lastCommittedTxId)
         NotStale
       }
     } else {
