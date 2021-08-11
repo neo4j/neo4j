@@ -414,6 +414,7 @@ org.neo4j.graphdb.schema.IndexType public final enum extends java.lang.Enum<org.
 org.neo4j.graphdb.schema.IndexType::BTREE org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::FULLTEXT org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::LOOKUP org.neo4j.graphdb.schema.IndexType public static final
+org.neo4j.graphdb.schema.IndexType::RANGE org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::TEXT org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::valueOf(java.lang.String) org.neo4j.graphdb.schema.IndexType public static
 org.neo4j.graphdb.schema.IndexType::values() org.neo4j.graphdb.schema.IndexType[] public static

@@ -64,4 +64,13 @@ interface IndexParams
         return false;
     }
 
+    default boolean indexSupportsStringSuffixAndContains()
+    {
+        return true;
+    }
+
+    default boolean indexSupportsGeometryRange()
+    {
+        return true;
+    }
 }

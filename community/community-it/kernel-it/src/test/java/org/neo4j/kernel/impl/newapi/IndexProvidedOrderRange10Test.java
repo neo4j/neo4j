@@ -22,18 +22,18 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexType;
 
-abstract class IndexProvidedOrderLuceneNative30Test extends AbstractIndexProvidedOrderTest
+abstract class IndexProvidedOrderRange10Test extends AbstractIndexProvidedOrderTest
 {
     @Override
     GraphDatabaseSettings.SchemaIndex getSchemaIndex()
     {
-        return GraphDatabaseSettings.SchemaIndex.NATIVE30;
+        //This value doesn't matter, it is not used when creating range indexes.
+        return GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
     }
 
     @Override
     IndexType getIndexType()
     {
-        return IndexType.BTREE;
+        return IndexType.RANGE;
     }
 }
-

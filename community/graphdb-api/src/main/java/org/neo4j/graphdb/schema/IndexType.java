@@ -84,4 +84,18 @@ public enum IndexType
      * </ul>
      */
     TEXT,
+
+    /**
+     * For B+Tree based indexes. All types of values are indexed and stored in sort-order. This means they are good at all types of exact matching,
+     * and range queries. They can also support index-backed order-by.
+     * <p>
+     * RANGE indexes have the following abilities and limitations:
+     * <ul>
+     *     <li>They can be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
+     *     <li>They do not support spatial queries, like 'distance' for example.</li>
+     *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
+     *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
+     * </ul>
+     */
+    RANGE
 }

@@ -30,6 +30,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -94,6 +95,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     private static long date891, date892, date86;
     private static long[] entitiesOfAllPropertyTypes;
     private static long whateverPoint;
+    private static Value whateverPointValue;
 
     private static final PointValue POINT_1 =
             PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, crs: 'wgs-84'}" );
@@ -104,6 +106,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     private final IndexParams indexParams = getIndexParams();
 
     protected abstract EntityParams<ENTITY_VALUE_INDEX_CURSOR> getEntityParams();
+    protected abstract IndexType getIndexType();
 
     @Override
     public ReadTestSupport newTestSupport()
@@ -119,19 +122,19 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            entityParams.createEntityIndex( tx, DEFAULT_ENTITY_TOKEN, PROP_NAME, PROP_INDEX_NAME );
-            entityParams.createEntityIndex( tx, DEFAULT_ENTITY_TOKEN, PROP_2_NAME, PROP_2_INDEX_NAME );
-            entityParams.createEntityIndex( tx, DEFAULT_ENTITY_TOKEN, PROP_3_NAME, PROP_3_INDEX_NAME );
+            entityParams.createEntityIndex( tx, DEFAULT_ENTITY_TOKEN, PROP_NAME, PROP_INDEX_NAME, getIndexType() );
+            entityParams.createEntityIndex( tx, DEFAULT_ENTITY_TOKEN, PROP_2_NAME, PROP_2_INDEX_NAME, getIndexType() );
+            entityParams.createEntityIndex( tx, DEFAULT_ENTITY_TOKEN, PROP_3_NAME, PROP_3_INDEX_NAME, getIndexType() );
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            entityParams.createEntityIndex( tx, WHAT_TOKEN, EVER_PROP_NAME, WHAT_EVER_INDEX_NAME );
+            entityParams.createEntityIndex( tx, WHAT_TOKEN, EVER_PROP_NAME, WHAT_EVER_INDEX_NAME, getIndexType() );
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            entityParams.createCompositeEntityIndex( tx, PERSON_TOKEN, FIRSTNAME_PROP_NAME, SURNAME_PROP_NAME, COMPOSITE_INDEX_NAME );
+            entityParams.createCompositeEntityIndex( tx, PERSON_TOKEN, FIRSTNAME_PROP_NAME, SURNAME_PROP_NAME, COMPOSITE_INDEX_NAME, getIndexType() );
             tx.commit();
         }
         catch ( Exception e )
@@ -202,7 +205,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             listOfIds.add( entityWithWhatever( tx, false ) );
             listOfIds.add( entityWithWhatever( tx, 3 ) );
             listOfIds.add( entityWithWhatever( tx, 13.0 ) );
-            whateverPoint = entityWithWhatever( tx, Values.pointValue( Cartesian, 1, 0 ) );
+            whateverPointValue = Values.pointValue( Cartesian, 1, 0 );
+            whateverPoint = entityWithWhatever( tx, whateverPointValue );
             listOfIds.add( whateverPoint );
             listOfIds.add( entityWithWhatever( tx, DateValue.date( 1989, 3, 24 ) ) );
             listOfIds.add( entityWithWhatever( tx, new String[]{"first", "second", "third"} ) );
@@ -382,6 +386,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     @Test
     void shouldPerformStringSuffixSearch() throws Exception
     {
+        assumeTrue( indexParams.indexSupportsStringSuffixAndContains() );
+
         // given
         boolean needsValues = indexParams.indexProvidesStringValues();
         int prop = token.propertyKey( PROP_NAME );
@@ -403,6 +409,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     @Test
     void shouldPerformStringContainmentSearch() throws Exception
     {
+        assumeTrue( indexParams.indexSupportsStringSuffixAndContains() );
+
         // given
         boolean needsValues = indexParams.indexProvidesStringValues();
         int prop = token.propertyKey( PROP_NAME );
@@ -553,6 +561,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     @Test
     void shouldPerformSpatialRangeSearch() throws KernelException
     {
+        assumeTrue( indexParams.indexSupportsGeometryRange() );
+
         // given
         boolean needsValues = indexParams.indexProvidesSpatialValues();
         IndexQueryConstraints constraints = unordered( needsValues );
@@ -759,6 +769,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     @Test
     void shouldRespectOrderCapabilitiesForSpatial() throws KernelException
     {
+        assumeTrue( indexParams.indexSupportsGeometryRange() );
+
         // given
         boolean needsValues = indexParams.indexProvidesSpatialValues();
         int prop = token.propertyKey( PROP_NAME );
@@ -866,7 +878,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unorderedValues(), PropertyIndexQuery.range( prop, Cartesian ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unorderedValues(), PropertyIndexQuery.exact( prop, whateverPointValue ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY ), true, whateverPoint );

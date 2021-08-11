@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi.index;
 
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 
 public class NodeValueIndexCursorNativeBtree10Test extends EntityValueIndexCursorTestBase<NodeValueIndexCursor>
@@ -34,5 +35,11 @@ public class NodeValueIndexCursorNativeBtree10Test extends EntityValueIndexCurso
     protected EntityParams<NodeValueIndexCursor> getEntityParams()
     {
         return new NodeParams();
+    }
+
+    @Override
+    protected IndexType getIndexType()
+    {
+        return IndexType.BTREE;
     }
 }

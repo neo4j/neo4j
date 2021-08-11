@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.newapi.index;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 
-class NativeBtree10IndexParams implements IndexParams
+class Range10IndexParams implements IndexParams
 {
 
     @Override
     public void enrichSettings( ReadTestSupport testSupport )
     {
-        testSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
+        testSupport.addSetting( GraphDatabaseInternalSettings.range_indexes_enabled, true );
     }
 
     @Override
     public String providerKey()
     {
-        return "native-btree";
+        return "range";
     }
 
     @Override
@@ -77,5 +77,23 @@ class NativeBtree10IndexParams implements IndexParams
     public boolean indexProvidesSpatialValues()
     {
         return true;
+    }
+
+    @Override
+    public boolean indexProvidesTemporalValues()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean indexSupportsStringSuffixAndContains()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean indexSupportsGeometryRange()
+    {
+        return false;
     }
 }

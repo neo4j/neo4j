@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi.index;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -57,9 +58,10 @@ public interface EntityParams<CURSOR extends Cursor & ValueIndexCursor>
     void entityIndexScan( KernelTransaction tx, IndexReadSession index, CURSOR cursor,
                           IndexQueryConstraints constraints ) throws KernelException;
 
-    void createEntityIndex( Transaction tx, String entityToken, String propertyKey, String indexName );
+    void createEntityIndex( Transaction tx, String entityToken, String propertyKey, String indexName, IndexType indexType );
 
-    void createCompositeEntityIndex( Transaction tx, String entityToken, String propertyKey1, String propertyKey2, String indexName );
+    void createCompositeEntityIndex( Transaction tx, String entityToken, String propertyKey1, String propertyKey2, String indexName,
+            IndexType indexType );
 
     void entitySetProperty( KernelTransaction tx, long entityId, int propId, String value ) throws KernelException;
 

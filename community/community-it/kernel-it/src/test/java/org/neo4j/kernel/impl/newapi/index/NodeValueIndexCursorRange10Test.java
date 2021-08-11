@@ -17,23 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.newapi.index;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 
-abstract class IndexProvidedOrderLuceneNative30Test extends AbstractIndexProvidedOrderTest
+public class NodeValueIndexCursorRange10Test extends EntityValueIndexCursorTestBase<NodeValueIndexCursor>
 {
+
     @Override
-    GraphDatabaseSettings.SchemaIndex getSchemaIndex()
+    protected IndexParams getIndexParams()
     {
-        return GraphDatabaseSettings.SchemaIndex.NATIVE30;
+        return new Range10IndexParams();
     }
 
     @Override
-    IndexType getIndexType()
+    protected EntityParams<NodeValueIndexCursor> getEntityParams()
     {
-        return IndexType.BTREE;
+        return new NodeParams();
+    }
+
+    @Override
+    protected IndexType getIndexType()
+    {
+        return IndexType.RANGE;
     }
 }
-

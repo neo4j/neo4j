@@ -43,7 +43,7 @@ public enum IndexType
      */
     TEXT,
     /**
-     * TODO add a corresponding public type when we have everything for creating RANGE indexes
+     * @see org.neo4j.graphdb.schema.IndexType#RANGE
      */
     RANGE;
 
@@ -63,6 +63,8 @@ public enum IndexType
             return LOOKUP;
         case TEXT:
             return TEXT;
+        case RANGE:
+            return RANGE;
         default:
             throw new IllegalArgumentException( "Unknown index type: " + type );
         }
@@ -80,6 +82,8 @@ public enum IndexType
             return org.neo4j.graphdb.schema.IndexType.LOOKUP;
         case TEXT:
             return org.neo4j.graphdb.schema.IndexType.TEXT;
+        case RANGE:
+            return org.neo4j.graphdb.schema.IndexType.RANGE;
         default:
             throw new IllegalStateException( "Missing index type variant in IndexType.toPublicApi: " + this );
         }

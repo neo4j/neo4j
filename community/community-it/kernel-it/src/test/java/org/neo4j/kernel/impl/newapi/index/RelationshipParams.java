@@ -24,6 +24,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -105,15 +106,17 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
     }
 
     @Override
-    public void createEntityIndex( Transaction tx, String entityToken, String propertyKey, String indexName )
+    public void createEntityIndex( Transaction tx, String entityToken, String propertyKey, String indexName, IndexType indexType )
     {
-        tx.schema().indexFor( RelationshipType.withName( entityToken ) ).on( propertyKey ).withName( indexName ).create();
+        tx.schema().indexFor( RelationshipType.withName( entityToken ) ).on( propertyKey ).withIndexType( indexType ).withName( indexName ).create();
     }
 
     @Override
-    public void createCompositeEntityIndex( Transaction tx, String entityToken, String propertyKey1, String propertyKey2, String indexName )
+    public void createCompositeEntityIndex( Transaction tx, String entityToken, String propertyKey1, String propertyKey2, String indexName,
+            IndexType indexType )
     {
-        tx.schema().indexFor( RelationshipType.withName( entityToken ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName ).create();
+        tx.schema().indexFor( RelationshipType.withName( entityToken ) ).on( propertyKey1 ).on( propertyKey2 ).withIndexType( indexType ).withName( indexName )
+                .create();
     }
 
     @Override
