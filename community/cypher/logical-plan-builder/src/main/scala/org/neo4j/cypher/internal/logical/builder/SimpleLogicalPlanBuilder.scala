@@ -19,15 +19,10 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import org.neo4j.cypher.internal.logical.plans.FieldSignature
-import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
-import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.logical.plans.QualifiedName
-import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-class TestPlanBuilder extends SimpleLogicalPlanBuilder(TestResolver)
+class SimpleLogicalPlanBuilder(resolver: Resolver = SimpleResolver(), wholePlan: Boolean = true)
+  extends AbstractLogicalPlanBuilder[LogicalPlan, SimpleLogicalPlanBuilder](resolver, wholePlan) {
 
-object TestResolver extends SimpleResolver(procedures = Set(
-  ProcedureSignature(QualifiedName(Seq("test"), "proc1"), IndexedSeq(), None, None, ProcedureReadOnlyAccess, id = 0),
-  ProcedureSignature(QualifiedName(Seq("test"), "proc2"), IndexedSeq(FieldSignature("in1", CTInteger)), Some(IndexedSeq(FieldSignature("foo", CTInteger))), None, ProcedureReadOnlyAccess, id = 0)
-))
+  override def build(readOnly: Boolean): LogicalPlan = buildLogicalPlan()
+}

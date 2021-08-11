@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import org.neo4j.cypher.internal.logical.builder.Resolver
+import org.neo4j.cypher.internal.logical.builder.SimpleResolver
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.logical.plans.QualifiedName
-import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 
 import scala.collection.mutable.ArrayBuffer
@@ -50,37 +48,9 @@ class LogicalPlanResolver(
                            properties: ArrayBuffer[String] = new ArrayBuffer[String](),
                            relTypes: ArrayBuffer[String] = new ArrayBuffer[String](),
                            procedures: Set[ProcedureSignature] = Set.empty
-                         ) extends Resolver with TokenContext {
-
-  override def getLabelId(label: String): Int = {
-    val index = labels.indexOf(label)
-    if (index == -1) {
-      labels += label
-      labels.size - 1
-    } else {
-      index
-    }
-  }
-
-  override def getPropertyKeyId(prop: String): Int = {
-    val index = properties.indexOf(prop)
-    if (index == -1) {
-      properties += prop
-      properties.size - 1
-    } else {
-      index
-    }
-  }
-
-  override def getRelTypeId(relType: String): Int = {
-    val index = relTypes.indexOf(relType)
-    if (index == -1) {
-      relTypes += relType
-      relTypes.size - 1
-    } else {
-      index
-    }
-  }
+                         )
+  extends SimpleResolver(labels, properties, relTypes, procedures)
+  with TokenContext {
 
   override def getLabelName(id: Int): String = if (id >= labels.size) throw new IllegalStateException(s"Label $id undefined") else labels(id)
 
@@ -93,8 +63,4 @@ class LogicalPlanResolver(
   override def getRelTypeName(id: Int): String = if (id >= relTypes.size) throw new IllegalStateException(s"RelType $id undefined") else relTypes(id)
 
   override def getOptRelTypeId(relType: String): Option[Int] = Some(getRelTypeId(relType))
-
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = procedures.find(_.name == name).getOrElse(throw new IllegalStateException(s"No procedure signature for $name"))
-
-  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???
 }

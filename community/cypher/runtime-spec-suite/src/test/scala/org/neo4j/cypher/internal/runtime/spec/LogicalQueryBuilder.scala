@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.PeriodicCommitInfo
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.Resolver
@@ -46,8 +44,6 @@ class LogicalQueryBuilder(tokenResolver: Resolver,
                           wholePlan: Boolean = true)
   extends AbstractLogicalPlanBuilder[LogicalQuery, LogicalQueryBuilder](tokenResolver, wholePlan) {
 
-  private var semanticTable = new SemanticTable()
-
   private val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
     override val defaultValue: ProvidedOrder = ProvidedOrder.empty
   }
@@ -57,18 +53,6 @@ class LogicalQueryBuilder(tokenResolver: Resolver,
   }
 
   private val leveragedOrders: LeveragedOrders = new LeveragedOrders
-
-  override def newNode(node: Variable): Unit = {
-    semanticTable = semanticTable.addNode(node)
-  }
-
-  override def newRelationship(relationship: Variable): Unit = {
-    semanticTable = semanticTable.addRelationship(relationship)
-  }
-
-  override def newVariable(variable: Variable): Unit = {
-    semanticTable = semanticTable.addTypeInfoCTAny(variable)
-  }
 
   def withProvidedOrder(order: ProvidedOrder): this.type = {
     providedOrders.set(idOfLastPlan, order)

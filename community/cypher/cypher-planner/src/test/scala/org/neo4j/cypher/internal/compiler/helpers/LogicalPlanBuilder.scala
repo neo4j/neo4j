@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder.FakeLeafPlan
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
@@ -40,7 +39,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
-import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new LogicalPlanResolver) extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](resolver, wholePlan) {
@@ -57,30 +55,7 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
     override protected def defaultValue: ProvidedOrder = ProvidedOrder.empty
   }
 
-  private var semanticTable = new SemanticTable()
-
   def fakeLeafPlan(args: String*): LogicalPlanBuilder = appendAtCurrentIndent(LeafOperator(FakeLeafPlan(args.toSet)(_)))
-
-  override def newNode(node: Variable): Unit = {
-    semanticTable = semanticTable.addNode(node)
-  }
-
-  override def newRelationship(relationship: Variable): Unit = {
-    semanticTable = semanticTable.addRelationship(relationship)
-  }
-
-  override def newVariable(variable: Variable): Unit = {
-    semanticTable = semanticTable.addTypeInfoCTAny(variable)
-  }
-
-  override protected def newAlias(variable: Variable, expression: Expression): Unit = {
-    val typeInfo = semanticTable.types.get(expression).orElse(findTypeIgnoringPosition(expression))
-    val spec = typeInfo.map(_.actual).getOrElse(CTAny.invariant)
-    semanticTable = semanticTable.addTypeInfo(variable, spec)
-  }
-
-  private def findTypeIgnoringPosition(expr: Expression) =
-    semanticTable.types.iterator.collectFirst { case (`expr`, t) => t }
 
   private val hasLabelsAndHasTypeNormalizer = new HasLabelsAndHasTypeNormalizer {
     override def isNode(expr: Expression): Boolean = semanticTable.isNodeNoFail(expr)
@@ -89,8 +64,6 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
 
   override protected def rewriteExpression(expr: Expression): Expression =
     hasLabelsAndHasTypeNormalizer.rewrite(expr)
-
-  def getSemanticTable: SemanticTable = semanticTable
 
   def withCardinality(x: Double): LogicalPlanBuilder = {
     cardinalities.set(idOfLastPlan, Cardinality(x))

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Equals
@@ -199,6 +200,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.GenTraversableOnce
@@ -231,6 +233,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   self: IMPL =>
 
   val patternParser = new PatternParser
+  protected var semanticTable = new SemanticTable()
 
   protected sealed trait OperatorBuilder
   protected case class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder{
@@ -1104,24 +1107,37 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   protected def buildLogicalPlan(): LogicalPlan = tree.build()
 
-  // ABSTRACT METHODS
+  def getSemanticTable: SemanticTable = semanticTable
 
   /**
-   * Called everytime a new node is introduced by some logical operator.
+   * Called every time a new node is introduced by some logical operator.
    */
-  protected def newNode(node: Variable): Unit
+  def newNode(node: Variable): Unit = {
+    semanticTable = semanticTable.addNode(node)
+  }
 
   /**
-   * Called everytime a new relationship is introduced by some logical operator.
+   * Called every time a new relationship is introduced by some logical operator.
    */
-  protected def newRelationship(relationship: Variable): Unit
+  def newRelationship(relationship: Variable): Unit = {
+    semanticTable = semanticTable.addRelationship(relationship)
+  }
 
   /**
-   * Called everytime a new variable is introduced by some logical operator.
+   * Called every time a new variable is introduced by some logical operator.
    */
-  protected def newVariable(variable: Variable): Unit
+  def newVariable(variable: Variable): Unit = {
+    semanticTable = semanticTable.addTypeInfoCTAny(variable)
+  }
 
-  protected def newAlias(variable: Variable, expression: Expression): Unit = ()
+  protected def newAlias(variable: Variable, expression: Expression): Unit = {
+    val typeInfo = semanticTable.types.get(expression).orElse(findTypeIgnoringPosition(expression))
+    val spec = typeInfo.map(_.actual).getOrElse(CTAny.invariant)
+    semanticTable = semanticTable.addTypeInfo(variable, spec)
+  }
+
+  private def findTypeIgnoringPosition(expr: Expression) =
+    semanticTable.types.iterator.collectFirst { case (`expr`, t) => t }
 
   protected def newNodes(nodes: Seq[String]): Seq[String] = {
     nodes.map(varFor).foreach(newNode)
@@ -1137,7 +1153,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     variables.map(varFor).foreach(newVariable)
     variables
   }
-
 
   /**
    * Allows implementations to rewrite expressions using contextual information
