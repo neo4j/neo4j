@@ -170,7 +170,7 @@ object PartialPredicate {
 
 case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
   override def canonicalOperatorSymbol = "STARTS WITH"
@@ -178,7 +178,7 @@ case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosit
 
 case class EndsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
   override def canonicalOperatorSymbol = "ENDS WITH"
@@ -186,7 +186,7 @@ case class EndsWith(lhs: Expression, rhs: Expression)(val position: InputPositio
 
 case class Contains(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 }
 

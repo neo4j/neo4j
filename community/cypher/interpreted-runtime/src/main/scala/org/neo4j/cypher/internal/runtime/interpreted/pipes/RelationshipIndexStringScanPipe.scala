@@ -25,10 +25,8 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.values.storable.TextValue
@@ -51,9 +49,7 @@ abstract class AbstractRelationshipIndexStringScanPipe(ident: String,
     val resultNodes = value match {
       case value: TextValue =>
         iterator(state, startNode, endNode,  baseContext, queryContextCall(state, state.queryIndexes(queryIndexId), value))
-      case IsNoValue() =>
-        ClosingIterator.empty
-      case x => throw new CypherTypeException(s"Expected a string value, but got $x")
+      case _ => ClosingIterator.empty
     }
 
     resultNodes

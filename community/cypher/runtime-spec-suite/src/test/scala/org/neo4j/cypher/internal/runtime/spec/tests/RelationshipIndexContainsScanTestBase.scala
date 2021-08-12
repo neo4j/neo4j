@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.exceptions.CypherTypeException
 
 abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
                                                              edition: Edition[CONTEXT],
@@ -145,8 +144,8 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .relationshipIndexOperator("(x)-[r:R(text CONTAINS 1337)]->(y)")
       .build()
 
-
-    a [CypherTypeException] should be thrownBy consume(execute(logicalQuery, runtime))
+    //then
+    execute(logicalQuery, runtime) should beColumns("text").withNoRows()
   }
 
   test("undirected scan should handle non-text input") {
@@ -166,8 +165,8 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .relationshipIndexOperator("(x)-[r:R(text CONTAINS 1337)]-(y)")
       .build()
 
-
-    a [CypherTypeException] should be thrownBy consume(execute(logicalQuery, runtime))
+    //then
+    execute(logicalQuery, runtime) should beColumns("text").withNoRows()
   }
 
   test("directed scan should cache properties") {

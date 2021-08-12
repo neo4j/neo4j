@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.exceptions.CypherTypeException
 
 abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
                                                              edition: Edition[CONTEXT],
@@ -119,7 +118,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
 
     // then
-    a [CypherTypeException] should be thrownBy consume(execute(logicalQuery, runtime))
+    execute(logicalQuery, runtime) should beColumns("text").withNoRows()
   }
 
   test("should cache properties") {

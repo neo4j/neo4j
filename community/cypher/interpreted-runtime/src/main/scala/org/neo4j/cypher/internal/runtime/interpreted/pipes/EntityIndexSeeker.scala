@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.runtime.CompositeValueIndexCursor
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsList
-import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
@@ -173,10 +172,8 @@ trait EntityIndexSeeker {
         expr(row, state) match {
           case text: TextValue =>
             Array(PropertyIndexQuery.stringPrefix(propertyId, text))
-          case IsNoValue() =>
+          case _ =>
             Nil
-          case other =>
-            throw new CypherTypeException("Expected TextValue, got " + other)
         }
 
       case InequalitySeekRangeExpression(innerRange) =>
