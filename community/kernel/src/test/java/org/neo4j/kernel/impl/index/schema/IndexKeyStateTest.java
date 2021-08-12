@@ -37,14 +37,12 @@ import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -53,7 +51,6 @@ import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.ByteArray;
 import org.neo4j.values.storable.ByteValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DoubleArray;
@@ -81,8 +78,10 @@ import org.neo4j.values.storable.Values;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.kernel.impl.index.schema.GenericKey.NO_ENTITY_ID;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
@@ -113,12 +112,10 @@ import static org.neo4j.values.storable.Values.timeArray;
 
 @ExtendWith( RandomExtension.class )
 @TestInstance( PER_CLASS )
-class GenericKeyStateTest
+abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>>
 {
-    private final IndexSpecificSpaceFillingCurveSettings noSpecificIndexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-
     @Inject
-    private static RandomSupport random;
+    RandomSupport random;
 
     @BeforeEach
     void setupRandomConfig()
@@ -170,7 +167,7 @@ class GenericKeyStateTest
     {
         // Given
         PageCursor cursor = newPageCursor();
-        BtreeKey writeState = newKeyState();
+        KEY writeState = newKeyState();
         Value value = valueGenerator.next();
         int offset = cursor.getOffset();
 
@@ -179,7 +176,7 @@ class GenericKeyStateTest
         writeState.put( cursor );
 
         // Then
-        BtreeKey readState = newKeyState();
+        KEY readState = newKeyState();
         int size = writeState.size();
         cursor.setOffset( offset );
         assertTrue( readState.get( cursor, size ), "failed to read" );
@@ -190,13 +187,67 @@ class GenericKeyStateTest
 
     @ParameterizedTest
     @MethodSource( "validValueGenerators" )
+    void readWhatIsWrittenCompositeKey( ValueGenerator valueGenerator )
+    {
+        // Given
+        int nbrOfSlots = random.nextInt( 2, 5 );
+        PageCursor cursor = newPageCursor();
+        Layout<KEY> layout = newLayout( nbrOfSlots );
+        KEY writeState = layout.newKey();
+        int offset = cursor.getOffset();
+
+        // When
+        Value[] writtenValues = generateValuesForCompositeKey( nbrOfSlots, valueGenerator );
+
+        for ( int slot = 0; slot < nbrOfSlots; slot++ )
+        {
+            writeState.writeValue( slot, writtenValues[slot], NEUTRAL );
+        }
+
+        writeState.put( cursor );
+
+        // Then
+        KEY readState = layout.newKey();
+        int size = writeState.size();
+        cursor.setOffset( offset );
+        assertTrue( readState.get( cursor, size ), "failed to read" );
+        assertEquals( 0, readState.compareValueTo( writeState ), "key states are not equal" );
+        Value[] readValues = readState.asValues();
+        assertThat( readValues ).isEqualTo( writtenValues );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
     void copyShouldCopy( ValueGenerator valueGenerator )
     {
         // Given
-        BtreeKey from = newKeyState();
+        KEY from = newKeyState();
         Value value = valueGenerator.next();
         from.writeValue( value, NEUTRAL );
-        BtreeKey to = genericKeyStateWithSomePreviousState( valueGenerator );
+        KEY to = genericKeyStateWithSomePreviousState( valueGenerator );
+
+        // When
+        to.copyFrom( from );
+
+        // Then
+        assertEquals( 0, from.compareValueTo( to ), "states not equals after copy" );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
+    void copyShouldCopyCompositeKey( ValueGenerator valueGenerator )
+    {
+        // Given
+        int nbrOfSlots = random.nextInt( 2, 5 );
+        Layout<KEY> layout = newLayout( nbrOfSlots );
+        KEY from = layout.newKey();
+        Value[] values = generateValuesForCompositeKey( nbrOfSlots, valueGenerator );
+        for ( int slot = 0; slot < nbrOfSlots; slot++ )
+        {
+            from.writeValue( slot, values[slot], NEUTRAL );
+        }
+
+        KEY to = compositeKeyStateWithSomePreviousState( layout, nbrOfSlots, valueGenerator );
 
         // When
         to.copyFrom( from );
@@ -209,8 +260,8 @@ class GenericKeyStateTest
     void copyShouldCopyExtremeValues()
     {
         // Given
-        BtreeKey extreme = newKeyState();
-        BtreeKey copy = newKeyState();
+        KEY extreme = newKeyState();
+        KEY copy = newKeyState();
 
         for ( ValueGroup valueGroup : ValueGroup.values() )
         {
@@ -232,19 +283,19 @@ class GenericKeyStateTest
     {
         // Given
         List<Value> values = new ArrayList<>();
-        List<BtreeKey> states = new ArrayList<>();
+        List<KEY> states = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
             Value value = valueGenerator.next();
             values.add( value );
-            BtreeKey state = newKeyState();
+            KEY state = newKeyState();
             state.writeValue( value, NEUTRAL );
             states.add( state );
         }
 
         // When
         values.sort( COMPARATOR );
-        states.sort( BtreeKey::compareValueTo );
+        states.sort( GenericKey::compareValueTo );
 
         // Then
         for ( int i = 0; i < values.size(); i++ )
@@ -253,63 +304,43 @@ class GenericKeyStateTest
         }
     }
 
-    @Test
-    void comparePointsMustOnlyReturnZeroForEqualPoints()
+    @ParameterizedTest
+    @MethodSource( "validComparableValueGenerators" )
+    void compositeKeyCompareToMustAlignWithValuesCompareTo( ValueGenerator valueGenerator )
     {
-        PointValue firstPoint = random.randomValues().nextPointValue();
-        PointValue equalPoint = Values.point( firstPoint );
-        CoordinateReferenceSystem crs = firstPoint.getCoordinateReferenceSystem();
-        SpaceFillingCurve curve = noSpecificIndexSettings.forCrs( crs );
-        Long spaceFillingCurveValue = curve.derivedValueFor( firstPoint.coordinate() );
-        PointValue centerPoint = Values.pointValue( crs, curve.centerPointFor( spaceFillingCurveValue ) );
-
-        BtreeKey firstKey = newKeyState();
-        firstKey.writeValue( firstPoint, NEUTRAL );
-        BtreeKey equalKey = newKeyState();
-        equalKey.writeValue( equalPoint, NEUTRAL );
-        BtreeKey centerKey = newKeyState();
-        centerKey.writeValue( centerPoint, NEUTRAL );
-        BtreeKey noCoordsKey = newKeyState();
-        noCoordsKey.writeValue( equalPoint, NEUTRAL );
-        GeometryType.setNoCoordinates( noCoordsKey );
-
-        assertEquals( 0, firstKey.compareValueTo( equalKey ), "expected keys to be equal" );
-        assertEquals( firstPoint.compareTo( centerPoint ) != 0, firstKey.compareValueTo( centerKey ) != 0,
-                "expected keys to be equal if and only if source points are equal" );
-        assertEquals( 0, firstKey.compareValueTo( noCoordsKey ), "expected keys to be equal" );
-    }
-
-    @Test
-    void comparePointArraysMustOnlyReturnZeroForEqualArrays()
-    {
-        PointArray firstArray = random.randomValues().nextPointArray();
-        PointValue[] sourcePointValues = firstArray.asObjectCopy();
-        PointArray equalArray = Values.pointArray( sourcePointValues );
-        PointValue[] centerPointValues = new PointValue[sourcePointValues.length];
-        for ( int i = 0; i < sourcePointValues.length; i++ )
+        int nbrOfSlots = random.nextInt( 2, 5 );
+        List<KEY> states = new ArrayList<>();
+        Layout<KEY> layout = newLayout( nbrOfSlots );
+        for ( int i = 0; i < 10; i++ )
         {
-            PointValue sourcePointValue = sourcePointValues[i];
-            CoordinateReferenceSystem crs = sourcePointValue.getCoordinateReferenceSystem();
-            SpaceFillingCurve curve = noSpecificIndexSettings.forCrs( crs );
-            Long spaceFillingCurveValue = curve.derivedValueFor( sourcePointValue.coordinate() );
-            centerPointValues[i] = Values.pointValue( crs, curve.centerPointFor( spaceFillingCurveValue ) );
+            KEY key = layout.newKey();
+            states.add( key );
+            for ( int slot = 0; slot < nbrOfSlots; slot++ )
+            {
+                key.writeValue( slot, valueGenerator.next(), NEUTRAL );
+            }
         }
-        PointArray centerArray = Values.pointArray( centerPointValues );
 
-        BtreeKey firstKey = newKeyState();
-        firstKey.writeValue( firstArray, NEUTRAL );
-        BtreeKey equalKey = newKeyState();
-        equalKey.writeValue( equalArray, NEUTRAL );
-        BtreeKey centerKey = newKeyState();
-        centerKey.writeValue( centerArray, NEUTRAL );
-        BtreeKey noCoordsKey = newKeyState();
-        noCoordsKey.writeValue( equalArray, NEUTRAL );
-        GeometryType.setNoCoordinates( noCoordsKey );
+        states.sort( GenericKey::compareValueTo );
+        for ( int i = 0; i < 9; i++ )
+        {
+            KEY key1 = states.get( i );
+            KEY key2 = states.get( i + 1 );
 
-        assertEquals( 0, firstKey.compareValueTo( equalKey ), "expected keys to be equal" );
-        assertEquals( firstArray.compareToSequence( centerArray, AnyValues.COMPARATOR ) != 0, firstKey.compareValueTo( centerKey ) != 0,
-                "expected keys to be equal if and only if source points are equal" );
-        assertEquals( 0, firstKey.compareValueTo( noCoordsKey ), "expected keys to be equal" );
+            for ( int slot = 0; slot < nbrOfSlots; slot++ )
+            {
+                var result = COMPARATOR.compare( key1.asValues()[slot], key2.asValues()[slot] );
+                if ( result < 0 )
+                {
+                    break;
+                }
+
+                if ( result > 0 )
+                {
+                    fail( "Keys incorrectly ordered: " + key1 + " , " + key2 );
+                }
+            }
+        }
     }
 
     // The reason this test doesn't test incomparable values is that it relies on ordering being same as that of the Values module.
@@ -330,15 +361,72 @@ class GenericKeyStateTest
         Value left = pickSmaller( value1, value2 );
         Value right = left == value1 ? value2 : value1;
 
+        KEY leftState = newKeyState();
+        leftState.writeValue( left, NEUTRAL );
+        KEY rightState = newKeyState();
+        rightState.writeValue( right, NEUTRAL );
+
         // Then
-        assertValidMinimalSplitter( left, right );
+        assertValidMinimalSplitter( leftState, rightState, this::newKeyState );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "validComparableValueGenerators" )
+    void mustProduceValidMinimalSplittersCompositeKey( ValueGenerator valueGenerator )
+    {
+        int nbrOfSlots = random.nextInt( 2, 5 );
+        Layout<KEY> layout = newLayout( nbrOfSlots );
+        KEY key1 = layout.newKey();
+        Value[] values1 = generateValuesForCompositeKey( nbrOfSlots, valueGenerator );
+        KEY key2 = layout.newKey();
+        Value[] values2;
+        do
+        {
+            values2 = generateValuesForCompositeKey( nbrOfSlots, valueGenerator );
+        }
+        while ( Arrays.equals( values1, values2 ) );
+        for ( int slot = 0; slot < nbrOfSlots; slot++ )
+        {
+            key1.writeValue( slot, values1[slot], NEUTRAL );
+            key2.writeValue( slot, values2[slot], NEUTRAL );
+        }
+
+        KEY leftState = key1.compareValueTo( key2 ) < 0 ? key1 : key2;
+        KEY rightState = leftState == key1 ? key2 : key1;
+
+        assertValidMinimalSplitter( leftState, rightState, layout::newKey );
     }
 
     @ParameterizedTest
     @MethodSource( "validValueGenerators" )
     void mustProduceValidMinimalSplittersWhenValuesAreEqual( ValueGenerator valueGenerator )
     {
-        assertValidMinimalSplitterForEqualValues( valueGenerator.next() );
+        Value value = valueGenerator.next();
+        KEY leftState = newKeyState();
+        leftState.writeValue( value, NEUTRAL );
+        KEY rightState = newKeyState();
+        rightState.writeValue( value, NEUTRAL );
+
+        assertValidMinimalSplitterForEqualValues( leftState, rightState, this::newKeyState );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
+    void mustProduceValidMinimalSplittersWhenValuesAreEqualCompositeKey( ValueGenerator valueGenerator )
+    {
+        int nbrOfSlots = random.nextInt( 2, 5 );
+        Layout<KEY> layout = newLayout( nbrOfSlots );
+        KEY leftState = layout.newKey();
+        KEY rightState = layout.newKey();
+        Value[] values = generateValuesForCompositeKey( nbrOfSlots, valueGenerator );
+
+        for ( int slot = 0; slot < nbrOfSlots; slot++ )
+        {
+            leftState.writeValue( slot, values[slot], NEUTRAL );
+            rightState.writeValue( slot, values[slot], NEUTRAL );
+        }
+
+        assertValidMinimalSplitterForEqualValues( leftState, rightState, layout::newKey );
     }
 
     @ParameterizedTest
@@ -348,7 +436,7 @@ class GenericKeyStateTest
         // Given
         PageCursor cursor = newPageCursor();
         Value value = valueGenerator.next();
-        BtreeKey state = newKeyState();
+        KEY state = newKeyState();
         state.writeValue( value, NEUTRAL );
         int offsetBefore = cursor.getOffset();
 
@@ -361,6 +449,36 @@ class GenericKeyStateTest
         int actualSize = offsetAfter - offsetBefore;
         assertEquals( reportedSize, actualSize,
                 String.format( "did not report correct size, value=%s, actualSize=%d, reportedSize=%d", value, actualSize, reportedSize ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
+    void mustReportCorrectSizeCompositeKey( ValueGenerator valueGenerator )
+    {
+        // Given
+        int nbrOfSlots = random.nextInt( 2, 5 );
+        PageCursor cursor = newPageCursor();
+        Layout<KEY> layout = newLayout( nbrOfSlots );
+        KEY state = layout.newKey();
+
+        Value[] writtenValues = generateValuesForCompositeKey( nbrOfSlots, valueGenerator );
+
+        for ( int slot = 0; slot < nbrOfSlots; slot++ )
+        {
+            state.writeValue( slot, writtenValues[slot], NEUTRAL );
+        }
+
+        int offsetBefore = cursor.getOffset();
+
+        // When
+        int reportedSize = state.size();
+        state.put( cursor );
+        int offsetAfter = cursor.getOffset();
+
+        // Then
+        int actualSize = offsetAfter - offsetBefore;
+        assertEquals( reportedSize, actualSize, String.format( "did not report correct size, value=%s, actualSize=%d, reportedSize=%d",
+                Arrays.toString( writtenValues ), actualSize, reportedSize ) );
     }
 
     @Test
@@ -484,7 +602,7 @@ class GenericKeyStateTest
     {
         // Given a value that we dereference
         Value srcValue = Values.utf8Value( "First string".getBytes( UTF_8 ) );
-        BtreeKey genericKeyState = newKeyState();
+        KEY genericKeyState = newKeyState();
         genericKeyState.writeValue( srcValue, NEUTRAL );
         Value dereferencedValue = genericKeyState.asValue();
         assertEquals( srcValue, dereferencedValue );
@@ -533,10 +651,10 @@ class GenericKeyStateTest
     {
         // Given
         Value value = valueGenerator.next();
-        GenericLayout layout = newLayout( 1 );
-        BtreeKey left = layout.newKey();
-        BtreeKey right = layout.newKey();
-        BtreeKey minimalSplitter = layout.newKey();
+        Layout<KEY> layout = newLayout( 1 );
+        KEY left = layout.newKey();
+        KEY right = layout.newKey();
+        KEY minimalSplitter = layout.newKey();
 
         // keys with same value but different entityId
         left.initialize( 1 );
@@ -564,10 +682,10 @@ class GenericKeyStateTest
         Value leftValue = pickSmaller( firstValue, secondValue );
         Value rightValue = pickOther( firstValue, secondValue, leftValue );
 
-        GenericLayout layout = newLayout( 1 );
-        BtreeKey left = layout.newKey();
-        BtreeKey right = layout.newKey();
-        BtreeKey minimalSplitter = layout.newKey();
+        Layout<KEY> layout = newLayout( 1 );
+        KEY left = layout.newKey();
+        KEY right = layout.newKey();
+        KEY minimalSplitter = layout.newKey();
 
         // keys with unique values
         left.initialize( 1 );
@@ -589,11 +707,11 @@ class GenericKeyStateTest
     void minimalSplitterForSameValueShouldDivideLeftAndRightCompositeKey( ValueGenerator valueGenerator )
     {
         // Given composite keys with same set of values
-        int nbrOfSlots = random.nextInt( 1, 5 );
-        GenericLayout layout = newLayout( nbrOfSlots );
-        BtreeKey left = layout.newKey();
-        BtreeKey right = layout.newKey();
-        BtreeKey minimalSplitter = layout.newKey();
+        int nbrOfSlots = random.nextInt( 2, 5 );
+        Layout<KEY> layout = newLayout( nbrOfSlots );
+        KEY left = layout.newKey();
+        KEY right = layout.newKey();
+        KEY minimalSplitter = layout.newKey();
         left.initialize( 1 );
         right.initialize( 2 );
         Value[] values = new Value[nbrOfSlots];
@@ -620,12 +738,12 @@ class GenericKeyStateTest
     void minimalSplitterShouldRemoveEntityIdIfPossibleCompositeKey( ValueGenerator valueGenerator )
     {
         // Given
-        int nbrOfSlots = random.nextInt( 1, 5 );
+        int nbrOfSlots = random.nextInt( 2, 5 );
         int differingSlot = random.nextInt( nbrOfSlots );
-        GenericLayout layout = newLayout( nbrOfSlots );
-        BtreeKey left = layout.newKey();
-        BtreeKey right = layout.newKey();
-        BtreeKey minimalSplitter = layout.newKey();
+        Layout<KEY> layout = newLayout( nbrOfSlots );
+        KEY left = layout.newKey();
+        KEY right = layout.newKey();
+        KEY minimalSplitter = layout.newKey();
         left.initialize( 1 );
         right.initialize( 2 );
         // Same value on all except one slot
@@ -664,7 +782,7 @@ class GenericKeyStateTest
     void testDocumentedKeySizesNonArrays( ValueGenerator generator )
     {
         Value value = generator.next();
-        BtreeKey key = newKeyState();
+        KEY key = newKeyState();
         key.initFromValue( 0, value, NEUTRAL );
         int keySize = key.size();
         int keyOverhead = BtreeKey.ENTITY_ID_SIZE;
@@ -725,7 +843,7 @@ class GenericKeyStateTest
     void testDocumentedKeySizesArrays( ValueGenerator generator )
     {
         Value value = generator.next();
-        BtreeKey key = newKeyState();
+        KEY key = newKeyState();
         key.initFromValue( 0, value, NEUTRAL );
         int keySize = key.size();
         int keyOverhead = BtreeKey.ENTITY_ID_SIZE;
@@ -806,7 +924,7 @@ class GenericKeyStateTest
     private void shouldReadBackToExactOriginalValue( Value srcValue )
     {
         // given
-        BtreeKey state = newKeyState();
+        KEY state = newKeyState();
         state.clear();
         state.writeValue( srcValue, NEUTRAL );
         Value retrievedValueAfterWrittenToState = state.asValue();
@@ -848,9 +966,9 @@ class GenericKeyStateTest
 
     private void assertHighest( Value value )
     {
-        BtreeKey highestOfAll = newKeyState();
-        BtreeKey highestInValueGroup = newKeyState();
-        BtreeKey other = newKeyState();
+        KEY highestOfAll = newKeyState();
+        KEY highestInValueGroup = newKeyState();
+        KEY other = newKeyState();
         highestOfAll.initValueAsHighest( ValueGroup.UNKNOWN );
         highestInValueGroup.initValueAsHighest( value.valueGroup() );
         other.writeValue( value, NEUTRAL );
@@ -862,9 +980,9 @@ class GenericKeyStateTest
 
     private void assertLowest( Value value )
     {
-        BtreeKey lowestOfAll = newKeyState();
-        BtreeKey lowestInValueGroup = newKeyState();
-        BtreeKey other = newKeyState();
+        KEY lowestOfAll = newKeyState();
+        KEY lowestInValueGroup = newKeyState();
+        KEY other = newKeyState();
         lowestOfAll.initValueAsLowest( ValueGroup.UNKNOWN );
         lowestInValueGroup.initValueAsLowest( value.valueGroup() );
         other.writeValue( value, NEUTRAL );
@@ -878,30 +996,21 @@ class GenericKeyStateTest
         return COMPARATOR.compare( value1, value2 ) < 0 ? value1 : value2;
     }
 
-    private void assertValidMinimalSplitter( Value left, Value right )
+    private void assertValidMinimalSplitter( KEY leftState, KEY rightState, Supplier<KEY> keyFactory )
     {
-        BtreeKey leftState = newKeyState();
-        leftState.writeValue( left, NEUTRAL );
-        BtreeKey rightState = newKeyState();
-        rightState.writeValue( right, NEUTRAL );
-
-        BtreeKey minimalSplitter = newKeyState();
+        KEY minimalSplitter = keyFactory.get();
         rightState.minimalSplitter( leftState, rightState, minimalSplitter );
 
         assertTrue( leftState.compareValueTo( minimalSplitter ) < 0,
                 "left state not less than minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
         assertTrue( rightState.compareValueTo( minimalSplitter ) >= 0,
-                "right state not less than minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
+                "right state not greater than or equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" +
+                        minimalSplitter );
     }
 
-    private void assertValidMinimalSplitterForEqualValues( Value value )
+    private void assertValidMinimalSplitterForEqualValues( KEY leftState, KEY rightState, Supplier<KEY> keyFactory )
     {
-        BtreeKey leftState = newKeyState();
-        leftState.writeValue( value, NEUTRAL );
-        BtreeKey rightState = newKeyState();
-        rightState.writeValue( value, NEUTRAL );
-
-        BtreeKey minimalSplitter = newKeyState();
+        KEY minimalSplitter = keyFactory.get();
         rightState.minimalSplitter( leftState, rightState, minimalSplitter );
 
         assertEquals( 0, leftState.compareValueTo( minimalSplitter ),
@@ -910,7 +1019,7 @@ class GenericKeyStateTest
                 "right state not equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
     }
 
-    private static Value nextValidValue( boolean includeIncomparable )
+    private Value nextValidValue( boolean includeIncomparable )
     {
         Value value;
         do
@@ -926,7 +1035,7 @@ class GenericKeyStateTest
         return isGeometryValue( value ) || isGeometryArray( value );
     }
 
-    private static ValueGenerator[] listValueGenerators( boolean includeIncomparable )
+    private ValueGenerator[] listValueGenerators( boolean includeIncomparable )
     {
         List<ValueGenerator> generators = new ArrayList<>();
         // single
@@ -938,7 +1047,7 @@ class GenericKeyStateTest
         return generators.toArray( new ValueGenerator[0] );
     }
 
-    private static List<ValueGenerator> singleValueGenerators( boolean includeIncomparable )
+    private List<ValueGenerator> singleValueGenerators( boolean includeIncomparable )
     {
         List<ValueGenerator> generators = new ArrayList<>( asList(
                 () -> random.randomValues().nextDateTimeValue(),
@@ -969,7 +1078,7 @@ class GenericKeyStateTest
         return generators;
     }
 
-    private static List<ValueGenerator> arrayValueGenerators( boolean includeIncomparable )
+    private List<ValueGenerator> arrayValueGenerators( boolean includeIncomparable )
     {
         List<ValueGenerator> generators = new ArrayList<>( asList(
                 () -> random.randomValues().nextDateTimeArray(),
@@ -1004,24 +1113,51 @@ class GenericKeyStateTest
         return generators;
     }
 
-    private static Stream<ValueGenerator> validValueGenerators()
+    private Stream<ValueGenerator> validValueGenerators()
     {
         return Stream.of( listValueGenerators( true ) );
     }
 
-    private static Stream<ValueGenerator> singleValueGeneratorsStream()
+    private Stream<ValueGenerator> singleValueGeneratorsStream()
     {
         return singleValueGenerators( true ).stream();
     }
 
-    private static Stream<ValueGenerator> arrayValueGeneratorsStream()
+    private Stream<ValueGenerator> arrayValueGeneratorsStream()
     {
         return arrayValueGenerators( true ).stream();
     }
 
-    private static Stream<ValueGenerator> validComparableValueGenerators()
+    private Stream<ValueGenerator> validComparableValueGenerators()
     {
-        return Stream.of( listValueGenerators( false ) );
+        return Stream.of( listValueGenerators( includePointTypesForComparisons() ) );
+    }
+
+    private ValueGenerator randomValueGenerator()
+    {
+        ValueGenerator[] generators = listValueGenerators( true);
+        return generators[random.nextInt( generators.length)];
+    }
+
+    // In order to keep the number of combinations in parametrised tests reasonable,
+    // the value in the first slot will be taken from the supplied generator.
+    // The supplied generator is typically a test parameter and will produce values only of one type.
+    // Types for other slots are selected at random, which ensures that this method produces
+    // composite keys of various type combinations.
+    // At the same time, with a typical usage, each type is guaranteed to be tested
+    // at least in the first slot.
+    private Value[] generateValuesForCompositeKey( int nbrOfSlots, ValueGenerator firstSlotValueGenerator )
+    {
+        Value[] values = new Value[nbrOfSlots];
+        values[0] = firstSlotValueGenerator.next();
+
+        for ( int slot = 1; slot < nbrOfSlots; slot++ )
+        {
+            // get a random value of a random type
+            values[slot] = randomValueGenerator().next();
+        }
+
+        return values;
     }
 
     private static int getStringSize( Value value )
@@ -1038,9 +1174,8 @@ class GenericKeyStateTest
         return expectedSizeOfData;
     }
 
-    private static int getGeometrySize( Value value )
+    private int getGeometrySize( Value value )
     {
-        int expectedSizeOfData;
         int dimensions;
         if ( value instanceof PointValue )
         {
@@ -1050,19 +1185,7 @@ class GenericKeyStateTest
         {
             throw new RuntimeException( "Unexpected class for value in value group " + GEOMETRY + ", was " + value.getClass() );
         }
-        if ( dimensions == 2 )
-        {
-            expectedSizeOfData = 28;
-        }
-        else if ( dimensions == 3 )
-        {
-            expectedSizeOfData = 36;
-        }
-        else
-        {
-            throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
-        }
-        return expectedSizeOfData;
+        return getPointSerialisedSize( dimensions );
     }
 
     private static int getNumberSize( Value value )
@@ -1153,13 +1276,12 @@ class GenericKeyStateTest
         }
     }
 
-    private static int getGeometryArrayElementSize( Value value, int arrayLength )
+    private int getGeometryArrayElementSize( Value value, int arrayLength )
     {
         if ( arrayLength < 1 )
         {
             return 0;
         }
-        int arrayElementSize;
         int dimensions;
         if ( value instanceof PointArray )
         {
@@ -1169,24 +1291,12 @@ class GenericKeyStateTest
         {
             throw new RuntimeException( "Unexpected class for value in value group " + GEOMETRY_ARRAY + ", was " + value.getClass() );
         }
-        if ( dimensions == 2 )
-        {
-            arrayElementSize = 24;
-        }
-        else if ( dimensions == 3 )
-        {
-            arrayElementSize = 32;
-        }
-        else
-        {
-            throw new RuntimeException( "Did not expect spatial value with " + dimensions + " dimensions." );
-        }
-        return arrayElementSize;
+        return getArrayPointSerialisedSize( dimensions );
     }
 
-    private BtreeKey genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
+    private KEY genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
     {
-        BtreeKey to = newKeyState();
+        KEY to = newKeyState();
         if ( random.nextBoolean() )
         {
             // Previous value
@@ -1198,14 +1308,25 @@ class GenericKeyStateTest
         return to;
     }
 
+    private KEY compositeKeyStateWithSomePreviousState( Layout<KEY> layout, int nbrOfSlots, ValueGenerator valueGenerator )
+    {
+        KEY to = layout.newKey();
+        if ( random.nextBoolean() )
+        {
+            Value[] previousValues = generateValuesForCompositeKey( nbrOfSlots, valueGenerator );
+            for ( int slot = 0; slot < nbrOfSlots; slot++ )
+            {
+                NativeIndexKey.Inclusion inclusion = random.among( NativeIndexKey.Inclusion.values() );
+                to.writeValue( slot, previousValues[slot], inclusion );
+            }
+        }
+        // No previous state
+        return to;
+    }
+
     private static PageCursor newPageCursor()
     {
         return ByteArrayPageCursor.wrap( PageCache.PAGE_SIZE );
-    }
-
-    private BtreeKey newKeyState()
-    {
-        return new BtreeKey( noSpecificIndexSettings );
     }
 
     private static Value pickOther( Value value1, Value value2, Value currentValue )
@@ -1224,14 +1345,32 @@ class GenericKeyStateTest
         return secondValue;
     }
 
-    private GenericLayout newLayout( int numberOfSlots )
+    KEY newKeyState()
     {
-        return new GenericLayout( numberOfSlots, noSpecificIndexSettings );
+        return newLayout( 1 ).newKey();
     }
+
+    abstract Layout<KEY> newLayout( int numberOfSlots );
+
+    abstract boolean includePointTypesForComparisons();
+
+    abstract int getPointSerialisedSize( int dimensions );
+
+    abstract int getArrayPointSerialisedSize( int dimensions );
 
     @FunctionalInterface
     private interface ValueGenerator
     {
         Value next();
+    }
+
+    interface Layout<KEY extends GenericKey<KEY>>
+    {
+
+        KEY newKey();
+
+        void minimalSplitter( KEY left, KEY right, KEY into );
+
+        int compare( KEY k1, KEY k2 );
     }
 }

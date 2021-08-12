@@ -34,23 +34,62 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class GenericKeyStateCompareTest
+class IndexKeyStateCompareTest
 {
     @Test
-    void compareGenericKeyState()
+    void compareBtreeKeyState()
     {
-        List<Value> allValues = Arrays.asList(
+        List<Value> allValues = getValues( false );
+        allValues.sort( Values.COMPARATOR );
+
+        List<BtreeKey> states = new ArrayList<>();
+        for ( Value value : allValues )
+        {
+            BtreeKey state = new BtreeKey( null );
+            state.writeValue( value, NativeIndexKey.Inclusion.NEUTRAL );
+            states.add( state );
+        }
+        Collections.shuffle( states );
+        states.sort( BtreeKey::compareValueTo );
+        List<Value> sortedStatesAsValues = states.stream().map( BtreeKey::asValue ).collect( Collectors.toList() );
+        assertEquals( allValues, sortedStatesAsValues );
+    }
+
+    @Test
+    void compareRangeKeyState()
+    {
+        List<Value> allValues = getValues( true );
+        allValues.sort( Values.COMPARATOR );
+
+        List<RangeKey> states = new ArrayList<>();
+        for ( Value value : allValues )
+        {
+            RangeKey state = new RangeKey();
+            state.writeValue( value, NativeIndexKey.Inclusion.NEUTRAL );
+            states.add( state );
+        }
+        Collections.shuffle( states );
+        states.sort( RangeKey::compareValueTo );
+        List<Value> sortedStatesAsValues = states.stream().map( RangeKey::asValue ).collect( Collectors.toList() );
+        assertEquals( allValues, sortedStatesAsValues );
+    }
+
+    private List<Value> getValues( boolean includeGeometry )
+    {
+        List<Value> values = Arrays.asList(
                 Values.of( "string1" ),
                 Values.of( 42 ),
                 Values.of( true ),
@@ -112,21 +151,36 @@ class GenericKeyStateCompareTest
                         DurationValue.duration( 12, 10, 10, 10 ),
                         DurationValue.duration( 12, 10, 10, 10 )
                 } )
-                // PointValue/PointArray comparison can't be compared to that of the GenericKeyState for those points
-                // since the index compares in a way which is designed to be queryable, so they have different sorting.
         );
-        allValues.sort( Values.COMPARATOR );
 
-        List<BtreeKey> states = new ArrayList<>();
-        for ( Value value : allValues )
+        // In case of Btree, PointValue/PointArray comparison can't be compared to that of the BtreeKey
+        // for those points, since the index compares in a way which is designed to be queryable,
+        // so they have different sorting.
+        if ( includeGeometry )
         {
-            BtreeKey state = new BtreeKey( null );
-            state.writeValue( value, NativeIndexKey.Inclusion.NEUTRAL );
-            states.add( state );
+            values = new ArrayList<>( values );
+            values.add( Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) );
+            values.add( Values.pointArray( new PointValue[]{
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.7566548, 56.7163465 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.13413478, 56.1343457 )
+            } ) );
+            values.add( Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 666 ) );
+            values.add( Values.pointArray( new PointValue[]{
+                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.7566548, 56.7163465, 666 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.13413478, 56.1343457, 555 )
+            } ) );
+            values.add( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0.0000043, -0.0000000012341025786543 ) );
+            values.add( Values.pointArray( new PointValue[]{
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 0.0000043, -0.0000000012341025786543 ),
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 0.2000043, -0.0300000012341025786543 )
+            } ) );
+            values.add( Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 0.0000043, -0.0000000012341025786543, 666 ) );
+            values.add( Values.pointArray( new PointValue[]{
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 0.0000043, -0.0000000012341025786543, 666 ),
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 0.2000043, -0.0300000012341025786543, 555 )
+            } ) );
         }
-        Collections.shuffle( states );
-        states.sort( BtreeKey::compareValueTo );
-        List<Value> sortedStatesAsValues = states.stream().map( BtreeKey::asValue ).collect( Collectors.toList() );
-        assertEquals( allValues, sortedStatesAsValues );
+
+        return values;
     }
 }

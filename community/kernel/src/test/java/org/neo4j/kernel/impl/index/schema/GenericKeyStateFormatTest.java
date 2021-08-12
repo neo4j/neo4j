@@ -38,12 +38,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.FormatCompatibilityVerifier;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -63,13 +61,13 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
+abstract class GenericKeyStateFormatTest<KEY extends GenericKey<KEY>> extends FormatCompatibilityVerifier
 {
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
 
     private static final int ENTITY_ID = 19570320;
-    private static final int NUMBER_OF_SLOTS = 2;
+    static final int NUMBER_OF_SLOTS = 2;
     private List<Value> values;
 
     @BeforeEach
@@ -166,18 +164,6 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     }
 
     @Override
-    protected String zipName()
-    {
-        return "current-generic-key-state-format.zip";
-    }
-
-    @Override
-    protected String storeFileName()
-    {
-        return "generic-key-state-store";
-    }
-
-    @Override
     protected void createStoreFile( Path storeFile ) throws IOException
     {
         withCursor( storeFile, true, c -> {
@@ -194,7 +180,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         {
             int major = c.getInt();
             int minor = c.getInt();
-            GenericLayout layout = getLayout();
+            Layout<KEY> layout = getLayout();
             if ( major != layout.majorVersion() || minor != layout.minorVersion() )
             {
                 exception.set( new FormatViolationException( String.format( "Read format version %d.%d, but layout has version %d.%d",
@@ -217,9 +203,9 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         } );
     }
 
-    private static void putFormatVersion( PageCursor cursor )
+    private void putFormatVersion( PageCursor cursor )
     {
-        GenericLayout layout = getLayout();
+        Layout<KEY> layout = getLayout();
         int major = layout.majorVersion();
         cursor.putInt( major );
         int minor = layout.minorVersion();
@@ -234,8 +220,8 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
 
     private void putData( PageCursor c )
     {
-        GenericLayout layout = getLayout();
-        BtreeKey key = layout.newKey();
+        Layout<KEY> layout = getLayout();
+        KEY key = layout.newKey();
         for ( Value value : values )
         {
             initializeFromValue( key, value );
@@ -244,7 +230,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         }
     }
 
-    private static void initializeFromValue( BtreeKey key, Value value )
+    private void initializeFromValue( KEY key, Value value )
     {
         key.initialize( ENTITY_ID );
         for ( int i = 0; i < NUMBER_OF_SLOTS; i++ )
@@ -255,9 +241,9 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
 
     private void verifyData( PageCursor c )
     {
-        GenericLayout layout = getLayout();
-        BtreeKey readCompositeKey = layout.newKey();
-        BtreeKey comparison = layout.newKey();
+        Layout<KEY> layout = getLayout();
+        KEY readCompositeKey = layout.newKey();
+        KEY comparison = layout.newKey();
         for ( Value value : values )
         {
             int keySize = c.getInt();
@@ -274,15 +260,12 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         }
     }
 
-    private static String detailedFailureMessage( BtreeKey actualKey, BtreeKey expectedKey )
+    private String detailedFailureMessage( KEY actualKey, KEY expectedKey )
     {
         return "expected " + expectedKey.toDetailedString() + ", but was " + actualKey.toDetailedString();
     }
 
-    private static GenericLayout getLayout()
-    {
-        return new GenericLayout( NUMBER_OF_SLOTS, IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() ) );
-    }
+    abstract Layout<KEY> getLayout();
 
     private void withCursor( Path storeFile, boolean create, Consumer<PageCursor> cursorConsumer ) throws IOException
     {
@@ -294,5 +277,21 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
             cursor.next();
             cursorConsumer.accept( cursor );
         }
+    }
+
+    interface Layout<KEY extends GenericKey<KEY>>
+    {
+
+        KEY newKey();
+
+        void readKey( PageCursor cursor, KEY into, int keySize );
+
+        void writeKey( PageCursor cursor, KEY key );
+
+        int compare( KEY k1, KEY k2 );
+
+        int majorVersion();
+
+        int minorVersion();
     }
 }
