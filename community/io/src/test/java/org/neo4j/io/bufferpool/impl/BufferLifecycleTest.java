@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.memory.MemoryPools;
@@ -30,7 +31,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -109,9 +110,19 @@ class BufferLifecycleTest
 
         // b6 should be still in the pool, so when we ask for a buffer
         // from the same bucket we should get that one instead of allocation a new one.
-        // In other words, this tests the pooling behaviour of the buffer pool.
-        var b8 = bufferPool.acquire( 1000 );
-        assertSame( b6, b8 );
+        // In other words, this tests the pooling behaviour of the buffer pool.1
+        int newBuffers = -1;
+        int maxAllocationAttempts = 100_000;
+        ByteBuffer b8 = null;
+        while ( b8 != b6 )
+        {
+            b8 = bufferPool.acquire( 1000 );
+            newBuffers++;
+            if ( newBuffers > maxAllocationAttempts )
+            {
+                fail( "Expected buffer " + b6 + " to be reused but was not able to get it after " + maxAllocationAttempts );
+            }
+        }
 
         collectionRunnable.run();
 
