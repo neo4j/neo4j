@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
+import org.neo4j.cypher.internal.rewriting.rewriters.NodePatternPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
@@ -40,7 +41,13 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
 
   def rewriter(semanticState: SemanticState): Rewriter = inSequence(
     normalizeHasLabelsAndHasType(semanticState),
-    normalizeMatchPredicates(MatchPredicateNormalizerChain(PropertyPredicateNormalizer(new AnonymousVariableNameGenerator), LabelPredicateNormalizer)),
+    normalizeMatchPredicates(
+      MatchPredicateNormalizerChain(
+        PropertyPredicateNormalizer(new AnonymousVariableNameGenerator),
+        LabelPredicateNormalizer,
+        NodePatternPredicateNormalizer,
+      )
+    ),
   )
 
   def parseForRewriting(queryText: String): Statement = JavaCCParser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
@@ -179,5 +186,23 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
     assertRewrite(
       "MATCH (a:Artist)-[r:WORKED_WITH* { year: $foo }]->(b:Artist) RETURN *",
       "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  UNNAMED0` in r where `  UNNAMED0`.year = $foo)  AND b:Artist RETURN *")
+  }
+
+  test("move single node patter predicate from node to WHERE") {
+    assertRewrite(
+      "MATCH (n WHERE n.prop > 123) RETURN n",
+      "MATCH (n) WHERE n.prop > 123 RETURN n")
+  }
+
+  test("move multiple node pattern predicates from node to WHERE") {
+    assertRewrite(
+      "MATCH (n WHERE n.prop > 123)-->(m WHERE m.prop < 42 AND m.otherProp = 'hello') RETURN n",
+      "MATCH (n)-->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') RETURN n")
+  }
+
+  test("add multiple node pattern predicates from node to existing WHERE predicate") {
+    assertRewrite(
+      "MATCH (n WHERE n.prop > 123)-->(m WHERE m.prop < 42 AND m.otherProp = 'hello') WHERE n.prop <> m.prop RETURN n",
+      "MATCH (n)-->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') AND n.prop <> m.prop RETURN n")
   }
 }

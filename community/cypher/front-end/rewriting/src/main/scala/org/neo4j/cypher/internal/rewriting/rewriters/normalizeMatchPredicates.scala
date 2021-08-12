@@ -46,9 +46,14 @@ object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFacto
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = normalizeMatchPredicates(MatchPredicateNormalizerChain(PropertyPredicateNormalizer(anonymousVariableNameGenerator), LabelPredicateNormalizer))
-
-
+                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter =
+    normalizeMatchPredicates(
+      MatchPredicateNormalizerChain(
+        PropertyPredicateNormalizer(anonymousVariableNameGenerator),
+        LabelPredicateNormalizer,
+        NodePatternPredicateNormalizer,
+      )
+    )
 }
 
 case class normalizeMatchPredicates(normalizer: MatchPredicateNormalizer) extends Rewriter {
@@ -61,13 +66,8 @@ case class normalizeMatchPredicates(normalizer: MatchPredicateNormalizer) extend
         case _                                                          => identity
       }
 
-      val rewrittenPredicates: List[Expression] = (predicates ++ where.map(_.expression)).toList
-
-      val predOpt: Option[Expression] = rewrittenPredicates match {
-        case Nil => None
-        case exp :: Nil => Some(exp)
-        case list => Some(list.reduce(And(_, _)(m.position)))
-      }
+      val rewrittenPredicates = predicates ++ where.map(_.expression)
+      val predOpt: Option[Expression] = rewrittenPredicates.reduceOption(And(_, _)(m.position))
 
       val newWhere: Option[Where] = predOpt.map {
         exp =>
