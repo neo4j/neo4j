@@ -360,7 +360,7 @@ public class TransactionRecordState implements RecordState
         getAndDeletePropertyChain( nodeRecord );
     }
 
-    private static Collection<DynamicRecord> markNotInUse( Collection<DynamicRecord> dynamicLabelRecords )
+    private static List<DynamicRecord> markNotInUse( List<DynamicRecord> dynamicLabelRecords )
     {
         for ( DynamicRecord record : dynamicLabelRecords )
         {

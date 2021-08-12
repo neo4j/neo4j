@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
@@ -71,7 +70,7 @@ public class Commands
         record.setCreated();
         if ( dynamicLabelRecordIds.length > 0 )
         {
-            Collection<DynamicRecord> dynamicRecords = dynamicRecords( dynamicLabelRecordIds );
+            List<DynamicRecord> dynamicRecords = dynamicRecords( dynamicLabelRecordIds );
             record.setLabelField( DynamicNodeLabels.dynamicPointer( dynamicRecords ), dynamicRecords );
         }
         return new NodeCommand( new NodeRecord( id ), record );

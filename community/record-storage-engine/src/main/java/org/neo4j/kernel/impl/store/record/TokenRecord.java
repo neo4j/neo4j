@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -79,7 +78,7 @@ public abstract class TokenRecord extends AbstractBaseRecord
         this.nameId = blockId;
     }
 
-    public Collection<DynamicRecord> getNameRecords()
+    public List<DynamicRecord> getNameRecords()
     {
         return nameRecords;
     }

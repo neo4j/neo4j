@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 import static java.util.Collections.emptyList;
@@ -33,7 +33,7 @@ public class NodeRecord extends PrimitiveRecord
     public static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeRecord.class );
     private long nextRel;
     private long labels;
-    private Collection<DynamicRecord> dynamicLabelRecords;
+    private List<DynamicRecord> dynamicLabelRecords;
     private boolean isLight;
     private boolean dense;
 
@@ -98,7 +98,7 @@ public class NodeRecord extends PrimitiveRecord
      * @param labels this will be either in-lined labels, or an id where to get the labels
      * @param dynamicRecords all changed dynamic records by doing this.
      */
-    public void setLabelField( long labels, Collection<DynamicRecord> dynamicRecords )
+    public void setLabelField( long labels, List<DynamicRecord> dynamicRecords )
     {
         this.labels = labels;
         this.dynamicLabelRecords = dynamicRecords;
@@ -119,7 +119,7 @@ public class NodeRecord extends PrimitiveRecord
         return isLight;
     }
 
-    public Collection<DynamicRecord> getDynamicLabelRecords()
+    public List<DynamicRecord> getDynamicLabelRecords()
     {
         return this.dynamicLabelRecords;
     }

@@ -229,6 +229,11 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         return blockRecordsCursor;
     }
 
+    public PropertyBlock[] getPropertyBlocks()
+    {
+        return blockRecords;
+    }
+
     @Override
     public Iterator<PropertyBlock> iterator()
     {

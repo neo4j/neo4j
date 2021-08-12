@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -104,7 +105,7 @@ public class InlineNodeLabels implements NodeLabels
         return Collections.emptyList();
     }
 
-    static boolean tryInlineInNodeRecord( NodeRecord node, long[] ids, Collection<DynamicRecord> changedDynamicRecords )
+    static boolean tryInlineInNodeRecord( NodeRecord node, long[] ids, List<DynamicRecord> changedDynamicRecords )
     {
         // We reserve the high header bit for future extensions of the format of the in-lined label bits
         // i.e. the 0-valued high header bit can allow for 0-7 in-lined labels in the bit-packed format.

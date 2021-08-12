@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
@@ -98,7 +98,7 @@ class NodeRecordTest
         NodeRecord node = newUsedNodeRecord( 0 );
         long labelId = 10_123;
         // A dynamic label record
-        Collection<DynamicRecord> existing = allocateRecordsForDynamicLabels( node.getId(), new long[]{labelId},
+        List<DynamicRecord> existing = allocateRecordsForDynamicLabels( node.getId(), new long[]{labelId},
                 recordAllocator, NULL, INSTANCE );
         // and a deleted one as well (simulating some deleted labels)
         DynamicRecord unused = newDeletedDynamicRecord( ids.nextId( NULL ) );

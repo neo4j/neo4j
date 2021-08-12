@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -118,7 +119,7 @@ public class DynamicNodeLabels implements NodeLabels
         long existingLabelsField = node.getLabelField();
         long existingLabelsBits = parseLabelsBody( existingLabelsField );
 
-        Collection<DynamicRecord> changedDynamicRecords = node.getDynamicLabelRecords();
+        List<DynamicRecord> changedDynamicRecords = node.getDynamicLabelRecords();
 
         long labelField = node.getLabelField();
         if ( fieldPointsToDynamicRecordOfLabels( labelField ) )
@@ -132,7 +133,7 @@ public class DynamicNodeLabels implements NodeLabels
         if ( !InlineNodeLabels.tryInlineInNodeRecord( node, labelIds, changedDynamicRecords ) )
         {
             Iterator<DynamicRecord> recycledRecords = changedDynamicRecords.iterator();
-            Collection<DynamicRecord> allocatedRecords = allocateRecordsForDynamicLabels( node.getId(), labelIds,
+            List<DynamicRecord> allocatedRecords = allocateRecordsForDynamicLabels( node.getId(), labelIds,
                     new ReusableRecordsCompositeAllocator( recycledRecords, allocator ), cursorContext, memoryTracker );
             // Set the rest of the previously set dynamic records as !inUse
             while ( recycledRecords.hasNext() )
@@ -157,7 +158,7 @@ public class DynamicNodeLabels implements NodeLabels
                 nodeStore.getDynamicLabelStore(), storeCursors );
         long[] newLabelIds = LabelIdArray.concatAndSort( existingLabelIds, labelId );
         Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
-        Collection<DynamicRecord> changedDynamicRecords = allocateRecordsForDynamicLabels( node.getId(), newLabelIds,
+        List<DynamicRecord> changedDynamicRecords = allocateRecordsForDynamicLabels( node.getId(), newLabelIds,
                 new ReusableRecordsCompositeAllocator( existingRecords, allocator ), cursorContext, memoryTracker );
         node.setLabelField( dynamicPointer( changedDynamicRecords ), changedDynamicRecords );
         return changedDynamicRecords;
@@ -171,7 +172,7 @@ public class DynamicNodeLabels implements NodeLabels
         long[] existingLabelIds = getDynamicLabelsArray( node.getUsedDynamicLabelRecords(),
                 nodeStore.getDynamicLabelStore(), storeCursors );
         long[] newLabelIds = filter( existingLabelIds, labelId );
-        Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
+        List<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         if ( InlineNodeLabels.tryInlineInNodeRecord( node, newLabelIds, existingRecords ) )
         {
             setNotInUse( existingRecords );
@@ -230,17 +231,17 @@ public class DynamicNodeLabels implements NodeLabels
                 Arrays.toString( getDynamicLabelsArrayFromHeavyRecords( node.getUsedDynamicLabelRecords() ) ) );
     }
 
-    public static Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
+    public static List<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
             AbstractDynamicStore dynamicLabelStore, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         return allocateRecordsForDynamicLabels( nodeId, labels, (DynamicRecordAllocator) dynamicLabelStore, cursorContext, memoryTracker );
     }
 
-    public static Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
+    public static List<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
             DynamicRecordAllocator allocator, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         long[] storedLongs = LabelIdArray.prependNodeId( nodeId, labels );
-        Collection<DynamicRecord> records = new ArrayList<>();
+        List<DynamicRecord> records = new ArrayList<>();
         // since we can't store points in long array we passing false as possibility to store points
         DynamicArrayStore.allocateRecords( records, storedLongs, allocator, false, cursorContext, memoryTracker );
         return records;

@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.internal.schema.SchemaRule;
@@ -168,10 +168,13 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         {
             channel.putLong( record.getSecondaryUnitId() );
         }
-        channel.put( (byte) record.numberOfProperties() ); // 1
-        for ( PropertyBlock block : record )
+        int numberOfProperties = record.numberOfProperties();
+        channel.put( (byte) numberOfProperties ); // 1
+        PropertyBlock[] blocks = record.getPropertyBlocks();
+        for ( int i = 0; i < numberOfProperties; i++ )
         {
-            assert block.getSize() > 0 : record + " seems kinda broken";
+            PropertyBlock block = blocks[i];
+            assert block.getSize() > 0 : record + " has incorrect size";
             writePropertyBlock( channel, block );
         }
         writeDynamicRecords( channel, record.getDeletedRecords() );
@@ -665,17 +668,17 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
                .putLong( command.delta() );
     }
 
-    static void writeDynamicRecords( WritableChannel channel, Collection<DynamicRecord> records ) throws IOException
+    static void writeDynamicRecords( WritableChannel channel, List<DynamicRecord> records ) throws IOException
     {
         writeDynamicRecords( channel, records, records.size() );
     }
 
-    static void writeDynamicRecords( WritableChannel channel, Iterable<DynamicRecord> records, int size ) throws IOException
+    static void writeDynamicRecords( WritableChannel channel, List<DynamicRecord> records, int size ) throws IOException
     {
         channel.putInt( size ); // 4
-        for ( DynamicRecord record : records )
+        for ( int i = 0; i < records.size(); i++ )
         {
-            writeDynamicRecord( channel, record );
+            writeDynamicRecord( channel, records.get( i ) );
         }
     }
 

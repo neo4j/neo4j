@@ -46,23 +46,23 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
-import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.util.Bits;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -553,14 +553,14 @@ class NodeLabelsFieldTest
     private static NodeRecord nodeRecordWithDynamicLabels( long nodeId, NodeStore nodeStore, StoreCursors storeCursors, long... labels )
     {
         NodeRecord node = new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 );
-        Collection<DynamicRecord> initialRecords = allocateAndApply( nodeStore, storeCursors, node.getId(), labels );
+        List<DynamicRecord> initialRecords = allocateAndApply( nodeStore, storeCursors, node.getId(), labels );
         node.setLabelField( dynamicLabelsLongRepresentation( initialRecords ), initialRecords );
         return node;
     }
 
-    private static Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, StoreCursors storeCursors, long nodeId, long[] longs )
+    private static List<DynamicRecord> allocateAndApply( NodeStore nodeStore, StoreCursors storeCursors, long nodeId, long[] longs )
     {
-        Collection<DynamicRecord> records = allocateRecordsForDynamicLabels( nodeId, longs, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
+        List<DynamicRecord> records = allocateRecordsForDynamicLabels( nodeId, longs, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
         nodeStore.updateDynamicLabelRecords( records, IdUpdateListener.DIRECT, NULL, storeCursors );
         return records;
     }

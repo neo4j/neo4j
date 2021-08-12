@@ -21,8 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -43,7 +43,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 class NeoTransactionIndexApplierTest
 {
     private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
-    private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
+    private final List<DynamicRecord> emptyDynamicRecords = Collections.emptyList();
     private final CommandsToApply transactionToApply = new GroupOfCommands( 1L, StoreCursors.NULL );
     private final BatchContext batchContext = mock( BatchContext.class, RETURNS_MOCKS );
 

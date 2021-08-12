@@ -21,8 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -544,7 +544,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
         NodeRecord record;
-        Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
+        List<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
         long labelField = Record.NO_LABELS_FIELD.intValue();
         if ( inUse )
         {

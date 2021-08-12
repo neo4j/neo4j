@@ -20,7 +20,6 @@
 package org.neo4j.collection.trackable;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.MutableSet;
 
 import org.neo4j.memory.MemoryTracker;
 
@@ -65,9 +64,9 @@ public final class HeapTrackingCollections
         return HeapTrackingUnifiedSet.createUnifiedSet( memoryTracker );
     }
 
-    public static <T> MutableSet<T> newIdentityHashingSet( MemoryTracker memoryTracker )
+    public static <T> HeapTrackingArrayList<T> newArrayList( int initialSize, MemoryTracker memoryTracker )
     {
-        return HeapTrackingUnifiedIdentityHashingSet.createUnifiedIdentityHashingSet( memoryTracker );
+        return HeapTrackingArrayList.newArrayList( initialSize, memoryTracker );
     }
 
     public static <T> HeapTrackingArrayList<T> newArrayList( MemoryTracker memoryTracker )

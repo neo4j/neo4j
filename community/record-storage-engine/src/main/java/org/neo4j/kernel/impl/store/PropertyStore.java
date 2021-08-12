@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -63,6 +62,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.TemporalValueWriterAdapter;
 
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newArrayList;
 import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
@@ -368,7 +368,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
 
             // Fall back to dynamic array store
-            List<DynamicRecord> arrayRecords = HeapTrackingCollections.newArrayList( memoryTracker );
+            List<DynamicRecord> arrayRecords = newArrayList( memoryTracker );
             allocateArrayRecords( arrayRecords, asObject, arrayAllocator, allowStorePointsAndTemporal, cursorContext, memoryTracker );
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
@@ -535,7 +535,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
             // Fall back to dynamic string store
             byte[] encodedString = encodeString( value );
-            List<DynamicRecord> valueRecords = HeapTrackingCollections.newArrayList( memoryTracker );
+            List<DynamicRecord> valueRecords = newArrayList( encodedString.length / stringAllocator.getRecordDataSize() + 1, memoryTracker );
             allocateStringRecords( valueRecords, encodedString, stringAllocator, cursorContext, memoryTracker );
             setSingleBlockValue( block, keyId, PropertyType.STRING, Iterables.first( valueRecords ).getId() );
             for ( DynamicRecord valueRecord : valueRecords )

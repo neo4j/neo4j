@@ -290,7 +290,7 @@ public class FullCheckIntegrationTest
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node() ).initialize( false, -1, false, -1, 0 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = new ArrayList<>();
+                List<DynamicRecord> newRecords = new ArrayList<>();
                 allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getId(), new long[]{42L} ),
                         new ReusableRecordsAllocator( 60, record ), NULL, INSTANCE );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
@@ -547,7 +547,7 @@ public class FullCheckIntegrationTest
             {
                 NodeRecord node = new NodeRecord( 42 ).initialize( false, -1, false, -1, 0 );
                 node.setInUse( true );
-                node.setLabelField( inlinedLabelsLongRepresentation( label1, label2 ), Collections.emptySet() );
+                node.setLabelField( inlinedLabelsLongRepresentation( label1, label2 ), Collections.emptyList() );
                 tx.create( node );
             }
         } );
@@ -699,8 +699,7 @@ public class FullCheckIntegrationTest
                 // structurally correct, but does not have the 'mandatory' property with the 'draconian' label
                 NodeRecord node = new NodeRecord( next.node() ).initialize( false, next.property(), false, -1, 0 );
                 node.setInUse( true );
-                node.setLabelField( inlinedLabelsLongRepresentation( draconian ),
-                        Collections.emptySet() );
+                node.setLabelField( inlinedLabelsLongRepresentation( draconian ), Collections.emptyList() );
                 PropertyRecord property = new PropertyRecord( node.getNextProp(), node );
                 property.setInUse( true );
                 PropertyBlock block = new PropertyBlock();
@@ -865,7 +864,7 @@ public class FullCheckIntegrationTest
     void shouldReportNodeDynamicLabelContainingDuplicateLabelAsNodeInconsistency() throws Exception
     {
         int nodeId = 1000;
-        Collection<DynamicRecord> duplicatedLabel = new ArrayList<>();
+        List<DynamicRecord> duplicatedLabel = new ArrayList<>();
         final Pair<List<DynamicRecord>, List<Integer>> labels = chainOfDynamicRecordsWithLabelsForANode( 1 );
 
         // given
