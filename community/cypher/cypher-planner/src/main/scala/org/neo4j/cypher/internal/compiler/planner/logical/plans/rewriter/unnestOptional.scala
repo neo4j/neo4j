@@ -25,12 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-<<<<<<< HEAD
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
-import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
-=======
-import org.neo4j.cypher.internal.logical.plans.Merge
->>>>>>> 04eb1fe4017... Fix slot allocation for optionalExpand predicate
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
