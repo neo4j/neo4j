@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCWithFallbackParsing
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
@@ -39,7 +40,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
   private def pipelineWithSemanticFeatures(semanticFeatures: SemanticFeature*) =
-    Parsing andThen SemanticAnalysis(warn = true, semanticFeatures:_*) andThen SemanticAnalysis(warn = false, semanticFeatures:_*)
+    OpenCypherJavaCCWithFallbackParsing andThen SemanticAnalysis(warn = true, semanticFeatures:_*) andThen SemanticAnalysis(warn = false, semanticFeatures:_*)
 
   private val pipeline = pipelineWithSemanticFeatures()
 
@@ -368,6 +369,134 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     context.errors shouldBe Seq(
       SemanticError("CALL { ... } IN TRANSACTIONS in a UNION is not supported", InputPosition(25, 3, 1))
+    )
+  }
+
+  test("should allow node pattern predicates in MATCH") {
+    val query = "WITH 123 AS minValue MATCH (n {prop: 42} WHERE n.otherProp > minValue)-->(m:Label WHERE m.prop = 42) RETURN n AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("should not allow node pattern predicates in MATCH to refer to other nodes") {
+    val query = "MATCH (start)-->(end:Label WHERE start.prop = 42) RETURN start AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Variable `start` not defined"
+    )
+  }
+
+  test("should not allow node pattern predicates in CREATE") {
+    val query = "CREATE (n WHERE n.prop = 123)"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Node pattern predicates are not allowed in CREATE"
+    )
+  }
+
+  test("should not allow node pattern predicates in MERGE") {
+    val query = "MERGE (n WHERE n.prop = 123)"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Node pattern predicates are not allowed in MERGE"
+    )
+  }
+
+  test("should allow node pattern predicates in pattern comprehension") {
+    val query = "WITH 123 AS minValue RETURN [(n {prop: 42} WHERE n.otherProp > minValue)-->(m:Label WHERE m.prop = 42) | n] AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("should not allow node pattern predicates in pattern comprehension to refer to other nodes") {
+    val query = "RETURN [(start)-->(end:Label WHERE start.prop = 42) | start] AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Variable `start` not defined"
+    )
+  }
+
+  test("should not allow node pattern predicates in pattern expression") {
+    val query =
+      """MATCH (a), (b)
+        |RETURN exists((a WHERE a.prop > 123)-->(b)) AS result""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Node pattern predicates are not allowed in expression"
+    )
+  }
+
+  test("should allow node pattern predicates in MATCH with shortestPath") {
+    val query =
+      """
+        |WITH 123 AS minValue
+        |MATCH p = shortestPath((n {prop: 42} WHERE n.otherProp > minValue)-[:REL*]->(m:Label WHERE m.prop = 42))
+        |RETURN n AS result
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("should not allow node pattern predicates in MATCH with shortestPath to refer to other nodes") {
+    val query =
+      """
+        |MATCH p = shortestPath((start)-[:REL*]->(end:Label WHERE start.prop = 42))
+        |RETURN start AS result""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Variable `start` not defined"
+    )
+  }
+
+  test("should not allow node pattern predicates in shortestPath expression") {
+    val query =
+      """
+        |MATCH (a), (b)
+        |WITH shortestPath((a WHERE a.prop > 123)-[:REL*]->(b)) AS p
+        |RETURN length(p) AS result""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Node pattern predicates are not allowed in expression"
     )
   }
 

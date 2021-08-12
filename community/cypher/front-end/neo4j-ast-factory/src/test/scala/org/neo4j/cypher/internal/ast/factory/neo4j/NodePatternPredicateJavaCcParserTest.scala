@@ -95,7 +95,7 @@ class NodePatternPredicateJavaCcParserTest extends CypherFunSuite with TestName 
     )
   }
 
-  private val exceptionFactory = new OpenCypherExceptionFactory(None)
+  private val exceptionFactory = OpenCypherExceptionFactory(None)
 
   private def parseNodePatterns(query: String): Seq[NodePattern] = {
     val ast = JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator())
