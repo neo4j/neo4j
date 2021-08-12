@@ -98,7 +98,7 @@ class PeriodicCommitHintTest extends CypherFunSuite with Positional {
 
     val value: SignedIntegerLiteral = SignedDecimalIntegerLiteral("1")(pos)
     val hint = PeriodicCommitHint(Some(value))(pos)
-    val nodePattern = NodePattern(None,Seq.empty,None)(pos)
+    val nodePattern = NodePattern(None,Seq.empty,None,None)(pos)
     val pattern = Pattern(Seq(EveryPath(nodePattern)))(pos)
     val create = Create(pattern)(pos)
     val queryPart = SingleQuery(Seq(create))(pos)

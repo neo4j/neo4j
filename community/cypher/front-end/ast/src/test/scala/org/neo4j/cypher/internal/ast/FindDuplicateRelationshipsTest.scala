@@ -33,7 +33,7 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
 
   private val pos = DummyPosition(0)
   private val pos2 = DummyPosition(1)
-  private val node = NodePattern(None, Seq.empty, None)(pos)
+  private val node = NodePattern(None, Seq.empty, None, None)(pos)
   private val relR = Variable("r")(pos)
   private val relRCopy = Variable("r")(pos2)
   private val relS = Variable("s")(pos)

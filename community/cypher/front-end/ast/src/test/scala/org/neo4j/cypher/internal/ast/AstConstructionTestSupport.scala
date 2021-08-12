@@ -375,19 +375,19 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
 
   def nodePat(): NodePattern =
-    NodePattern(None, Seq(), None)(pos)
+    NodePattern(None, Seq(), None, None)(pos)
 
   def nodePat(name: String): NodePattern =
-    NodePattern(Some(Variable(name)(pos)), Seq(), None)(pos)
+    NodePattern(Some(Variable(name)(pos)), Seq(), None, None)(pos)
 
   def nodePat(name: String, labels: String*): NodePattern =
-    NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None)(pos)
+    NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None, None)(pos)
 
   def patternExpression(nodeVar1: Variable, nodeVar2: Variable): PatternExpression =
     PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(nodeVar1), Seq.empty, None)(pos),
+      NodePattern(Some(nodeVar1), Seq.empty, None, None)(pos),
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
-      NodePattern(Some(nodeVar2), Seq.empty, None)(pos)
+      NodePattern(Some(nodeVar2), Seq.empty, None, None)(pos)
     )(pos))(pos))(Set.empty, "", "")
 
   def query(part: QueryPart): Query =

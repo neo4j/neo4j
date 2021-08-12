@@ -374,7 +374,7 @@ class FabricPlannerTest
       local.state.statement().shouldEqual(
         Query(None,
           singleQuery(
-            match_(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)),
+            match_(NodePattern(Some(varFor("n")), Seq.empty, None, None)(pos)),
             with_(varFor("n").as("true")),
             returnVars("true")
           ))(pos)
@@ -396,7 +396,7 @@ class FabricPlannerTest
       local.state.statement().shouldEqual(
         Query(None,
           singleQuery(
-            match_(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)),
+            match_(NodePattern(Some(varFor("n")), Seq.empty, None, None)(pos)),
             with_(varFor("n").as("true")),
             returnLit(true -> "true")
           ))(pos)

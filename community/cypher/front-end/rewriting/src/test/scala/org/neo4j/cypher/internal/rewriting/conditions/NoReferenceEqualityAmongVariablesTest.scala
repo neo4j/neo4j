@@ -30,13 +30,13 @@ class NoReferenceEqualityAmongVariablesTest extends CypherFunSuite with AstConst
 
   test("unhappy when same Variable instance is used multiple times") {
     val id = varFor("a")
-    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(id), Seq(), Some(id))_)))_, Seq(), None)_
+    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(id), Seq(), Some(id), None)_)))_, Seq(), None)_
 
     collector(ast) should equal(Seq(s"The instance $id is used 2 times"))
   }
 
   test("happy when all variable are no reference equal") {
-    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(varFor("a")), Seq(), Some(varFor("a")))_)))_, Seq(), None)_
+    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(varFor("a")), Seq(), Some(varFor("a")), None)_)))_, Seq(), None)_
 
     collector(ast) shouldBe empty
   }

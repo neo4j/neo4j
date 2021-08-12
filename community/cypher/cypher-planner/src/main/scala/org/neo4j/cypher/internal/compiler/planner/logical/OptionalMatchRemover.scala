@@ -240,7 +240,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
     def createNode(name: String): NodePattern = {
       val labels = predicates.getOrElse(name, Seq.empty)
-      NodePattern(Some(createVariable(name)), labels = labels, properties = None)(InputPosition.NONE)
+      NodePattern(Some(createVariable(name)), labels = labels, properties = None, predicate = None)(InputPosition.NONE)
     }
 
     val relName = createVariable(pattern.name)

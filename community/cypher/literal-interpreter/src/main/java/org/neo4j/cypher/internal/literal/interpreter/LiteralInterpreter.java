@@ -326,7 +326,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL nodePattern( NULL p, Object v, List<StringPos<NULL>> labels, Object properties )
+    public NULL nodePattern( NULL p, Object v, List<StringPos<NULL>> labels, Object properties, Object predicate )
     {
         throw new UnsupportedOperationException( "nodePattern is not a literal" );
     }

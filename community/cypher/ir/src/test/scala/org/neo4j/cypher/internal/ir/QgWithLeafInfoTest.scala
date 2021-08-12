@@ -410,9 +410,9 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   test("allKnownUnstableNodeProperties includes pattern expression property key names") {
     val a = StableIdentifier("a", isIdStable = false)
     val pExp = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), Seq.empty, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)))(pos),
+      NodePattern(Some(varFor("a")), Seq.empty, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)), None)(pos),
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
-      NodePattern(None, Seq.empty, None)(pos)
+      NodePattern(None, Seq.empty, None, None)(pos)
     )(pos))(pos))(Set.empty, "", "")
 
     val qg = QueryGraph(
@@ -440,9 +440,9 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   test("allKnownUnstableRelProperties includes pattern comprehension property key names") {
     val a = StableIdentifier("a", isIdStable = false)
     val pComp = PatternComprehension(None, RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), Seq.empty, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)))(pos),
+      NodePattern(Some(varFor("a")), Seq.empty, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)), None)(pos),
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
-      NodePattern(None, Seq.empty, None)(pos)
+      NodePattern(None, Seq.empty, None, None)(pos)
     )(pos))(pos), None, literalInt(5))(pos, Set.empty, "", "")
 
     val qg = QueryGraph(

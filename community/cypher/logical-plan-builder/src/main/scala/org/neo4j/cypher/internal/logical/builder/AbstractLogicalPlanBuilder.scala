@@ -410,14 +410,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => FindShortestPaths(lp,
       ShortestPathPattern(pathName, PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length), !all)
       (ShortestPaths(RelationshipChain(
-        NodePattern(Some(varFor(p.from)), Seq.empty, None)(pos), // labels and properties are not used at runtime
+        NodePattern(Some(varFor(p.from)), Seq.empty, None, None)(pos), // labels and properties are not used at runtime
         RelationshipPattern(Some(varFor(p.relName)),
           p.relTypes,
           length,
           None, // properties are not used at runtime
           p.dir
         )(pos),
-        NodePattern(Some(varFor(p.to)), Seq.empty, None)(pos) // labels and properties are not used at runtime
+        NodePattern(Some(varFor(p.to)), Seq.empty, None, None)(pos) // labels and properties are not used at runtime
       )(pos), !all)(pos)),
       predicates.map(Parser.parseExpression),
       withFallback,

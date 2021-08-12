@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 
 case class PropertyPredicateNormalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
-    case NodePattern(Some(id), _, Some(props)) if !isParameter(props) =>
+    case NodePattern(Some(id), _, Some(props), _) if !isParameter(props) =>
       propertyPredicates(id, props)
 
     case RelationshipPattern(Some(id), _, None, Some(props), _, _) if !isParameter(props) =>
@@ -42,7 +42,7 @@ case class PropertyPredicateNormalizer(anonymousVariableNameGenerator: Anonymous
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(Some(_) ,_, Some(props)) if !isParameter(props)                  => p.copy(properties = None)(p.position)
+    case p@NodePattern(Some(_) ,_, Some(props), _) if !isParameter(props)                  => p.copy(properties = None)(p.position)
     case p@RelationshipPattern(Some(_), _, _, Some(props), _, _) if !isParameter(props) => p.copy(properties = None)(p.position)
   }
 

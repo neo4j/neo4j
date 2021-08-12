@@ -1877,15 +1877,17 @@ NODE_PATTERN NodePattern() :
     VARIABLE v = null;
     List<StringPos<POS>> labels = new ArrayList<>();
     EXPRESSION properties = null;
+    EXPRESSION predicate = null;
 }
 {
     t=<LPAREN>
         ( v=Variable() )?
         ( labels=NodeLabels() )?
         ( properties=Properties() )?
+        ( <WHERE> predicate=Expression() )?
     <RPAREN>
     {
-        return astFactory.nodePattern( pos( t ), v, labels, properties );
+        return astFactory.nodePattern( pos( t ), v, labels, properties, predicate );
     }
 }
 

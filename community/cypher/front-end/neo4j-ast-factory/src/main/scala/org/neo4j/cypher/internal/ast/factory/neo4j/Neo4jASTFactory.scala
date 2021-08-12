@@ -565,12 +565,10 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     val clausesIter = setClauses.iterator()
     val positionItr = positions.iterator()
     val actions = actionTypes.asScala.toList.map {
-      case MergeActionType.OnMatch => {
+      case MergeActionType.OnMatch =>
         OnMatch(clausesIter.next())(positionItr.next)
-      }
-      case MergeActionType.OnCreate => {
+      case MergeActionType.OnCreate =>
         OnCreate(clausesIter.next())(positionItr.next)
-      }
     }
 
     Merge(Pattern(Seq(pattern))(p), actions)(p)
@@ -647,8 +645,9 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   override def nodePattern(p: InputPosition,
                            v: Variable,
                            labels: util.List[StringPos[InputPosition]],
-                           properties: Expression): NodePattern =
-    NodePattern(Option(v), labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), Option(properties))(p)
+                           properties: Expression,
+                           predicate: Expression): NodePattern =
+    NodePattern(Option(v), labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), Option(properties), Option(predicate))(p)
 
   override def relationshipPattern(p: InputPosition,
                                    left: Boolean,

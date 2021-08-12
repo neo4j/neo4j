@@ -32,7 +32,7 @@ class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestS
   val condition: Any => Seq[String] = containsNoNodesOfType[UnaliasedReturnItem]()
 
   test("Happy when not finding UnaliasedReturnItem") {
-    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None)_)))_, Seq(), None)_
+    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None, None)_)))_, Seq(), None)_
 
     condition(ast) should equal(Seq())
   }

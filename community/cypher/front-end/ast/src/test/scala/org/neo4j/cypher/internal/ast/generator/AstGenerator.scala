@@ -833,7 +833,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     variable <- option(_variable)
     labels <- zeroOrMore(_labelName)
     properties <- option(oneOf(_map, _parameter))
-  } yield NodePattern(variable, labels, properties)(pos)
+  } yield NodePattern(variable, labels, properties, None)(pos)
 
   def _range: Gen[Range] = for {
     lower <- option(_unsignedDecIntLit)
