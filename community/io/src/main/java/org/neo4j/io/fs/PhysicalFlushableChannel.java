@@ -126,11 +126,13 @@ public class PhysicalFlushableChannel implements FlushableChannel
     public FlushableChannel put( byte[] value, int offset, int length ) throws IOException
     {
         int localOffset = 0;
+        int capacity = buffer.capacity();
         while ( localOffset < length )
         {
-            int chunkSize = min( length - localOffset, buffer.capacity() >> 1 );
+            int remaining = buffer.remaining();
+            int bufferCapacity = remaining > 0 ? remaining : capacity;
+            int chunkSize = min( length - localOffset, bufferCapacity );
             bufferWithGuaranteedSpace( chunkSize ).put( value, offset + localOffset, chunkSize );
-
             localOffset += chunkSize;
         }
         return this;
@@ -178,7 +180,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
 
     ByteBuffer bufferWithGuaranteedSpace( int spaceInBytes ) throws IOException
     {
-        assert spaceInBytes < buffer.capacity();
+        assert spaceInBytes <= buffer.capacity();
         if ( buffer.remaining() < spaceInBytes )
         {
             prepareForFlush();

@@ -20,14 +20,18 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
@@ -35,6 +39,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.extension.Inject;
@@ -47,6 +52,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.neo4j.io.ByteUnit.bytes;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
@@ -85,12 +93,7 @@ class PhysicalFlushableChannelTest
             channel.put( bytes, length );
         }
 
-        byte[] writtenBytes = new byte[length];
-        try ( InputStream in = Files.newInputStream( firstFile ) )
-        {
-            in.read( writtenBytes );
-        }
-
+        byte[] writtenBytes = Files.readAllBytes( firstFile );
         assertArrayEquals( bytes, writtenBytes );
     }
 
@@ -109,12 +112,7 @@ class PhysicalFlushableChannelTest
             channel.put( bytes, length );
         }
 
-        byte[] writtenBytes = new byte[length];
-        try ( InputStream in = Files.newInputStream( firstFile ) )
-        {
-            in.read( writtenBytes );
-        }
-
+        byte[] writtenBytes = Files.readAllBytes( firstFile );
         assertArrayEquals( bytes, writtenBytes );
     }
 
@@ -156,25 +154,26 @@ class PhysicalFlushableChannelTest
             channel.put( bytes, length );
         }
 
-        byte[] writtenBytes = new byte[length];
-        try ( InputStream in = Files.newInputStream( firstFile ) )
-        {
-            in.read( writtenBytes );
-        }
-
+        byte[] writtenBytes = Files.readAllBytes( firstFile );
         assertArrayEquals( bytes, writtenBytes );
     }
 
-    private static byte[] generateBytes( int length )
+    @MethodSource( "bytesToChannelParameters" )
+    @ParameterizedTest
+    void writeBytesOverChannel( int length, ScopedBuffer buffer ) throws IOException
     {
-        Random random = new Random();
-        char[] validCharacters = new char[] { 'a', 'b', 'c', 'd', 'e','f', 'g', 'h','i', 'j', 'k', 'l', 'm', 'n', 'o' };
-        byte[] bytes = new byte[length];
-        for ( int i = 0; i < length; i++ )
+        var file = directory.homePath().resolve( "fileWithBytes" );
+        StoreChannel storeChannel = fileSystem.write( file );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file, nativeChannelAccessor );
+        byte[] bytes = generateBytes( length );
+        try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel, buffer ) )
         {
-            bytes[i] = (byte) validCharacters[random.nextInt(validCharacters.length)];
+            channel.put( bytes, length );
         }
-        return bytes;
+
+        byte[] writtenBytes = Files.readAllBytes( file );
+        assertArrayEquals( bytes, writtenBytes );
     }
 
     @Test
@@ -235,18 +234,19 @@ class PhysicalFlushableChannelTest
         StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file, nativeChannelAccessor );
-        PositionAwarePhysicalFlushableChecksumChannel channel =
-                new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, new NativeScopedBuffer( 1024, INSTANCE ) );
-        LogPosition initialPosition = channel.getCurrentPosition();
+        try ( var channel = new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel,
+                new NativeScopedBuffer( 1024, INSTANCE ) ) )
+        {
+            LogPosition initialPosition = channel.getCurrentPosition();
 
-        // WHEN
-        channel.putLong( 67 );
-        channel.putInt( 1234 );
-        LogPosition positionAfterSomeData = channel.getCurrentPosition();
+            // WHEN
+            channel.putLong( 67 );
+            channel.putInt( 1234 );
+            LogPosition positionAfterSomeData = channel.getCurrentPosition();
 
-        // THEN
-        assertEquals( 12, positionAfterSomeData.getByteOffset() - initialPosition.getByteOffset() );
-        channel.close();
+            // THEN
+            assertEquals( 12, positionAfterSomeData.getByteOffset() - initialPosition.getByteOffset() );
+        }
     }
 
     @Test
@@ -299,4 +299,39 @@ class PhysicalFlushableChannelTest
         }
     }
 
+    private static Stream<Arguments> bytesToChannelParameters()
+    {
+        return Stream.of(
+                Arguments.of( 128, new HeapScopedBuffer( 128, INSTANCE ) ),
+                Arguments.of( 256, new HeapScopedBuffer( 128, INSTANCE ) ),
+                Arguments.of( 258, new HeapScopedBuffer( 128, INSTANCE ) ),
+                Arguments.of( 512, new HeapScopedBuffer( 128, INSTANCE ) ),
+                Arguments.of( 12, new HeapScopedBuffer( 512, INSTANCE ) ),
+                Arguments.of( 120, new HeapScopedBuffer( 512, INSTANCE ) ),
+                Arguments.of( 1200, new HeapScopedBuffer( 512, INSTANCE ) ),
+                Arguments.of( 512 * 3 + 1, new HeapScopedBuffer( 512, INSTANCE ) ),
+                Arguments.of( 512 * 3 - 1, new HeapScopedBuffer( 512, INSTANCE ) ),
+                Arguments.of( (int) kibiBytes( 24 ), new HeapScopedBuffer( 512, INSTANCE ) ),
+                Arguments.of( (int) kibiBytes( 1024 ), new HeapScopedBuffer( 512, INSTANCE ) ),
+                Arguments.of( (int) kibiBytes( 5024 ), new HeapScopedBuffer( 512, INSTANCE ) ),
+                Arguments.of( (int) kibiBytes( 10024 ), new HeapScopedBuffer( 512, INSTANCE ) ),
+                Arguments.of( (int) kibiBytes( 10024 ), new HeapScopedBuffer( 1024, INSTANCE ) ),
+                Arguments.of( (int) kibiBytes( 11024 ), new HeapScopedBuffer( 1024, INSTANCE ) ),
+                Arguments.of( (int) kibiBytes( 11424 ), new HeapScopedBuffer( 1024, INSTANCE ) ),
+                Arguments.of( (int) bytes( ThreadLocalRandom.current().nextInt( 1024, (int) mebiBytes( 100 ) ) ),
+                        new HeapScopedBuffer( ThreadLocalRandom.current().nextInt( 128, (int) mebiBytes( 2 ) ), INSTANCE ) ) )
+        ;
+    }
+
+    private static byte[] generateBytes( int length )
+    {
+        Random random = new Random();
+        char[] validCharacters = new char[] { 'a', 'b', 'c', 'd', 'e','f', 'g', 'h','i', 'j', 'k', 'l', 'm', 'n', 'o' };
+        byte[] bytes = new byte[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            bytes[i] = (byte) validCharacters[random.nextInt(validCharacters.length)];
+        }
+        return bytes;
+    }
 }
