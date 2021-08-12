@@ -42,15 +42,16 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.Futures;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@TestDirectoryExtension
+@EphemeralTestDirectoryExtension
 class RelationshipsDeadlockTest
 {
     private static final String STMT_BA = " WITH $personA as personA, $personB as personB  " +
@@ -79,7 +80,7 @@ class RelationshipsDeadlockTest
     @BeforeEach
     void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setFileSystem( testDirectory.getFileSystem() ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -103,57 +104,62 @@ class RelationshipsDeadlockTest
         }
 
         final ExecutorService executorService = Executors.newFixedThreadPool( THREADS );
-        final List<Map<String, Object>> rels = generateRelationshipData();
-        final AtomicBoolean stop = new AtomicBoolean();
-        final AtomicReference<Exception> error = new AtomicReference<>();
-        final Runnable workload = () ->
-        {
-            for ( final Map<String, Object> rel : rels )
-            {
-                if ( stop.get() )
-                {
-                    break;
-                }
-                try ( Transaction tx = db.beginTx() )
-                {
-                    final int a = (Integer) rel.get( "personA" );
-                    final int b = (Integer) rel.get( "personB" );
-                    tx.execute( a > b ? STMT_AB : STMT_BA, rel );
-                    tx.commit();
-                }
-                catch ( Exception e )
-                {
-                    if ( stop.compareAndSet( false, true ) )
-                    {
-                        error.set( e );
-                    }
-                    stop.set( true );
-                    throw new RuntimeException( e );
-                }
-            }
-        };
-
         var futures = new ArrayList<Future<?>>();
-        for ( int i = 0; i < THREADS; i++ )
+        final AtomicReference<Exception> error = new AtomicReference<>();
+        try
         {
-            futures.add( executorService.submit( workload ) );
+            final List<Map<String,Object>> rels = generateRelationshipData();
+            final AtomicBoolean stop = new AtomicBoolean();
+            final Runnable workload = () ->
+            {
+                for ( final Map<String,Object> rel : rels )
+                {
+                    if ( stop.get() )
+                    {
+                        break;
+                    }
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        final int a = (Integer) rel.get( "personA" );
+                        final int b = (Integer) rel.get( "personB" );
+                        tx.execute( a > b ? STMT_AB : STMT_BA, rel );
+                        tx.commit();
+                    }
+                    catch ( Exception e )
+                    {
+                        if ( stop.compareAndSet( false, true ) )
+                        {
+                            error.set( e );
+                        }
+                        stop.set( true );
+                        throw new RuntimeException( e );
+                    }
+                }
+            };
+
+            for ( int i = 0; i < THREADS; i++ )
+            {
+                futures.add( executorService.submit( workload ) );
+            }
+        }
+        finally
+        {
+            executorService.shutdown();
         }
 
-        executorService.shutdown();
-        executorService.awaitTermination( 1, TimeUnit.MINUTES );
-
+        assertTrue( executorService.awaitTermination( 10, TimeUnit.MINUTES ) );
+        assertDoesNotThrow( () -> Futures.getAll( futures ) );
         if ( error.get() != null )
         {
             fail( error.get() );
         }
-        assertDoesNotThrow( () -> Futures.getAll( futures ) );
     }
 
     private static List<Map<String, Object>> generateRelationshipData()
     {
         final Random rnd = new Random();
         final List<Map<String, Object>> rels = new ArrayList<>();
-        for ( int i = 0; i < 100000; i++ )
+        for ( int i = 0; i < 10_000; i++ )
         {
             IntIntPair pair;
             do
