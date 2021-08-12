@@ -17,8 +17,15 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 trait MatchPredicateNormalizer {
   val extract: PartialFunction[AnyRef, IndexedSeq[Expression]]
   val replace: PartialFunction[AnyRef, AnyRef]
+
+  final def extractAllFrom(pattern: Any): Seq[Expression] =
+    pattern.fold(Vector.empty[Expression]) {
+      case pattern: AnyRef if extract.isDefinedAt(pattern) => acc => acc ++ extract(pattern)
+      case _                                               => identity
+    }
 }

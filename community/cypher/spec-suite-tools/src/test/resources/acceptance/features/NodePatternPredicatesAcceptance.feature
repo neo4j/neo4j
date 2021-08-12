@@ -91,3 +91,47 @@ Feature: NodePatternPredicates
       RETURN a.prop AS result
       """
     Then a SyntaxError should be raised at runtime: UndefinedVariable
+
+  Scenario: Pattern comprehension with predicate on a single node
+    And having executed:
+      """
+      CREATE (:A {prop: 1})-[:R]->(:B)
+      CREATE (:A {prop: 2})-[:R]->(:B)
+      CREATE (:A {prop: 3})-[:R]->(:B)
+      """
+    When executing query:
+      """
+      WITH 1 AS x
+      RETURN [(a:A WHERE a.prop > x)-[r]-(b:B) | a.prop] AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | [2, 3] |
+    And no side effects
+
+  Scenario: Pattern comprehension with predicates on multiple nodes
+    And having executed:
+      """
+      CREATE (a:A {prop: 1})
+      CREATE (a)-[:R]->(:B {prop: 100})
+      CREATE (a)-[:R]->(:B {prop: 200})
+
+      CREATE (:A {prop: 2})-[:R]->(:B {prop: 300})
+      CREATE (:A {prop: 3})-[:R]->(:B {prop: 400})
+      """
+    When executing query:
+      """
+      RETURN [(a:A WHERE a.prop < 3)-[r]->(b:B WHERE b.prop > 100) | [a.prop, b.prop]] AS result
+      """
+    Then the result should be, in any order:
+      | result               |
+      | [[1, 200], [2, 300]] |
+    And no side effects
+
+  Scenario: Should not allow to reference other elements of the pattern in a pattern comprehension
+    Given any graph
+    When executing query:
+      """
+      RETURN [(a:A WHERE b.prop > 1)-[r]-(b:B) | a]
+      """
+    Then a SyntaxError should be raised at runtime: UndefinedVariable

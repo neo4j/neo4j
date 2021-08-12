@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeExistsPatternExpre
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizePatternComprehensionPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
@@ -61,6 +62,7 @@ object ASTRewriter {
     normalizeExistsPatternExpressions,
     nameAllPatternElements,
     normalizeMatchPredicates,
+    normalizePatternComprehensionPredicates,
     normalizeNotEquals,
     normalizeArgumentOrder,
     normalizeSargablePredicates,

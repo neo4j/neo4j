@@ -61,11 +61,7 @@ case class normalizeMatchPredicates(normalizer: MatchPredicateNormalizer) extend
 
   private val rewriter = Rewriter.lift {
     case m@Match(_, pattern, _, where) =>
-      val predicates = pattern.fold(Vector.empty[Expression]) {
-        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
-        case _                                                          => identity
-      }
-
+      val predicates = normalizer.extractAllFrom(pattern)
       val rewrittenPredicates = predicates ++ where.map(_.expression)
       val predOpt: Option[Expression] = rewrittenPredicates.reduceOption(And(_, _)(m.position))
 
