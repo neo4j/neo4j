@@ -141,7 +141,14 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
     @Override
     public void onError( Throwable throwable )
     {
-        this.error = throwable;
+        if ( this.error == null )
+        {
+            this.error = throwable;
+        }
+        else if ( this.error != throwable )
+        {
+            this.error.addSuppressed( throwable );
+        }
     }
 
     @Override
@@ -388,7 +395,14 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         {
             if ( NonFatalCypherError.isNonFatal( error ) )
             {
-                close();
+                try
+                {
+                    close();
+                }
+                catch ( Throwable suppressed )
+                {
+                    error.addSuppressed( suppressed );
+                }
             }
             throw converted( error );
         }
