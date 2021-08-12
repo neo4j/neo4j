@@ -16,10 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
@@ -28,10 +30,14 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 case class Where(expression: Expression)(val position: InputPosition)
   extends ASTNode with SemanticCheckable {
 
-  def dependencies = expression.dependencies
+  def dependencies: Set[LogicalVariable] = expression.dependencies
 
-  def semanticCheck =
+  def semanticCheck: SemanticCheck = Where.checkExpression(expression)
+}
+
+object Where {
+  def checkExpression(expression: Expression): SemanticCheck =
     SemanticExpressionCheck.simple(expression) chain
-    SemanticPatternCheck.checkValidPropertyKeyNames(expression.findAllByClass[Property].map(prop => prop.propertyKey), expression.position) chain
-    SemanticExpressionCheck.expectType(CTBoolean.covariant, expression)
+      SemanticPatternCheck.checkValidPropertyKeyNames(expression.findAllByClass[Property].map(prop => prop.propertyKey), expression.position) chain
+      SemanticExpressionCheck.expectType(CTBoolean.covariant, expression)
 }

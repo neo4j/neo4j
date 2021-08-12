@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
 import org.neo4j.cypher.internal.expressions.And
@@ -369,8 +370,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         SemanticState.recordCurrentScope(x) chain
           withScopedState {
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
-              x.namedPath.map(declareVariable(_, CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success) chain
-              simple(x.predicate) chain
+              x.namedPath.foldSemanticCheck(declareVariable(_, CTPath)) chain
+              x.predicate.foldSemanticCheck(Where.checkExpression) chain
               simple(x.projection)
           } chain {
             val outerTypes: TypeGenerator = types(x.projection)(_).wrapInList
