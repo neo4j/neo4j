@@ -20,7 +20,9 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
 object Pattern {
-  sealed trait SemanticContext
+  sealed trait SemanticContext {
+    def name: String = SemanticContext.name(this)
+  }
 
   object SemanticContext {
     case object Match extends SemanticContext
