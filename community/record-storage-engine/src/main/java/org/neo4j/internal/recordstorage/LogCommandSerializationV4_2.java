@@ -375,7 +375,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         channel.put( flags );
         if ( record.inUse() )
         {
-            byte schemaFlags = bitFlags( bitFlag( record.isConstraint(), SchemaRecord.SCHEMA_FLAG_IS_CONSTRAINT ) );
+            byte schemaFlags = bitFlag( record.isConstraint(), SchemaRecord.SCHEMA_FLAG_IS_CONSTRAINT );
             channel.put( schemaFlags );
             channel.putLong( record.getNextProp() );
             if ( record.hasSecondaryUnitId() )

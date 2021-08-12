@@ -21,6 +21,8 @@ package org.neo4j.util;
 
 import java.util.Arrays;
 
+import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
+
 /**
  * Got bits to store, shift and retrieve and they are more than what fits in a long?
  * Use {@link Bits} then.
@@ -196,36 +198,6 @@ public final class Bits
         builder.append( ']' );
     }
 
-    public static String numbersToBitString( byte[] values )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( byte value : values )
-        {
-            numberToString( builder, value, 1 );
-        }
-        return builder.toString();
-    }
-
-    public static String numbersToBitString( short[] values )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( short value : values )
-        {
-            numberToString( builder, value, 2 );
-        }
-        return builder.toString();
-    }
-
-    public static String numbersToBitString( int[] values )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( int value : values )
-        {
-            numberToString( builder, value, 4 );
-        }
-        return builder.toString();
-    }
-
     public static String numbersToBitString( long[] values )
     {
         StringBuilder builder = new StringBuilder();
@@ -364,52 +336,41 @@ public final class Bits
         return (flags & flag) == flag;
     }
 
-    private static boolean isPowerOfTwo( byte flag )
-    {
-        return (flag & (-flag)) == flag;
-    }
-
     public static boolean bitFlag( int flags, int flag )
     {
-        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        assert isPowerOfTwo( flag ) : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
         return (flags & flag) == flag;
     }
 
     public static int bitFlag( boolean value, int flag )
     {
-        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        assert isPowerOfTwo( flag ) : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
         return value ? flag : 0;
     }
 
     public static byte bitFlag( boolean value, byte flag )
     {
-        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        assert isPowerOfTwo( flag ) : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
         return value ? flag : 0;
     }
 
-    public static byte notFlag( byte flags, byte flag )
+    public static byte bitFlags( int flag1, int flag2, int flag3, int flag4, int flag5, int flag6, int flag7 )
     {
-        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
-        return (byte) (flags & (~flag));
+        int result = flag1 | flag2 | flag3 | flag4 | flag5 | flag6 | flag7;
+        assert (result & ~0xFF) == 0;
+        return (byte) result;
     }
 
-    public static byte bitFlags( byte... flags )
+    public static byte bitFlags( int flag1, int flag2, int flag3, int flag4, int flag5 )
     {
-        byte result = 0;
-        for ( byte flag : flags )
-        {
-            result |= flag;
-        }
-        return result;
+        int result = flag1 | flag2 | flag3 | flag4 | flag5;
+        assert (result & ~0xFF) == 0;
+        return (byte) result;
     }
 
-    public static byte bitFlags( int... flags )
+    public static byte bitFlags( int flag1, int flag2, int flag3, int flag4 )
     {
-        int result = 0;
-        for ( int flag : flags )
-        {
-            result |= flag;
-        }
+        int result = flag1 | flag2 | flag3 | flag4;
         assert (result & ~0xFF) == 0;
         return (byte) result;
     }
