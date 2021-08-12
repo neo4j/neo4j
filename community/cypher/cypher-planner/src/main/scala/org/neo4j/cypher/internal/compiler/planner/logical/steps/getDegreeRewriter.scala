@@ -121,11 +121,11 @@ object RelationshipsPatternSolvableByGetDegree {
     case RelationshipsPattern
       (RelationshipChain
         (NodePattern
-          (Some(node), List(), None),
+          (Some(node), List(), None, None),
         RelationshipPattern
           (Some(rel), types, None, None, dir, _),
         NodePattern
-          (Some(otherNode), List(), None))) =>
+          (Some(otherNode), List(), None, None))) =>
 
       Some((node, rel, otherNode, types, dir))
 
