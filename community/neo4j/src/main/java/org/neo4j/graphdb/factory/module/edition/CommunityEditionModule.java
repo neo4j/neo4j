@@ -91,7 +91,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
-import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
@@ -170,7 +169,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     static Predicate<String> communityFileWatcherFileNameFilter()
     {
-        return DEFAULT_FILENAME_PREDICATE;
+        return defaultFileWatcherFilter();
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()

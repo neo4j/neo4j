@@ -24,11 +24,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -59,8 +62,12 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.layout.CommonDatabaseFile.LABEL_SCAN_STORE;
+import static org.neo4j.io.layout.CommonDatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -198,6 +205,38 @@ class FileWatchIT
         deletionListener.awaitDeletionNotification();
 
         assertThat( logProvider ).forClass( DefaultFileDeletionEventListener.class ).forLevel( INFO ).doesNotContainMessage( fileName );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "lookupIndexFileNames" )
+    void doNotMonitorLookupIndexFiles( String fileName ) throws IOException, InterruptedException
+    {
+        // Given an active file watcher
+        FileWatcher fileWatcher = getFileWatcher( database );
+        CheckPointer checkpointer = getCheckpointer( database );
+        String metadataStore = databaseLayout.metadataStore().getFileName().toString();
+        ModificationEventListener modificationEventListener = new ModificationEventListener( metadataStore );
+        fileWatcher.addFileWatchEventListener( modificationEventListener );
+        do
+        {
+            createNode( database );
+            forceCheckpoint( checkpointer );
+        }
+        while ( !modificationEventListener.awaitModificationNotification() );
+
+        // When a lookup index file is deleted
+        DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
+        fileWatcher.addFileWatchEventListener( deletionListener );
+        deleteFile( databaseLayout.databaseDirectory(), fileName );
+        deletionListener.awaitDeletionNotification();
+
+        // Then it's not reported as an error
+        assertThat( logProvider ).forClass( DefaultFileDeletionEventListener.class ).forLevel( ERROR ).doesNotContainMessage( fileName );
+    }
+
+    private static Collection<String> lookupIndexFileNames()
+    {
+        return asList( LABEL_SCAN_STORE.getName(), RELATIONSHIP_TYPE_SCAN_STORE.getName());
     }
 
     @Test

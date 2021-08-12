@@ -36,6 +36,7 @@ import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
@@ -54,6 +55,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -74,6 +76,8 @@ import org.neo4j.procedure.builtin.routing.SingleAddressRoutingTableProvider;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.io.layout.DatabaseFile.LABEL_SCAN_STORE;
+import static org.neo4j.io.layout.DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE;
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
 /**
@@ -222,5 +226,11 @@ public abstract class AbstractEditionModule
         LogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
         RoutingTableTTLProvider ttlProvider = RoutingTableTTLProvider.ttlFromConfig( config );
         return new SingleAddressRoutingTableProvider( portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlProvider );
+    }
+
+    protected static Predicate<String> defaultFileWatcherFilter()
+    {
+        return Predicates.any( TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE, filename ->
+                filename.contains( LABEL_SCAN_STORE.getName() ) || filename.contains( RELATIONSHIP_TYPE_SCAN_STORE.getName() ) );
     }
 }
