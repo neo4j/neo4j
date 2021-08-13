@@ -58,7 +58,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     public void start()
     {
         var monitoringParams = JobMonitoringParams.systemJob( databaseName, "ID generator maintenance" );
-        jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, monitoringParams, () -> maintenance( false ), 300, MILLISECONDS );
+        jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, monitoringParams, () -> maintenance( true ), 200, MILLISECONDS );
     }
 
     @Override
