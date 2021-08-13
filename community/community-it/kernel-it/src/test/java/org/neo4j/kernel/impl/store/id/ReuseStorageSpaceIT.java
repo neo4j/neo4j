@@ -49,7 +49,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
@@ -59,10 +58,8 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.RandomValues;
 
-import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -70,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.internal.id.indexed.IndexedIdGenerator.STRICTLY_PRIORITIZE_FREELIST_NAME;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
@@ -154,15 +150,7 @@ class ReuseStorageSpaceIT
 
     private static Pair<Integer,Sizes> sameProcess( Path storeDirectory, long seed, Operation operation )
     {
-        enableStrictPrioritizationOfFreelist();
-        try
-        {
-            return Pair.of( CUSTOM_EXIT_CODE, withDb( storeDirectory, db -> operation.perform( db, seed ) ) );
-        }
-        finally
-        {
-            restoreStrictPrioritizationOfFreelist();
-        }
+        return Pair.of( CUSTOM_EXIT_CODE, withDb( storeDirectory, db -> operation.perform( db, seed ) ) );
     }
 
     private static Pair<Integer,Sizes> crashingChildProcess( Path storeDirectory, long seed, Operation operation ) throws Exception
@@ -185,9 +173,6 @@ class ReuseStorageSpaceIT
      */
     public static void main( String[] args )
     {
-        // No need to restore this later because we exit the JVM anyway
-        enableStrictPrioritizationOfFreelist();
-
         Path storeDirectory = Path.of( args[0] ).toAbsolutePath();
         long seed = Long.parseLong( args[1] );
         Operation operation = Operation.valueOf( args[2] );
@@ -314,16 +299,6 @@ class ReuseStorageSpaceIT
             labels[i] = label( names[i] );
         }
         return labels;
-    }
-
-    private static void enableStrictPrioritizationOfFreelist()
-    {
-        FeatureToggles.set( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, TRUE );
-    }
-
-    private static void restoreStrictPrioritizationOfFreelist()
-    {
-        FeatureToggles.clear( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME );
     }
 
     private static class Sizes

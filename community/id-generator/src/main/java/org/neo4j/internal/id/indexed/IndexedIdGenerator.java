@@ -207,7 +207,7 @@ public class IndexedIdGenerator implements IdGenerator
      *     <li>If {@code true}: thread will await lock released and check cache afterwards. If no id is cached even then it will allocate from high id.</li>
      * </ul>
      */
-    private static final boolean STRICTLY_PRIORITIZE_FREELIST_DEFAULT = false;
+    static final boolean STRICTLY_PRIORITIZE_FREELIST_DEFAULT = true;
     public static final String STRICTLY_PRIORITIZE_FREELIST_NAME = "strictlyPrioritizeFreelist";
 
     /**
@@ -351,7 +351,6 @@ public class IndexedIdGenerator implements IdGenerator
         this.readOnly = readOnly;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
-        this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
         this.cache = new SpmcLongQueue( cacheCapacity );
         this.maxId = maxId;
         this.monitor = monitor;
@@ -389,6 +388,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnly, openOptions );
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
+        this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;
         this.scanner = readOnly ? null : new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
                 tracer -> lockAndInstantiateMarker( true, tracer ), generation, strictlyPrioritizeFreelist, monitor );
     }
