@@ -47,6 +47,12 @@ public final class DoubleArray extends FloatingPointArray
     }
 
     @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof FloatingPointValue;
+    }
+
+    @Override
     public double doubleValue( int index )
     {
         return value[index];
@@ -153,5 +159,24 @@ public final class DoubleArray extends FloatingPointArray
     public long estimatedHeapUsage()
     {
         return SHALLOW_SIZE + sizeOf( value );
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        double[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((FloatingPointValue) added).doubleValue();
+        return new DoubleArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        double[] newArray = new double[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((FloatingPointValue) prepended).doubleValue();
+        return new DoubleArray( newArray );
     }
 }

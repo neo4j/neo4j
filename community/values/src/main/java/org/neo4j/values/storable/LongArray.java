@@ -154,4 +154,29 @@ public final class LongArray extends IntegralArray
     {
         return SHALLOW_SIZE + sizeOf( value );
     }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof IntegralValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        long[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((IntegralValue) added).longValue();
+        return new LongArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        long[] newArray = new long[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((IntegralValue) prepended).longValue();
+        return new LongArray( newArray );
+    }
 }

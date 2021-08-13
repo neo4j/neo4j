@@ -154,4 +154,29 @@ public final class FloatArray extends FloatingPointArray
     {
         return SHALLOW_SIZE + sizeOf( value );
     }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof FloatValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        float[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((FloatValue) added).value();
+        return new FloatArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        float[] newArray = new float[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((FloatValue) prepended).value();
+        return new FloatArray( newArray );
+    }
 }

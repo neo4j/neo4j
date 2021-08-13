@@ -182,6 +182,31 @@ public final class ByteArray extends IntegralArray
         return SHALLOW_SIZE + sizeOf( value );
     }
 
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof ByteValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        byte[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((ByteValue) added).value();
+        return new ByteArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        byte[] newArray = new byte[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((ByteValue) prepended).value();
+        return new ByteArray( newArray );
+    }
+
     public void zero()
     {
         invalid = true;

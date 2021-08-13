@@ -22,6 +22,7 @@ package org.neo4j.values.storable;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static org.neo4j.memory.HeapEstimator.LOCAL_DATE_TIME_SIZE;
@@ -92,5 +93,30 @@ public class LocalDateTimeArray extends TemporalArray<LocalDateTime>
     public long estimatedHeapUsage()
     {
         return SHALLOW_SIZE + sizeOfObjectArray( LOCAL_DATE_TIME_SIZE, value.length );
+    }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof LocalDateTimeValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        LocalDateTime[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((LocalDateTimeValue) added).temporal();
+        return new LocalDateTimeArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        LocalDateTime[] newArray = new LocalDateTime[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((LocalDateTimeValue) prepended).temporal();
+        return new LocalDateTimeArray( newArray );
     }
 }

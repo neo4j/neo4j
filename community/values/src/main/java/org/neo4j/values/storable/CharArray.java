@@ -142,4 +142,29 @@ public final class CharArray extends TextArray
     {
         return SHALLOW_SIZE + sizeOf( value );
     }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof CharValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        char[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((CharValue) added).value();
+        return new CharArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        char[] newArray = new char[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((CharValue) prepended).value();
+        return new CharArray( newArray );
+    }
 }

@@ -105,4 +105,29 @@ public final class PointArray extends NonPrimitiveArray<PointValue>
         int length = value.length;
         return SHALLOW_SIZE + (length == 0 ? 0 : sizeOfObjectArray( value[0].estimatedHeapUsage(), length ));
     }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof PointValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        PointValue[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((PointValue) added);
+        return new PointArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        PointValue[] newArray = new PointValue[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((PointValue) prepended);
+        return new PointArray( newArray );
+    }
 }

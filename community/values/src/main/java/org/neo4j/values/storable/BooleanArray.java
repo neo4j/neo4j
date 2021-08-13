@@ -150,4 +150,29 @@ public final class BooleanArray extends ArrayValue
     {
         return SHALLOW_SIZE + sizeOf( value );
     }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof BooleanValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        boolean[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((BooleanValue) added).booleanValue();
+        return new BooleanArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        boolean[] newArray = new boolean[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((BooleanValue) prepended).booleanValue();
+        return new BooleanArray( newArray );
+    }
 }

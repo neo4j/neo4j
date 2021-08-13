@@ -103,4 +103,29 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
     {
         return SHALLOW_SIZE + sizeOfObjectArray( DurationValue.SHALLOW_SIZE, value.length );
     }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof DurationValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        DurationValue[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((DurationValue) added);
+        return new DurationArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        DurationValue[] newArray = new DurationValue[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((DurationValue) prepended);
+        return new DurationArray( newArray );
+    }
 }

@@ -154,4 +154,29 @@ public class ShortArray extends IntegralArray
     {
         return SHALLOW_SIZE + sizeOf( value );
     }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof ShortValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        short[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((ShortValue) added).value();
+        return new ShortArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        short[] newArray = new short[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((ShortValue) prepended).value();
+        return new ShortArray( newArray );
+    }
 }

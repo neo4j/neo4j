@@ -44,7 +44,7 @@ object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
     if (a.storable()) {
       a.toStorableArray
     } else if (a.isEmpty) {
-      Values.stringArray(Array.empty[String]:_*)
+      Values.EMPTY_TEXT_ARRAY
     } else {
       val typeValue = a.iterator().asScala.reduce(CastSupport.merge)
       val converter = CastSupport.getConverter(typeValue)

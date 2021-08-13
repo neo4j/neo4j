@@ -22,6 +22,7 @@ package org.neo4j.values.storable;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static org.neo4j.memory.HeapEstimator.ZONED_DATE_TIME_SIZE;
@@ -92,5 +93,30 @@ public final class DateTimeArray extends TemporalArray<ZonedDateTime>
     public long estimatedHeapUsage()
     {
         return SHALLOW_SIZE + sizeOfObjectArray( ZONED_DATE_TIME_SIZE, value.length );
+    }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof DateTimeValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        ZonedDateTime[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((DateTimeValue) added).temporal();
+        return new DateTimeArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        ZonedDateTime[] newArray = new ZonedDateTime[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((DateTimeValue) prepended).temporal();
+        return new DateTimeArray( newArray );
     }
 }

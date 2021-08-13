@@ -22,6 +22,7 @@ package org.neo4j.values.storable;
 import java.time.OffsetTime;
 import java.util.Arrays;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static org.neo4j.memory.HeapEstimator.OFFSET_TIME_SIZE;
@@ -92,5 +93,30 @@ public class TimeArray extends TemporalArray<OffsetTime>
     public long estimatedHeapUsage()
     {
         return SHALLOW_SIZE + sizeOfObjectArray( OFFSET_TIME_SIZE, value.length );
+    }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof TimeValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        OffsetTime[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((TimeValue) added).temporal();
+        return new TimeArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        OffsetTime[] newArray = new OffsetTime[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((TimeValue) prepended).temporal();
+        return new TimeArray( newArray );
     }
 }

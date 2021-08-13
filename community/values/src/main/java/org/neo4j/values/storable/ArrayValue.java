@@ -33,6 +33,10 @@ public abstract class ArrayValue extends HashMemoizingValue implements SequenceV
     @Override
     public abstract int length();
 
+    public abstract ArrayValue copyWithAppended( AnyValue added );
+
+    public abstract ArrayValue copyWithPrepended( AnyValue prepended );
+
     @Override
     public IterationPreference iterationPreference()
     {

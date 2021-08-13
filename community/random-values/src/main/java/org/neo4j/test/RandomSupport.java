@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -240,6 +241,11 @@ public class RandomSupport
     public Value nextValue( ValueType type )
     {
         return randoms.nextValueOfType( type );
+    }
+
+    public ArrayValue nextArray()
+    {
+        return randoms.nextArray();
     }
 
     // ============================

@@ -151,4 +151,29 @@ public class StringArray extends TextArray
         int length = value.length;
         return SHALLOW_SIZE + (length == 0 ? 0 : sizeOfObjectArray( sizeOf( value[0] ), length ) ); // Use first element as probe
     }
+
+    @Override
+    public boolean hasCompatibleType( AnyValue value )
+    {
+        return value instanceof TextValue;
+    }
+
+    @Override
+    public ArrayValue copyWithAppended( AnyValue added )
+    {
+        assert hasCompatibleType( added ) : "Incompatible types";
+        String[] newArray = Arrays.copyOf( value, value.length + 1 );
+        newArray[value.length] = ((TextValue) added).stringValue();
+        return new StringArray( newArray );
+    }
+
+    @Override
+    public ArrayValue copyWithPrepended( AnyValue prepended )
+    {
+        assert hasCompatibleType( prepended ) : "Incompatible types";
+        String[] newArray = new String[value.length + 1];
+        System.arraycopy( value, 0, newArray, 1, value.length );
+        newArray[0] = ((TextValue) prepended).stringValue();
+        return new StringArray( newArray );
+    }
 }

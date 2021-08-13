@@ -86,11 +86,11 @@ class AppendedPrependListTest
         ListValue inner = list( longValue( 5L ), longValue( 6L ) );
 
         // When
-        ListValue appended = inner.prepend( NO_VALUE );
+        ListValue prepended = inner.prepend( NO_VALUE );
 
         // Then
         ListValue expected = list( NO_VALUE, longValue( 5L ), longValue( 6L ) );
-        assertListValuesEquals( appended, expected );
+        assertListValuesEquals( prepended, expected );
     }
 
     private static void assertListValuesEquals( ListValue appended, ListValue expected )
