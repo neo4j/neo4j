@@ -343,7 +343,6 @@ public class IndexedIdGenerator implements IdGenerator
         this.readOnlyChecker = readOnlyChecker;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
-        this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
         this.cache = new SpmcLongQueue( cacheCapacity );
         this.maxId = maxId;
         this.monitor = monitor;
@@ -381,6 +380,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnlyChecker, databaseName, openOptions );
 
         boolean strictlyPrioritizeFreelist = config.get( GraphDatabaseInternalSettings.strictly_prioritize_id_freelist );
+        this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;
         this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
                 tracer -> lockAndInstantiateMarker( true, tracer ), generation, strictlyPrioritizeFreelist, monitor );
     }

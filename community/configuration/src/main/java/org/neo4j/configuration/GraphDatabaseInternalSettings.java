@@ -615,7 +615,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
      */
     @Internal
     public static final Setting<Boolean> strictly_prioritize_id_freelist =
-            newBuilder( "unsupported.dbms.strictly_prioritize_id_freelist", BOOL, false ).build();
+            newBuilder( "unsupported.dbms.strictly_prioritize_id_freelist", BOOL, true ).build();
 
     @Internal
     public static final Setting<Long> index_populator_block_size = newBuilder( "unsupported.dbms.index.populator_block_size", BYTES, mebiBytes( 1 ) )
