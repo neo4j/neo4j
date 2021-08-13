@@ -96,7 +96,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
+    public void maintenance( CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }

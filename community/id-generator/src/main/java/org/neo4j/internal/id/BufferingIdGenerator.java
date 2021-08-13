@@ -74,13 +74,13 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     }
 
     @Override
-    public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
+    public void maintenance( CursorContext cursorContext )
     {
         // Check and potentially release ids onto the IdGenerator
         buffer.maintenance( cursorContext );
 
         // Do IdGenerator maintenance, typically ensure ID cache is full
-        super.maintenance( awaitOngoing, cursorContext );
+        super.maintenance( cursorContext );
     }
 
     @Override

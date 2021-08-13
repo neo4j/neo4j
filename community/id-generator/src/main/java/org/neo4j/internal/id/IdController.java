@@ -51,10 +51,8 @@ public interface IdController extends Lifecycle
 
     /**
      * Perform ids related maintenance.
-     *
-     * @param awaitOngoing awaits any ongoing maintenance operation if another thread does such.
      */
-    void maintenance( boolean awaitOngoing );
+    void maintenance();
 
     void initialize( Supplier<ConditionSnapshot> conditionSnapshotSupplier );
 }

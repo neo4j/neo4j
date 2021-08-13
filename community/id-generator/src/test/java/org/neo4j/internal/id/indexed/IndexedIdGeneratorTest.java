@@ -756,7 +756,7 @@ class IndexedIdGeneratorTest
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
-            idGenerator.maintenance( false, cursorContext );
+            idGenerator.maintenance( cursorContext );
 
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
@@ -764,7 +764,7 @@ class IndexedIdGeneratorTest
 
             idGenerator.marker( NULL ).markDeleted( 1 );
             idGenerator.clearCache( NULL );
-            idGenerator.maintenance( false, cursorContext );
+            idGenerator.maintenance( cursorContext );
 
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
@@ -936,17 +936,10 @@ class IndexedIdGeneratorTest
             } );
             barrier.await();
 
-            // First check that a maintenance call which isn't told to wait can complete
-            t3.execute( () ->
-            {
-                idGenerator.maintenance( false, NULL );
-                return null;
-            } );
-
-            // then check that a call which is told to wait blocks
+            // check that a maintenance call blocks
             Future<Object> t3Future = t3.executeDontWait( () ->
             {
-                idGenerator.maintenance( true, NULL );
+                idGenerator.maintenance( NULL );
                 return null;
             } );
             t3.waitUntilWaiting( details -> details.isAt( FreeIdScanner.class, "tryLoadFreeIdsIntoCache" ) );

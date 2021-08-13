@@ -84,7 +84,7 @@ class BufferedIdControllerTest
             assertThat( pageCacheTracer.hits() ).isZero();
 
             var controller = newController( pageCacheTracer );
-            controller.maintenance( false );
+            controller.maintenance();
 
             assertThat( pageCacheTracer.pins() ).isOne();
             assertThat( pageCacheTracer.unpins() ).isOne();

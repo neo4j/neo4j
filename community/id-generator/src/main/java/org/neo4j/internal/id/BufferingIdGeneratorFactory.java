@@ -111,13 +111,13 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
         return bufferingGenerator;
     }
 
-    public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
+    public void maintenance( CursorContext cursorContext )
     {
         for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
-                generator.maintenance( awaitOngoing, cursorContext );
+                generator.maintenance( cursorContext );
             }
         }
     }
