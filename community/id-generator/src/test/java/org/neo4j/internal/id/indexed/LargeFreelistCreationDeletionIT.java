@@ -78,7 +78,7 @@ class LargeFreelistCreationDeletionIT
                     false, NULL ) )
             {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.
-                freelist.maintenance( true, NULL );
+                freelist.maintenance( NULL );
 
                 Race race = new Race();
                 WorkSync<IndexedIdGenerator,Ids> workSync = new WorkSync<>( freelist );

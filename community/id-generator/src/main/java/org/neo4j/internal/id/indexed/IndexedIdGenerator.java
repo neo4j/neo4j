@@ -417,7 +417,7 @@ public class IndexedIdGenerator implements IdGenerator
         // we can see if the cache is starting to dry out and if so do a scan right here.
         // There may be multiple allocation requests doing this, but it should be very cheap:
         // comparing two ints, reading an AtomicBoolean and trying to CAS an AtomicBoolean.
-        maintenance( false, cursorTracer );
+        checkRefillCache( cursorTracer );
 
         // try get from cache
         long id = cache.takeOrDefault( NO_ID );
@@ -447,7 +447,7 @@ public class IndexedIdGenerator implements IdGenerator
     public org.neo4j.internal.id.IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, PageCursorTracer cursorTracer )
     {
         assertNotReadOnly();
-        maintenance( false, cursorTracer );
+        checkRefillCache( cursorTracer );
 
         if ( forceConsecutiveAllocation )
         {
@@ -580,7 +580,7 @@ public class IndexedIdGenerator implements IdGenerator
 
         // After potentially recovery has been run and everything is prepared to get going let's call maintenance,
         // which will fill the ID buffers right away before any request comes to the db.
-        maintenance( false, cursorTracer );
+        maintenance( cursorTracer );
     }
 
     @Override
@@ -591,12 +591,21 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer )
+    public void maintenance( PageCursorTracer cursorTracer )
     {
-        if ( !readOnly && cache.size() < cacheOptimisticRefillThreshold )
+        if ( !readOnly && cache.size() < cache.capacity() )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
-            scanner.tryLoadFreeIdsIntoCache( awaitOngoing, cursorTracer );
+            scanner.tryLoadFreeIdsIntoCache( true, cursorTracer );
+        }
+    }
+
+    private void checkRefillCache( PageCursorTracer cursorTracer )
+    {
+        if ( !readOnly && cache.size() <= cacheOptimisticRefillThreshold )
+        {
+            // We're just helping other allocation requests and avoiding unwanted sliding of highId here
+            scanner.tryLoadFreeIdsIntoCache( false, cursorTracer );
         }
     }
 

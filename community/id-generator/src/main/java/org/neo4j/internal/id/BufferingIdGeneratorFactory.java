@@ -107,13 +107,13 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
         return bufferingGenerator;
     }
 
-    public void maintenance( boolean awaitOngoing, PageCursorTracer pageCursorTracer )
+    public void maintenance( PageCursorTracer pageCursorTracer )
     {
         for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
-                generator.maintenance( awaitOngoing, pageCursorTracer );
+                generator.maintenance( pageCursorTracer );
             }
         }
     }

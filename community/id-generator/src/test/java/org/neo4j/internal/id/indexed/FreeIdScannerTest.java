@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -390,9 +389,60 @@ class FreeIdScannerTest
         verify( cache, times( 1 ) ).offer( anyLong() ); // <-- the 1 call is from the call which makes the other thread stuck above
         try ( OtherThreadExecutor t2 = new OtherThreadExecutor( "T2" ) )
         {
-            Future<Void> t2Completion = t2.executeDontWait( (Callable<Void>) () ->
+            Future<Void> t2Completion = t2.executeDontWait( () ->
             {
                 scanner.tryLoadFreeIdsIntoCache( false, NULL );
+                return null;
+            } );
+            t2.waitUntilWaiting( details -> details.isAt( FreeIdScanner.class, "tryLoadFreeIdsIntoCache" ) );
+            verify( cache, times( 1 ) ).offer( anyLong() );
+            barrier.release();
+            t2Completion.get();
+        }
+
+        // clean up
+        scanFuture.get();
+        executorService.shutdown();
+
+        // and then
+        verify( cache ).offer( 0 );
+        verify( cache ).offer( 1 );
+    }
+
+    @Test
+    void shouldLetSecondThreadWaitIfForcedToEvenInNonStrictMode() throws Exception
+    {
+        // given
+        int generation = 1;
+        Barrier.Control barrier = new Barrier.Control();
+        ConcurrentLongQueue cache = mock( ConcurrentLongQueue.class );
+        when( cache.capacity() ).thenReturn( 8 );
+        when( cache.offer( anyLong() ) ).thenAnswer( invocationOnMock ->
+        {
+            barrier.reached();
+            return true;
+        } );
+        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cache, generation, false );
+
+        forEachId( generation, range( 0, 2 ) ).accept( ( marker, id ) ->
+        {
+            marker.markDeleted( id );
+            marker.markFree( id );
+        } );
+
+        // when
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        Future<?> scanFuture = executorService.submit( () -> scanner.tryLoadFreeIdsIntoCache( false, NULL ) );
+        barrier.await();
+        // now it's stuck in trying to offer to the cache
+
+        // then a scan call from another thread should complete but not do anything
+        verify( cache, times( 1 ) ).offer( anyLong() ); // <-- the 1 call is from the call which makes the other thread stuck above
+        try ( OtherThreadExecutor t2 = new OtherThreadExecutor( "T2" ) )
+        {
+            Future<Void> t2Completion = t2.executeDontWait( () ->
+            {
+                scanner.tryLoadFreeIdsIntoCache( true, NULL );
                 return null;
             } );
             t2.waitUntilWaiting( details -> details.isAt( FreeIdScanner.class, "tryLoadFreeIdsIntoCache" ) );
