@@ -64,7 +64,7 @@ class FreeIdScanner implements Closeable
      * {@link #findSomeIdsToCache(LinkedChunkLongArray, int, CursorContext)} both to know where to initiate a scan from and to set it, if the cache got
      * full before scan completed, or set it to null of the scan ended. The actual {@link Seeker} itself is local to the scan method.
      */
-    private Long ongoingScanRangeIndex;
+    private volatile Long ongoingScanRangeIndex;
 
     FreeIdScanner( int idsPerEntry, GBPTree<IdRangeKey,IdRange> tree, ConcurrentLongQueue cache, AtomicBoolean atLeastOneIdOnFreelist,
             MarkerProvider markerProvider, long generation, boolean strictlyPrioritizeFreelistOverHighId, IndexedIdGenerator.Monitor monitor )
