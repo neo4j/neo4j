@@ -110,7 +110,7 @@ class BufferLifecycleTest
 
         // b6 should be still in the pool, so when we ask for a buffer
         // from the same bucket we should get that one instead of allocation a new one.
-        // In other words, this tests the pooling behaviour of the buffer pool.1
+        // In other words, this tests the pooling behaviour of the buffer pool
         int newBuffers = -1;
         int maxAllocationAttempts = 100_000;
         ByteBuffer b8 = null;
