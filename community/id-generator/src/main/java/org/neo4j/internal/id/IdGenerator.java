@@ -76,10 +76,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * The work happening inside this method should be work that would otherwise happen now and then inside the other methods anyway,
      * but letting a maintenance thread calling it may take some burden off of main request threads.
      *
-     * @param awaitOngoing awaits any ongoing maintenance operation if another thread does such.
      * @param cursorContext underlying page cursor context
      */
-    void maintenance( boolean awaitOngoing, CursorContext cursorContext );
+    void maintenance( CursorContext cursorContext );
 
     /**
      * Starts the id generator, signaling that the database has entered normal operations mode.
@@ -204,9 +203,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
+        public void maintenance( CursorContext cursorContext )
         {
-            delegate.maintenance( awaitOngoing, cursorContext );
+            delegate.maintenance( cursorContext );
         }
 
         @Override

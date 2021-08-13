@@ -123,7 +123,7 @@ class IndexedIdGeneratorRecoverabilityTest
             freelist.start( NO_FREE_IDS, NULL );
             markFree( freelist, id1, id2 );
 
-            freelist.maintenance( true, NULL );
+            freelist.maintenance( NULL );
             final ImmutableLongSet reused = LongSets.immutable.of( freelist.nextId( NULL ), freelist.nextId( NULL ) );
             assertEquals( LongSets.immutable.of( id1, id2 ), reused, "IDs are not reused" );
         }
@@ -226,7 +226,7 @@ class IndexedIdGeneratorRecoverabilityTest
             // Normal operations
             freelist.start( NO_FREE_IDS, NULL );
             markFree( freelist, id );
-            freelist.maintenance( true, NULL );
+            freelist.maintenance( NULL );
             long idAfterRecovery = freelist.nextId( NULL );
             assertEquals( id, idAfterRecovery );
             markUsed( freelist, id );
@@ -246,7 +246,7 @@ class IndexedIdGeneratorRecoverabilityTest
             // And as an extra measure of verification
             markFree( freelist, id );
             MutableLongSet expected = LongSets.mutable.with( id, neighbourId );
-            freelist.maintenance( true, NULL );
+            freelist.maintenance( NULL );
             assertTrue( expected.remove( freelist.nextId( NULL ) ) );
             assertTrue( expected.remove( freelist.nextId( NULL ) ) );
             assertTrue( expected.isEmpty() );

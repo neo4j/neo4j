@@ -198,7 +198,7 @@ class IndexedIdGeneratorTest
         markFree( id );
 
         // when
-        idGenerator.maintenance( true, NULL );
+        idGenerator.maintenance( NULL );
         long nextTimeId = idGenerator.nextId( NULL );
 
         // then
@@ -220,7 +220,7 @@ class IndexedIdGeneratorTest
         markFree( id );
 
         // then
-        idGenerator.maintenance( true, NULL );
+        idGenerator.maintenance( NULL );
         long reusedId = idGenerator.nextId( NULL );
         assertEquals( id, reusedId );
     }
@@ -246,7 +246,7 @@ class IndexedIdGeneratorTest
         markDeleted( secondId, secondSize );
         markFree( firstId, firstSize );
         markFree( secondId, secondSize );
-        idGenerator.maintenance( true, NULL );
+        idGenerator.maintenance( NULL );
 
         // then
         assertThat( idGenerator.nextConsecutiveIdRange( 4, true, NULL ) ).isEqualTo( 0 );
@@ -692,7 +692,7 @@ class IndexedIdGeneratorTest
             verify( monitor ).markedAsFree( allocatedHighId, 1 );
         }
 
-        idGenerator.maintenance( true, NULL );
+        idGenerator.maintenance( NULL );
         long reusedId = idGenerator.nextId( NULL );
         verify( monitor ).allocatedFromReused( reusedId, 1 );
         idGenerator.checkpoint( NULL );
@@ -763,7 +763,7 @@ class IndexedIdGeneratorTest
         {
             idGenerator.marker( NULL ).markDeleted( 1 );
             idGenerator.clearCache( NULL );
-            idGenerator.maintenance( true, cursorContext );
+            idGenerator.maintenance( cursorContext );
 
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.hits() ).isOne();
@@ -832,7 +832,7 @@ class IndexedIdGeneratorTest
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
-            idGenerator.maintenance( false, cursorContext );
+            idGenerator.maintenance( cursorContext );
 
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
@@ -840,7 +840,7 @@ class IndexedIdGeneratorTest
 
             idGenerator.marker( NULL ).markDeleted( 1 );
             idGenerator.clearCache( NULL );
-            idGenerator.maintenance( false, cursorContext );
+            idGenerator.maintenance( cursorContext );
 
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
@@ -1001,22 +1001,15 @@ class IndexedIdGeneratorTest
         {
             Future<Object> t2Future = t2.executeDontWait( () ->
             {
-                idGenerator.maintenance( true, NULL );
+                idGenerator.maintenance( NULL );
                 return null;
             } );
             barrier.await();
 
-            // First check that a maintenance call which isn't told to wait can complete
-            t3.execute( () ->
-            {
-                idGenerator.maintenance( false, NULL );
-                return null;
-            } );
-
-            // then check that a call which is told to wait blocks
+            // check that a maintenance call blocks
             Future<Object> t3Future = t3.executeDontWait( () ->
             {
-                idGenerator.maintenance( true, NULL );
+                idGenerator.maintenance( NULL );
                 return null;
             } );
             t3.waitUntilWaiting( details -> details.isAt( FreeIdScanner.class, "tryLoadFreeIdsIntoCache" ) );

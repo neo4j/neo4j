@@ -566,7 +566,7 @@ public class IndexedIdGenerator implements IdGenerator
 
         // After potentially recovery has been run and everything is prepared to get going let's call maintenance,
         // which will fill the ID buffers right away before any request comes to the db.
-        maintenance( false, cursorContext );
+        maintenance( cursorContext );
     }
 
     @Override
@@ -577,12 +577,21 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
+    public void maintenance( CursorContext cursorContext )
     {
-        if ( cache.size() < cacheOptimisticRefillThreshold && !readOnlyChecker.isReadOnly() )
+        if ( cache.size() < cache.capacity() && !readOnlyChecker.isReadOnly() )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
-            scanner.tryLoadFreeIdsIntoCache( awaitOngoing, cursorContext );
+            scanner.tryLoadFreeIdsIntoCache( true, cursorContext );
+        }
+    }
+
+    private void checkRefillCache( CursorContext cursorContext )
+    {
+        if ( cache.size() <= cacheOptimisticRefillThreshold && !readOnlyChecker.isReadOnly() )
+        {
+            // We're just helping other allocation requests and avoiding unwanted sliding of highId here
+            scanner.tryLoadFreeIdsIntoCache( false, cursorContext );
         }
     }
 

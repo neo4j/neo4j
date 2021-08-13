@@ -95,7 +95,7 @@ class AbstractDynamicStoreTest
             assertZeroCursor( cursorContext );
             prepareDirtyGenerator( store );
 
-            store.getIdGenerator().maintenance( true, cursorContext );
+            store.getIdGenerator().maintenance( cursorContext );
             store.nextRecord( cursorContext );
 
             assertOneCursor( cursorContext );
@@ -128,7 +128,7 @@ class AbstractDynamicStoreTest
             assertZeroCursor( cursorContext );
             prepareDirtyGenerator( store );
 
-            store.getIdGenerator().maintenance( true, cursorContext );
+            store.getIdGenerator().maintenance( cursorContext );
             store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorContext, INSTANCE );
 
             assertOneCursor( cursorContext );

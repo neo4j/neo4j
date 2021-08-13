@@ -83,7 +83,7 @@ class LargeFreelistCreationDeletionIT
                     writable(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, Sets.immutable.empty(), SINGLE_IDS ) )
             {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.
-                freelist.maintenance( true, NULL );
+                freelist.maintenance( NULL );
 
                 Race race = new Race();
                 WorkSync<IndexedIdGenerator,Ids> workSync = new WorkSync<>( freelist );

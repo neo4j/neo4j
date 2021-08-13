@@ -91,12 +91,12 @@ class BufferingIdGeneratorFactoryTest
         verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
 
         // after some maintenance and transaction still not closed
-        bufferingIdGeneratorFactory.maintenance( false, NULL );
+        bufferingIdGeneratorFactory.maintenance( NULL );
         verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance( false, NULL );
+        bufferingIdGeneratorFactory.maintenance( NULL );
 
         // THEN
         verify( actual.markers.get( TestIdType.TEST ) ).markFree( 7, 2 );

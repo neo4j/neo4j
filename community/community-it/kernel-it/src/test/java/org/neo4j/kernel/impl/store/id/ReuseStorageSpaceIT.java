@@ -47,6 +47,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.ByteUnit;
@@ -178,7 +179,7 @@ class ReuseStorageSpaceIT
         } );
     }
 
-    private static Sizes withDb( Path storeDir, ThrowingConsumer<GraphDatabaseService,Exception> transaction )
+    private static Sizes withDb( Path storeDir, ThrowingConsumer<GraphDatabaseAPI,Exception> transaction )
     {
         DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( storeDir )
                 // This test specifically exercises the ID caches and refilling of those as it goes, so the smaller the better for this test
@@ -361,7 +362,7 @@ class ReuseStorageSpaceIT
         CREATE
                 {
                     @Override
-                    void perform( GraphDatabaseService db, long seed )
+                    void perform( GraphDatabaseAPI db, long seed )
                     {
                         createStuff( db, seed );
                     }
@@ -369,7 +370,7 @@ class ReuseStorageSpaceIT
         CREATE_DELETE
                 {
                     @Override
-                    public void perform( GraphDatabaseService db, long seed )
+                    public void perform( GraphDatabaseAPI db, long seed )
                     {
                         createStuff( db, seed );
                         deleteStuff( db );
@@ -378,24 +379,15 @@ class ReuseStorageSpaceIT
         DELETE_CREATE
                 {
                     @Override
-                    public void perform( GraphDatabaseService db, long seed ) throws InterruptedException
+                    public void perform( GraphDatabaseAPI db, long seed ) throws InterruptedException
                     {
                         deleteStuff( db );
-                        // Why park here? Our isolation mechanism works by buffering deleted ids until all transactions that had a chance
-                        // to see that deleted version of that particular record have been closed. This decisions happens in the background
-                        // and is checked once per second or so, so for the most part this happens seemingly instantaneous.
-                        // Although since this test moves on to create immediately after deleting things it may not be enough and therefore
-                        // we park here for a couple of maintenance intervals (which is 1s at the time of writing this).
-                        // TODO properly monitor this somehow instead of blindly sleeping 2 secs. Although this will probably be difficult
-                        //      before the architectural problems of when in the lifecycle the IdGeneratorFactory is created, because ideally
-                        //      this would be a monitor on the IdController to see when it has completed maintenance at least one time
-                        //      after we deleted all the stuff. Hence the to do.
-                        Thread.sleep( 2_000 );
+                        db.getDependencyResolver().resolveDependency( IdController.class ).maintenance();
                         createStuff( db, seed );
                     }
                 };
 
-        abstract void perform( GraphDatabaseService db, long seed ) throws Exception;
+        abstract void perform( GraphDatabaseAPI db, long seed ) throws Exception;
     }
 
     interface Launcher

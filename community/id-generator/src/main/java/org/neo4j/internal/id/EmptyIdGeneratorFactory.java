@@ -153,7 +153,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
+        public void maintenance( CursorContext cursorContext )
         {
             // nothing
         }
