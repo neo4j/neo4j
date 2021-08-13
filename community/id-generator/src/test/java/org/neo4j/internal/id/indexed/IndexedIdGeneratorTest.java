@@ -79,6 +79,7 @@ import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 import static java.util.Comparator.comparingLong;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1022,6 +1023,76 @@ class IndexedIdGeneratorTest
             barrier.release();
             t2Future.get();
             t3Future.get();
+        }
+    }
+
+    @Test
+    void shouldPrioritizeFreelistOnConcurrentAllocation() throws Exception
+    {
+        // given
+        Barrier.Control barrier = new Barrier.Control();
+        AtomicInteger numReserved = new AtomicInteger();
+        AtomicInteger numCached = new AtomicInteger();
+        AtomicBoolean enabled = new AtomicBoolean( true );
+        IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor.Adapter()
+        {
+            @Override
+            public void markedAsReserved( long markedId, int numberOfIds )
+            {
+                numReserved.incrementAndGet();
+            }
+
+            @Override
+            public void cached( long cachedId, int numberOfIds )
+            {
+                int cached = numCached.incrementAndGet();
+                if ( cached == numReserved.get() && enabled.get() )
+                {
+                    enabled.set( false );
+                    barrier.reached();
+                }
+            }
+
+            @Override
+            public void allocatedFromHigh( long allocatedId, int numberOfIds )
+            {
+                fail( "Should not allocate from high ID" );
+            }
+        };
+        open( Config.defaults(), monitor, writable(), SINGLE_IDS );
+        idGenerator.start( NO_FREE_IDS, NULL );
+
+        // delete and free more than cache-size IDs
+        try ( Marker marker = idGenerator.marker( NULL ) )
+        {
+            for ( int i = 0; i < IndexedIdGenerator.SMALL_CACHE_CAPACITY + 10; i++ )
+            {
+                marker.markDeleted( i );
+                marker.markFree( i );
+            }
+        }
+
+        // when
+        // let one thread call nextId() and block when it has filled the cache (the above monitor will see to that it happens)
+        try ( OtherThreadExecutor t2 = new OtherThreadExecutor( "T2" ) )
+        {
+            Future<Void> nextIdFuture = t2.executeDontWait( () ->
+            {
+                long id = idGenerator.nextId( NULL );
+                assertEquals( IndexedIdGenerator.SMALL_CACHE_CAPACITY, id );
+                return null;
+            } );
+
+            // and let another thread allocate all those IDs before the T2 thread had a chance to get one of them
+            barrier.await();
+            for ( int i = 0; i < numCached.get(); i++ )
+            {
+                idGenerator.nextId( NULL );
+            }
+
+            // then let first thread continue and it should not allocate off of high id
+            barrier.release();
+            nextIdFuture.get();
         }
     }
 

@@ -628,7 +628,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             "   If `false`: thread will allocate from high id and return, to not block id allocation request." +
             "   If `true` : thread will await lock released and check cache afterwards. If no id is cached even then it will allocate from high id." )
     public static final Setting<Boolean> strictly_prioritize_id_freelist =
-            newBuilder( "unsupported.dbms.strictly_prioritize_id_freelist", BOOL, false ).build();
+            newBuilder( "unsupported.dbms.strictly_prioritize_id_freelist", BOOL, true ).build();
 
     @Internal
     @Description( "Block/buffer size for index population" )

@@ -220,7 +220,7 @@ public class IndexedIdGenerator implements IdGenerator
      * Used for id generators that generally has low activity.
      * 2^8 == 256 and one ID takes up 8B, which results in a memory usage of 256 * 8 = ~2k memory
      */
-    private static final int SMALL_CACHE_CAPACITY = 1 << 8;
+    static final int SMALL_CACHE_CAPACITY = 1 << 8;
 
     /**
      * Used for id generators that generally has high activity.
@@ -335,7 +335,6 @@ public class IndexedIdGenerator implements IdGenerator
         this.readOnlyChecker = readOnlyChecker;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
-        this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
         IdSlotDistribution.Slot[] slots = slotDistribution.slots( cacheCapacity );
         this.cache = new IdCache( slots );
         this.biggestSlotSize = Arrays.stream( slots ).map( IdSlotDistribution.Slot::slotSize ).max( naturalOrder() ).orElseThrow();
@@ -375,6 +374,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnlyChecker, databaseName, openOptions );
 
         this.strictlyPrioritizeFreelist = config.get( GraphDatabaseInternalSettings.strictly_prioritize_id_freelist );
+        this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;
         this.scanner = new FreeIdScanner( idsPerEntry, tree, layout, cache, atLeastOneIdOnFreelist,
                 context -> lockAndInstantiateMarker( true, context ), generation, strictlyPrioritizeFreelist, monitor );
     }
