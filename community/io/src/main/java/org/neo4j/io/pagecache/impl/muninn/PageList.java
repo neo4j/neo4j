@@ -343,6 +343,11 @@ class PageList implements PageReferenceTranslator
         return usage <= 1;
     }
 
+    static long getUsage( long pageRef )
+    {
+        return UnsafeUtil.getLongVolatile( offPageBinding( pageRef ) ) & MASK_USAGE_COUNT;
+    }
+
     static long getFilePageId( long pageRef )
     {
         long filePageId = UnsafeUtil.getLong( offPageBinding( pageRef ) ) >>> SHIFT_FILE_PAGE_ID;

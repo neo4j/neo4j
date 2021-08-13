@@ -87,6 +87,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
@@ -1407,6 +1408,41 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
             IOUtils.closeAll( mappedPagedFiles );
         } );
+    }
+
+    @Test
+    void transientCursorShouldNotUpdateUsageCounter() throws IOException
+    {
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+        {
+            PageList pages = pageCache.pages;
+            long zeroPageRef = pages.deref( 0 );
+
+            // Pretend to read some data
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                assertThat( PageList.getUsage( zeroPageRef ) ).isEqualTo( 1 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                assertThat( PageList.getUsage( zeroPageRef ) ).isEqualTo( 2 );
+            }
+
+            // Using transient cursors should not update usage
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_TRANSIENT, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                assertThat( PageList.getUsage( zeroPageRef ) ).isEqualTo( 2 );
+            }
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_TRANSIENT, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                assertThat( PageList.getUsage( zeroPageRef ) ).isEqualTo( 2 );
+            }
+        }
     }
 
     private static class FlushRendezvousTracer extends DefaultPageCacheTracer

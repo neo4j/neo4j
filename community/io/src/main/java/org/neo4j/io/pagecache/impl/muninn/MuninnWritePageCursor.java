@@ -124,7 +124,10 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // after the reset() call, which means that if we throw, the cursor will
         // be closed and the page lock will be released.
         assertPagedFileStillMappedAndGetIdOfLastPage();
-        PageList.incrementUsage( pageRef );
+        if ( updateUsage )
+        {
+            PageList.incrementUsage( pageRef );
+        }
         PageList.setLastModifiedTxId( pageRef, versionContext.committingTransactionId() );
     }
 

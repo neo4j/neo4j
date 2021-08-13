@@ -44,6 +44,7 @@ import org.neo4j.util.VisibleForTesting;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.UNMAPPED_TTE;
 import static org.neo4j.util.FeatureToggles.flag;
 
@@ -75,6 +76,7 @@ public abstract class MuninnPageCursor extends PageCursor
     protected boolean eagerFlush;
     protected boolean noFault;
     protected boolean noGrow;
+    protected boolean updateUsage;
     @SuppressWarnings( "unused" ) // accessed via VarHandle.
     private long currentPageId;
     private static final VarHandle CURRENT_PAGE_ID;
@@ -125,6 +127,7 @@ public abstract class MuninnPageCursor extends PageCursor
         this.pageId = pageId;
         this.pf_flags = pf_flags;
         this.eagerFlush = isFlagRaised( pf_flags, PF_EAGER_FLUSH );
+        this.updateUsage = !isFlagRaised( pf_flags, PF_TRANSIENT );
         this.noFault = isFlagRaised( pf_flags, PF_NO_FAULT );
         this.noGrow = noFault || isFlagRaised( pf_flags, PagedFile.PF_NO_GROW );
     }

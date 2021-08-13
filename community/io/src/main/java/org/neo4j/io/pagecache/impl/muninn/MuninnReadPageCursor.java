@@ -79,7 +79,10 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
     {
         reset( pageRef );
-        PageList.incrementUsage( pageRef );
+        if ( updateUsage )
+        {
+            PageList.incrementUsage( pageRef );
+        }
     }
 
     @Override
