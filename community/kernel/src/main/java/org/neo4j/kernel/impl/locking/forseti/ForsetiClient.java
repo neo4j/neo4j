@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.locking.forseti.ForsetiLockManager.GlobalLocks;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.HeapEstimator;
@@ -686,6 +687,15 @@ public class ForsetiClient implements Locks.Client
             });
         } );
         return locks.stream();
+    }
+
+    @Override
+    public boolean holdsLock( long id, ResourceType resource, LockType lockType )
+    {
+        ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps.get( resource );
+        ForsetiLockManager.Lock lock = lockMap.get( id );
+        //If we are looking for shared a lock and have the exclusive its fine because exclusive is more strict
+        return lock != null && lock.isOwnedBy( this ) && (lock.type() == lockType || lock.type() == EXCLUSIVE);
     }
 
     @Override

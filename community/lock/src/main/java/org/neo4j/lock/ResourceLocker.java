@@ -74,6 +74,17 @@ public interface ResourceLocker
      */
     Stream<ActiveLock> activeLocks();
 
+    /**
+     * Checks whether or not this client currently owns the given lock.
+     *
+     * @param id the resource id of the lock.
+     * @param resource the resource type of the lock.
+     * @param lockType the type of lock.
+     * @return {@code true} if this client owns the given lock, this also includes returning {@code true} if the requested
+     * {@link LockType#SHARED} and this clients owns the {@link LockType#EXCLUSIVE}. Otherwise {@code false}.
+     */
+    boolean holdsLock( long id, ResourceType resource, LockType lockType );
+
     ResourceLocker PREVENT = new ResourceLocker()
     {
         @Override
@@ -116,6 +127,12 @@ public interface ResourceLocker
         {
             return Stream.empty();
         }
+
+        @Override
+        public boolean holdsLock( long id, ResourceType resource, LockType lockType )
+        {
+            return false;
+        }
     };
 
     ResourceLocker IGNORE = new ResourceLocker()
@@ -150,6 +167,12 @@ public interface ResourceLocker
         public Stream<ActiveLock> activeLocks()
         {
             return Stream.empty();
+        }
+
+        @Override
+        public boolean holdsLock( long id, ResourceType resource, LockType lockType )
+        {
+            return false;
         }
     };
 }
