@@ -110,7 +110,7 @@ public final class BooleanArray extends ArrayValue
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         return NumberValues.compareBooleanArrays( this, (BooleanArray) otherValue );
     }

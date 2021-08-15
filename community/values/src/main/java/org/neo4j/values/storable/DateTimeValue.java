@@ -521,7 +521,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
-    int unsafeCompareTo( Value other )
+    protected int unsafeCompareTo( Value other )
     {
         DateTimeValue that = (DateTimeValue) other;
         int cmp = Long.compare( epochSeconds, that.epochSeconds );

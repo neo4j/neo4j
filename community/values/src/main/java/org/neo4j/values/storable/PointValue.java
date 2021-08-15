@@ -195,7 +195,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         return compareTo( (PointValue) otherValue );
     }

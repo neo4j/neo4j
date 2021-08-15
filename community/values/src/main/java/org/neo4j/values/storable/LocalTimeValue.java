@@ -194,7 +194,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         LocalTimeValue other = (LocalTimeValue) otherValue;
         return value.compareTo( other.value );

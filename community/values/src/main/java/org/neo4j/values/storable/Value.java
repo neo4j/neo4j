@@ -189,7 +189,7 @@ public abstract class Value extends AnyValue
         return Equality.FALSE;
     }
 
-    abstract int unsafeCompareTo( Value other );
+    protected abstract int unsafeCompareTo( Value other );
 
     /**
      * Should return {@code Comparison.UNDEFINED} for values that cannot be compared

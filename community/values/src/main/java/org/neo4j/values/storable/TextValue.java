@@ -84,7 +84,7 @@ public abstract class TextValue extends HashMemoizingScalarValue
     public abstract int compareTo( TextValue other );
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         return compareTo( (TextValue) otherValue );
     }

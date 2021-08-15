@@ -87,7 +87,7 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         return compareToNonPrimitiveArray( (DurationArray) otherValue );
     }

@@ -284,7 +284,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     @Override
-    int unsafeCompareTo( Value other )
+    protected int unsafeCompareTo( Value other )
     {
         LocalDateTimeValue that = (LocalDateTimeValue) other;
         int cmp = Long.compare( epochSecondsInUTC, that.epochSecondsInUTC );

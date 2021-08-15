@@ -77,7 +77,7 @@ public class LocalDateTimeArray extends TemporalArray<LocalDateTime>
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         return compareToNonPrimitiveArray( (LocalDateTimeArray) otherValue );
     }

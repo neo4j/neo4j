@@ -221,7 +221,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         return compareTo( (DurationValue) otherValue );
     }

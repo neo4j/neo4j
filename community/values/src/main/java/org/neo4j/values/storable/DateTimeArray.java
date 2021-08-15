@@ -77,7 +77,7 @@ public final class DateTimeArray extends TemporalArray<ZonedDateTime>
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         return compareToNonPrimitiveArray( (DateTimeArray) otherValue );
     }

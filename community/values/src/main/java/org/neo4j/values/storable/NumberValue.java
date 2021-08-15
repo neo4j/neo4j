@@ -50,7 +50,7 @@ public abstract class NumberValue extends ScalarValue
     public abstract int compareTo( FloatingPointValue other );
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         if ( otherValue instanceof IntegralValue )
         {

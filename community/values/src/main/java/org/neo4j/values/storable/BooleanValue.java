@@ -102,7 +102,7 @@ public abstract class BooleanValue extends ScalarValue
         }
 
         @Override
-        int unsafeCompareTo( Value otherValue )
+        protected int unsafeCompareTo( Value otherValue )
         {
             BooleanValue other = (BooleanValue) otherValue;
             return other.booleanValue() ? 0 : 1;
@@ -160,7 +160,7 @@ public abstract class BooleanValue extends ScalarValue
         }
 
         @Override
-        int unsafeCompareTo( Value otherValue )
+        protected int unsafeCompareTo( Value otherValue )
         {
             BooleanValue other = (BooleanValue) otherValue;
             return !other.booleanValue() ? 0 : -1;

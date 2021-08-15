@@ -283,7 +283,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    protected int unsafeCompareTo( Value otherValue )
     {
         TimeValue other = (TimeValue) otherValue;
         int compare = Long.compare( nanosOfDayUTC, other.nanosOfDayUTC );
