@@ -35,8 +35,7 @@ import org.neo4j.values.storable.Values;
 
 public class RelationshipIndexOrderTest extends IndexOrderTestBase<RelationshipValueIndexCursor>
 {
-
-    public static final String DEFAULT_REl_TYPE = "Rel";
+    private static final String DEFAULT_REl_TYPE = "Rel";
 
     protected Pair<Long,Value> entityWithProp( KernelTransaction tx, Object value ) throws Exception
     {

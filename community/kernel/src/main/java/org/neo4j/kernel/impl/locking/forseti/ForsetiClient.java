@@ -715,6 +715,15 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
+    public boolean holdsLock( long id, ResourceType resource, LockType lockType )
+    {
+        ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps[resource.typeId()];
+        ForsetiLockManager.Lock lock = lockMap.get( id );
+        //If we are looking for shared a lock and have the exclusive its fine because exclusive is more strict
+        return lock != null && lock.isOwnedBy( this ) && (lock.type() == lockType || lock.type() == EXCLUSIVE);
+    }
+
+    @Override
     public long activeLockCount()
     {
         return countLocks( exclusiveLockCounts ) + countLocks( sharedLockCounts );

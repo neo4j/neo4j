@@ -242,6 +242,27 @@ class SharedLock implements ForsetiLockManager.Lock
     }
 
     @Override
+    public boolean isOwnedBy( ForsetiClient client )
+    {
+        for ( AtomicReferenceArray<ForsetiClient> ownerArray : clientsHoldingThisLock )
+        {
+            if ( ownerArray != null )
+            {
+                int len = ownerArray.length();
+                for ( int i = 0; i < len; i++ )
+                {
+                    ForsetiClient owner = ownerArray.get( i );
+                    if ( owner == client )
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
     public LockType type()
     {
         return isUpdateLock() ? LockType.EXCLUSIVE : LockType.SHARED;

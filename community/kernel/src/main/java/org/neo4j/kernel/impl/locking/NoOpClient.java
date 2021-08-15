@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
 
@@ -93,6 +94,12 @@ public class NoOpClient implements Locks.Client
     public Stream<ActiveLock> activeLocks()
     {
         return Stream.empty();
+    }
+
+    @Override
+    public boolean holdsLock( long id, ResourceType resource, LockType lockType )
+    {
+        return false;
     }
 
     @Override

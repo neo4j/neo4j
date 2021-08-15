@@ -150,6 +150,8 @@ public class ForsetiLockManager implements Locks
          */
         void collectOwners( Set<ForsetiClient> owners );
 
+        boolean isOwnedBy( ForsetiClient client );
+
         LockType type();
 
         LongSet transactionIds();

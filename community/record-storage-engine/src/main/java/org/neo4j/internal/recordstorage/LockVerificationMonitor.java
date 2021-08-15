@@ -236,7 +236,7 @@ public class LockVerificationMonitor implements LoadMonitor
 
     private static boolean hasLock( ResourceLocker locks, long id, ResourceType resource, LockType type )
     {
-        return locks.activeLocks().anyMatch( lock -> lock.resourceId() == id && lock.resourceType() == resource && lock.lockType() == type );
+        return locks.holdsLock( id, resource, type );
     }
 
     private static long schemaNameResourceId( String schemaName )

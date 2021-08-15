@@ -154,6 +154,12 @@ class TrackingResourceLocker implements ResourceLocker
         return locks.stream();
     }
 
+    @Override
+    public boolean holdsLock( long id, ResourceType resource, LockType lockType )
+    {
+        return hasLock( resource, lockType, id ) || (lockType == SHARED && hasLock( resource, EXCLUSIVE, id ));
+    }
+
     private static void gatherActiveLocks( List<ActiveLock> locks, HashMap<ResourceType,MutableSortedBag<Long>> locksByType, LockType lockType )
     {
         locksByType.forEach(
@@ -252,6 +258,12 @@ class TrackingResourceLocker implements ResourceLocker
             public Stream<ActiveLock> activeLocks()
             {
                 return actual.activeLocks();
+            }
+
+            @Override
+            public boolean holdsLock( long id, ResourceType resource, LockType lockType )
+            {
+                return actual.holdsLock( id, resource, lockType );
             }
         };
     }

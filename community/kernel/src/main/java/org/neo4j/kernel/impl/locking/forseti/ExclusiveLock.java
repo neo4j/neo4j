@@ -65,6 +65,12 @@ class ExclusiveLock implements ForsetiLockManager.Lock
     }
 
     @Override
+    public boolean isOwnedBy( ForsetiClient client )
+    {
+        return owner.equals( client );
+    }
+
+    @Override
     public LockType type()
     {
         return EXCLUSIVE;
