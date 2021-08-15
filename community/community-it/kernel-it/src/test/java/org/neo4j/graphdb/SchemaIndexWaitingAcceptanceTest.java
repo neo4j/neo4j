@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
-import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -63,10 +63,10 @@ public class SchemaIndexWaitingAcceptanceTest
     }
 
     @Test
-    void shouldTimeoutWaitingForIndexToComeOnline()
+    void shouldTimeoutWaitingForIndexToComeOnline() throws InterruptedException
     {
         // given
-        DoubleLatch latch = provider.installPopulationJobCompletionLatch();
+        Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE );
 
         IndexDefinition index;
         try ( Transaction tx = database.beginTx() )
@@ -75,7 +75,7 @@ public class SchemaIndexWaitingAcceptanceTest
             tx.commit();
         }
 
-        latch.waitForAllToStart();
+        barrier.await();
 
         var e = assertThrows( IllegalStateException.class, () ->
         {
@@ -85,14 +85,14 @@ public class SchemaIndexWaitingAcceptanceTest
             }
         } );
         assertThat( e ).hasMessageContaining( "come online" );
-        latch.finish();
+        barrier.release();
     }
 
     @Test
-    void shouldTimeoutWaitingForIndexByNameToComeOnline()
+    void shouldTimeoutWaitingForIndexByNameToComeOnline() throws InterruptedException
     {
         // given
-        DoubleLatch latch = provider.installPopulationJobCompletionLatch();
+        Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE );
 
         try ( Transaction tx = database.beginTx() )
         {
@@ -100,7 +100,7 @@ public class SchemaIndexWaitingAcceptanceTest
             tx.commit();
         }
 
-        latch.waitForAllToStart();
+        barrier.await();
 
         var e = assertThrows( IllegalStateException.class, () ->
         {
@@ -110,14 +110,14 @@ public class SchemaIndexWaitingAcceptanceTest
             }
         } );
         assertThat( e ).hasMessageContaining( "come online" );
-        latch.finish();
+        barrier.release();
     }
 
     @Test
-    void shouldTimeoutWaitingForAllIndexesToComeOnline()
+    void shouldTimeoutWaitingForAllIndexesToComeOnline() throws InterruptedException
     {
         // given
-        DoubleLatch latch = provider.installPopulationJobCompletionLatch();
+        Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE );
 
         try ( Transaction tx = database.beginTx() )
         {
@@ -125,7 +125,7 @@ public class SchemaIndexWaitingAcceptanceTest
             tx.commit();
         }
 
-        latch.waitForAllToStart();
+        barrier.await();
 
         // when
         var e = assertThrows( IllegalStateException.class, () ->
@@ -136,6 +136,6 @@ public class SchemaIndexWaitingAcceptanceTest
             }
         } );
         assertThat( e ).hasMessageContaining( "come online" );
-        latch.finish();
+        barrier.release();
     }
 }

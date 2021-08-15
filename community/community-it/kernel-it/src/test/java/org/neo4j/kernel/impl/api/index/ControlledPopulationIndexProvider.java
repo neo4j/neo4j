@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,7 +36,8 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.test.DoubleLatch;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.Barrier;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -61,16 +63,29 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
         when( mockedWriter.newValueReader() ).thenReturn( ValueIndexReader.EMPTY );
     }
 
-    public DoubleLatch installPopulationJobCompletionLatch()
+    public Barrier.Control installPopulationLatch( PopulationLatchMethod method )
     {
-        final DoubleLatch populationCompletionLatch = new DoubleLatch();
+        Barrier.Control barrier = new Barrier.Control();
         mockedPopulator = new IndexPopulator.Adapter()
         {
             @Override
             public void create()
             {
-                populationCompletionLatch.startAndWaitForAllToStartAndFinish();
+                if ( method == PopulationLatchMethod.CREATE )
+                {
+                    barrier.reached();
+                }
                 super.create();
+            }
+
+            @Override
+            public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
+            {
+                if ( method == PopulationLatchMethod.ADD_BATCH )
+                {
+                    barrier.reached();
+                }
+                super.add( updates, cursorContext );
             }
 
             @Override
@@ -79,7 +94,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
                 return new IndexSample();
             }
         };
-        return populationCompletionLatch;
+        return barrier;
     }
 
     public void awaitFullyPopulated()
@@ -112,5 +127,11 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
     public void setInitialIndexState( InternalIndexState initialIndexState )
     {
         this.initialIndexState = initialIndexState;
+    }
+
+    public enum PopulationLatchMethod
+    {
+        ADD_BATCH,
+        CREATE;
     }
 }

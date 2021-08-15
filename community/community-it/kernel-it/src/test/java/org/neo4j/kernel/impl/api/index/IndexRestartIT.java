@@ -32,7 +32,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
-import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -50,13 +50,15 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstan
 @EphemeralTestDirectoryExtension
 class IndexRestartIT
 {
+    private static final String myKey = "number_of_bananas_owned";
+    private static final Label myLabel = label( "MyLabel" );
+
     @Inject
     private FileSystemAbstraction fs;
 
     private GraphDatabaseService db;
     private TestDatabaseManagementServiceBuilder factory;
     private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
-    private final Label myLabel = label( "MyLabel" );
     private DatabaseManagementService managementService;
 
     @BeforeEach
@@ -78,16 +80,24 @@ class IndexRestartIT
      * as possible. If this proves to be flaky, remove it right away.
      */
     @Test
-    void shouldBeAbleToDropIndexWhileItIsPopulating()
+    void shouldBeAbleToDropIndexWhileItIsPopulating() throws InterruptedException
     {
         // GIVEN
         startDb();
-        DoubleLatch populationCompletionLatch = provider.installPopulationJobCompletionLatch();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < 10; i++ )
+            {
+                tx.createNode( myLabel ).setProperty( myKey, i );
+            }
+            tx.commit();
+        }
+        Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.ADD_BATCH );
         IndexDefinition index = createIndex();
-        populationCompletionLatch.waitForAllToStart(); // await population job to start
+        barrier.await();
 
         // WHEN
-        dropIndex( index, populationCompletionLatch );
+        dropIndex( index, barrier );
         try ( Transaction transaction = db.beginTx() )
         {
             // THEN
@@ -154,18 +164,18 @@ class IndexRestartIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = tx.schema().indexFor( myLabel ).on( "number_of_bananas_owned" ).create();
+            IndexDefinition index = tx.schema().indexFor( myLabel ).on( myKey ).create();
             tx.commit();
             return index;
         }
     }
 
-    private void dropIndex( IndexDefinition index, DoubleLatch populationCompletionLatch )
+    private void dropIndex( IndexDefinition index, Barrier.Control populationCompletionLatch )
     {
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().getIndexByName( index.getName() ).drop();
-            populationCompletionLatch.finish();
+            populationCompletionLatch.release();
             tx.commit();
         }
     }
