@@ -61,6 +61,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
@@ -294,7 +295,7 @@ class Neo4jCommandTest
             ProcessHandle secondHandle = getProcess().get();
             assertThat( firstHandle.pid() ).isEqualTo( secondHandle.pid() );
             assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( !firstHandle.isAlive() );
+            assertFalse( firstHandle.isAlive() );
         }
 
         @Test
