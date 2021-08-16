@@ -47,6 +47,7 @@ public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE ext
                     return true;
                 }
             }
+            close();
             return false;
         }
         catch ( IOException e )
