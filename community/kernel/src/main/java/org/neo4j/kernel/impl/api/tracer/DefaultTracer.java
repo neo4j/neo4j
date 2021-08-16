@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogFileCreateEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogFileFlushEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
@@ -43,9 +44,11 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 public class DefaultTracer implements DatabaseTracer
 {
     private final AtomicLong appendedBytes = new AtomicLong();
+    private final AtomicLong numberOfFlushes = new AtomicLong();
 
     private final CountingLogRotateEvent countingLogRotateEvent = new CountingLogRotateEvent();
     private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.addAndGet( CURRENT_FORMAT_LOG_HEADER_SIZE );
+    private final LogFileFlushEvent logFileFlushEvent = numberOfFlushes::incrementAndGet;
     private final CountingLogCheckPointEvent logCheckPointEvent = new CountingLogCheckPointEvent( this::appendLogBytes, countingLogRotateEvent );
     private final LogAppendEvent logAppendEvent = new DefaultLogAppendEvent();
     private final CommitEvent commitEvent = new DefaultCommitEvent();
@@ -87,6 +90,12 @@ public class DefaultTracer implements DatabaseTracer
     }
 
     @Override
+    public long numberOfFlushes()
+    {
+        return numberOfFlushes.get();
+    }
+
+    @Override
     public long numberOfCheckPoints()
     {
         return logCheckPointEvent.numberOfCheckPoints();
@@ -123,6 +132,12 @@ public class DefaultTracer implements DatabaseTracer
     public LogFileCreateEvent createLogFile()
     {
         return logFileCreateEvent;
+    }
+
+    @Override
+    public LogFileFlushEvent flushFile()
+    {
+        return logFileFlushEvent;
     }
 
     private class DefaultTransactionEvent implements TransactionEvent

@@ -81,7 +81,7 @@ public class TransactionLogChannelAllocator
                 }
             }
             byte formatVersion = header == null ? CURRENT_LOG_FORMAT_VERSION : header.getLogFormatVersion();
-            return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion, logFile, nativeChannelAccessor );
+            return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion, logFile, nativeChannelAccessor, databaseTracer );
         }
     }
 
@@ -114,7 +114,7 @@ public class TransactionLogChannelAllocator
                                     header != null ? header.toString() : "null header." ) );
                 }
                 var versionedStoreChannel = new PhysicalLogVersionedStoreChannel( rawChannel, version, header.getLogFormatVersion(),
-                        fileToOpen, nativeChannelAccessor, raw );
+                        fileToOpen, nativeChannelAccessor, databaseTracer, raw );
                 if ( !raw )
                 {
                     nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( rawChannel, version );

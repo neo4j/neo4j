@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -602,7 +603,7 @@ class TransactionLogsRecoveryTest
             KernelVersion version ) throws IOException
     {
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
-                CURRENT_LOG_FORMAT_VERSION, file, EMPTY_ACCESSOR );
+                CURRENT_LOG_FORMAT_VERSION, file, EMPTY_ACCESSOR, DatabaseTracer.NULL );
               PositionAwarePhysicalFlushableChecksumChannel writableLogChannel =
                       new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, new HeapScopedBuffer( 1, KibiByte, INSTANCE ) ) )
         {

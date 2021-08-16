@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 
 public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<StoreChannel> implements LogVersionedStoreChannel
 {
@@ -35,15 +36,16 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
     private final Path path;
     private final ChannelNativeAccessor nativeChannelAccessor;
     private final boolean raw;
+    private final DatabaseTracer databaseTracer;
 
     public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion, Path path,
-            ChannelNativeAccessor nativeChannelAccessor ) throws IOException
+            ChannelNativeAccessor nativeChannelAccessor, DatabaseTracer databaseTracer ) throws IOException
     {
-        this( delegateChannel, version, formatVersion, path, nativeChannelAccessor, false );
+        this( delegateChannel, version, formatVersion, path, nativeChannelAccessor, databaseTracer, false );
     }
 
     public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion, Path path,
-            ChannelNativeAccessor nativeChannelAccessor, boolean raw ) throws IOException
+            ChannelNativeAccessor nativeChannelAccessor, DatabaseTracer databaseTracer, boolean raw ) throws IOException
     {
         super( delegateChannel );
         this.version = version;
@@ -51,6 +53,7 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
         this.position = delegateChannel.position();
         this.path = path;
         this.nativeChannelAccessor = nativeChannelAccessor;
+        this.databaseTracer = databaseTracer;
         this.raw = raw;
     }
 
@@ -173,6 +176,15 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
         PhysicalLogVersionedStoreChannel that = (PhysicalLogVersionedStoreChannel) o;
 
         return version == that.version && delegate.equals( that.delegate );
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
+        try ( var flushEvent = databaseTracer.flushFile() )
+        {
+            super.flush();
+        }
     }
 
     @Override

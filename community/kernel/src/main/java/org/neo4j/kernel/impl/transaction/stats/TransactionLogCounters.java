@@ -44,4 +44,10 @@ public interface TransactionLogCounters
      * @return last log rotation time in milliseconds
      */
     long lastLogRotationTimeMillis();
+
+    /**
+     * Total number of transaction log flushes
+     * @return number of flushes
+     */
+    long numberOfFlushes();
 }

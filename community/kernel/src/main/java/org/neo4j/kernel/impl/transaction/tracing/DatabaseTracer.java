@@ -50,6 +50,12 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
         }
 
         @Override
+        public LogFileFlushEvent flushFile()
+        {
+            return LogFileFlushEvent.NULL;
+        }
+
+        @Override
         public LogCheckPointEvent beginCheckPoint()
         {
             return LogCheckPointEvent.NULL;
@@ -84,7 +90,15 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
         {
             return 0;
         }
+
+        @Override
+        public long numberOfFlushes()
+        {
+            return 0;
+        }
     };
 
     LogFileCreateEvent createLogFile();
+
+    LogFileFlushEvent flushFile();
 }

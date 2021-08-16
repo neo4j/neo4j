@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -56,6 +57,7 @@ class ReadAheadLogChannelTest
     @Inject
     private TestDirectory directory;
     private final LogFileChannelNativeAccessor nativeChannelAccessor = mock( LogFileChannelNativeAccessor.class );
+    private final DatabaseTracer databaseTracer = DatabaseTracer.NULL;
 
     @Test
     void shouldReadFromSingleChannel() throws Exception
@@ -83,7 +85,7 @@ class ReadAheadLogChannelTest
 
         StoreChannel storeChannel = fileSystem.read( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file, nativeChannelAccessor );
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file, nativeChannelAccessor, databaseTracer );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, INSTANCE ) )
         {
             // THEN
@@ -107,7 +109,7 @@ class ReadAheadLogChannelTest
         directory.createFile( path.getFileName().toString() );
         var storeChannel = fileSystem.read( path );
         var versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, -1 , (byte) -1, path, nativeChannelAccessor );
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 , (byte) -1, path, nativeChannelAccessor, databaseTracer );
         var capturingLogVersionBridge = new RawCapturingLogVersionBridge();
         assertThrows( ReadPastEndException.class, () ->
         {
@@ -142,7 +144,7 @@ class ReadAheadLogChannelTest
 
         StoreChannel storeChannel = fileSystem.read( file( 0 ) );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file( 0 ), nativeChannelAccessor );
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file( 0 ), nativeChannelAccessor, databaseTracer );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
         {
             private boolean returned;
@@ -155,7 +157,7 @@ class ReadAheadLogChannelTest
                     returned = true;
                     channel.close();
                     return new PhysicalLogVersionedStoreChannel( fileSystem.read( file( 1 ) ),
-                            -1 /* ignored */, (byte) -1, file( 1 ), nativeChannelAccessor );
+                            -1 /* ignored */, (byte) -1, file( 1 ), nativeChannelAccessor, databaseTracer );
                 }
                 return channel;
             }

@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -115,7 +116,7 @@ class ReaderLogVersionBridgeTest
 
         // then
         PhysicalLogVersionedStoreChannel expected = new PhysicalLogVersionedStoreChannel( newStoreChannel, version + 1,
-                CURRENT_LOG_FORMAT_VERSION, Path.of( "log.file" ), ChannelNativeAccessor.EMPTY_ACCESSOR );
+                CURRENT_LOG_FORMAT_VERSION, Path.of( "log.file" ), ChannelNativeAccessor.EMPTY_ACCESSOR, DatabaseTracer.NULL );
         assertEquals( expected, result );
         verify( channel ).close();
     }

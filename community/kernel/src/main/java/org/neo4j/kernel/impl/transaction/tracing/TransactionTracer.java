@@ -66,6 +66,12 @@ public interface TransactionTracer extends TransactionLogCounters
         {
             return 0;
         }
+
+        @Override
+        public long numberOfFlushes()
+        {
+            return 0;
+        }
     };
 
     /**
