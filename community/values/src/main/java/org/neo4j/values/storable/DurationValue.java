@@ -707,9 +707,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.DURATION;
+        return ValueRepresentation.DURATION;
     }
 
     @Override

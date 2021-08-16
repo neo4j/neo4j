@@ -25,7 +25,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -108,6 +110,33 @@ class ListValueFuzzTest
             // Then
             assertFalse( prepended.storable() );
         }
+    }
+
+    @Test
+    void shouldCreateStorableLists()
+    {
+        boolean seenStorable = false;
+        boolean seenNonStorable = false;
+        for ( ValueType valueType : ValueType.values() )
+        {
+            AnyValue value = random.nextValue( valueType );
+            if ( value.valueRepresentation().canCreateArrayOfValueGroup() )
+            {
+                ListValue list = VirtualValues.list( value, value, value );
+                assertTrue( list.storable() );
+                assertEquals( list, fromArray( list.toStorableArray() ) );
+                seenStorable = true;
+            }
+            else
+            {
+                ListValue list = VirtualValues.list( value, value, value );
+                assertFalse( list.storable() );
+                seenNonStorable = true;
+            }
+        }
+
+        assertTrue( seenStorable );
+        assertTrue( seenNonStorable );
     }
 
     private Value nextCompatible( ArrayValue value )

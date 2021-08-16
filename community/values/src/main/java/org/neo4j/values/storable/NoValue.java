@@ -111,9 +111,9 @@ public final class NoValue extends Value
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.NO_VALUE;
+        return ValueRepresentation.NO_VALUE;
     }
 
     @Override

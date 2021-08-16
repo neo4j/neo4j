@@ -614,6 +614,12 @@ public final class UTF8StringValue extends StringValue
         return index;
     }
 
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.UTF8_TEXT;
+    }
+
     public byte[] bytes()
     {
         return bytes;

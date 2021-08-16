@@ -30,6 +30,7 @@ import java.util.stream.Collector;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.ValueRepresentation;
 
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
@@ -59,6 +60,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
 
     private final HeapTrackingArrayList<AnyValue> values;
     private final MemoryTracker scopedMemoryTracker;
+    private ValueRepresentation representation = null;
 
     public HeapTrackingListValueBuilder( MemoryTracker memoryTracker )
     {
@@ -72,12 +74,13 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
     public void add( AnyValue value )
     {
         scopedMemoryTracker.allocateHeap( value.estimatedHeapUsage() );
+        representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
         values.add( value );
     }
 
     public ListValue build()
     {
-        return new ListValue.JavaListListValue( values, payloadSize() );
+        return new ListValue.JavaListListValue( values, payloadSize(), representation );
     }
 
     public ListValue buildAndClose()

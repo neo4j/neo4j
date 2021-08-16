@@ -87,4 +87,10 @@ public final class LongValue extends IntegralValue
     {
         return SHALLOW_SIZE;
     }
+
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.INT64;
+    }
 }

@@ -179,4 +179,10 @@ public final class FloatArray extends FloatingPointArray
         newArray[0] = ((FloatValue) prepended).value();
         return new FloatArray( newArray );
     }
+
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.FLOAT32_ARRAY;
+    }
 }

@@ -22,6 +22,7 @@ package org.neo4j.values;
 import org.neo4j.memory.Measurable;
 import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.ValueRepresentation;
 
 public abstract class AnyValue implements Measurable
 {
@@ -55,6 +56,8 @@ public abstract class AnyValue implements Measurable
     public abstract <T> T map( ValueMapper<T> mapper );
 
     public abstract String getTypeName();
+
+    public abstract ValueRepresentation valueRepresentation();
 
     /**
      * @return {@code true} if at least one operand is NaN and the other is a number

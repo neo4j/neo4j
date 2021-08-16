@@ -72,9 +72,9 @@ public class TimeArray extends TemporalArray<OffsetTime>
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.ZONED_TIME_ARRAY;
+        return ValueRepresentation.ZONED_TIME_ARRAY;
     }
 
     @Override

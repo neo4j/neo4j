@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -38,8 +39,11 @@ import static org.neo4j.values.storable.Values.charArray;
 import static org.neo4j.values.storable.Values.doubleArray;
 import static org.neo4j.values.storable.Values.floatArray;
 import static org.neo4j.values.storable.Values.intArray;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longArray;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.shortArray;
+import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
@@ -57,7 +61,7 @@ class ListTest
             {VirtualValues.list( Values.longValue( 1L ), Values.longValue( 4L ), Values.longValue( 7L ) ),
 
                     range( 1L, 8L, 3L ),
-                    VirtualValues.fromArray( Values.longArray( new long[]{1L, 4L, 7L} ) ),
+                    VirtualValues.fromArray( longArray( new long[]{1L, 4L, 7L} ) ),
                     list( -2L, 1L, 4L, 7L, 10L ).slice( 1, 4 ),
                     list( -2L, 1L, 4L, 7L ).drop( 1 ),
                     list( 1L, 4L, 7L, 10L, 13L ).take( 3 ),
@@ -70,7 +74,7 @@ class ListTest
             {VirtualValues.list( Values.longValue( 1L ), Values.longValue( 4L ), Values.longValue( 7L ) ),
 
                     range( 2L, 9L, 3L ),
-                    VirtualValues.fromArray( Values.longArray( new long[]{3L, 6L, 9L} ) ),
+                    VirtualValues.fromArray( longArray( new long[]{3L, 6L, 9L} ) ),
                     list( -2L, 1L, 5L, 8L, 11L ).slice( 1, 4 ),
                     list( -2L, 6L, 9L, 12L ).drop( 1 ),
                     list( 7L, 10L, 13L, 10L, 13L ).take( 3 ),
@@ -320,5 +324,22 @@ class ListTest
         assertThat( emptyReversedList.isEmpty() ).isTrue();
         assertThat( arrayList.isEmpty() ).isFalse();
         assertThat( emptyArrayList.isEmpty() ).isTrue();
+    }
+
+    @Test
+    void storableListsShouldBeStorable()
+    {
+        ListValue list = VirtualValues.list( longValue( 1 ), intValue( 2 ), shortValue( (short) 3 ) );
+
+        assertThat( list.storable() ).isTrue();
+        assertThat( list.toStorableArray() ).isInstanceOf( LongArray.class ).isEqualTo( longArray( new long[] {1, 2, 3}) );
+    }
+
+    @Test
+    void notStorableListShouldNotBeStorable()
+    {
+        ListValue list = VirtualValues.list( longArray( new long[] {1, 2, 3}), longArray( new long[] {4, 5, 6}) );
+
+        assertThat( list.storable() ).isFalse();
     }
 }

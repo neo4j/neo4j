@@ -179,4 +179,10 @@ public class ShortArray extends IntegralArray
         newArray[0] = ((ShortValue) prepended).value();
         return new ShortArray( newArray );
     }
+
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.INT16_ARRAY;
+    }
 }

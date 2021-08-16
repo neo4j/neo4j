@@ -39,12 +39,14 @@ import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
+import static org.neo4j.values.virtual.ArrayHelpers.assertValueRepresentation;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
@@ -131,12 +133,15 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     {
         private final AnyValue[] values;
         private final long payloadSize;
+        private final ValueRepresentation itemRepresentation;
 
-        ArrayListValue( AnyValue[] values, long payloadSize )
+        ArrayListValue( AnyValue[] values, long payloadSize, ValueRepresentation itemRepresentation )
         {
+            this.itemRepresentation = itemRepresentation;
             assert values != null;
             this.payloadSize = shallowSizeOfObjectArray( values.length ) + payloadSize;
             assert !containsNull( values );
+            assert assertValueRepresentation( values, itemRepresentation );
 
             this.values = values;
         }
@@ -176,6 +181,27 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         {
             return ARRAY_LIST_VALUE_SHALLOW_SIZE + payloadSize;
         }
+
+
+        @Override
+        public boolean storable()
+        {
+            return itemRepresentation.canCreateArrayOfValueGroup();
+        }
+
+        @Override
+        public ArrayValue toStorableArray()
+        {
+            assert storable();
+            if ( values.length == 0)
+            {
+                return Values.EMPTY_TEXT_ARRAY;
+            }
+            else
+            {
+                return itemRepresentation.arrayOf( this );
+            }
+        }
     }
 
     private static final long JAVA_LIST_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance( JavaListListValue.class );
@@ -183,14 +209,17 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     {
         private final List<AnyValue> values;
         private final long payloadSize;
+        private final ValueRepresentation itemRepresentation;
 
-        JavaListListValue( List<AnyValue> values, long payloadSize )
+        JavaListListValue( List<AnyValue> values, long payloadSize, ValueRepresentation itemRepresentation )
         {
             this.payloadSize = payloadSize;
             assert values != null;
             assert !containsNull( values );
+            assert assertValueRepresentation( values.toArray( AnyValue[]::new ), itemRepresentation );
 
             this.values = values;
+            this.itemRepresentation = itemRepresentation;
         }
 
         @Override
@@ -239,6 +268,26 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public long estimatedHeapUsage()
         {
             return JAVA_LIST_LIST_VALUE_SHALLOW_SIZE + payloadSize;
+        }
+
+        @Override
+        public boolean storable()
+        {
+            return itemRepresentation.canCreateArrayOfValueGroup();
+        }
+
+        @Override
+        public ArrayValue toStorableArray()
+        {
+            assert storable();
+            if ( values.isEmpty() )
+            {
+                return Values.EMPTY_TEXT_ARRAY;
+            }
+            else
+            {
+                return itemRepresentation.arrayOf( this );
+            }
         }
     }
 
@@ -911,6 +960,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         long keptValuesHeapSize = 0;
         Set<AnyValue> seen = new HashSet<>();
         List<AnyValue> kept = new ArrayList<>();
+        ValueRepresentation representation = null;
         for ( AnyValue value : this )
         {
             if ( seen.add( value ) )
@@ -918,8 +968,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 kept.add( value );
                 keptValuesHeapSize += value.estimatedHeapUsage();
             }
+            representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
         }
-        return new JavaListListValue( kept, keptValuesHeapSize );
+        return new JavaListListValue( kept, keptValuesHeapSize, representation );
     }
 
     private AnyValue[] iterationAsArray()

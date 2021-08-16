@@ -282,9 +282,9 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.DATE;
+        return ValueRepresentation.DATE;
     }
 
     @Override

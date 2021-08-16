@@ -21,6 +21,7 @@ package org.neo4j.values;
 
 import java.util.Comparator;
 
+import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.virtual.VirtualValueGroup;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -73,4 +74,10 @@ public abstract class VirtualValue extends HashMemoizingAnyValue
     public abstract int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator );
 
     public abstract Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator );
+
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.UNKNOWN;
+    }
 }

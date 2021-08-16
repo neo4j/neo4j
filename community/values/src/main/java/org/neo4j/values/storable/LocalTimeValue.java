@@ -274,9 +274,9 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.LOCAL_TIME;
+        return ValueRepresentation.LOCAL_TIME;
     }
 
     @Override

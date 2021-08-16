@@ -81,9 +81,9 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.DURATION_ARRAY;
+        return ValueRepresentation.DURATION_ARRAY;
     }
 
     @Override

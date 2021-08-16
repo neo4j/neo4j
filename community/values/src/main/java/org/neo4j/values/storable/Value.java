@@ -241,7 +241,12 @@ public abstract class Value extends AnyValue
      */
     public abstract String prettyPrint();
 
-    public abstract ValueGroup valueGroup();
+    public abstract ValueRepresentation valueRepresentation();
+
+    public final ValueGroup valueGroup()
+    {
+        return valueRepresentation().valueGroup();
+    }
 
     public abstract NumberType numberType();
 

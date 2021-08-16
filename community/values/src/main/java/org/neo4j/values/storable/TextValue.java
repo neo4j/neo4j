@@ -108,12 +108,6 @@ public abstract class TextValue extends HashMemoizingScalarValue
     }
 
     @Override
-    public ValueGroup valueGroup()
-    {
-        return ValueGroup.TEXT;
-    }
-
-    @Override
     public NumberType numberType()
     {
         return NumberType.NO_NUMBER;

@@ -114,9 +114,9 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.GEOMETRY;
+        return ValueRepresentation.GEOMETRY;
     }
 
     @Override

@@ -20,8 +20,10 @@
 package org.neo4j.values.virtual;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.ValueRepresentation;
 
 /**
  * This class is way too similar to org.neo4j.collection.PrimitiveArrays.
@@ -56,5 +58,15 @@ final class ArrayHelpers
             }
         }
         return false;
+    }
+
+    static boolean assertValueRepresentation( AnyValue[] values, ValueRepresentation representation )
+    {
+        ValueRepresentation actual = null;
+        for ( AnyValue value : values )
+        {
+            actual = actual == null ? value.valueRepresentation() : actual.coerce( value.valueRepresentation() );
+        }
+        return Objects.requireNonNullElse( actual, ValueRepresentation.UNKNOWN ) == representation;
     }
 }

@@ -31,6 +31,7 @@ import org.neo4j.values.AnyValueWriter
 import org.neo4j.values.Equality
 import org.neo4j.values.ValueMapper
 import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.ValueRepresentation
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -58,6 +59,7 @@ case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean 
   override def map[T](mapper: ValueMapper[T]): T = throw new UnsupportedOperationException()
   override def getTypeName: String = "ResourceLinenumber"
   override def estimatedHeapUsage(): Long = ResourceLinenumber.SHALLOW_SIZE // NOTE: The filename string is expected to be repeated so we do not count it here
+  override def valueRepresentation(): ValueRepresentation = ValueRepresentation.UNKNOWN
 }
 
 object ResourceLinenumber {

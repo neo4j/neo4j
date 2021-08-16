@@ -179,4 +179,10 @@ public final class LongArray extends IntegralArray
         newArray[0] = ((IntegralValue) prepended).longValue();
         return new LongArray( newArray );
     }
+
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.INT64_ARRAY;
+    }
 }

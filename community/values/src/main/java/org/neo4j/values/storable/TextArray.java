@@ -72,9 +72,9 @@ public abstract class TextArray extends ArrayValue
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.TEXT_ARRAY;
+        return ValueRepresentation.TEXT_ARRAY;
     }
 
     @Override

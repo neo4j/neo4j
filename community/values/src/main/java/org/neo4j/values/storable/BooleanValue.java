@@ -44,9 +44,9 @@ public abstract class BooleanValue extends ScalarValue
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.BOOLEAN;
+        return ValueRepresentation.BOOLEAN;
     }
 
     public abstract boolean booleanValue();

@@ -396,6 +396,12 @@ public abstract class StringValue extends TextValue
         {
             return 0;
         }
+
+        @Override
+        public ValueRepresentation valueRepresentation()
+        {
+            return ValueRepresentation.UTF16_TEXT;
+        }
     };
 }
 

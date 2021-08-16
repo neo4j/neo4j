@@ -179,4 +179,10 @@ public final class IntArray extends IntegralArray
         newArray[0] = ((IntValue) prepended).value();
         return new IntArray( newArray );
     }
+
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.INT32_ARRAY;
+    }
 }

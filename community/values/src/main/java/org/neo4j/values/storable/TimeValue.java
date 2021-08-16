@@ -355,9 +355,9 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.ZONED_TIME;
+        return ValueRepresentation.ZONED_TIME;
     }
 
     @Override

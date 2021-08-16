@@ -72,9 +72,9 @@ public final class DateArray extends TemporalArray<LocalDate>
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.DATE_ARRAY;
+        return ValueRepresentation.DATE_ARRAY;
     }
 
     @Override

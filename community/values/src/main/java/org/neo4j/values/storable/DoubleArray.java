@@ -179,4 +179,10 @@ public final class DoubleArray extends FloatingPointArray
         newArray[0] = ((FloatingPointValue) prepended).doubleValue();
         return new DoubleArray( newArray );
     }
+
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.FLOAT64_ARRAY;
+    }
 }

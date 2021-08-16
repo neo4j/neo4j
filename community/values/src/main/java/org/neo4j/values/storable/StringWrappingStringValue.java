@@ -183,6 +183,12 @@ final class StringWrappingStringValue extends StringValue
         return SHALLOW_SIZE + sizeOf( value );
     }
 
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.UTF16_TEXT;
+    }
+
     private static int ltrimIndex( String value )
     {
         int start = 0, length = value.length();

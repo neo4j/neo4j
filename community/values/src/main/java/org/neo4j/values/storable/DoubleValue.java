@@ -87,4 +87,10 @@ public final class DoubleValue extends FloatingPointValue
     {
         return SHALLOW_SIZE;
     }
+
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.FLOAT64;
+    }
 }

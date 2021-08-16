@@ -64,9 +64,9 @@ public final class PointArray extends NonPrimitiveArray<PointValue>
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.GEOMETRY_ARRAY;
+        return ValueRepresentation.GEOMETRY_ARRAY;
     }
 
     @Override

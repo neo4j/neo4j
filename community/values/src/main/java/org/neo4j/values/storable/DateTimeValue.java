@@ -573,9 +573,9 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.ZONED_DATE_TIME;
+        return ValueRepresentation.ZONED_DATE_TIME;
     }
 
     @Override

@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.ValueRepresentation;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
@@ -62,13 +63,22 @@ public abstract class ListValueBuilder
         return new UnknownSizeListValueBuilder();
     }
 
-    public abstract void add( AnyValue value );
+    protected long estimatedHeapSize;
+    protected ValueRepresentation valueRepresentation = null;
+
+    public final void add( AnyValue value )
+    {
+        estimatedHeapSize += value.estimatedHeapUsage();
+        valueRepresentation = valueRepresentation == null ? value.valueRepresentation() : valueRepresentation.coerce( value.valueRepresentation() );
+        internalAdd( value );
+    }
 
     public abstract ListValue build();
 
+    protected abstract void internalAdd( AnyValue value );
+
     private static class FixedSizeListValueBuilder extends ListValueBuilder
     {
-        long estimatedHeapSize;
         private final AnyValue[] values;
         private int index;
 
@@ -78,36 +88,27 @@ public abstract class ListValueBuilder
         }
 
         @Override
-        public void add( AnyValue value )
+        public ListValue build()
         {
-            estimatedHeapSize += value.estimatedHeapUsage();
-            values[index++] = value;
+            return new ListValue.ArrayListValue( values, estimatedHeapSize, valueRepresentation );
         }
 
         @Override
-        public ListValue build()
+        public void internalAdd( AnyValue value )
         {
-            return new ListValue.ArrayListValue( values, estimatedHeapSize );
+            values[index++] = value;
         }
     }
 
     private static final long ARRAY_LIST_SHALLOW_SIZE = shallowSizeOfInstance( ArrayList.class );
     private static class UnknownSizeListValueBuilder extends ListValueBuilder
     {
-        long estimatedHeapSize;
         private final List<AnyValue> values = new ArrayList<>();
 
         UnknownSizeListValueBuilder()
         {
             super();
             estimatedHeapSize += ARRAY_LIST_SHALLOW_SIZE;
-        }
-
-        @Override
-        public void add( AnyValue value )
-        {
-            estimatedHeapSize += value.estimatedHeapUsage();
-            values.add( value );
         }
 
         public UnknownSizeListValueBuilder combine( UnknownSizeListValueBuilder rhs )
@@ -120,7 +121,13 @@ public abstract class ListValueBuilder
         @Override
         public ListValue build()
         {
-            return new ListValue.JavaListListValue( values, estimatedHeapSize );
+            return new ListValue.JavaListListValue( values, estimatedHeapSize, valueRepresentation );
+        }
+
+        @Override
+        public void internalAdd( AnyValue value )
+        {
+            values.add( value );
         }
     }
 

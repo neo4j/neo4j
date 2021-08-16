@@ -207,6 +207,12 @@ public final class ByteArray extends IntegralArray
         return new ByteArray( newArray );
     }
 
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.INT8_ARRAY;
+    }
+
     public void zero()
     {
         invalid = true;

@@ -281,4 +281,10 @@ public final class CharValue extends TextValue
     {
         return SHALLOW_SIZE;
     }
+
+    @Override
+    public ValueRepresentation valueRepresentation()
+    {
+        return ValueRepresentation.UTF16_TEXT;
+    }
 }

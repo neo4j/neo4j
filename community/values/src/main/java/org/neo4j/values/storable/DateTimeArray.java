@@ -72,9 +72,9 @@ public final class DateTimeArray extends TemporalArray<ZonedDateTime>
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.ZONED_DATE_TIME_ARRAY;
+        return ValueRepresentation.ZONED_DATE_TIME_ARRAY;
     }
 
     @Override

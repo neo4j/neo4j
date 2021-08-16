@@ -116,9 +116,9 @@ public final class BooleanArray extends ArrayValue
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.BOOLEAN_ARRAY;
+        return ValueRepresentation.BOOLEAN_ARRAY;
     }
 
     @Override

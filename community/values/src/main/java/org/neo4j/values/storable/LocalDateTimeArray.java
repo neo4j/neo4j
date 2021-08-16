@@ -72,9 +72,9 @@ public class LocalDateTimeArray extends TemporalArray<LocalDateTime>
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public ValueRepresentation valueRepresentation()
     {
-        return ValueGroup.LOCAL_DATE_TIME_ARRAY;
+        return ValueRepresentation.LOCAL_DATE_TIME_ARRAY;
     }
 
     @Override
