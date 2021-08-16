@@ -57,6 +57,8 @@ sealed trait AdministrationCommand extends CatalogDDL {
 
   def isReadOnly: Boolean
 
+  override def containsUpdates: Boolean = !isReadOnly
+
   override def semanticCheck: SemanticCheck =
       requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleDatabases, position) chain
       when(useGraphVar.isDefined)(SemanticError(s"The `USE` clause is not supported for Administration Commands.", position))

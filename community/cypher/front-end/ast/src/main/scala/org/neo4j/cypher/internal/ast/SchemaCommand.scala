@@ -37,6 +37,8 @@ sealed trait SchemaCommand extends Statement {
   def withGraph(useGraph: Option[GraphSelection]): SchemaCommand
 
   override def returnColumns: List[LogicalVariable] = List.empty
+
+  override def containsUpdates: Boolean = true
 }
 
 case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {

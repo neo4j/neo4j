@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.planning
 
+import java.time.Clock
+
 import org.neo4j.cypher.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherRuntimeOption
@@ -108,7 +110,6 @@ import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 
-import java.time.Clock
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -285,8 +286,9 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val createPlanContext = CypherPlanner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
     val planContext = new ExceptionTranslatingPlanContext(createPlanContext(transactionalContextWrapper, notificationLogger, log))
 
+    val containsUpdates: Boolean = syntacticQuery.statement().containsUpdates
     val executionModel = options.runtime match {
-      case CypherRuntimeOption.default | CypherRuntimeOption.pipelined | CypherRuntimeOption.parallel => Batched
+      case CypherRuntimeOption.default | CypherRuntimeOption.pipelined | CypherRuntimeOption.parallel if !containsUpdates => Batched
       case _ => Volcano
     }
 
