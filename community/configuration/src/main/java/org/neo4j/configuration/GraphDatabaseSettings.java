@@ -598,14 +598,15 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Long> logical_log_rotation_threshold =
             newBuilder( "dbms.tx_log.rotation.size", BYTES, mebiBytes( 250 ) ).addConstraint( min( kibiBytes( 128 ) ) ).dynamic().build();
 
-    @Description( "On serialisation of transaction logs they will temporary stored in the byte buffer that will be flushed in the end of transaction " +
-            " or at any buffer will be full. By default size of byte buffer is based on number of available cpu's with " +
+    @Description( "On serialization of transaction logs, they will be temporary stored in the byte buffer that will be flushed at the end of the transaction " +
+            "or at any moment when buffer will be full." )
+    @DocumentedDefaultValue( "By default the size of byte buffer is based on number of available cpu's with " +
             "minimal buffer size of 512KB. Every another 4 cpu's will add another 512KB into the buffer size. " +
             "Maximal buffer size in this default scheme is 4MB taking into account " +
             "that we can have one transaction log writer per database in multi-database env." +
             "For example, runtime with 4 cpus will have buffer size of 1MB; " +
-                         "runtime with 8 cpus will have buffer size of 1MB 512KB; " +
-                         "runtime with 12 cpus will have buffer size of 2MB." )
+            "runtime with 8 cpus will have buffer size of 1MB 512KB; " +
+            "runtime with 12 cpus will have buffer size of 2MB." )
     public static final Setting<Long> transaction_log_buffer_size =
             newBuilder( "dbms.tx_log.buffer.size", LONG, ByteUnit.kibiBytes( Math.min( (getRuntime().availableProcessors() / 4) + 1, 8 ) * 512L ) )
                     .addConstraint( min( kibiBytes( 128 ) ) )

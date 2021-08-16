@@ -204,6 +204,7 @@ org.neo4j.configuration.GraphDatabaseSettings::store_user_log_to_stdout org.neo4
 org.neo4j.configuration.GraphDatabaseSettings::strict_config_validation org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::track_query_allocation org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::track_query_cpu_time org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::transaction_log_buffer_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::transaction_logs_root_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::transaction_monitor_check_interval org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::transaction_sampling_percentage org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
