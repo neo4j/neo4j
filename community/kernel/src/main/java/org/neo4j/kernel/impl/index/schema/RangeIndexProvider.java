@@ -20,12 +20,14 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -41,6 +43,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 
@@ -175,7 +178,33 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,NativeIndex
         public boolean supportPartitionedScan( IndexQuery... queries )
         {
             Preconditions.requireNoNullElements( queries );
-            return false;
+            if ( queries.length == 0 || Arrays.stream( queries ).anyMatch( query ->
+                    query instanceof PropertyIndexQuery.StringSuffixPredicate
+                    || query instanceof PropertyIndexQuery.StringContainsPredicate
+                    || query instanceof PropertyIndexQuery.GeometryRangePredicate
+                    || query instanceof PropertyIndexQuery.RangePredicate && query.valueGroup() == ValueGroup.GEOMETRY_ARRAY ) )
+            {
+                return false;
+            }
+
+            for ( int i = 1; i < queries.length; i++ )
+            {
+                final var prev = queries[i - 1];
+                final var query = queries[i];
+
+                if ( prev instanceof PropertyIndexQuery.ExactPredicate )
+                {
+                    continue;
+                }
+                if ( (prev instanceof PropertyIndexQuery.ExistsPredicate
+                      || prev instanceof PropertyIndexQuery.RangePredicate
+                      || prev instanceof PropertyIndexQuery.StringPrefixPredicate)
+                     && !(query instanceof PropertyIndexQuery.ExistsPredicate) )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

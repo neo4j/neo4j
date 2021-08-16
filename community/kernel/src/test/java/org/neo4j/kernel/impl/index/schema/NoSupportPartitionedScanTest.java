@@ -45,16 +45,6 @@ public class NoSupportPartitionedScanTest extends SupportPartitionedScanTestSuit
         super( NO_CAPABILITY, NO_SUPPORT );
     }
 
-    // range index being implemented
-    @Nested
-    class Range extends SupportPartitionedScanTestSuite
-    {
-        Range()
-        {
-            super( RangeIndexProvider.CAPABILITY, NO_SUPPORT );
-        }
-    }
-
     // point index being implemented
     @Nested
     class Point extends SupportPartitionedScanTestSuite
