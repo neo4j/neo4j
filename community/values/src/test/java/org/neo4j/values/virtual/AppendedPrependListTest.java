@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.fromArray;
 import static org.neo4j.values.virtual.VirtualValues.list;
@@ -116,6 +117,20 @@ class AppendedPrependListTest
 
         // When
         ListValue appended = inner.append( longValue( 7L ) );
+
+        // Then
+        assertTrue( appended.storable() );
+        assertEquals( list(  longValue( 5L ), longValue( 6L ), longValue( 7L ) ), fromArray( appended.toStorableArray() ));
+    }
+
+    @Test
+    void shouldBeStorableIfAppendedMatchesInnerStorableWithDifferentButCompatibleTypes()
+    {
+        // Given
+        ListValue inner = list( longValue( 5L ), longValue( 6L ) );
+
+        // When
+        ListValue appended = inner.append( intValue( 7 ) );
 
         // Then
         assertTrue( appended.storable() );

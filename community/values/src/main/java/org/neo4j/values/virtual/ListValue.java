@@ -54,6 +54,8 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 {
     public abstract int size();
 
+    public abstract ValueRepresentation itemValueRepresentation();
+
     @Override
     public abstract AnyValue value( int offset );
 
@@ -95,6 +97,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public int size()
         {
             return array.length();
+        }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation()
+        {
+            return isEmpty() ? ValueRepresentation.UNKNOWN : head().valueRepresentation();
         }
 
         @Override
@@ -190,6 +198,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 return itemRepresentation.arrayOf( this );
             }
         }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation()
+        {
+            return itemRepresentation;
+        }
     }
 
     private static final long JAVA_LIST_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance( JavaListListValue.class );
@@ -276,6 +290,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             {
                 return itemRepresentation.arrayOf( this );
             }
+        }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation()
+        {
+            return itemRepresentation;
         }
     }
 
@@ -374,8 +394,14 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             }
             else
             {
-                return head().valueRepresentation().arrayOf( this );
+                return itemValueRepresentation().arrayOf( this );
             }
+        }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation()
+        {
+            return inner.itemValueRepresentation();
         }
     }
 
@@ -435,8 +461,14 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             }
             else
             {
-                return head().valueRepresentation().arrayOf( this );
+                return itemValueRepresentation().arrayOf( this );
             }
+        }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation()
+        {
+            return inner.itemValueRepresentation();
         }
     }
 
@@ -532,16 +564,29 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             }
             return Values.longArray( array );
         }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation()
+        {
+            return ValueRepresentation.INT64;
+        }
     }
 
     private static final long CONCAT_LIST_SHALLOW_SIZE = shallowSizeOfInstance( ConcatList.class );
     static final class ConcatList extends ListValue
     {
         private final ListValue[] lists;
+        private final ValueRepresentation itemValueRepresentation;
         private int size = -1;
 
         ConcatList( ListValue[] lists )
         {
+            ValueRepresentation representation = null;
+            for ( ListValue list : lists )
+            {
+                representation = representation == null ? list.itemValueRepresentation() : representation.coerce( list.itemValueRepresentation() );
+            }
+            this.itemValueRepresentation = representation;
             this.lists = lists;
         }
 
@@ -614,6 +659,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             newArray[lists.length] = value;
             return new ConcatList( newArray );
         }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation()
+        {
+            return itemValueRepresentation;
+        }
     }
 
     private static final long APPEND_LIST_SHALLOW_SIZE = shallowSizeOfInstance( AppendList.class );
@@ -638,13 +689,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                     ArrayValue array = ((ArrayValueListValue) base).array;
                     return array.hasCompatibleType( appended );
                 }
-                else if ( base.isEmpty() )
-                {
-                    return appended.valueRepresentation().canCreateArrayOfValueGroup();
-                }
                 else
                 {
-                    return base.head().valueRepresentation() == appended.valueRepresentation();
+                    return itemValueRepresentation().canCreateArrayOfValueGroup();
                 }
             }
             else
@@ -663,7 +710,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             }
             else
             {
-                return appended.valueRepresentation().arrayOf( this );
+                return itemValueRepresentation().arrayOf( this );
             }
         }
 
@@ -726,6 +773,19 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public long estimatedAppendedHeapUsage()
         {
             return APPEND_LIST_SHALLOW_SIZE + appended.estimatedHeapUsage();
+        }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation()
+        {
+            if ( base.isEmpty() )
+            {
+                return appended.valueRepresentation();
+            }
+            else
+            {
+                return base.itemValueRepresentation().coerce( appended.valueRepresentation() );
+            }
         }
     }
 
@@ -807,13 +867,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                     ArrayValue array = ((ArrayValueListValue) base).array;
                     return array.hasCompatibleType( prepended );
                 }
-                else if ( base.isEmpty() )
-                {
-                    return prepended.valueRepresentation().canCreateArrayOfValueGroup();
-                }
                 else
                 {
-                    return base.head().valueRepresentation() == prepended.valueRepresentation();
+                    return itemValueRepresentation().canCreateArrayOfValueGroup();
                 }
             }
             else
@@ -833,6 +889,19 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             else
             {
                 return prepended.valueRepresentation().arrayOf( this );
+            }
+        }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation()
+        {
+            if ( base.isEmpty() )
+            {
+                return prepended.valueRepresentation();
+            }
+            else
+            {
+                return base.itemValueRepresentation().coerce( prepended.valueRepresentation() );
             }
         }
     }

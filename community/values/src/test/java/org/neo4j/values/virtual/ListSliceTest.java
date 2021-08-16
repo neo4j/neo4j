@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longArray;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
@@ -150,5 +151,20 @@ class ListSliceTest
         // Then
         assertTrue( slice.storable() );
         assertEquals( list( longValue( 3 ), longValue( 4 ) ), fromArray( slice.toStorableArray() ) );
+    }
+
+    @Test
+    void slicesAreStorableIfInnerListIsStorableWithDifferentTypes()
+    {
+        // Given
+        ListValue inner = list( intValue( 5 ), longValue( 6L ), intValue( 7 ),
+                                longValue( 8L ), intValue( 9 ), longValue( 10L ), intValue( 11 ) );
+
+        // When
+        ListValue slice = inner.slice( 2, 4 );
+
+        // Then
+        assertTrue( slice.storable() );
+        assertEquals( list( longValue( 7 ), longValue( 8 ) ), fromArray( slice.toStorableArray() ) );
     }
 }
