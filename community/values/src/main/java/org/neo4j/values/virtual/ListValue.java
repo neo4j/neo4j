@@ -55,12 +55,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public abstract int size();
 
     @Override
-    public boolean hasCompatibleType( AnyValue value )
-    {
-        return false;
-    }
-
-    @Override
     public abstract AnyValue value( int offset );
 
     @Override
@@ -95,12 +89,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public ArrayValue toStorableArray()
         {
             return array;
-        }
-
-        @Override
-        public boolean hasCompatibleType( AnyValue value )
-        {
-            return array.hasCompatibleType( value );
         }
 
         @Override
@@ -643,14 +631,40 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public boolean storable()
         {
-            return base.storable() && base.hasCompatibleType( appended );
+            if ( base.storable() )
+            {
+                if ( base instanceof ArrayValueListValue )
+                {
+                    ArrayValue array = ((ArrayValueListValue) base).array;
+                    return array.hasCompatibleType( appended );
+                }
+                else if ( base.isEmpty() )
+                {
+                    return appended.valueRepresentation().canCreateArrayOfValueGroup();
+                }
+                else
+                {
+                    return base.head().valueRepresentation() == appended.valueRepresentation();
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
 
         @Override
         public ArrayValue toStorableArray()
         {
-            ArrayValue anyValues = base.toStorableArray();
-            return  anyValues.copyWithAppended( appended);
+            if ( base instanceof ArrayValueListValue )
+            {
+                ArrayValue array = ((ArrayValueListValue) base).array;
+                return array.copyWithAppended( appended );
+            }
+            else
+            {
+                return appended.valueRepresentation().arrayOf( this );
+            }
         }
 
         @Override
@@ -786,14 +800,40 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public boolean storable()
         {
-            return base.storable() && base.hasCompatibleType( prepended );
+            if ( base.storable() )
+            {
+                if ( base instanceof ArrayValueListValue )
+                {
+                    ArrayValue array = ((ArrayValueListValue) base).array;
+                    return array.hasCompatibleType( prepended );
+                }
+                else if ( base.isEmpty() )
+                {
+                    return prepended.valueRepresentation().canCreateArrayOfValueGroup();
+                }
+                else
+                {
+                    return base.head().valueRepresentation() == prepended.valueRepresentation();
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
 
         @Override
         public ArrayValue toStorableArray()
         {
-            ArrayValue anyValues = base.toStorableArray();
-            return anyValues.copyWithPrepended( prepended );
+            if ( base instanceof ArrayValueListValue )
+            {
+                ArrayValue array = ((ArrayValueListValue) base).array;
+                return array.copyWithPrepended( prepended );
+            }
+            else
+            {
+                return prepended.valueRepresentation().arrayOf( this );
+            }
         }
     }
 

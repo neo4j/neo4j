@@ -46,8 +46,6 @@ public interface SequenceValue extends Iterable<AnyValue>
 
     int length();
 
-    boolean hasCompatibleType( AnyValue value );
-
     default boolean isEmpty()
     {
         return length() == 0;

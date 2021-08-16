@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.virtual.VirtualValues.fromArray;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 class AppendedPrependListTest
@@ -91,6 +92,34 @@ class AppendedPrependListTest
         // Then
         ListValue expected = list( NO_VALUE, longValue( 5L ), longValue( 6L ) );
         assertListValuesEquals( prepended, expected );
+    }
+
+    @Test
+    void shouldBeStorableIfPrependedMatchesInnerStorable()
+    {
+        // Given
+        ListValue inner = list( longValue( 5L ), longValue( 6L ) );
+
+        // When
+        ListValue prepended = inner.prepend( longValue( 4L ) );
+
+        // Then
+        assertTrue( prepended.storable() );
+        assertEquals( list(  longValue( 4L ), longValue( 5L ), longValue( 6L ) ), fromArray( prepended.toStorableArray() ));
+    }
+
+    @Test
+    void shouldBeStorableIfAppendedMatchesInnerStorable()
+    {
+        // Given
+        ListValue inner = list( longValue( 5L ), longValue( 6L ) );
+
+        // When
+        ListValue appended = inner.append( longValue( 7L ) );
+
+        // Then
+        assertTrue( appended.storable() );
+        assertEquals( list(  longValue( 5L ), longValue( 6L ), longValue( 7L ) ), fromArray( appended.toStorableArray() ));
     }
 
     private static void assertListValuesEquals( ListValue appended, ListValue expected )
