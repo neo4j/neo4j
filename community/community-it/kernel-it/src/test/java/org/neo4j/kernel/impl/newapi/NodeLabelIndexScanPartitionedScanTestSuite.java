@@ -49,7 +49,7 @@ class NodeLabelIndexScanPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<TokenScanQuery> setupDatabase()
+        Queries<TokenScanQuery> setupDatabase()
         {
             final var numberOfLabels = 3;
 
@@ -67,7 +67,7 @@ class NodeLabelIndexScanPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<TokenScanQuery> setupDatabase()
+        Queries<TokenScanQuery> setupDatabase()
         {
             final var numberOfLabels = 3;
             final var numberOfNodes = 100_000;
@@ -77,7 +77,7 @@ class NodeLabelIndexScanPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<TokenScanQuery> createData( int numberOfNodes, List<Integer> labelIds )
+        Queries<TokenScanQuery> createData( int numberOfNodes, List<Integer> labelIds )
         {
             // given  a number of nodes to create
             final var nodesWithLabelId = new EntityIdsMatchingQuery<TokenScanQuery>();
@@ -105,7 +105,7 @@ class NodeLabelIndexScanPartitionedScanTestSuite
             }
 
             // then   there should be some queries to match against
-            assertThat( nodesWithLabelId.queries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
+            assertThat( nodesWithLabelId.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
 
             var numberOfCreatedNodes = 0;
             for ( final var entry : nodesWithLabelId )
@@ -115,7 +115,7 @@ class NodeLabelIndexScanPartitionedScanTestSuite
             // then   and the number created should be equal to what was asked
             assertThat( numberOfCreatedNodes ).as( "nodes created" ).isEqualTo( numberOfNodes );
 
-            return nodesWithLabelId;
+            return new Queries<>( nodesWithLabelId );
         }
     }
 }

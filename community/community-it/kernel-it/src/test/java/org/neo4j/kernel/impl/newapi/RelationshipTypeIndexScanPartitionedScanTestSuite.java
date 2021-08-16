@@ -50,7 +50,7 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<TokenScanQuery> setupDatabase()
+        Queries<TokenScanQuery> setupDatabase()
         {
             final var numberOfRelTypes = 3;
 
@@ -68,7 +68,7 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<TokenScanQuery> setupDatabase()
+        Queries<TokenScanQuery> setupDatabase()
         {
             final var numberOfRelTypes = 3;
             final var numberOfRelationships = 100_000;
@@ -78,7 +78,7 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<TokenScanQuery> createData( int numberOfRelationships, List<Integer> relTypeIds )
+        Queries<TokenScanQuery> createData( int numberOfRelationships, List<Integer> relTypeIds )
         {
             // given  a number of relationships to create
             final var relsWithRelTypeId = new EntityIdsMatchingQuery<TokenScanQuery>();
@@ -136,7 +136,7 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
             }
 
             // then   there should be some queries to match against
-            assertThat( relsWithRelTypeId.queries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
+            assertThat( relsWithRelTypeId.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
 
             var numberOfCreatedRels = 0;
             for ( final var entry : relsWithRelTypeId )
@@ -146,7 +146,7 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
             // then   and the number created should be equal to what was asked
             assertThat( numberOfCreatedRels ).as( "relationships created" ).isEqualTo( numberOfRelationships );
 
-            return relsWithRelTypeId;
+            return new Queries<>( relsWithRelTypeId );
         }
     }
 }

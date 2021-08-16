@@ -56,7 +56,6 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 import org.neo4j.kernel.impl.index.schema.TokenScan;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
@@ -458,10 +457,18 @@ abstract class Read implements TxStateHolder,
 
     private <C extends Cursor> PartitionedScan<C> tokenIndexScan( TokenReadSession session, int desiredNumberOfPartitions,
                                                                   CursorContext cursorContext, TokenPredicate query )
+            throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
-        DefaultTokenReadSession defaultSession = (DefaultTokenReadSession) session;
-        PartitionedTokenScan tokenScan = defaultSession.reader.entityTokenScan( desiredNumberOfPartitions, cursorContext, query );
+        final var descriptor = session.reference();
+        if ( !descriptor.getCapability().supportPartitionedScan() )
+        {
+            throw new IndexNotApplicableKernelException( "This index does not support partitioned scan for this query: "
+                                                         + descriptor.userDescription( ktx.tokenRead() ) );
+        }
+
+        final var defaultSession = (DefaultTokenReadSession) session;
+        final var tokenScan = defaultSession.reader.entityTokenScan( desiredNumberOfPartitions, cursorContext, query );
         return new PartitionedTokenIndexCursorScan<>( this, query, tokenScan );
     }
 

@@ -25,6 +25,7 @@ import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collector;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
@@ -75,9 +77,9 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
     @InjectSoftAssertions
     protected SoftAssertions softly;
 
-    abstract EntityIdsMatchingQuery<QUERY> setupDatabase();
+    abstract Queries<QUERY> setupDatabase();
 
-    protected EntityIdsMatchingQuery<QUERY> entityIdsMatchingQuery;
+    protected Queries<QUERY> queries;
     protected int maxNumberOfPartitions;
     protected PartitionedScanFactory<QUERY,SESSION,CURSOR> factory;
 
@@ -91,11 +93,11 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
     {
         // given  setting up the database
         // when   the queries and expected matches are generated
-        entityIdsMatchingQuery = setupDatabase();
+        queries = setupDatabase();
         // then   require there to be some queries to test against
-        assertThat( entityIdsMatchingQuery ).as( "there are queries to test against" ).isNotEmpty();
+        assertThat( queries.valid ).as( "there are queries to test against" ).isNotEmpty();
 
-        maxNumberOfPartitions = calculateMaxNumberOfPartitions( entityIdsMatchingQuery.queries() );
+        maxNumberOfPartitions = calculateMaxNumberOfPartitions( queries.valid.queries() );
     }
 
     protected final KernelTransaction beginTx()
@@ -108,7 +110,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
     {
         try ( var tx = beginTx() )
         {
-            final var query = entityIdsMatchingQuery.iterator().next().getKey();
+            final var query = getFirstValidQuery();
 
             // given  a read session with a mismatched entity type to the seek/scan
             // when   partitioned scan constructed
@@ -127,12 +129,10 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
     {
         try ( var tx = beginTx() )
         {
-            final var query = entityIdsMatchingQuery.iterator().next().getKey();
-
             // given  an invalid desiredNumberOfPartitions
             // when   partitioned scan constructed
             // then   IllegalArgumentException should be thrown
-            softly.assertThatThrownBy( () -> factory.partitionedScan( tx, query, desiredNumberOfPartitions ),
+            softly.assertThatThrownBy( () -> factory.partitionedScan( tx, getFirstValidQuery(), desiredNumberOfPartitions ),
                                        "desired number of partitions must be positive" )
                   .isInstanceOf( IllegalArgumentException.class )
                   .hasMessageContainingAll( "Expected positive", "value" );
@@ -148,20 +148,32 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             createState( tx );
             softly.assertThat( tx.dataRead().transactionStateHasChanges() ).as( "transaction state" ).isTrue();
 
-            final var query = entityIdsMatchingQuery.iterator().next().getKey();
-
             // when   partitioned scan constructed
             // then   IllegalStateException should be thrown
-            softly.assertThatThrownBy( () -> factory.partitionedScan( tx, query, Integer.MAX_VALUE ),
+            softly.assertThatThrownBy( () -> factory.partitionedScan( tx, getFirstValidQuery(), Integer.MAX_VALUE ),
                                        "should throw on construction of scan, with transaction state" )
                   .isInstanceOf( IllegalStateException.class )
                   .hasMessage( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
         }
     }
 
-    private static void createState( KernelTransaction tx ) throws InvalidTransactionTypeKernelException
+    @Test
+    @EnabledIf( value = "invalidQueriesGenerated", disabledReason = "There were no invalid queries generated" )
+    final void shouldThrowWithInvalidQuery() throws KernelException
     {
-        tx.dataWrite().nodeCreate();
+        try ( var tx = beginTx() )
+        {
+            for ( final var query : queries.invalid )
+            {
+                // given  an invalid query
+                // when   partitioned scan constructed
+                // then   IndexNotApplicableKernelException should be thrown
+                softly.assertThatThrownBy( () -> factory.partitionedScan( tx, query, Integer.MAX_VALUE ),
+                                           "should throw with an invalid query" )
+                      .isInstanceOf( IndexNotApplicableKernelException.class )
+                      .hasMessageContaining( "This index does not support partitioned scan for this query" );
+            }
+        }
     }
 
     abstract static class WithoutData<QUERY extends Query<?>, SESSION, CURSOR extends Cursor>
@@ -178,7 +190,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx.cursors() ).with( tx.cursorContext() ) )
             {
-                for ( final var entry : entityIdsMatchingQuery )
+                for ( final var entry : queries.valid )
                 {
                     final var query = entry.getKey();
                     // given  an empty database
@@ -219,7 +231,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx.cursors() ).with( tx.cursorContext() ) )
             {
-                for ( final var entry : entityIdsMatchingQuery )
+                for ( final var entry : queries.valid )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -283,7 +295,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx.cursors() ).with( tx.cursorContext() ) )
             {
-                for ( final var entry : entityIdsMatchingQuery )
+                for ( final var entry : queries.valid )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -321,7 +333,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         {
             try ( var tx = beginTx() )
             {
-                for ( final var entry : entityIdsMatchingQuery )
+                for ( final var entry : queries.valid )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -385,6 +397,16 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         }
     }
 
+    private boolean invalidQueriesGenerated()
+    {
+        return !queries.invalid.isEmpty();
+    }
+
+    private QUERY getFirstValidQuery()
+    {
+        return queries.valid.iterator().next().getKey();
+    }
+
     protected String getTokenIndexName( EntityType entityType )
     {
         try ( var tx = beginTx() )
@@ -445,30 +467,63 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         return maxNumberOfPartitions;
     }
 
-    protected static class EntityIdsMatchingQuery<QUERY extends Query<?>>
+    private static void createState( KernelTransaction tx ) throws InvalidTransactionTypeKernelException
+    {
+        tx.dataWrite().nodeCreate();
+    }
+
+    protected static final class Queries<QUERY extends Query<?>>
+    {
+        final EntityIdsMatchingQuery<QUERY> valid;
+        final Set<QUERY> invalid;
+
+        public Queries( EntityIdsMatchingQuery<QUERY> valid, Set<QUERY> invalid )
+        {
+            this.valid = valid;
+            this.invalid = Collections.unmodifiableSet( invalid );
+        }
+
+        public Queries( EntityIdsMatchingQuery<QUERY> valid )
+        {
+            this( valid, Set.of() );
+        }
+    }
+
+    protected static final class EntityIdsMatchingQuery<QUERY extends Query<?>>
             implements Iterable<Map.Entry<QUERY,Set<Long>>>
     {
         private final Map<QUERY,Set<Long>> matches = new HashMap<>();
 
-        final Set<Long> getOrCreate( QUERY query )
+        static <QUERY extends Query<?>> Collector<QUERY,EntityIdsMatchingQuery<QUERY>,EntityIdsMatchingQuery<QUERY>> collector()
+        {
+            return Collector.of(EntityIdsMatchingQuery<QUERY>::new, EntityIdsMatchingQuery::getOrCreate, EntityIdsMatchingQuery::addAll);
+        }
+
+        Set<Long> getOrCreate( QUERY query )
         {
             return matches.computeIfAbsent( query, q -> new HashSet<>() );
         }
 
-        final Set<Long> addOrReplace( QUERY query, Set<Long> entityIds )
+        Set<Long> addOrReplace( QUERY query, Set<Long> entityIds )
         {
             return matches.put( query, entityIds );
         }
 
-        final Set<QUERY> queries()
+        EntityIdsMatchingQuery<QUERY> addAll( EntityIdsMatchingQuery<QUERY> other )
         {
-            return matches.keySet();
+            matches.putAll( other.matches );
+            return this;
+        }
+
+        Set<QUERY> queries()
+        {
+            return Collections.unmodifiableMap( matches ).keySet();
         }
 
         @Override
         public Iterator<Map.Entry<QUERY,Set<Long>>> iterator()
         {
-            return matches.entrySet().iterator();
+            return Collections.unmodifiableMap( matches ).entrySet().iterator();
         }
     }
 

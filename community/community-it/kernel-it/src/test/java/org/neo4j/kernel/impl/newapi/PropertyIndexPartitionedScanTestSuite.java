@@ -99,8 +99,7 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
     {
         protected final PartitionedScanFactories.PropertyIndex<QUERY,CURSOR> factory;
 
-        protected abstract EntityIdsMatchingQuery<QUERY> createData( int numberOfProperties,
-                                                                     Pair<Integer,int[]> tokenAndPropKeyCombination );
+        protected abstract Queries<QUERY> createData( int numberOfProperties, Pair<Integer,int[]> tokenAndPropKeyCombination );
 
         WithData( PropertyIndexPartitionedScanTestSuite<QUERY,CURSOR> testSuite )
         {
@@ -110,7 +109,7 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
 
     }
 
-    protected static class PropertyRecord
+    protected static final class PropertyRecord
     {
         final int id;
         final Value value;

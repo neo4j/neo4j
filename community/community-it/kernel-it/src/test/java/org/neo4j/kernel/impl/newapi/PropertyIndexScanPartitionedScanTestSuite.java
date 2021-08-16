@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -42,17 +44,16 @@ abstract class PropertyIndexScanPartitionedScanTestSuite<CURSOR extends Cursor>
             super( testSuite );
         }
 
-        protected EntityIdsMatchingQuery<PropertyKeyScanQuery> emptyQueries( Pair<Integer,int[]> tokenAndPropKeyCombination )
+        protected Queries<PropertyKeyScanQuery> emptyQueries( Pair<Integer,int[]> tokenAndPropKeyCombination )
         {
-            final var empty = new EntityIdsMatchingQuery<PropertyKeyScanQuery>();
             final var tokenId = tokenAndPropKeyCombination.first();
             final var propKeyIds = tokenAndPropKeyCombination.other();
-            for ( final var propKeyId : propKeyIds )
-            {
-                empty.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( tokenId, propKeyId ) ) );
-            }
-            empty.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( tokenId, propKeyIds ) ) );
-            return empty;
+            final var empty = Stream.concat( Arrays.stream( propKeyIds ).mapToObj( propKeyId -> factory.getIndexName( tokenId, propKeyId ) ),
+                                             Stream.of( factory.getIndexName( tokenId, propKeyIds ) ) )
+                                    .map( PropertyKeyScanQuery::new )
+                                    .collect( EntityIdsMatchingQuery.collector() );
+
+            return new Queries<>( empty );
         }
     }
 
@@ -65,7 +66,7 @@ abstract class PropertyIndexScanPartitionedScanTestSuite<CURSOR extends Cursor>
         }
     }
 
-    protected static class PropertyKeyScanQuery implements Query<Void>
+    protected static final class PropertyKeyScanQuery implements Query<Void>
     {
         private final String indexName;
 
@@ -75,13 +76,13 @@ abstract class PropertyIndexScanPartitionedScanTestSuite<CURSOR extends Cursor>
         }
 
         @Override
-        public final String indexName()
+        public String indexName()
         {
             return indexName;
         }
 
         @Override
-        public final Void get()
+        public Void get()
         {
             return null;
         }

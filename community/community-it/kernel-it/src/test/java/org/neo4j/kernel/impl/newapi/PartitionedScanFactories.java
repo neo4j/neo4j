@@ -186,9 +186,14 @@ class PartitionedScanFactories
             return tx.dataRead().indexReadSession( index );
         }
 
+        protected final IndexDescriptor getIndex( KernelTransaction tx, String name )
+        {
+            return tx.schemaRead().indexGetForName( name );
+        }
+
         protected final IndexDescriptor getIndex( KernelTransaction tx, int tokenId, int... propKeyIds )
         {
-            return tx.schemaRead().indexGetForName( getIndexName( tokenId, propKeyIds ) );
+            return getIndex(tx, getIndexName( tokenId, propKeyIds ) );
         }
     }
 

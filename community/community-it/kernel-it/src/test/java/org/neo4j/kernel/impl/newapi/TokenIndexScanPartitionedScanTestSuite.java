@@ -40,15 +40,14 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
             super( testSuite );
         }
 
-        EntityIdsMatchingQuery<TokenScanQuery> emptyQueries( EntityType entityType, Iterable<Integer> tokenIds )
+        Queries<TokenScanQuery> emptyQueries( EntityType entityType, List<Integer> tokenIds )
         {
             final var tokenIndexName = getTokenIndexName( entityType );
-            final var empty = new EntityIdsMatchingQuery<TokenScanQuery>();
-            for ( final var tokenId : tokenIds )
-            {
-                empty.getOrCreate( new TokenScanQuery( tokenIndexName, new TokenPredicate( tokenId ) ) );
-            }
-            return empty;
+            final var empty = tokenIds.stream()
+                                      .map( TokenPredicate::new )
+                                      .map( pred -> new TokenScanQuery( tokenIndexName, pred ) )
+                                      .collect( EntityIdsMatchingQuery.collector() );
+            return new Queries<>( empty );
         }
     }
 
@@ -60,10 +59,10 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
             super( testSuite );
         }
 
-        abstract EntityIdsMatchingQuery<TokenScanQuery> createData( int numberOfEntities, List<Integer> tokenIds );
+        abstract Queries<TokenScanQuery> createData( int numberOfEntities, List<Integer> tokenIds );
     }
 
-    protected static class TokenScanQuery implements Query<TokenPredicate>
+    protected static final class TokenScanQuery implements Query<TokenPredicate>
     {
         private final String name;
         private final TokenPredicate predicate;
@@ -75,13 +74,13 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
         }
 
         @Override
-        public final String indexName()
+        public String indexName()
         {
             return name;
         }
 
         @Override
-        public final TokenPredicate get()
+        public TokenPredicate get()
         {
             return predicate;
         }

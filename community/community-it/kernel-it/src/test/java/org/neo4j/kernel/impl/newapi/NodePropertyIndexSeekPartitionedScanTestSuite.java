@@ -50,7 +50,7 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<PropertyKeySeekQuery> setupDatabase()
+        Queries<PropertyKeySeekQuery> setupDatabase()
         {
             final var numberOfLabels = 1;
             final var numberOfPropKeys = 2;
@@ -73,7 +73,7 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<PropertyKeySeekQuery> setupDatabase()
+        Queries<PropertyKeySeekQuery> setupDatabase()
         {
             final var numberOfLabels = 1;
             final var numberOfPropKeys = 2;
@@ -89,8 +89,7 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
         }
 
         @Override
-        protected EntityIdsMatchingQuery<PropertyKeySeekQuery> createData( int numberOfProperties,
-                                                                           Pair<Integer,int[]> labelAndPropKeyCombination )
+        protected Queries<PropertyKeySeekQuery> createData( int numberOfProperties, Pair<Integer,int[]> labelAndPropKeyCombination )
         {
             // given  a set of queries
             final var tracking = new TrackEntityIdsMatchingQuery();
@@ -136,13 +135,15 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
                 throw new AssertionError( "failed to create database", e );
             }
 
+            final var expected = tracking.get();
+
             // then   there should be some queries to match against
-            assertThat( tracking.get().queries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
+            assertThat( expected.valid.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
 
             // then   and the number created should be equal to what was asked
             assertThat( numberOfCreatedProperties ).as( "node properties created" ).isEqualTo( numberOfProperties );
 
-            return tracking.get();
+            return expected;
         }
     }
 }

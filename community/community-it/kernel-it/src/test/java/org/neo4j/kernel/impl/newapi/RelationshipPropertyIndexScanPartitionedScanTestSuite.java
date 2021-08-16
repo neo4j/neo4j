@@ -54,7 +54,7 @@ class RelationshipPropertyIndexScanPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<PropertyKeyScanQuery> setupDatabase()
+        Queries<PropertyKeyScanQuery> setupDatabase()
         {
             final var numberOfRelTypes = 1;
             final var numberOfPropKeys = 2;
@@ -78,7 +78,7 @@ class RelationshipPropertyIndexScanPartitionedScanTestSuite
         }
 
         @Override
-        EntityIdsMatchingQuery<PropertyKeyScanQuery> setupDatabase()
+        Queries<PropertyKeyScanQuery> setupDatabase()
         {
             final var numberOfRelTypes = 1;
             final var numberOfPropKeys = 2;
@@ -94,8 +94,7 @@ class RelationshipPropertyIndexScanPartitionedScanTestSuite
         }
 
         @Override
-        protected EntityIdsMatchingQuery<PropertyKeyScanQuery> createData( int numberOfProperties,
-                                                                           Pair<Integer,int[]> relTypeAndPropKeyCombination )
+        protected Queries<PropertyKeyScanQuery> createData( int numberOfProperties, Pair<Integer,int[]> relTypeAndPropKeyCombination )
         {
             // given  a set of queries
             final var relsInIndex = new EntityIdsMatchingQuery<PropertyKeyScanQuery>();
@@ -140,12 +139,12 @@ class RelationshipPropertyIndexScanPartitionedScanTestSuite
             }
 
             // then   there should be some queries to match against
-            assertThat( relsInIndex.queries().size() ).as( "queries should exist" ).isGreaterThan( 0 );
+            assertThat( relsInIndex.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
 
             // then   and the number created should be equal to what was asked
             assertThat( numberOfCreatedProperties ).as( "node properties created" ).isEqualTo( numberOfProperties );
 
-            return relsInIndex;
+            return new Queries<>( relsInIndex );
         }
     }
 }

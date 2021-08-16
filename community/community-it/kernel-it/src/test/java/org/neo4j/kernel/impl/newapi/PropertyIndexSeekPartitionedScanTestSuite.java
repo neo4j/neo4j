@@ -20,14 +20,19 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.EntityIdsMatchingQuery;
+import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Queries;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.kernel.impl.newapi.PropertyIndexSeekPartitionedScanTestSuite.PropertyKeySeekQuery;
 
@@ -47,36 +52,37 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
             super( testSuite );
         }
 
-        protected EntityIdsMatchingQuery<PropertyKeySeekQuery> emptyQueries( Pair<Integer,int[]> tokenAndPropKeyCombination )
+        protected Queries<PropertyKeySeekQuery> emptyQueries( Pair<Integer,int[]> tokenAndPropKeyCombination )
         {
-            final var empty = new EntityIdsMatchingQuery<PropertyKeySeekQuery>();
             try ( var tx = beginTx() )
             {
                 final var tokenId = tokenAndPropKeyCombination.first();
                 final var propKeyIds = tokenAndPropKeyCombination.other();
-                for ( final var propKeyId : propKeyIds )
-                {
-                    final var index = factory.getIndex( tx, tokenId, propKeyId );
-                    Arrays.stream( ValueType.values() )
-                          .map( type -> new PropertyRecord( propKeyId, type.toValue( 0 ), type ) )
-                          .map( PropertyIndexPartitionedScanTestSuite::queries )
-                          .forEach( queries -> queries.filter( index.getCapability()::supportPartitionedScan )
-                                                      .map( query -> new PropertyKeySeekQuery( index.getName(), query ) )
-                                                      .forEach( empty::getOrCreate ) );
-                }
+                final var validQueries = Stream.concat(
+                        // single queries
+                        Arrays.stream( propKeyIds ).boxed()
+                              .flatMap( propKeyId -> Arrays.stream( ValueType.values() )
+                                      .map( type -> new PropertyRecord( propKeyId, type.toValue( 0 ), type ) ) )
+                              .flatMap( prop -> queries( prop )
+                                      .map( query -> new PropertyKeySeekQuery( factory.getIndexName( tokenId, prop.id ), query ) ) ),
 
-                final var index = factory.getIndex( tx, tokenId, propKeyIds );
-                queries( Arrays.stream( propKeyIds ).mapToObj( propKeyId ->
-                    createRandomPropertyRecord( random, propKeyId, 0 ) ).toArray( PropertyRecord[]::new ) )
-                        .filter( index.getCapability()::supportPartitionedScan )
-                        .map( query -> new PropertyKeySeekQuery( index.getName(), query ) )
-                        .forEach( empty::getOrCreate );
+                        // composite queries
+                        queries( Arrays.stream( propKeyIds )
+                                       .mapToObj( propKeyId -> createRandomPropertyRecord( random, propKeyId, 0 ) )
+                                       .toArray( PropertyRecord[]::new ) )
+                                .map( query -> new PropertyKeySeekQuery( factory.getIndexName( tokenId, propKeyIds ), query ) ) )
+
+                                               .collect( Collectors.partitioningBy( query -> factory.getIndex( tx, query.indexName() )
+                                                                                                    .getCapability()
+                                                                                                    .supportPartitionedScan( query.get() ) ) );
+
+                return new Queries<>( validQueries.get( true ).stream().collect( EntityIdsMatchingQuery.collector() ),
+                                      validQueries.get( false ).stream().collect( Collectors.toUnmodifiableSet() ) );
             }
             catch ( Exception e )
             {
                 throw new AssertionError( "failed to create empty queries", e );
             }
-            return empty;
         }
     }
 
@@ -102,34 +108,36 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
      * In "included" we keep track of the queries we want to test. There will be a lot of
      * different exact queries so we randomly select a few of them to test.
      */
-    protected static class TrackEntityIdsMatchingQuery
+    protected static final class TrackEntityIdsMatchingQuery
     {
         private final EntityIdsMatchingQuery<PropertyKeySeekQuery> tracking = new EntityIdsMatchingQuery<>();
         private final EntityIdsMatchingQuery<PropertyKeySeekQuery> included = new EntityIdsMatchingQuery<>();
+        private final Set<PropertyKeySeekQuery> invalid = new HashSet<>();
 
-        final EntityIdsMatchingQuery<PropertyKeySeekQuery> get()
+        Queries<PropertyKeySeekQuery> get()
         {
-            return included;
+            return new Queries<>( included, Collections.unmodifiableSet( invalid ) );
         }
 
-        protected void generateAndTrack( long nodeId, boolean includeExactQueries, IndexDescriptor index, PropertyRecord... props )
+        void generateAndTrack( long nodeId, boolean includeExactQueries, IndexDescriptor index, PropertyRecord... props )
         {
-            queries( props ).filter( index.getCapability()::supportPartitionedScan )
-                            .forEach( rawQuery ->
-                            {
-                                final var query = add( nodeId, index.getName(), rawQuery );
-                                if ( Arrays.stream( rawQuery ).noneMatch( PropertyIndexQuery.ExactPredicate.class::isInstance ) || includeExactQueries )
-                                {
-                                    include( query );
-                                }
-                            } );
+            final var validQueries = queries( props )
+                    .map( queries -> new PropertyKeySeekQuery( index.getName(), queries ) )
+                    .collect( Collectors.partitioningBy( query -> index.getCapability().supportPartitionedScan( query.get() ) ) );
+
+            validQueries.get( true ).stream()
+                        .map( query -> add( nodeId, query ) )
+                        .filter( query -> Arrays.stream( query.get() ).noneMatch( PropertyIndexQuery.ExactPredicate.class::isInstance )
+                                          || includeExactQueries )
+                        .forEach( this::include );
+
+            invalid.addAll( validQueries.get( false ) );
         }
 
-        private PropertyKeySeekQuery add( long nodeId, String indexName, PropertyIndexQuery... queries )
+        private PropertyKeySeekQuery add( long nodeId, PropertyKeySeekQuery query )
         {
-            final var propertyKeySeekQuery = new PropertyKeySeekQuery( indexName, queries );
-            tracking.getOrCreate( propertyKeySeekQuery ).add( nodeId );
-            return propertyKeySeekQuery;
+            tracking.getOrCreate( query ).add( nodeId );
+            return query;
         }
 
         private void include( PropertyKeySeekQuery propertyKeySeekQuery )
@@ -138,7 +146,7 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
         }
     }
 
-    protected static class PropertyKeySeekQuery implements Query<PropertyIndexQuery[]>
+    protected static final class PropertyKeySeekQuery implements Query<PropertyIndexQuery[]>
     {
         private final String indexName;
         private final PropertyIndexQuery[] queries;
@@ -150,18 +158,18 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
         }
 
         @Override
-        public final String indexName()
+        public String indexName()
         {
             return indexName;
         }
 
         @Override
-        public final PropertyIndexQuery[] get()
+        public PropertyIndexQuery[] get()
         {
             return queries;
         }
 
-        public final PropertyIndexQuery get( int i )
+        public PropertyIndexQuery get( int i )
         {
             return queries[i];
         }
