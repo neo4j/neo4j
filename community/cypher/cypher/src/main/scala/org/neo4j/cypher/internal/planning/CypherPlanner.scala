@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.planning
 
 import org.neo4j.cypher.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.internal.AdministrationCommandRuntime
 import org.neo4j.cypher.internal.Assertion.assertionsEnabled
@@ -46,6 +47,8 @@ import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.CypherPlannerFactory
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.MissingParametersNotification
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
@@ -282,12 +285,18 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val createPlanContext = CypherPlanner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
     val planContext = new ExceptionTranslatingPlanContext(createPlanContext(transactionalContextWrapper, notificationLogger, log))
 
+    val executionModel = options.runtime match {
+      case CypherRuntimeOption.default | CypherRuntimeOption.pipelined | CypherRuntimeOption.parallel => Batched
+      case _ => Volcano
+    }
+
     // Context used to create logical plans
     val plannerContext = contextCreator.create(tracer,
       notificationLogger,
       planContext,
       rawQueryText,
       options.debugOptions,
+      executionModel,
       Some(options.offset),
       monitors,
       CachedMetricsFactory(SimpleMetricsFactory),

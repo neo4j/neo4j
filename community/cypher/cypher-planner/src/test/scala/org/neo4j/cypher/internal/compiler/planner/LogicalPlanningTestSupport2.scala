@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
@@ -310,7 +311,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
         innerVariableNamer = innerVariableNamer,
-        idGen = idGen
+        idGen = idGen,
+        executionModel = ExecutionModel.default
       )
       f(config, ctx)
     }
@@ -331,7 +333,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
         innerVariableNamer = innerVariableNamer,
-        idGen = idGen
+        idGen = idGen,
+        executionModel = ExecutionModel.default
       )
       f(config, ctx)
     }

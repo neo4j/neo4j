@@ -40,6 +40,7 @@ trait ContextCreator[Context <: BaseContext] {
              planContext: PlanContext,
              queryText: String,
              debugOptions: Set[String],
+             executionModel: ExecutionModel,
              offset: Option[InputPosition],
              monitors: Monitors,
              metricsFactory: MetricsFactory,

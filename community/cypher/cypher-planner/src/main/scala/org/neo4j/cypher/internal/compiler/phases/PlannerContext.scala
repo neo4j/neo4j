@@ -24,6 +24,7 @@ import java.time.Clock
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.compiler.ContextCreator
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
@@ -57,7 +58,8 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val clock: Clock,
                      val logicalPlanIdGen: IdGen,
                      val innerVariableNamer: InnerVariableNamer,
-                     val params: MapValue) extends BaseContext {
+                     val params: MapValue,
+                     val executionModel: ExecutionModel) extends BaseContext {
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
     SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
@@ -74,6 +76,7 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
                       planContext: PlanContext,
                       queryText: String,
                       debugOptions: Set[String],
+                      executionModel: ExecutionModel,
                       offset: Option[InputPosition],
                       monitors: Monitors,
                       metricsFactory: MetricsFactory,
@@ -94,6 +97,6 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
       metricsFactory.newMetrics(planContext.statistics, evaluator, config)
 
     new PlannerContext(exceptionFactory, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer, params)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer, params, executionModel)
   }
 }

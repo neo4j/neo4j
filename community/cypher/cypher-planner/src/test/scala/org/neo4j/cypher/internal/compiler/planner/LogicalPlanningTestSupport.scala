@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
@@ -222,7 +223,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
-      idGen = idGen)
+      idGen = idGen,
+      executionModel = ExecutionModel.default)
   }
 
   def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
@@ -241,7 +243,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
-      idGen = idGen)
+      idGen = idGen,
+      executionModel = ExecutionModel.default)
   }
 
   def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]
