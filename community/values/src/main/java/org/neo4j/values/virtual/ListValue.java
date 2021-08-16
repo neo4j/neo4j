@@ -485,6 +485,25 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         {
             return INTEGRAL_RANGE_LIST_VALUE_SHALLOW_SIZE;
         }
+
+        @Override
+        public boolean storable()
+        {
+            return true;
+        }
+
+        @Override
+        public ArrayValue toStorableArray()
+        {
+            long current = start;
+            int size = size();
+            long[] array = new long[size];
+            for ( int i = 0; i < size; i++, current += step )
+            {
+                array[i] = current;
+            }
+            return Values.longArray( array );
+        }
     }
 
     private static final long CONCAT_LIST_SHALLOW_SIZE = shallowSizeOfInstance( ConcatList.class );
