@@ -216,12 +216,16 @@ public class NettyServer extends LifecycleAdapter
 
     private ServerBootstrap createServerBootstrap( ServerConfigurationProvider configurationProvider, ProtocolInitializer protocolInitializer )
     {
-        return new ServerBootstrap()
-                .group( eventLoopGroup )
+        var serverBootstrap = new ServerBootstrap();
+        serverBootstrap.group( eventLoopGroup )
                 .channel( configurationProvider.getChannelClass( protocolInitializer.address() ) )
                 .option( ChannelOption.SO_REUSEADDR, TRUE )
-                .childOption( ChannelOption.SO_KEEPALIVE, config.get( BoltConnectorInternalSettings.tcp_keep_alive ) ? TRUE : FALSE )
                 .childHandler( protocolInitializer.channelInitializer() );
+        if ( !(protocolInitializer.address() instanceof DomainSocketAddress) )
+        {
+            serverBootstrap.childOption( ChannelOption.SO_KEEPALIVE, config.get( BoltConnectorInternalSettings.tcp_keep_alive ) ? TRUE : FALSE );
+        }
+        return serverBootstrap;
     }
 
     private static ServerConfigurationProvider createConfigurationProvider( Config config )
