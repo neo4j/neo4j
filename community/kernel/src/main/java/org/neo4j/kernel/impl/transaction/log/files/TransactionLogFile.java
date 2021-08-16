@@ -33,7 +33,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -64,8 +63,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
-import static java.lang.Math.min;
-import static java.lang.Runtime.getRuntime;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 /**
@@ -124,7 +122,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
         //try to set position
         seekChannelPosition( currentLogVersion );
 
-        writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, new NativeScopedBuffer( calculateLogBufferSize(), memoryTracker ) );
+        writer = new PositionAwarePhysicalFlushableChecksumChannel( channel,
+                new NativeScopedBuffer( context.getConfig().get( transaction_log_buffer_size ), memoryTracker ) );
         transactionLogWriter = new TransactionLogWriter( writer, new DbmsLogEntryWriterFactory( context.getKernelVersionProvider() ) );
     }
 
@@ -582,23 +581,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
         }
 
         return logHeader;
-    }
-
-    /**
-     * Calculate size of byte buffer for transaction log file based on number of available cpu's.
-     * Minimal buffer size is 512KB. Every another 4 cpu's will add another 512KB into the buffer size.
-     * Maximal buffer size is 4MB taking into account that we can have more then one transaction log writer in multi-database env.
-     * <p/>
-     * Examples:
-     * runtime with 4 cpus will have buffer size of 1MB
-     * runtime with 8 cpus will have buffer size of 1MB 512KB
-     * runtime with 12 cpus will have buffer size of 2MB
-     *
-     * @return transaction log writer buffer size.
-     */
-    private static int calculateLogBufferSize()
-    {
-        return (int) ByteUnit.kibiBytes( min( (getRuntime().availableProcessors() / 4) + 1, 8 ) * 512 );
     }
 
     private void forceLog( LogForceEvents logForceEvents ) throws IOException

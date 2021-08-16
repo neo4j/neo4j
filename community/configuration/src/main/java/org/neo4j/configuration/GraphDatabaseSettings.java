@@ -39,6 +39,7 @@ import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
+import static java.lang.Runtime.getRuntime;
 import static java.time.Duration.ofHours;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
@@ -596,6 +597,19 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Specifies at which file size the logical log will auto-rotate. Minimum accepted value is 128 KiB. " )
     public static final Setting<Long> logical_log_rotation_threshold =
             newBuilder( "dbms.tx_log.rotation.size", BYTES, mebiBytes( 250 ) ).addConstraint( min( kibiBytes( 128 ) ) ).dynamic().build();
+
+    @Description( "On serialisation of transaction logs they will temporary stored in the byte buffer that will be flushed in the end of transaction " +
+            " or at any buffer will be full. By default size of byte buffer is based on number of available cpu's with " +
+            "minimal buffer size of 512KB. Every another 4 cpu's will add another 512KB into the buffer size. " +
+            "Maximal buffer size in this default scheme is 4MB taking into account " +
+            "that we can have one transaction log writer per database in multi-database env." +
+            "For example, runtime with 4 cpus will have buffer size of 1MB; " +
+                         "runtime with 8 cpus will have buffer size of 1MB 512KB; " +
+                         "runtime with 12 cpus will have buffer size of 2MB." )
+    public static final Setting<Long> transaction_log_buffer_size =
+            newBuilder( "dbms.tx_log.buffer.size", LONG, ByteUnit.kibiBytes( Math.min( (getRuntime().availableProcessors() / 4) + 1, 8 ) * 512L ) )
+                    .addConstraint( min( kibiBytes( 128 ) ) )
+                    .build();
 
     @Description( "Specify if Neo4j should try to preallocate logical log file in advance." )
     public static final Setting<Boolean> preallocate_logical_logs = newBuilder( "dbms.tx_log.preallocate", BOOL, true ).dynamic().build();
