@@ -17,36 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.internal.id;
 
-import org.neo4j.internal.id.IdType;
-
-public enum RecordIdType implements IdType
+public enum SchemaIdType implements IdType
 {
-    NODE( true ),
-    RELATIONSHIP( true ),
-    PROPERTY( true ),
-    STRING_BLOCK( true ),
-    ARRAY_BLOCK( true ),
-    PROPERTY_KEY_TOKEN_NAME( false ),
-    RELATIONSHIP_TYPE_TOKEN_NAME( false ),
-    LABEL_TOKEN_NAME( false ),
-    NODE_LABELS( false ),
-    RELATIONSHIP_GROUP( true );
+    PROPERTY_KEY_TOKEN,
+    LABEL_TOKEN,
+    RELATIONSHIP_TYPE_TOKEN,
+    SCHEMA;
 
-    private final boolean highActivity;
-
-    RecordIdType( boolean highActivity )
-    {
-        this.highActivity = highActivity;
-    }
-
-    /**
-     * @return whether or not there's a high activity of id allocations/deallocations for this type.
-     */
     @Override
     public boolean highActivity()
     {
-        return highActivity;
+        return false;
     }
 }

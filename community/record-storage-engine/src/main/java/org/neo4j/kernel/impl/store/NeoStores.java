@@ -36,6 +36,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -517,7 +518,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createSchemaStore( CursorContext cursorContext )
     {
         return initialize(
-                new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, RecordIdType.SCHEMA, idGeneratorFactory, pageCache,
+                new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, SchemaIdType.SCHEMA, idGeneratorFactory, pageCache,
                         logProvider,
                         (PropertyStore) getOrOpenStore( StoreType.PROPERTY, cursorContext ),
                         recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), cursorContext );

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.store;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseFile;
@@ -54,7 +56,7 @@ public enum StoreType
                     return neoStores.createPropertyKeyTokenNamesStore( cursorContext );
                 }
             },
-    PROPERTY_KEY_TOKEN( RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordIdType.PROPERTY_KEY_TOKEN )
+    PROPERTY_KEY_TOKEN( RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, SchemaIdType.PROPERTY_KEY_TOKEN )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
@@ -102,7 +104,7 @@ public enum StoreType
                     return neoStores.createRelationshipTypeTokenNamesStore( cursorContext );
                 }
             },
-    RELATIONSHIP_TYPE_TOKEN( RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, RecordIdType.RELATIONSHIP_TYPE_TOKEN )
+    RELATIONSHIP_TYPE_TOKEN( RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, SchemaIdType.RELATIONSHIP_TYPE_TOKEN )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
@@ -118,7 +120,7 @@ public enum StoreType
                     return neoStores.createLabelTokenNamesStore( cursorContext );
                 }
             },
-    LABEL_TOKEN( RecordDatabaseFile.LABEL_TOKEN_STORE, RecordIdType.LABEL_TOKEN )
+    LABEL_TOKEN( RecordDatabaseFile.LABEL_TOKEN_STORE, SchemaIdType.LABEL_TOKEN )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
@@ -126,7 +128,7 @@ public enum StoreType
                     return neoStores.createLabelTokenStore( cursorContext );
                 }
             },
-    SCHEMA( RecordDatabaseFile.SCHEMA_STORE, RecordIdType.SCHEMA )
+    SCHEMA( RecordDatabaseFile.SCHEMA_STORE, SchemaIdType.SCHEMA )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
@@ -152,9 +154,9 @@ public enum StoreType
             };
 
     private final DatabaseFile databaseFile;
-    private final RecordIdType idType;
+    private final IdType idType;
 
-    StoreType( DatabaseFile databaseFile, RecordIdType idType )
+    StoreType( DatabaseFile databaseFile, IdType idType )
     {
         this.databaseFile = databaseFile;
         this.idType = idType;
@@ -167,7 +169,7 @@ public enum StoreType
         return databaseFile;
     }
 
-    public RecordIdType getIdType()
+    public IdType getIdType()
     {
         return idType;
     }

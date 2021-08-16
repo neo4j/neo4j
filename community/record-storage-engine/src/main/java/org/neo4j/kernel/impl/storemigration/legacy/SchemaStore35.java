@@ -29,8 +29,8 @@ import java.util.Collection;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -53,7 +53,7 @@ public class SchemaStore35 extends AbstractDynamicStore
             Path path,
             Path idFile,
             Config conf,
-            RecordIdType idType,
+            IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,

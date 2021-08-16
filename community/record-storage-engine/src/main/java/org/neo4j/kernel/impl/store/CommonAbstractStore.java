@@ -42,9 +42,9 @@ import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.recordstorage.InconsistentDataReadException;
-import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -83,7 +83,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     protected final Config configuration;
     protected final PageCache pageCache;
-    protected final RecordIdType idType;
+    protected final IdType idType;
     protected final IdGeneratorFactory idGeneratorFactory;
     protected final Log log;
     protected final String storeVersion;
@@ -126,7 +126,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             Path path,
             Path idFile,
             Config configuration,
-            RecordIdType idType,
+            IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
@@ -800,7 +800,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return storeHeaderFormat.numberOfReservedRecords();
     }
 
-    public RecordIdType getIdType()
+    public IdType getIdType()
     {
         return idType;
     }

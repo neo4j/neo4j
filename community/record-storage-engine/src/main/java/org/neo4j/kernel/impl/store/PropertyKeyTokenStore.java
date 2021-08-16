@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.recordstorage.RecordIdType;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -57,7 +57,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( path, idFile, config, RecordIdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
+        super( path, idFile, config, SchemaIdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
                 recordFormats.propertyKeyToken(), recordFormats.storeVersion(), readOnlyChecker, databaseName, PROPERTY_KEY_TOKEN_CURSOR,
                 DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR, openOptions );
     }

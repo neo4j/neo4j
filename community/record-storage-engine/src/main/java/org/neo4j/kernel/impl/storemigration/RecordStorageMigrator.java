@@ -67,10 +67,10 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
@@ -1050,7 +1050,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         directoryLayout.schemaStore(),
                         directoryLayout.idSchemaStore(),
                         config,
-                        RecordIdType.SCHEMA,
+                        SchemaIdType.SCHEMA,
                         srcIdGeneratorFactory,
                         pageCache,
                         NullLogProvider.getInstance(),

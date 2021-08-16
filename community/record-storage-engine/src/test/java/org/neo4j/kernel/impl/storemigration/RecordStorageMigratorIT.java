@@ -56,8 +56,8 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RandomSchema;
-import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -394,7 +394,7 @@ class RecordStorageMigratorIT
         // Prepare the legacy schema store we'll migrate.
         Path storeFile = databaseLayout.schemaStore();
         Path idFile = databaseLayout.idSchemaStore();
-        SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, RecordIdType.SCHEMA, igf, pageCache, logProvider,
+        SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, SchemaIdType.SCHEMA, igf, pageCache, logProvider,
                 StandardV3_4.RECORD_FORMATS, writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         schemaStore35.initialise( false, NULL );
         SplittableRandom rng = new SplittableRandom( randomRule.seed() );

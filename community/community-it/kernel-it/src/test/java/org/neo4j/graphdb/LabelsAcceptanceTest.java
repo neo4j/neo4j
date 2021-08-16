@@ -44,10 +44,10 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
-import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -853,7 +853,7 @@ class LabelsAcceptanceTest
 
                     private long maxId( IdType idType, long maxId, LongSupplier highId )
                     {
-                        return RecordIdType.LABEL_TOKEN.equals( idType ) ? highId.getAsLong() - 1 : maxId;
+                        return SchemaIdType.LABEL_TOKEN.equals( idType ) ? highId.getAsLong() - 1 : maxId;
                     }
                 } ).build();
     }

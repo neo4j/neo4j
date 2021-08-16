@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.recordstorage.RecordIdType;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -57,7 +57,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( path, idFile, config, RecordIdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
+        super( path, idFile, config, SchemaIdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
                 TYPE_DESCRIPTOR, recordFormats.relationshipTypeToken(),
                 recordFormats.storeVersion(), readOnlyChecker, databaseName, REL_TYPE_TOKEN_CURSOR, DYNAMIC_REL_TYPE_TOKEN_CURSOR, openOptions );
     }

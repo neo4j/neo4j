@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.stats;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.context.CursorContext;
 
@@ -59,7 +60,7 @@ public class RecordDatabaseEntityCounters implements StoreEntityCounters
     @Override
     public long relationshipTypes()
     {
-        return idGeneratorFactory.get( RecordIdType.RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( SchemaIdType.RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
     }
 
     @Override
