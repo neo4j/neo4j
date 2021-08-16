@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -147,6 +148,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     checkStandaloneCall(clauses) chain
       withScopedState(clauseCheck(clauses)) chain
       checkOrder(clauses) chain
+      checkNoCallInTransactionsAfterWriteClause(clauses) chain
       checkIndexHints(clauses) chain
       checkInputDataStream(clauses) chain
       recordCurrentScope(this)
@@ -284,6 +286,24 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
 
     semantics.SemanticCheckResult(s, sequenceErrors ++ concludeError)
+  }
+
+  private def checkNoCallInTransactionsAfterWriteClause(clauses: Seq[Clause]): SemanticCheck = {
+    case class Acc(precedingWrite: Boolean, errors: Seq[SemanticError])
+
+    val Acc(_, errors) = clauses.foldLeft[Acc](Acc(precedingWrite = false, Seq.empty)) {
+      case (Acc(precedingWrite, errors), callInTxs:SubqueryCall) if SubqueryCall.isTransactionalSubquery(callInTxs) =>
+        if (precedingWrite) {
+          Acc(precedingWrite, errors :+ SemanticError("CALL { ... } IN TRANSACTIONS after a write clause is not supported", callInTxs.position))
+        } else {
+          Acc(precedingWrite, errors)
+        }
+      case (acc, clause) => Acc(
+        acc.precedingWrite || clause.treeExists { case _: UpdateClause => true },
+        acc.errors
+      )
+    }
+    errors
   }
 
   private def checkClauses(clauses: Seq[Clause], outerScope: Option[Scope]): SemanticCheck = initialState => {

@@ -372,6 +372,130 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
+  test("CALL { ... } IN TRANSACTIONS with a preceding write clause") {
+    val query =
+      """CREATE (foo)
+        |WITH foo AS foo
+        |CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN foo AS foo""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("CALL { ... } IN TRANSACTIONS after a write clause is not supported", InputPosition(29, 3, 1))
+    )
+  }
+
+  test("Multiple CALL { ... } IN TRANSACTIONS with preceding write clauses") {
+    val query =
+      """CREATE (foo)
+        |WITH foo AS foo
+        |CALL { CREATE (x) } IN TRANSACTIONS
+        |CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN foo AS foo""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("CALL { ... } IN TRANSACTIONS after a write clause is not supported", InputPosition(29, 3, 1)),
+      SemanticError("CALL { ... } IN TRANSACTIONS after a write clause is not supported", InputPosition(65, 4, 1)),
+    )
+  }
+
+  test("Multiple CALL { ... } IN TRANSACTIONS with a write clause between them") {
+    val query =
+      """CALL { CREATE (x) } IN TRANSACTIONS
+        |CREATE (foo)
+        |WITH foo AS foo
+        |CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN foo AS foo""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("CALL { ... } IN TRANSACTIONS after a write clause is not supported", InputPosition(65, 4, 1)),
+    )
+  }
+
+  test("CALL { ... } IN TRANSACTIONS with a preceding nested write clause") {
+    val query =
+      """CALL { CREATE (foo) RETURN foo AS foo }
+        |WITH foo AS foo
+        |CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN foo AS foo""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("CALL { ... } IN TRANSACTIONS after a write clause is not supported", InputPosition(56, 3, 1))
+    )
+  }
+
+  test("CALL { ... } IN TRANSACTIONS with a preceding nested write clause in a unit subquery") {
+    val query =
+      """CALL { CREATE (x) }
+        |WITH 1 AS foo
+        |CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN foo AS foo""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("CALL { ... } IN TRANSACTIONS after a write clause is not supported", InputPosition(34, 3, 1))
+    )
+  }
+
+  test("Multiple CALL { ... } IN TRANSACTIONS that contain write clauses, but no write clauses in between") {
+    val query =
+      """CALL { CREATE (x) } IN TRANSACTIONS
+        |WITH 1 AS foo
+        |CALL { CREATE (y) } IN TRANSACTIONS
+        |RETURN foo AS foo""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("CALL { ... } IN TRANSACTIONS with a following write clause") {
+    val query =
+      """CALL { CREATE (x) } IN TRANSACTIONS
+        |CREATE (foo)
+        |RETURN foo AS foo""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
   test("should allow node pattern predicates in MATCH") {
     val query = "WITH 123 AS minValue MATCH (n {prop: 42} WHERE n.otherProp > minValue)-->(m:Label WHERE m.prop = 42) RETURN n AS result"
 
