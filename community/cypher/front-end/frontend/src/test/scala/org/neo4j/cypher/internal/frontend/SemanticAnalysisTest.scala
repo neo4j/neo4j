@@ -295,7 +295,80 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
-    context.errors shouldBe empty
+    context.errors shouldBe Seq(
+      SemanticError("CALL { ... } IN TRANSACTIONS nested in a regular CALL is not supported", InputPosition(7, 1, 8))
+    )
+  }
+  
+  test("CALL { ... } IN TRANSACTIONS nested in a regular CALL and nested CALL { ... } IN TRANSACTIONS") {
+    val query = "CALL { CALL { CALL { CREATE (x) } IN TRANSACTIONS } IN TRANSACTIONS } RETURN 1 AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("Nested CALL { ... } IN TRANSACTIONS is not supported", InputPosition(14, 1, 15)),
+      SemanticError("CALL { ... } IN TRANSACTIONS nested in a regular CALL is not supported", InputPosition(7, 1, 8))
+    )
+  }
+
+  test("CALL { ... } IN TRANSACTIONS in a UNION") {
+    val query =
+      """CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN 1 AS result
+        |UNION
+        |CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN 2 AS result""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("CALL { ... } IN TRANSACTIONS in a UNION is not supported", InputPosition(0, 1, 1)),
+      SemanticError("CALL { ... } IN TRANSACTIONS in a UNION is not supported", InputPosition(61, 4, 1))
+    )
+  }
+
+  test("CALL { ... } IN TRANSACTIONS in first part of UNION") {
+    val query =
+      """CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN 1 AS result
+        |UNION
+        |RETURN 2 AS result""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("CALL { ... } IN TRANSACTIONS in a UNION is not supported", InputPosition(0, 1, 1))
+    )
+  }
+
+  test("CALL { ... } IN TRANSACTIONS in second part of UNION") {
+    val query =
+      """RETURN 1 AS result
+        |UNION
+        |CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN 2 AS result""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("CALL { ... } IN TRANSACTIONS in a UNION is not supported", InputPosition(25, 3, 1))
+    )
   }
 
   private def initStartState(query: String) =

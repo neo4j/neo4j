@@ -988,6 +988,10 @@ object SubqueryCall {
     override def semanticCheck: SemanticCheck =
       requireFeatureSupport("The CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallSubqueryInTransactions, position)
   }
+
+  def isTransactionalSubquery(clause: SubqueryCall): Boolean = clause.inTransactionsParameters.isDefined
+
+  def findTransactionalSubquery(part: QueryPart) : Option[SubqueryCall] = part.treeFind[SubqueryCall] { case s if isTransactionalSubquery(s) => true }
 }
 
 case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters])(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {
@@ -1002,7 +1006,8 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
             requireFeatureSupport("The returning CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallReturningSubqueryInTransactions, position)
           }
         } chain checkNoNestedCallInTransactions
-      }
+      } chain
+      checkNoCallInTransactionsInsideRegularCall
   }
 
   def checkSubquery: SemanticCheck = { outer: SemanticState =>
@@ -1047,11 +1052,21 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
   }
 
   private def checkNoNestedCallInTransactions: SemanticCheck = {
-    val nestedCallInTransactions = part.treeFind[SubqueryCall] {
-      case s if s.inTransactionsParameters.isDefined => true
-    }
+    val nestedCallInTransactions = SubqueryCall.findTransactionalSubquery(part)
     nestedCallInTransactions.foldSemanticCheck { nestedCallInTransactions =>
       error("Nested CALL { ... } IN TRANSACTIONS is not supported", nestedCallInTransactions.position)
+    }
+  }
+
+  private def checkNoCallInTransactionsInsideRegularCall: SemanticCheck = {
+    val nestedCallInTransactions =
+      if (inTransactionsParameters.isEmpty) {
+        SubqueryCall.findTransactionalSubquery(part)
+      } else
+        None
+
+    nestedCallInTransactions.foldSemanticCheck { nestedCallInTransactions =>
+      error("CALL { ... } IN TRANSACTIONS nested in a regular CALL is not supported", nestedCallInTransactions.position)
     }
   }
 }
