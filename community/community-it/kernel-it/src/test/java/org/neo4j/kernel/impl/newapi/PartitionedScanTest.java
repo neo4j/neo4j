@@ -57,6 +57,15 @@ class PartitionedScanTest
                 super( IndexType.FUSION );
             }
         }
+
+        @Nested
+        class Range extends NodePropertyIndexSeekPartitionedScanTestSuite
+        {
+            Range()
+            {
+                super( IndexType.RANGE );
+            }
+        }
     }
 
     @Nested
@@ -68,6 +77,15 @@ class PartitionedScanTest
             BTree()
             {
                 super( IndexType.BTREE );
+            }
+        }
+
+        @Nested
+        class Range extends NodePropertyIndexScanPartitionedScanTestSuite
+        {
+            Range()
+            {
+                super( IndexType.RANGE );
             }
         }
     }
@@ -92,6 +110,15 @@ class PartitionedScanTest
                 super( IndexType.FUSION );
             }
         }
+
+        @Nested
+        class Range extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
+        {
+            Range()
+            {
+                super( IndexType.RANGE );
+            }
+        }
     }
 
     @Nested
@@ -103,6 +130,15 @@ class PartitionedScanTest
             BTree()
             {
                 super( IndexType.BTREE );
+            }
+        }
+
+        @Nested
+        class Range extends RelationshipPropertyIndexScanPartitionedScanTestSuite
+        {
+            Range()
+            {
+                super( IndexType.RANGE );
             }
         }
     }
