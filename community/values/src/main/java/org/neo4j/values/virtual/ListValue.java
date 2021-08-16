@@ -430,6 +430,26 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         {
             return REVERSED_LIST_SHALLOW_SIZE + inner.estimatedHeapUsage();
         }
+
+        @Override
+        public boolean storable()
+        {
+            return inner.storable();
+        }
+
+        @Override
+        public ArrayValue toStorableArray()
+        {
+            assert storable();
+            if (isEmpty() )
+            {
+                return Values.EMPTY_TEXT_ARRAY;
+            }
+            else
+            {
+                return head().valueRepresentation().arrayOf( this );
+            }
+        }
     }
 
     private static final long INTEGRAL_RANGE_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance( IntegralRangeListValue.class );

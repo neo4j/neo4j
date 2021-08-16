@@ -23,8 +23,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.values.storable.Values.longArray;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
+import static org.neo4j.values.virtual.VirtualValues.fromArray;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 class ReversedListTest
@@ -73,5 +76,19 @@ class ReversedListTest
         assertEquals( expected, reverse );
         assertEquals( expected.hashCode(), reverse.hashCode() );
         assertArrayEquals( expected.asArray(), reverse.asArray() );
+    }
+
+    @Test
+    void reversedListIsStorableIfInnerIsStorable()
+    {
+        // Given
+        ListValue inner = fromArray( longArray( new long[] {5, 6, 7, 8} ) );
+
+        // When
+        ListValue reverse = inner.reverse();
+
+        // Then
+       assertTrue( reverse.storable() );
+       assertEquals( longArray( new long[] {8, 7, 6, 5} ), reverse.toStorableArray() );
     }
 }
