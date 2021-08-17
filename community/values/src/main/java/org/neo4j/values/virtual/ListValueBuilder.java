@@ -77,6 +77,11 @@ public abstract class ListValueBuilder
 
     protected abstract void internalAdd( AnyValue value );
 
+    protected ValueRepresentation valueRepresentation()
+    {
+        return valueRepresentation == null ? ValueRepresentation.UNKNOWN : valueRepresentation;
+    }
+
     private static class FixedSizeListValueBuilder extends ListValueBuilder
     {
         private final AnyValue[] values;
@@ -90,7 +95,7 @@ public abstract class ListValueBuilder
         @Override
         public ListValue build()
         {
-            return new ListValue.ArrayListValue( values, estimatedHeapSize, valueRepresentation );
+            return new ListValue.ArrayListValue( values, estimatedHeapSize, valueRepresentation() );
         }
 
         @Override
@@ -121,7 +126,7 @@ public abstract class ListValueBuilder
         @Override
         public ListValue build()
         {
-            return new ListValue.JavaListListValue( values, estimatedHeapSize, valueRepresentation );
+            return new ListValue.JavaListListValue( values, estimatedHeapSize, valueRepresentation() );
         }
 
         @Override

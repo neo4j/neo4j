@@ -55,7 +55,7 @@ public final class VirtualValues
             payloadSize += value.estimatedHeapUsage();
             representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
         }
-        return new ListValue.ArrayListValue( values, payloadSize, representation );
+        return new ListValue.ArrayListValue( values, payloadSize, representation == null ? ValueRepresentation.UNKNOWN : representation );
     }
 
     public static ListValue fromList( List<AnyValue> values )
@@ -67,7 +67,7 @@ public final class VirtualValues
             payloadSize += value.estimatedHeapUsage();
             representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
         }
-        return new ListValue.JavaListListValue( values, payloadSize, representation );
+        return new ListValue.JavaListListValue( values, payloadSize, representation == null ? ValueRepresentation.UNKNOWN : representation );
     }
 
     public static ListValue range( long start, long end, long step )

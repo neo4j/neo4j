@@ -127,13 +127,13 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         ArrayListValue( AnyValue[] values, long payloadSize, ValueRepresentation itemRepresentation )
         {
-            this.itemRepresentation = itemRepresentation;
             assert values != null;
             this.payloadSize = shallowSizeOfObjectArray( values.length ) + payloadSize;
             assert !containsNull( values );
             assert assertValueRepresentation( values, itemRepresentation );
 
             this.values = values;
+            this.itemRepresentation = itemRepresentation;
         }
 
         @Override
@@ -993,7 +993,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             }
             representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
         }
-        return new JavaListListValue( kept, keptValuesHeapSize, representation );
+        return new JavaListListValue( kept, keptValuesHeapSize, representation == null ? ValueRepresentation.UNKNOWN : representation );
     }
 
     public ArrayValue toStorableArray()

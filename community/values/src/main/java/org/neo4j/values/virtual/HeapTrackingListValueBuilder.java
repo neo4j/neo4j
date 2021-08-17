@@ -80,7 +80,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
 
     public ListValue build()
     {
-        return new ListValue.JavaListListValue( values, payloadSize(), representation );
+        return new ListValue.JavaListListValue( values, payloadSize(), valueRepresentation() );
     }
 
     public ListValue buildAndClose()
@@ -107,6 +107,11 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
     public void close()
     {
         scopedMemoryTracker.close();
+    }
+
+    private ValueRepresentation valueRepresentation()
+    {
+        return representation == null ? ValueRepresentation.UNKNOWN : representation;
     }
 
     /**
