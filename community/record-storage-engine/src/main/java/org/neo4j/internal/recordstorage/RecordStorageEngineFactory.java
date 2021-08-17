@@ -114,10 +114,12 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForV
 @ServiceProvider
 public class RecordStorageEngineFactory implements StorageEngineFactory
 {
+    public static final String NAME = "record";
+
     @Override
     public String name()
     {
-        return "record";
+        return NAME;
     }
 
     @Override

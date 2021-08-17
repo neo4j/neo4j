@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
@@ -66,7 +66,7 @@ public class CommitProcessTracingIT
     @Inject
     private TransactionCommitProcess commitProcess;
     @Inject
-    private RecordStorageEngine storageEngine;
+    private StorageEngine storageEngine;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )

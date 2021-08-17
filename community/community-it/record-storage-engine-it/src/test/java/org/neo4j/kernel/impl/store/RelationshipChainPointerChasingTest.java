@@ -24,11 +24,14 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -38,9 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterables.asArray;
-import static org.neo4j.kernel.impl.MyRelTypes.TEST;
-import static org.neo4j.kernel.impl.MyRelTypes.TEST2;
-import static org.neo4j.kernel.impl.MyRelTypes.TEST_TRAVERSAL;
 
 /**
  * Traversing a relationship chain has no consistency guarantees that there will be no change between
@@ -63,6 +63,7 @@ class RelationshipChainPointerChasingTest
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
     {
+        builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
         builder.setConfig( GraphDatabaseSettings.dense_node_threshold, THRESHOLD );
     }
 
@@ -77,7 +78,7 @@ class RelationshipChainPointerChasingTest
             node = tx.createNode();
             for ( int i = 0; i < numberOfRelationships; i++ )
             {
-                node.createRelationshipTo( tx.createNode(), TEST );
+                node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
             }
             tx.commit();
         }
@@ -122,10 +123,10 @@ class RelationshipChainPointerChasingTest
             node = tx.createNode();
             for ( int i = 0; i < THRESHOLD; i++ )
             {
-                node.createRelationshipTo( tx.createNode(), TEST );
+                node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST );
             }
-            relationshipInTheMiddle = node.createRelationshipTo( tx.createNode(), TEST2 );
-            relationshipInTheEnd = node.createRelationshipTo( tx.createNode(), TEST_TRAVERSAL );
+            relationshipInTheMiddle = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST2 );
+            relationshipInTheEnd = node.createRelationshipTo( tx.createNode(), MyRelTypes.TEST_TRAVERSAL );
             tx.commit();
         }
 
@@ -139,7 +140,7 @@ class RelationshipChainPointerChasingTest
             Iterator<Relationship> relationships = node.getRelationships().iterator();
             for ( int i = 0; i < THRESHOLD / 2; i++ )
             {
-                assertTrue( relationships.next().isType( TEST ) );
+                assertTrue( relationships.next().isType( MyRelTypes.TEST ) );
             }
 
             // Here we're awfully certain that we're on this first group, so we go ahead and delete the
@@ -149,7 +150,7 @@ class RelationshipChainPointerChasingTest
             // THEN we should be able to, first of all, iterate through the rest of the relationships of the first type
             for ( int i = 0; i < THRESHOLD / 2; i++ )
             {
-                assertTrue( relationships.next().isType( TEST ) );
+                assertTrue( relationships.next().isType( MyRelTypes.TEST ) );
             }
             // THEN we should be able to see the last relationship, after the deleted one
             // where the group for the deleted relationship also should've been deleted since it was the
@@ -189,5 +190,10 @@ class RelationshipChainPointerChasingTest
         } );
         thread.start();
         thread.join();
+    }
+
+    enum MyRelTypes implements RelationshipType
+    {
+        TEST, TEST_TRAVERSAL, TEST2
     }
 }

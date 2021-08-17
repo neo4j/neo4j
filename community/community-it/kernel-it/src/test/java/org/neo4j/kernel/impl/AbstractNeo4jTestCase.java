@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -31,6 +32,7 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -63,7 +65,9 @@ public abstract class AbstractNeo4jTestCase
 
     protected static void startDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+        managementService = new TestDatabaseManagementServiceBuilder()
+                .setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME )
+                .impermanent().build();
         graphDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

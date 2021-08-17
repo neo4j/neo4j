@@ -23,12 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -46,7 +46,7 @@ class FullScanStoreViewTracingIT
     @Inject
     private LockService lockService;
     @Inject
-    private RecordStorageEngine storageEngine;
+    private StorageEngine storageEngine;
     @Inject
     private JobScheduler jobScheduler;
 

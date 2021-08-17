@@ -22,7 +22,9 @@ package org.neo4j.graphdb.aligned;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -52,6 +54,7 @@ public class AlignedRecordFormatIT
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
+        builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
         builder.setConfig( GraphDatabaseSettings.record_format, NAME );
     }
 

@@ -28,7 +28,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -37,11 +36,12 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.token.TokenHolders;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,7 +68,7 @@ public class DynamicIndexStoreViewIT
     @Inject
     private IndexingService indexingService;
     @Inject
-    private RecordStorageEngine storageEngine;
+    private StorageEngine storageEngine;
     @Inject
     private TokenHolders tokenHolders;
     @Inject
