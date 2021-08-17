@@ -483,21 +483,33 @@ public final class SettingConstraints
 
     public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> settingConstraint )
     {
-        return ifCluster( settingConstraint, unconstrained() );
+        return ifMode( settingConstraint, ifStandaloneClusterEnabled( settingConstraint ),
+                GraphDatabaseSettings.Mode.CORE, GraphDatabaseSettings.Mode.READ_REPLICA );
     }
 
-    public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> clusterConstraint, SettingConstraint<T> nonClusterConstraint )
+    public static <T> SettingConstraint<T> ifPrimary( SettingConstraint<T> settingConstraint )
     {
-        return ifMode( clusterConstraint, nonClusterConstraint, GraphDatabaseSettings.Mode.CORE, GraphDatabaseSettings.Mode.READ_REPLICA );
+        return ifMode( settingConstraint, ifStandaloneClusterEnabled( settingConstraint ), GraphDatabaseSettings.Mode.CORE );
     }
 
-    public static <T> SettingConstraint<T> ifMode( SettingConstraint<T> modeConstraint, SettingConstraint<T> nonModeConstraint,
+    public static <T> SettingConstraint<T> ifClusterCore( SettingConstraint<T> settingConstraint )
+    {
+        return ifMode( settingConstraint, unconstrained(), GraphDatabaseSettings.Mode.CORE );
+    }
+
+    private static <T> SettingConstraint<T> ifStandaloneClusterEnabled( SettingConstraint<T> settingConstraint )
+    {
+        return ifMode( dependency( settingConstraint, unconstrained(), GraphDatabaseSettings.enable_clustering_in_standalone, is( true ) ),
+                unconstrained(), GraphDatabaseSettings.Mode.SINGLE );
+    }
+
+    private static <T> SettingConstraint<T> ifMode( SettingConstraint<T> modeConstraint, SettingConstraint<T> nonModeConstraint,
             GraphDatabaseSettings.Mode... modes )
     {
         return dependency( modeConstraint, nonModeConstraint, GraphDatabaseSettings.mode, isOneOf( modes ) );
     }
 
-    public static <T> SettingConstraint<T> isOneOf( T[] acceptedValues )
+    private static <T> SettingConstraint<T> isOneOf( T[] acceptedValues )
     {
         if ( acceptedValues == null || acceptedValues.length == 0 )
         {

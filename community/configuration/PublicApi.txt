@@ -108,6 +108,7 @@ org.neo4j.configuration.GraphDatabaseSettings::default_listen_address org.neo4j.
 org.neo4j.configuration.GraphDatabaseSettings::default_log_format org.neo4j.graphdb.config.Setting<org.neo4j.logging.FormattedLogFormat> public static final
 org.neo4j.configuration.GraphDatabaseSettings::default_schema_provider org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::dense_node_threshold org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::enable_clustering_in_standalone org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::fail_on_missing_files org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::filewatcher_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::forbid_exhaustive_shortestpath org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
