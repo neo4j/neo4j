@@ -64,6 +64,8 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -395,6 +397,14 @@ class Neo4jCommandTest
             addConf( BootloaderSettings.additional_jvm, "-Dfoo=some\"partly'quoted'\"data" );
             assertThat( execute( "console", "--dry-run" ) ).isEqualTo( ExitCode.SOFTWARE );
             assertThat( err.toString() ).contains( "contains both single and double quotes" );
+        }
+
+        @Test
+        void shouldNotComplainOnUnknownSettingWithStrictValidation()
+        {
+            addConf( newBuilder( "apoc.export.file.enabled", BOOL, false ).build(), "true" );
+            addConf( GraphDatabaseSettings.strict_config_validation, "true" );
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
         }
 
         @Nested

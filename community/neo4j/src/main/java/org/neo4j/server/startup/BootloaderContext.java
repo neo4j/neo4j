@@ -21,7 +21,6 @@ package org.neo4j.server.startup;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.factory.Lists;
-import org.glassfish.jersey.internal.guava.Predicates;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -179,7 +178,7 @@ abstract class BootloaderContext
         Path confFile = confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME );
         try
         {
-            Predicate<String> filter = full ? Predicates.alwaysTrue() : settingsUsedByBootloader()::contains;
+            Predicate<String> filter = full ? settingsDeclaredInNeo4j()::contains : settingsUsedByBootloader()::contains;
 
             Configuration config = Config.newBuilder()
                     .commandExpansion( expandCommands )
@@ -226,6 +225,13 @@ abstract class BootloaderContext
                 BootloaderSettings.windows_tools_directory.name(),
                 BootloaderSettings.pid_file.name()
         );
+    }
+
+    private static Set<String> settingsDeclaredInNeo4j()
+    {
+        // We filter out any settings not declared in Neo4j jars since we can't do strict config validation otherwise
+        // E.g settings declared in plugins since the plugin directory is not on the class path for the bootloader
+        return Config.defaults().getDeclaredSettings().keySet();
     }
 
     protected abstract Map<Setting<?>,Object> overriddenDefaultsValues();
