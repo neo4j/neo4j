@@ -47,6 +47,24 @@ public final class IntValue extends IntegralValue
     }
 
     @Override
+    public int intValue()
+    {
+        return value;
+    }
+
+    @Override
+    public short shortValue()
+    {
+        throw new IllegalStateException( "A 32 bit integer doesn't fit in a 16 bit value") ;
+    }
+
+    @Override
+    public byte byteValue()
+    {
+        throw new IllegalStateException( "A 32 bit integer doesn't fit in a 8 bit value") ;
+    }
+
+    @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeInteger( value );

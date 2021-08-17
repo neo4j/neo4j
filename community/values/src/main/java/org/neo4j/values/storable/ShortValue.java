@@ -47,6 +47,24 @@ public final class ShortValue extends IntegralValue
     }
 
     @Override
+    public int intValue()
+    {
+        return value;
+    }
+
+    @Override
+    public short shortValue()
+    {
+        return value;
+    }
+
+    @Override
+    public byte byteValue()
+    {
+        throw new IllegalStateException( "A 16 bit integer doesn't fit in a 8 bit value") ;
+    }
+
+    @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeInteger( value );

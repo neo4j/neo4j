@@ -21,9 +21,16 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.exceptions.CypherTypeException;
+import org.neo4j.values.virtual.ListValue;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT32;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT64;
+import static org.neo4j.values.storable.ValueRepresentation.GEOMETRY;
 import static org.neo4j.values.storable.ValueRepresentation.INT16;
 import static org.neo4j.values.storable.ValueRepresentation.INT32;
 import static org.neo4j.values.storable.ValueRepresentation.INT64;
@@ -31,10 +38,12 @@ import static org.neo4j.values.storable.ValueRepresentation.INT8;
 import static org.neo4j.values.storable.ValueRepresentation.LOCAL_TIME;
 import static org.neo4j.values.storable.ValueRepresentation.UTF16_TEXT;
 import static org.neo4j.values.storable.ValueRepresentation.UTF8_TEXT;
+import static org.neo4j.values.storable.Values.pointValue;
+import static org.neo4j.values.storable.Values.unsafePointValue;
+import static org.neo4j.values.virtual.VirtualValues.list;
 
 class ValueRepresentationTest
 {
-
 
     @Test
     void shouldCoerceNumbers()
@@ -104,4 +113,19 @@ class ValueRepresentationTest
         assertEquals( UTF16_TEXT, UTF16_TEXT.coerce( UTF16_TEXT ) );
     }
 
+    @Test
+    void shouldFailToCreateArrayOfPointsWithDifferentCRS()
+    {
+        // given
+        ListValue points = list( pointValue( Cartesian, 1.0, 1.0 ), pointValue( WGS84, 1.0, 1.0 ) );
+        assertThrows( CypherTypeException.class, () -> GEOMETRY.arrayOf( points ) );
+    }
+
+    @Test
+    void shouldFailToCreateArrayOfPointsWithDifferentDimension()
+    {
+        // given
+        ListValue points = list( pointValue( Cartesian, 1.0, 1.0 ), unsafePointValue( Cartesian, 1.0, 1.0, 1.0 ) );
+        assertThrows( CypherTypeException.class, () -> GEOMETRY.arrayOf( points ) );
+    }
 }

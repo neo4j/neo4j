@@ -21,34 +21,12 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.ArrayValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.ListValue
-
-import scala.collection.JavaConverters.asScalaIteratorConverter
 
 object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
-
   def apply(a: AnyValue): Value = a match {
     case value: Value => value
-    case IsList(l) => transformTraversableToArray(l)
+    case IsList(l) => l.toStorableArray
     case _ => throw new CypherTypeException(s"Property values can only be of primitive types or arrays thereof. Encountered: $a.")
-  }
-  /*
-  This method finds the type that we can use for the primitive array that Neo4j wants
-  We can't just find the nearest common supertype - we need a type that the other values
-  can be coerced to according to Cypher coercion rules
-   */
-  private def transformTraversableToArray(a: ListValue): ArrayValue = {
-    if (a.storable()) {
-      a.toStorableArray
-    } else if (a.isEmpty) {
-      Values.EMPTY_TEXT_ARRAY
-    } else {
-      val typeValue = a.iterator().asScala.reduce(CastSupport.merge)
-      val converter = CastSupport.getConverter(typeValue)
-      converter.arrayConverter(a)
-    }
   }
 }

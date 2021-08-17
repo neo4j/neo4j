@@ -47,6 +47,24 @@ public final class ByteValue extends IntegralValue
     }
 
     @Override
+    public int intValue()
+    {
+        return value;
+    }
+
+    @Override
+    public short shortValue()
+    {
+        return value;
+    }
+
+    @Override
+    public byte byteValue()
+    {
+        return value;
+    }
+
+    @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeInteger( value );

@@ -149,7 +149,6 @@ class ListSliceTest
         ListValue slice = inner.slice( 2, 4 );
 
         // Then
-        assertTrue( slice.storable() );
         assertEquals( list( longValue( 3 ), longValue( 4 ) ), fromArray( slice.toStorableArray() ) );
     }
 
@@ -164,7 +163,6 @@ class ListSliceTest
         ListValue slice = inner.slice( 2, 4 );
 
         // Then
-        assertTrue( slice.storable() );
         assertEquals( list( longValue( 7 ), longValue( 8 ) ), fromArray( slice.toStorableArray() ) );
     }
 }

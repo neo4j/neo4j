@@ -25,6 +25,7 @@ import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 
+import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 
@@ -57,9 +58,26 @@ public enum ValueRepresentation
                 {
                     PointValue[] points = new PointValue[values.length()];
                     int i = 0;
+                    PointValue first = null;
                     for ( AnyValue value : values )
                     {
-                        points[i++] = ((PointValue) value);
+                        PointValue current = getOrFail( value, PointValue.class );
+                        if ( first == null )
+                        {
+                            first = current;
+                        }
+                        else
+                        {
+                            if ( !first.getCoordinateReferenceSystem().equals( current.getCoordinateReferenceSystem() ))
+                            {
+                                throw new CypherTypeException("Collections containing point values with different CRS can not be stored in properties.");
+                            }
+                            else if ( first.coordinate().length != current.coordinate().length )
+                            {
+                                throw new CypherTypeException("Collections containing point values with different dimensions can not be stored in properties.");
+                            }
+                        }
+                        points[i++] = current;
                     }
                     return Values.pointArray( points );
                 }
@@ -73,7 +91,7 @@ public enum ValueRepresentation
                     int i = 0;
                     for ( AnyValue value : values )
                     {
-                        temporals[i++] = ((DateTimeValue) value).temporal();
+                        temporals[i++] = (getOrFail( value, DateTimeValue.class )).temporal();
                     }
                     return Values.dateTimeArray( temporals );
                 }
@@ -87,7 +105,7 @@ public enum ValueRepresentation
                     int i = 0;
                     for ( AnyValue value : values )
                     {
-                        temporals[i++] = ((LocalDateTimeValue) value).temporal();
+                        temporals[i++] = getOrFail( value, LocalDateTimeValue.class ).temporal();
                     }
                     return Values.localDateTimeArray( temporals );
                 }
@@ -101,7 +119,7 @@ public enum ValueRepresentation
                      int i = 0;
                     for ( AnyValue value : values )
                     {
-                        temporals[i++] = ((DateValue) value).temporal();
+                        temporals[i++] = getOrFail( value, DateValue.class ).temporal();
                     }
                     return Values.dateArray( temporals );
                 }
@@ -226,7 +244,7 @@ public enum ValueRepresentation
                     int i = 0;
                     for ( AnyValue value : values )
                     {
-                        longs[i++] = ((NumberValue) value).longValue();
+                        longs[i++] = getOrFail( value, NumberValue.class ).longValue();
                     }
                     return Values.longArray( longs );
                 }
@@ -259,7 +277,7 @@ public enum ValueRepresentation
                     int i = 0;
                     for ( AnyValue value : values )
                     {
-                        ints[i++] = ((IntValue) value).value();
+                        ints[i++] = getOrFail( value, IntegralValue.class ).intValue();
                     }
                     return Values.intArray( ints );
                 }
@@ -293,7 +311,7 @@ public enum ValueRepresentation
                     int i = 0;
                     for ( AnyValue value : values )
                     {
-                        shorts[i++] = ((ShortValue) value).value();
+                        shorts[i++] = getOrFail( value, IntegralValue.class ).shortValue();
                     }
                     return Values.shortArray( shorts );
                 }
@@ -329,7 +347,7 @@ public enum ValueRepresentation
                     int i = 0;
                     for ( AnyValue value : values )
                     {
-                        bytes[i++] = ((ByteValue) value).value();
+                        bytes[i++] = getOrFail( value, ByteValue.class ).value();
                     }
                     return Values.byteArray( bytes );
                 }
@@ -396,7 +414,7 @@ public enum ValueRepresentation
                     int i = 0;
                     for ( AnyValue value : values )
                     {
-                        floats[i++] = ((FloatValue) value).value();
+                        floats[i++] = getOrFail( value, FloatValue.class ).value();
                     }
                     return Values.floatArray( floats );
                 }
@@ -451,7 +469,7 @@ public enum ValueRepresentation
      */
     public ArrayValue arrayOf( SequenceValue values )
     {
-        throw new IllegalStateException( "Cannot create arrays of " + this );
+        throw failure();
     }
 
     /**
@@ -462,5 +480,33 @@ public enum ValueRepresentation
     public ValueRepresentation coerce( ValueRepresentation other )
     {
         return valueGroup() == other.valueGroup() ? this : ValueRepresentation.UNKNOWN;
+    }
+
+    private static <T> T getOrFail( AnyValue value, Class<T> typ )
+    {
+        if ( typ.isAssignableFrom( value.getClass() ) )
+        {
+            return typ.cast( value );
+        }
+        else if ( value == Values.NO_VALUE )
+        {
+            throw new CypherTypeException(
+                    "Collections containing null values can not be stored in properties." );
+        }
+        else if ( value instanceof SequenceValue )
+        {
+            throw new CypherTypeException(
+                    "Collections containing collections can not be stored in properties." );
+        }
+        else
+        {
+            throw failure();
+        }
+    }
+
+    private static CypherTypeException failure()
+    {
+        return new CypherTypeException( "Neo4j only supports a subset of Cypher types for storage as singleton or array properties. " +
+                                       "Please refer to section cypher/syntax/values of the manual for more details." );
     }
 }

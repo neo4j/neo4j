@@ -25,7 +25,6 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
@@ -96,7 +95,6 @@ class IntegralRangeListValueTest
 
         ArrayValue expected = Values.longArray( new long[] {5,  7, 9, 11});
 
-        assertTrue( range.storable() );
         assertEquals( expected, range.toStorableArray() );
     }
 }

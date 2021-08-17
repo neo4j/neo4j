@@ -82,12 +82,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public boolean storable()
-        {
-            return true;
-        }
-
-        @Override
         public ArrayValue toStorableArray()
         {
             return array;
@@ -178,27 +172,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             return ARRAY_LIST_VALUE_SHALLOW_SIZE + payloadSize;
         }
 
-
-        @Override
-        public boolean storable()
-        {
-            return itemRepresentation.canCreateArrayOfValueGroup();
-        }
-
-        @Override
-        public ArrayValue toStorableArray()
-        {
-            assert storable();
-            if ( values.length == 0)
-            {
-                return Values.EMPTY_TEXT_ARRAY;
-            }
-            else
-            {
-                return itemRepresentation.arrayOf( this );
-            }
-        }
-
         @Override
         public ValueRepresentation itemValueRepresentation()
         {
@@ -270,26 +243,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public long estimatedHeapUsage()
         {
             return JAVA_LIST_LIST_VALUE_SHALLOW_SIZE + payloadSize;
-        }
-
-        @Override
-        public boolean storable()
-        {
-            return itemRepresentation.canCreateArrayOfValueGroup();
-        }
-
-        @Override
-        public ArrayValue toStorableArray()
-        {
-            assert storable();
-            if ( values.isEmpty() )
-            {
-                return Values.EMPTY_TEXT_ARRAY;
-            }
-            else
-            {
-                return itemRepresentation.arrayOf( this );
-            }
         }
 
         @Override
@@ -379,26 +332,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public boolean storable()
-        {
-            return inner.storable();
-        }
-
-        @Override
-        public ArrayValue toStorableArray()
-        {
-            assert storable();
-            if (isEmpty() )
-            {
-                return Values.EMPTY_TEXT_ARRAY;
-            }
-            else
-            {
-                return itemValueRepresentation().arrayOf( this );
-            }
-        }
-
-        @Override
         public ValueRepresentation itemValueRepresentation()
         {
             return inner.itemValueRepresentation();
@@ -443,26 +376,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public long estimatedHeapUsage()
         {
             return REVERSED_LIST_SHALLOW_SIZE + inner.estimatedHeapUsage();
-        }
-
-        @Override
-        public boolean storable()
-        {
-            return inner.storable();
-        }
-
-        @Override
-        public ArrayValue toStorableArray()
-        {
-            assert storable();
-            if (isEmpty() )
-            {
-                return Values.EMPTY_TEXT_ARRAY;
-            }
-            else
-            {
-                return itemValueRepresentation().arrayOf( this );
-            }
         }
 
         @Override
@@ -544,12 +457,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public long estimatedHeapUsage()
         {
             return INTEGRAL_RANGE_LIST_VALUE_SHALLOW_SIZE;
-        }
-
-        @Override
-        public boolean storable()
-        {
-            return true;
         }
 
         @Override
@@ -680,38 +587,17 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public boolean storable()
-        {
-            if ( base.storable() )
-            {
-                if ( base instanceof ArrayValueListValue )
-                {
-                    ArrayValue array = ((ArrayValueListValue) base).array;
-                    return array.hasCompatibleType( appended );
-                }
-                else
-                {
-                    return itemValueRepresentation().canCreateArrayOfValueGroup();
-                }
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        @Override
         public ArrayValue toStorableArray()
         {
             if ( base instanceof ArrayValueListValue )
             {
                 ArrayValue array = ((ArrayValueListValue) base).array;
-                return array.copyWithAppended( appended );
+                if ( array.hasCompatibleType( appended ) )
+                {
+                    return array.copyWithAppended( appended );
+                }
             }
-            else
-            {
-                return itemValueRepresentation().arrayOf( this );
-            }
+            return super.toStorableArray();
         }
 
         @Override
@@ -858,38 +744,17 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public boolean storable()
-        {
-            if ( base.storable() )
-            {
-                if ( base instanceof ArrayValueListValue )
-                {
-                    ArrayValue array = ((ArrayValueListValue) base).array;
-                    return array.hasCompatibleType( prepended );
-                }
-                else
-                {
-                    return itemValueRepresentation().canCreateArrayOfValueGroup();
-                }
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        @Override
         public ArrayValue toStorableArray()
         {
             if ( base instanceof ArrayValueListValue )
             {
                 ArrayValue array = ((ArrayValueListValue) base).array;
-                return array.copyWithPrepended( prepended );
+                if ( array.hasCompatibleType( prepended ) )
+                {
+                    return array.copyWithPrepended( prepended );
+                }
             }
-            else
-            {
-                return prepended.valueRepresentation().arrayOf( this );
-            }
+            return super.toStorableArray();
         }
 
         @Override
@@ -911,11 +776,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         return !isEmpty();
     }
 
-    public boolean storable()
-    {
-        return false;
-    }
-
     @Override
     public String toString()
     {
@@ -932,11 +792,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
         sb.append( '}' );
         return sb.toString();
-    }
-
-    public ArrayValue toStorableArray()
-    {
-        throw new UnsupportedOperationException( "List cannot be turned into a storable array" );
     }
 
     @Override
@@ -1139,6 +994,18 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
         }
         return new JavaListListValue( kept, keptValuesHeapSize, representation );
+    }
+
+    public ArrayValue toStorableArray()
+    {
+        if (isEmpty() )
+        {
+            return Values.EMPTY_TEXT_ARRAY;
+        }
+        else
+        {
+            return itemValueRepresentation().arrayOf( this );
+        }
     }
 
     private AnyValue[] iterationAsArray()

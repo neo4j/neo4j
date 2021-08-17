@@ -22,6 +22,7 @@ package org.neo4j.values.storable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -30,7 +31,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
@@ -45,98 +46,110 @@ class ListValueFuzzTest
     @Test
     void shouldBeStorableIfAppendToStorableWithCompatibleTypes()
     {
-        for ( ValueType valueType : ValueType.arrayTypes() )
+        for ( int i = 0; i < ITERATIONS; i++ )
         {
-            // Given
-            ArrayValue arrayValue = (ArrayValue) random.nextValue( valueType );
-            ListValue inner = fromArray( arrayValue );
+            for ( ValueType valueType : ValueType.arrayTypes() )
+            {
+                // Given
+                ArrayValue arrayValue = (ArrayValue) random.nextValue( valueType );
+                ListValue inner = fromArray( arrayValue );
 
-            // When
-            ListValue appended = inner.append( nextCompatible( arrayValue ) );
+                // When
+                ListValue appended = inner.append( nextCompatible( arrayValue ) );
 
-            // Then
-            assertTrue( appended.storable() );
-            assertEquals( appended, fromArray( appended.toStorableArray() ) );
+                // Then
+                assertEquals( appended, fromArray( appended.toStorableArray() ) );
+            }
         }
     }
 
     @Test
     void shouldNotBeStorableIfAppendToStorableWithIncompatibleTypes()
     {
-        for ( ValueType valueType : ValueType.arrayTypes() )
+        for ( int i = 0; i < ITERATIONS; i++ )
         {
-            // Given
-            ArrayValue arrayValue = (ArrayValue) random.nextValue( valueType );
-            ListValue inner = fromArray( arrayValue );
+            for ( ValueType valueType : ValueType.arrayTypes() )
+            {
+                // Given
+                ArrayValue arrayValue = (ArrayValue) random.nextValue( valueType );
+                ListValue inner = fromArray( arrayValue );
 
-            // When
-            ListValue appended = inner.append( nextIncompatible( arrayValue ) );
+                // When
+                ListValue appended = inner.append( nextIncompatible( arrayValue ) );
 
-            // Then
-            assertFalse( appended.storable() );
+                // Then
+                assertThrows( CypherTypeException.class, appended::toStorableArray );
+            }
         }
     }
 
     @Test
     void shouldBeStorableIfPrependToStorableWithCompatibleTypes()
     {
-        for ( ValueType valueType : ValueType.arrayTypes() )
+        for ( int i = 0; i < ITERATIONS; i++ )
         {
-            // Given
-            ArrayValue arrayValue = (ArrayValue) random.nextValue( valueType );
-            ListValue inner = fromArray( arrayValue );
+            for ( ValueType valueType : ValueType.arrayTypes() )
+            {
+                // Given
+                ArrayValue arrayValue = (ArrayValue) random.nextValue( valueType );
+                ListValue inner = fromArray( arrayValue );
 
-            // When
-            ListValue prepended = inner.prepend( nextCompatible( arrayValue ) );
+                // When
+                ListValue prepended = inner.prepend( nextCompatible( arrayValue ) );
 
-            // Then
-            assertTrue( prepended.storable() );
-            assertEquals( prepended, fromArray( prepended.toStorableArray() ) );
+                // Then
+                assertEquals( prepended, fromArray( prepended.toStorableArray() ) );
+            }
         }
     }
 
     @Test
     void shouldNotBeStorableIfPrependToStorableWithIncompatibleTypes()
     {
-        for ( ValueType valueType : ValueType.arrayTypes() )
+        for ( int i = 0; i < ITERATIONS; i++ )
         {
-            // Given
-            ArrayValue arrayValue = (ArrayValue) random.nextValue( valueType );
-            ListValue inner = fromArray( arrayValue );
+            for ( ValueType valueType : ValueType.arrayTypes() )
+            {
+                // Given
+                ArrayValue arrayValue = (ArrayValue) random.nextValue( valueType );
+                ListValue inner = fromArray( arrayValue );
 
-            // When
-            ListValue prepended = inner.prepend( nextIncompatible( arrayValue ) );
+                // When
+                ListValue prepended = inner.prepend( nextIncompatible( arrayValue ) );
 
-            // Then
-            assertFalse( prepended.storable() );
+                // Then
+                assertThrows( CypherTypeException.class, prepended::toStorableArray );
+            }
         }
     }
 
     @Test
     void shouldCreateStorableLists()
     {
-        boolean seenStorable = false;
-        boolean seenNonStorable = false;
-        for ( ValueType valueType : ValueType.values() )
+        for ( int i = 0; i < ITERATIONS; i++ )
         {
-            AnyValue value = random.nextValue( valueType );
-            if ( value.valueRepresentation().canCreateArrayOfValueGroup() )
+            boolean seenStorable = false;
+            boolean seenNonStorable = false;
+            for ( ValueType valueType : ValueType.values() )
             {
-                ListValue list = VirtualValues.list( value, value, value );
-                assertTrue( list.storable() );
-                assertEquals( list, fromArray( list.toStorableArray() ) );
-                seenStorable = true;
+                AnyValue value = random.nextValue( valueType );
+                if ( value.valueRepresentation().canCreateArrayOfValueGroup() )
+                {
+                    ListValue list = VirtualValues.list( value, value, value );
+                    assertEquals( list, fromArray( list.toStorableArray() ) );
+                    seenStorable = true;
+                }
+                else
+                {
+                    ListValue list = VirtualValues.list( value, value, value );
+                    assertThrows( CypherTypeException.class, list::toStorableArray );
+                    seenNonStorable = true;
+                }
             }
-            else
-            {
-                ListValue list = VirtualValues.list( value, value, value );
-                assertFalse( list.storable() );
-                seenNonStorable = true;
-            }
-        }
 
-        assertTrue( seenStorable );
-        assertTrue( seenNonStorable );
+            assertTrue( seenStorable );
+            assertTrue( seenNonStorable );
+        }
     }
 
     private Value nextCompatible( ArrayValue value )
@@ -155,10 +168,14 @@ class ListValueFuzzTest
     private Value nextIncompatible( ArrayValue value )
     {
         ValueType[] types = ValueType.values();
-        while (true)
+        while ( true )
         {
             Value nextValue = random.nextValue( types[random.nextInt( types.length )] );
-            if ( !value.hasCompatibleType( nextValue ))
+            if ( value.isEmpty() )
+            {
+                return nextValue;
+            }
+            if ( !value.value( 0 ).valueRepresentation().coerce( nextValue.valueRepresentation() ).canCreateArrayOfValueGroup() )
             {
                 return nextValue;
             }

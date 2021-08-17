@@ -25,11 +25,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.values.storable.NoValue.NO_VALUE;
@@ -331,7 +333,6 @@ class ListTest
     {
         ListValue list = VirtualValues.list( longValue( 1 ), intValue( 2 ), shortValue( (short) 3 ) );
 
-        assertThat( list.storable() ).isTrue();
         assertThat( list.toStorableArray() ).isInstanceOf( LongArray.class ).isEqualTo( longArray( new long[] {1, 2, 3}) );
     }
 
@@ -340,6 +341,6 @@ class ListTest
     {
         ListValue list = VirtualValues.list( longArray( new long[] {1, 2, 3}), longArray( new long[] {4, 5, 6}) );
 
-        assertThat( list.storable() ).isFalse();
+        assertThatThrownBy( list::toStorableArray ).isInstanceOf( CypherTypeException.class );
     }
 }

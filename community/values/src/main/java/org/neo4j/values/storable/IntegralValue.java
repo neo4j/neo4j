@@ -39,6 +39,12 @@ public abstract class IntegralValue extends NumberValue
                 name + " must be an integer value, but was a " + value.getClass().getSimpleName() );
     }
 
+    public abstract int intValue();
+
+    public abstract short shortValue();
+
+    public abstract byte byteValue();
+
     @Override
     public boolean equals( long x )
     {

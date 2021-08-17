@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.floatValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.virtual.VirtualValues.fromArray;
@@ -105,7 +107,6 @@ class AppendedPrependListTest
         ListValue prepended = inner.prepend( longValue( 4L ) );
 
         // Then
-        assertTrue( prepended.storable() );
         assertEquals( list(  longValue( 4L ), longValue( 5L ), longValue( 6L ) ), fromArray( prepended.toStorableArray() ));
     }
 
@@ -119,7 +120,6 @@ class AppendedPrependListTest
         ListValue appended = inner.append( longValue( 7L ) );
 
         // Then
-        assertTrue( appended.storable() );
         assertEquals( list(  longValue( 5L ), longValue( 6L ), longValue( 7L ) ), fromArray( appended.toStorableArray() ));
     }
 
@@ -133,8 +133,20 @@ class AppendedPrependListTest
         ListValue appended = inner.append( intValue( 7 ) );
 
         // Then
-        assertTrue( appended.storable() );
         assertEquals( list(  longValue( 5L ), longValue( 6L ), longValue( 7L ) ), fromArray( appended.toStorableArray() ));
+    }
+
+    @Test
+    void foo()
+    {
+        // Given
+        ListValue inner = list( doubleValue( 5 ), doubleValue( 6 ) );
+
+        // When
+        ListValue prepended = inner.prepend( floatValue( 4f ) );
+
+        // Then
+        assertEquals( list(  longValue( 4L ), longValue( 5L ), longValue( 6L ) ), fromArray( prepended.toStorableArray() ));
     }
 
     private static void assertListValuesEquals( ListValue appended, ListValue expected )
