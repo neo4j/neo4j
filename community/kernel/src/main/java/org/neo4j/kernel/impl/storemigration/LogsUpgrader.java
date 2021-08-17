@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.DatabaseNotCleanlyShutDownException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -87,6 +88,7 @@ public class LogsUpgrader
     public void assertCleanlyShutDown( DatabaseLayout layout )
     {
         Throwable suppressibleException = null;
+        LogTailInformation tail = null;
         try
         {
             // we should not use provided database layout here since transaction log location is different compare to previous versions
@@ -94,7 +96,7 @@ public class LogsUpgrader
             DatabaseLayout oldDatabaseLayout = buildLegacyLogsLayout( layout );
             LogFiles logFiles = buildLogFiles( oldDatabaseLayout );
 
-            LogTailInformation tail = logFiles.getTailInformation();
+            tail = logFiles.getTailInformation();
             if ( !tail.isRecoveryRequired() )
             {
                 // All good
@@ -124,7 +126,7 @@ public class LogsUpgrader
             // ignore exception and throw db not cleanly shutdown
             suppressibleException = throwable;
         }
-        StoreUpgrader.DatabaseNotCleanlyShutDownException exception = new StoreUpgrader.DatabaseNotCleanlyShutDownException();
+        DatabaseNotCleanlyShutDownException exception = upgradeException( tail );
         if ( suppressibleException != null )
         {
             exception.addSuppressed( suppressibleException );
@@ -235,5 +237,10 @@ public class LogsUpgrader
         // We can't use those id files because at this point they haven't been migrated yet.
         Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only_database_default, true );
         return storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, readOnlyConfig, pageCache, tracer );
+    }
+
+    private static DatabaseNotCleanlyShutDownException upgradeException( LogTailInformation tail )
+    {
+        return tail == null ? new DatabaseNotCleanlyShutDownException() : new DatabaseNotCleanlyShutDownException( tail );
     }
 }

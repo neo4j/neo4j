@@ -40,6 +40,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -241,8 +242,6 @@ public class StoreUpgrader
             throw new StoreUpgrader.AttemptedDowngradeException();
         case unexpectedStoreVersion:
             throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException( result.actualVersion, configuredFormat );
-        case storeNotCleanlyShutDown:
-            throw new StoreUpgrader.DatabaseNotCleanlyShutDownException();
         case unexpectedUpgradingVersion:
             throw new StoreUpgrader.UnexpectedUpgradingStoreFormatException();
         default:
@@ -439,13 +438,18 @@ public class StoreUpgrader
 
     public static class DatabaseNotCleanlyShutDownException extends UnableToUpgradeException
     {
-        private static final String MESSAGE =
+        private static final String DEFAULT_MESSAGE =
                 "The database is not cleanly shutdown. The database needs recovery, in order to recover the database, "
                 + "please run the old version of the database on this store.";
 
         DatabaseNotCleanlyShutDownException()
         {
-            super( MESSAGE );
+            super( DEFAULT_MESSAGE );
+        }
+
+        DatabaseNotCleanlyShutDownException( LogTailInformation logTail )
+        {
+            super( DEFAULT_MESSAGE + " Log tail: " + logTail );
         }
     }
 }

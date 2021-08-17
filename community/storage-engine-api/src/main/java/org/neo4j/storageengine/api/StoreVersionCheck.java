@@ -89,7 +89,6 @@ public interface StoreVersionCheck
         storeVersionNotFound( false ),
         unexpectedStoreVersion( false ),
         attemptedStoreDowngrade( false ),
-        storeNotCleanlyShutDown( false ),
         unexpectedUpgradingVersion( false );
 
         private final boolean success;
