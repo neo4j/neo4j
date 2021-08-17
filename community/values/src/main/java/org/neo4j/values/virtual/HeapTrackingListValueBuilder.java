@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
+import org.github.jamm.Unmetered;
+
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -60,6 +62,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
 
     private final HeapTrackingArrayList<AnyValue> values;
     private final MemoryTracker scopedMemoryTracker;
+    @Unmetered
     private ValueRepresentation representation;
 
     public HeapTrackingListValueBuilder( MemoryTracker memoryTracker )

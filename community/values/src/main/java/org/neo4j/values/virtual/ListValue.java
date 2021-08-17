@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
+import org.github.jamm.Unmetered;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -123,6 +125,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     {
         private final AnyValue[] values;
         private final long payloadSize;
+        @Unmetered
         private final ValueRepresentation itemRepresentation;
 
         ArrayListValue( AnyValue[] values, long payloadSize, ValueRepresentation itemRepresentation )
@@ -184,6 +187,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     {
         private final List<AnyValue> values;
         private final long payloadSize;
+        @Unmetered
         private final ValueRepresentation itemRepresentation;
 
         JavaListListValue( List<AnyValue> values, long payloadSize, ValueRepresentation itemRepresentation )
