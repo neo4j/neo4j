@@ -188,6 +188,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "or 'READ_REPLICA' for operating as a read replica member of a Causal Cluster. Only SINGLE mode is allowed in Community" )
     public static final Setting<Mode> mode = newBuilder( "dbms.mode", ofEnum( Mode.class ), Mode.SINGLE ).build();
 
+    @Description( "Enable discovery service and a catchup server to be started on an Enterprise Standalone Instance 'dbms.mode=SINGLE', " +
+                  "and with that allow for Read Replicas to connect and pull transaction from it. " +
+                  "When 'dbms.mode' is clustered (CORE, READ_REPLICA) this setting is not recognized." )
+    public static final Setting<Boolean> enable_clustering_in_standalone = newBuilder( "dbms.clustering.enable", BOOL, false ).build();
+
     @Description( "Use server side routing by default for neo4j:// protocol connections" )
     public static final Setting<RoutingMode> routing_default_router = newBuilder( "dbms.routing.default_router", ofEnum( RoutingMode.class ),
                                                                                   RoutingMode.CLIENT ).build();
@@ -924,8 +929,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .dynamic().build();
 
     @Description( "Limit the amount of memory that a single transaction can consume, in bytes (or kilobytes with the 'k' " +
-                  "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'largest possible value'. When `dbms.mode=SINGLE` this is 'unlimited'. " +
-                  "When `dbms.mode=CORE` or `dbms.mode=READ_REPLICA` this is '2G'." )
+                  "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'largest possible value'. " +
+                  "When `dbms.mode=CORE` or `dbms.mode=READ_REPLICA` or `dbms.clustering.enable=true` this is '2G', in other cases this is 'unlimited'." )
     public static final Setting<Long> memory_transaction_max_size =
             newBuilder( "dbms.memory.transaction.max_size", BYTES, 0L )
                     .addConstraint( any( min( mebiBytes( 1 ) ), is( 0L ) ) )

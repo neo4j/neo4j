@@ -480,14 +480,15 @@ public final class SettingConstraints
         return lessThanOrEqual( Long::valueOf, other );
     }
 
-    public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> settingConstraint )
+    public static <T> SettingConstraint<T> ifClusterCore( SettingConstraint<T> settingConstraint )
     {
-        return ifCluster( settingConstraint, unconstrained() );
+        return dependency( settingConstraint, unconstrained(), GraphDatabaseSettings.mode, is( GraphDatabaseSettings.Mode.CORE ) );
     }
 
-    public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> clusterConstraint, SettingConstraint<T> nonClusterConstraint )
+    public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> settingConstraint )
     {
-        return dependency( clusterConstraint, nonClusterConstraint,
+        return dependency( settingConstraint, dependency( settingConstraint, unconstrained(),
+                GraphDatabaseSettings.enable_clustering_in_standalone, is( true ) ),
                 GraphDatabaseSettings.mode, any( is( GraphDatabaseSettings.Mode.CORE ), is( GraphDatabaseSettings.Mode.READ_REPLICA ) ) );
     }
 
