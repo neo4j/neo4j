@@ -29,6 +29,12 @@ import org.neo4j.cypher.internal.logical.plans.Union
 sealed trait ExecutionModel {
   /**
    * @return true if the execution model does not maintain provided order for a specific logical plan (not recursive)
+   *
+   * This mainly targets plans that in a particular execution model invalidates the order of arguments rows on
+   * the right-hand side of an Apply. In addition to this there are also other more general rules for how plans
+   * affects provided order.
+   *
+   * The check is invoked on each plan under an Apply and the implementation is not expected to recurse into it children.
    */
   def invalidatesProvidedOrder(plan: LogicalPlan): Boolean
 }
