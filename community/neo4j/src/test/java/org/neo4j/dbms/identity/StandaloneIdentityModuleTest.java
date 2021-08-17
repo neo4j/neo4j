@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -35,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATA_DIR_NAME;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 
 @EphemeralTestDirectoryExtension
 public class StandaloneIdentityModuleTest
@@ -53,7 +53,7 @@ public class StandaloneIdentityModuleTest
         assertFalse( fs.fileExists( dataDir ) );
 
         // when
-        var identityModule = new StandaloneIdentityModule( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var identityModule = new StandaloneIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertTrue( fs.fileExists( dataDir ) );
@@ -61,13 +61,13 @@ public class StandaloneIdentityModuleTest
         assertNotNull( identityModule.serverId() );
 
         // when
-        var secondIdentityModule = new StandaloneIdentityModule( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var secondIdentityModule = new StandaloneIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertEquals( identityModule.serverId(), secondIdentityModule.serverId() );
 
         fs.deleteRecursively( dataDir );
-        var thirdIdentityModule = new StandaloneIdentityModule( nullLogProvider(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var thirdIdentityModule = new StandaloneIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
 
         // then
         assertNotEquals( secondIdentityModule.serverId(), thirdIdentityModule.serverId() );

@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 
 public class StandaloneIdentityModule extends AbstractIdentityModule
@@ -33,17 +33,19 @@ public class StandaloneIdentityModule extends AbstractIdentityModule
 
     public static StandaloneIdentityModule fromGlobalModule( GlobalModule globalModule )
     {
-        return new StandaloneIdentityModule( globalModule.getLogService().getInternalLogProvider(),
+        return new StandaloneIdentityModule( globalModule.getLogService(),
                 globalModule.getFileSystem(),
                 globalModule.getNeo4jLayout(),
                 globalModule.getOtherMemoryPool().getPoolMemoryTracker() );
     }
 
-    StandaloneIdentityModule( LogProvider logProvider, FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
+    StandaloneIdentityModule( LogService logService,
+            FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
     {
-        var log = logProvider.getLog( StandaloneIdentityModule.class );
+        var log = logService.getInternalLog( getClass() );
         var storage = createServerIdStorage( fs, layout.serverIdFile() );
         this.serverId = readOrGenerate( storage, log, ServerId.class, ServerId::new, UUID::randomUUID );
+        logService.getUserLog( getClass() ).info( "This instance is %s (%s)", serverId, serverId.uuid() );
     }
 
     @Override
