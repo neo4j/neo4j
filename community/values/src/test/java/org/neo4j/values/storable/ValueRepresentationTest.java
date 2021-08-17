@@ -57,7 +57,6 @@ class ValueRepresentationTest
         assertEquals( FLOAT64, INT8.coerce( FLOAT64 ) );
         assertEquals( ValueRepresentation.UNKNOWN, INT8.coerce( LOCAL_TIME ) );
 
-
         //16 bit integers
         assertEquals( INT16, INT16.coerce( INT8 ) );
         assertEquals( INT16, INT16.coerce( INT16 ) );

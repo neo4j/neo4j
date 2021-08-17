@@ -61,7 +61,7 @@ public final class ShortValue extends IntegralValue
     @Override
     public byte byteValue()
     {
-        throw new IllegalStateException( "A 16 bit integer doesn't fit in a 8 bit value") ;
+        throw new IllegalStateException( "A 16 bit integer doesn't fit in a 8 bit value" );
     }
 
     @Override

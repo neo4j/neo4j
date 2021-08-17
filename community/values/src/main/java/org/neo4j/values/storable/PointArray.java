@@ -117,7 +117,7 @@ public final class PointArray extends NonPrimitiveArray<PointValue>
     {
         assert hasCompatibleType( added ) : "Incompatible types";
         PointValue[] newArray = Arrays.copyOf( value, value.length + 1 );
-        newArray[value.length] = ((PointValue) added);
+        newArray[value.length] = (PointValue) added;
         return new PointArray( newArray );
     }
 
@@ -127,7 +127,7 @@ public final class PointArray extends NonPrimitiveArray<PointValue>
         assert hasCompatibleType( prepended ) : "Incompatible types";
         PointValue[] newArray = new PointValue[value.length + 1];
         System.arraycopy( value, 0, newArray, 1, value.length );
-        newArray[0] = ((PointValue) prepended);
+        newArray[0] = (PointValue) prepended;
         return new PointArray( newArray );
     }
 }

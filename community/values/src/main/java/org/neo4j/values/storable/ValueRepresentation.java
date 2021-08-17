@@ -68,13 +68,14 @@ public enum ValueRepresentation
                         }
                         else
                         {
-                            if ( !first.getCoordinateReferenceSystem().equals( current.getCoordinateReferenceSystem() ))
+                            if ( !first.getCoordinateReferenceSystem().equals( current.getCoordinateReferenceSystem() ) )
                             {
-                                throw new CypherTypeException("Collections containing point values with different CRS can not be stored in properties.");
+                                throw new CypherTypeException( "Collections containing point values with different CRS can not be stored in properties." );
                             }
                             else if ( first.coordinate().length != current.coordinate().length )
                             {
-                                throw new CypherTypeException("Collections containing point values with different dimensions can not be stored in properties.");
+                                throw new CypherTypeException(
+                                        "Collections containing point values with different dimensions can not be stored in properties." );
                             }
                         }
                         points[i++] = current;
@@ -161,7 +162,7 @@ public enum ValueRepresentation
                      int i = 0;
                     for ( AnyValue value : values )
                     {
-                        temporals[i++] = ((DurationValue) value);
+                        temporals[i++] = (DurationValue) value;
                     }
                     return Values.durationArray( temporals );
                 }

@@ -115,7 +115,7 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
     {
         assert hasCompatibleType( added ) : "Incompatible types";
         DurationValue[] newArray = Arrays.copyOf( value, value.length + 1 );
-        newArray[value.length] = ((DurationValue) added);
+        newArray[value.length] = (DurationValue) added;
         return new DurationArray( newArray );
     }
 
@@ -125,7 +125,7 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
         assert hasCompatibleType( prepended ) : "Incompatible types";
         DurationValue[] newArray = new DurationValue[value.length + 1];
         System.arraycopy( value, 0, newArray, 1, value.length );
-        newArray[0] = ((DurationValue) prepended);
+        newArray[0] = (DurationValue) prepended;
         return new DurationArray( newArray );
     }
 }

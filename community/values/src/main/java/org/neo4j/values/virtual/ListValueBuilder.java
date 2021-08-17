@@ -64,7 +64,7 @@ public abstract class ListValueBuilder
     }
 
     protected long estimatedHeapSize;
-    protected ValueRepresentation valueRepresentation = null;
+    protected ValueRepresentation valueRepresentation;
 
     public final void add( AnyValue value )
     {

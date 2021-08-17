@@ -998,7 +998,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
     public ArrayValue toStorableArray()
     {
-        if (isEmpty() )
+        if ( isEmpty() )
         {
             return Values.EMPTY_TEXT_ARRAY;
         }

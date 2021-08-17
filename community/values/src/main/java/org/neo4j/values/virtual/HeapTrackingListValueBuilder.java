@@ -60,7 +60,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
 
     private final HeapTrackingArrayList<AnyValue> values;
     private final MemoryTracker scopedMemoryTracker;
-    private ValueRepresentation representation = null;
+    private ValueRepresentation representation;
 
     public HeapTrackingListValueBuilder( MemoryTracker memoryTracker )
     {

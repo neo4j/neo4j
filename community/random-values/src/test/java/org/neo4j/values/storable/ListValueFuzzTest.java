@@ -155,10 +155,10 @@ class ListValueFuzzTest
     private Value nextCompatible( ArrayValue value )
     {
         ValueType[] types = ValueType.values();
-        while (true)
+        while ( true )
         {
             Value nextValue = random.nextValue( types[random.nextInt( types.length )] );
-            if ( value.hasCompatibleType( nextValue ))
+            if ( value.hasCompatibleType( nextValue ) )
             {
                 return nextValue;
             }
