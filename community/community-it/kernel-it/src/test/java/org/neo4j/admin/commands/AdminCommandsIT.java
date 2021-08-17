@@ -41,6 +41,7 @@ import org.neo4j.commandline.dbms.DumpCommand;
 import org.neo4j.commandline.dbms.LoadCommand;
 import org.neo4j.commandline.dbms.MemoryRecommendationsCommand;
 import org.neo4j.commandline.dbms.StoreInfoCommand;
+import org.neo4j.commandline.dbms.UnbindCommand;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.CheckConsistencyCommand;
@@ -94,6 +95,7 @@ class AdminCommandsIT
         assertSuccess( new MemoryRecommendationsCommand( context ), "--expand-commands" );
         assertSuccess( new ImportCommand( context ), "--expand-commands", "--nodes=" + testDirectory.createFile( "foo.csv" ).toAbsolutePath() );
         assertSuccess( new DumpCommand( context, new Dumper( context.err() ) ), "--expand-commands", "--to", "test" );
+        assertSuccess( new UnbindCommand( context ), "--expand-commands" );
     }
 
     @Test
@@ -108,6 +110,7 @@ class AdminCommandsIT
         assertExpansionError( new MemoryRecommendationsCommand( context ) );
         assertExpansionError( new ImportCommand( context ), "--nodes=" + testDirectory.createFile( "foo.csv" ).toAbsolutePath() );
         assertExpansionError( new DumpCommand( context, new Dumper( context.err() ) ), "--to", "test" );
+        assertExpansionError( new UnbindCommand( context ) );
     }
 
     private static void assertSuccess( AbstractCommand command, String... args ) throws Exception
