@@ -39,16 +39,6 @@ class GeometryType2 extends Type
     // long2 (dimensions)
     // long0Array (coordinates)
 
-    // code+table for points (geometry) is 3B in total
-    private static final int MASK_CODE =            0b00000011_11111111_11111111;
-    private static final int MASK_DIMENSIONS_READ = 0b00011100_00000000_00000000;
-    //                                                  ^ this bit is reserved for future expansion of number of dimensions
-    private static final int MASK_TABLE_READ =      0b11000000_00000000_00000000;
-    private static final int SHIFT_DIMENSIONS = Integer.bitCount( MASK_CODE );
-    private static final int SHIFT_TABLE = SHIFT_DIMENSIONS + 1/*the reserved dimension bit*/ + Integer.bitCount( MASK_DIMENSIONS_READ );
-    private static final int MASK_TABLE_PUT = MASK_TABLE_READ >>> SHIFT_TABLE;
-    private static final int MASK_DIMENSIONS_PUT = MASK_DIMENSIONS_READ >>> SHIFT_DIMENSIONS;
-
     GeometryType2( byte typeId )
     {
         super( ValueGroup.GEOMETRY, typeId, PointValue.MIN_VALUE, PointValue.MAX_VALUE );
@@ -57,8 +47,8 @@ class GeometryType2 extends Type
     @Override
     int valueSize( GenericKey<?> state )
     {
-        int coordinatesSize = dimensions( state ) * Types.SIZE_GEOMETRY_COORDINATE;
-        return Types.SIZE_GEOMETRY_HEADER + coordinatesSize;
+        int coordinatesSize = dimensions( state ) * PointKeyUtil.SIZE_GEOMETRY_COORDINATE;
+        return PointKeyUtil.SIZE_GEOMETRY_HEADER + coordinatesSize;
     }
 
     static int dimensions( GenericKey<?> state )
@@ -156,10 +146,10 @@ class GeometryType2 extends Type
 
     static boolean readCrs( PageCursor cursor, GenericKey<?> into )
     {
-        int header = read3BInt( cursor );
-        into.long0 = (header & MASK_TABLE_READ) >>> SHIFT_TABLE;
-        into.long1 = header & MASK_CODE;
-        into.long2 = (header & MASK_DIMENSIONS_READ) >>> SHIFT_DIMENSIONS;
+        int header = PointKeyUtil.readHeader( cursor );
+        into.long0 = PointKeyUtil.crsTableId(header );
+        into.long1 = PointKeyUtil.crsCode( header );
+        into.long2 = PointKeyUtil.dimensions(header );
         return true;
     }
 
@@ -175,28 +165,9 @@ class GeometryType2 extends Type
         return true;
     }
 
-    private static int read3BInt( PageCursor cursor )
-    {
-        int low = cursor.getShort() & 0xFFFF;
-        int high = cursor.getByte() & 0xFF;
-        return high << Short.SIZE | low;
-    }
-
     static void putCrs( PageCursor cursor, long tableId, long code, long dimensions )
     {
-        assertValueWithin( tableId, MASK_TABLE_PUT, "tableId" );
-        assertValueWithin( code, MASK_CODE, "code" );
-        assertValueWithin( dimensions, MASK_DIMENSIONS_PUT, "dimensions" );
-        int header = (int) ((tableId << SHIFT_TABLE) | (dimensions << SHIFT_DIMENSIONS) | code);
-        put3BInt( cursor, header );
-    }
-
-    private static void assertValueWithin( long value, int maskAllowed, String name )
-    {
-        if ( (value & ~maskAllowed) != 0 )
-        {
-            throw new IllegalArgumentException( "Expected 0 < " + name + " <= " + maskAllowed + ", but was " + value );
-        }
+        PointKeyUtil.writeHeader( cursor, tableId, code, dimensions );
     }
 
     static void putPoint( PageCursor cursor, long dimensions, long[] coordinate, int long0ArrayOffset )
@@ -217,11 +188,5 @@ class GeometryType2 extends Type
             state.long0Array[i] = Double.doubleToLongBits( coordinate[i] );
         }
         state.long2 = coordinate.length;
-    }
-
-    private static void put3BInt( PageCursor cursor, int value )
-    {
-        cursor.putShort( (short) value );
-        cursor.putByte( (byte) (value >>> Short.SIZE) );
     }
 }

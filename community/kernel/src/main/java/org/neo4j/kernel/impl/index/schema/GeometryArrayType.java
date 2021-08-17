@@ -40,6 +40,9 @@ import static org.neo4j.kernel.impl.index.schema.GeometryType.hasCoordinates;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.putCrs;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.putPoint;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.readCrs;
+import static org.neo4j.kernel.impl.index.schema.PointKeyUtil.SIZE_GEOMETRY_COORDINATE;
+import static org.neo4j.kernel.impl.index.schema.PointKeyUtil.SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE;
+import static org.neo4j.kernel.impl.index.schema.PointKeyUtil.SIZE_GEOMETRY_HEADER;
 
 /**
  * Handles {@link PointValue[]}.
@@ -70,8 +73,8 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     @Override
     int valueSize( GenericKey<?> state )
     {
-        return Types.SIZE_GEOMETRY_HEADER +
-               arrayKeySize( state, Types.SIZE_GEOMETRY + dimensions( state ) * Types.SIZE_GEOMETRY_COORDINATE );
+        return SIZE_GEOMETRY_HEADER +
+               arrayKeySize( state, SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE + dimensions( state ) * SIZE_GEOMETRY_COORDINATE );
     }
 
     @Override

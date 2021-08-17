@@ -66,8 +66,8 @@ class GeometryArrayType2 extends AbstractArrayType<PointValue>
     @Override
     int valueSize( GenericKey<?> state )
     {
-        return Types.SIZE_GEOMETRY_HEADER +
-               arrayKeySize( state, dimensions( state ) * Types.SIZE_GEOMETRY_COORDINATE );
+        return PointKeyUtil.SIZE_GEOMETRY_HEADER +
+               arrayKeySize( state, dimensions( state ) * PointKeyUtil.SIZE_GEOMETRY_COORDINATE );
     }
 
     @Override

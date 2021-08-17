@@ -41,16 +41,6 @@ class GeometryType extends Type
     // long3 (dimensions)
     // long1Array (coordinates), use long1Array so that it doesn't clash mentally with long0Array in GeometryArrayType
 
-    // code+table for points (geometry) is 3B in total
-    private static final int MASK_CODE =            0b00000011_11111111_11111111;
-    private static final int MASK_DIMENSIONS_READ = 0b00011100_00000000_00000000;
-    //                                                  ^ this bit is reserved for future expansion of number of dimensions
-    private static final int MASK_TABLE_READ =      0b11000000_00000000_00000000;
-    private static final int SHIFT_DIMENSIONS = Integer.bitCount( MASK_CODE );
-    private static final int SHIFT_TABLE = SHIFT_DIMENSIONS + 1/*the reserved dimension bit*/ + Integer.bitCount( MASK_DIMENSIONS_READ );
-    private static final int MASK_TABLE_PUT = MASK_TABLE_READ >>> SHIFT_TABLE;
-    private static final int MASK_DIMENSIONS_PUT = MASK_DIMENSIONS_READ >>> SHIFT_DIMENSIONS;
-
     GeometryType( byte typeId )
     {
         super( ValueGroup.GEOMETRY, typeId, PointValue.MIN_VALUE, PointValue.MAX_VALUE );
@@ -59,8 +49,8 @@ class GeometryType extends Type
     @Override
     int valueSize( GenericKey<?> state )
     {
-        int coordinatesSize = dimensions( state ) * Types.SIZE_GEOMETRY_COORDINATE;
-        return Types.SIZE_GEOMETRY_HEADER + Types.SIZE_GEOMETRY + coordinatesSize;
+        int coordinatesSize = dimensions( state ) * PointKeyUtil.SIZE_GEOMETRY_COORDINATE;
+        return PointKeyUtil.SIZE_GEOMETRY_HEADER + PointKeyUtil.SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE + coordinatesSize;
     }
 
     static int dimensions( GenericKey<?> state )
@@ -175,19 +165,7 @@ class GeometryType extends Type
 
     static void putCrs( PageCursor cursor, long long1, long long2, long long3 )
     {
-        assertValueWithin( long1, MASK_TABLE_PUT, "tableId" );
-        assertValueWithin( long2, MASK_CODE, "code" );
-        assertValueWithin( long3, MASK_DIMENSIONS_PUT, "dimensions" );
-        int header = (int) ((long1 << SHIFT_TABLE) | (long3 << SHIFT_DIMENSIONS) | long2);
-        put3BInt( cursor, header );
-    }
-
-    private static void assertValueWithin( long value, int maskAllowed, String name )
-    {
-        if ( (value & ~maskAllowed) != 0 )
-        {
-            throw new IllegalArgumentException( "Expected 0 < " + name + " <= " + maskAllowed + ", but was " + value );
-        }
+        PointKeyUtil.writeHeader( cursor, long1, long2, long3 );
     }
 
     static void putPoint( PageCursor cursor, long long0, long long3, long[] long1Array, int long1ArrayOffset )
@@ -226,18 +204,12 @@ class GeometryType extends Type
         state.long3 = 0;
     }
 
-    private static void put3BInt( PageCursor cursor, int value )
-    {
-        cursor.putShort( (short) value );
-        cursor.putByte( (byte) (value >>> Short.SIZE) );
-    }
-
     static boolean readCrs( PageCursor cursor, GenericKey<?> into )
     {
-        int header = read3BInt( cursor );
-        into.long1 = (header & MASK_TABLE_READ) >>> SHIFT_TABLE;
-        into.long2 = header & MASK_CODE;
-        into.long3 = (header & MASK_DIMENSIONS_READ) >>> SHIFT_DIMENSIONS;
+        int header = PointKeyUtil.readHeader( cursor );
+        into.long1 = PointKeyUtil.crsTableId(header );
+        into.long2 = PointKeyUtil.crsCode( header );
+        into.long3 = PointKeyUtil.dimensions(header );
         return true;
     }
 
@@ -252,13 +224,6 @@ class GeometryType extends Type
             into.long1Array[i] = cursor.getLong();
         }
         return true;
-    }
-
-    private static int read3BInt( PageCursor cursor )
-    {
-        int low = cursor.getShort() & 0xFFFF;
-        int high = cursor.getByte() & 0xFF;
-        return high << Short.SIZE | low;
     }
 
     static void write( BtreeKey state, long derivedSpaceFillingCurveValue, double[] coordinate )

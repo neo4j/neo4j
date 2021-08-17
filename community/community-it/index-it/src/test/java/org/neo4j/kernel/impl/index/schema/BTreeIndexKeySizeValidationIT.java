@@ -61,10 +61,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.kernel.impl.index.schema.PointKeyUtil.SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE;
 import static org.neo4j.kernel.impl.index.schema.Types.SIZE_BOOLEAN;
 import static org.neo4j.kernel.impl.index.schema.Types.SIZE_DATE;
 import static org.neo4j.kernel.impl.index.schema.Types.SIZE_DURATION;
-import static org.neo4j.kernel.impl.index.schema.Types.SIZE_GEOMETRY;
 import static org.neo4j.kernel.impl.index.schema.Types.SIZE_LOCAL_DATE_TIME;
 import static org.neo4j.kernel.impl.index.schema.Types.SIZE_LOCAL_TIME;
 import static org.neo4j.kernel.impl.index.schema.Types.SIZE_NUMBER_BYTE;
@@ -441,10 +441,14 @@ public class BTreeIndexKeySizeValidationIT
         localDateTimeArray( SIZE_LOCAL_DATE_TIME, 680, 677, ( random, i ) -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
         durationArray( SIZE_DURATION, 291, 290, ( random, i ) -> random.randomValues().nextDurationArrayRaw( i, i ) ),
         periodArray( SIZE_DURATION, 291, 290, ( random, i ) -> random.randomValues().nextPeriodArrayRaw( i, i ) ),
-        cartesianPointArray( SIZE_GEOMETRY, 340, 338, ( random, i ) -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
-        cartesian3DPointArray( SIZE_GEOMETRY, 255, 254, ( random, i ) -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
-        geographicPointArray( SIZE_GEOMETRY, 340, 338, ( random, i ) -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
-        geographic3DPointArray( SIZE_GEOMETRY, 255, 254, ( random, i ) -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
+        cartesianPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, 338,
+                ( random, i ) -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
+        cartesian3DPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 255, 254,
+                ( random, i ) -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
+        geographicPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, 338,
+                ( random, i ) -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
+        geographic3DPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 255, 254,
+                ( random, i ) -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
 
         private final int singleArrayEntrySize;
         private final DynamicValueGenerator generator;

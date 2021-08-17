@@ -53,7 +53,6 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
     static final int BIGGEST_STATIC_SIZE = Long.BYTES * 4; // long0, long1, long2, long3
     static final long TRUE = 1;
     static final long FALSE = 0;
-    static final int NO_ENTITY_ID = -1;
     /**
      * An average month is 30 days, 10 hours and 30 minutes.
      * In seconds this is (((30 * 24) + 10) * 60 + 30) * 60 = 2629800

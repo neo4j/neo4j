@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
 class BtreeKeyStateFormatTest extends GenericKeyStateFormatTest<BtreeKey>
@@ -38,46 +38,8 @@ class BtreeKeyStateFormatTest extends GenericKeyStateFormatTest<BtreeKey>
     }
 
     @Override
-    Layout<BtreeKey> getLayout()
+    Layout<BtreeKey,?> getLayout()
     {
-        GenericLayout genericLayout = new GenericLayout( NUMBER_OF_SLOTS, IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() ) );
-        return new Layout<>()
-        {
-            @Override
-            public BtreeKey newKey()
-            {
-                return genericLayout.newKey();
-            }
-
-            @Override
-            public void readKey( PageCursor cursor, BtreeKey into, int keySize )
-            {
-                genericLayout.readKey( cursor, into, keySize );
-            }
-
-            @Override
-            public void writeKey( PageCursor cursor, BtreeKey key )
-            {
-                genericLayout.writeKey( cursor, key );
-            }
-
-            @Override
-            public int compare( BtreeKey k1, BtreeKey k2 )
-            {
-                return genericLayout.compare( k1, k2 );
-            }
-
-            @Override
-            public int majorVersion()
-            {
-                return genericLayout.majorVersion();
-            }
-
-            @Override
-            public int minorVersion()
-            {
-                return genericLayout.minorVersion();
-            }
-        };
+        return new GenericLayout( NUMBER_OF_SLOTS, IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() ) );
     }
 }

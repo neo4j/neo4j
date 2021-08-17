@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.index.internal.gbptree.Layout;
 
 class RangeKeyStateFormatTest extends GenericKeyStateFormatTest<RangeKey>
 {
@@ -36,46 +36,8 @@ class RangeKeyStateFormatTest extends GenericKeyStateFormatTest<RangeKey>
     }
 
     @Override
-    Layout<RangeKey> getLayout()
+    Layout<RangeKey,?> getLayout()
     {
-        RangeLayout rangeLayout = new RangeLayout( NUMBER_OF_SLOTS );
-        return new Layout<>()
-        {
-            @Override
-            public RangeKey newKey()
-            {
-                return rangeLayout.newKey();
-            }
-
-            @Override
-            public void readKey( PageCursor cursor, RangeKey into, int keySize )
-            {
-                rangeLayout.readKey( cursor, into, keySize );
-            }
-
-            @Override
-            public void writeKey( PageCursor cursor, RangeKey key )
-            {
-                rangeLayout.writeKey( cursor, key );
-            }
-
-            @Override
-            public int compare( RangeKey k1, RangeKey k2 )
-            {
-                return rangeLayout.compare( k1, k2 );
-            }
-
-            @Override
-            public int majorVersion()
-            {
-                return rangeLayout.majorVersion();
-            }
-
-            @Override
-            public int minorVersion()
-            {
-                return rangeLayout.minorVersion();
-            }
-        };
+        return new RangeLayout( NUMBER_OF_SLOTS );
     }
 }

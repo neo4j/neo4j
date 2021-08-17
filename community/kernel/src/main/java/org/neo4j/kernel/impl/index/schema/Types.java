@@ -65,9 +65,7 @@ class Types
     static final BooleanArrayType BOOLEAN_ARRAY = new BooleanArrayType( (byte) 18 );
     static final NumberArrayType NUMBER_ARRAY = new NumberArrayType( (byte) 19 );
 
-    static final int SIZE_GEOMETRY_COORDINATE =    Long.BYTES;     /* one coordinate */
-    public static final int SIZE_GEOMETRY_HEADER = 3;              /* 2b tableId and 22b code */
-    public static final int SIZE_GEOMETRY =        Long.BYTES;     /* rawValueBits */
+    /* Geometry constants are located in PointKeyUtil */
     public static final int SIZE_ZONED_DATE_TIME = Long.BYTES +    /* epochSecond */
                                                    Integer.BYTES + /* nanoOfSecond */
                                                    Integer.BYTES;  /* timeZone */

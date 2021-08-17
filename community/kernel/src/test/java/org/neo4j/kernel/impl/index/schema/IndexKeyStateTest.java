@@ -83,7 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.neo4j.kernel.impl.index.schema.GenericKey.NO_ENTITY_ID;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.NO_ENTITY_ID;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY_ARRAY;
