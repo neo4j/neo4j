@@ -28,13 +28,14 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 /**
  * A command representing one unit of change to a {@link StorageEngine}. Commands are created by
  * {@link StorageEngine#createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, long,
- * TxStateVisitor.Decorator, CursorContext, MemoryTracker)}
+ * TxStateVisitor.Decorator,CursorContext, StoreCursors, MemoryTracker)}
  * and once created can be serialized onto a {@link WritableChannel} and/or passed back to
  * {@link StorageEngine#apply(CommandsToApply, TransactionApplicationMode)} for application where the
  * changes represented by the command are actually applied onto storage.

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -66,7 +68,9 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -74,12 +78,14 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.dedicated_transaction_appender;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -87,9 +93,10 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 @EphemeralNeo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
-public class BatchingTransactionAppenderConcurrencyTest
+public class TransactionAppenderConcurrencyTest
 {
     private static ExecutorService executor;
+    private static ThreadPoolJobScheduler jobScheduler;
 
     @Inject
     private LifeSupport life;
@@ -106,6 +113,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     @BeforeAll
     static void setUpExecutor()
     {
+        jobScheduler = new ThreadPoolJobScheduler();
         executor = Executors.newCachedThreadPool();
     }
 
@@ -120,6 +128,14 @@ public class BatchingTransactionAppenderConcurrencyTest
     void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );
+        jobScheduler = new ThreadPoolJobScheduler();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        life.shutdown();
+        jobScheduler.close();
     }
 
     /*
@@ -146,8 +162,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
-        final BatchingTransactionAppender appender = life.add(
-                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth ) );
+        var appender = life.add( createTransactionAppender( databaseHealth, logFiles, jobScheduler ) );
         life.start();
 
         // WHEN
@@ -186,7 +201,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    void databasePanicShouldHandleOutOfMemoryErrors() throws IOException, InterruptedException
+    void databasePanicShouldHandleOutOfMemoryErrors() throws IOException, InterruptedException, ExecutionException
     {
         final CountDownLatch panicLatch = new CountDownLatch( 1 );
         final CountDownLatch adversaryLatch = new CountDownLatch( 1 );
@@ -202,8 +217,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
-        final BatchingTransactionAppender appender =
-                life.add( new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, slowPanicDatabaseHealth ) );
+        var appender = life.add( createTransactionAppender( slowPanicDatabaseHealth, logFiles, jobScheduler ) );
         life.start();
 
         // Commit initial transaction
@@ -257,6 +271,13 @@ public class BatchingTransactionAppenderConcurrencyTest
         }
     }
 
+    private TransactionAppender createTransactionAppender( DatabaseHealth databaseHealth, LogFiles logFiles, JobScheduler scheduler )
+    {
+        return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, logRotation,
+                Config.defaults( dedicated_transaction_appender, false ),
+                databaseHealth, scheduler, NullLogProvider.nullLogProvider() );
+    }
+
     private static class OutOfMemoryAwareFileSystem extends EphemeralFileSystemAbstraction
     {
         private volatile boolean shouldOOM;
@@ -264,7 +285,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         @Override
         public synchronized StoreChannel write( Path fileName ) throws IOException
         {
-            return new DelegatingStoreChannel( super.write( fileName ) )
+            return new DelegatingStoreChannel<>( super.write( fileName ) )
             {
                 @Override
                 public void writeAll( ByteBuffer src ) throws IOException

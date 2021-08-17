@@ -84,12 +84,19 @@ public class FileLogRotation implements LogRotation
         {
             synchronized ( rotatableFile )
             {
-                if ( rotatableFile.rotationNeeded() )
-                {
-                    doRotate( logRotateEvents );
-                    return true;
-                }
+                return locklessRotateLogIfNeeded( logRotateEvents );
             }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean locklessRotateLogIfNeeded( LogRotateEvents logRotateEvents ) throws IOException
+    {
+        if ( rotatableFile.rotationNeeded() )
+        {
+            doRotate( logRotateEvents );
+            return true;
         }
         return false;
     }

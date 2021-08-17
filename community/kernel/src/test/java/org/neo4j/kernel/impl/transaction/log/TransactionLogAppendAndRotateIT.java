@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -31,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -54,8 +57,10 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
@@ -65,6 +70,7 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -75,6 +81,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
+import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 
@@ -88,6 +95,20 @@ class TransactionLogAppendAndRotateIT
     private LifeSupport life;
     @Inject
     private DatabaseLayout databaseLayout;
+    private ThreadPoolJobScheduler jobScheduler;
+
+    @BeforeEach
+    void setUp()
+    {
+        jobScheduler = new ThreadPoolJobScheduler();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        life.shutdown();
+        jobScheduler.close();
+    }
 
     @Test
     void shouldKeepTransactionsIntactWhenConcurrentlyRotationAndAppending() throws Throwable
@@ -110,7 +131,7 @@ class TransactionLogAppendAndRotateIT
         Health health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         LogRotation rotation = transactionLogRotation( logFiles, Clock.systemUTC(), health, monitoring );
         final TransactionAppender appender =
-                life.add( new BatchingTransactionAppender( logFiles, rotation, metadataCache, txIdStore, health ) );
+                life.add( createBatchAppender( logFiles, txIdStore, metadataCache, health, rotation, jobScheduler, Config.defaults() ) );
 
         // WHEN
         Race race = new Race();
@@ -138,6 +159,12 @@ class TransactionLogAppendAndRotateIT
 
         // THEN
         assertTrue( monitoring.numberOfRotations() > 0 );
+    }
+
+    private TransactionAppender createBatchAppender( LogFiles logFiles, TransactionIdStore txIdStore, TransactionMetadataCache metadataCache,
+            Health health, LogRotation rotation, JobScheduler jobScheduler, Config config )
+    {
+        return createTransactionAppender( logFiles, txIdStore, metadataCache, rotation, config, health, jobScheduler, NullLogProvider.nullLogProvider() );
     }
 
     private static Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end, AllTheMonitoring monitoring )

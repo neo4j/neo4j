@@ -68,6 +68,7 @@ public enum Group
     INDEX_UPDATING( "IndexUpdating", ExecutorServiceFactory.singleThread() ), // Single-threaded to serialise updates with opening/closing/flushing of indexes.
     /** Thread pool for anyone who want some help doing file IO in parallel. */
     FILE_IO_HELPER( "FileIOHelper" ),
+    LOG_WRITER( "LOG_WRITER" ),
     NATIVE_SECURITY( "NativeSecurity" ),
     METRICS_EVENT( "MetricsEvent" ),
     /** Threads that perform database manager operations necessary to bring databases to their desired states. */

@@ -19,31 +19,48 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
-public class TestableTransactionAppender extends LifecycleAdapter implements TransactionAppender
+class QueueTransactionAppender extends LifecycleAdapter implements TransactionAppender
 {
-    private final TransactionIdStore transactionIdStore;
+    private final TransactionLogQueue transactionLogQueue;
 
-    public TestableTransactionAppender( TransactionIdStore transactionIdStore )
+    QueueTransactionAppender( TransactionLogQueue transactionLogQueue )
     {
-        this.transactionIdStore = transactionIdStore;
+        this.transactionLogQueue = transactionLogQueue;
     }
 
     @Override
-    public long append( TransactionToApply batch, LogAppendEvent logAppendEvent )
+    public void start() throws Exception
     {
-        long txId = TransactionIdStore.BASE_TX_ID;
+        transactionLogQueue.start();
+    }
+
+    @Override
+    public void shutdown() throws Exception
+    {
+        transactionLogQueue.shutdown();
+    }
+
+    @Override
+    public long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException, ExecutionException, InterruptedException
+    {
+        long committedTxId = transactionLogQueue.submit( batch, logAppendEvent ).get();
+        publishAsCommitted( batch );
+        return committedTxId;
+    }
+
+    private static void publishAsCommitted( TransactionToApply batch )
+    {
         while ( batch != null )
         {
-            txId = transactionIdStore.nextCommittingTransactionId();
-            batch.commitment( new FakeCommitment( txId, transactionIdStore ), txId );
             batch.publishAsCommitted();
             batch = batch.next();
         }
-        return txId;
     }
 }

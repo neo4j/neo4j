@@ -60,7 +60,6 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
-import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
@@ -73,7 +72,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -116,6 +114,8 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
+import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
+import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
@@ -404,8 +404,9 @@ public final class Recovery
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
                 failOnCorruptedLogFiles );
-        BatchingTransactionAppender transactionAppender = new BatchingTransactionAppender( logFiles, LogRotation.NO_ROTATION, metadataCache,
-                metadataProvider, databaseHealth );
+
+        var transactionAppender =
+                createTransactionAppender( logFiles, metadataProvider, metadataCache, NO_ROTATION, config, databaseHealth, scheduler, logProvider );
 
         LifeSupport schemaLife = new LifeSupport();
         schemaLife.add( storageEngine.schemaAndTokensLifecycle() );

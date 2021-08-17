@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -31,7 +33,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
  * Writes batches of transactions, each containing groups of commands to a log that is guaranteed to be recoverable,
  * i.e. consistently readable, in the event of failure.
  */
-public interface TransactionAppender
+public interface TransactionAppender extends Lifecycle
 {
     /**
      * Appends a batch of transactions to a log, effectively committing the transactions.
@@ -54,5 +56,5 @@ public interface TransactionAppender
      * @throws IOException if there was a problem appending the transaction. See method javadoc body for
      * how to handle exceptions in general thrown from this method.
      */
-    long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException;
+    long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException, ExecutionException, InterruptedException;
 }

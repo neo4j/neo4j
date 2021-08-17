@@ -76,6 +76,7 @@ import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTA
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 @ExtendWith( LifeExtension.class )
 class BatchingTransactionAppenderTest
@@ -95,6 +96,7 @@ class BatchingTransactionAppenderTest
     void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );
+        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, 1 ) );
     }
 
     @Test
@@ -297,7 +299,7 @@ class BatchingTransactionAppenderTest
 
     private BatchingTransactionAppender createTransactionAppender()
     {
-        return new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, databaseHealth, BASE_TX_CHECKSUM );
+        return new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, databaseHealth );
     }
 
     private static TransactionRepresentation transaction( List<StorageCommand> commands, byte[] additionalHeader, long timeStarted,

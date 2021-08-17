@@ -21,7 +21,6 @@ package org.neo4j.configuration;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Setting;
@@ -44,7 +43,6 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
-import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -761,4 +759,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
 
     @Description( "Number of reserved header bytes in each page in page cache. Please note changing it for already existing store is not supported." )
     public static final Setting<Integer> reserved_page_header_bytes = newBuilder( "unsupported.dbms.reserved.page.header.bytes", INT, 0 ).build();
+
+    @Description( "Allow database to use dedicated transaction appender writer thread." )
+    public static final Setting<Boolean> dedicated_transaction_appender =
+            newBuilder( "unsupported.dbms.tx.logs.dedicated.appender", BOOL, Boolean.TRUE ).build();
 }

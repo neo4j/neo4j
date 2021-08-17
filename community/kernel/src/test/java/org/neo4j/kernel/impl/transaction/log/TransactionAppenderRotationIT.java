@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -26,7 +28,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -44,23 +48,27 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
+import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
-import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,7 +78,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
-class BatchingTransactionAppenderRotationIT
+class TransactionAppenderRotationIT
 {
     @Inject
     private DatabaseLayout layout;
@@ -81,9 +89,23 @@ class BatchingTransactionAppenderRotationIT
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final Monitors monitors = new Monitors();
+    private ThreadPoolJobScheduler jobScheduler;
+
+    @BeforeEach
+    void setUp()
+    {
+        jobScheduler = new ThreadPoolJobScheduler();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        life.shutdown();
+        jobScheduler.close();
+    }
 
     @Test
-    void correctLastAppliedToPreviousLogTransactionInHeaderOnLogFileRotation() throws IOException
+    void correctLastAppliedToPreviousLogTransactionInHeaderOnLogFileRotation() throws IOException, ExecutionException, InterruptedException
     {
         LogFiles logFiles = getLogFiles( logVersionRepository, transactionIdStore );
         life.add( logFiles );
@@ -93,8 +115,8 @@ class BatchingTransactionAppenderRotationIT
                 FileLogRotation.transactionLogRotation( logFiles, Clock.systemUTC(), databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
-        BatchingTransactionAppender transactionAppender =
-                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth );
+        TransactionAppender transactionAppender =
+                createTransactionAppender( logFiles, databaseHealth, logRotation, transactionMetadataCache, transactionIdStore, jobScheduler );
 
         life.add( transactionAppender );
 
@@ -107,6 +129,13 @@ class BatchingTransactionAppenderRotationIT
         Path highestLogFile = logFile.getHighestLogFile();
         LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, highestLogFile, INSTANCE );
         assertEquals( 2, logHeader.getLastCommittedTxId() );
+    }
+
+    private static TransactionAppender createTransactionAppender( LogFiles logFiles, Health databaseHealth, LogRotation logRotation,
+            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore, JobScheduler scheduler )
+    {
+        return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, logRotation, Config.defaults(),
+                databaseHealth, scheduler, NullLogProvider.getInstance() );
     }
 
     private static TransactionToApply prepareTransaction()
@@ -184,7 +213,7 @@ class BatchingTransactionAppenderRotationIT
         }
 
         @Override
-        public SerializeTransactionEvent beginSerializeTransaction()
+        public AppendTransactionEvent beginAppendTransaction()
         {
             return () ->
             {

@@ -108,7 +108,6 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
-import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
@@ -182,6 +181,7 @@ import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
+import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
@@ -742,8 +742,9 @@ public class Database extends LifecycleAdapter
 
         final LogRotation logRotation = transactionLogRotation( logFiles, clock, databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
 
-        final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender(
-                logFiles, logRotation, transactionMetadataCache, metadataProvider, databaseHealth ) );
+        var transactionAppender =
+                createTransactionAppender( logFiles, metadataProvider, transactionMetadataCache, logRotation, config, databaseHealth, scheduler, logProvider );
+        life.add( transactionAppender );
 
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader, monitors, true );
@@ -762,9 +763,9 @@ public class Database extends LifecycleAdapter
         life.add( checkPointer );
         life.add( checkPointScheduler );
 
-        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, logRotation, appender );
+        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, logRotation, transactionAppender );
 
-        return new DatabaseTransactionLogModule( checkPointer, appender );
+        return new DatabaseTransactionLogModule( checkPointer, transactionAppender );
     }
 
     private DatabaseKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,

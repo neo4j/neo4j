@@ -26,12 +26,11 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
 
@@ -39,7 +38,7 @@ import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SP
  * Concurrently appends transactions to the transaction log, while coordinating with the log rotation and forcing the
  * log file in batches for higher throughput in a concurrent scenario.
  */
-public class BatchingTransactionAppender extends LifecycleAdapter implements TransactionAppender
+class BatchingTransactionAppender extends LifecycleAdapter implements TransactionAppender
 {
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogFile logFile;
@@ -50,7 +49,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private TransactionLogWriter transactionLogWriter;
     private int previousChecksum;
 
-    public BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation, TransactionMetadataCache transactionMetadataCache,
+    BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation, TransactionMetadataCache transactionMetadataCache,
             TransactionIdStore transactionIdStore, Health databaseHealth )
     {
         this.logFile = logFiles.getLogFile();
@@ -59,18 +58,6 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;
         this.previousChecksum = transactionIdStore.getLastCommittedTransaction().checksum();
-    }
-
-    @VisibleForTesting
-    public BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation, TransactionMetadataCache transactionMetadataCache,
-            TransactionIdStore transactionIdStore, Health databaseHealth, int previousChecksum )
-    {
-        this.logFile = logFiles.getLogFile();
-        this.logRotation = logRotation;
-        this.transactionIdStore = transactionIdStore;
-        this.databaseHealth = databaseHealth;
-        this.transactionMetadataCache = transactionMetadataCache;
-        this.previousChecksum = previousChecksum;
     }
 
     @Override
@@ -89,7 +76,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         {
             // Assert that kernel is healthy before making any changes
             databaseHealth.assertHealthy( IOException.class );
-            try ( SerializeTransactionEvent serialiseEvent = logAppendEvent.beginSerializeTransaction() )
+            try ( AppendTransactionEvent appendEvent = logAppendEvent.beginAppendTransaction() )
             {
                 // Append all transactions in this batch to the log under the same logFile monitor
                 TransactionToApply tx = batch;

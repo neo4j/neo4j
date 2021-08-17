@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.transaction.tracing;
 /**
  * Represents the serialization and the writing of commands to the transaction log, for a particular transaction.
  */
-public interface SerializeTransactionEvent extends AutoCloseable
+public interface AppendTransactionEvent extends AutoCloseable
 {
-    SerializeTransactionEvent NULL = () ->
+    AppendTransactionEvent NULL = () ->
     {
     };
 

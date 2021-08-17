@@ -40,16 +40,28 @@ public interface LogRotation
         }
 
         @Override
+        public boolean locklessRotateLogIfNeeded( LogRotateEvents logRotateEvents )
+        {
+            return false;
+        }
+
+        @Override
         public void rotateLogFile( LogRotateEvents logRotateEvents )
         {
         }
     };
 
     /**
-     * Rotates the undelying log if it is required. Returns true if rotation happened, false otherwise
+     * Rotates the underlying log if it is required. Returns true if rotation happened, false otherwise
      * @param logRotateEvents A trace event for the current log append operation.
      */
     boolean rotateLogIfNeeded( LogRotateEvents logRotateEvents ) throws IOException;
+
+    /**
+     * Rotates the underlying log if it is required. Returns true if rotation happened, false otherwise
+     * @param logRotateEvents A trace event for the current log append operation.
+     */
+    boolean locklessRotateLogIfNeeded( LogRotateEvents logRotateEvents ) throws IOException;
 
     /**
      * Force a log rotation.

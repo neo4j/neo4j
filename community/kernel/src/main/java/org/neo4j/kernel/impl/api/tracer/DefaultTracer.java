@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -32,7 +33,6 @@ import org.neo4j.kernel.impl.transaction.tracing.LogFileFlushEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
-import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 
@@ -221,9 +221,9 @@ public class DefaultTracer implements DatabaseTracer
         }
 
         @Override
-        public SerializeTransactionEvent beginSerializeTransaction()
+        public AppendTransactionEvent beginAppendTransaction()
         {
-            return SerializeTransactionEvent.NULL;
+            return AppendTransactionEvent.NULL;
         }
 
         @Override

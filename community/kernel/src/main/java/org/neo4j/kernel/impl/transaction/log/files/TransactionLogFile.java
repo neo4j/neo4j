@@ -166,13 +166,9 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public boolean rotationNeeded()
+    public boolean rotationNeeded() throws IOException
     {
-        /*
-         * Whereas channel.size() should be fine, we're safer calling position() due to possibility
-         * of this file being memory mapped or whatever.
-         */
-        return channel.position() >= rotateAtSize.get();
+        return writer.getCurrentPosition().getByteOffset() >= rotateAtSize.get();
     }
 
     @Override
@@ -427,6 +423,21 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
             }
         }
         return attemptedForce;
+    }
+
+    @Override
+    public void locklessForce( LogForceEvents logForceEvents ) throws IOException
+    {
+        try ( LogForceEvent logForceEvent = logForceEvents.beginLogForce() )
+        {
+            databaseHealth.assertHealthy( IOException.class );
+            flush();
+        }
+        catch ( final Throwable panic )
+        {
+            databaseHealth.panic( panic );
+            throw panic;
+        }
     }
 
     /**

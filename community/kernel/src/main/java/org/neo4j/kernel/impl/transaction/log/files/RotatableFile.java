@@ -27,7 +27,7 @@ public interface RotatableFile
     /**
      * @return {@code true} if a rotation is needed.
      */
-    boolean rotationNeeded();
+    boolean rotationNeeded() throws IOException;
 
     /**
      * Rotate the active file.

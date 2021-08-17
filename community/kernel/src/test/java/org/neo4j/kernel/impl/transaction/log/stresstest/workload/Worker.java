@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
-import java.io.IOException;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -52,7 +51,7 @@ class Worker implements Runnable
             {
                 latestTxId = transactionAppender.append( transaction, LogAppendEvent.NULL );
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 throw new RuntimeException( e );
             }

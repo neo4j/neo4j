@@ -29,13 +29,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -45,13 +45,16 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.util.concurrent.Futures;
 
+import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 import static org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter.EMPTY;
 
@@ -74,14 +77,15 @@ public class Runner implements Callable<Long>
         long lastCommittedTransactionId;
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+                var jobScheduler = new ThreadPoolJobScheduler();
                 Lifespan life = new Lifespan() )
         {
             TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
             LogFiles logFiles = life.add( createLogFiles( transactionIdStore, fileSystem ) );
 
-            TransactionAppender transactionAppender = life.add(
-                    createBatchingTransactionAppender( transactionIdStore, transactionMetadataCache, logFiles ) );
+            TransactionAppender transactionAppender =
+                    life.add( createBatchingTransactionAppender( transactionMetadataCache, logFiles, transactionIdStore, Config.defaults(), jobScheduler ) );
 
             ExecutorService executorService = Executors.newFixedThreadPool( threads );
             try
@@ -108,14 +112,14 @@ public class Runner implements Callable<Long>
         return lastCommittedTransactionId;
     }
 
-    private static BatchingTransactionAppender createBatchingTransactionAppender( TransactionIdStore transactionIdStore,
-            TransactionMetadataCache transactionMetadataCache, LogFiles logFiles )
+    private static TransactionAppender createBatchingTransactionAppender( TransactionMetadataCache transactionMetadataCache, LogFiles logFiles,
+            TransactionIdStore transactionIdStore, Config config, JobScheduler jobScheduler )
     {
         Log log = NullLog.getInstance();
-        Health databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, log );
+        DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, log );
         LogRotation logRotation = transactionLogRotation( logFiles, Clock.systemUTC(), databaseHealth, EMPTY );
-        return new BatchingTransactionAppender( logFiles, logRotation,
-                transactionMetadataCache, transactionIdStore, databaseHealth );
+        return createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, logRotation, config, databaseHealth,
+                jobScheduler, NullLogProvider.nullLogProvider() );
     }
 
     private LogFiles createLogFiles( TransactionIdStore transactionIdStore,
