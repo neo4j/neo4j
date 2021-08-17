@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.exceptions.InternalException
 
 import scala.util.control.NonFatal
 
@@ -46,6 +47,10 @@ case class TransactionForeachPipe(source: Pipe, inner: Pipe)
   }
 
   def inNewTransaction(state: QueryState)(f: QueryState => Unit): Unit = {
+
+    // Ensure that no write happens before a 'CALL { ... } IN TRANSACTIONS'
+    if (state.query.transactionalContext.dataRead.transactionStateHasChanges) throw new InternalException("Expected transaction state to be empty when calling transactional subquery.")
+
     // beginTx()
     val stateWithNewTransaction = state.withNewTransaction()
     val innerTxContext = stateWithNewTransaction.query.transactionalContext

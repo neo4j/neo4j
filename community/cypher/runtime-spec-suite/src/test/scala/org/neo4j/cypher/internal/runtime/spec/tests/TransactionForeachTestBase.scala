@@ -293,4 +293,25 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(query, runtime)
     noException should be thrownBy consume(runtimeResult)
   }
+
+  test("Make sure transaction state is empty before opening inner transaction") {
+    given {
+      nodeGraph(sizeHint)
+    }
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.allNodeScan("m")
+      .create(createNode("node"))
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    val runtimeResult = execute(query, runtime)
+
+    val exception = the[Exception] thrownBy consume(runtimeResult)
+    exception.getMessage should include("Expected transaction state to be empty when calling transactional subquery.")
+  }
 }
