@@ -865,6 +865,8 @@ final case class CreateGraph(graphName: CatalogName, query: QueryPart)
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this) chain
       query.semanticCheck
+
+  override def containsUpdates: Boolean = true
 }
 
 final case class DropGraph(graphName: CatalogName)(val position: InputPosition) extends MultiGraphDDL {
@@ -874,6 +876,8 @@ final case class DropGraph(graphName: CatalogName)(val position: InputPosition) 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
+
+  override def containsUpdates: Boolean = true
 }
 
 object CreateView {
@@ -891,6 +895,8 @@ final case class CreateView(graphName: CatalogName, params: Seq[Parameter], quer
       SemanticState.recordCurrentScope(this) chain
       recordGraphParameters chain
       query.semanticCheck
+
+  override def containsUpdates: Boolean = true
 
   private def recordGraphParameters(state: SemanticState): SemanticCheckResult = {
     params.foldLeft(success(state): SemanticCheckResult) { case (SemanticCheckResult(s, errors), p) =>
@@ -910,6 +916,8 @@ final case class DropView(graphName: CatalogName)(val position: InputPosition) e
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
+
+  override def containsUpdates: Boolean = true
 }
 
 sealed trait WaitUntilComplete {
