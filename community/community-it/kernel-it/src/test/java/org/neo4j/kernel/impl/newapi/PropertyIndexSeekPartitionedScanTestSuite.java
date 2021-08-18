@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,10 +37,15 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.EntityIdsMatchingQu
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Queries;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.kernel.impl.newapi.PropertyIndexSeekPartitionedScanTestSuite.PropertyKeySeekQuery;
+import org.neo4j.values.storable.Values;
 
 abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
         extends PropertyIndexPartitionedScanTestSuite<PropertyKeySeekQuery,CURSOR>
 {
+    // range for range based queries, other value type ranges are calculated from this for consistency
+    // as using an int as source of values, ~half of ints will be covered by this range
+    private static final Pair<Integer,Integer> RANGE = Pair.of( Integer.MIN_VALUE / 2, Integer.MAX_VALUE / 2 );
+
     PropertyIndexSeekPartitionedScanTestSuite( IndexType index )
     {
         super( index );
@@ -52,12 +59,10 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
             super( testSuite );
         }
 
-        protected Queries<PropertyKeySeekQuery> emptyQueries( Pair<Integer,int[]> tokenAndPropKeyCombination )
+        protected Queries<PropertyKeySeekQuery> emptyQueries( int tokenId, int[] propKeyIds )
         {
             try ( var tx = beginTx() )
             {
-                final var tokenId = tokenAndPropKeyCombination.first();
-                final var propKeyIds = tokenAndPropKeyCombination.other();
                 final var validQueries = Stream.concat(
                         // single queries
                         Arrays.stream( propKeyIds ).boxed()
@@ -100,6 +105,53 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
         {
             return random.nextDouble() < ratioForExactQuery;
         }
+    }
+
+    private static Stream<PropertyIndexQuery> queries( PropertyRecord prop )
+    {
+        if ( prop == null )
+        {
+            return Stream.of();
+        }
+
+        final var general = Stream.of(
+                PropertyIndexQuery.exists( prop.id ),
+                PropertyIndexQuery.exact( prop.id, prop.value ),
+                PropertyIndexQuery.range( prop.id, prop.type.toValue( RANGE.first() ), true, prop.type.toValue( RANGE.other() ), false ) );
+
+        final var text = Stream.of(
+                PropertyIndexQuery.stringPrefix( prop.id, Values.utf8Value( "1" ) ),
+                PropertyIndexQuery.stringSuffix( prop.id, Values.utf8Value( "1" ) ),
+                PropertyIndexQuery.stringContains( prop.id, Values.utf8Value( "1" ) ) );
+
+        final var queries = prop.type == ValueType.TEXT
+                            ? Stream.concat( general, text )
+                            : general;
+
+        return queries.filter( query -> query.acceptsValue( prop.value ) );
+    }
+
+    private static Stream<PropertyIndexQuery[]> queries( PropertyRecord... props )
+    {
+        final var allSingleQueries = Arrays.stream( props )
+                                           .map( PropertyIndexSeekPartitionedScanTestSuite::queries )
+                                           .map( queries -> queries.collect( Collectors.toUnmodifiableList() ) )
+                                           .collect( Collectors.toUnmodifiableList() );
+
+        // cartesian product of all single queries that match
+        var compositeQueries = Stream.of( List.<PropertyIndexQuery>of() );
+        for ( final var singleQueries : allSingleQueries )
+        {
+            compositeQueries = compositeQueries.flatMap( prev ->
+                singleQueries.stream().map( extra ->
+                {
+                    final var prevWithExtra = new ArrayList<>( prev );
+                    prevWithExtra.add( extra );
+                    return prevWithExtra;
+                } ) );
+        }
+
+        return compositeQueries.map( compositeQuery -> compositeQuery.toArray( PropertyIndexQuery[]::new ) );
     }
 
     /**

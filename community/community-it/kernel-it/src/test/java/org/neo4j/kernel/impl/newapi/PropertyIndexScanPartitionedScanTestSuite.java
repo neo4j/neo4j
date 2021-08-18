@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.kernel.impl.newapi.PropertyIndexScanPartitionedScanTestSuite.PropertyKeyScanQuery;
@@ -44,10 +43,8 @@ abstract class PropertyIndexScanPartitionedScanTestSuite<CURSOR extends Cursor>
             super( testSuite );
         }
 
-        protected Queries<PropertyKeyScanQuery> emptyQueries( Pair<Integer,int[]> tokenAndPropKeyCombination )
+        protected Queries<PropertyKeyScanQuery> emptyQueries( int tokenId, int[] propKeyIds )
         {
-            final var tokenId = tokenAndPropKeyCombination.first();
-            final var propKeyIds = tokenAndPropKeyCombination.other();
             final var empty = Stream.concat( Arrays.stream( propKeyIds ).mapToObj( propKeyId -> factory.getIndexName( tokenId, propKeyId ) ),
                                              Stream.of( factory.getIndexName( tokenId, propKeyIds ) ) )
                                     .map( PropertyKeyScanQuery::new )

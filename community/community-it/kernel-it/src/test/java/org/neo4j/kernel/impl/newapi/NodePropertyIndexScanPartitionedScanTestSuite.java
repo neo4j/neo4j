@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Nested;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodePropertyIndexScan;
 
@@ -60,10 +59,9 @@ class NodePropertyIndexScanPartitionedScanTestSuite
 
             final var labelId = createTags( numberOfLabels, factory.getTokenFactory() ).get( 0 );
             final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
-            final var labelAndPropKeyCombination = Pair.of( labelId, propKeyIds );
 
-            final var data = emptyQueries( labelAndPropKeyCombination );
-            createIndexes( createIndexPrototypes( labelAndPropKeyCombination ) );
+            final var data = emptyQueries( labelId, propKeyIds );
+            createIndexes( createIndexPrototypes( labelId, propKeyIds ) );
             return data;
         }
     }
@@ -85,15 +83,14 @@ class NodePropertyIndexScanPartitionedScanTestSuite
 
             final var labelId = createTags( numberOfLabels, factory.getTokenFactory() ).get( 0 );
             final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
-            final var labelAndPropKeyCombination = Pair.of( labelId, propKeyIds );
 
-            final var data = createData( numberOfProperties, labelAndPropKeyCombination );
-            createIndexes( createIndexPrototypes( labelAndPropKeyCombination ) );
+            final var data = createData( numberOfProperties, labelId, propKeyIds );
+            createIndexes( createIndexPrototypes( labelId, propKeyIds ) );
             return data;
         }
 
         @Override
-        protected Queries<PropertyKeyScanQuery> createData( int numberOfProperties, Pair<Integer,int[]> labelAndPropKeyCombination )
+        protected Queries<PropertyKeyScanQuery> createData( int numberOfProperties, int labelId, int[] propKeyIds )
         {
             // given  a set of queries
             final var nodesInIndex = new EntityIdsMatchingQuery<PropertyKeyScanQuery>();
@@ -106,10 +103,7 @@ class NodePropertyIndexScanPartitionedScanTestSuite
                 final var write = tx.dataWrite();
                 while ( propValues.hasNext() )
                 {
-                    final var labelId = labelAndPropKeyCombination.first();
-                    final var propKeyIds = labelAndPropKeyCombination.other();
                     final var assignedProperties = new PropertyRecord[propKeyIds.length];
-
                     final var nodeId = write.nodeCreate();
                     if ( write.nodeAddLabel( nodeId, labelId ) )
                     {

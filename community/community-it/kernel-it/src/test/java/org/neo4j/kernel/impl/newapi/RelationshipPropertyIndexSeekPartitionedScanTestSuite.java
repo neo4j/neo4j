@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import org.junit.jupiter.api.Nested;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipPropertyIndexSeek;
 
@@ -58,10 +57,9 @@ class RelationshipPropertyIndexSeekPartitionedScanTestSuite
 
             final var relTypeId = createTags( numberOfRelTypes, factory.getTokenFactory() ).get( 0 );
             final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
-            final var relTypeAndPropKeyCombination = Pair.of( relTypeId, propKeyIds );
 
-            createIndexes( createIndexPrototypes( relTypeAndPropKeyCombination ) );
-            return emptyQueries( relTypeAndPropKeyCombination );
+            createIndexes( createIndexPrototypes( relTypeId, propKeyIds ) );
+            return emptyQueries( relTypeId, propKeyIds );
         }
     }
 
@@ -83,14 +81,13 @@ class RelationshipPropertyIndexSeekPartitionedScanTestSuite
 
             final var relTypeId = createTags( numberOfRelTypes, factory.getTokenFactory() ).get( 0 );
             final var propKeyIds = createTags( numberOfPropKeys, factory.getPropKeyFactory() ).stream().mapToInt( i -> i ).toArray();
-            final var relTypeAndPropKeyCombination = Pair.of( relTypeId, propKeyIds );
 
-            createIndexes( createIndexPrototypes( relTypeAndPropKeyCombination ) );
-            return createData( numberOfProperties, relTypeAndPropKeyCombination );
+            createIndexes( createIndexPrototypes( relTypeId, propKeyIds ) );
+            return createData( numberOfProperties, relTypeId, propKeyIds );
         }
 
         @Override
-        protected Queries<PropertyKeySeekQuery> createData( int numberOfProperties, Pair<Integer,int[]> relTypeAndPropKeyCombination )
+        protected Queries<PropertyKeySeekQuery> createData( int numberOfProperties, int relTypeId, int[] propKeyIds )
         {
             // given  a set of queries
             final var tracking = new TrackEntityIdsMatchingQuery();
@@ -103,10 +100,7 @@ class RelationshipPropertyIndexSeekPartitionedScanTestSuite
                 final var write = tx.dataWrite();
                 while ( propValues.hasNext() )
                 {
-                    final var relTypeId = relTypeAndPropKeyCombination.first();
-                    final var propKeyIds = relTypeAndPropKeyCombination.other();
                     final var assignedProperties = new PropertyRecord[propKeyIds.length];
-
                     final var relId = write.relationshipCreate( write.nodeCreate(), relTypeId, write.nodeCreate() );
                     for ( int i = 0; i < propKeyIds.length; i++ )
                     {
