@@ -124,6 +124,7 @@ public interface IndexCapability
         @Override
         public boolean supportPartitionedScan( IndexQuery... queries )
         {
+            Preconditions.requireNonEmpty( queries );
             Preconditions.requireNoNullElements( queries );
             return false;
         }

@@ -103,6 +103,7 @@ abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCo
             @Override
             public boolean supportPartitionedScan( IndexQuery... queries )
             {
+                Preconditions.requireNonEmpty( queries );
                 Preconditions.requireNoNullElements( queries );
                 return false;
             }

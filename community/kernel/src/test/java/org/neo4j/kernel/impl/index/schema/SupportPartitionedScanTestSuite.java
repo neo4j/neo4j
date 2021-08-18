@@ -62,7 +62,15 @@ abstract class SupportPartitionedScanTestSuite
     }
 
     @Test
-    void throwOnNullQueries()
+    final void throwOnEmptyQueries()
+    {
+        softly.assertThatThrownBy( capability::supportPartitionedScan, "require non empty queries" )
+              .isInstanceOf( IllegalArgumentException.class )
+              .hasMessageContaining( "Expected non empty array" );
+    }
+
+    @Test
+    final void throwOnNullQueries()
     {
         softly.assertThatThrownBy( () -> capability.supportPartitionedScan( null, null ), "require all non-null queries" )
               .isInstanceOf( IllegalArgumentException.class )
@@ -70,7 +78,7 @@ abstract class SupportPartitionedScanTestSuite
     }
 
     @Test
-    void testSupported()
+    final void testSupported()
     {
         supported.forEach( ( query, expected ) ->
             softly.assertThat( capability.supportPartitionedScan( query.queries( idGenerator() ) ) )

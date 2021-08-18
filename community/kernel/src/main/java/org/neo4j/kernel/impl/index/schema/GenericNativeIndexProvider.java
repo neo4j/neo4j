@@ -270,9 +270,9 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         @Override
         public boolean supportPartitionedScan( IndexQuery... queries )
         {
+            Preconditions.requireNonEmpty( queries );
             Preconditions.requireNoNullElements( queries );
-            if ( queries.length == 0
-                 || Arrays.stream( queries ).anyMatch( query ->
+            if ( Arrays.stream( queries ).anyMatch( query ->
                     query instanceof TokenPredicate
                     || query instanceof PropertyIndexQuery.GeometryRangePredicate
                     || query instanceof PropertyIndexQuery.RangePredicate && ((PropertyIndexQuery) query).valueGroup() == ValueGroup.GEOMETRY_ARRAY )

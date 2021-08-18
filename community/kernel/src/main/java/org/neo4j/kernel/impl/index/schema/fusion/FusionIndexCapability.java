@@ -97,6 +97,7 @@ public class FusionIndexCapability implements IndexCapability
     @Override
     public boolean supportPartitionedScan( IndexQuery... queries )
     {
+        Preconditions.requireNonEmpty( queries );
         Preconditions.requireNoNullElements( queries );
         if ( Arrays.stream( queries ).anyMatch( query ->
                 query instanceof TokenPredicate

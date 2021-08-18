@@ -222,6 +222,7 @@ public class TokenIndexProvider extends IndexProvider
         @Override
         public boolean supportPartitionedScan( IndexQuery... queries )
         {
+            Preconditions.requireNonEmpty( queries );
             Preconditions.requireNoNullElements( queries );
             return queries.length == 1 && queries[0] instanceof TokenPredicate;
         }

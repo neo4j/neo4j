@@ -200,8 +200,9 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
         @Override
         public boolean supportPartitionedScan( IndexQuery... queries )
         {
+            Preconditions.requireNonEmpty( queries );
             Preconditions.requireNoNullElements( queries );
-            if ( queries.length == 0 || Arrays.stream( queries ).anyMatch( query ->
+            if ( Arrays.stream( queries ).anyMatch( query ->
                     query instanceof TokenPredicate
                     || query instanceof PropertyIndexQuery.StringSuffixPredicate
                     || query instanceof PropertyIndexQuery.StringContainsPredicate
