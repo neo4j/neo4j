@@ -968,19 +968,19 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
      */
     public static DurationValue approximate( double months, double days, double seconds, double nanos )
     {
-        long monthsAsLong = safeDoubleToLong(months);
+        long monthsAsLong = safeDoubleToLong( months );
 
-        double monthDiffInNanos = AVG_NANOS_PER_MONTH * months - AVG_NANOS_PER_MONTH * monthsAsLong;
+        double monthDiffInNanos = AVG_NANOS_PER_MONTH * (months - monthsAsLong);
         days += monthDiffInNanos / (NANOS_PER_SECOND * SECONDS_PER_DAY);
-        long daysAsLong = safeDoubleToLong(days);
+        long daysAsLong = safeDoubleToLong( days );
 
-        double daysDiffInNanos = NANOS_PER_SECOND * SECONDS_PER_DAY * days - NANOS_PER_SECOND * SECONDS_PER_DAY * daysAsLong;
+        double daysDiffInNanos = NANOS_PER_SECOND * SECONDS_PER_DAY * (days - daysAsLong);
         seconds += daysDiffInNanos / NANOS_PER_SECOND;
-        long secondsAsLong = safeDoubleToLong(seconds);
+        long secondsAsLong = safeDoubleToLong( seconds );
 
-        double secondsDiffInNanos = NANOS_PER_SECOND * seconds - NANOS_PER_SECOND * secondsAsLong;
+        double secondsDiffInNanos = NANOS_PER_SECOND * (seconds - secondsAsLong);
         nanos += secondsDiffInNanos;
-        long nanosAsLong = safeDoubleToLong(nanos);
+        long nanosAsLong = safeDoubleToLong( nanos );
 
         return duration( monthsAsLong, daysAsLong, secondsAsLong, nanosAsLong );
     }

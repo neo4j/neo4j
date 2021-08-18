@@ -584,7 +584,7 @@ class DurationValueTest
     public void shouldApproximateWithoutAccumulatedRoundingErrors()
     {
         DurationValue result = DurationValue.approximate( 10.8, 0, 0, 0 );
-        assertEqual( result, DurationValue.duration( 10, 24, 30196, 800000000 ) );
+        assertEqual( result, DurationValue.duration( 10, 24, 30196, 800000001 ) );
     }
 
     @Test
@@ -594,6 +594,20 @@ class DurationValueTest
         double nanos = 0.6; // with 1.1 ns we should be on the safe side to get rounded to 1 ns, even with rounding errors
         DurationValue result = DurationValue.approximate( months, 0, 0, nanos );
         assertEqual( result, DurationValue.duration( 0, 0, 0, 1 ) );
+    }
+
+    @Test
+    public void shouldNotOverflowOnBiggerValues()
+    {
+        assertEqual(
+                DurationValue.approximate( 293 * 12, 0, 0, 0 ),
+                DurationValue.duration( 293 * 12, 0, 0, 0 ) );
+        assertEqual(
+                DurationValue.approximate( 0, 106752, 0, 0 ),
+                DurationValue.duration( 0, 106752, 0, 0 ) );
+        assertEqual(
+                DurationValue.approximate( 0, 0, 9223372037L, 0 ),
+                DurationValue.duration( 0, 0, 9223372037L, 0 ) );
     }
 
     @Test
