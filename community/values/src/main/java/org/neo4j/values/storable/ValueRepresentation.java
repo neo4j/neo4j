@@ -415,7 +415,16 @@ public enum ValueRepresentation
                     int i = 0;
                     for ( AnyValue value : values )
                     {
-                        floats[i++] = getOrFail( value, FloatValue.class ).value();
+                        NumberValue asNumberValue = getOrFail( value, NumberValue.class );
+                        if ( asNumberValue instanceof FloatValue )
+                        {
+                            floats[i] = ((FloatValue) asNumberValue).value();
+                        }
+                        else
+                        {
+                            floats[i] = asNumberValue.longValue();
+                        }
+                        i++;
                     }
                     return Values.floatArray( floats );
                 }
