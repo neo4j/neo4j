@@ -468,7 +468,7 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         final var descriptor = session.reference();
-        if ( !descriptor.getCapability().supportPartitionedScan() )
+        if ( !descriptor.getCapability().supportPartitionedScan( query ) )
         {
             throw new IndexNotApplicableKernelException( "This index does not support partitioned scan for this query: "
                                                          + descriptor.userDescription( ktx.tokenRead() ) );

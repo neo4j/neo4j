@@ -30,6 +30,7 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
@@ -271,12 +272,13 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         {
             Preconditions.requireNoNullElements( queries );
             if ( queries.length == 0
-                 || Arrays.stream( queries ).anyMatch( PropertyIndexQuery.GeometryRangePredicate.class::isInstance )
-                 || Arrays.stream( queries ).filter( PropertyIndexQuery.RangePredicate.class::isInstance )
-                          .map( PropertyIndexQuery.RangePredicate.class::cast )
-                          .map( PropertyIndexQuery::valueGroup ).anyMatch( ValueGroup.GEOMETRY_ARRAY::equals )
-                 || (queries.length > 1 && (Arrays.stream( queries ).anyMatch( PropertyIndexQuery.StringSuffixPredicate.class::isInstance )
-                                            || Arrays.stream( queries ).anyMatch( PropertyIndexQuery.StringContainsPredicate.class::isInstance ))) )
+                 || Arrays.stream( queries ).anyMatch( query ->
+                    query instanceof TokenPredicate
+                    || query instanceof PropertyIndexQuery.GeometryRangePredicate
+                    || query instanceof PropertyIndexQuery.RangePredicate && ((PropertyIndexQuery) query).valueGroup() == ValueGroup.GEOMETRY_ARRAY )
+                 || queries.length > 1 && Arrays.stream( queries ).anyMatch( query ->
+                    query instanceof PropertyIndexQuery.StringSuffixPredicate
+                    || query instanceof PropertyIndexQuery.StringContainsPredicate ) )
             {
                 return false;
             }

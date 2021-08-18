@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.function.IntSupplier;
 
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -115,7 +116,7 @@ abstract class SupportPartitionedScanTestSuite
     {
         // singular queries
 
-        TOKEN_LOOKUP( new IndexQueryFromId[0] ),
+        TOKEN_LOOKUP( TokenPredicate::new ),
 
         EXISTS( PropertyIndexQuery::exists ),
 
@@ -792,6 +793,7 @@ abstract class SupportPartitionedScanTestSuite
                          .toArray( IndexQuery[]::new );
         }
 
+        @FunctionalInterface
         interface IndexQueryFromId
         {
             IndexQuery fromId( int id );

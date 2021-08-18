@@ -28,6 +28,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -201,7 +202,8 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
         {
             Preconditions.requireNoNullElements( queries );
             if ( queries.length == 0 || Arrays.stream( queries ).anyMatch( query ->
-                    query instanceof PropertyIndexQuery.StringSuffixPredicate
+                    query instanceof TokenPredicate
+                    || query instanceof PropertyIndexQuery.StringSuffixPredicate
                     || query instanceof PropertyIndexQuery.StringContainsPredicate
                     || query instanceof PropertyIndexQuery.GeometryRangePredicate
                     || query instanceof PropertyIndexQuery.RangePredicate && ((PropertyIndexQuery) query).valueGroup() == ValueGroup.GEOMETRY_ARRAY ) )

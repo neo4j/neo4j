@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -97,7 +98,9 @@ public class FusionIndexCapability implements IndexCapability
     public boolean supportPartitionedScan( IndexQuery... queries )
     {
         Preconditions.requireNoNullElements( queries );
-        if ( Arrays.stream( queries ).anyMatch( PropertyIndexQuery.ExistsPredicate.class::isInstance ) )
+        if ( Arrays.stream( queries ).anyMatch( query ->
+                query instanceof TokenPredicate
+                || query instanceof PropertyIndexQuery.ExistsPredicate ) )
         {
             return false;
         }
