@@ -26,11 +26,11 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.memory.MemoryTracker;
 
-class BlockBasedRangeIndexPopulator extends BlockBasedIndexPopulator<RangeKey,NativeIndexValue>
+class BlockBasedRangeIndexPopulator extends BlockBasedIndexPopulator<RangeKey>
 {
     private final TokenNameLookup tokenNameLookup;
 
-    BlockBasedRangeIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<RangeKey,NativeIndexValue> layout,
+    BlockBasedRangeIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<RangeKey> layout,
             IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup )
     {
@@ -39,7 +39,7 @@ class BlockBasedRangeIndexPopulator extends BlockBasedIndexPopulator<RangeKey,Na
     }
 
     @Override
-    NativeIndexReader<RangeKey,NativeIndexValue> newReader()
+    NativeIndexReader<RangeKey> newReader()
     {
         return new RangeIndexReader( tree, layout, descriptor );
     }

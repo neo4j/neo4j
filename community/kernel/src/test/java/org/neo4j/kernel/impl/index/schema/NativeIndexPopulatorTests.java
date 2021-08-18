@@ -51,12 +51,12 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILE
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_POPULATING;
 
-abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
-        extends IndexPopulatorTests<KEY,VALUE,IndexLayout<KEY,VALUE>>
+abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
+        extends IndexPopulatorTests<KEY,NullValue,IndexLayout<KEY>>
 {
     private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
-    NativeValueIndexUtility<KEY,VALUE> valueUtil;
-    ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
+    NativeValueIndexUtility<KEY> valueUtil;
+    ValueCreatorUtil<KEY> valueCreatorUtil;
 
     @BeforeEach
     void setupValueCreator()
@@ -88,7 +88,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         return BYTE_ONLINE;
     }
 
-    abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
+    abstract ValueCreatorUtil<KEY> createValueCreatorUtil();
 
     @Test
     void dropShouldDeleteExistingDirectory() throws IOException

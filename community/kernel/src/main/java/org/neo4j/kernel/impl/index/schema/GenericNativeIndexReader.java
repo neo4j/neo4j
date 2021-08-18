@@ -44,12 +44,12 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-class GenericNativeIndexReader extends NativeIndexReader<BtreeKey,NativeIndexValue>
+class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
 {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
 
-    GenericNativeIndexReader( GBPTree<BtreeKey,NativeIndexValue> tree, IndexLayout<BtreeKey,NativeIndexValue> layout,
+    GenericNativeIndexReader( GBPTree<BtreeKey,NullValue> tree, IndexLayout<BtreeKey> layout,
             IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
             SpaceFillingCurveConfiguration configuration )
     {
@@ -87,7 +87,7 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey,NativeIndexVal
                 for ( SpaceFillingCurve.LongRange range : ranges )
                 {
                     // Here's a sub-query that we'll have to do for this geometry range. Build this query from all predicates
-                    // and when getting to the geometry range predicate that sparked these sub-query chenanigans, swap in this sub-query in its place.
+                    // and when getting to the geometry range predicate that sparked these sub-query shenanigans, swap in this sub-query in its place.
                     BtreeKey treeKeyFrom = layout.newKey();
                     BtreeKey treeKeyTo = layout.newKey();
                     initializeFromToKeys( treeKeyFrom, treeKeyTo );

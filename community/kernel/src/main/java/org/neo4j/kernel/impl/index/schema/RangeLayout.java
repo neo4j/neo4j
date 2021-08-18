@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-class RangeLayout extends IndexLayout<RangeKey,NativeIndexValue>
+class RangeLayout extends IndexLayout<RangeKey>
 {
     private final int numberOfSlots;
 

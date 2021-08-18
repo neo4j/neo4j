@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 
-class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey,NativeIndexValue>
+class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey>
 {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
@@ -47,7 +47,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey,NativeInde
     private IndexValueValidator validator;
 
     GenericNativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-            IndexLayout<BtreeKey,NativeIndexValue> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
+            IndexLayout<BtreeKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
             IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration, TokenNameLookup tokenNameLookup )
     {
         super( databaseIndexContext, indexFiles, layout, descriptor );
@@ -58,7 +58,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey,NativeInde
     }
 
     @Override
-    protected void afterTreeInstantiation( GBPTree<BtreeKey,NativeIndexValue> tree )
+    protected void afterTreeInstantiation( GBPTree<BtreeKey,NullValue> tree )
     {
         validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
     }
@@ -95,11 +95,11 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey,NativeInde
         highest.initValuesAsHighest();
         try
         {
-            Collection<Seeker.WithContext<BtreeKey,NativeIndexValue>> seekersWithContext = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
+            Collection<Seeker.WithContext<BtreeKey,NullValue>> seekersWithContext = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
             Collection<IndexEntriesReader> readers = new ArrayList<>();
-            for ( Seeker.WithContext<BtreeKey,NativeIndexValue> seekerWithContext : seekersWithContext )
+            for ( Seeker.WithContext<BtreeKey,NullValue> seekerWithContext : seekersWithContext )
             {
-                Seeker<BtreeKey,NativeIndexValue> seeker = seekerWithContext.with( cursorContext );
+                Seeker<BtreeKey,NullValue> seeker = seekerWithContext.with( cursorContext );
                 readers.add( new IndexEntriesReader()
                 {
                     @Override

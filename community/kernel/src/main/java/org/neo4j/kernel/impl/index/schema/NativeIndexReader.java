@@ -44,13 +44,13 @@ import org.neo4j.values.storable.Value;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements ValueIndexReader
+abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements ValueIndexReader
 {
     protected final IndexDescriptor descriptor;
-    final IndexLayout<KEY,VALUE> layout;
-    final GBPTree<KEY,VALUE> tree;
+    final IndexLayout<KEY> layout;
+    final GBPTree<KEY,NullValue> tree;
 
-    NativeIndexReader( GBPTree<KEY,VALUE> tree, IndexLayout<KEY,VALUE> layout, IndexDescriptor descriptor )
+    NativeIndexReader( GBPTree<KEY,NullValue> tree, IndexLayout<KEY> layout, IndexDescriptor descriptor )
     {
         this.tree = tree;
         this.layout = layout;
@@ -72,7 +72,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         // non-unique sampler which scans the index and counts (potentially duplicates, of which there will
         // be none in a unique index).
 
-        FullScanNonUniqueIndexSampler<KEY,VALUE> sampler = new FullScanNonUniqueIndexSampler<>( tree, layout );
+        FullScanNonUniqueIndexSampler<KEY> sampler = new FullScanNonUniqueIndexSampler<>( tree, layout );
         return tracer ->
         {
             try
@@ -104,7 +104,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             treeKeyFrom.initFromValue( i, propertyValues[i], NEUTRAL );
             treeKeyTo.initFromValue( i, propertyValues[i], NEUTRAL );
         }
-        try ( Seeker<KEY,VALUE> seeker = tree.seek( treeKeyFrom, treeKeyTo, cursorContext ) )
+        try ( Seeker<KEY,NullValue> seeker = tree.seek( treeKeyFrom, treeKeyTo, cursorContext ) )
         {
             long count = 0;
             while ( seeker.next() )
@@ -160,7 +160,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
         try
         {
-            Seeker<KEY,VALUE> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, constraints.order(), cursorContext );
+            Seeker<KEY,NullValue> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, constraints.order(), cursorContext );
             IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
             client.initialize( descriptor, hitProgressor, accessMode, false, constraints, query );
         }
@@ -170,7 +170,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
     }
 
-    Seeker<KEY,VALUE> makeIndexSeeker( KEY treeKeyFrom, KEY treeKeyTo, IndexOrder indexOrder, CursorContext cursorContext ) throws IOException
+    Seeker<KEY,NullValue> makeIndexSeeker( KEY treeKeyFrom, KEY treeKeyTo, IndexOrder indexOrder, CursorContext cursorContext ) throws IOException
     {
         if ( indexOrder == IndexOrder.DESCENDING )
         {
@@ -181,7 +181,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         return tree.seek( treeKeyFrom, treeKeyTo, cursorContext );
     }
 
-    private IndexProgressor getIndexProgressor( Seeker<KEY,VALUE> seeker, IndexProgressor.EntityValueClient client, boolean needFilter,
+    private IndexProgressor getIndexProgressor( Seeker<KEY,NullValue> seeker, IndexProgressor.EntityValueClient client, boolean needFilter,
                                                 PropertyIndexQuery[] query )
     {
         return needFilter ? new FilteringNativeHitIndexProgressor<>( seeker, client, query )
@@ -210,7 +210,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     {
         private final PropertyIndexQuery[] query;
         private final boolean filter;
-        private final Iterator<Seeker.WithContext<KEY,VALUE>> partitions;
+        private final Iterator<Seeker.WithContext<KEY,NullValue>> partitions;
         private final int numberOfPartitions;
 
         NativePartitionedValueSeek( int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query ) throws IOException
@@ -254,7 +254,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             }
         }
 
-        private synchronized Optional<Seeker.WithContext<KEY,VALUE>> getNextPotentialPartition()
+        private synchronized Optional<Seeker.WithContext<KEY,NullValue>> getNextPotentialPartition()
         {
             return partitions.hasNext() ? Optional.of( partitions.next() ) : Optional.empty();
         }

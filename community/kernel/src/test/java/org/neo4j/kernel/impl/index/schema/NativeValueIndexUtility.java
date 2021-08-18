@@ -19,11 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
@@ -40,29 +37,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-public class NativeValueIndexUtility<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+public class NativeValueIndexUtility<KEY extends NativeIndexKey<KEY>>
 {
-    private final ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
-    private final Layout<KEY,VALUE> layout;
+    private final ValueCreatorUtil<KEY> valueCreatorUtil;
+    private final Layout<KEY,NullValue> layout;
 
-    public NativeValueIndexUtility( ValueCreatorUtil<KEY,VALUE> valueCreatorUtil, Layout<KEY,VALUE> layout )
+    public NativeValueIndexUtility( ValueCreatorUtil<KEY> valueCreatorUtil, Layout<KEY,NullValue> layout )
     {
         this.valueCreatorUtil = valueCreatorUtil;
         this.layout = layout;
     }
 
-    private void copyValue( VALUE value, VALUE intoValue )
-    {
-        valueCreatorUtil.copyValue( value, intoValue );
-    }
-
-    void verifyUpdates( ValueIndexEntryUpdate<IndexDescriptor>[] updates, Supplier<GBPTree<KEY,VALUE>> treeProvider )
+    void verifyUpdates( ValueIndexEntryUpdate<IndexDescriptor>[] updates, Supplier<GBPTree<KEY,NullValue>> treeProvider )
             throws IOException
     {
-        Pair<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
-        List<Pair<KEY,VALUE>> actualHits = new ArrayList<>();
-        try ( GBPTree<KEY,VALUE> tree = treeProvider.get();
-              Seeker<KEY,VALUE> scan = scan( tree ) )
+        List<KEY> expectedHits = convertToHits( updates, layout );
+        List<KEY> actualHits = new ArrayList<>();
+        try ( GBPTree<KEY,NullValue> tree = treeProvider.get();
+              Seeker<KEY,NullValue> scan = scan( tree ) )
         {
             while ( scan.next() )
             {
@@ -70,22 +62,22 @@ public class NativeValueIndexUtility<KEY extends NativeIndexKey<KEY>, VALUE exte
             }
         }
 
-        Comparator<Pair<KEY,VALUE>> hitComparator = ( h1, h2 ) ->
+        Comparator<KEY> hitComparator = ( h1, h2 ) ->
         {
-            int keyCompare = layout.compare( h1.getKey(), h2.getKey() );
+            int keyCompare = layout.compare( h1, h2 );
             if ( keyCompare == 0 )
             {
-                return valueCreatorUtil.compareIndexedPropertyValue( h1.getKey(), h2.getKey() );
+                return valueCreatorUtil.compareIndexedPropertyValue( h1, h2 );
             }
             else
             {
                 return keyCompare;
             }
         };
-        assertSameHits( expectedHits, actualHits.toArray( new Pair[0] ), hitComparator );
+        assertSameHits( expectedHits, actualHits, hitComparator );
     }
 
-    private Seeker<KEY,VALUE> scan( GBPTree<KEY,VALUE> tree ) throws IOException
+    private Seeker<KEY,NullValue> scan( GBPTree<KEY,NullValue> tree ) throws IOException
     {
         KEY lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );
@@ -96,37 +88,35 @@ public class NativeValueIndexUtility<KEY extends NativeIndexKey<KEY>, VALUE exte
         return tree.seek( lowest, highest, NULL );
     }
 
-    private void assertSameHits( Pair<KEY, VALUE>[] expectedHits, Pair<KEY, VALUE>[] actualHits,
-            Comparator<Pair<KEY, VALUE>> comparator )
+    private void assertSameHits( List<KEY> expectedHits, List<KEY> actualHits,
+            Comparator<KEY> comparator )
     {
-        Arrays.sort( expectedHits, comparator );
-        Arrays.sort( actualHits, comparator );
+        expectedHits.sort( comparator );
+        actualHits.sort( comparator );
         assertEquals(
-            expectedHits.length, actualHits.length, format( "Array length differ%nExpected:%d, Actual:%d",
-                    expectedHits.length, actualHits.length ) );
+            expectedHits.size(), actualHits.size(), format( "Array length differ%nExpected:%d, Actual:%d",
+                    expectedHits.size(), actualHits.size() ) );
 
-        for ( int i = 0; i < expectedHits.length; i++ )
+        for ( int i = 0; i < expectedHits.size(); i++ )
         {
-            Pair<KEY,VALUE> expected = expectedHits[i];
-            Pair<KEY,VALUE> actual = actualHits[i];
+            KEY expected = expectedHits.get( i );
+            KEY actual = actualHits.get( i );
             assertEquals( 0, comparator.compare( expected, actual ),
                 "Hits differ on item number " + i + ". Expected " + expected + " but was " + actual );
         }
     }
 
-    private Pair<KEY,VALUE> deepCopy( Seeker<KEY,VALUE> from )
+    private KEY deepCopy( Seeker<KEY,NullValue> from )
     {
         KEY intoKey = layout.newKey();
-        VALUE intoValue = layout.newValue();
         layout.copyKey( from.key(), intoKey );
-        copyValue( from.value(), intoValue );
-        return Pair.of( intoKey, intoValue );
+        return intoKey;
     }
 
-    private Pair<KEY,VALUE>[] convertToHits( ValueIndexEntryUpdate<IndexDescriptor>[] updates,
-            Layout<KEY,VALUE> layout )
+    private List<KEY> convertToHits( ValueIndexEntryUpdate<IndexDescriptor>[] updates,
+            Layout<KEY,NullValue> layout )
     {
-        List<Pair<KEY,VALUE>> hits = new ArrayList<>( updates.length );
+        List<KEY> hits = new ArrayList<>( updates.length );
         for ( ValueIndexEntryUpdate<IndexDescriptor> u : updates )
         {
             KEY key = layout.newKey();
@@ -135,10 +125,8 @@ public class NativeValueIndexUtility<KEY extends NativeIndexKey<KEY>, VALUE exte
             {
                 key.initFromValue( i, u.values()[i], NEUTRAL );
             }
-            VALUE value = layout.newValue();
-            value.from( u.values() );
-            hits.add( Pair.of( key, value ) );
+            hits.add( key );
         }
-        return hits.toArray( new Pair[0] );
+        return hits;
     }
 }

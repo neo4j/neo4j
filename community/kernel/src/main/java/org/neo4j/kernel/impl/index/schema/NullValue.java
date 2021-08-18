@@ -19,27 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.values.storable.Value;
-
 /**
- * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
- *
- * NOTE:  For the time being no data exists in {@link NativeIndexValue}, but since the layout is under development
- * it's very convenient to have this class still exist so that it's very easy to try out different types
- * of layouts without changing the entire stack of arguments. In the end it may just be that this class
- * will be deleted, but for now it sticks around.
+ * Null-object used by {@link IndexLayout}
  */
-class NativeIndexValue
+class NullValue
 {
     static final int SIZE = 0;
 
-    static final NativeIndexValue INSTANCE = new NativeIndexValue();
-
-    void from( Value... values )
-    {
-        // not needed a.t.m.
-    }
+    static final NullValue INSTANCE = new NullValue();
 
     @Override
     public String toString()

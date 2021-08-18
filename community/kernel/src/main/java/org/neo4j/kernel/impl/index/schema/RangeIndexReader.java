@@ -35,10 +35,10 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-public class RangeIndexReader extends NativeIndexReader<RangeKey,NativeIndexValue>
+public class RangeIndexReader extends NativeIndexReader<RangeKey>
 {
-    RangeIndexReader( GBPTree<RangeKey,NativeIndexValue> tree,
-            IndexLayout<RangeKey,NativeIndexValue> layout, IndexDescriptor descriptor )
+    RangeIndexReader( GBPTree<RangeKey,NullValue> tree,
+            IndexLayout<RangeKey> layout, IndexDescriptor descriptor )
     {
         super( tree, layout, descriptor );
     }

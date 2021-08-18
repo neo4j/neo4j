@@ -63,7 +63,7 @@ class IndexUpdateStorageTest
     void shouldAddZeroEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<BtreeKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+        try ( IndexUpdateStorage<BtreeKey> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
                 heapBufferFactory( 0 ).globalAllocator(), 1000, layout, INSTANCE
         ) )
         {
@@ -80,7 +80,7 @@ class IndexUpdateStorageTest
     void shouldAddFewEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<BtreeKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+        try ( IndexUpdateStorage<BtreeKey> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
                 heapBufferFactory( 0 ).globalAllocator(), 1000, layout, INSTANCE
         ) )
         {
@@ -97,7 +97,7 @@ class IndexUpdateStorageTest
     void shouldAddManyEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<BtreeKey,NativeIndexValue> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+        try ( IndexUpdateStorage<BtreeKey> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
                 heapBufferFactory( 0 ).globalAllocator(), 10_000, layout, INSTANCE
         ) )
         {
@@ -110,7 +110,7 @@ class IndexUpdateStorageTest
         }
     }
 
-    private static void storeAll( IndexUpdateStorage<BtreeKey,NativeIndexValue> storage, List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected )
+    private static void storeAll( IndexUpdateStorage<BtreeKey> storage, List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected )
             throws IOException
     {
         for ( IndexEntryUpdate<SchemaDescriptorSupplier> update : expected )
@@ -120,10 +120,10 @@ class IndexUpdateStorageTest
         storage.doneAdding();
     }
 
-    private static void verify( List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected, IndexUpdateStorage<BtreeKey,NativeIndexValue> storage )
+    private static void verify( List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected, IndexUpdateStorage<BtreeKey> storage )
             throws IOException
     {
-        try ( IndexUpdateCursor<BtreeKey,NativeIndexValue> reader = storage.reader() )
+        try ( IndexUpdateCursor<BtreeKey,NullValue> reader = storage.reader() )
         {
             for ( IndexEntryUpdate<SchemaDescriptorSupplier> expectedUpdate : expected )
             {
@@ -134,7 +134,7 @@ class IndexUpdateStorageTest
         }
     }
 
-    private static IndexEntryUpdate<SchemaDescriptorSupplier> asUpdate( IndexUpdateCursor<BtreeKey,NativeIndexValue> reader )
+    private static IndexEntryUpdate<SchemaDescriptorSupplier> asUpdate( IndexUpdateCursor<BtreeKey,NullValue> reader )
     {
         switch ( reader.updateMode() )
         {

@@ -23,11 +23,11 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.values.storable.Value;
 
-class FilteringNativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeHitIndexProgressor<KEY,VALUE>
+class FilteringNativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>> extends NativeHitIndexProgressor<KEY>
 {
     private final PropertyIndexQuery[] filter;
 
-    FilteringNativeHitIndexProgressor( Seeker<KEY,VALUE> seeker, EntityValueClient client, PropertyIndexQuery[] filter )
+    FilteringNativeHitIndexProgressor( Seeker<KEY,NullValue> seeker, EntityValueClient client, PropertyIndexQuery[] filter )
     {
         super( seeker, client );
         this.filter = filter;

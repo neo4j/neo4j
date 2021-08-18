@@ -39,17 +39,17 @@ class GenericBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorTest<B
     }
 
     @Override
-    BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
+    BlockBasedIndexPopulator<BtreeKey> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker ) throws IOException
     {
         GenericLayout layout = layout();
-        BlockBasedIndexPopulator<BtreeKey,NativeIndexValue> populator =
+        BlockBasedIndexPopulator<BtreeKey> populator =
                 new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory,
                         Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 ),
                         memoryTracker, monitor )
                 {
                     @Override
-                    NativeIndexReader<BtreeKey,NativeIndexValue> newReader()
+                    NativeIndexReader<BtreeKey> newReader()
                     {
                         throw new UnsupportedOperationException( "Not needed in this test" );
                     }

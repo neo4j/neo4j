@@ -37,17 +37,17 @@ class RangeBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorTest<Ran
     }
 
     @Override
-    BlockBasedIndexPopulator<RangeKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
+    BlockBasedIndexPopulator<RangeKey> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker ) throws IOException
     {
         RangeLayout layout = layout();
-        BlockBasedIndexPopulator<RangeKey,NativeIndexValue> populator =
+        BlockBasedIndexPopulator<RangeKey> populator =
                 new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory,
                         Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 ),
                         memoryTracker, monitor )
                 {
                     @Override
-                    NativeIndexReader<RangeKey,NativeIndexValue> newReader()
+                    NativeIndexReader<RangeKey> newReader()
                     {
                         throw new UnsupportedOperationException( "Not needed in this test" );
                     }

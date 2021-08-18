@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.NO_ENTITY_ID;
 
-class PointLayout extends IndexLayout<PointKey,NativeIndexValue>
+class PointLayout extends IndexLayout<PointKey>
 {
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
 

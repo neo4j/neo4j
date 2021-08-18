@@ -36,14 +36,14 @@ class NativeIndexPopulatorTestCases
     static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
-    static PopulatorFactory<BtreeKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
+    static PopulatorFactory<BtreeKey> genericBlockBasedPopulatorFactory()
     {
         return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
                 new GenericBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, spaceFillingCurveSettings, configuration, false,
                         heapBufferFactory( 10 * 1024 ), config, INSTANCE, tokenNameLookup );
     }
 
-    static NativeIndexPopulatorTestCases.PopulatorFactory<RangeKey,NativeIndexValue> rangeBlockBasedPopulatorFactory()
+    static NativeIndexPopulatorTestCases.PopulatorFactory<RangeKey> rangeBlockBasedPopulatorFactory()
     {
         return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
                 new BlockBasedRangeIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, false,
@@ -51,9 +51,9 @@ class NativeIndexPopulatorTestCases
     }
 
     @FunctionalInterface
-    public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+    public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>>
     {
-        NativeIndexPopulator<KEY,VALUE> create( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+        NativeIndexPopulator<KEY> create( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
                 IndexDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws IOException;
     }
 }

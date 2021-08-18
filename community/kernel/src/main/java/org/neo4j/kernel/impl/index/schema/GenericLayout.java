@@ -23,7 +23,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
-class GenericLayout extends IndexLayout<BtreeKey,NativeIndexValue>
+class GenericLayout extends IndexLayout<BtreeKey>
 {
     private final int numberOfSlots;
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;

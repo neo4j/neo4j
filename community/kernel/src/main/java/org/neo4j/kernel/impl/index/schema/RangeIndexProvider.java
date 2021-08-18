@@ -98,7 +98,7 @@ import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
  * We COULD allow this query and do filter during scan instead and take the extra cost into account when planning queries.
  * As of writing this, there is no such filtering implementation.
  */
-public class RangeIndexProvider extends NativeIndexProvider<RangeKey,NativeIndexValue,RangeLayout>
+public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout>
 {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "range", "1.0" );
     static final RangeIndexCapability CAPABILITY = new RangeIndexCapability();

@@ -95,7 +95,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     private IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
 
     abstract IndexType indexType();
-    abstract BlockBasedIndexPopulator<KEY,NativeIndexValue> instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException;
+    abstract BlockBasedIndexPopulator<KEY> instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException;
 
     @BeforeEach
     void setup()
@@ -126,7 +126,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     void shouldSeeExternalUpdateBothBeforeAndAfterScanCompleted() throws IndexEntryConflictException, IOException
     {
         // given
-        BlockBasedIndexPopulator<KEY, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -152,7 +152,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     void shouldThrowOnDuplicatedValuesFromScan() throws IOException
     {
         // given
-        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -176,7 +176,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     void shouldThrowOnDuplicatedValuesFromExternalUpdates() throws IOException
     {
         // given
-        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -203,7 +203,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     void shouldThrowOnDuplicatedValuesFromScanAndExternalUpdates() throws IOException
     {
         // given
-        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -230,7 +230,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     void shouldNotThrowOnDuplicationsLaterFixedByExternalUpdates() throws IndexEntryConflictException, IOException
     {
         // given
-        BlockBasedIndexPopulator<KEY,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -261,7 +261,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException, IOException
     {
         // given
-        BlockBasedIndexPopulator<KEY, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
         {
             int maxKeyValueSize = populator.tree.keyValueSizeCap();
@@ -286,7 +286,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     void shouldThrowForEntriesLargerThanMaxSize() throws IOException
     {
         // given
-        BlockBasedIndexPopulator<KEY, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
         {
             int maxKeyValueSize = populator.tree.keyValueSizeCap();
@@ -311,9 +311,9 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         }
     }
 
-    private void assertHasEntry( BlockBasedIndexPopulator<KEY, NativeIndexValue> populator, Value entry, int expectedId )
+    private void assertHasEntry( BlockBasedIndexPopulator<KEY> populator, Value entry, int expectedId )
     {
-        try ( NativeIndexReader<KEY, NativeIndexValue> reader = populator.newReader() )
+        try ( NativeIndexReader<KEY> reader = populator.newReader() )
         {
             SimpleEntityValueClient valueClient = new SimpleEntityValueClient();
             PropertyIndexQuery.ExactPredicate exact = PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), entry );
@@ -324,7 +324,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         }
     }
 
-    private void externalUpdate( BlockBasedIndexPopulator<KEY, NativeIndexValue> populator, TextValue matata, int matataId )
+    private void externalUpdate( BlockBasedIndexPopulator<KEY> populator, TextValue matata, int matataId )
         throws IndexEntryConflictException
     {
         try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( NULL ) )
@@ -334,9 +334,9 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         }
     }
 
-    private void assertMatch( BlockBasedIndexPopulator<KEY, NativeIndexValue> populator, Value value, long id )
+    private void assertMatch( BlockBasedIndexPopulator<KEY> populator, Value value, long id )
     {
-        try ( NativeIndexReader<KEY, NativeIndexValue> reader = populator.newReader() )
+        try ( NativeIndexReader<KEY> reader = populator.newReader() )
         {
             SimpleEntityValueClient cursor = new SimpleEntityValueClient();
             reader.query( cursor, NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(),

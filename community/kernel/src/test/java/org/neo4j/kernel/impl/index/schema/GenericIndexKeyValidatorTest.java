@@ -61,7 +61,7 @@ class GenericIndexKeyValidatorTest
     void shouldNotBotherSerializingToRealBytesIfFarFromThreshold()
     {
         // given
-        Layout<BtreeKey,NativeIndexValue> layout = mock( Layout.class );
+        Layout<BtreeKey,NullValue> layout = mock( Layout.class );
         doThrow( RuntimeException.class ).when( layout ).newKey();
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, descriptor, layout, SIMPLE_NAME_LOOKUP );
 
@@ -75,7 +75,7 @@ class GenericIndexKeyValidatorTest
     void shouldInvolveSerializingToRealBytesIfMayCrossThreshold()
     {
         // given
-        Layout<BtreeKey,NativeIndexValue> layout = mock( Layout.class );
+        Layout<BtreeKey,NullValue> layout = mock( Layout.class );
         when( layout.newKey() ).thenReturn( new CompositeBtreeKey( 3, spatialSettings() ) );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, descriptor, layout, SIMPLE_NAME_LOOKUP );
 

@@ -89,11 +89,11 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.values.storable.Values.of;
 
-abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        extends IndexAccessorTests<KEY,VALUE, IndexLayout<KEY,VALUE>>
+abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
+        extends IndexAccessorTests<KEY,NullValue, IndexLayout<KEY>>
 {
-    NativeValueIndexUtility<KEY,VALUE> valueUtil;
-    ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
+    NativeValueIndexUtility<KEY> valueUtil;
+    ValueCreatorUtil<KEY> valueCreatorUtil;
 
     @BeforeEach
     void setupValueUtil()
@@ -110,7 +110,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         return new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
     }
 
-    abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
+    abstract ValueCreatorUtil<KEY> createValueCreatorUtil();
 
     abstract IndexCapability indexCapability();
 

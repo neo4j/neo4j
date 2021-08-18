@@ -43,18 +43,18 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
-abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexPopulatorTests<KEY,VALUE>
+abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> extends NativeIndexPopulatorTests<KEY>
 {
     private final IndexDescriptor uniqueDescriptor =
             IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( 42, 666 ) ).withName( "constraint" )
                     .withIndexType( indexType() ).materialise( 0 );
 
-    private final NativeIndexPopulatorTestCases.PopulatorFactory<KEY, VALUE> populatorFactory;
+    private final NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory;
     private final ValueType[] typesOfGroup;
-    private final IndexLayoutFactory<KEY, VALUE> indexLayoutFactory;
+    private final IndexLayoutFactory<KEY> indexLayoutFactory;
 
-    NativeUniqueIndexPopulatorTest( NativeIndexPopulatorTestCases.PopulatorFactory<KEY, VALUE> populatorFactory, ValueType[] typesOfGroup,
-        IndexLayoutFactory<KEY, VALUE> indexLayoutFactory )
+    NativeUniqueIndexPopulatorTest( NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory, ValueType[] typesOfGroup,
+        IndexLayoutFactory<KEY> indexLayoutFactory )
     {
         this.populatorFactory = populatorFactory;
         this.typesOfGroup = typesOfGroup;
@@ -64,20 +64,20 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
     abstract IndexType indexType();
 
     @Override
-    NativeIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache ) throws IOException
+    NativeIndexPopulator<KEY> createPopulator( PageCache pageCache ) throws IOException
     {
         DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).build();
         return populatorFactory.create( context, indexFiles, layout, indexDescriptor, tokenNameLookup );
     }
 
     @Override
-    ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
+    ValueCreatorUtil<KEY> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( uniqueDescriptor, typesOfGroup, ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE );
     }
 
     @Override
-    IndexLayout<KEY,VALUE> createLayout()
+    IndexLayout<KEY> createLayout()
     {
         return indexLayoutFactory.create();
     }

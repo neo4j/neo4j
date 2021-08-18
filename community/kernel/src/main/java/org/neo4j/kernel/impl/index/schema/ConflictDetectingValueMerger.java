@@ -29,10 +29,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
  * key already exists. After this merge has been used in a call to {@link Writer#merge(Object, Object, ValueMerger)}
  * {@link #checkConflict(REPORT_TYPE)} can be called to check whether or not that call conflicted with
  * an existing key. A call to {@link #checkConflict(REPORT_TYPE)} will also initialize the conflict flag.
- *
- * @param <VALUE> type of values being merged.
  */
-abstract class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue, REPORT_TYPE> implements ValueMerger<KEY,VALUE>
+abstract class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, REPORT_TYPE> implements ValueMerger<KEY,NullValue>
 {
     private final boolean compareEntityIds;
 
@@ -46,7 +44,7 @@ abstract class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, VAL
     }
 
     @Override
-    public MergeResult merge( KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue )
+    public MergeResult merge( KEY existingKey, KEY newKey, NullValue existingValue, NullValue newValue )
     {
         if ( existingKey.getEntityId() != newKey.getEntityId() )
         {

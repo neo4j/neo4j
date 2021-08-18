@@ -35,13 +35,13 @@ import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.values.storable.Value;
 
-public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey,NativeIndexValue>
+public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey>
 {
     private final TokenNameLookup tokenNameLookup;
     private IndexValueValidator validator;
 
     RangeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-            IndexLayout<RangeKey,NativeIndexValue> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            IndexLayout<RangeKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
         super( databaseIndexContext, indexFiles, layout, descriptor );
@@ -50,7 +50,7 @@ public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey,NativeIndex
     }
 
     @Override
-    protected void afterTreeInstantiation( GBPTree<RangeKey,NativeIndexValue> tree )
+    protected void afterTreeInstantiation( GBPTree<RangeKey,NullValue> tree )
     {
         validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
     }
@@ -79,11 +79,11 @@ public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey,NativeIndex
         highest.initValuesAsHighest();
         try
         {
-            Collection<Seeker.WithContext<RangeKey,NativeIndexValue>> seekersWithContext = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
+            Collection<Seeker.WithContext<RangeKey,NullValue>> seekersWithContext = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
             Collection<IndexEntriesReader> readers = new ArrayList<>();
-            for ( Seeker.WithContext<RangeKey,NativeIndexValue> seekerWithContext : seekersWithContext )
+            for ( Seeker.WithContext<RangeKey,NullValue> seekerWithContext : seekersWithContext )
             {
-                Seeker<RangeKey,NativeIndexValue> seeker = seekerWithContext.with( cursorContext );
+                Seeker<RangeKey,NullValue> seeker = seekerWithContext.with( cursorContext );
                 readers.add( new IndexEntriesReader()
                 {
                     @Override

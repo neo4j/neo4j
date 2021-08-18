@@ -32,15 +32,14 @@ import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
  * {@link NonUniqueIndexSampler} which performs a full scans of a {@link GBPTree} in {@link #sample(CursorContext)}.
  *
  * @param <KEY> type of keys in tree.
- * @param <VALUE> type of values in tree.
  */
-class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>>
         extends NonUniqueIndexSampler.Adapter
 {
-    private final GBPTree<KEY,VALUE> gbpTree;
-    private final IndexLayout<KEY,VALUE> layout;
+    private final GBPTree<KEY,NullValue> gbpTree;
+    private final IndexLayout<KEY> layout;
 
-    FullScanNonUniqueIndexSampler( GBPTree<KEY,VALUE> gbpTree, IndexLayout<KEY,VALUE> layout )
+    FullScanNonUniqueIndexSampler( GBPTree<KEY,NullValue> gbpTree, IndexLayout<KEY> layout )
     {
         this.gbpTree = gbpTree;
         this.layout = layout;
@@ -56,7 +55,7 @@ class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>, VALUE exten
         highest.initialize( Long.MAX_VALUE );
         highest.initValuesAsHighest();
         KEY prev = layout.newKey();
-        try ( Seeker<KEY,VALUE> seek = gbpTree.seek( lowest, highest, cursorContext ) )
+        try ( Seeker<KEY,NullValue> seek = gbpTree.seek( lowest, highest, cursorContext ) )
         {
             long sampledValues = 0;
             long uniqueValues = 0;

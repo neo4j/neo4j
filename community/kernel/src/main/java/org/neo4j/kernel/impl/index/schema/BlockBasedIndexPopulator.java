@@ -90,9 +90,8 @@ import static org.neo4j.util.concurrent.Runnables.runAll;
  * where {@link GraphDatabaseInternalSettings#index_population_workers} controls the number of population workers.
  *
  * @param <KEY>
- * @param <VALUE>
  */
-public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
+public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> extends NativeIndexPopulator<KEY>
 {
     private final boolean archiveFailedIndex;
     private final MemoryTracker memoryTracker;
@@ -107,7 +106,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private final List<ThreadLocalBlockStorage> allScanUpdates = new CopyOnWriteArrayList<>();
     private final ThreadLocal<ThreadLocalBlockStorage> scanUpdates;
     private final ByteBufferFactory bufferFactory;
-    private IndexUpdateStorage<KEY,VALUE> externalUpdates;
+    private IndexUpdateStorage<KEY> externalUpdates;
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean scanCompleted;
     private final CloseCancellation cancellation = new CloseCancellation();
@@ -121,13 +120,13 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private final AtomicLong numberOfAppliedScanUpdates = new AtomicLong();
     private final AtomicLong numberOfAppliedExternalUpdates = new AtomicLong();
 
-    BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+    BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
             IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker )
     {
         this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, NO_MONITOR );
     }
 
-    BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+    BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
             IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
             BlockStorage.Monitor blockStorageMonitor )
     {
@@ -184,7 +183,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         if ( !updates.isEmpty() )
         {
-            BlockStorage<KEY,VALUE> blockStorage = scanUpdates.get().blockStorage;
+            BlockStorage<KEY,NullValue> blockStorage = scanUpdates.get().blockStorage;
             for ( IndexEntryUpdate<?> update : updates )
             {
                 storeUpdate( (ValueIndexEntryUpdate<?>) update, blockStorage );
@@ -192,16 +191,14 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void storeUpdate( long entityId, Value[] values, BlockStorage<KEY,VALUE> blockStorage )
+    private void storeUpdate( long entityId, Value[] values, BlockStorage<KEY,NullValue> blockStorage )
     {
         try
         {
             validator.validate( entityId, values );
             KEY key = layout.newKey();
-            VALUE value = layout.newValue();
             initializeKeyFromUpdate( key, entityId, values );
-            value.from( values );
-            blockStorage.add( key, value );
+            blockStorage.add( key, NullValue.INSTANCE );
         }
         catch ( IOException e )
         {
@@ -209,7 +206,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void storeUpdate( ValueIndexEntryUpdate<?> update, BlockStorage<KEY,VALUE> blockStorage )
+    private void storeUpdate( ValueIndexEntryUpdate<?> update, BlockStorage<KEY,NullValue> blockStorage )
     {
         storeUpdate( update.getEntityId(), update.values(), blockStorage );
     }
@@ -260,7 +257,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             try ( var allocator = bufferFactory.newLocalAllocator();
                   var indexKeyStorage = new IndexKeyStorage<>( fileSystem, duplicatesFile, allocator, readBufferSize, layout, memoryTracker ) )
             {
-                RecordingConflictDetector<KEY,VALUE> recordingConflictDetector = new RecordingConflictDetector<>( !descriptor.isUnique(), indexKeyStorage );
+                RecordingConflictDetector<KEY> recordingConflictDetector = new RecordingConflictDetector<>( !descriptor.isUnique(), indexKeyStorage );
                 nonUniqueIndexSample = writeScanUpdatesToTree( populationWorkScheduler, recordingConflictDetector, allocator, readBufferSize, cursorContext );
 
                 // Apply the external updates
@@ -308,7 +305,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         List<JobHandle<?>> mergeFutures = new ArrayList<>();
         for ( ThreadLocalBlockStorage part : allScanUpdates )
         {
-            BlockStorage<KEY,VALUE> scanUpdates = part.blockStorage;
+            BlockStorage<KEY,NullValue> scanUpdates = part.blockStorage;
             // Call doneAdding here so that the buffer it allocates if it needs to flush something will be shared with other indexes
             scanUpdates.doneAdding();
             mergeFutures.add( populationWorkScheduler.schedule(
@@ -334,25 +331,25 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
      * @throws IOException If something goes wrong while reading from index.
      * @throws IndexEntryConflictException If a duplicate is found.
      */
-    private void writeExternalUpdatesToTree( RecordingConflictDetector<KEY,VALUE> recordingConflictDetector, CursorContext cursorContext )
+    private void writeExternalUpdatesToTree( RecordingConflictDetector<KEY> recordingConflictDetector, CursorContext cursorContext )
             throws IOException, IndexEntryConflictException
     {
-        try ( Writer<KEY,VALUE> writer = tree.writer( cursorContext );
-              IndexUpdateCursor<KEY,VALUE> updates = externalUpdates.reader() )
+        try ( Writer<KEY,NullValue> writer = tree.writer( cursorContext );
+              IndexUpdateCursor<KEY,NullValue> updates = externalUpdates.reader() )
         {
             while ( updates.next() && !cancellation.cancelled() )
             {
                 switch ( updates.updateMode() )
                 {
                 case ADDED:
-                    writeToTree( writer, recordingConflictDetector, updates.key(), updates.value() );
+                    writeToTree( writer, recordingConflictDetector, updates.key() );
                     break;
                 case REMOVED:
                     writer.remove( updates.key() );
                     break;
                 case CHANGED:
                     writer.remove( updates.key() );
-                    writeToTree( writer, recordingConflictDetector, updates.key2(), updates.value() );
+                    writeToTree( writer, recordingConflictDetector, updates.key2() );
                     break;
                 default:
                     throw new IllegalArgumentException( "Unknown update mode " + updates.updateMode() );
@@ -377,7 +374,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void verifyUniqueSeek( Seeker<KEY,VALUE> seek ) throws IOException, IndexEntryConflictException
+    private void verifyUniqueSeek( Seeker<KEY,NullValue> seek ) throws IOException, IndexEntryConflictException
     {
         if ( seek != null )
         {
@@ -394,7 +391,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private IndexSample writeScanUpdatesToTree( PopulationWorkScheduler populationWorkScheduler, RecordingConflictDetector<KEY,VALUE> recordingConflictDetector,
+    private IndexSample writeScanUpdatesToTree( PopulationWorkScheduler populationWorkScheduler, RecordingConflictDetector<KEY> recordingConflictDetector,
             Allocator allocator, int bufferSize, CursorContext cursorContext ) throws IOException, IndexEntryConflictException
     {
         if ( allScanUpdates.isEmpty() )
@@ -408,7 +405,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
               var singleBlockScopedBuffer = allocator.allocate( (int) kibiBytes( 8 ), memoryTracker ) )
         {
             // Get the initial list of parts
-            List<BlockEntryCursor<KEY,VALUE>> parts = new ArrayList<>();
+            List<BlockEntryCursor<KEY,NullValue>> parts = new ArrayList<>();
             for ( ThreadLocalBlockStorage part : allScanUpdates )
             {
                 var readScopedBuffer = allocator.allocate( bufferSize, memoryTracker );
@@ -429,7 +426,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             {
                 while ( allEntries.next() && !cancellation.cancelled() )
                 {
-                    writeToTree( writer, recordingConflictDetector, allEntries.key(), allEntries.value() );
+                    writeToTree( writer, recordingConflictDetector, allEntries.key() );
                     numberOfAppliedScanUpdates.incrementAndGet();
                 }
                 return descriptor.isUnique() ? null : allEntries.buildIndexSample();
@@ -602,12 +599,12 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     /**
      * Write key and value to tree and record duplicates if any.
      */
-    private void writeToTree( Writer<KEY,VALUE> writer, RecordingConflictDetector<KEY,VALUE> recordingConflictDetector, KEY key, VALUE value )
+    private void writeToTree( Writer<KEY,NullValue> writer, RecordingConflictDetector<KEY> recordingConflictDetector, KEY key )
             throws IndexEntryConflictException
     {
         recordingConflictDetector.controlConflictDetection( key );
-        writer.merge( key, value, recordingConflictDetector );
-        handleMergeConflict( writer, recordingConflictDetector, key, value );
+        writer.merge( key, NullValue.INSTANCE, recordingConflictDetector );
+        handleMergeConflict( writer, recordingConflictDetector, key );
     }
 
     /**
@@ -615,7 +612,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
      * value later on. But for now we try and insert conflicting value again but with a relaxed uniqueness constraint. Insert is done with a throwing
      * conflict checker which means it will throw if we see same value AND same id in one key.
      */
-    private void handleMergeConflict( Writer<KEY,VALUE> writer, RecordingConflictDetector<KEY,VALUE> recordingConflictDetector, KEY key, VALUE value )
+    private void handleMergeConflict( Writer<KEY,NullValue> writer, RecordingConflictDetector<KEY> recordingConflictDetector, KEY key )
             throws IndexEntryConflictException
     {
         if ( recordingConflictDetector.wasConflicting() )
@@ -627,7 +624,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
 
             // Insert and overwrite with relaxed uniqueness constraint
             recordingConflictDetector.relaxUniqueness( key );
-            writer.put( key, value );
+            writer.put( key, NullValue.INSTANCE );
         }
     }
 
@@ -647,7 +644,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
      */
     private class ThreadLocalBlockStorage extends BlockStorage.Monitor.Delegate
     {
-        private final BlockStorage<KEY,VALUE> blockStorage;
+        private final BlockStorage<KEY,NullValue> blockStorage;
         private volatile long count;
         private volatile boolean mergeStarted;
         private volatile long totalEntriesToMerge;
@@ -694,8 +691,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private static class RecordingConflictDetector<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-            extends ConflictDetectingValueMerger<KEY,VALUE,KEY>
+    private static class RecordingConflictDetector<KEY extends NativeIndexKey<KEY>>
+            extends ConflictDetectingValueMerger<KEY,KEY>
     {
         private final IndexKeyStorage<KEY> allConflictingKeys;
 

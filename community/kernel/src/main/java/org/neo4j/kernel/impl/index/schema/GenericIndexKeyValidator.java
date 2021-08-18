@@ -41,10 +41,10 @@ class GenericIndexKeyValidator implements IndexValueValidator
 {
     private final IndexDescriptor descriptor;
     private final int maxLength;
-    private final Layout<? extends GenericKey<?>,NativeIndexValue> layout;
+    private final Layout<? extends GenericKey<?>,NullValue> layout;
     private final TokenNameLookup tokenNameLookup;
 
-    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<? extends GenericKey<?>,NativeIndexValue> layout,
+    GenericIndexKeyValidator( int maxLength, IndexDescriptor descriptor, Layout<? extends GenericKey<?>,NullValue> layout,
             TokenNameLookup tokenNameLookup )
     {
         this.maxLength = maxLength;

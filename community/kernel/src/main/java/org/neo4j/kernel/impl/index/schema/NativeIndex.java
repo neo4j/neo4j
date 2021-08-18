@@ -42,11 +42,11 @@ import org.neo4j.monitoring.Monitors;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
-abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements ConsistencyCheckable
+abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements ConsistencyCheckable
 {
     final PageCache pageCache;
     final IndexFiles indexFiles;
-    final IndexLayout<KEY,VALUE> layout;
+    final IndexLayout<KEY> layout;
     final FileSystemAbstraction fileSystem;
     final IndexDescriptor descriptor;
     private final Monitors monitors;
@@ -55,9 +55,9 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     private final PageCacheTracer pageCacheTracer;
     private final String databaseName;
 
-    protected GBPTree<KEY,VALUE> tree;
+    protected GBPTree<KEY,NullValue> tree;
 
-    NativeIndex( DatabaseIndexContext databaseIndexContext, IndexLayout<KEY,VALUE> layout, IndexFiles indexFiles, IndexDescriptor descriptor )
+    NativeIndex( DatabaseIndexContext databaseIndexContext, IndexLayout<KEY> layout, IndexFiles indexFiles, IndexDescriptor descriptor )
     {
         this.pageCache = databaseIndexContext.pageCache;
         this.fileSystem = databaseIndexContext.fileSystem;
@@ -81,7 +81,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         afterTreeInstantiation( tree );
     }
 
-    protected void afterTreeInstantiation( GBPTree<KEY,VALUE> tree )
+    protected void afterTreeInstantiation( GBPTree<KEY,NullValue> tree )
     {   // no-op per default
     }
 

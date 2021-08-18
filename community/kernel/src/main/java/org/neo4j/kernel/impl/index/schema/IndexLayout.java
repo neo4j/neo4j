@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-abstract class IndexLayout<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends Layout.Adapter<KEY,VALUE>
+abstract class IndexLayout<KEY extends NativeIndexKey<KEY>> extends Layout.Adapter<KEY,NullValue>
 {
     // allows more control of the identifier, needed for legacy reasons for the two number layouts
     IndexLayout( boolean fixedSize, long identifier, int majorVersion, int minorVersion )
@@ -32,29 +32,29 @@ abstract class IndexLayout<KEY extends NativeIndexKey<KEY>, VALUE extends Native
 
     IndexLayout( boolean fixedSize, String layoutName, int majorVersion, int minorVersion )
     {
-        this( fixedSize, Layout.namedIdentifier( layoutName, NativeIndexValue.SIZE ), majorVersion, minorVersion );
+        this( fixedSize, Layout.namedIdentifier( layoutName, NullValue.SIZE ), majorVersion, minorVersion );
     }
 
     @Override
-    public VALUE newValue()
+    public NullValue newValue()
     {
-        return (VALUE) NativeIndexValue.INSTANCE;
+        return NullValue.INSTANCE;
     }
 
     @Override
-    public int valueSize( NativeIndexValue nativeIndexValue )
+    public int valueSize( NullValue nullValue )
     {
-        return NativeIndexValue.SIZE;
+        return NullValue.SIZE;
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NativeIndexValue nativeIndexValue )
+    public void writeValue( PageCursor cursor, NullValue nullValue )
     {
         // nothing to write
     }
 
     @Override
-    public void readValue( PageCursor cursor, NativeIndexValue into, int valueSize )
+    public void readValue( PageCursor cursor, NullValue into, int valueSize )
     {
         // nothing to read
     }

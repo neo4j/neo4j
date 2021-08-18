@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 
 import static org.neo4j.values.storable.Values.stringValue;
 
-class ResultCursor implements Seeker<BtreeKey,NativeIndexValue>
+class ResultCursor implements Seeker<BtreeKey,NullValue>
 {
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private final Iterator<String> iterator;
@@ -67,8 +67,8 @@ class ResultCursor implements Seeker<BtreeKey,NativeIndexValue>
     }
 
     @Override
-    public NativeIndexValue value()
+    public NullValue value()
     {
-        return NativeIndexValue.INSTANCE;
+        return NullValue.INSTANCE;
     }
 }

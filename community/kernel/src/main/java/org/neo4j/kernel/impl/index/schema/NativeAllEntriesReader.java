@@ -30,16 +30,16 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> implements BoundedIterable<Long>
+public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>> implements BoundedIterable<Long>
 {
-    private final GBPTree<KEY,VALUE> tree;
-    private final Layout<KEY,VALUE> layout;
+    private final GBPTree<KEY,NullValue> tree;
+    private final Layout<KEY,NullValue> layout;
     private final long fromIdInclusive;
     private final long toIdExclusive;
     private final CursorContext cursorContext;
-    private Seeker<KEY,VALUE> seeker;
+    private Seeker<KEY,NullValue> seeker;
 
-    NativeAllEntriesReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
+    NativeAllEntriesReader( GBPTree<KEY,NullValue> tree, Layout<KEY,NullValue> layout, long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
     {
         this.tree = tree;
         this.layout = layout;

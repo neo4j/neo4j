@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCursor;
@@ -31,28 +30,26 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
-import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyAndValueFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 
 /**
  * Buffer {@link IndexEntryUpdate} by writing them out to a file. Can be read back in insert order through {@link #reader()}.
  */
-public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        extends SimpleEntryStorage<IndexEntryUpdate<?>,IndexUpdateCursor<KEY,VALUE>>
+public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>>
+        extends SimpleEntryStorage<IndexEntryUpdate<?>,IndexUpdateCursor<KEY,NullValue>>
 {
-    private final Layout<KEY,VALUE> layout;
+    private final IndexLayout<KEY> layout;
     private final KEY key1;
     private final KEY key2;
-    private final VALUE value;
+    private final NullValue value = NullValue.INSTANCE;
 
-    IndexUpdateStorage( FileSystemAbstraction fs, Path file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,VALUE> layout,
+    IndexUpdateStorage( FileSystemAbstraction fs, Path file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, IndexLayout<KEY> layout,
             MemoryTracker memoryTracker )
     {
         super( fs, file, byteBufferFactory, blockSize, memoryTracker );
         this.layout = layout;
         this.key1 = layout.newKey();
         this.key2 = layout.newKey();
-        this.value = layout.newValue();
     }
 
     @Override
@@ -64,7 +61,7 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>, VALUE extends N
         switch ( updateMode )
         {
         case ADDED:
-            initializeKeyAndValueFromUpdate( key1, value, valueUpdate.getEntityId(), valueUpdate.values() );
+            initializeKeyFromUpdate( key1, valueUpdate.getEntityId(), valueUpdate.values() );
             entrySize += BlockEntry.entrySize( layout, key1, value );
             break;
         case REMOVED:
@@ -73,7 +70,7 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>, VALUE extends N
             break;
         case CHANGED:
             initializeKeyFromUpdate( key1, valueUpdate.getEntityId(), valueUpdate.beforeValues() );
-            initializeKeyAndValueFromUpdate( key2, value, valueUpdate.getEntityId(), valueUpdate.values() );
+            initializeKeyFromUpdate( key2, valueUpdate.getEntityId(), valueUpdate.values() );
             entrySize += BlockEntry.keySize( layout, key1 ) + BlockEntry.entrySize( layout, key2, value );
             break;
         default:
@@ -87,7 +84,7 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>, VALUE extends N
     }
 
     @Override
-    public IndexUpdateCursor<KEY,VALUE> reader( PageCursor pageCursor )
+    public IndexUpdateCursor<KEY,NullValue> reader( PageCursor pageCursor )
     {
         return new IndexUpdateCursor<>( pageCursor, layout );
     }

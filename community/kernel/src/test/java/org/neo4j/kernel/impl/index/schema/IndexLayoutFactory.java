@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 @FunctionalInterface
-interface IndexLayoutFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+interface IndexLayoutFactory<KEY extends NativeIndexKey<KEY>>
 {
-    IndexLayout<KEY,VALUE> create();
+    IndexLayout<KEY> create();
 }

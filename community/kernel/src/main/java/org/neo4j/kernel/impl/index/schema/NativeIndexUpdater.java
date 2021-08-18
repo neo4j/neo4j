@@ -29,23 +29,20 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        implements IndexUpdater
+class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdater
 {
     private final KEY treeKey;
-    private final VALUE treeValue;
-    private final ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger = new ThrowingConflictDetector<>( true );
-    private Writer<KEY,VALUE> writer;
+    private final ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger = new ThrowingConflictDetector<>( true );
+    private Writer<KEY,NullValue> writer;
 
     private boolean closed = true;
 
-    NativeIndexUpdater( KEY treeKey, VALUE treeValue )
+    NativeIndexUpdater( KEY treeKey )
     {
         this.treeKey = treeKey;
-        this.treeValue = treeValue;
     }
 
-    NativeIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer )
+    NativeIndexUpdater<KEY> initialize( Writer<KEY,NullValue> writer )
     {
         if ( !closed )
         {
@@ -62,7 +59,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
     {
         assertOpen();
         ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
-        processUpdate( treeKey, treeValue, valueUpdate, writer, conflictDetectingValueMerger );
+        processUpdate( treeKey, valueUpdate, writer, conflictDetectingValueMerger );
     }
 
     @Override
@@ -80,17 +77,17 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
         }
     }
 
-    static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processUpdate( KEY treeKey, VALUE treeValue,
-            ValueIndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
+    static <KEY extends NativeIndexKey<KEY>> void processUpdate( KEY treeKey,
+            ValueIndexEntryUpdate<?> update, Writer<KEY,NullValue> writer, ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
         switch ( update.updateMode() )
         {
         case ADDED:
-            processAdd( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
+            processAdd( treeKey, update, writer, conflictDetectingValueMerger );
             break;
         case CHANGED:
-            processChange( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
+            processChange( treeKey, update, writer, conflictDetectingValueMerger );
             break;
         case REMOVED:
             processRemove( treeKey, update, writer );
@@ -100,8 +97,8 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
         }
     }
 
-    private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processRemove( KEY treeKey,
-            ValueIndexEntryUpdate<?> update, Writer<KEY,VALUE> writer )
+    private static <KEY extends NativeIndexKey<KEY>> void processRemove( KEY treeKey,
+            ValueIndexEntryUpdate<?> update, Writer<KEY,NullValue> writer )
     {
         // todo Do we need to verify that we actually removed something at all?
         // todo Difference between online and recovery?
@@ -109,9 +106,9 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
         writer.remove( treeKey );
     }
 
-    private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processChange( KEY treeKey, VALUE treeValue,
-            ValueIndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
-            ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
+    private static <KEY extends NativeIndexKey<KEY>> void processChange( KEY treeKey,
+            ValueIndexEntryUpdate<?> update, Writer<KEY,NullValue> writer,
+            ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
         // Remove old entry
@@ -119,27 +116,19 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
         writer.remove( treeKey );
         // Insert new entry
         initializeKeyFromUpdate( treeKey, update.getEntityId(), update.values() );
-        treeValue.from( update.values() );
         conflictDetectingValueMerger.controlConflictDetection( treeKey );
-        writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
+        writer.merge( treeKey, NullValue.INSTANCE, conflictDetectingValueMerger );
         conflictDetectingValueMerger.checkConflict( update.values() );
     }
 
-    private static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void processAdd( KEY treeKey, VALUE treeValue,
-            ValueIndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetectingValueMerger )
+    private static <KEY extends NativeIndexKey<KEY>> void processAdd( KEY treeKey,
+            ValueIndexEntryUpdate<?> update, Writer<KEY,NullValue> writer, ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
-        initializeKeyAndValueFromUpdate( treeKey, treeValue, update.getEntityId(), update.values() );
+        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.values() );
         conflictDetectingValueMerger.controlConflictDetection( treeKey );
-        writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
+        writer.merge( treeKey, NullValue.INSTANCE, conflictDetectingValueMerger );
         conflictDetectingValueMerger.checkConflict( update.values() );
-    }
-
-    static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void initializeKeyAndValueFromUpdate( KEY treeKey, VALUE treeValue,
-            long entityId, Value[] values )
-    {
-        initializeKeyFromUpdate( treeKey, entityId, values );
-        treeValue.from( values );
     }
 
     static <KEY extends NativeIndexKey<KEY>> void initializeKeyFromUpdate( KEY treeKey, long entityId, Value[] values )

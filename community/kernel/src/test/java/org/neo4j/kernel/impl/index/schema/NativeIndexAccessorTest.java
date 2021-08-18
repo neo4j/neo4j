@@ -45,7 +45,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
-class NativeIndexAccessorTest extends NativeIndexAccessorTests<BtreeKey,NativeIndexValue>
+class NativeIndexAccessorTest extends NativeIndexAccessorTests<BtreeKey>
 {
     private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
             IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
@@ -53,11 +53,11 @@ class NativeIndexAccessorTest extends NativeIndexAccessorTests<BtreeKey,NativeIn
     private static final IndexDescriptor indexDescriptor = forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 );
 
     private final ValueType[] supportedTypes = ValueType.values();
-    private final IndexLayoutFactory<BtreeKey,NativeIndexValue> indexLayoutFactory = () -> new GenericLayout( 1, spaceFillingCurveSettings );
+    private final IndexLayoutFactory<BtreeKey> indexLayoutFactory = () -> new GenericLayout( 1, spaceFillingCurveSettings );
     private final IndexCapability indexCapability = GenericNativeIndexProvider.CAPABILITY;
 
     @Override
-    NativeIndexAccessor<BtreeKey,NativeIndexValue> createAccessor( PageCache pageCache )
+    NativeIndexAccessor<BtreeKey> createAccessor( PageCache pageCache )
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
@@ -78,7 +78,7 @@ class NativeIndexAccessorTest extends NativeIndexAccessorTests<BtreeKey,NativeIn
     }
 
     @Override
-    ValueCreatorUtil<BtreeKey,NativeIndexValue> createValueCreatorUtil()
+    ValueCreatorUtil<BtreeKey> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( indexDescriptor, supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
     }
@@ -90,7 +90,7 @@ class NativeIndexAccessorTest extends NativeIndexAccessorTests<BtreeKey,NativeIn
     }
 
     @Override
-    IndexLayout<BtreeKey,NativeIndexValue> createLayout()
+    IndexLayout<BtreeKey> createLayout()
     {
         return indexLayoutFactory.create();
     }

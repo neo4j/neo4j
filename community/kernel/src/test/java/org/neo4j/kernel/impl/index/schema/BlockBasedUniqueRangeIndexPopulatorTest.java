@@ -24,7 +24,7 @@ import org.neo4j.values.storable.ValueType;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.rangeBlockBasedPopulatorFactory;
 
-class BlockBasedUniqueRangeIndexPopulatorTest extends NativeUniqueIndexPopulatorTest<RangeKey,NativeIndexValue>
+class BlockBasedUniqueRangeIndexPopulatorTest extends NativeUniqueIndexPopulatorTest<RangeKey>
 {
     BlockBasedUniqueRangeIndexPopulatorTest()
     {

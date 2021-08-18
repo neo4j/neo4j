@@ -55,17 +55,17 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
-class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey,NativeIndexValue>
+class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey>
 {
     private static final IndexDescriptor indexDescriptor = forSchema( forLabel( 42, 666 ) ).withIndexType( IndexType.RANGE )
             .withName( "index" ).materialise( 0 );
 
     private final ValueType[] supportedTypes = ValueType.values();
-    private final IndexLayoutFactory<RangeKey,NativeIndexValue> indexLayoutFactory = () -> new RangeLayout( 1 );
+    private final IndexLayoutFactory<RangeKey> indexLayoutFactory = () -> new RangeLayout( 1 );
     private final IndexCapability indexCapability = RangeIndexProvider.CAPABILITY;
 
     @Override
-    NativeIndexAccessor<RangeKey,NativeIndexValue> createAccessor( PageCache pageCache )
+    NativeIndexAccessor<RangeKey> createAccessor( PageCache pageCache )
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
@@ -85,7 +85,7 @@ class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey,NativeInd
     }
 
     @Override
-    ValueCreatorUtil<RangeKey,NativeIndexValue> createValueCreatorUtil()
+    ValueCreatorUtil<RangeKey> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( indexDescriptor, supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
     }
@@ -97,7 +97,7 @@ class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey,NativeInd
     }
 
     @Override
-    IndexLayout<RangeKey,NativeIndexValue> createLayout()
+    IndexLayout<RangeKey> createLayout()
     {
         return indexLayoutFactory.create();
     }

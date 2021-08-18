@@ -42,7 +42,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
-class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>>
 {
     static final double FRACTION_DUPLICATE_UNIQUE = 0;
     static final double FRACTION_DUPLICATE_NON_UNIQUE = 0.1;
@@ -173,10 +173,6 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
     static void sort( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
     {
         Arrays.sort( updates, UPDATE_COMPARATOR );
-    }
-
-    void copyValue( VALUE value, VALUE intoValue )
-    {   // no-op until we decide to use value for something
     }
 
     private static class RandomValueGenerator extends PrefetchingIterator<Value>

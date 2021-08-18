@@ -37,17 +37,17 @@ import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 
-public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndex<KEY,VALUE>
+public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> extends NativeIndex<KEY>
         implements IndexAccessor
 {
-    private final NativeIndexUpdater<KEY,VALUE> singleUpdater;
+    private final NativeIndexUpdater<KEY> singleUpdater;
     final NativeIndexHeaderWriter headerWriter;
 
-    NativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+    NativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
             IndexDescriptor descriptor )
     {
         super( databaseIndexContext, layout, indexFiles, descriptor );
-        singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );
+        singleUpdater = new NativeIndexUpdater<>( layout.newKey() );
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE );
     }
 
@@ -60,7 +60,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public NativeIndexUpdater<KEY, VALUE> newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+    public NativeIndexUpdater<KEY> newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
         assertOpen();
         try

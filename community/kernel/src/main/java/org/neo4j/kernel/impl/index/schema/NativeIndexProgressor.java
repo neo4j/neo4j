@@ -26,13 +26,13 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-abstract class NativeIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements IndexProgressor
+abstract class NativeIndexProgressor<KEY extends NativeIndexKey<KEY>> implements IndexProgressor
 {
-    final Seeker<KEY,VALUE> seeker;
+    final Seeker<KEY,NullValue> seeker;
     final EntityValueClient client;
     private boolean closed;
 
-    NativeIndexProgressor( Seeker<KEY,VALUE> seeker, EntityValueClient client )
+    NativeIndexProgressor( Seeker<KEY,NullValue> seeker, EntityValueClient client )
     {
         this.seeker = seeker;
         this.client = client;

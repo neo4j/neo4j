@@ -26,9 +26,9 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexProgressor<KEY,VALUE>
+public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>> extends NativeIndexProgressor<KEY>
 {
-    NativeHitIndexProgressor( Seeker<KEY,VALUE> seeker, IndexProgressor.EntityValueClient client )
+    NativeHitIndexProgressor( Seeker<KEY,NullValue> seeker, IndexProgressor.EntityValueClient client )
     {
         super( seeker, client );
     }

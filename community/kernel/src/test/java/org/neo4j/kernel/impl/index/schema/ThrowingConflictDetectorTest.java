@@ -36,7 +36,7 @@ import static org.neo4j.internal.helpers.ArrayUtil.array;
 class ThrowingConflictDetectorTest
 {
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    private final ThrowingConflictDetector<BtreeKey,NativeIndexValue> detector = new ThrowingConflictDetector<>( true );
+    private final ThrowingConflictDetector<BtreeKey> detector = new ThrowingConflictDetector<>( true );
 
     @Test
     void shouldReportConflictOnSameValueAndDifferentEntityIds()
@@ -50,8 +50,8 @@ class ThrowingConflictDetectorTest
         MergeResult mergeResult = detector.merge(
                 key( entityId1, value ),
                 key( entityId2, value ),
-                NativeIndexValue.INSTANCE,
-                NativeIndexValue.INSTANCE );
+                NullValue.INSTANCE,
+                NullValue.INSTANCE );
 
         // then
         assertSame( MergeResult.UNCHANGED, mergeResult );
@@ -72,8 +72,8 @@ class ThrowingConflictDetectorTest
         MergeResult mergeResult = detector.merge(
                 key( entityId, value ),
                 key( entityId, value ),
-                NativeIndexValue.INSTANCE,
-                NativeIndexValue.INSTANCE );
+                NullValue.INSTANCE,
+                NullValue.INSTANCE );
 
         // then
         assertSame( MergeResult.UNCHANGED, mergeResult );

@@ -46,36 +46,33 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
  * {@link IndexPopulator} backed by a {@link GBPTree}.
  *
  * @param <KEY> type of {@link NativeIndexKey}.
- * @param <VALUE> type of {@link NativeIndexValue}.
  */
-public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        extends NativeIndex<KEY,VALUE> implements IndexPopulator, ConsistencyCheckable
+public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>>
+        extends NativeIndex<KEY> implements IndexPopulator, ConsistencyCheckable
 {
     public static final byte BYTE_FAILED = 0;
     static final byte BYTE_ONLINE = 1;
     static final byte BYTE_POPULATING = 2;
 
     private final KEY treeKey;
-    private final VALUE treeValue;
     private final UniqueIndexSampler uniqueSampler;
 
-    private ConflictDetectingValueMerger<KEY,VALUE,Value[]> mainConflictDetector;
-    private ConflictDetectingValueMerger<KEY,VALUE,Value[]> updatesConflictDetector;
+    private ConflictDetectingValueMerger<KEY,Value[]> mainConflictDetector;
+    private ConflictDetectingValueMerger<KEY,Value[]> updatesConflictDetector;
 
     private byte[] failureBytes;
     private boolean dropped;
     private boolean closed;
 
-    NativeIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+    NativeIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
             IndexDescriptor descriptor )
     {
         super( databaseIndexContext, layout, indexFiles, descriptor );
         this.treeKey = layout.newKey();
-        this.treeValue = layout.newValue();
         this.uniqueSampler = descriptor.isUnique() ? new UniqueIndexSampler() : null;
     }
 
-    abstract NativeIndexReader<KEY,VALUE> newReader();
+    abstract NativeIndexReader<KEY> newReader();
 
     @Override
     public synchronized void create() throws IOException
@@ -218,14 +215,14 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         tree.checkpoint( new FailureHeaderWriter( failureBytes ), cursorContext );
     }
 
-    private void processUpdates( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetector,
+    private void processUpdates( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates, ConflictDetectingValueMerger<KEY,Value[]> conflictDetector,
             CursorContext cursorContext ) throws IndexEntryConflictException
     {
-        try ( Writer<KEY,VALUE> writer = tree.writer( cursorContext ) )
+        try ( Writer<KEY,NullValue> writer = tree.writer( cursorContext ) )
         {
             for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
             {
-                NativeIndexUpdater.processUpdate( treeKey, treeValue, (ValueIndexEntryUpdate<?>) indexEntryUpdate, writer, conflictDetector );
+                NativeIndexUpdater.processUpdate( treeKey, (ValueIndexEntryUpdate<?>) indexEntryUpdate, writer, conflictDetector );
             }
         }
         catch ( IOException e )

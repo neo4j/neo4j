@@ -23,7 +23,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
-class ThrowingConflictDetector<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends ConflictDetectingValueMerger<KEY,VALUE,Value[]>
+class ThrowingConflictDetector<KEY extends NativeIndexKey<KEY>> extends ConflictDetectingValueMerger<KEY,Value[]>
 {
     ThrowingConflictDetector( boolean compareEntityIds )
     {

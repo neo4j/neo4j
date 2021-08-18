@@ -25,7 +25,7 @@ import org.neo4j.values.storable.ValueType;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.genericBlockBasedPopulatorFactory;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.spaceFillingCurveSettings;
 
-class GenericBlockBasedNativeNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopulatorTest<BtreeKey,NativeIndexValue>
+class GenericBlockBasedNativeNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopulatorTest<BtreeKey>
 {
     GenericBlockBasedNativeNonUniqueIndexPopulatorTest()
     {
