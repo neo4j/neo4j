@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.ExecutionModel.SelectedBatchSize
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.BatchedCartesianOrdering
@@ -44,6 +45,17 @@ sealed trait ExecutionModel {
   def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering
 
   def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize
+
+  /**
+   * @return true if the execution model does not maintain provided order for a specific logical plan (not recursive)
+   *
+   * This mainly targets plans that in a particular execution model invalidates the order of arguments rows on
+   * the right-hand side of an Apply. In addition to this there are also other more general rules for how plans
+   * affects provided order.
+   *
+   * The check is invoked on each plan under an Apply and the implementation is not expected to recurse into it children.
+   */
+  def invalidatesProvidedOrder(plan: LogicalPlan): Boolean
 }
 
 object ExecutionModel {
@@ -52,6 +64,7 @@ object ExecutionModel {
   case object Volcano extends ExecutionModel {
     override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = VolcanoCartesianOrdering
     override def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize = VolcanoBatchSize
+    override def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = false
   }
 
   case class Batched(smallBatchSize: Int, bigBatchSize: Int) extends ExecutionModel {
@@ -137,6 +150,13 @@ object ExecutionModel {
     }
 
     override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = new BatchedCartesianOrdering(selectBatchSize(maxCardinality.amount))
+
+    override def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = plan match {
+      case _: Union =>
+        true
+      case _ =>
+        false
+    }
   }
 
   object Batched {
