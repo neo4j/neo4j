@@ -26,6 +26,6 @@ object LabelPredicateNormalizer extends MatchPredicateNormalizer {
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(Some(id), labels, _, _) if labels.nonEmpty => p.copy(variable = Some(id.copyId), labels = Seq.empty)(p.position)
+    case p@NodePattern(Some(_), labels, _, _) if labels.nonEmpty => p.copy(labels = Seq.empty)(p.position)
   }
 }

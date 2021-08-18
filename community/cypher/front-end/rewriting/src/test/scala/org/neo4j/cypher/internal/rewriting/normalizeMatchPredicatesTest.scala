@@ -41,13 +41,7 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
 
   def rewriter(semanticState: SemanticState): Rewriter = inSequence(
     normalizeHasLabelsAndHasType(semanticState),
-    normalizeMatchPredicates(
-      MatchPredicateNormalizerChain(
-        PropertyPredicateNormalizer(new AnonymousVariableNameGenerator),
-        LabelPredicateNormalizer,
-        NodePatternPredicateNormalizer,
-      )
-    ),
+    normalizeMatchPredicates.getRewriter(semanticState, Map.empty, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator),
   )
 
   def parseForRewriting(queryText: String): Statement = JavaCCParser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)

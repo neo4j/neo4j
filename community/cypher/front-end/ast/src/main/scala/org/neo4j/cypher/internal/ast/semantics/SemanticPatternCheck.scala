@@ -79,7 +79,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case x: NodePattern =>
         x.predicate.foldSemanticCheck { predicate =>
           when (ctx != SemanticContext.Match) {
-            error(s"Node pattern predicates are not allowed in ${ctx.name}", predicate.position)
+            error(s"Node pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension", predicate.position)
           } chain withScopedState {
             declareVariables(ctx, x) chain
               Where.checkExpression(predicate)

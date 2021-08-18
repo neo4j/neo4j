@@ -22,6 +22,7 @@
 
 Feature: NodePatternPredicates
   Scenario: Predicate on a single node
+    Given an empty graph
     And having executed:
       """
       CREATE (:A {prop: 1})-[:R]->(:B)
@@ -41,6 +42,7 @@ Feature: NodePatternPredicates
     And no side effects
 
   Scenario: Predicates on multiple nodes
+    Given an empty graph
     And having executed:
       """
       CREATE (a:A {prop: 1})
@@ -62,6 +64,7 @@ Feature: NodePatternPredicates
     And no side effects
 
   Scenario: shortestPath with node pattern predicate
+    Given an empty graph
     And having executed:
       """
       CREATE (start:Start)
@@ -82,7 +85,6 @@ Feature: NodePatternPredicates
       | 3        | 4   |
     And no side effects
 
-
   Scenario: Should not allow to reference other elements of the pattern
     Given any graph
     When executing query:
@@ -93,6 +95,7 @@ Feature: NodePatternPredicates
     Then a SyntaxError should be raised at runtime: UndefinedVariable
 
   Scenario: Pattern comprehension with predicate on a single node
+    Given an empty graph
     And having executed:
       """
       CREATE (:A {prop: 1})-[:R]->(:B)
@@ -110,6 +113,7 @@ Feature: NodePatternPredicates
     And no side effects
 
   Scenario: Pattern comprehension with predicates on multiple nodes
+    Given an empty graph
     And having executed:
       """
       CREATE (a:A {prop: 1})
