@@ -20,8 +20,6 @@
 package org.neo4j.internal.id.indexed;
 
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.eclipse.collections.api.list.primitive.MutableLongList;
-import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -82,7 +80,7 @@ class FreeIdScanner implements Closeable
     private final ConcurrentLinkedQueue<Long> queuedWastedCachedIds = new ConcurrentLinkedQueue<>();
     /**
      * State for whether or not there's an ongoing scan, and if so where it should begin from. This is used in
-     * {@link #findSomeIdsToCache(PendingIdQueue, MutableLongList, MutableInt, CursorContext)}  both to know where to initiate a scan from and to
+     * {@link #findSomeIdsToCache(PendingIdQueue, MutableInt, CursorContext)}  both to know where to initiate a scan from and to
      * set it, if the cache got full before scan completed, or set it to null of the scan ended. The actual {@link Seeker} itself is local to the scan method.
      */
     private volatile Long ongoingScanRangeIndex;
@@ -112,10 +110,9 @@ class FreeIdScanner implements Closeable
      */
     boolean tryLoadFreeIdsIntoCache( boolean awaitOngoing, boolean forceScan, CursorContext cursorContext )
     {
-        if ( ongoingScanRangeIndex != null && !forceScan && !thereAreLikelyFreeIdsToFind() )
+        if ( !forceScan && !hasMoreFreeIds() )
         {
-            // If no scan is in progress (SeekCursor now sitting and waiting at some leaf in the free-list)
-            // and if we have no reason to expect finding any free id from a scan then don't do it.
+            // If no scan is in progress and if we have no reason to expect finding any free id from a scan then don't do it.
             return false;
         }
 
@@ -139,11 +136,10 @@ class FreeIdScanner implements Closeable
                         PendingIdQueue pendingIdQueue = new PendingIdQueue( cache.slotsByAvailableSpace() );
                         // While we're at it have a look at the wasted IDs from handing out cached IDs smaller than their slot size
                         cacheWastedIds( pendingIdQueue, cursorContext );
-                        MutableLongList pendingItemsToReserve = LongLists.mutable.empty();
-                        if ( findSomeIdsToCache( pendingIdQueue, pendingItemsToReserve, availableSpaceById, cursorContext ) )
+                        if ( findSomeIdsToCache( pendingIdQueue, availableSpaceById, cursorContext ) )
                         {
                             // Get a writer and mark the found ids as reserved
-                            markIdsAsReserved( pendingItemsToReserve, cursorContext );
+                            markIdsAsReserved( pendingIdQueue, cursorContext );
 
                             // Place them in the cache so that allocation requests can see them
                             cache.offer( pendingIdQueue, monitor );
@@ -201,11 +197,6 @@ class FreeIdScanner implements Closeable
         }
     }
 
-    private boolean thereAreLikelyFreeIdsToFind()
-    {
-        return atLeastOneIdOnFreelist.get() || !queuedSkippedHighIds.isEmpty() || !queuedWastedCachedIds.isEmpty();
-    }
-
     private void markQueuedSkippedHighIdsAsFree( CursorContext cursorContext )
     {
         consumeQueuedIds( queuedSkippedHighIds, IdGenerator.Marker::markFree, cursorContext );
@@ -214,6 +205,11 @@ class FreeIdScanner implements Closeable
     private void markWastedIdsAsUnreserved( CursorContext cursorContext )
     {
         consumeQueuedIds( queuedWastedCachedIds, IndexedIdGenerator.InternalMarker::markUnreserved, cursorContext );
+    }
+
+    boolean hasMoreFreeIds()
+    {
+        return ongoingScanRangeIndex != null || atLeastOneIdOnFreelist.get() || !queuedSkippedHighIds.isEmpty() || !queuedWastedCachedIds.isEmpty();
     }
 
     private boolean scanLock( boolean awaitOngoing )
@@ -257,21 +253,15 @@ class FreeIdScanner implements Closeable
         queuedWastedCachedIds.offer( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
     }
 
-    private void markIdsAsReserved( MutableLongList pendingItemsToCache, CursorContext cursorContext )
+    private void markIdsAsReserved( PendingIdQueue pendingIdQueue, CursorContext cursorContext )
     {
         try ( InternalMarker marker = markerProvider.getMarker( cursorContext ) )
         {
-            pendingItemsToCache.forEach( item ->
-            {
-                long startId = idFromCombinedId( item );
-                int numberOfIds = numberOfIdsFromCombinedId( item );
-                marker.markReserved( startId, numberOfIds );
-            } );
+            pendingIdQueue.accept( ( slotIndex, slotSize, ids ) -> ids.forEach( id -> marker.markReserved( id, slotSize ) ) );
         }
     }
 
-    private boolean findSomeIdsToCache( PendingIdQueue pendingIdQueue, MutableLongList pendingItemsToCache, MutableInt availableSpaceById,
-            CursorContext cursorContext ) throws IOException
+    private boolean findSomeIdsToCache( PendingIdQueue pendingIdQueue, MutableInt availableSpaceById, CursorContext cursorContext ) throws IOException
     {
         boolean startedNow = ongoingScanRangeIndex == null;
         IdRangeKey from = ongoingScanRangeIndex == null ? LOW_KEY : new IdRangeKey( ongoingScanRangeIndex );
@@ -286,13 +276,13 @@ class FreeIdScanner implements Closeable
                     seekerExhausted = true;
                     break;
                 }
-                queueIdsFromTreeItem( scanner.key(), scanner.value(), pendingIdQueue, pendingItemsToCache, availableSpaceById );
+                queueIdsFromTreeItem( scanner.key(), scanner.value(), pendingIdQueue, availableSpaceById );
             }
             // If there's more left to scan "this round" then make a note of it so that we start from this place the next time
             ongoingScanRangeIndex = seekerExhausted ? null : scanner.key().getIdRangeIdx();
         }
 
-        boolean somethingWasCached = pendingItemsToCache.size() > 0;
+        boolean somethingWasCached = !pendingIdQueue.isEmpty();
         if ( seekerExhausted )
         {
             if ( !somethingWasCached && startedNow )
@@ -304,8 +294,7 @@ class FreeIdScanner implements Closeable
         return somethingWasCached;
     }
 
-    private void queueIdsFromTreeItem( IdRangeKey key, IdRange range, PendingIdQueue pendingIdQueue, MutableLongList pendingItemsToCache,
-            MutableInt availableSpaceById )
+    private void queueIdsFromTreeItem( IdRangeKey key, IdRange range, PendingIdQueue pendingIdQueue, MutableInt availableSpaceById )
     {
         final long baseId = key.getIdRangeIdx() * idsPerEntry;
         final boolean differentGeneration = generation != range.getGeneration();
@@ -324,29 +313,25 @@ class FreeIdScanner implements Closeable
             }
             else if ( firstFreeI != -1 )
             {
-                queueId( pendingIdQueue, pendingItemsToCache, availableSpaceById, baseId, firstFreeI, i );
+                queueId( pendingIdQueue, availableSpaceById, baseId, firstFreeI, i - firstFreeI );
                 firstFreeI = -1;
             }
         }
 
         if ( firstFreeI != -1 )
         {
-            queueId( pendingIdQueue, pendingItemsToCache, availableSpaceById, baseId, firstFreeI, idsPerEntry );
+            queueId( pendingIdQueue, availableSpaceById, baseId, firstFreeI, idsPerEntry - firstFreeI );
         }
     }
 
-    private void queueId( PendingIdQueue pendingIdQueue, MutableLongList pendingItemsToCache, MutableInt availableSpaceById, long baseId, int firstFreeI,
-            int i )
+    private void queueId( PendingIdQueue pendingIdQueue, MutableInt availableSpaceById, long baseId, int firstFreeI, int slotSize )
     {
         long startId = baseId + firstFreeI;
-        int freeSlotSize = i - firstFreeI;
+        assert layout.idRangeIndex( startId ) == layout.idRangeIndex( startId + slotSize - 1 );
 
-        assert layout.idRangeIndex( startId ) == layout.idRangeIndex( startId + freeSlotSize - 1 );
-
-        int accepted = pendingIdQueue.offer( startId, freeSlotSize );
+        int accepted = pendingIdQueue.offer( startId, slotSize );
         if ( accepted > 0 )
         {
-            pendingItemsToCache.add( combinedIdAndNumberOfIds( startId, accepted, false ) );
             availableSpaceById.addAndGet( -accepted );
         }
     }

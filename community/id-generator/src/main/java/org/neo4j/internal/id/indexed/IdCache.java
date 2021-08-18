@@ -83,8 +83,8 @@ class IdCache
                     throw new IllegalStateException( "This really should not happen, we knew the max available space there were for caching ids" +
                             " and now the cache claims to have less than that?" );
                 }
-                monitor.cached( id, slotSizes[slotIndex] );
                 size.incrementAndGet();
+                monitor.cached( id, slotSizes[slotIndex] );
             } );
         }
     }
@@ -165,6 +165,18 @@ class IdCache
     int size()
     {
         return size.get();
+    }
+
+    boolean isFull()
+    {
+        for ( ConcurrentLongQueue queue : queues )
+        {
+            if ( queue.size() < queue.capacity() )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     private int lowestSlotIndexCapableOf( int numberOfIds )

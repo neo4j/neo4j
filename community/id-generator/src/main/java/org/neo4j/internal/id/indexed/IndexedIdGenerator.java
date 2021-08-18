@@ -226,7 +226,7 @@ public class IndexedIdGenerator implements IdGenerator
      * Used for id generators that generally has high activity.
      * 2^14 == 16384 and one ID takes up 8B, which results in a memory usage of 16384 * 8 = ~131k memory
      */
-    private static final int LARGE_CACHE_CAPACITY = 1 << 14;
+    static final int LARGE_CACHE_CAPACITY = 1 << 14;
 
     /**
      * First generation the tree entries will start at. Generation will be incremented each time an IndexedIdGenerator is opened,
@@ -395,30 +395,28 @@ public class IndexedIdGenerator implements IdGenerator
         }
     }
 
-    private void prepareIdAllocation( CursorContext cursorContext )
-    {
-        if ( strictlyPrioritizeFreelist )
-        {
-            maintenance( true, cursorContext );
-        }
-    }
-
     @Override
     public long nextId( CursorContext cursorContext )
     {
-        prepareIdAllocation( cursorContext );
-        long id = cache.takeOrDefault( NO_ID );
-        if ( id != NO_ID )
+        do
         {
-            monitor.allocatedFromReused( id, 1 );
-            return id;
+            checkRefillCache( cursorContext );
+
+            long id = cache.takeOrDefault( NO_ID );
+            if ( id != NO_ID )
+            {
+                monitor.allocatedFromReused( id, 1 );
+                return id;
+            }
         }
+        while ( scanner.hasMoreFreeIds() );
 
         // There was no ID in the cache. This could be that either there are no free IDs in here (the typical case), or a benign
         // race where the cache ran out of IDs and it's very soon filled with more IDs from an ongoing scan. We have made the decision
         // to prioritise performance and so we don't just sit here waiting for an ongoing scan to find IDs (fast as it may be, although it can be I/O bound)
         // so we allocate from highId instead. This make highId slide a little even if there actually are free ids available,
         // but this should be a fairly rare event.
+        long id;
         do
         {
             id = highId.getAndIncrement();
@@ -432,10 +430,11 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public long nextConsecutiveIdRange( int numberOfIds, boolean favorSamePage, CursorContext cursorContext )
     {
-        prepareIdAllocation( cursorContext );
-
         if ( numberOfIds <= biggestSlotSize )
         {
+            // TODO to fill cache in a do-while would be preferrable here too, but slightly harder since the scanner
+            //  may say that there are more free IDs, but there may not actually be more free IDs of the given numberOfIds
+            checkRefillCache( cursorContext );
             long id = cache.takeOrDefault( NO_ID, numberOfIds, scanner::queueWastedCachedId );
             if ( id != NO_ID )
             {
@@ -579,7 +578,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void maintenance( CursorContext cursorContext )
     {
-        if ( cache.size() < cache.capacity() && !readOnlyChecker.isReadOnly() )
+        if ( !cache.isFull() && !readOnlyChecker.isReadOnly() )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.tryLoadFreeIdsIntoCache( true, cursorContext );
@@ -588,7 +587,7 @@ public class IndexedIdGenerator implements IdGenerator
 
     private void checkRefillCache( CursorContext cursorContext )
     {
-        if ( cache.size() <= cacheOptimisticRefillThreshold && !readOnlyChecker.isReadOnly() )
+        if ( cache.size() <= cacheOptimisticRefillThreshold )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.tryLoadFreeIdsIntoCache( false, cursorContext );

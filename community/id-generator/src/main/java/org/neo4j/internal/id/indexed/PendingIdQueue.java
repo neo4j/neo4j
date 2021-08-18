@@ -104,6 +104,18 @@ class PendingIdQueue
         throw new IllegalArgumentException( "No slot size found for " + slotSize + " among " + Arrays.toString( slotSizes ) );
     }
 
+    boolean isEmpty()
+    {
+        for ( MutableLongList queue : queues )
+        {
+            if ( !queue.isEmpty() )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     interface IdVisitor
     {
         void ids( int slotIndex, int slotSize, LongList ids );
