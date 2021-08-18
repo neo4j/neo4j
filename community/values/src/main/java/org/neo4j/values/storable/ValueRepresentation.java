@@ -117,7 +117,7 @@ public enum ValueRepresentation
                 public ArrayValue arrayOf( SequenceValue values )
                 {
                     LocalDate[] temporals = new LocalDate[values.length()];
-                     int i = 0;
+                    int i = 0;
                     for ( AnyValue value : values )
                     {
                         temporals[i++] = getOrFail( value, DateValue.class ).temporal();
@@ -470,6 +470,32 @@ public enum ValueRepresentation
      */
     public ArrayValue arrayOf( SequenceValue values )
     {
+        //NOTE: coming here means that we know we'll fail, just a matter of finding an appropriate error message.
+        AnyValue prev = null;
+        for ( AnyValue value : values )
+        {
+            if ( value == Values.NO_VALUE )
+            {
+                throw new CypherTypeException(
+                        "Collections containing null values can not be stored in properties." );
+            }
+            else if ( value instanceof SequenceValue )
+            {
+                throw new CypherTypeException(
+                        "Collections containing collections can not be stored in properties." );
+            }
+            else if ( prev != null && prev.valueRepresentation().valueGroup() != (value.valueRepresentation().valueGroup()) )
+            {
+                throw new CypherTypeException( "Neo4j only supports a subset of Cypher types for storage as singleton or array properties. " +
+                                               "Please refer to section cypher/syntax/values of the manual for more details." );
+            }
+            else if ( !value.valueRepresentation().canCreateArrayOfValueGroup() )
+            {
+                throw new CypherTypeException( String.format( "Property values can only be of primitive types or arrays thereof. Encountered: %s.", value ) );
+            }
+            prev = value;
+        }
+
         throw failure();
     }
 
@@ -507,7 +533,6 @@ public enum ValueRepresentation
 
     private static CypherTypeException failure()
     {
-        return new CypherTypeException( "Neo4j only supports a subset of Cypher types for storage as singleton or array properties. " +
-                                       "Please refer to section cypher/syntax/values of the manual for more details." );
+        return new CypherTypeException( "Property values can only be of primitive types or arrays thereof" );
     }
 }
