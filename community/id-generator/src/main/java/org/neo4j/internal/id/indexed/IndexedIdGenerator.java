@@ -214,13 +214,13 @@ public class IndexedIdGenerator implements IdGenerator
      * Used for id generators that generally has low activity.
      * 2^8 == 256 and one ID takes up 8B, which results in a memory usage of 256 * 8 = ~2k memory
      */
-    private static final int SMALL_CACHE_CAPACITY = 1 << 8;
+    static final int SMALL_CACHE_CAPACITY = 1 << 8;
 
     /**
      * Used for id generators that generally has high activity.
      * 2^14 == 16384 and one ID takes up 8B, which results in a memory usage of 16384 * 8 = ~131k memory
      */
-    private static final int LARGE_CACHE_CAPACITY = 1 << 14;
+    static final int LARGE_CACHE_CAPACITY = 1 << 14;
 
     /**
      * First generation the tree entries will start at. Generation will be incremented each time an IndexedIdGenerator is opened,
@@ -409,22 +409,27 @@ public class IndexedIdGenerator implements IdGenerator
         // we can see if the cache is starting to dry out and if so do a scan right here.
         // There may be multiple allocation requests doing this, but it should be very cheap:
         // comparing two ints, reading an AtomicBoolean and trying to CAS an AtomicBoolean.
-        checkRefillCache( cursorContext );
-
-        // try get from cache
-        long id = cache.takeOrDefault( NO_ID );
-        if ( id != NO_ID )
+        do
         {
-            // We got an ID from the cache, all good
-            monitor.allocatedFromReused( id );
-            return id;
+            checkRefillCache( cursorContext );
+
+            // try get from cache
+            long id = cache.takeOrDefault( NO_ID );
+            if ( id != NO_ID )
+            {
+                // We got an ID from the cache, all good
+                monitor.allocatedFromReused( id );
+                return id;
+            }
         }
+        while ( scanner.hasMoreFreeIds() );
 
         // There was no ID in the cache. This could be that either there are no free IDs in here (the typical case), or a benign
         // race where the cache ran out of IDs and it's very soon filled with more IDs from an ongoing scan. We have made the decision
         // to prioritise performance and so we don't just sit here waiting for an ongoing scan to find IDs (fast as it may be, although it can be I/O bound)
         // so we allocate from highId instead. This make highId slide a little even if there actually are free ids available,
         // but this should be a fairly rare event.
+        long id;
         do
         {
             id = highId.getAndIncrement();
@@ -439,8 +444,6 @@ public class IndexedIdGenerator implements IdGenerator
     public org.neo4j.internal.id.IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext )
     {
         assertNotReadOnly();
-        checkRefillCache( cursorContext );
-
         if ( forceConsecutiveAllocation )
         {
             long startId;

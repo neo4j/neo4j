@@ -85,10 +85,9 @@ class FreeIdScanner implements Closeable
      */
     boolean tryLoadFreeIdsIntoCache( boolean awaitOngoing, CursorContext cursorContext )
     {
-        if ( ongoingScanRangeIndex == null && !atLeastOneIdOnFreelist.get() )
+        if ( !hasMoreFreeIds() )
         {
-            // If no scan is in progress (SeekCursor now sitting and waiting at some leaf in the free-list)
-            // and if we have no reason to expect finding any free id from a scan then don't do it.
+            // If no scan is in progress and if we have no reason to expect finding any free id from a scan then don't do it.
             return false;
         }
 
@@ -127,6 +126,11 @@ class FreeIdScanner implements Closeable
             }
         }
         return false;
+    }
+
+    boolean hasMoreFreeIds()
+    {
+        return ongoingScanRangeIndex != null || atLeastOneIdOnFreelist.get();
     }
 
     private boolean scanLock( boolean awaitOngoing )
