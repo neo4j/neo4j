@@ -227,18 +227,39 @@ public abstract class PropertyIndexQuery implements IndexQuery
         return ToStringBuilder.reflectionToString( this, ToStringStyle.SHORT_PREFIX_STYLE );
     }
 
-    @Override
+    /**
+     * @return The ID of the property key, this queries against.
+     */
     public final int propertyKeyId()
     {
         return propertyKeyId;
     }
+
+    @Override
+    public final int queriedId()
+    {
+        return propertyKeyId();
+    }
+
+    /**
+     * @param value to test against the query.
+     * @return true if the {@code value} satisfies the query; false otherwise.
+     */
+    public abstract boolean acceptsValue( Value value );
 
     public boolean acceptsValueAt( PropertyCursor property )
     {
         return acceptsValue( property.propertyValue() );
     }
 
-    @Override
+    /**
+     * @return Target {@link ValueGroup} for query or {@link ValueGroup#UNKNOWN} if not targeting single group.
+     */
+    public abstract ValueGroup valueGroup();
+
+    /**
+     * @return Target {@link ValueCategory} for query
+     */
     public ValueCategory valueCategory()
     {
         return valueGroup().category();

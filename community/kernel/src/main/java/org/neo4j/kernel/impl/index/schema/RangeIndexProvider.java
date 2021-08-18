@@ -185,9 +185,6 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
                 return true;
             case range:
                 return valueCategory != ValueCategory.UNKNOWN && valueCategory != ValueCategory.GEOMETRY;
-            case stringSuffix:
-            case stringContains:
-            case fulltextSearch:
             default:
                 return false;
             }
@@ -207,7 +204,7 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
                     query instanceof PropertyIndexQuery.StringSuffixPredicate
                     || query instanceof PropertyIndexQuery.StringContainsPredicate
                     || query instanceof PropertyIndexQuery.GeometryRangePredicate
-                    || query instanceof PropertyIndexQuery.RangePredicate && query.valueGroup() == ValueGroup.GEOMETRY_ARRAY ) )
+                    || query instanceof PropertyIndexQuery.RangePredicate && ((PropertyIndexQuery) query).valueGroup() == ValueGroup.GEOMETRY_ARRAY ) )
             {
                 return false;
             }

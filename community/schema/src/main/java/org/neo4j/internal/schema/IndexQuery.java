@@ -19,40 +19,21 @@
  */
 package org.neo4j.internal.schema;
 
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
-import org.neo4j.values.storable.ValueGroup;
-
 /**
  * Provides a minimal interface for property index queries.
  */
 public interface IndexQuery
 {
     /**
-     * @return The ID of the property key, this queries against.
+     * @return The ID, this queries against.
      */
-    int propertyKeyId();
-
-    /**
-     * @param value to test against the query.
-     * @return true if the {@code value} satisfies the query; false otherwise.
-     */
-    boolean acceptsValue( Value value );
-
-    /**
-     * @return Target {@link ValueGroup} for query or {@link ValueGroup#UNKNOWN} if not targeting single group.
-     */
-    ValueGroup valueGroup();
-
-    /**
-     * @return Target {@link ValueCategory} for query
-     */
-    ValueCategory valueCategory();
+    int queriedId();
 
     IndexQueryType type();
 
     enum IndexQueryType
     {
+        tokenLookup,
         exists,
         exact,
         range,

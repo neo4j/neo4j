@@ -273,7 +273,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
             if ( queries.length == 0
                  || Arrays.stream( queries ).anyMatch( PropertyIndexQuery.GeometryRangePredicate.class::isInstance )
                  || Arrays.stream( queries ).filter( PropertyIndexQuery.RangePredicate.class::isInstance )
-                          .map( IndexQuery::valueGroup ).anyMatch( ValueGroup.GEOMETRY_ARRAY::equals )
+                          .map( PropertyIndexQuery.RangePredicate.class::cast )
+                          .map( PropertyIndexQuery::valueGroup ).anyMatch( ValueGroup.GEOMETRY_ARRAY::equals )
                  || (queries.length > 1 && (Arrays.stream( queries ).anyMatch( PropertyIndexQuery.StringSuffixPredicate.class::isInstance )
                                             || Arrays.stream( queries ).anyMatch( PropertyIndexQuery.StringContainsPredicate.class::isInstance ))) )
             {

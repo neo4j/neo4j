@@ -20,7 +20,9 @@
 
 package org.neo4j.internal.kernel.api;
 
-public class TokenPredicate
+import org.neo4j.internal.schema.IndexQuery;
+
+public class TokenPredicate implements IndexQuery
 {
     private final int tokenId;
 
@@ -32,5 +34,17 @@ public class TokenPredicate
     public int tokenId()
     {
         return tokenId;
+    }
+
+    @Override
+    public int queriedId()
+    {
+        return tokenId();
+    }
+
+    @Override
+    public IndexQueryType type()
+    {
+        return IndexQueryType.tokenLookup;
     }
 }
