@@ -21,15 +21,24 @@ package org.neo4j.kernel.impl.store.id;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.assertj.core.description.Description;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -64,6 +73,7 @@ import org.neo4j.values.storable.RandomValues;
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
@@ -125,6 +135,90 @@ class ReuseStorageSpaceIT
                 Operation.CREATE,
                 Operation.DELETE_CREATE,
                 ReuseStorageSpaceIT::crashingChildProcess );
+    }
+
+    @Test
+    void shouldPrioritizeFreelistWhenConcurrentlyAllocating() throws Exception
+    {
+        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() )
+                // This test specifically exercises the ID caches and refilling of those as it goes, so the smaller the better for this test
+                .setConfig( GraphDatabaseInternalSettings.force_small_id_cache, true )
+                .build();
+        try
+        {
+            // given
+            GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
+            int numNodes = 40_000;
+            MutableLongSet nodeIds = createNodes( db, numNodes );
+            try ( Transaction tx = db.beginTx() )
+            {
+                nodeIds.forEach( nodeId -> tx.getNodeById( nodeId ).delete() );
+                tx.commit();
+            }
+            db.getDependencyResolver().resolveDependency( IdController.class ).maintenance();
+
+            // First create 40,000 nodes, then delete them, ensure ID maintenance has run and allocate concurrently
+            int numThreads = 4;
+            Collection<Callable<MutableLongSet>> allocators = new ArrayList<>();
+            for ( int i = 0; i < numThreads; i++ )
+            {
+                allocators.add( () -> createNodes( db, numNodes / numThreads ) );
+            }
+            ExecutorService executor = Executors.newFixedThreadPool( numThreads );
+            List<Future<MutableLongSet>> results = executor.invokeAll( allocators );
+            MutableLongSet reallocatedNodeIds = LongSets.mutable.withInitialCapacity( numNodes );
+            for ( Future<MutableLongSet> result : results )
+            {
+                reallocatedNodeIds.addAll( result.get() );
+            }
+            assertThat( reallocatedNodeIds ).as( diff( nodeIds, reallocatedNodeIds ) ).isEqualTo( nodeIds );
+        }
+        finally
+        {
+            dbms.shutdown();
+        }
+    }
+
+    private Description diff( MutableLongSet nodeIds, MutableLongSet reallocatedNodeIds )
+    {
+        return new Description()
+        {
+            @Override
+            public String value()
+            {
+                StringBuilder builder = new StringBuilder();
+                nodeIds.forEach( nodeId ->
+                {
+                    if ( !reallocatedNodeIds.contains( nodeId ) )
+                    {
+                        builder.append( format( "%n<%d", nodeId ) );
+                    }
+                } );
+                reallocatedNodeIds.forEach( nodeId ->
+                {
+                    if ( !nodeIds.contains( nodeId ) )
+                    {
+                        builder.append( format( "%n>%d", nodeId ) );
+                    }
+                } );
+                return builder.toString();
+            }
+        };
+    }
+
+    private MutableLongSet createNodes( GraphDatabaseAPI db, int numNodes )
+    {
+        MutableLongSet nodeIds = LongSets.mutable.withInitialCapacity( numNodes );
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < numNodes; i++ )
+            {
+                Node node = tx.createNode();
+                nodeIds.add( node.getId() );
+            }
+            tx.commit();
+        }
+        return nodeIds;
     }
 
     private void shouldReuseStorageSpace( Operation initialState, Operation operation, Launcher launcher ) throws Exception
