@@ -96,6 +96,12 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
         {
             return 0;
         }
+
+        @Override
+        public long lastTransactionLogAppendBatch()
+        {
+            return 0;
+        }
     };
 
     LogFileCreateEvent createLogFile();

@@ -213,7 +213,7 @@ class TransactionAppenderRotationIT
         }
 
         @Override
-        public AppendTransactionEvent beginAppendTransaction()
+        public AppendTransactionEvent beginAppendTransaction( int appendItems )
         {
             return () ->
             {

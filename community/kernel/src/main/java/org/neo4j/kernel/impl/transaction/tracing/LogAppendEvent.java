@@ -50,8 +50,9 @@ public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoClo
 
     /**
      * Begin serializing and writing out the commands for this transaction.
+     * @param appendItems number of items we desire to append
      */
-    AppendTransactionEvent beginAppendTransaction();
+    AppendTransactionEvent beginAppendTransaction( int appendItems );
 
     class Empty implements LogAppendEvent
     {
@@ -78,7 +79,7 @@ public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoClo
         }
 
         @Override
-        public AppendTransactionEvent beginAppendTransaction()
+        public AppendTransactionEvent beginAppendTransaction( int appendItems )
         {
             return AppendTransactionEvent.NULL;
         }

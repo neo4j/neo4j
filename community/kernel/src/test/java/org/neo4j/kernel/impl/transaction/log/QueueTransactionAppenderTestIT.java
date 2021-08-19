@@ -292,7 +292,7 @@ class QueueTransactionAppenderTestIT
         }
 
         @Override
-        public AppendTransactionEvent beginAppendTransaction()
+        public AppendTransactionEvent beginAppendTransaction( int appendItems )
         {
             events.add( EventType.BEGIN_APPEND );
             return new RecordingTransactionAppendEvent( events );

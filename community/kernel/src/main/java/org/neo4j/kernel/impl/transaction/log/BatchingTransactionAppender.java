@@ -76,7 +76,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         {
             // Assert that kernel is healthy before making any changes
             databaseHealth.assertHealthy( IOException.class );
-            try ( AppendTransactionEvent appendEvent = logAppendEvent.beginAppendTransaction() )
+            try ( AppendTransactionEvent appendEvent = logAppendEvent.beginAppendTransaction( 1 ) )
             {
                 // Append all transactions in this batch to the log under the same logFile monitor
                 TransactionToApply tx = batch;

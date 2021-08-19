@@ -45,6 +45,7 @@ public class DefaultTracer implements DatabaseTracer
 {
     private final AtomicLong appendedBytes = new AtomicLong();
     private final AtomicLong numberOfFlushes = new AtomicLong();
+    private final AtomicLong appliedBatchSize = new AtomicLong();
 
     private final CountingLogRotateEvent countingLogRotateEvent = new CountingLogRotateEvent();
     private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.addAndGet( CURRENT_FORMAT_LOG_HEADER_SIZE );
@@ -93,6 +94,12 @@ public class DefaultTracer implements DatabaseTracer
     public long numberOfFlushes()
     {
         return numberOfFlushes.get();
+    }
+
+    @Override
+    public long lastTransactionLogAppendBatch()
+    {
+        return appliedBatchSize.get();
     }
 
     @Override
@@ -221,8 +228,9 @@ public class DefaultTracer implements DatabaseTracer
         }
 
         @Override
-        public AppendTransactionEvent beginAppendTransaction()
+        public AppendTransactionEvent beginAppendTransaction( int appendItems )
         {
+            appliedBatchSize.set( appendItems );
             return AppendTransactionEvent.NULL;
         }
 

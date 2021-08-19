@@ -72,6 +72,12 @@ public interface TransactionTracer extends TransactionLogCounters
         {
             return 0;
         }
+
+        @Override
+        public long lastTransactionLogAppendBatch()
+        {
+            return 0;
+        }
     };
 
     /**

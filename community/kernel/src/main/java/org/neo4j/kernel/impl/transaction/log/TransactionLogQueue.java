@@ -255,12 +255,13 @@ public class TransactionLogQueue extends LifecycleAdapter
             private void processBatch() throws IOException
             {
                 databaseHealth.assertHealthy( IOException.class );
-                for ( int i = 0; i < index.intValue(); i++ )
+                int drainedElements = index.intValue();
+                for ( int i = 0; i < drainedElements; i++ )
                 {
                     TxQueueElement txQueueElement = txElements[i];
                     LogAppendEvent logAppendEvent = txQueueElement.logAppendEvent;
                     long lastTransactionId = TransactionIdStore.BASE_TX_ID;
-                    try ( var appendEvent = logAppendEvent.beginAppendTransaction() )
+                    try ( var appendEvent = logAppendEvent.beginAppendTransaction( drainedElements ) )
                     {
                         TransactionToApply tx = txQueueElement.batch;
                         while ( tx != null )

@@ -50,4 +50,10 @@ public interface TransactionLogCounters
      * @return number of flushes
      */
     long numberOfFlushes();
+
+    /**
+     * Size of last batch of transactions that was appended to transaction log
+     * @return last append batch size
+     */
+    long lastTransactionLogAppendBatch();
 }
