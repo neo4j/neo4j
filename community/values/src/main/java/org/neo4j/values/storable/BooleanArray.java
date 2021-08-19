@@ -171,8 +171,8 @@ public final class BooleanArray extends ArrayValue
     {
         assert hasCompatibleType( prepended ) : "Incompatible types";
         boolean[] newArray = new boolean[value.length + 1];
-        System.arraycopy( value, 0, newArray, 1, value.length );
         newArray[0] = ((BooleanValue) prepended).booleanValue();
+        System.arraycopy( value, 0, newArray, 1, value.length );
         return new BooleanArray( newArray );
     }
 }

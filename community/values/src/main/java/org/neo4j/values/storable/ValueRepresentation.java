@@ -35,7 +35,14 @@ import org.neo4j.values.SequenceValue;
  */
 public enum ValueRepresentation
 {
-    UNKNOWN( ValueGroup.UNKNOWN, false ),
+    UNKNOWN( ValueGroup.UNKNOWN, false )
+            {
+                @Override
+                public ValueRepresentation coerce( ValueRepresentation other )
+                {
+                    return UNKNOWN;
+                }
+            },
     GEOMETRY_ARRAY( ValueGroup.GEOMETRY_ARRAY, false ),
     ZONED_DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY, false ),
     LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, false ),
