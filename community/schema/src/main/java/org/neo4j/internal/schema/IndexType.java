@@ -45,7 +45,11 @@ public enum IndexType
     /**
      * @see org.neo4j.graphdb.schema.IndexType#RANGE
      */
-    RANGE;
+    RANGE,
+    /**
+     * TODO add a corresponding public type when we have everything for creating POINT indexes
+     */
+    POINT;
 
     public static IndexType fromPublicApi( org.neo4j.graphdb.schema.IndexType type )
     {

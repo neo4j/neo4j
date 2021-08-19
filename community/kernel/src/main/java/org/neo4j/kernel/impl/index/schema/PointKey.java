@@ -71,6 +71,15 @@ class PointKey extends NativeIndexKey<PointKey>
         this.inclusion = inclusion;
     }
 
+    void writePointDerived( CoordinateReferenceSystem crs, long derivedSpaceFillingCurveValue, NativeIndexKey.Inclusion inclusion )
+    {
+        crsCode = crs.getCode();
+        crsTableId = crs.getTable().getTableId();
+        this.derivedSpaceFillingCurveValue = derivedSpaceFillingCurveValue;
+        coordinate = NO_COORDINATE;
+        this.inclusion = inclusion;
+    }
+
     @Override
     void assertValidValue( int stateSlot, Value value )
     {
@@ -147,7 +156,12 @@ class PointKey extends NativeIndexKey<PointKey>
             return derivedSpaceFillingCurveValueComparison;
         }
 
-        for ( int i = 0; i < this.coordinate.length; i++ )
+        // When we construct spatial sub-queries we create keys with only derived
+        // space filling curve value and no actual coordinates. That's why we need
+        // to check min dimensions here. In all other cases the number of dimensions
+        // for a point is always given by the crs.
+        int dimensions = Math.min( this.coordinate.length, other.coordinate.length );
+        for ( int i = 0; i < dimensions; i++ )
         {
             // It's ok to compare the coordinate value here without deserializing them
             // because we are only defining SOME deterministic order so that we can

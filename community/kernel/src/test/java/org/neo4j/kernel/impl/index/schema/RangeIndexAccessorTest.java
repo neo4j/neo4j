@@ -55,7 +55,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
-class RangeIndexAccessorTest extends NativeIndexAccessorTests<RangeKey>
+class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
 {
     private static final IndexDescriptor indexDescriptor = forSchema( forLabel( 42, 666 ) ).withIndexType( IndexType.RANGE )
             .withName( "index" ).materialise( 0 );

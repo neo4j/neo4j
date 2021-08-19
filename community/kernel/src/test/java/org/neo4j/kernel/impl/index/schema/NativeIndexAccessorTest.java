@@ -45,7 +45,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
-class NativeIndexAccessorTest extends NativeIndexAccessorTests<BtreeKey>
+class NativeIndexAccessorTest extends GenericNativeIndexAccessorTests<BtreeKey>
 {
     private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
             IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );

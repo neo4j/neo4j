@@ -22,16 +22,21 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
@@ -125,6 +130,71 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
         catch ( TreeInconsistencyException e )
         {
             return UNKNOWN_NUMBER_OF_ENTRIES;
+        }
+    }
+
+    @Override
+    public IndexEntriesReader[] newAllEntriesValueReader( int partitions, CursorContext cursorContext )
+    {
+        KEY lowest = layout.newKey();
+        lowest.initialize( Long.MIN_VALUE );
+        lowest.initValuesAsLowest();
+        KEY highest = layout.newKey();
+        highest.initialize( Long.MAX_VALUE );
+        highest.initValuesAsHighest();
+        try
+        {
+            Collection<Seeker.WithContext<KEY,NullValue>> seekersWithContext = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
+            Collection<IndexEntriesReader> readers = new ArrayList<>();
+            for ( Seeker.WithContext<KEY,NullValue> seekerWithContext : seekersWithContext )
+            {
+                Seeker<KEY,NullValue> seeker = seekerWithContext.with( cursorContext );
+                readers.add( new IndexEntriesReader()
+                {
+                    @Override
+                    public long next()
+                    {
+                        return seeker.key().getEntityId();
+                    }
+
+                    @Override
+                    public boolean hasNext()
+                    {
+                        try
+                        {
+                            return seeker.next();
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new UncheckedIOException( e );
+                        }
+                    }
+
+                    @Override
+                    public Value[] values()
+                    {
+                        return seeker.key().asValues();
+                    }
+
+                    @Override
+                    public void close()
+                    {
+                        try
+                        {
+                            seeker.close();
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new UncheckedIOException( e );
+                        }
+                    }
+                } );
+            }
+            return readers.toArray( IndexEntriesReader[]::new );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 }

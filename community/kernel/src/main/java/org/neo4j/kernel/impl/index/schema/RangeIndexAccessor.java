@@ -19,18 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.values.storable.Value;
@@ -66,70 +58,5 @@ public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey>
     public void validateBeforeCommit( long entityId, Value[] tuple )
     {
         validator.validate( entityId, tuple );
-    }
-
-    @Override
-    public IndexEntriesReader[] newAllEntriesValueReader( int partitions, CursorContext cursorContext )
-    {
-        RangeKey lowest = layout.newKey();
-        lowest.initialize( Long.MIN_VALUE );
-        lowest.initValuesAsLowest();
-        RangeKey highest = layout.newKey();
-        highest.initialize( Long.MAX_VALUE );
-        highest.initValuesAsHighest();
-        try
-        {
-            Collection<Seeker.WithContext<RangeKey,NullValue>> seekersWithContext = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
-            Collection<IndexEntriesReader> readers = new ArrayList<>();
-            for ( Seeker.WithContext<RangeKey,NullValue> seekerWithContext : seekersWithContext )
-            {
-                Seeker<RangeKey,NullValue> seeker = seekerWithContext.with( cursorContext );
-                readers.add( new IndexEntriesReader()
-                {
-                    @Override
-                    public long next()
-                    {
-                        return seeker.key().getEntityId();
-                    }
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        try
-                        {
-                            return seeker.next();
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new UncheckedIOException( e );
-                        }
-                    }
-
-                    @Override
-                    public Value[] values()
-                    {
-                        return seeker.key().asValues();
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        try
-                        {
-                            seeker.close();
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new UncheckedIOException( e );
-                        }
-                    }
-                } );
-            }
-            return readers.toArray( IndexEntriesReader[]::new );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
     }
 }

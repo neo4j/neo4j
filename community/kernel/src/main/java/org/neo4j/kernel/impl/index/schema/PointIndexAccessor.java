@@ -22,51 +22,43 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 
-class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey>
+class PointIndexAccessor extends NativeIndexAccessor<PointKey>
 {
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
-    private final TokenNameLookup tokenNameLookup;
-    private IndexValueValidator validator;
 
-    GenericNativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-            IndexLayout<BtreeKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
-            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration, TokenNameLookup tokenNameLookup )
+    PointIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
+            IndexLayout<PointKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
+            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration )
     {
         super( databaseIndexContext, indexFiles, layout, descriptor );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
-        this.tokenNameLookup = tokenNameLookup;
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
-    }
-
-    @Override
-    protected void afterTreeInstantiation( GBPTree<BtreeKey,NullValue> tree )
-    {
-        validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
     }
 
     @Override
     public ValueIndexReader newValueReader()
     {
         assertOpen();
-        return new GenericNativeIndexReader( tree, layout, descriptor, spaceFillingCurveSettings, configuration );
+        return new PointIndexReader( tree, layout, descriptor, spaceFillingCurveSettings, configuration );
     }
 
     @Override
     public void validateBeforeCommit( long entityId, Value[] tuple )
     {
-        validator.validate( entityId, tuple );
+        // Validation is supposed to check that the to-be-added values fit into the index key.
+        // This is always true for the point index, because it does not support composite keys
+        // and the supported values have only two possible sizes - serialised 2D point
+        // and serialised 3D point.
+        // Size of either of them is well under GBP-tree key limit.
     }
 
     @Override
