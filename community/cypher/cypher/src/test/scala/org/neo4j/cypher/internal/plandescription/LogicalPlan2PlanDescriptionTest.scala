@@ -291,6 +291,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StartDatabase
 import org.neo4j.cypher.internal.logical.plans.StopDatabase
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -1718,6 +1719,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("SemiApply") {
     assertGood(attach(SemiApply(lhsLP, rhsLP), 2345.0),
       planDescription(id, "SemiApply", TwoChildren(lhsPD, rhsPD), Seq.empty, Set("a")))
+  }
+
+  test("TransactionForeach") {
+    assertGood(attach(TransactionForeach(lhsLP, rhsLP), 2345.0),
+      planDescription(id, "TransactionForeach", TwoChildren(lhsPD, rhsPD), Seq.empty, Set("a")))
   }
 
   test("TriadicBuild") {
