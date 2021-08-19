@@ -1058,6 +1058,18 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public void setStatusDetails( String statusDetails )
+        {
+            internal.setStatusDetails( statusDetails );
+        }
+
+        @Override
+        public String statusDetails()
+        {
+            return internal.statusDetails();
+        }
+
+        @Override
         public void assertOpen()
         {
             internal.assertOpen();

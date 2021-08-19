@@ -167,4 +167,10 @@ public interface KernelTransactionHandle
      * on first write operation, be it data or schema operation.
      */
     boolean isSchemaTransaction();
+
+    /**
+     * Provide additional status details from underlying transaction
+     * @return additional status or empty string if not available.
+     */
+    String getStatusDetails();
 }

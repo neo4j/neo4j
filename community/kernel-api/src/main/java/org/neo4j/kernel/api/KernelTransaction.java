@@ -268,6 +268,18 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      */
     Map<String,Object> getMetaData();
 
+    /**
+     * Sets additional status to be associated with particular transaction execution step.
+     * @param statusDetails - additional status details.
+     */
+    void setStatusDetails( String statusDetails );
+
+    /**
+     * Gets additional status details if available
+     * @return additional status details or empty string.
+     */
+    String statusDetails();
+
     enum Type
     {
         /**

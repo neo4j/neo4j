@@ -72,6 +72,7 @@ public class TransactionStatusResult
     public final Long estimatedUsedHeapMemory;
     /** @since Neo4j 4.4 */
     public final String outerTransactionId;
+    public final String statusDetails;
 
     public TransactionStatusResult( String database, KernelTransactionHandle transaction,
             TransactionDependenciesResolver transactionDependenciesResolver,
@@ -116,6 +117,7 @@ public class TransactionStatusResult
         this.connectionId = clientInfo.map( ClientConnectionInfo::connectionId ).orElse( EMPTY );
         this.resourceInformation = transactionDependenciesResolver.describeBlockingLocks( transaction );
         this.status = getStatus( transaction, transactionDependenciesResolver );
+        this.statusDetails = transaction.getStatusDetails();
         this.metaData = transaction.getMetaData();
         this.initializationStackTrace = transaction.transactionInitialisationTrace().getTrace();
     }

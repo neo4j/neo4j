@@ -165,6 +165,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
+    public String getStatusDetails()
+    {
+        return tx.statusDetails();
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

@@ -131,6 +131,8 @@ import static java.lang.Thread.currentThread;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
@@ -208,6 +210,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile ClientConnectionInfo clientInfo;
     private volatile int reuseCount;
     private volatile Map<String,Object> userMetaData;
+    private volatile String statusDetails;
     private final AllStoreHolder allStoreHolder;
     private final Operations operations;
     private InternalTransaction internalTransaction;
@@ -265,6 +268,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, cpuClockRef, namedDatabaseId, config );
         this.statistics = new Statistics( this, cpuClockRef, config.get( GraphDatabaseInternalSettings.enable_transaction_heap_allocation_tracking ) );
         this.userMetaData = emptyMap();
+        this.statusDetails = EMPTY;
         this.constraintSemantics = constraintSemantics;
         this.transactionalCursors = storageEngine.createStorageCursors( CursorContext.NULL );
         this.storageLocks = storageEngine.createStorageLocks( lockClient );
@@ -543,6 +547,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Map<String, Object> getMetaData()
     {
         return userMetaData;
+    }
+
+    @Override
+    public void setStatusDetails( String statusDetails )
+    {
+        assertOpen();
+        this.statusDetails = statusDetails;
+    }
+
+    @Override
+    public String statusDetails()
+    {
+        var details = statusDetails;
+        return defaultString( details, EMPTY );
     }
 
     @Override
@@ -1080,6 +1098,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             collectionsFactory.release();
             reuseCount++;
             userMetaData = emptyMap();
+            statusDetails = EMPTY;
             clientInfo = null;
             internalTransaction = null;
             userTransactionId = 0;

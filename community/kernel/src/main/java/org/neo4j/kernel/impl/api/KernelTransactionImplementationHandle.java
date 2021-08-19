@@ -56,6 +56,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final Optional<Status> terminationReason;
     private final Optional<ExecutingQuery> executingQuery;
     private final Map<String,Object> metaData;
+    private final String statusDetails;
     private final long userTransactionId;
     private final TransactionInitializationTrace initializationTrace;
     private final KernelTransactionStamp transactionStamp;
@@ -72,6 +73,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.terminationReason = tx.getReasonIfTerminated();
         this.executingQuery = tx.executingQuery();
         this.metaData = tx.getMetaData();
+        this.statusDetails = tx.statusDetails();
         this.userTransactionId = tx.getUserTransactionId();
         this.initializationTrace = tx.getInitializationTrace();
         this.clientInfo = tx.clientInfo();
@@ -132,6 +134,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public Map<String,Object> getMetaData()
     {
         return metaData;
+    }
+
+    @Override
+    public String getStatusDetails()
+    {
+        return statusDetails;
     }
 
     @Override

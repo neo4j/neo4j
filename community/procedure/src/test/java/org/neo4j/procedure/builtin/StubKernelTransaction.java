@@ -350,6 +350,18 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public void setStatusDetails( String statusDetails )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public String statusDetails()
+    {
+        return null;
+    }
+
+    @Override
     public void assertOpen()
     {
         throw new UnsupportedOperationException( "not implemented" );
