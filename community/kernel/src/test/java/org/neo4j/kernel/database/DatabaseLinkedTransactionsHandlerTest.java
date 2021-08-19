@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.database;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 
 import java.util.Collections;
@@ -38,6 +39,7 @@ class DatabaseLinkedTransactionsHandlerTest
 {
     KernelTransactions kernelTransactions = mock( KernelTransactions.class );
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @RepeatedTest( 100 )
     void testRaceConditionRegisterTerminate() throws Throwable
     {

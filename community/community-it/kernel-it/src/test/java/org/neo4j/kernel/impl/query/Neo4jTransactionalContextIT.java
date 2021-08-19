@@ -205,6 +205,7 @@ class Neo4jTransactionalContextIT
         }
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionExecutingQueryShouldUseOuterTransactionIdAndQueryText()
     {
@@ -226,6 +227,7 @@ class Neo4jTransactionalContextIT
         assertThat( snapshot.transactionId(), equalTo( outerTx.kernelTransaction().getUserTransactionId() ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionExecutingQueryShouldSumUpPageHitsFaultsFromInnerAndOuterTransaction()
     {
@@ -256,6 +258,7 @@ class Neo4jTransactionalContextIT
         assertThat( snapshot.pageFaults(), equalTo( outerFaults + innerFaults ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionExecutingQueryShouldSumUpPageHitsFaultsFromInnerAndOuterTransactionsAlsoWhenCommitted()
     {
@@ -303,6 +306,7 @@ class Neo4jTransactionalContextIT
         assertThat( snapshot.pageFaults(), equalTo( outerFaults + closedInnerFaults + openInnerFaults ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionKernelStatisticsProviderShouldOnlySeePageHitsFaultsFromCurrentTransactionsInPROFILE()
     {
@@ -348,6 +352,7 @@ class Neo4jTransactionalContextIT
         assertThat( innerProfileStatisticsProvider.getPageCacheMisses(), equalTo( openInnerFaults ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionExecutingQueryShouldSumUpPageHitsFaultsFromInnerAndOuterTransactionsAlsoWhenRolledBack()
     {
@@ -394,6 +399,7 @@ class Neo4jTransactionalContextIT
         assertThat( snapshot.pageFaults(), equalTo( outerFaults + closedInnerFaults + openInnerFaults ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionExecutingQueryShouldSumUpActiveLocksFromOpenInnerAndOuterTransactions()
     {
@@ -433,6 +439,7 @@ class Neo4jTransactionalContextIT
         assertThat( snapshot.activeLockCount(), equalTo( outerActiveLocks + innerActiveLocks1 + innerActiveLocks2 ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionExecutingQueryShouldSumUpActiveLocksFromOpenInnerAndOuterTransactionsButNotFromClosedTransactions()
     {
@@ -481,6 +488,7 @@ class Neo4jTransactionalContextIT
         assertThat( snapshot.activeLockCount(), equalTo( outerActiveLocks + openInnerActiveLocks ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionExecutingQueryShouldCalculateHighWaterMarkMemoryUsageAlsoWhenCommittedInQuerySnapshot()
     {
@@ -558,6 +566,7 @@ class Neo4jTransactionalContextIT
         assertThrows( TransactionTerminatedException.class, ctx::contextWithNewTransaction );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionTerminateInnerTransactionOnOuterTransactionTerminate()
     {
@@ -573,6 +582,7 @@ class Neo4jTransactionalContextIT
         assertTrue( isMarkedForTermination( innerCtx ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionDeregisterInnerTransactionOnInnerContextCommit()
     {
@@ -592,6 +602,7 @@ class Neo4jTransactionalContextIT
         assertFalse( terminationHandler.hasInnerTransaction( ctx.kernelTransaction().getUserTransactionId() ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionDeregisterInnerTransactionOnInnerContextRollback()
     {
@@ -610,6 +621,7 @@ class Neo4jTransactionalContextIT
         assertFalse( terminationHandler.hasInnerTransaction( ctx.kernelTransaction().getUserTransactionId() ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionDeregisterInnerTransactionOnInnerContextClose()
     {
@@ -628,6 +640,7 @@ class Neo4jTransactionalContextIT
         assertFalse( terminationHandler.hasInnerTransaction( ctx.kernelTransaction().getUserTransactionId() ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionThrowIfInnerTransactionPresentOnOuterTransactionCommit()
     {
@@ -644,6 +657,7 @@ class Neo4jTransactionalContextIT
                       outerTx::commit);
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionDoesNotThrowIfInnerTransactionDeregisteredOnOuterTransactionCommit()
     {
@@ -664,6 +678,7 @@ class Neo4jTransactionalContextIT
         );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionTerminateInnerTransactionOnOuterTransactionRollback()
     {
@@ -695,6 +710,7 @@ class Neo4jTransactionalContextIT
         assertFalse( innerCtx.isOpen() );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionTerminateInnerTransactionOnOuterTransactionClose()
     {
@@ -710,6 +726,7 @@ class Neo4jTransactionalContextIT
         assertTrue( isMarkedForTermination( innerCtx ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionDoNotTerminateOuterTransactionOnInnerTransactionTerminate()
     {
@@ -725,6 +742,7 @@ class Neo4jTransactionalContextIT
         assertFalse( isMarkedForTermination( ctx ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionDoNotCloseOuterContextOnInnerContextRollback()
     {
@@ -740,6 +758,7 @@ class Neo4jTransactionalContextIT
         assertTrue( ctx.isOpen() );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionCloseInnerStatementOnInnerContextCommitClose() throws Exception
     {
@@ -764,6 +783,7 @@ class Neo4jTransactionalContextIT
         verifyNoInteractions( outerCloseable );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionCloseInnerStatementOnInnerTransactionCommitClose() throws Exception
     {
@@ -802,6 +822,7 @@ class Neo4jTransactionalContextIT
                       () -> ctx.contextWithNewTransaction());
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionProcedureCalledFromInnerContextShouldUseInnerTransaction() throws ProcedureException
     {
@@ -824,6 +845,7 @@ class Neo4jTransactionalContextIT
         assertThat( ctx.kernelTransaction().getMetaData(), equalTo( Collections.emptyMap() ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionListTransactions() throws ProcedureException, InvalidArgumentsException
     {
@@ -877,6 +899,7 @@ class Neo4jTransactionalContextIT
         assertThat( outerTransactionIds, hasSize(2) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionListQueries() throws ProcedureException, InvalidArgumentsException
     {
@@ -920,6 +943,7 @@ class Neo4jTransactionalContextIT
         assertThat( queryIds, equalTo( Collections.singletonList( expectedQueryId ) ) );
     }
 
+    @Disabled( "Handling of linked transactions is temporarily disabled" )
     @Test
     void contextWithNewTransactionKillQuery() throws ProcedureException, InvalidArgumentsException
     {
