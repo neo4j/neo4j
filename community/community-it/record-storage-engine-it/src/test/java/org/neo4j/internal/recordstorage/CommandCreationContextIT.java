@@ -103,7 +103,7 @@ public class CommandCreationContextIT
             {
                 creationContext.initialize( cursorContext, StoreCursors.NULL );
                 idReservation.applyAsLong( creationContext );
-                assertCursorZero( cursorContext );
+                assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1 );
             }
         }
     }

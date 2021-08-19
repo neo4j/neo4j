@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -84,7 +85,7 @@ class DynamicArrayStoreTest
 
     @ParameterizedTest
     @MethodSource( "data" )
-    void tracePageCacheAccessOnRecordAllocation( Supplier<Object> dataSupplier )
+    void tracePageCacheAccessOnRecordAllocation( Supplier<Object> dataSupplier ) throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( var store = dynamicArrayStore() )
@@ -102,15 +103,17 @@ class DynamicArrayStoreTest
 
             store.allocateRecords( new ArrayList<>(), array, cursorContext, INSTANCE );
 
-            assertZeroCursor( cursorContext );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1 );
         }
     }
 
     private static void prepareDirtyGenerator( DynamicArrayStore store )
     {
         var idGenerator = store.getIdGenerator();
-        var marker = idGenerator.marker( NULL );
-        marker.markDeleted( 1L );
+        try ( var marker = idGenerator.marker( NULL ) )
+        {
+            marker.markDeleted( 1L );
+        }
         idGenerator.clearCache( NULL );
     }
 
@@ -122,12 +125,13 @@ class DynamicArrayStoreTest
         assertThat( cursorTracer.unpins() ).isZero();
     }
 
-    private DynamicArrayStore dynamicArrayStore()
+    private DynamicArrayStore dynamicArrayStore() throws IOException
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
         DynamicArrayStore store = new DynamicArrayStore( storeFile, idFile, Config.defaults(), RecordIdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
                 NullLogProvider.getInstance(), 1, Standard.LATEST_RECORD_FORMATS, writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         store.initialise( true, NULL );
+        store.start( NULL );
         return store;
     }
 }
