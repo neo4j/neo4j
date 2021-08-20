@@ -91,7 +91,6 @@ import org.neo4j.values.storable.Value;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -188,7 +187,7 @@ class KernelTransactionTestBase
                                                     leaseService, memoryPool,
                                                     new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseId.name() ),
                                                     TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST,
-                                                    mock( DbmsRuntimeRepository.class ), locksClient
+                                                    mock( DbmsRuntimeRepository.class ), locksClient, mock( KernelTransactions.class )
         );
     }
 

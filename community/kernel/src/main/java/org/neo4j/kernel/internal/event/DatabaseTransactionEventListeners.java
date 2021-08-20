@@ -23,13 +23,9 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.event.TransactionListenersState.ListenerState;
@@ -179,34 +175,5 @@ public class DatabaseTransactionEventListeners extends LifecycleAdapter
     private static boolean canInvokeListenersWithTransactionState( ReadableTransactionState state )
     {
         return state != null && state.hasChanges();
-    }
-
-    public void beforeTerminate( KernelTransaction transaction, Status reason )
-    {
-        Collection<TransactionEventListener<?>> eventListeners = globalTransactionEventListeners.getDatabaseTransactionEventListeners( databaseName );
-        for ( TransactionEventListener<?> listener : eventListeners )
-        {
-            listener.beforeTerminate( transaction.getUserTransactionId(), reason);
-        }
-    }
-
-    public void beforeCloseTransaction( KernelTransaction transaction ) throws TransactionFailureException
-    {
-        Collection<TransactionEventListener<?>> eventListeners = globalTransactionEventListeners.getDatabaseTransactionEventListeners( databaseName );
-        for ( TransactionEventListener<?> listener : eventListeners )
-        {
-            try
-            {
-                listener.beforeCloseTransaction( transaction.getUserTransactionId(), transaction.canCommit() );
-            }
-            catch ( Throwable t )
-            {
-                if ( t instanceof Status.HasStatus )
-                {
-                    throw new TransactionFailureException( ((Status.HasStatus) t).status(), t, t.getMessage() );
-                }
-                throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, t, t.getMessage() );
-            }
-        }
     }
 }

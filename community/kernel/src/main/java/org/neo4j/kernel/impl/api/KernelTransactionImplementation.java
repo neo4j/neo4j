@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
@@ -137,6 +138,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
@@ -231,6 +233,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private KernelTransactionMonitor kernelTransactionMonitor;
     private final StoreCursors transactionalCursors;
 
+    private final KernelTransactions kernelTransactions;
+    /**
+     * This transaction's inner transactions' ids.
+     */
+    @Nullable
+    private volatile InnerTransactionHandlerImpl innerTransactionHandler;
+
     public KernelTransactionImplementation( Config config,
             DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
             TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
@@ -243,7 +252,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor,
             AbstractSecurityLog securityLog, KernelVersionRepository kernelVersionRepository, DbmsRuntimeRepository dbmsRuntimeRepository,
-            Locks.Client lockClient )
+            Locks.Client lockClient, KernelTransactions kernelTransactions )
     {
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
@@ -299,6 +308,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.config = config;
         this.collectionsFactory = collectionsFactorySupplier.create();
         this.lockClient = lockClient;
+        this.kernelTransactions = kernelTransactions;
     }
 
     /**
@@ -337,6 +347,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations.initialize( cursorContext );
         this.initializationTrace = traceProvider.getTraceInfo();
         this.memoryTracker.setLimit( transactionHeapBytesLimit );
+        this.innerTransactionHandler = new InnerTransactionHandlerImpl( kernelTransactions );
         return this;
     }
 
@@ -486,7 +497,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( canBeTerminated() )
         {
-            eventListeners.beforeTerminate( this, reason);
+            var innerTransactionHandler = this.innerTransactionHandler;
+            if ( innerTransactionHandler != null )
+            {
+                innerTransactionHandler.terminateInnerTransactions( reason );
+            }
             failure = true;
             terminationReason = reason;
             if ( lockClient != null )
@@ -707,10 +722,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assertTransactionOpen();
         assertTransactionNotClosing();
+        // we assume that inner transaction have been closed before closing the outer transaction
+        assertNoInnerTransactions();
         closing = true;
         try
         {
-            eventListeners.beforeCloseTransaction( this );
             if ( canCommit() )
             {
                 return commitTransaction();
@@ -1110,6 +1126,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             cursorContext.close();
             initializationTrace = NONE;
             memoryTracker.reset();
+            innerTransactionHandler.close();
+            innerTransactionHandler = null;
         }
         finally
         {
@@ -1265,6 +1283,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 txState.indexDoDrop( IndexDescriptor.NLI_PROTOTYPE.materialise( id ) );
             }
         };
+    }
+
+    @Override
+    public InnerTransactionHandlerImpl getInnerTransactionHandler()
+    {
+        if ( innerTransactionHandler != null )
+        {
+            return this.innerTransactionHandler;
+        }
+        throw new IllegalStateException( "Called getInnerTransactionHandler on inactive transaction" );
+    }
+
+    private void assertNoInnerTransactions() throws TransactionFailureException
+    {
+        if ( getInnerTransactionHandler().hasInnerTransaction() )
+        {
+            throw new TransactionFailureException( TransactionCommitFailed, "The transaction cannot be committed when it has open inner transactions." );
+        }
     }
 
     public static class Statistics

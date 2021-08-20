@@ -25,7 +25,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientFailureException;
-import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * An event handler interface for transaction events. Once it has been
@@ -122,30 +121,4 @@ public interface TransactionEventListener<T>
      * @param databaseService underlying database service
      */
     void afterRollback( TransactionData data, T state, GraphDatabaseService databaseService );
-
-    /**
-     * Invoked before the transaction is marked as terminated.
-     *
-     * @param transactionId user id of the transaction to be terminated
-     * @param reason        the status code for why the transaction was terminated
-     */
-    default void beforeTerminate( long transactionId, Status reason )
-    {
-    }
-
-    /**
-     * Invoked before the transaction is closed.
-     *
-     * If this method throws an exception the transaction will be rolled back
-     * and a {@link TransactionFailureException} or a {@link TransientFailureException} will be thrown from
-     * {@link Transaction#close()}.
-     *
-     * @param transactionId user id of the transaction to be terminated
-     * @param canCommit {@code true if the transaction is about to commit}, {@code false} otherwise
-     *
-     * @throws Exception to indicate that the transaction should be rolled back.
-     */
-    default void beforeCloseTransaction( long transactionId, boolean canCommit ) throws Exception
-    {
-    }
 }

@@ -309,7 +309,7 @@ class KernelTransactionTerminationTest
                    mock( IndexStatisticsStore.class ), dependencies, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
                    LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
                    TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ),
-                   new NoOpClient() );
+                   new NoOpClient(), mock( KernelTransactions.class ) );
 
             this.monitor = monitor;
         }

@@ -420,7 +420,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, indexStatisticsStore,
                             databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
-                            securityLog, kernelVersionRepository, dbmsRuntimeRepository, locks.newClient() );
+                            securityLog, kernelVersionRepository, dbmsRuntimeRepository, locks.newClient(), KernelTransactions.this );
             this.transactions.add( tx );
             return tx;
         }

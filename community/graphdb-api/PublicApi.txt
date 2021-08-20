@@ -341,9 +341,7 @@ org.neo4j.graphdb.event.TransactionData::username() java.lang.String public abst
 org.neo4j.graphdb.event.TransactionEventListener<T extends java.lang.Object> public abstract interface
 org.neo4j.graphdb.event.TransactionEventListener<T>::afterCommit(org.neo4j.graphdb.event.TransactionData, #T, org.neo4j.graphdb.GraphDatabaseService) void public abstract
 org.neo4j.graphdb.event.TransactionEventListener<T>::afterRollback(org.neo4j.graphdb.event.TransactionData, #T, org.neo4j.graphdb.GraphDatabaseService) void public abstract
-org.neo4j.graphdb.event.TransactionEventListener<T>::beforeCloseTransaction(long, boolean) void public default throws java.lang.Exception
 org.neo4j.graphdb.event.TransactionEventListener<T>::beforeCommit(org.neo4j.graphdb.event.TransactionData, org.neo4j.graphdb.Transaction, org.neo4j.graphdb.GraphDatabaseService) #T public abstract throws java.lang.Exception
-org.neo4j.graphdb.event.TransactionEventListener<T>::beforeTerminate(long, org.neo4j.kernel.api.exceptions.Status) void public default
 org.neo4j.graphdb.schema.AnyTokens public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.AnyTokens>
 org.neo4j.graphdb.schema.AnyTokens::ANY_LABELS org.neo4j.graphdb.schema.AnyTokens public static final
 org.neo4j.graphdb.schema.AnyTokens::ANY_RELATIONSHIP_TYPES org.neo4j.graphdb.schema.AnyTokens public static final

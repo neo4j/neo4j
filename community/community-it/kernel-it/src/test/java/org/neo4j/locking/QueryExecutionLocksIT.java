@@ -64,6 +64,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.InnerTransactionHandler;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
@@ -1127,6 +1128,12 @@ class QueryExecutionLocksIT
         public boolean canCommit()
         {
             return internal.canCommit();
+        }
+
+        @Override
+        public InnerTransactionHandler getInnerTransactionHandler()
+        {
+            return internal.getInnerTransactionHandler();
         }
     }
 }

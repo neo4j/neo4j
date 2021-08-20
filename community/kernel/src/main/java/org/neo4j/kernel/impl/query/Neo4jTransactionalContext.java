@@ -25,12 +25,12 @@ import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.InnerTransactionHandler;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.database.DatabaseLinkedTransactionsHandler;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -214,16 +214,17 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         // Create new InternalTransaction, creates new KernelTransaction
         InternalTransaction newTransaction = graph.beginTransaction( transactionType, securityContext, clientInfo );
-        DatabaseLinkedTransactionsHandler terminationHandler =
-                graph.getDependencyResolver().resolveDependency( DatabaseLinkedTransactionsHandler.class );
         long newTransactionId = newTransaction.kernelTransaction().getUserTransactionId();
-        long outerTransactionId = kernelTransaction.getUserTransactionId();
-        terminationHandler.registerInnerTransaction( newTransactionId, outerTransactionId );
+        InnerTransactionHandler innerTransactionHandler = kernelTransaction.getInnerTransactionHandler();
+        innerTransactionHandler.registerInnerTransaction( newTransactionId );
+        // We rely on the close callback of the inner transaction to be called on close. Otherwise, the worst thing that could happen is that the outer
+        // transaction cannot commit because of inner transactions still being open. But the close callback not being called, should be such an off scenario
+        // that we may not want to commit the outer transaction anyways.
+        newTransaction.addCloseCallback(() -> innerTransactionHandler.removeInnerTransaction( newTransactionId ));
 
         KernelStatement newStatement = (KernelStatement) newTransaction.kernelTransaction().acquireStatement();
         // Bind the new transaction/statement to the executingQuery
         newStatement.queryRegistry().bindExecutingQuery( executingQuery );
-        newTransaction.addCloseCallback(() -> terminationHandler.removeInnerTransaction( newTransactionId, outerTransactionId ));
 
         return new Neo4jTransactionalContext(
                 graph,

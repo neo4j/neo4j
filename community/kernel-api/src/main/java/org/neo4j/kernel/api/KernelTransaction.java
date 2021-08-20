@@ -345,13 +345,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
 
     /**
      * Bind this kernel transaction to a user transaction
-     * @param internalTransaction
      */
     void bindToUserTransaction( InternalTransaction internalTransaction );
 
     /**
      * Return user transaction that is bound to current kernel transaction
-     * @return
      */
     InternalTransaction internalTransaction();
 
@@ -503,6 +501,8 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * Whether this transaction can be committed or must instead be rolled back on close().
      */
     boolean canCommit();
+
+    InnerTransactionHandler getInnerTransactionHandler();
 
     interface KernelTransactionMonitor
     {

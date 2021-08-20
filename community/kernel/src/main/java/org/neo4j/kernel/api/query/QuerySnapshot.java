@@ -171,6 +171,9 @@ public class QuerySnapshot
         return query.startTimestampMillis();
     }
 
+    /**
+     * User transaction ID of the outer transaction that is executing this query.
+     */
     public long transactionId()
     {
         return transactionId;

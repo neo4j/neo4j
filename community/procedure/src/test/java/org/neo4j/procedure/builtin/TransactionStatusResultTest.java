@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.query.QueryObfuscator;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TestKernelTransactionHandle;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -291,7 +292,7 @@ class TransactionStatusResultTest
                     mock( IndexStatisticsStore.class ), dependencies,
                     from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
                     TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ),
-                    new NoOpClient() )
+                    new NoOpClient(), mock( KernelTransactions.class ) )
             {
                 @Override
                 public Statistics getStatistics()
