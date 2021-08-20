@@ -852,8 +852,9 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
                         PageCursorTracer cursorTracer = executionContext.cursorContext().getCursorTracer();
                         for ( int j = 0; j <= iterations; j++ )
                         {
-                            PinEvent pinEvent = cursorTracer.beginPin( false, 1, mock( PageSwapper.class ) );
-                            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, 1 );
+                            PageSwapper swapper = mock( PageSwapper.class );
+                            PinEvent pinEvent = cursorTracer.beginPin( false, 1, swapper );
+                            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
                             pageFaultEvent.addBytesRead( 42 );
                             pageFaultEvent.done();
                             pinEvent.done();

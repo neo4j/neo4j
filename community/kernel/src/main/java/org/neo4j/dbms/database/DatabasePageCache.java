@@ -36,6 +36,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.monitoring.PageFileCounters;
+import org.neo4j.io.pagecache.tracing.FileMappedListener;
 
 import static java.util.Objects.requireNonNull;
 
@@ -43,13 +45,14 @@ import static java.util.Objects.requireNonNull;
  * Wrapper around global page cache for an individual database. Abstracts the knowledge that database can have about other databases mapped files
  * by restricting access to files that mapped by other databases.
  * Any lookup or attempts to flush/close page file or cache itself will influence only files that were mapped by particular database over this wrapper.
- * Database specific page cache lifecycle tight to a individual database and it will be closed as soon as the particular database will be closed.
+ * Database specific page cache lifecycle tight to an individual database, and it will be closed as soon as the particular database will be closed.
  */
 public class DatabasePageCache implements PageCache
 {
     private final PageCache globalPageCache;
     private final CopyOnWriteArrayList<PagedFile> databasePagedFiles = new CopyOnWriteArrayList<>();
     private final IOController ioController;
+    private final List<FileMappedListener> mappedListeners = new CopyOnWriteArrayList<>();
     private boolean closed;
 
     public DatabasePageCache( PageCache globalPageCache, IOController ioController )
@@ -65,8 +68,9 @@ public class DatabasePageCache implements PageCache
         // no one should call this version of map method with emptyDatabaseName != null,
         // since it is this class that is decorating map calls with the name of the database
         PagedFile pagedFile = globalPageCache.map( path, pageSize, databaseName, openOptions, ioController );
-        DatabasePageFile databasePageFile = new DatabasePageFile( pagedFile, databasePagedFiles );
+        DatabasePageFile databasePageFile = new DatabasePageFile( pagedFile, databasePagedFiles, mappedListeners );
         databasePagedFiles.add( databasePageFile );
+        invokeFileMapListeners( mappedListeners, databasePageFile );
         return databasePageFile;
     }
 
@@ -131,15 +135,43 @@ public class DatabasePageCache implements PageCache
         return globalPageCache.getBufferFactory();
     }
 
+    private static void invokeFileMapListeners( List<FileMappedListener> listeners, DatabasePageFile databasePageFile )
+    {
+        for ( FileMappedListener mappedListener : listeners )
+        {
+            mappedListener.fileMapped( databasePageFile );
+        }
+    }
+
+    private static void invokeFileUnmapListeners( List<FileMappedListener> listeners, DatabasePageFile databasePageFile )
+    {
+        for ( FileMappedListener mappedListener : listeners )
+        {
+            mappedListener.fileUnmapped( databasePageFile );
+        }
+    }
+
+    public void registerFileMappedListener( FileMappedListener mappedListener )
+    {
+        mappedListeners.add( mappedListener );
+    }
+
+    public void unregisterFileMappedListener( FileMappedListener mappedListener )
+    {
+        mappedListeners.remove( mappedListener );
+    }
+
     private static class DatabasePageFile implements PagedFile
     {
         private final PagedFile delegate;
         private final List<PagedFile> databaseFiles;
+        private final List<FileMappedListener> mappedListeners;
 
-        DatabasePageFile( PagedFile delegate, List<PagedFile> databaseFiles )
+        DatabasePageFile( PagedFile delegate, List<PagedFile> databaseFiles, List<FileMappedListener> mappedListeners )
         {
             this.delegate = delegate;
             this.databaseFiles = databaseFiles;
+            this.mappedListeners = mappedListeners;
         }
 
         @Override
@@ -181,6 +213,7 @@ public class DatabasePageCache implements PageCache
         @Override
         public void close()
         {
+            invokeFileUnmapListeners( mappedListeners, this );
             delegate.close();
             databaseFiles.remove( this );
         }
@@ -201,6 +234,12 @@ public class DatabasePageCache implements PageCache
         public String getDatabaseName()
         {
             return delegate.getDatabaseName();
+        }
+
+        @Override
+        public PageFileCounters pageFileCounters()
+        {
+            return delegate.pageFileCounters();
         }
 
         @Override

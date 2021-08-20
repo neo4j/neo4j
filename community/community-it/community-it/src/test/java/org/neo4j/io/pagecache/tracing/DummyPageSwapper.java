@@ -28,11 +28,18 @@ public class DummyPageSwapper implements PageSwapper
 {
     protected final String filename;
     protected final int filePageSize;
+    protected final PageFileSwapperTracer tracer;
 
     public DummyPageSwapper( String filename, int filePageSize )
     {
+        this( filename, filePageSize, PageFileSwapperTracer.NULL );
+    }
+
+    public DummyPageSwapper( String filename, int filePageSize, PageFileSwapperTracer tracer )
+    {
         this.filename = filename;
         this.filePageSize = filePageSize;
+        this.tracer = tracer;
     }
 
     @Override
@@ -106,6 +113,12 @@ public class DummyPageSwapper implements PageSwapper
     public int swapperId()
     {
         return 42;
+    }
+
+    @Override
+    public PageFileSwapperTracer fileSwapperTracer()
+    {
+        return tracer;
     }
 
     @Override

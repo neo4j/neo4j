@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.buffer.NativeIOBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -777,6 +778,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     public String getDatabaseName()
     {
         return databaseName;
+    }
+
+    @Override
+    public PageFileCounters pageFileCounters()
+    {
+        return swapper.fileSwapperTracer();
     }
 
     /**

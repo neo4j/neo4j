@@ -29,9 +29,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.FileMappedListener;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -240,6 +242,44 @@ class DatabasePageCacheTest
         assertTrue( databasePageCache.listExistingMappings().isEmpty() );
     }
 
+    @Test
+    void fileMapperListenerNotification() throws IOException
+    {
+        Path mapFile1 = testDirectory.createFile( "mapFile1" );
+        Path mapFile2 = testDirectory.createFile( "mapFile2" );
+        Path mapFile3 = testDirectory.createFile( "mapFile3" );
+        Path mapFile4 = testDirectory.createFile( "mapFile4" );
+
+        var mappedFile1 = databasePageCache.map( mapFile1, PAGE_SIZE, DATABASE_NAME );
+
+        var mapListener1 = new TestFileMappedListener();
+        var mapListener2 = new TestFileMappedListener();
+        databasePageCache.registerFileMappedListener( mapListener1 );
+        databasePageCache.registerFileMappedListener( mapListener2 );
+
+        var mappedFile2 = databasePageCache.map( mapFile2, PAGE_SIZE, DATABASE_NAME );
+        var mappedFile4 = databasePageCache.map( mapFile4, PAGE_SIZE, DATABASE_NAME );
+
+        assertThat( mapListener1.getMappedHistory() ).containsExactly( mappedFile2, mappedFile4 );
+        assertThat( mapListener2.getMappedHistory() ).containsExactly( mappedFile2, mappedFile4 );
+        assertThat( mapListener1.getUnmappedHistory() ).isEmpty();
+        assertThat( mapListener2.getUnmappedHistory() ).isEmpty();
+
+        mappedFile2.close();
+
+        assertThat( mapListener1.getMappedHistory() ).containsExactly( mappedFile2, mappedFile4 );
+        assertThat( mapListener2.getMappedHistory() ).containsExactly( mappedFile2, mappedFile4 );
+        assertThat( mapListener1.getUnmappedHistory() ).containsExactly( mappedFile2 );
+        assertThat( mapListener2.getUnmappedHistory() ).contains( mappedFile2 );
+
+        mappedFile1.close();
+
+        assertThat( mapListener1.getMappedHistory() ).containsExactly( mappedFile2, mappedFile4 );
+        assertThat( mapListener2.getMappedHistory() ).containsExactly( mappedFile2, mappedFile4 );
+        assertThat( mapListener1.getUnmappedHistory() ).containsExactly( mappedFile2, mappedFile1 );
+        assertThat( mapListener2.getUnmappedHistory() ).contains( mappedFile2, mappedFile1 );
+    }
+
     private static PagedFile findPagedFile( List<PagedFile> pagedFiles, Path mapFile )
     {
         return pagedFiles.stream().filter( pagedFile -> pagedFile.path().equals( mapFile ) ).findFirst().orElseThrow(
@@ -262,6 +302,34 @@ class DatabasePageCacheTest
         List<PagedFile> getPagedFiles()
         {
             return pagedFiles;
+        }
+    }
+
+    private static class TestFileMappedListener implements FileMappedListener
+    {
+        private final List<PagedFile> mappedHistory = new CopyOnWriteArrayList<>();
+        private final List<PagedFile> unmappedHistory = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void fileMapped( PagedFile pagedFile )
+        {
+            mappedHistory.add( pagedFile );
+        }
+
+        @Override
+        public void fileUnmapped( PagedFile pagedFile )
+        {
+            unmappedHistory.add( pagedFile );
+        }
+
+        public List<PagedFile> getMappedHistory()
+        {
+            return mappedHistory;
+        }
+
+        public List<PagedFile> getUnmappedHistory()
+        {
+            return unmappedHistory;
         }
     }
 }

@@ -46,29 +46,29 @@ public final class StandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer cacheTracer )
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer );
         int pageSize = PageCache.PAGE_SIZE;
         return createPageCache( factory, jobScheduler, cacheTracer, pageSize );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         int pageSize = PageCache.PAGE_SIZE;
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer );
         return createPageCache( factory, jobScheduler, cacheTracer, pageSize );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, int pageSize )
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem );
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer );
         return createPageCache( factory, jobScheduler, cacheTracer, pageSize );
     }
 
     private static PageCache createPageCache( PageSwapperFactory factory, JobScheduler jobScheduler, PageCacheTracer cacheTracer, int pageSize )
     {
-        long expectedMemory = Math.max( MebiByte.toBytes( 8 ), 10 * pageSize );
+        long expectedMemory = Math.max( MebiByte.toBytes( 8 ), 10L * pageSize );
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE );
         return new MuninnPageCache( factory, jobScheduler, config( memoryAllocator ).pageCacheTracer( cacheTracer ).pageSize( pageSize ) );
     }

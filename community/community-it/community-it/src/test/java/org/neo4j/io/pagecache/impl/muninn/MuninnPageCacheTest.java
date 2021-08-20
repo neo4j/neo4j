@@ -322,6 +322,42 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             }
             assertEquals( 2, cursorContext.getCursorTracer().pins() );
             assertEquals( 2, cursorContext.getCursorTracer().unpins() );
+            assertEquals( 2, pagedFile.pageFileCounters().pins() );
+            assertEquals( 2, pagedFile.pageFileCounters().unpins() );
+        }
+    }
+
+    @Test
+    void finishPinEventReportedPerFile() throws IOException
+    {
+        writeInitialDataTo( file( "a" ) );
+        writeInitialDataTo( file( "b" ) );
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        PageCursorTracer pageCursorTracer = cacheTracer.createPageCursorTracer( "finishPinEventReportedPerFile" );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 4, cacheTracer );
+                PagedFile pagedFileA = map( pageCache, file( "a" ), 8 );
+                PagedFile pagedFileB = map( pageCache, file( "b" ), 8 );)
+        {
+            CursorContext cursorContext = new CursorContext( pageCursorTracer );
+            try ( PageCursor cursor = pagedFileA.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext ) )
+            {
+                assertTrue( cursor.next() );
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
+            try ( PageCursor cursor = pagedFileB.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext ) )
+            {
+                assertTrue( cursor.next() );
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
+            assertEquals( 4, cursorContext.getCursorTracer().pins() );
+            assertEquals( 4, cursorContext.getCursorTracer().unpins() );
+
+            assertEquals( 2, pagedFileA.pageFileCounters().pins() );
+            assertEquals( 2, pagedFileA.pageFileCounters().unpins() );
+            assertEquals( 2, pagedFileB.pageFileCounters().pins() );
+            assertEquals( 2, pagedFileB.pageFileCounters().unpins() );
         }
     }
 
@@ -455,7 +491,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
         int maxPages = 4096 /* chunk size */ + 10;
-        PageSwapperFactory swapperFactory = new MultiChunkSwapperFilePageSwapperFactory();
+        PageSwapperFactory swapperFactory = new MultiChunkSwapperFilePageSwapperFactory( pageCacheTracer );
         try ( MuninnPageCache pageCache = createPageCache( swapperFactory, maxPages, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -923,6 +959,47 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
             assertEquals( 2, pageCacheTracer.flushes() );
             assertEquals( 1, pageCacheTracer.merges() );
+            assertEquals( 2, pagedFile.pageFileCounters().flushes() );
+            assertEquals( 1, pagedFile.pageFileCounters().merges() );
+        }
+    }
+
+    @Test
+    void flushSequentialPagesOnPageFileFlushWithNoBuffersWithMultipleFiles() throws IOException
+    {
+        assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
+        writeInitialDataTo( file( "a" ) );
+        writeInitialDataTo( file( "b" ) );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 4, pageCacheTracer );
+                PagedFile pagedFileA = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) );
+                PagedFile pagedFileB = map( pageCache, file( "b" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            try ( PageCursor cursor = pagedFileA.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            try ( PageCursor cursor = pagedFileA.io( 2, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFileA.flushAndForce();
+
+            try ( PageCursor cursor = pagedFileB.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.putLong( 1 );
+            }
+            pagedFileB.flushAndForce();
+
+            assertEquals( 3, pageCacheTracer.flushes() );
+            assertEquals( 1, pageCacheTracer.merges() );
+            assertEquals( 2, pagedFileA.pageFileCounters().flushes() );
+            assertEquals( 1, pagedFileA.pageFileCounters().merges() );
+            assertEquals( 1, pagedFileB.pageFileCounters().flushes() );
+            assertEquals( 0, pagedFileB.pageFileCounters().merges() );
         }
     }
 
@@ -948,6 +1025,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
             assertEquals( 2, pageCacheTracer.flushes() );
             assertEquals( 0, pageCacheTracer.merges() );
+            assertEquals( 2, pagedFile.pageFileCounters().flushes() );
+            assertEquals( 0, pagedFile.pageFileCounters().merges() );
         }
     }
 
@@ -972,6 +1051,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
             assertEquals( 2, pageCacheTracer.flushes() );
             assertEquals( 0, pageCacheTracer.merges() );
+            assertEquals( 2, pagedFile.pageFileCounters().flushes() );
+            assertEquals( 0, pagedFile.pageFileCounters().merges() );
         }
     }
 
@@ -1607,7 +1688,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                     }
 
                     @Override
-                    public PageFaultEvent beginPageFault( long filePageId, int swapperId )
+                    public PageFaultEvent beginPageFault( long filePageId, PageSwapper swapper )
                     {
                         return new PageFaultEvent()
                         {
@@ -1757,9 +1838,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
     private class MultiChunkSwapperFilePageSwapperFactory extends SingleFilePageSwapperFactory
     {
-        MultiChunkSwapperFilePageSwapperFactory()
+        MultiChunkSwapperFilePageSwapperFactory( PageCacheTracer pageCacheTracer )
         {
-            super( MuninnPageCacheTest.this.fs );
+            super( MuninnPageCacheTest.this.fs, pageCacheTracer );
         }
 
         @Override

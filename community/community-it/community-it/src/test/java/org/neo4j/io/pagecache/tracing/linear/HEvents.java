@@ -289,7 +289,7 @@ class HEvents
         }
 
         @Override
-        public PageFaultEvent beginPageFault( long filePageId, int swapperId )
+        public PageFaultEvent beginPageFault( long filePageId, PageSwapper swapper )
         {
             hit = false;
             return tracer.add( new PageFaultHEvent( tracer ) );

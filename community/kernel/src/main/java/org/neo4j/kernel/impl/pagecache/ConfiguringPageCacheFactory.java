@@ -93,7 +93,7 @@ public class ConfiguringPageCacheFactory
     {
         if ( pageCache == null )
         {
-            this.swapperFactory = createAndConfigureSwapperFactory( fs );
+            this.swapperFactory = createAndConfigureSwapperFactory( fs, pageCacheTracer );
             this.pageCache = createPageCache();
         }
         return pageCache;
@@ -197,8 +197,8 @@ public class ConfiguringPageCacheFactory
         log.info( msg );
     }
 
-    private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs )
+    private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, PageCacheTracer pageCacheTracer )
     {
-        return new SingleFilePageSwapperFactory( fs );
+        return new SingleFilePageSwapperFactory( fs, pageCacheTracer );
     }
 }

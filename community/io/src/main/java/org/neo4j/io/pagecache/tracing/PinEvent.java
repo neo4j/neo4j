@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
+import org.neo4j.io.pagecache.PageSwapper;
+
 /**
  * Begin pinning a page.
  */
@@ -35,7 +37,7 @@ public interface PinEvent
         }
 
         @Override
-        public PageFaultEvent beginPageFault( long filePageId, int swapperId )
+        public PageFaultEvent beginPageFault( long filePageId, PageSwapper pageSwapper )
         {
             return PageFaultEvent.NULL;
         }
@@ -59,9 +61,9 @@ public interface PinEvent
     /**
      * The page we want to pin is not in memory, so being a page fault to load it in.
      * @param filePageId file page id
-     * @param swapperId file swapper id
+     * @param pageSwapper file swapper
      */
-    PageFaultEvent beginPageFault( long filePageId, int swapperId );
+    PageFaultEvent beginPageFault( long filePageId, PageSwapper pageSwapper );
 
     /**
      * Page found and bounded.

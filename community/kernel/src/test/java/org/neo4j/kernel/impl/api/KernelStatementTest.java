@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
@@ -109,12 +109,12 @@ class KernelStatementTest
         try ( var statement = createStatement( transaction ) )
         {
             var cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
-            statement.initialize( Mockito.mock( Locks.Client.class ), cursorContext, 100 );
+            statement.initialize( mock( Locks.Client.class ), cursorContext, 100 );
             statement.acquire();
 
             cursorContext.getCursorTracer().beginPin( false, 1, null ).hit();
             cursorContext.getCursorTracer().beginPin( false, 1, null ).hit();
-            cursorContext.getCursorTracer().beginPin( false, 1, null ).beginPageFault( 1, 2 ).done();
+            cursorContext.getCursorTracer().beginPin( false, 1, null ).beginPageFault( 1, mock( PageSwapper.class ) ).done();
             assertEquals( 2, statement.getHits() );
             assertEquals( 1, statement.getFaults() );
 

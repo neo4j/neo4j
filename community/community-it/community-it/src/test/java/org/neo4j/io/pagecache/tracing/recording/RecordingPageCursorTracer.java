@@ -134,7 +134,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
             }
 
             @Override
-            public PageFaultEvent beginPageFault( long filePageId, int swapperId )
+            public PageFaultEvent beginPageFault( long filePageId, PageSwapper swapper )
             {
                 hit = false;
                 return new PageFaultEvent()

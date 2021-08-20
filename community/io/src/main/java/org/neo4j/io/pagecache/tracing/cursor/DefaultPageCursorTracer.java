@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
@@ -59,6 +60,10 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long merges;
 
     private final DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
+    private final DefaultEvictionEvent evictionEvent = new DefaultEvictionEvent();
+    private final DefaultPageFaultEvent pageFaultEvent = new DefaultPageFaultEvent();
+    private final DefaultFlushEvent flushEvent = new DefaultFlushEvent();
+
     private final PageCacheTracer pageCacheTracer;
     private final String tag;
     private boolean ignoreCounterCheck;
@@ -263,63 +268,82 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         pins++;
+        PageFileSwapperTracer swapperTracer = swapper.fileSwapperTracer();
+        swapperTracer.pins( 1 );
         if ( DEBUG_PINS )
         {
             DefaultPinEvent event = new DefaultPinEvent();
             event.eventHits = 1;
+            event.swapperTracer = swapperTracer;
             PIN_DEBUG_MAP.put( event, new Exception() );
             return event;
         }
         else
         {
             pinTracingEvent.eventHits = 1;
+            pinTracingEvent.swapperTracer = swapperTracer;
             return pinTracingEvent;
         }
     }
 
-    private final EvictionEvent evictionEvent = new EvictionEvent()
+    public void setIgnoreCounterCheck( boolean ignoreCounterCheck )
     {
-        @Override
-        public void setFilePageId( long filePageId )
-        {
-        }
+        this.ignoreCounterCheck = ignoreCounterCheck;
+    }
 
-        @Override
-        public void setSwapper( PageSwapper swapper )
-        {
-        }
-
-        @Override
-        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
-        {
-            return flushEvent;
-        }
-
-        @Override
-        public void threwException( IOException exception )
-        {
-            evictionExceptions++;
-        }
-
-        @Override
-        public void close()
-        {
-            evictions++;
-        }
-    };
-
-    private final PageFaultEvent pageFaultEvent = new PageFaultEvent()
+    private class DefaultPinEvent implements PinEvent
     {
+        private int eventHits = 1;
+        private PageFileSwapperTracer swapperTracer;
+
+        @Override
+        public void setCachePageId( long cachePageId )
+        {
+        }
+
+        @Override
+        public PageFaultEvent beginPageFault( long filePageId, PageSwapper pageSwapper )
+        {
+            eventHits = 0;
+            pageFaultEvent.swapperTracer = pageSwapper.fileSwapperTracer();
+            return pageFaultEvent;
+        }
+
+        @Override
+        public void hit()
+        {
+            hits += eventHits;
+            swapperTracer.hits( eventHits );
+        }
+
+        @Override
+        public void done()
+        {
+            unpins++;
+            swapperTracer.unpins( 1 );
+            if ( DEBUG_PINS )
+            {
+                PIN_DEBUG_MAP.remove( this );
+            }
+        }
+    }
+
+    private class DefaultPageFaultEvent implements PageFaultEvent
+    {
+        private PageFileSwapperTracer swapperTracer;
+
         @Override
         public void addBytesRead( long bytes )
         {
             bytesRead += bytes;
+            swapperTracer.bytesRead( bytesRead );
         }
 
         @Override
         public void done()
         {
             faults++;
+            swapperTracer.faults( 1 );
         }
 
         @Override
@@ -343,14 +367,17 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         public void setCachePageId( long cachePageId )
         {
         }
-    };
+    }
 
-    private final FlushEvent flushEvent = new FlushEvent()
+    private class DefaultFlushEvent implements FlushEvent
     {
+        private PageFileSwapperTracer swapperTracer;
+
         @Override
         public void addBytesWritten( long bytes )
         {
             bytesWritten += bytes;
+            swapperTracer.bytesWritten( bytesWritten );
         }
 
         @Override
@@ -365,52 +392,57 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public void addPagesFlushed( int pageCount )
+        public void addPagesFlushed( int flushedPages )
         {
-            flushes += pageCount;
+            flushes += flushedPages;
+            swapperTracer.flushes( flushedPages );
         }
 
         @Override
         public void addPagesMerged( int pagesMerged )
         {
             merges += pagesMerged;
+            swapperTracer.merges( pagesMerged );
         }
-    };
-
-    public void setIgnoreCounterCheck( boolean ignoreCounterCheck )
-    {
-        this.ignoreCounterCheck = ignoreCounterCheck;
     }
 
-    private class DefaultPinEvent implements PinEvent
+    private class DefaultEvictionEvent implements EvictionEvent
     {
-        private int eventHits = 1;
+        private PageFileSwapperTracer swapperTracer;
 
         @Override
-        public void setCachePageId( long cachePageId )
+        public void setFilePageId( long filePageId )
         {
         }
 
         @Override
-        public PageFaultEvent beginPageFault( long filePageId, int swapperId )
+        public void setSwapper( PageSwapper swapper )
         {
-            eventHits = 0;
-            return pageFaultEvent;
+            swapperTracer = swapper.fileSwapperTracer();
         }
 
         @Override
-        public void hit()
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
         {
-            hits += eventHits;
+            flushEvent.swapperTracer = swapper.fileSwapperTracer();
+            return flushEvent;
         }
 
         @Override
-        public void done()
+        public void threwException( IOException exception )
         {
-            unpins++;
-            if ( DEBUG_PINS )
+            evictionExceptions++;
+            swapperTracer.evictionExceptions( 1 );
+        }
+
+        @Override
+        public void close()
+        {
+            evictions++;
+            // it can be the case that we fail to do eviction since file was not there anymore, but we still were the one who actually cleared page binding
+            if ( swapperTracer != null )
             {
-                PIN_DEBUG_MAP.remove( this );
+                swapperTracer.evictions( 1 );
             }
         }
     }

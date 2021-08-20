@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
+import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.WRITE_OPTIONS;
@@ -99,6 +100,7 @@ public class SingleFilePageSwapper implements PageSwapper
     private FileLock fileLock;
     private final boolean hasPositionLock;
     private final int swapperId;
+    private final PageFileSwapperTracer fileSwapperTracer;
 
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
@@ -121,11 +123,12 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     SingleFilePageSwapper( Path path, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO,
-            boolean preallocateStoreFiles, IOController ioController, SwapperSet swapperSet ) throws IOException
+            boolean preallocateStoreFiles, IOController ioController, SwapperSet swapperSet, PageFileSwapperTracer fileSwapperTracer ) throws IOException
     {
         this.fs = fs;
         this.path = path;
         this.ioController = ioController;
+        this.fileSwapperTracer = fileSwapperTracer;
         this.preallocateStoreFiles = preallocateStoreFiles;
 
         var options = new ArrayList<>( WRITE_OPTIONS );
@@ -774,6 +777,12 @@ public class SingleFilePageSwapper implements PageSwapper
     public int swapperId()
     {
         return swapperId;
+    }
+
+    @Override
+    public PageFileSwapperTracer fileSwapperTracer()
+    {
+        return fileSwapperTracer;
     }
 
     @Override

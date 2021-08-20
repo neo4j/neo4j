@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -41,6 +42,12 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     public RecordingPageCacheTracer()
     {
         super( Evict.class );
+    }
+
+    @Override
+    public PageFileSwapperTracer createFileSwapperTracer()
+    {
+        return PageFileSwapperTracer.NULL;
     }
 
     @Override

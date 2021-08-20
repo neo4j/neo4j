@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.tracing;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 
@@ -31,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 class DefaultPageCursorTracerTest
 {
@@ -46,7 +46,7 @@ class DefaultPageCursorTracerTest
         cacheTracer = new DefaultPageCacheTracer();
         pageCursorTracer = createTracer();
         swapper = new DummyPageSwapper( "filename", (int) ByteUnit.kibiBytes( 8 ) );
-        referenceTranslator = Mockito.mock( PageReferenceTranslator.class );
+        referenceTranslator = mock( PageReferenceTranslator.class );
     }
 
     @Test
@@ -117,12 +117,12 @@ class DefaultPageCursorTracerTest
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
         {
-            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, 2 );
+            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
             {
                 pageFaultEvent.addBytesRead( 42 );
             }
             pageFaultEvent.done();
-            pageFaultEvent = pinEvent.beginPageFault(3, 4);
+            pageFaultEvent = pinEvent.beginPageFault( 3, swapper );
             {
                 pageFaultEvent.addBytesRead( 42 );
             }
@@ -141,9 +141,10 @@ class DefaultPageCursorTracerTest
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
         {
-            PageFaultEvent faultEvent = pinEvent.beginPageFault( 1, 2 );
+            PageFaultEvent faultEvent = pinEvent.beginPageFault( 1, swapper );
             {
                 EvictionEvent evictionEvent = faultEvent.beginEviction( 0 );
+                evictionEvent.setSwapper( swapper );
                 evictionEvent.setFilePageId( 0 );
                 evictionEvent.threwException( new IOException( "exception" ) );
                 evictionEvent.close();
@@ -164,10 +165,11 @@ class DefaultPageCursorTracerTest
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
         {
-            PageFaultEvent faultEvent = pinEvent.beginPageFault( 3, 4 );
+            PageFaultEvent faultEvent = pinEvent.beginPageFault( 3, swapper );
             {
                 EvictionEvent evictionEvent = faultEvent.beginEviction(0);
                 {
+                    evictionEvent.setSwapper( swapper );
                     FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, referenceTranslator );
                     flushEvent.addBytesWritten( 27 );
                     flushEvent.addPagesMerged( 10 );
@@ -296,11 +298,12 @@ class DefaultPageCursorTracerTest
             DummyPageSwapper dummyPageSwapper = new DummyPageSwapper( "a", 4 );
             PinEvent pinEvent = tracer.beginPin( false, 1, dummyPageSwapper );
             pinEvent.hit();
-            try ( PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, 3 ) )
+            try ( PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, dummyPageSwapper ) )
             {
                 pageFaultEvent.addBytesRead( 16 );
                 try ( EvictionEvent evictionEvent = pageFaultEvent.beginEviction( 3 ) )
                 {
+                    evictionEvent.setSwapper( dummyPageSwapper );
                     FlushEvent flushEvent = evictionEvent.beginFlush( 1, dummyPageSwapper, pageRef -> (int) pageRef );
                     flushEvent.addPagesMerged( 7 );
                     flushEvent.addBytesWritten( 17 );
@@ -325,11 +328,12 @@ class DefaultPageCursorTracerTest
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( false, 0, swapper );
         {
-            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 4, 5 );
+            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 4, swapper );
             pageFaultEvent.addBytesRead( 150 );
             {
                 EvictionEvent evictionEvent = pageFaultEvent.beginEviction(0);
                 {
+                    evictionEvent.setSwapper( swapper );
                     FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, referenceTranslator );
                     flushEvent.addBytesWritten( 10 );
                     flushEvent.addPagesFlushed( 1 );
@@ -359,7 +363,7 @@ class DefaultPageCursorTracerTest
     private void pinFaultAndHit()
     {
         PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
-        PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 6, 7 );
+        PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 6, swapper );
         pinEvent.hit();
         pageFaultEvent.done();
         pinEvent.done();

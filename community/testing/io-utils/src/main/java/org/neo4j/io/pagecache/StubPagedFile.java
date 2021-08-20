@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.monitoring.PageFileCounters;
+import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 
 public class StubPagedFile implements PagedFile
 {
@@ -101,5 +103,11 @@ public class StubPagedFile implements PagedFile
     public String getDatabaseName()
     {
         return "stub";
+    }
+
+    @Override
+    public PageFileCounters pageFileCounters()
+    {
+        return PageFileSwapperTracer.NULL;
     }
 }

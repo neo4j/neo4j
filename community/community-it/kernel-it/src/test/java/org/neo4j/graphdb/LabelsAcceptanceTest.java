@@ -55,6 +55,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -219,9 +220,11 @@ class LabelsAcceptanceTest
     void oversteppingMaxNumberOfLabelsShouldFailGracefully() throws IOException
     {
         JobScheduler scheduler = JobSchedulerFactory.createScheduler();
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        MuninnPageCache.Configuration config = MuninnPageCache.config( 1_000 ).pageCacheTracer( cacheTracer );
         try ( EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
                 Lifespan lifespan = new Lifespan( scheduler );
-                PageCache pageCache = new MuninnPageCache( swapper( fileSystem ), scheduler, MuninnPageCache.config( 1_000 ) ) )
+                PageCache pageCache = new MuninnPageCache( swapper( fileSystem, cacheTracer ), scheduler, config ) )
         {
             // Given
             Dependencies dependencies = new Dependencies();
@@ -858,8 +861,8 @@ class LabelsAcceptanceTest
                 } ).build();
     }
 
-    private static PageSwapperFactory swapper( EphemeralFileSystemAbstraction fileSystem )
+    private static PageSwapperFactory swapper( EphemeralFileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer )
     {
-        return new SingleFilePageSwapperFactory( fileSystem );
+        return new SingleFilePageSwapperFactory( fileSystem, pageCacheTracer );
     }
 }

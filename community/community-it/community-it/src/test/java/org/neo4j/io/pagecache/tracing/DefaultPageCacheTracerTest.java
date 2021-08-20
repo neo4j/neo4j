@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
-public class DefaultPageCacheTracerTest
+class DefaultPageCacheTracerTest
 {
     private PageCacheTracer tracer;
     private PageSwapper swapper;
@@ -68,7 +68,7 @@ public class DefaultPageCacheTracerTest
         assertEquals( 0, third.pins() );
 
         PinEvent secondPin = second.beginPin( true, 2, swapper );
-        secondPin.beginPageFault( 2, 3 ).done();
+        secondPin.beginPageFault( 2, swapper ).done();
 
         assertEquals( 2, first.pins() );
         assertEquals( 1, second.pins() );
@@ -86,6 +86,7 @@ public class DefaultPageCacheTracerTest
         {
             try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction( 0 ) )
             {
+                evictionEvent.setSwapper( swapper );
                 FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 10 );

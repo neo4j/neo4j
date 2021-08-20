@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -77,7 +78,7 @@ public class PageCacheSupport
      */
     public PageCache getPageCache( FileSystemAbstraction fs, PageCacheConfig overriddenConfig )
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fs );
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fs, new DefaultPageCacheTracer() );
         return getPageCache( factory, overriddenConfig );
     }
 

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 
 /**
  * The representation of a file that has been mapped into the associated page cache.
@@ -196,7 +197,12 @@ public interface PagedFile extends AutoCloseable
     boolean isDeleteOnClose();
 
     /**
-     * An name of the database the mapped file belongs to.
+     * Name of the database the mapped file belongs to.
      */
     String getDatabaseName();
+
+    /**
+     * Underlying page cache counters for mapped file
+     */
+    PageFileCounters pageFileCounters();
 }

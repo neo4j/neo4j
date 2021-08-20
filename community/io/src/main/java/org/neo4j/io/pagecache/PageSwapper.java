@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
+
 /**
  * <strong>Implementation note:</strong> These methods must NEVER swallow a thread-interrupt.
  * If the thread is interrupted when these methods are called, or gets interrupted while they are
@@ -181,4 +183,9 @@ public interface PageSwapper extends Closeable
      * @return underlying page swapper id
      */
     int swapperId();
+
+    /**
+     * Tracer of this page swapper. Each page swapper has an ability to get newly allocated tracer on creation to be able to tracer individual page cache events
+     */
+    PageFileSwapperTracer fileSwapperTracer();
 }

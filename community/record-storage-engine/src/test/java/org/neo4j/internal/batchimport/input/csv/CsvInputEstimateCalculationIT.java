@@ -163,16 +163,17 @@ class CsvInputEstimateCalculationIT
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            new ParallelBatchImporter( databaseLayout, fs, PageCacheTracer.NULL, PBI_CONFIG, NullLogService.getInstance(),
+            PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+            new ParallelBatchImporter( databaseLayout, fs, cacheTracer, PBI_CONFIG, NullLogService.getInstance(),
                     INVISIBLE, EMPTY, config, format, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE ).doImport( input );
 
             // then compare estimates with actual disk sizes
-            SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
+            SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, cacheTracer );
             try ( PageCache pageCache = new MuninnPageCache( swapperFactory, jobScheduler, MuninnPageCache.config( 1000 ) );
                     NeoStores stores = new StoreFactory( databaseLayout, config,
                             new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
-                          NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openAllNeoStores() )
+                          NullLogProvider.getInstance(), cacheTracer, writable() ).openAllNeoStores() )
             {
                 assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
                 assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );

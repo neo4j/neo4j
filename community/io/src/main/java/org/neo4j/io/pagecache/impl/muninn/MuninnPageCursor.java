@@ -410,7 +410,7 @@ public abstract class MuninnPageCursor extends PageCursor
         // If we manage to get a free page to fault into, then we will also be taking a write lock on that page, to
         // protect it against concurrent eviction as we assigning a binding to the page. If anything goes wrong, then
         // we must make sure to release that write lock as well.
-        try ( PageFaultEvent faultEvent = pinEvent.beginPageFault( filePageId, swapper.swapperId() ) )
+        try ( PageFaultEvent faultEvent = pinEvent.beginPageFault( filePageId, swapper ) )
         {
             long pageRef;
             int pageId;

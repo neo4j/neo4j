@@ -2498,6 +2498,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     assertTrue( cursor.next( i ) );
                     countedPages++;
                 }
+
+                assertThat( pagedFile.pageFileCounters().pins() ).as( "wrong count of pins" ).isEqualTo( countedPages + initialPins );
+                // we substract 1 here since cursor still not unpinned last page at this point
+                assertThat( pagedFile.pageFileCounters().unpins() ).as( "wrong count of unpins" ).isEqualTo( countedPages + initialUnpins - 1 );
             }
 
             assertThat( tracer.pins() ).as( "wrong count of pins" ).isEqualTo( countedPages + initialPins );
@@ -2550,6 +2554,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 // This counts as a single pin
                 assertTrue( cursor.next( 0 ) );
                 assertTrue( cursor.next( 0 ) );
+
+                assertThat( pagedFile.pageFileCounters().pins() ).as( "wrong count of pins" ).isEqualTo( pagesToGenerate + 1 + initialPins );
+                // we do not have +1 here since cursor still not unpinned last page at this point
+                assertThat( pagedFile.pageFileCounters().unpins() ).as( "wrong count of unpins" ).isEqualTo( pagesToGenerate + initialPins );
             }
 
             assertThat( tracer.pins() ).as( "wrong count of pins" ).isEqualTo( pagesToGenerate + 1 + initialPins );
@@ -4610,10 +4618,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void fileMappedWithDeleteOnCloseShouldNotFlushDirtyPagesOnClose() throws Exception
     {
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         AtomicInteger flushCounter = new AtomicInteger();
-        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( fs, flushCounter );
+        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( fs, flushCounter, cacheTracer );
         Path file = file( "a" );
-        try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL );
+        try ( PageCache cache = createPageCache( swapperFactory, maxPages, cacheTracer );
                 PagedFile pf = cache.map( file, filePageSize, DEFAULT_DATABASE_NAME, immutable.of( DELETE_ON_CLOSE ) );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
@@ -4626,10 +4635,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustFlushAllDirtyPagesWhenClosingPagedFileThatIsNotMappedWithDeleteOnClose() throws Exception
     {
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         AtomicInteger flushCounter = new AtomicInteger();
-        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( fs, flushCounter );
+        PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( fs, flushCounter, cacheTracer );
         Path file = file( "a" );
-        try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL );
+        try ( PageCache cache = createPageCache( swapperFactory, maxPages, cacheTracer );
                 PagedFile pf = cache.map( file, filePageSize, DEFAULT_DATABASE_NAME );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
@@ -4639,9 +4649,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( flushCounter.get() ).isEqualTo( 1 );
     }
 
-    private static SingleFilePageSwapperFactory flushCountingPageSwapperFactory( FileSystemAbstraction fs, AtomicInteger flushCounter )
+    private static SingleFilePageSwapperFactory flushCountingPageSwapperFactory( FileSystemAbstraction fs, AtomicInteger flushCounter,
+            PageCacheTracer pageCacheTracer )
     {
-        return new SingleFilePageSwapperFactory( fs )
+        return new SingleFilePageSwapperFactory( fs, pageCacheTracer )
         {
             @Override
             public PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,

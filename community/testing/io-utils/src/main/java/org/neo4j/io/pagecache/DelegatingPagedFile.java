@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 
 public class DelegatingPagedFile implements PagedFile
 {
@@ -91,5 +92,11 @@ public class DelegatingPagedFile implements PagedFile
     public String getDatabaseName()
     {
         return delegate.getDatabaseName();
+    }
+
+    @Override
+    public PageFileCounters pageFileCounters()
+    {
+        return delegate.pageFileCounters();
     }
 }

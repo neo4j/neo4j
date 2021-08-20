@@ -123,7 +123,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer )
     {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer );
         return createPageCache( swapperFactory, maxPages, tracer );
     }
 

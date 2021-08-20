@@ -38,6 +38,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public PageFileSwapperTracer createFileSwapperTracer()
+    {
+        return delegate.createFileSwapperTracer();
+    }
+
+    @Override
     public PageCursorTracer createPageCursorTracer( String tag )
     {
         return delegate.createPageCursorTracer( tag );

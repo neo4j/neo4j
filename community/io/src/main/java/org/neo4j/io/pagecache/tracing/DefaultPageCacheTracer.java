@@ -43,8 +43,10 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     protected final LongAdder merges = new LongAdder();
     protected final LongAdder bytesRead = new LongAdder();
     protected final LongAdder bytesWritten = new LongAdder();
+
     protected final LongAdder filesMapped = new LongAdder();
     protected final LongAdder filesUnmapped = new LongAdder();
+
     protected final LongAdder evictionExceptions = new LongAdder();
     protected final LongAdder iopqPerformed = new LongAdder();
     protected final LongAdder ioLimitedTimes = new LongAdder();
@@ -53,40 +55,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     protected final LongAdder closedCursors = new LongAdder();
     protected final AtomicLong maxPages = new AtomicLong();
 
-    private final FlushEvent flushEvent = new FlushEvent()
-    {
-        @Override
-        public void addBytesWritten( long bytes )
-        {
-            bytesWritten.add( bytes );
-        }
-
-        @Override
-        public void done()
-        {
-        }
-
-        @Override
-        public void done( IOException exception )
-        {
-            done();
-        }
-
-        @Override
-        public void addPagesFlushed( int pageCount )
-        {
-            flushes.add( pageCount );
-        }
-
-        @Override
-        public void addPagesMerged( int pagesMerged )
-        {
-            merges.add( pagesMerged );
-        }
-    };
+    private final PageCacheFlushEvent flushEvent = new PageCacheFlushEvent();
 
     private final EvictionEvent evictionEvent = new EvictionEvent()
     {
+        private PageFileSwapperTracer swapperTracer;
+
         @Override
         public void setFilePageId( long filePageId )
         {
@@ -95,11 +69,13 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         @Override
         public void setSwapper( PageSwapper swapper )
         {
+            this.swapperTracer = swapper.fileSwapperTracer();
         }
 
         @Override
         public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
         {
+            flushEvent.swapperTracer = swapper.fileSwapperTracer();
             return flushEvent;
         }
 
@@ -107,12 +83,14 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         public void threwException( IOException exception )
         {
             evictionExceptions.increment();
+            swapperTracer.evictionExceptions( 1 );
         }
 
         @Override
         public void close()
         {
             evictions.increment();
+            swapperTracer.evictions( 1 );
         }
     };
 
@@ -143,12 +121,14 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         public FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush,
                 int mergedPages )
         {
+            flushEvent.swapperTracer = swapper.fileSwapperTracer();
             return flushEvent;
         }
 
         @Override
         public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
         {
+            flushEvent.swapperTracer = swapper.fileSwapperTracer();
             return flushEvent;
         }
 
@@ -182,6 +162,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         {
         }
     };
+
+    @Override
+    public PageFileSwapperTracer createFileSwapperTracer()
+    {
+        return new DefaultPageFileSwapperTracer();
+    }
 
     @Override
     public PageCursorTracer createPageCursorTracer( String tag )
@@ -433,5 +419,42 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     public void maxPages( long maxPages, long pageSize )
     {
         this.maxPages.set( maxPages );
+    }
+
+    private class PageCacheFlushEvent implements FlushEvent
+    {
+        private PageFileSwapperTracer swapperTracer;
+
+        @Override
+        public void addBytesWritten( long bytes )
+        {
+            bytesWritten.add( bytes );
+            swapperTracer.bytesWritten( bytes );
+        }
+
+        @Override
+        public void done()
+        {
+        }
+
+        @Override
+        public void done( IOException exception )
+        {
+            done();
+        }
+
+        @Override
+        public void addPagesFlushed( int pageCount )
+        {
+            flushes.add( pageCount );
+            swapperTracer.flushes( pageCount );
+        }
+
+        @Override
+        public void addPagesMerged( int pagesMerged )
+        {
+            merges.add( pagesMerged );
+            swapperTracer.merges( pagesMerged );
+        }
     }
 }

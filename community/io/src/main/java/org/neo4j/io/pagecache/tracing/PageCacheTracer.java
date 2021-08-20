@@ -37,6 +37,12 @@ public interface PageCacheTracer extends PageCacheCounters
     PageCacheTracer NULL = new PageCacheTracer()
     {
         @Override
+        public PageFileSwapperTracer createFileSwapperTracer()
+        {
+            return PageFileSwapperTracer.NULL;
+        }
+
+        @Override
         public PageCursorTracer createPageCursorTracer( String tag )
         {
             return PageCursorTracer.NULL;
@@ -271,6 +277,14 @@ public interface PageCacheTracer extends PageCacheCounters
             return PageCacheTracer.class.getName() + ".NULL";
         }
     };
+
+    /**
+     * Create page file tracer for underlying page file.
+     * Every new mapped page file will call this method to create a new instance of tracer.
+     *
+     * @return page file tracer
+     */
+    PageFileSwapperTracer createFileSwapperTracer();
 
     /**
      * Create page cursor tracer for underlying page cache with a specific tag.

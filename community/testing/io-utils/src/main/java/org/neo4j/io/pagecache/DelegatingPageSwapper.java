@@ -22,6 +22,8 @@ package org.neo4j.io.pagecache;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
+
 /**
  * A PageSwapper that delegates all calls to a wrapped PageSwapper instance.
  *
@@ -112,6 +114,12 @@ public class DelegatingPageSwapper implements PageSwapper
     public int swapperId()
     {
         return delegate.swapperId();
+    }
+
+    @Override
+    public PageFileSwapperTracer fileSwapperTracer()
+    {
+        return delegate.fileSwapperTracer();
     }
 
     @Override

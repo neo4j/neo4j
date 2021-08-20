@@ -28,6 +28,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 
 /**
  * A {@linkplain PagedFile paged file} that wraps another paged file and an {@linkplain Adversary adversary} to provide
@@ -116,5 +117,11 @@ public class AdversarialPagedFile implements PagedFile
     public String getDatabaseName()
     {
         return delegate.getDatabaseName();
+    }
+
+    @Override
+    public PageFileCounters pageFileCounters()
+    {
+        return delegate.pageFileCounters();
     }
 }

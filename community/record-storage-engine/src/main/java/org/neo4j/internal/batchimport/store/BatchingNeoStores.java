@@ -321,7 +321,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, PageCacheTracer tracer, JobScheduler jobScheduler,
             MemoryTracker memoryTracker )
     {
-        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
+        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem, tracer );
         MemoryAllocator memoryAllocator = createAllocator( ByteUnit.parse( config.get( pagecache_memory ) ), memoryTracker );
         MuninnPageCache.Configuration configuration = MuninnPageCache.config( memoryAllocator )
                 .pageCacheTracer( tracer )

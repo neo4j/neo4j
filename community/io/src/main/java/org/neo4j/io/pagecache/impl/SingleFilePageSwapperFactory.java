@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 /**
  * A factory for SingleFilePageSwapper instances.
@@ -38,10 +39,12 @@ import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 public class SingleFilePageSwapperFactory implements PageSwapperFactory
 {
     private final FileSystemAbstraction fs;
+    private final PageCacheTracer pageCacheTracer;
 
-    public SingleFilePageSwapperFactory( FileSystemAbstraction fs )
+    public SingleFilePageSwapperFactory( FileSystemAbstraction fs, PageCacheTracer pageCacheTracer )
     {
         this.fs = fs;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     @Override
@@ -52,6 +55,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         {
             throw new NoSuchFileException( file.toString(), null, "Cannot map non-existing file" );
         }
-        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO, preallocateStoreFiles, ioController, swappers );
+        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO, preallocateStoreFiles, ioController, swappers,
+                pageCacheTracer.createFileSwapperTracer() );
     }
 }

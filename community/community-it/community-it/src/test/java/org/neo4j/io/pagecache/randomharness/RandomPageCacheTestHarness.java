@@ -389,7 +389,7 @@ public class RandomPageCacheTestHarness implements Closeable
             fs = new AdversarialFileSystemAbstraction( adversary, fs );
         }
 
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer );
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         MuninnPageCache cache = new MuninnPageCache( swapperFactory, jobScheduler, MuninnPageCache.config( cachePageCount ).pageCacheTracer( tracer ) );
         if ( filePageSize == 0 )
