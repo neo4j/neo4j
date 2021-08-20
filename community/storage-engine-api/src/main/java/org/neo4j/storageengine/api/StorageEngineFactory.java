@@ -82,6 +82,8 @@ public interface StorageEngineFactory
 
     StoreVersion versionInformation( String storeVersion );
 
+    StoreVersion versionInformation( StoreId storeId );
+
     RollingUpgradeCompatibility rollingUpgradeCompatibility();
 
     /**

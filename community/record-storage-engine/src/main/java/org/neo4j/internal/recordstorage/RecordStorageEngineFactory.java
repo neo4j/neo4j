@@ -137,6 +137,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
+    public StoreVersion versionInformation( StoreId storeId )
+    {
+        return versionInformation( MetaDataStore.versionLongToString( storeId.getStoreVersion() ) );
+    }
+
+    @Override
     public RollingUpgradeCompatibility rollingUpgradeCompatibility()
     {
         return new RecordStoreRollingUpgradeCompatibility( RecordFormatSelector.allFormats() );
