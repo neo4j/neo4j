@@ -31,7 +31,6 @@ trait ExecutionResultBuilder {
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def addProfileDecorator(profileDecorator: PipeDecorator)
   def build(params: MapValue,
-            readOnly: Boolean,
             queryProfile: QueryProfile,
             prePopulateResults: Boolean,
             input: InputDataStream,

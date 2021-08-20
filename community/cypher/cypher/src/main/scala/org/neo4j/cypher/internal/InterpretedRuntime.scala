@@ -111,7 +111,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       if (doProfile)
         builder.addProfileDecorator(new Profiler(queryContext.transactionalContext.dbmsInfo, profileInformation))
 
-      builder.build(params, readOnly, profileInformation, prePopulateResults, input, subscriber, doProfile)
+      builder.build(params, profileInformation, prePopulateResults, input, subscriber, doProfile)
     }
 
     override def notifications: Set[InternalNotification] = warnings

@@ -30,3 +30,5 @@ case object WRITE extends InternalQueryType
 case object SCHEMA_WRITE extends InternalQueryType
 
 case object DBMS extends InternalQueryType
+
+case object DBMS_READ extends InternalQueryType

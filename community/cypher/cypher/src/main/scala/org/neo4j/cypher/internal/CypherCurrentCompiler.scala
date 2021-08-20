@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.result.FailedExecutionResult
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.result.StandardInternalExecutionResult
 import org.neo4j.cypher.internal.runtime.DBMS
+import org.neo4j.cypher.internal.runtime.DBMS_READ
 import org.neo4j.cypher.internal.runtime.ExplainMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InternalQueryType
@@ -172,7 +173,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     new CypherExecutableQuery(
       logicalPlan,
-      queryType == READ_ONLY,
+      queryType == READ_ONLY || queryType == DBMS_READ,
       attributes.effectiveCardinalities,
       logicalPlanResult.plannerContext.debugOptions.rawCardinalitiesEnabled,
       attributes.providedOrders,
@@ -214,7 +215,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val logicalQuery = LogicalQuery(
       logicalPlan,
       planState.queryText,
-      queryType == READ_ONLY,
+      queryType == READ_ONLY || queryType == DBMS_READ,
       planState.returnColumns().toArray,
       planState.semanticTable(),
       planningAttributesCopy.effectiveCardinalities,
@@ -266,7 +267,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         if (procedureOrSchema.isDefined) {
           procedureOrSchema.get
         } else if (planHasDBMSProcedure(planState.logicalPlan)) {
-          DBMS
+          if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly) {
+            DBMS_READ
+          } else {
+            DBMS
+          }
         } else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly) {
           READ_ONLY
         } else if (columnNames(planState.logicalPlan).isEmpty) {
