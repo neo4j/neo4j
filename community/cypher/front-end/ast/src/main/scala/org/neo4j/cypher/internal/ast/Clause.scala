@@ -963,6 +963,9 @@ case class Yield(returnItems: ReturnItems,
   override def withReturnItems(items: Seq[ReturnItem]): Yield =
     this.copy(returnItems = ReturnItems(returnItems.includeExisting, items)(returnItems.position))(this.position)
 
+  def withReturnItems(returnItems: ReturnItems): Yield =
+    this.copy(returnItems = returnItems)(this.position)
+
   override def warnOnAccessToRestrictedVariableInOrderByOrWhere(previousScopeVars: Set[String])
                                                                (error: SemanticErrorDef): SemanticErrorDef = error
 }

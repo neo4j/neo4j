@@ -73,8 +73,8 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
     // Command clause with only a YIELD
     case (commandClause: CommandClause) :: (yieldClause: Yield) :: Nil =>
       rewrittenClause :+ commandClause :+ yieldClause :+ returnClause(lastPosition(yieldClause), getDefaultOrderFromYieldOrCommand(yieldClause, commandClause))
-    // Command clause with YIELD and RETURN (to fix column order)
-    case (commandClause: CommandClause) :: (yieldClause: Yield) :: (returnClause: Return) :: Nil =>
+    // Command clause with YIELD and RETURN * (to fix column order)
+    case (commandClause: CommandClause) :: (yieldClause: Yield) :: (returnClause: Return) :: Nil if returnClause.returnItems.includeExisting =>
       rewrittenClause :+ commandClause :+ yieldClause :+ updateDefaultOrderOnReturn(returnClause, yieldClause, commandClause)
     case c :: cs => rewriteClauses(cs, rewrittenClause :+ c)
     case Nil => rewrittenClause
@@ -85,9 +85,7 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
     else yieldClause.returnItems.items.map(_.name).toList
 
   private def updateDefaultOrderOnReturn(returnClause: Return, yieldClause: Yield, commandClause: CommandClause) = {
-    val defaultOrderOnColumns =
-      if (returnClause.returnItems.includeExisting) returnClause.returnItems.defaultOrderOnColumns.getOrElse(getDefaultOrderFromYieldOrCommand(yieldClause, commandClause))
-      else returnClause.returnItems.items.map(_.name).toList
+    val defaultOrderOnColumns = returnClause.returnItems.defaultOrderOnColumns.getOrElse(getDefaultOrderFromYieldOrCommand(yieldClause, commandClause))
     returnClause.withReturnItems(returnClause.returnItems.withDefaultOrderOnColumns(defaultOrderOnColumns))
   }
 

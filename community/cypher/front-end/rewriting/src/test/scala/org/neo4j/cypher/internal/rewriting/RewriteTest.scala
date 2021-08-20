@@ -33,11 +33,16 @@ trait RewriteTest {
   val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
   protected def assertRewrite(originalQuery: String, expectedQuery: String) {
+    val (expected, result) = getRewrite(originalQuery, expectedQuery)
+    assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
+  }
+
+  protected def getRewrite(originalQuery: String, expectedQuery: String): (Statement, AnyRef) = {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
     SemanticChecker.check(original)
     val result = rewrite(original)
-    assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
+    (expected, result)
   }
 
   protected def parseForRewriting(queryText: String): Statement = parser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None))
