@@ -58,7 +58,7 @@ public abstract class DatabaseStateProcedure extends CallableProcedure.BasicProc
                 .out( "error", Neo4jTypes.NTString )
                 .description( "The actual status of the database with the provided name on this neo4j instance." )
                 .systemProcedure()
-                .mode( Mode.READ )
+                .mode( Mode.DBMS )
                 .build() );
         this.idRepository = idRepository;
     }

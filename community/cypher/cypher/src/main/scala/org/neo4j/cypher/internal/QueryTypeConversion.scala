@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.runtime.DBMS
+import org.neo4j.cypher.internal.runtime.DBMS_READ
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.READ_WRITE
@@ -37,5 +38,6 @@ object QueryTypeConversion {
       case WRITE => QueryExecutionType.QueryType.WRITE
       case SCHEMA_WRITE => QueryExecutionType.QueryType.SCHEMA_WRITE
       case DBMS => QueryExecutionType.QueryType.DBMS
+      case DBMS_READ => QueryExecutionType.QueryType.DBMS
     }
 }

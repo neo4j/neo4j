@@ -68,7 +68,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
       case _ => pipeDecorator = profileDecorator
     }
 
-    override def build(params: MapValue, readOnly: Boolean, queryProfile: QueryProfile, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber, doProfile: Boolean): RuntimeResult = {
+    override def build(params: MapValue, queryProfile: QueryProfile, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber, doProfile: Boolean): RuntimeResult = {
       val state = createQueryState(params, prePopulateResults, input, subscriber, doProfile)
       new PipeExecutionResult(pipe, columns.toArray, state, queryProfile, subscriber)
     }
