@@ -119,7 +119,7 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     @Override
     public long getUserTransactionId()
     {
-        return tx.getTransactionId();
+        return tx.getUserTransactionId();
     }
 
     @Override
