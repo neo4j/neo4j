@@ -138,7 +138,7 @@ public enum ValueRepresentation
                 public ArrayValue arrayOf( SequenceValue values )
                 {
                     OffsetTime[] temporals = new OffsetTime[values.length()];
-                     int i = 0;
+                    int i = 0;
                     for ( AnyValue value : values )
                     {
                         temporals[i++] = ((TimeValue) value).temporal();
@@ -152,7 +152,7 @@ public enum ValueRepresentation
                 public ArrayValue arrayOf( SequenceValue values )
                 {
                     LocalTime[] temporals = new LocalTime[values.length()];
-                     int i = 0;
+                    int i = 0;
                     for ( AnyValue value : values )
                     {
                         temporals[i++] = ((LocalTimeValue) value).temporal();
@@ -166,7 +166,7 @@ public enum ValueRepresentation
                 public ArrayValue arrayOf( SequenceValue values )
                 {
                     DurationValue[] temporals = new DurationValue[values.length()];
-                     int i = 0;
+                    int i = 0;
                     for ( AnyValue value : values )
                     {
                         temporals[i++] = (DurationValue) value;
@@ -180,7 +180,7 @@ public enum ValueRepresentation
                 public ArrayValue arrayOf( SequenceValue values )
                 {
                     String[] strings = new String[values.length()];
-                      int i = 0;
+                    int i = 0;
                     for ( AnyValue value : values )
                     {
                         strings[i++] = ((TextValue) value).stringValue();
@@ -207,7 +207,7 @@ public enum ValueRepresentation
                 public ArrayValue arrayOf( SequenceValue values )
                 {
                     String[] strings = new String[values.length()];
-                      int i = 0;
+                    int i = 0;
                     for ( AnyValue value : values )
                     {
                         strings[i++] = ((TextValue) value).stringValue();
@@ -525,11 +525,11 @@ public enum ValueRepresentation
         return valueGroup() == other.valueGroup() ? this : ValueRepresentation.UNKNOWN;
     }
 
-    private static <T> T getOrFail( AnyValue value, Class<T> typ )
+    private static <T> T getOrFail( AnyValue value, Class<T> type )
     {
-        if ( typ.isAssignableFrom( value.getClass() ) )
+        if ( type.isAssignableFrom( value.getClass() ) )
         {
-            return typ.cast( value );
+            return type.cast( value );
         }
         else if ( value == Values.NO_VALUE )
         {
