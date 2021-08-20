@@ -301,4 +301,26 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
   }
+
+  test("handle cached properties in node index seek on the RHS of an apply") {
+    // given
+    val b = given {
+      nodeIndex("B", "id")
+      nodePropertyGraph(
+        sizeHint, { case i => Map("id" -> i)}, "A")
+      nodePropertyGraph(1, {case _ => Map("id" -> 1)}, "B").head
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .apply()
+      .|.nodeIndexOperator("b:B(id = ???)", paramExpr = Some(cachedNodeProp("a", "id")), argumentIds = Set("b"))
+      .nodeByLabelScan("a", "A")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("b").withSingleRow(b)
+  }
 }
