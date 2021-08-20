@@ -48,6 +48,7 @@ class TestCommonIterators
     {
         Object object = new Object();
         Object object2 = new Object();
+        Object defaultValue = new Object();
 
         // first Iterable
         assertEquals( object, Iterables.first( asList( object, object2 ) ) );
@@ -68,6 +69,11 @@ class TestCommonIterators
         assertEquals( object, Iterators.firstOrNull( asList( object, object2 ).iterator() ) );
         assertEquals( object, Iterators.firstOrNull( singletonList( object ).iterator() ) );
         assertNull( Iterators.firstOrNull( Collections.emptyIterator() ) );
+
+        // firstOrDefault
+        assertEquals( object, Iterators.firstOrDefault( asList( object, object2 ).iterator(), defaultValue ) );
+        assertEquals( object, Iterators.firstOrDefault( singletonList( object ).iterator(), defaultValue ) );
+        assertEquals( defaultValue, Iterators.firstOrDefault( Collections.emptyIterator(), defaultValue ) );
     }
 
     @Test

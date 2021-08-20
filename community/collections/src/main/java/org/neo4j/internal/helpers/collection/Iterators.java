@@ -77,6 +77,21 @@ public final class Iterators
     }
 
     /**
+     * Returns the given iterator's first element or {@param defaultValue} if no
+     * element found.
+     *
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @param defaultValue the default value to return.
+     * @return the first element in the {@code iterator}, or {@code null} if no
+     * element found.
+     */
+    public static <T> T firstOrDefault( Iterator<T> iterator, T defaultValue )
+    {
+        return iterator.hasNext() ? iterator.next() : defaultValue;
+    }
+
+    /**
      * Returns the given iterator's first element. If no element is found a
      * {@link NoSuchElementException} is thrown.
      *

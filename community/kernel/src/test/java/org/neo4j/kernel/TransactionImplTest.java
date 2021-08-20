@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -30,6 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -45,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -225,7 +228,10 @@ class TransactionImplTest
     private void checkForIAE( Consumer<Transaction> consumer, String message )
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        SchemaRead mock = mock( SchemaRead.class );
+        when( mock.index( any() ) ).thenReturn( Collections.emptyIterator() );
         when( kernelTransaction.tokenRead() ).thenReturn( mock( TokenRead.class ) );
+        when( kernelTransaction.schemaRead() ).thenReturn( mock );
 
         try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
         {

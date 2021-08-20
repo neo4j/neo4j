@@ -27,7 +27,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -43,7 +42,6 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.schema.IndexType.TEXT;
@@ -100,9 +98,13 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
             mike.createRelationshipTo( smith, FRIEND ).setProperty( SINCE, "2 years, 2 months" );
             james.createRelationshipTo( smith, FRIEND ).setProperty( SINCE, "2 years" );
 
-            Node noah = tx.createNode( PERSON );
+            var noah = tx.createNode( PERSON );
             noah.setProperty( NAME, "Noah" );
             noah.createRelationshipTo( mike, FRIEND ).setProperty( SINCE, "4 years" );
+
+            var alex = tx.createNode( PERSON );
+            alex.setProperty( NAME, "Alex" );
+
             tx.commit();
         }
     }
@@ -127,6 +129,37 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
         assertThat( indexedRelations( stringSuffix( token.propertyKey( SINCE ), stringValue( "years" ) ) ) ).isEqualTo( 3 );
         assertThat( indexedRelations( stringPrefix( token.propertyKey( SINCE ), stringValue( "2 years" ) ) ) ).isEqualTo( 2 );
         assertThat( indexedRelations( range( token.propertyKey( SINCE ), "2 years", true, "3 years", true ) ) ).isEqualTo( 3 );
+    }
+
+    @Test
+    void shouldScanIndex() throws Exception
+    {
+        assertThat( scannedNodeCount() ).isEqualTo( 5 );
+        assertThat( scannedRelationshipCount() ).isEqualTo( 4 );
+    }
+
+    private long scannedNodeCount() throws Exception
+    {
+        monitor.reset();
+        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( nodeIndexName ) );
+        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+        {
+            read.nodeIndexScan( index, cursor, unconstrained() );
+            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
+            return count( cursor );
+        }
+    }
+
+    private long scannedRelationshipCount() throws Exception
+    {
+        monitor.reset();
+        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( relIndexName ) );
+        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+        {
+            read.relationshipIndexScan( index, cursor, unconstrained() );
+            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
+            return count( cursor );
+        }
     }
 
     private long indexedNodes( PropertyIndexQuery... query ) throws Exception

@@ -62,6 +62,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -109,7 +110,10 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
+import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.filter;
+import static org.neo4j.internal.helpers.collection.Iterators.firstOrDefault;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.nodeMatchProperties;
@@ -388,7 +392,12 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
-        return nodesByLabelAndProperty( transaction, labelId, PropertyIndexQuery.exact( propertyId, Values.of( value, false ) ) );
+        if ( invalidTokens( labelId, propertyId ) )
+        {
+            return emptyResourceIterator();
+        }
+        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forLabel( labelId, propertyId ) );
+        return nodesByLabelAndProperty( transaction, labelId, PropertyIndexQuery.exact( propertyId, Values.of( value, false ) ), index );
     }
 
     @Override
@@ -402,8 +411,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
+        if ( invalidTokens( labelId, propertyId ) )
+        {
+            return emptyResourceIterator();
+        }
         PropertyIndexQuery query = getIndexQuery( value, searchMode, propertyId );
-        return nodesByLabelAndProperty( transaction, labelId, query );
+        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forLabel( labelId, propertyId ), IndexType.TEXT );
+        return nodesByLabelAndProperty( transaction, labelId, query, index );
     }
 
     private static PropertyIndexQuery getIndexQuery( String value, StringSearchMode searchMode, int propertyId )
@@ -494,8 +508,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int typeId = tokenRead.relationshipType( relationshipType.name() );
         int propertyId = tokenRead.propertyKey( key );
+        if ( invalidTokens( typeId, propertyId ) )
+        {
+            return emptyResourceIterator();
+        }
         PropertyIndexQuery query = getIndexQuery( template, searchMode, propertyId );
-        return relationshipsByTypeAndProperty( transaction, typeId, query );
+        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forRelType( typeId, propertyId ), IndexType.TEXT );
+        return relationshipsByTypeAndProperty( transaction, typeId, query, index );
     }
 
     @Override
@@ -568,9 +587,14 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         checkPropertyKey( key );
         KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
-        int labelId = tokenRead.relationshipType( relationshipType.name() );
+        int typeId = tokenRead.relationshipType( relationshipType.name() );
         int propertyId = tokenRead.propertyKey( key );
-        return relationshipsByTypeAndProperty( transaction, labelId, PropertyIndexQuery.exact( propertyId, Values.of( value, false ) ) );
+        if ( invalidTokens( typeId, propertyId ) )
+        {
+            return emptyResourceIterator();
+        }
+        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forRelType( typeId, propertyId ) );
+        return relationshipsByTypeAndProperty( transaction, typeId, PropertyIndexQuery.exact( propertyId, Values.of( value, false ) ), index );
     }
 
     @Override
@@ -795,16 +819,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return new SchemaImpl( kernelTransaction() );
     }
 
-    private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, PropertyIndexQuery query )
+    private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, PropertyIndexQuery query, IndexDescriptor index )
     {
         Read read = transaction.dataRead();
-
-        if ( query.propertyKeyId() == TokenRead.NO_TOKEN || labelId == TokenRead.NO_TOKEN )
-        {
-            return emptyResourceIterator();
-        }
-
-        var index = findUsableMatchingIndex( transaction, SchemaDescriptors.forLabel( labelId, query.propertyKeyId() ) );
         if ( index != IndexDescriptor.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching nodes
@@ -825,16 +842,11 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return getNodesByLabelAndPropertyWithoutPropertyIndex( transaction, labelId, query );
     }
 
-    private ResourceIterator<Relationship> relationshipsByTypeAndProperty( KernelTransaction transaction, int typeId, PropertyIndexQuery query )
+    private ResourceIterator<Relationship> relationshipsByTypeAndProperty(
+            KernelTransaction transaction, int typeId, PropertyIndexQuery query, IndexDescriptor index )
     {
         Read read = transaction.dataRead();
 
-        if ( query.propertyKeyId() == TokenRead.NO_TOKEN || typeId == TokenRead.NO_TOKEN )
-        {
-            return emptyResourceIterator();
-        }
-
-        var index = findUsableMatchingIndex( transaction, SchemaDescriptors.forRelType( typeId, query.propertyKeyId() ) );
         if ( index != IndexDescriptor.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching relationships
@@ -1180,17 +1192,26 @@ public class TransactionImpl extends EntityValidationTransactionImpl
      */
     private static IndexDescriptor findUsableMatchingIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor )
     {
+        return firstOrDefault( getMatchingOnlineIndexes( transaction, schemaDescriptor ), IndexDescriptor.NO_INDEX );
+    }
+
+    private static IndexDescriptor findUsableMatchingIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor, IndexType preference )
+    {
+        List<IndexDescriptor> indexes = asList( getMatchingOnlineIndexes( transaction, schemaDescriptor ) );
+        Optional<IndexDescriptor> preferred = indexes.stream().filter( index -> index.getIndexType() == preference ).findAny();
+        return preferred.orElse( firstOrDefault( indexes.iterator(), IndexDescriptor.NO_INDEX ) );
+    }
+
+    private static Iterator<IndexDescriptor> getMatchingOnlineIndexes( KernelTransaction transaction, SchemaDescriptor schemaDescriptor )
+    {
         SchemaRead schemaRead = transaction.schemaRead();
         Iterator<IndexDescriptor> iterator = schemaRead.index( schemaDescriptor );
-        while ( iterator.hasNext() )
-        {
-            IndexDescriptor index = iterator.next();
-            if ( index.getIndexType() != IndexType.FULLTEXT && indexIsOnline( schemaRead, index ) )
-            {
-                return index;
-            }
-        }
-        return IndexDescriptor.NO_INDEX;
+        return filter( index -> index.getIndexType() != IndexType.FULLTEXT && indexIsOnline( schemaRead, index ), iterator );
+    }
+
+    private static boolean invalidTokens( int... tokens )
+    {
+        return stream( tokens ).anyMatch( token -> token == Token.NO_TOKEN );
     }
 
     /**

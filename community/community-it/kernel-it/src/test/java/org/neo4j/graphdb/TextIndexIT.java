@@ -57,6 +57,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.StringSearchMode.CONTAINS;
 import static org.neo4j.graphdb.StringSearchMode.PREFIX;
 import static org.neo4j.graphdb.StringSearchMode.SUFFIX;
+import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.conditions.Conditions.condition;
 import static org.neo4j.test.conditions.Conditions.equalityCondition;
@@ -184,8 +185,7 @@ public class TextIndexIT
         try ( var tx = db.beginTx() )
         {
             tx.schema().indexFor( person ).on( "name" ).withIndexType( IndexType.TEXT ).create();
-//            TODO: add this index back to test selection in core api
-//            tx.schema().indexFor( person ).on( "name" ).withIndexType( BTREE ).create();
+            tx.schema().indexFor( person ).on( "name" ).withIndexType( BTREE ).create();
             tx.commit();
         }
         try ( var tx = db.beginTx() )
@@ -232,8 +232,7 @@ public class TextIndexIT
         try ( var tx = db.beginTx() )
         {
             tx.schema().indexFor( relation ).on( "since" ).withIndexType( IndexType.TEXT ).create();
-//            TODO: add this index back to test selection in core api
-//            tx.schema().indexFor( relation ).on( "since" ).withIndexType( BTREE ).create();
+            tx.schema().indexFor( relation ).on( "since" ).withIndexType( BTREE ).create();
             tx.commit();
         }
         try ( var tx = db.beginTx() )
