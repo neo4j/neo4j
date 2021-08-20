@@ -48,6 +48,8 @@ trait WritableRow extends CachedPropertiesRow {
    */
   def invalidateCachedNodeProperties(node: Long): Unit
 
+  def invalidateCachedProperties(): Unit
+
   /**
    * Invalidate all cached relationship properties for the given relationship id
    */

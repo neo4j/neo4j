@@ -200,6 +200,12 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
 
   override def getCachedPropertyAt(offset: Int): Value = fail()
 
+  override def invalidateCachedProperties(): Unit = {
+    if (cachedProperties != null) {
+      cachedProperties.keys.foreach(cnp => setCachedProperty(cnp, null))
+    }
+  }
+
   override def invalidateCachedNodeProperties(node: Long): Unit = {
     if (cachedProperties != null) {
       cachedProperties.keys.filter(cnp => getByName(cnp.entityName) match {
