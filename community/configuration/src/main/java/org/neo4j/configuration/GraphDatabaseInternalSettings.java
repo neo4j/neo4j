@@ -762,5 +762,5 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
 
     @Description( "Allow database to use dedicated transaction appender writer thread." )
     public static final Setting<Boolean> dedicated_transaction_appender =
-            newBuilder( "unsupported.dbms.tx.logs.dedicated.appender", BOOL, Boolean.TRUE ).build();
+            newBuilder( "unsupported.dbms.tx.logs.dedicated.appender", BOOL, Boolean.FALSE ).build();
 }
