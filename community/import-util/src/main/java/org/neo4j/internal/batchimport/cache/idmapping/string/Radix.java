@@ -35,13 +35,26 @@ public abstract class Radix
 
     public static final Factory<Radix> STRING = String::new;
 
+    private long nullCount;
     final long[] radixIndexCount = new long[(int) pow( 2, RadixCalculator.RADIX_BITS - 1 )];
 
     public int registerRadixOf( long value )
     {
         int radix = calculator().radixOf( value );
-        radixIndexCount[radix]++;
+        if ( radix == RadixCalculator.NULL_RADIX )
+        {
+            nullCount++;
+        }
+        else
+        {
+            radixIndexCount[radix]++;
+        }
         return radix;
+    }
+
+    public long getNullCount()
+    {
+        return nullCount;
     }
 
     public long[] getRadixIndexCounts()

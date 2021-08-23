@@ -26,6 +26,11 @@ import org.apache.commons.lang3.mutable.MutableInt;
  */
 public abstract class RadixCalculator
 {
+    /**
+     * A radix representing a "null" value, i.e. a value which is not used.
+     */
+    public static final int NULL_RADIX = -1;
+
     protected static final int RADIX_BITS = 24;
     protected static final long LENGTH_BITS = 0xFE000000_00000000L;
     protected static final int LENGTH_MASK = (int) (LENGTH_BITS >>> (64 - RADIX_BITS));
@@ -41,6 +46,11 @@ public abstract class RadixCalculator
         @Override
         public int radixOf( long value )
         {
+            if ( value == EncodingIdMapper.GAP_VALUE )
+            {
+                return NULL_RADIX;
+            }
+
             int index = (int) (value >>> (64 - RADIX_BITS));
             index = ((index & LENGTH_MASK) >>> 1) | (index & HASHCODE_MASK);
             return index;
@@ -62,6 +72,11 @@ public abstract class RadixCalculator
         @Override
         public int radixOf( long value )
         {
+            if ( value == EncodingIdMapper.GAP_VALUE )
+            {
+                return NULL_RADIX;
+            }
+
             long val1 = value & ~LENGTH_BITS;
             val1 = val1 >>> radixShift.intValue();
             int index = (int) val1;
