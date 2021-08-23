@@ -576,14 +576,14 @@ class DurationValueTest
     }
 
     @Test
-    public void shouldApproximateWithoutAccumulatedRoundingErrors()
+    public void shouldApproximateFractionalMonth()
     {
         DurationValue result = DurationValue.approximate( 10.8, 0, 0, 0 );
         assertEqual( result, DurationValue.duration( 10, 24, 30196, 800000001 ) );
     }
 
     @Test
-    public void shouldApproximateWithoutAccumulatedRoundingErrors2()
+    public void shouldApproximateWithoutAccumulatedRoundingErrors()
     {
         double months = 1.9013243104086859E-16; // 0.5 ns
         double nanos = 0.6; // with 1.1 ns we should be on the safe side to get rounded to 1 ns, even with rounding errors
