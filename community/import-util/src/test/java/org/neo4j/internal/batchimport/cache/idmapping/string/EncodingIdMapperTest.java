@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,6 +62,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.count;
+import static org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
+import static org.neo4j.internal.batchimport.input.Group.GLOBAL;
 import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
 
 @RunWith( Parameterized.class )
@@ -560,6 +563,62 @@ public class EncodingIdMapperTest
             }
         }
         assertEquals( count, correctHits );
+    }
+
+    @Test
+    public void shouldSkipNullValues()
+    {
+        // GIVEN
+        MutableLong highDataIndex = new MutableLong();
+        MutableLong highTrackerIndex = new MutableLong();
+        EncodingIdMapper.Monitor monitor = new EncodingIdMapper.Monitor()
+        {
+            @Override
+            public void preparing( long highestSetDataIndex, long highestSetTrackerIndex )
+            {
+                highDataIndex.setValue( highestSetDataIndex );
+                highTrackerIndex.setValue( highestSetTrackerIndex );
+            }
+        };
+        IdMapper idMapper = mapper( new LongEncoder(), Radix.LONG, monitor );
+        long count = 1_000;
+        for ( long id = 0; id < count; id++ )
+        {
+            long nodeId = id * 2;
+            idMapper.put( id, nodeId, Group.GLOBAL );
+        }
+
+        // WHEN
+        idMapper.prepare( nodeId ->
+        {
+            throw new RuntimeException( "Should not be called" );
+        }, Collector.EMPTY, NONE );
+
+        // THEN
+        assertEquals( (count - 1) * 2, highDataIndex.longValue() );
+        assertEquals( count - 1, highTrackerIndex.longValue() );
+    }
+
+    @Test
+    public void shouldCompleteQuicklyForMostlyGapValues()
+    {
+        // given
+        int nThreads = 4;
+        IdMapper idMapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
+        int count = nThreads * 10_000;
+        MutableLong nextNodeId = new MutableLong();
+        for ( long id = 0; id < count; id++ )
+        {
+            idMapper.put( id, nextNodeId.getAndAdd( random.nextInt( 500, 1_000 ) ), GLOBAL );
+        }
+
+        // when
+        idMapper.prepare( nodeId ->
+        {
+            throw new RuntimeException();
+        }, Collector.EMPTY, ProgressListener.NONE );
+
+        // then before making the fix where the IdMapper would skip "null" values this test would have taken multiple weeks
     }
 
     private LongFunction<Object> values( Object... values )
