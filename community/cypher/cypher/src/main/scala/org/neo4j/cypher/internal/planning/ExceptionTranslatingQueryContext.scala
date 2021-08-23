@@ -135,11 +135,14 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
     translateException(tokenNameLookup, inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
 
-  override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addLookupIndexRule(entityType, name))
+  override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addLookupIndexRule(entityType, name, provider))
 
   override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
     translateException(tokenNameLookup, inner.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, provider, indexConfig))
+
+  override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addTextIndexRule(entityId, entityType, propertyKeyIds, name, provider))
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(tokenNameLookup, inner.dropIndexRule(labelId, propertyKeyIds))
@@ -167,6 +170,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor =
     translateException(tokenNameLookup, inner.fulltextIndexReference(entityIds, entityType, properties:_*))
+
+  override def textIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
+    translateException(tokenNameLookup, inner.textIndexReference(entityId, entityType, properties:_*))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

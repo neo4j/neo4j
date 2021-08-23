@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
+import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndex
@@ -94,6 +96,19 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       Some(plans.CreateFulltextIndex(source, entityNames, propKeys, name, options))
     }
 
+    def createTextIndex(entityName: Either[LabelName, RelTypeName],
+                        props: List[Property],
+                        name: Option[String],
+                        ifExistsDo: IfExistsDo,
+                        options: Options): Option[LogicalPlan] = {
+      val propKeys = props.map(_.propertyKey)
+      val source = ifExistsDo match {
+        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForTextIndex(entityName, propKeys, name))
+        case _ => None
+      }
+      Some(plans.CreateTextIndex(source, entityName, propKeys, name, options))
+    }
+
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
       case CreateNodeKeyConstraint(node, label, props, name, ifExistsDo, options, _) =>
@@ -123,12 +138,12 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT EXISTS (node.prop)
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS NOT NULL
-      case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, _, _, _) =>
+      case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, _, options, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(prop.map.asCanonicalStringVal, scala.util.Left(label), Seq(prop), plans.NodePropertyExistence, name))
           case _ => None
         }
-        Some(plans.CreateNodePropertyExistenceConstraint(source, label, prop, name))
+        Some(plans.CreateNodePropertyExistenceConstraint(source, label, prop, name, options))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)
       case DropNodePropertyExistenceConstraint(_, label, prop, _) =>
@@ -136,12 +151,12 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT EXISTS (r.prop)
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT r.prop IS NOT NULL
-      case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, _, _, _) =>
+      case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, _, options, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(prop.map.asCanonicalStringVal, scala.util.Right(relType), Seq(prop), plans.RelationshipPropertyExistence, name))
           case _ => None
         }
-        Some(plans.CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name))
+        Some(plans.CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name, options))
 
       // DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)
       case DropRelationshipPropertyExistenceConstraint(_, relType, prop, _) =>
@@ -165,13 +180,13 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)
-      case CreateLookupIndex(_, isNodeIndex, _, name, ifExistsDo, _, _) =>
+      case CreateLookupIndex(_, isNodeIndex, _, name, ifExistsDo, options, _) =>
         val entityType = if (isNodeIndex) EntityType.NODE else EntityType.RELATIONSHIP
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForLookupIndex(entityType, name))
           case _ => None
         }
-        Some(plans.CreateLookupIndex(source, entityType, name))
+        Some(plans.CreateLookupIndex(source, entityType, name, options))
 
       // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR (n[:LABEL[|...]]) ON EACH (n.prop[, ...]) [OPTIONS {...}]
       case CreateFulltextNodeIndex(_, labels, props, name, ifExistsDo, options, _) =>
@@ -180,6 +195,14 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR ()-[r[:RELATIONSHIP_TYPE[|...]]]->() ON EACH (r.prop[, ...]) [OPTIONS {...}]
       case CreateFulltextRelationshipIndex(_, relTypes, props, name, ifExistsDo, options, _) =>
         createFulltextIndex(Right(relTypes), props, name, ifExistsDo, options)
+
+      // CREATE TEXT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+      case CreateTextNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
+        createTextIndex(Left(label), props, name, ifExistsDo, options)
+
+      // CREATE TEXT INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
+      case CreateTextRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
+        createTextIndex(Right(relType), props, name, ifExistsDo, options)
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, props, _) =>

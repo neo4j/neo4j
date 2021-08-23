@@ -60,4 +60,9 @@ public interface ASTExceptionFactory
     {
         return String.format( "Filter type %s is not defined for show %s command.", got.description(), command );
     }
+
+    static String invalidCreateIndexType( CreateIndexTypes got )
+    {
+        return String.format( "Index type %s is not defined for create index command.", got.description() );
+    }
 }

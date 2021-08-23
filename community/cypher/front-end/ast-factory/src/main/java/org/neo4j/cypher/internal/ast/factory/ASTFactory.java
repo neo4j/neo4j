@@ -268,8 +268,8 @@ public interface ASTFactory<STATEMENT,
     SCHEMA_COMMAND createLookupIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable,
                                       StringPos<POS> functionName, VARIABLE functionParameter, Either<Map<String,EXPRESSION>,PARAMETER> options );
 
-    SCHEMA_COMMAND createBtreeIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable,
-                                StringPos<POS> label, List<PROPERTY> properties, Either<Map<String,EXPRESSION>,PARAMETER> options );
+    SCHEMA_COMMAND createIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable, StringPos<POS> label,
+                                List<PROPERTY> properties, Either<Map<String,EXPRESSION>,PARAMETER> options, CreateIndexTypes indexType );
 
     SCHEMA_COMMAND createFulltextIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable,
                                         List<StringPos<POS>> labels, List<PROPERTY> properties, Either<Map<String,EXPRESSION>,PARAMETER> options );

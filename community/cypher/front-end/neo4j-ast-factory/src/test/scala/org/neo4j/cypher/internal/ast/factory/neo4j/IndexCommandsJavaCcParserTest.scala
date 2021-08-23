@@ -55,18 +55,18 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
 
   // Create index
 
-  test("CREATe INDEX FOR (n1:Person) ON (n2.name)")
-  {
+  test("CREATe INDEX FOR (n1:Person) ON (n2.name)") {
     assertSameAST(testName)
   }
 
+  // default type loop
   Seq(
-    ("(n1:Person)", btreeNodeIndex: CreateBtreeIndexFunction),
-    ("()-[n1:R]-()", btreeRelIndex: CreateBtreeIndexFunction),
-    ("()-[n1:R]->()", btreeRelIndex: CreateBtreeIndexFunction),
-    ("()<-[n1:R]-()", btreeRelIndex: CreateBtreeIndexFunction)
+    ("(n1:Person)", btreeNodeIndex: CreateIndexFunction),
+    ("()-[n1:R]-()", btreeRelIndex: CreateIndexFunction),
+    ("()-[n1:R]->()", btreeRelIndex: CreateIndexFunction),
+    ("()<-[n1:R]-()", btreeRelIndex: CreateIndexFunction)
   ).foreach {
-    case (pattern, createIndex: CreateBtreeIndexFunction) =>
+    case (pattern, createIndex: CreateIndexFunction) =>
       test(s"CREATE INDEX FOR $pattern ON (n2.name)") {
         assertSameAST(testName)
       }
@@ -79,7 +79,7 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
         assertSameAST(testName)
       }
 
-      test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name)") {
+      test(s"CREATE INDEX my_index FOR $pattern ON (n2.name)") {
         assertSameAST(testName)
       }
 
@@ -119,19 +119,19 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
         assertSameAST(testName)
       }
 
-      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+      test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
         assertSameAST(testName)
       }
 
-      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
+      test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
         assertSameAST(testName)
       }
 
-      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
+      test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
         assertSameAST(testName)
       }
 
-      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
+      test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
         assertSameAST(testName)
       }
 
@@ -151,7 +151,7 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
         assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsThrowError, NoOptions))
       }
 
-      test(s"CREATE BTREE INDEX my_index FOR $pattern ON n2.name") {
+      test(s"CREATE INDEX my_index FOR $pattern ON n2.name") {
         assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
       }
 
@@ -168,6 +168,116 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
       }
   }
 
+  // btree loop
+  Seq(
+    ("(n1:Person)", btreeNodeIndex: CreateIndexFunction),
+    ("()-[n1:R]-()", btreeRelIndex: CreateIndexFunction),
+    ("()-[n1:R]->()", btreeRelIndex: CreateIndexFunction),
+    ("()<-[n1:R]-()", btreeRelIndex: CreateIndexFunction)
+  ).foreach {
+    case (pattern, createIndex: CreateIndexFunction) =>
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"USE neo4j CREATE BTREE INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX `$$my_index` FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE BTREE INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE BTREE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE BTREE INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE BTREE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'native-btree-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX $$my_index FOR $pattern ON (n2.name)") {
+        assertJavaCCExceptionStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE BTREE INDEX my_index FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE OR REPLACE BTREE INDEX IF NOT EXISTS FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsInvalidSyntax, NoOptions))
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) {indexProvider : 'native-btree-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS") {
+        assertSameAST(testName)
+      }
+  }
+
+  // lookup loop
   Seq(
     ("(n1)", "labels(n2)"),
     ("()-[r1]-()", "type(r2)"),
@@ -236,6 +346,7 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
       }
   }
 
+  // fulltext loop
   Seq(
     "(n1:Person)",
     "(n1:Person|Colleague|Friend)",
@@ -361,6 +472,119 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
       }
   }
 
+  // text loop
+  Seq(
+    ("(n1:Person)", textNodeIndex: CreateIndexFunction),
+    ("()-[n1:R]-()", textRelIndex: CreateIndexFunction),
+    ("()-[n1:R]->()", textRelIndex: CreateIndexFunction),
+    ("()<-[n1:R]-()", textRelIndex: CreateIndexFunction)
+  ).foreach {
+    case (pattern, createIndex: CreateIndexFunction) =>
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"USE neo4j CREATE TEXT INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX `$$my_index` FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE TEXT INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE TEXT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE TEXT INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE TEXT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'text-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'text-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'text-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX $$my_index FOR $pattern ON (n2.name)") {
+        assertJavaCCExceptionStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE TEXT INDEX my_index FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE OR REPLACE TEXT INDEX IF NOT EXISTS FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsInvalidSyntax, NoOptions))
+      }
+
+      test(s"CREATE TEXT INDEX my_index FOR $pattern ON n2.name, n3.age") {
+        assertJavaCCExceptionStart(testName, """Invalid input ',': expected "OPTIONS" or <EOF>""")
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) {indexProvider : 'text-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS") {
+        assertSameAST(testName)
+      }
+  }
+
   test("CREATE LOOKUP INDEX FOR (x1) ON EACH labels(x2)") {
     assertSameAST(testName)
   }
@@ -415,6 +639,27 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
   }
 
   test("CREATE INDEX FOR [r1:R] ON (r2.name)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE TEXT INDEX FOR n1:Person ON (n2.name)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE TEXT INDEX FOR -[r1:R]-() ON (r2.name)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE TEXT INDEX FOR ()-[r1:R]- ON (r2.name)") {
+    //parboiled expects a space here, whereas java cc is whitespace ignorant
+    assertJavaCCException(testName, "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 34 (offset: 33))")
+  }
+
+  test("CREATE TEXT INDEX FOR -[r1:R]- ON (r2.name)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE TEXT INDEX FOR [r1:R] ON (r2.name)") {
     assertSameAST(testName)
   }
 
@@ -594,7 +839,8 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
   }
 
   // help methods
-  type CreateBtreeIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Options) => InputPosition => ast.CreateIndex
+
+  type CreateIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Options) => InputPosition => ast.CreateIndex
 
   private def btreeNodeIndex(props: List[expressions.Property],
                              name: Option[String],
@@ -607,4 +853,16 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
                             ifExistsDo: ast.IfExistsDo,
                             options: Options): InputPosition => ast.CreateIndex =
     ast.CreateBtreeRelationshipIndex(varFor("n1"), relTypeName("R"), props, name, ifExistsDo, options)
+
+  private def textNodeIndex(props: List[expressions.Property],
+                             name: Option[String],
+                             ifExistsDo: ast.IfExistsDo,
+                             options: Options): InputPosition => ast.CreateIndex =
+    ast.CreateTextNodeIndex(varFor("n1"), labelName("Person"), props, name, ifExistsDo, options)
+
+  private def textRelIndex(props: List[expressions.Property],
+                            name: Option[String],
+                            ifExistsDo: ast.IfExistsDo,
+                            options: Options): InputPosition => ast.CreateIndex =
+    ast.CreateTextRelationshipIndex(varFor("n1"), relTypeName("R"), props, name, ifExistsDo, options)
 }

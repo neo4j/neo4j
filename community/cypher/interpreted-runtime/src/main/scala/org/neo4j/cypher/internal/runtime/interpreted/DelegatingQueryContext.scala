@@ -170,11 +170,14 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
     singleDbHit(inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
 
-  override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor =
-    singleDbHit(inner.addLookupIndexRule(entityType, name))
+  override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
+    singleDbHit(inner.addLookupIndexRule(entityType, name, provider))
 
   override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
     singleDbHit(inner.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, provider, indexConfig))
+
+  override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
+    singleDbHit(inner.addTextIndexRule(entityId, entityType, propertyKeyIds, name, provider))
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = singleDbHit(inner.dropIndexRule(labelId, propertyKeyIds))
 
@@ -194,6 +197,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def lookupIndexReference(entityType: EntityType): IndexDescriptor = singleDbHit(inner.lookupIndexReference(entityType))
 
   override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.fulltextIndexReference(entityIds, entityType, properties:_*))
+
+  override def textIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.textIndexReference(entityId, entityType, properties:_*))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
+import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.User
@@ -146,6 +147,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRole
+import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateUser
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
@@ -168,6 +170,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForTextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropDatabase
@@ -710,21 +713,27 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // LOOKUP
 
-    assertGood(attach(CreateLookupIndex(None, EntityType.NODE, Some("$indexName")), 63.2),
+    assertGood(attach(CreateLookupIndex(None, EntityType.NODE, Some("$indexName"), NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("LOOKUP INDEX `$indexName` FOR (n) ON EACH labels(n)")), Set.empty))
 
-    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(EntityType.NODE, None)), EntityType.NODE, None), 63.2),
+    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(EntityType.NODE, None)), EntityType.NODE, None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("LOOKUP INDEX FOR (n) ON EACH labels(n)")), Set.empty)
       ), Seq(details("LOOKUP INDEX FOR (n) ON EACH labels(n)")), Set.empty))
 
-    assertGood(attach(CreateLookupIndex(None, EntityType.RELATIONSHIP, Some("$indexName")), 63.2),
+    assertGood(attach(CreateLookupIndex(None, EntityType.NODE, Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("token-lookup-1.0")))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""LOOKUP INDEX `$indexName` FOR (n) ON EACH labels(n) OPTIONS {indexProvider: "token-lookup-1.0"}""")), Set.empty))
+
+    assertGood(attach(CreateLookupIndex(None, EntityType.RELATIONSHIP, Some("$indexName"), NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("LOOKUP INDEX `$indexName` FOR ()-[r]-() ON EACH type(r)")), Set.empty))
 
-    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(EntityType.RELATIONSHIP, None)), EntityType.RELATIONSHIP, None), 63.2),
+    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(EntityType.RELATIONSHIP, None)), EntityType.RELATIONSHIP, None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty)
       ), Seq(details("LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty))
+
+    assertGood(attach(CreateLookupIndex(None, EntityType.RELATIONSHIP, Some("$indexName"), OptionsMap(Map("indexConfig" -> MapExpression(Seq.empty)(pos)))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("LOOKUP INDEX `$indexName` FOR ()-[r]-() ON EACH type(r) OPTIONS {indexConfig: {}}")), Set.empty))
 
     // FULLTEXT
 
@@ -760,6 +769,41 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop")), Some("$indexName"), OptionsParam(parameter("ops", CTMap))), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX `$indexName` FOR (:Label) ON EACH [prop] OPTIONS $ops")), Set.empty))
+
+    // TEXT
+
+    assertGood(attach(CreateTextIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateTextIndex(None, Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX FOR (:Label) ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateTextIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("text-1.0")))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""TEXT INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "text-1.0"}""")), Set.empty))
+
+    assertGood(attach(CreateTextIndex(Some(DoNothingIfExistsForTextIndex(Left(label("Label")), List(key("prop")), None)),
+      Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("TEXT INDEX FOR (:Label) ON (prop)")), Set.empty)
+      ), Seq(details("TEXT INDEX FOR (:Label) ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateTextIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateTextIndex(None, Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateTextIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("text-1.0")))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""TEXT INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "text-1.0"}""")), Set.empty))
+
+    assertGood(attach(CreateTextIndex(Some(DoNothingIfExistsForTextIndex(Right(relType("Label")), List(key("prop")), None)),
+      Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("TEXT INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
+      ), Seq(details("TEXT INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateTextIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsParam(parameter("options", CTMap))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")), Set.empty))
   }
 
   test("DropIndex") {
@@ -787,6 +831,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(ShowIndexes(FulltextIndexes, verbose = true, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("fulltextIndexes, allColumns")), Set.empty))
+
+    assertGood(attach(ShowIndexes(TextIndexes, verbose = true, List.empty), 1.0),
+      planDescription(id, "ShowIndexes", NoChildren, Seq(details("textIndexes, allColumns")), Set.empty))
 
     assertGood(attach(ShowIndexes(LookupIndexes, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("lookupIndexes, defaultColumns")), Set.empty))
@@ -836,28 +883,28 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateNodePropertyExistenceConstraint") {
-    assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop(" x", "prop"), None), 63.2),
+    assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop(" x", "prop"), None, NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NOT NULL")), Set.empty))
 
-    assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop("x","prop"), Some("constraintName")), 63.2),
+    assertGood(attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop("x","prop"), Some("constraintName"), NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop) IS NOT NULL")), Set.empty))
 
     assertGood(attach(CreateNodePropertyExistenceConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), NodePropertyExistence, None)),
-      label("Label"), prop(" x", "prop"), None), 63.2),
+      label("Label"), prop(" x", "prop"), None, NoOptions), 63.2),
       planDescription(id, "CreateConstraint", SingleChild(
         planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NOT NULL")), Set.empty)
       ), Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NOT NULL")), Set.empty))
   }
 
   test("CreateRelationshipPropertyExistenceConstraint") {
-    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, relType("R"), prop(" x", "prop"), None), 63.2),
+    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, relType("R"), prop(" x", "prop"), None, NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT (` x`.prop) IS NOT NULL")), Set.empty))
 
-    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, relType("R"), prop(" x", "prop"), Some("constraintName")), 63.2),
+    assertGood(attach(CreateRelationshipPropertyExistenceConstraint(None, relType("R"), prop(" x", "prop"), Some("constraintName"), NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON ()-[` x`:R]-() ASSERT (` x`.prop) IS NOT NULL")), Set.empty))
 
     assertGood(attach(CreateRelationshipPropertyExistenceConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Right(relType("R")), Seq(prop(" x", "prop")), RelationshipPropertyExistence, None)),
-      relType("R"), prop(" x", "prop"), None), 63.2),
+      relType("R"), prop(" x", "prop"), None, NoOptions), 63.2),
       planDescription(id, "CreateConstraint", SingleChild(
         planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT (` x`.prop) IS NOT NULL")), Set.empty)
       ), Seq(details("CONSTRAINT ON ()-[` x`:R]-() ASSERT (` x`.prop) IS NOT NULL")), Set.empty))

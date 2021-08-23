@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowIndexType
+import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.Nonunique
@@ -72,6 +73,10 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         indexes.filter {
           case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.FULLTEXT)
         }
+      case TextIndexes =>
+        indexes.filter {
+          case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.TEXT)
+        }
       case LookupIndexes =>
         indexes.filter {
           case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.LOOKUP)
@@ -108,7 +113,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
           // Tells if the index is only meant to allow one value per key, either "UNIQUE" or "NONUNIQUE"
           "uniqueness" -> Values.stringValue(uniqueness),
-          // The IndexType of this index, either "FULLTEXT", "BTREE" or "LOOKUP"
+          // The IndexType of this index, either "FULLTEXT", "TEXT", "BTREE" or "LOOKUP"
           "type" -> Values.stringValue(indexType.name),
           // Type of entities this index represents, either "NODE" or "RELATIONSHIP"
           "entityType" -> Values.stringValue(entityType.name),
@@ -121,7 +126,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         )
         if (verbose) {
           val indexConfig = indexDescriptor.getIndexConfig
-          val optionsValue = if (isLookupIndex) Values.NO_VALUE else extractOptionsMap(providerName, indexConfig)
+          val optionsValue = extractOptionsMap(providerName, indexConfig)
           briefResult ++ Map(
             "options" -> optionsValue,
             "failureMessage" -> Values.stringValue(indexStatus.failureMessage),
@@ -195,6 +200,18 @@ object ShowIndexesCommand {
           case EntityType.RELATIONSHIP =>
             val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
             s"CREATE FULLTEXT INDEX $escapedName FOR ()-[r$labelsOrTypesWithBars]-() ON EACH [$escapedRelProperties] OPTIONS $optionsString"
+          case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
+        }
+      case IndexType.TEXT =>
+        val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+
+        entityType match {
+          case EntityType.NODE =>
+            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
+            s"CREATE TEXT INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties)"
+          case EntityType.RELATIONSHIP =>
+            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+            s"CREATE TEXT INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties)"
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.LOOKUP =>

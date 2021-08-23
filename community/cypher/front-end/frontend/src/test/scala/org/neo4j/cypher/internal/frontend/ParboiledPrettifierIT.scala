@@ -393,6 +393,90 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "create FULLTEXT INDEX foo IF not EXISTS FOR ()-[n:R]-() ON EACH [n.p]" ->
       "CREATE FULLTEXT INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON EACH [n.p]",
 
+    "create TEXT INDEX FOR (n:A) ON (n.p)" ->
+      "CREATE TEXT INDEX FOR (n:A) ON (n.p)",
+
+    "create TEXT INDEX FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
+      "CREATE TEXT INDEX FOR (n:A) ON (n.p1, n.p2, n.p3)",
+
+    "create TEXT INDEX foo FOR (n:A) ON (n.p)" ->
+      "CREATE TEXT INDEX foo FOR (n:A) ON (n.p)",
+
+    "create TEXT INDEX `foo` FOR (n:A) ON (n.p)" ->
+      "CREATE TEXT INDEX foo FOR (n:A) ON (n.p)",
+
+    "create TEXT INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
+      "CREATE TEXT INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
+
+    "CREATE TEXT index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'text-1.0'}" ->
+      """CREATE TEXT INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "text-1.0"}""",
+
+    "create text INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'text-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+      """CREATE TEXT INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "text-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+
+    "create TEXT INDEX myIndex for (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+      """CREATE TEXT INDEX myIndex FOR (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+
+    "CREATE TEXT index FOR (n:Person) on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE TEXT INDEX FOR (n:Person) ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+    "CREATE TEXT index FOR (n:Person) on (n.name) OPtiONS {}" ->
+      """CREATE TEXT INDEX FOR (n:Person) ON (n.name) OPTIONS {}""",
+
+    "create or REPLACE TEXT INDEX FOR (n:A) ON (n.p)" ->
+      "CREATE OR REPLACE TEXT INDEX FOR (n:A) ON (n.p)",
+
+    "create or REPLACE TEXT INDEX foo FOR (n:A) ON (n.p)" ->
+      "CREATE OR REPLACE TEXT INDEX foo FOR (n:A) ON (n.p)",
+
+    "create TEXT INDEX IF not EXISTS FOR (n:A) ON (n.p)" ->
+      "CREATE TEXT INDEX IF NOT EXISTS FOR (n:A) ON (n.p)",
+
+    "create TEXT INDEX foo IF not EXISTS FOR (n:A) ON (n.p)" ->
+      "CREATE TEXT INDEX foo IF NOT EXISTS FOR (n:A) ON (n.p)",
+
+    "create TEXT INDEX FOR ()-[n:R]->() ON (n.p)" ->
+      "CREATE TEXT INDEX FOR ()-[n:R]-() ON (n.p)",
+
+    "create TEXT INDEX FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
+      "CREATE TEXT INDEX FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
+
+    "create TEXT INDEX foo FOR ()<-[n:R]-() ON (n.p)" ->
+      "CREATE TEXT INDEX foo FOR ()-[n:R]-() ON (n.p)",
+
+    "create TEXT INDEX `foo` FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE TEXT INDEX foo FOR ()-[n:R]-() ON (n.p)",
+
+    "create TEXT INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
+      "CREATE TEXT INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
+
+    "CREATE TEXT index FOR ()-[n:R]->() on (n.name) OPtiONS {indexProvider: 'text-1.0'}" ->
+      """CREATE TEXT INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "text-1.0"}""",
+
+    "create TEXT INDEX for ()-[n:R]-() ON (n.name) OPTIONS {`indexProvider`: 'text-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+      """CREATE TEXT INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "text-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+
+    "create TEXT INDEX myIndex for ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+      """CREATE TEXT INDEX myIndex FOR ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+
+    "CREATE TEXT index FOR ()-[n:R]-() on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE TEXT INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+    "CREATE TEXT index FOR ()<-[n:R]-() on (n.name) OPtiONS {}" ->
+      """CREATE TEXT INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {}""",
+
+    "create or REPLACE TEXT INDEX FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE OR REPLACE TEXT INDEX FOR ()-[n:R]-() ON (n.p)",
+
+    "create or REPLACE TEXT INDEX foo FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE OR REPLACE TEXT INDEX foo FOR ()-[n:R]-() ON (n.p)",
+
+    "create TEXT INDEX IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE TEXT INDEX IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
+
+    "create TEXT INDEX foo IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE TEXT INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
+
     "drop INDEX ON :A(p)" ->
       "DROP INDEX ON :A(p)",
 
@@ -610,6 +694,9 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show FULltEXT index" ->
       "SHOW FULLTEXT INDEXES",
 
+    "show tEXT index" ->
+      "SHOW TEXT INDEXES",
+
     "show loOKup index" ->
       "SHOW LOOKUP INDEXES",
 
@@ -645,6 +732,11 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         |  ORDER BY name ASCENDING
         |  SKIP 1
         |  LIMIT 1""".stripMargin,
+
+    "show text index yield name return name" ->
+      """SHOW TEXT INDEXES
+        |YIELD name
+        |RETURN name""".stripMargin,
 
     // show constraints
 

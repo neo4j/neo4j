@@ -121,14 +121,20 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     result
   }
 
-  override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor = {
-    val result = inner.addLookupIndexRule(entityType, name)
+  override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = {
+    val result = inner.addLookupIndexRule(entityType, name, provider)
     indexesAdded.increase()
     result
   }
 
   override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = {
     val result = inner.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, provider, indexConfig)
+    indexesAdded.increase()
+    result
+  }
+
+  override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = {
+    val result = inner.addTextIndexRule(entityId, entityType, propertyKeyIds, name, provider)
     indexesAdded.increase()
     result
   }

@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
+import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
@@ -34,6 +36,7 @@ import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.UniquePropertyConstraintCommand
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UseGraph
@@ -159,6 +162,15 @@ object Additions {
       case c: UniquePropertyConstraintCommand if c.properties.size > 1 =>
         throw cypherExceptionFactory.syntaxException("Multi-property uniqueness constraints are not supported in this Cypher version.", c.position)
 
+      // CREATE TEXT INDEX ...
+      case c: CreateTextNodeIndex =>
+        throw cypherExceptionFactory.syntaxException("Text indexes are not supported in this Cypher version.", c.position)
+      case c: CreateTextRelationshipIndex =>
+        throw cypherExceptionFactory.syntaxException("Text indexes are not supported in this Cypher version.", c.position)
+
+      // SHOW TEXT INDEXES
+      case s: ShowIndexesClause if s.indexType == TextIndexes =>
+        throw cypherExceptionFactory.syntaxException("Filtering on text indexes in SHOW INDEXES is not supported in this Cypher version.", s.position)
     }
   }
 

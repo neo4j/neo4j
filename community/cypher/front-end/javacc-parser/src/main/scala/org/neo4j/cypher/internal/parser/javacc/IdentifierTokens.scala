@@ -158,6 +158,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.STATUS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.STOP
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.SUSPENDED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TERMINATE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TEXT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.THEN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TO
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRANSACTION
@@ -325,6 +326,7 @@ object IdentifierTokens {
     STOP,
     SUSPENDED,
     TERMINATE,
+    TEXT,
     THEN,
     TO,
     TRANSACTION,

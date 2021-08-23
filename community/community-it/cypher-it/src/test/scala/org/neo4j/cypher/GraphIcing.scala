@@ -138,11 +138,11 @@ trait GraphIcing {
     }
 
     def createNodeIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
-      createNodeIndex(None, label, properties, Map("indexProvider" -> s"'$provider'"))
+      createNodeIndex(None, label, properties, options = Map("indexProvider" -> s"'$provider'"))
     }
 
     def createRelationshipIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(None, label, properties, Map("indexProvider" -> s"'$provider'"))
+      createRelationshipIndex(None, label, properties, options = Map("indexProvider" -> s"'$provider'"))
     }
 
     def createRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
@@ -157,18 +157,34 @@ trait GraphIcing {
       createRelationshipIndex(Some(name), relType, properties)
     }
 
-    private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String], options: Map[String, String] = Map.empty): IndexDefinition = {
-      createIndex(maybeName, s"(e:$label)", properties, () => getNodeIndex(label, properties), options)
+    def createTextNodeIndex(label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(None, label, properties, IndexType.TEXT)
     }
 
-    private def createRelationshipIndex(maybeName: Option[String], relType: String, properties: Seq[String], options: Map[String, String] = Map.empty): IndexDefinition = {
-      createIndex(maybeName, s"()-[e:$relType]-()", properties, () => getRelIndex(relType, properties), options)
+    def createTextNodeIndexWithName(name: String, label: String, property: String): IndexDefinition = {
+      createNodeIndex(Some(name), label, Seq(property), IndexType.TEXT)
     }
 
-    private def createIndex(maybeName: Option[String], pattern: String, properties: Seq[String], getIndex: () => IndexDefinition, options: Map[String, String] = Map.empty): IndexDefinition = {
+    def createTextRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(None, relType, properties, IndexType.TEXT)
+    }
+
+    def createTextRelationshipIndexWithName(name: String, relType: String, property: String): IndexDefinition = {
+      createRelationshipIndex(Some(name), relType, Seq(property), IndexType.TEXT)
+    }
+
+    private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE, options: Map[String, String] = Map.empty): IndexDefinition = {
+      createIndex(maybeName, s"(e:$label)", properties, indexType, () => getNodeIndex(label, properties, indexType), options)
+    }
+
+    private def createRelationshipIndex(maybeName: Option[String], relType: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE, options: Map[String, String] = Map.empty): IndexDefinition = {
+      createIndex(maybeName, s"()-[e:$relType]-()", properties, indexType, () => getRelIndex(relType, properties, indexType), options)
+    }
+
+    private def createIndex(maybeName: Option[String], pattern: String, properties: Seq[String], indexType: IndexType, getIndex: () => IndexDefinition, options: Map[String, String] = Map.empty): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
       withTx( tx => {
-        tx.execute(s"CREATE INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})${optionsString(options)}")
+        tx.execute(s"CREATE $indexType INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})${optionsString(options)}")
       })
 
       withTx( tx =>  {
@@ -233,11 +249,11 @@ trait GraphIcing {
       } )
     }
 
-    def getNodeIndex(label: String, properties: Seq[String]): IndexDefinition =
-      getMaybeNodeIndex(label, properties).get
+    def getNodeIndex(label: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE): IndexDefinition =
+      getMaybeNodeIndex(label, properties, indexType).get
 
-    def getRelIndex(relType: String, properties: Seq[String]): IndexDefinition =
-      getMaybeRelIndex(relType, properties).get
+    def getRelIndex(relType: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE): IndexDefinition =
+      getMaybeRelIndex(relType, properties, indexType).get
 
     def getLookupIndex(isNodeIndex: Boolean): IndexDefinition =
       getMaybeLookupIndex(isNodeIndex).get
@@ -245,12 +261,14 @@ trait GraphIcing {
     def getFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): IndexDefinition =
       getMaybeFulltextIndex(entities, props, isNodeIndex).get
 
-    def getMaybeNodeIndex(label: String, properties: Seq[String]): Option[IndexDefinition] = withTx(tx =>  {
-      tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
+    def getMaybeNodeIndex(label: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE): Option[IndexDefinition] = withTx(tx =>  {
+      tx.schema().getIndexes(Label.label(label)).asScala
+        .find(index => index.getIndexType.equals(indexType) && index.getPropertyKeys.asScala.toList == properties.toList)
     } )
 
-    def getMaybeRelIndex(relType: String, properties: Seq[String]): Option[IndexDefinition] = withTx(tx =>  {
-      tx.schema().getIndexes(RelationshipType.withName(relType)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
+    def getMaybeRelIndex(relType: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE): Option[IndexDefinition] = withTx(tx =>  {
+      tx.schema().getIndexes(RelationshipType.withName(relType)).asScala
+        .find(index => index.getIndexType.equals(indexType) && index.getPropertyKeys.asScala.toList == properties.toList)
     } )
 
     def getMaybeLookupIndex(isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {

@@ -207,9 +207,11 @@ object StaticEvaluation {
 
     override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
 
-    override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor = notAvailable()
+    override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = notAvailable()
 
     override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
+
+    override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = notAvailable()
 
     override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = notAvailable()
 
@@ -228,6 +230,8 @@ object StaticEvaluation {
     override def lookupIndexReference(entityType: EntityType): IndexDescriptor = notAvailable()
 
     override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
+
+    override def textIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
 
     override def nodeIndexSeek(index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor = notAvailable()
 

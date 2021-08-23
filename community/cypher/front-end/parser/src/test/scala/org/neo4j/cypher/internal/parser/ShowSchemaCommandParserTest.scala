@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.OldValidSyntax
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
+import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 
 /* Tests for listing indexes and constraints */
@@ -55,6 +56,10 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
 
     test(s"SHOW FULLTEXT $indexKeyword") {
       yields(_ => query(ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
+    }
+
+    test(s"SHOW TEXT $indexKeyword") {
+      yields(_ => query(ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW LOOKUP $indexKeyword") {
@@ -147,6 +152,11 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
 
   test("SHOW INDEXES YIELD name AS INDEX, type AS OUTPUT") {
     yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))))
+  }
+
+  test("SHOW TEXT INDEXES YIELD name AS INDEX, type AS OUTPUT") {
+    yields(_ => query(ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
       yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))))
   }
 
@@ -284,6 +294,14 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("SHOW FULLTEXT INDEXES VERBOSE") {
+    failsToParse
+  }
+
+  test("SHOW TEXT INDEXES BRIEF") {
+    failsToParse
+  }
+
+  test("SHOW TEXT INDEXES VERBOSE") {
     failsToParse
   }
 

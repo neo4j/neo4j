@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
 import org.neo4j.cypher.internal.ast.factory.ActionType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintType;
+import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
@@ -443,10 +444,10 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL createBtreeIndex( NULL p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, Object o,
-                                  StringPos<NULL> label, List<Object> objects, Either<Map<String,Object>,Object> options )
+    public NULL createIndex( NULL p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, Object o, StringPos<NULL> label,
+                             List<Object> objects, Either<Map<String,Object>,Object> options, CreateIndexTypes indexType )
     {
-        throw new UnsupportedOperationException( "createBtreeIndex is not a literal" );
+        throw new UnsupportedOperationException( "createIndex is not a literal" );
     }
 
     @Override

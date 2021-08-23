@@ -130,6 +130,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "REL"
          |  "RELATIONSHIP"
          |  "ROLES"
+         |  "TEXT"
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 14 (offset: 13))""".stripMargin
@@ -183,6 +184,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "REL"
          |  "RELATIONSHIP"
          |  "ROLES"
+         |  "TEXT"
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
@@ -220,6 +222,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "REL"
          |  "RELATIONSHIP"
          |  "ROLES"
+         |  "TEXT"
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
@@ -261,6 +264,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "REL"
          |  "RELATIONSHIP"
          |  "ROLES"
+         |  "TEXT"
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
