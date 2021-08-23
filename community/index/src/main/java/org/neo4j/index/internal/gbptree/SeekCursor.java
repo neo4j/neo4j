@@ -1096,6 +1096,9 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      */
     private boolean scoutNextSibling() throws IOException
     {
+        assert !seekForward; // only happens when we go backward
+        assert !isInternal; // only happens when we go through leafs
+
         // Read header but to local variables and not global once
         byte nodeType;
         int keyCount = -1;
@@ -1106,9 +1109,10 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             if ( nodeType == TreeNode.NODE_TYPE_TREE_NODE )
             {
                 keyCount = TreeNode.keyCount( scout );
-                if ( keyCountIsSane( keyCount ) )
+                // if keyCount is 0 we observed intermediate state and caller will retry
+                if ( keyCountIsSane( keyCount ) && keyCount > 0 )
                 {
-                    int firstPos = seekForward ? 0 : keyCount - 1;
+                    int firstPos = keyCount - 1;
                     bTreeNode.keyAt( scout, expectedFirstAfterGoToNext, firstPos, LEAF, cursorContext );
                 }
             }
@@ -1124,7 +1128,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             }
             checkOutOfBounds( this.cursor );
         }
-        return !(nodeType != TreeNode.NODE_TYPE_TREE_NODE || !keyCountIsSane( keyCount ));
+        return nodeType == TreeNode.NODE_TYPE_TREE_NODE && keyCountIsSane( keyCount ) && keyCount > 0;
     }
 
     /**

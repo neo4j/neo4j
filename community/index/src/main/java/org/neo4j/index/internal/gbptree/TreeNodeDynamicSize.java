@@ -287,7 +287,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
             int keySize = extractKeySize( keyValueSize );
             int valueSize = extractValueSize( keyValueSize );
-            if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 )
+            if ( keyValueSizeTooLarge( keySize, valueSize ) || keySize < 0 || valueSize < 0 )
             {
                 readUnreliableKeyValueSize( cursor, keySize, valueSize, keyValueSize, pos );
                 return into;
