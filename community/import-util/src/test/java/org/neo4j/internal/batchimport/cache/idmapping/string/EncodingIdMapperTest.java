@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -44,9 +46,9 @@ import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static java.lang.Math.toIntExact;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +63,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.count;
+import static org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
+import static org.neo4j.internal.batchimport.input.Group.GLOBAL;
 import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -569,6 +573,62 @@ public class EncodingIdMapperTest
             }
         }
         assertEquals( count, correctHits );
+    }
+
+    @Test
+    void shouldSkipNullValues()
+    {
+        // GIVEN
+        MutableLong highDataIndex = new MutableLong();
+        MutableLong highTrackerIndex = new MutableLong();
+        EncodingIdMapper.Monitor monitor = new EncodingIdMapper.Monitor()
+        {
+            @Override
+            public void preparing( long highestSetDataIndex, long highestSetTrackerIndex )
+            {
+                highDataIndex.setValue( highestSetDataIndex );
+                highTrackerIndex.setValue( highestSetTrackerIndex );
+            }
+        };
+        IdMapper idMapper = mapper( new LongEncoder(), Radix.LONG, monitor, 4 );
+        long count = 1_000;
+        for ( long id = 0; id < count; id++ )
+        {
+            long nodeId = id * 2;
+            idMapper.put( id, nodeId, Group.GLOBAL );
+        }
+
+        // WHEN
+        idMapper.prepare( nodeId ->
+        {
+            throw new RuntimeException( "Should not be called" );
+        }, Collector.EMPTY, NONE );
+
+        // THEN
+        assertEquals( (count - 1) * 2, highDataIndex.longValue() );
+        assertEquals( count - 1, highTrackerIndex.longValue() );
+    }
+
+    @Test
+    void shouldCompleteQuicklyForMostlyGapValues()
+    {
+        // given
+        int nThreads = 4;
+        IdMapper idMapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR, nThreads );
+        int count = nThreads * 10_000;
+        MutableLong nextNodeId = new MutableLong();
+        for ( long id = 0; id < count; id++ )
+        {
+            idMapper.put( id, nextNodeId.getAndAdd( random.nextInt( 500, 1_000 ) ), GLOBAL );
+        }
+
+        // when
+        idMapper.prepare( nodeId ->
+        {
+            throw new RuntimeException();
+        }, Collector.EMPTY, ProgressListener.NONE );
+
+        // then before making the fix where the IdMapper would skip "null" values this test would have taken multiple weeks
     }
 
     private static PropertyValueLookup values( Object... values )
