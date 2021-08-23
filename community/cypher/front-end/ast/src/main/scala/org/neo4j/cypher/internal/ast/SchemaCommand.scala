@@ -31,6 +31,9 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.util.ConstraintVersion
+import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_0
+import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_1
+import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_2
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -52,6 +55,11 @@ sealed trait SchemaCommand extends StatementWithGraph with SemanticAnalysisTooli
       error(s"Failed to create $schemaString: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
     case _ => SemanticCheckResult.success
   }
+
+  // Error messages for mixing old and new constraint syntax
+  val errorMessageOnRequire: String = "Invalid constraint syntax, ON should not be used in combination with REQUIRE. Replace ON with FOR."
+  val errorMessageForAssert: String = "Invalid constraint syntax, FOR should not be used in combination with ASSERT. Replace ASSERT with REQUIRE."
+  val errorMessageForAssertExists: String = "Invalid constraint syntax, FOR should not be used in combination with ASSERT EXISTS. Replace ASSERT EXISTS with REQUIRE ... IS NOT NULL."
 }
 
 case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[UseGraph] = None)(val position: InputPosition) extends SchemaCommand {
@@ -220,7 +228,12 @@ case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, propert
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create node key constraint: `OR REPLACE` cannot be used together with this command.", position)
-    case _ => checkOptionsMap("node key constraint", options) chain super.semanticCheck
+    case _ =>
+        constraintVersion match {
+          case CONSTRAINT_VERSION_2 if containsOn => error(errorMessageOnRequire, position)
+          case CONSTRAINT_VERSION_0 if !containsOn => error(errorMessageForAssert, position)
+          case _ => checkOptionsMap("node key constraint", options) chain super.semanticCheck
+        }
   }
 }
 
@@ -233,7 +246,12 @@ case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, 
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create uniqueness constraint: `OR REPLACE` cannot be used together with this command.", position)
-    case _ => checkOptionsMap("uniqueness constraint", options) chain super.semanticCheck
+    case _ =>
+      constraintVersion match {
+        case CONSTRAINT_VERSION_2 if containsOn => error(errorMessageOnRequire, position)
+        case CONSTRAINT_VERSION_0 if !containsOn => error(errorMessageForAssert, position)
+        case _ => checkOptionsMap("uniqueness constraint", options) chain super.semanticCheck
+      }
   }
 }
 
@@ -246,7 +264,13 @@ case class CreateNodePropertyExistenceConstraint(variable: Variable, label: Labe
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create node property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
-    case _ => checkOptionsMap("node property existence constraint", options) chain super.semanticCheck
+    case _ =>
+      constraintVersion match {
+        case CONSTRAINT_VERSION_2 if containsOn => error(errorMessageOnRequire, position)
+        case CONSTRAINT_VERSION_1 if !containsOn => error(errorMessageForAssert, position)
+        case CONSTRAINT_VERSION_0 if !containsOn => error(errorMessageForAssertExists, position)
+        case _ => checkOptionsMap("node property existence constraint", options) chain super.semanticCheck
+      }
   }
 }
 
@@ -259,7 +283,13 @@ case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, rel
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create relationship property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
-    case _ => checkOptionsMap("relationship property existence constraint", options) chain super.semanticCheck
+    case _ =>
+      constraintVersion match {
+        case CONSTRAINT_VERSION_2 if containsOn => error(errorMessageOnRequire, position)
+        case CONSTRAINT_VERSION_1 if !containsOn => error(errorMessageForAssert, position)
+        case CONSTRAINT_VERSION_0 if !containsOn => error(errorMessageForAssertExists, position)
+        case _ => checkOptionsMap("relationship property existence constraint", options) chain super.semanticCheck
+      }
   }
 }
 
