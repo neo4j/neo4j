@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
+import org.neo4j.cypher.internal.util.ConstraintVersion
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -214,7 +215,7 @@ trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
   def relType: RelTypeName
 }
 
-case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends NodeKeyConstraintCommand {
+case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, containsOn: Boolean, constraintVersion: ConstraintVersion, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends NodeKeyConstraintCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
@@ -227,7 +228,7 @@ case class DropNodeKeyConstraint(variable: Variable, label: LabelName, propertie
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
-case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends UniquePropertyConstraintCommand {
+case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, containsOn: Boolean, constraintVersion: ConstraintVersion, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends UniquePropertyConstraintCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
@@ -240,7 +241,7 @@ case class DropUniquePropertyConstraint(variable: Variable, label: LabelName, pr
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
-case class CreateNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property, name: Option[String], ifExistsDo: IfExistsDo, oldSyntax: Boolean, options: Options, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends NodePropertyConstraintCommand {
+case class CreateNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property, name: Option[String], ifExistsDo: IfExistsDo, options: Options, containsOn: Boolean, constraintVersion: ConstraintVersion, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends NodePropertyConstraintCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {
@@ -253,7 +254,7 @@ case class DropNodePropertyExistenceConstraint(variable: Variable, label: LabelN
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
-case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property, name: Option[String], ifExistsDo: IfExistsDo, oldSyntax: Boolean, options: Options, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends RelationshipPropertyConstraintCommand {
+case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property, name: Option[String], ifExistsDo: IfExistsDo, options: Options, containsOn: Boolean, constraintVersion: ConstraintVersion, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends RelationshipPropertyConstraintCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck =  ifExistsDo match {

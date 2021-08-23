@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
+import org.neo4j.cypher.internal.util.ConstraintVersion;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
@@ -412,7 +413,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
 
     @Override
     public NULL createConstraint( NULL p, ConstraintType constraintType, boolean replace, boolean ifNotExsits, String name, Object o, StringPos<NULL> label,
-                                  List<Object> objects, SimpleEither<Map<String,Object>,Object> options )
+                                  List<Object> objects, SimpleEither<Map<String,Object>,Object> options, boolean containsOn,
+                                  ConstraintVersion constraintVersion )
     {
         throw new UnsupportedOperationException( "createConstraint is not a literal" );
     }

@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.ast.UniquePropertyConstraintCommand
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_1
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
 object Additions {
@@ -79,51 +80,51 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Dropping index by name is not supported in this Cypher version.", d.position)
 
       // CREATE CONSTRAINT name ON ... IS NODE KEY
-      case c@CreateNodeKeyConstraint(_, _, _, Some(_), _, _, _) =>
+      case c@CreateNodeKeyConstraint(_, _, _, Some(_), _, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named node key constraint is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] IF NOT EXISTS ON ... IS NODE KEY
-      case c@CreateNodeKeyConstraint(_, _, _, _, IfExistsDoNothing, _, _) =>
+      case c@CreateNodeKeyConstraint(_, _, _, _, IfExistsDoNothing, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating node key constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT ... IS NODE KEY OPTIONS {...}
-      case c@CreateNodeKeyConstraint(_, _, _, _, _, options, _) if options != NoOptions =>
+      case c@CreateNodeKeyConstraint(_, _, _, _, _, options, _, _, _) if options != NoOptions =>
         throw cypherExceptionFactory.syntaxException("Creating node key constraint with options is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON ... IS UNIQUE
-      case c@CreateUniquePropertyConstraint(_, _, _, Some(_),_, _, _) =>
+      case c@CreateUniquePropertyConstraint(_, _, _, Some(_),_, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named uniqueness constraint is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] IF NOT EXISTS ON ... IS UNIQUE
-      case c@CreateUniquePropertyConstraint(_, _, _, _, IfExistsDoNothing, _, _) =>
+      case c@CreateUniquePropertyConstraint(_, _, _, _, IfExistsDoNothing, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT ... IS UNIQUE OPTIONS {...}
-      case c@CreateUniquePropertyConstraint(_, _, _, _, _, options, _) if options != NoOptions =>
+      case c@CreateUniquePropertyConstraint(_, _, _, _, _, options, _, _, _) if options != NoOptions =>
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint with options is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON () ... EXISTS
-      case c@CreateNodePropertyExistenceConstraint(_, _, _, Some(_), _, _, _, _) =>
+      case c@CreateNodePropertyExistenceConstraint(_, _, _, Some(_), _, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named node existence constraint is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] IF NOT EXISTS ON () ... EXISTS
-      case c@CreateNodePropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing, _, _, _) =>
+      case c@CreateNodePropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating node existence constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON ()-[]-() ... EXISTS
-      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, Some(_), _, _, _, _) =>
+      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, Some(_), _, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating named relationship existence constraint is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] IF NOT EXISTS ON ()-[]-() ... EXISTS
-      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing, _, _, _) =>
+      case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, _, IfExistsDoNothing, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS NOT NULL
-      case c: CreateNodePropertyExistenceConstraint if !c.oldSyntax =>
+      case c: CreateNodePropertyExistenceConstraint if c.constraintVersion == CONSTRAINT_VERSION_1 =>
         throw cypherExceptionFactory.syntaxException("Creating node existence constraint using `IS NOT NULL` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT r.prop IS NOT NULL
-      case c: CreateRelationshipPropertyExistenceConstraint if !c.oldSyntax =>
+      case c: CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == CONSTRAINT_VERSION_1 =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IS NOT NULL` is not supported in this Cypher version.", c.position)
 
       // DROP CONSTRAINT name

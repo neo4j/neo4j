@@ -20,202 +20,387 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
+import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_0
+import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_1
+import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_2
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
 /* Tests for creating and dropping constraints */
 class ConstraintCommandsParserTest extends SchemaCommandsParserTestBase {
 
-  // Create constraint: Without name
+  Seq("ON", "FOR")
+    .foreach { forOrOnString =>
+      Seq("ASSERT", "REQUIRE")
+        .foreach { requireOrAssertString =>
+          val containsOn = forOrOnString == "ON"
+          val constraintVersion = if (requireOrAssertString == "REQUIRE") CONSTRAINT_VERSION_2 else CONSTRAINT_VERSION_0
+          val constraintVersionOneOrTwo = if (requireOrAssertString == "REQUIRE") CONSTRAINT_VERSION_2 else CONSTRAINT_VERSION_1
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError, NoOptions))
-  }
+          // Create constraint: Without name
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE OR REPLACE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsReplace, NoOptions))
-  }
+          test(s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsReplace, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsDoNothing, NoOptions))
-  }
+          test(s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsDoNothing, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), None, ast.IfExistsThrowError, NoOptions))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), None, ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), None, ast.IfExistsInvalidSyntax, NoOptions))
-  }
+          test(s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), None, ast.IfExistsInvalidSyntax, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY OPTIONS {indexProvider : 'native-btree-1.0'}") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
-      None, ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0")))))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexProvider : 'native-btree-1.0'}") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
+              None, ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"))), containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
-      OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
-          "indexConfig"   -> mapOf(
-            "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-            "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
-          ))
-      )
-    ))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
+              OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
+                "indexConfig" -> mapOf(
+                  "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+                  "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+                ))
+              ), containsOn, constraintVersion
+            ))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
-      OptionsMap(Map("indexConfig" -> mapOf(
-        "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-        "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-      )))
-    ))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
+              OptionsMap(Map("indexConfig" -> mapOf(
+                "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+                "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+              ))), containsOn, constraintVersion
+            ))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY OPTIONS {nonValidOption : 42}") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
-      OptionsMap(Map("nonValidOption" -> literalInt(42)))))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {nonValidOption : 42}") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
+              OptionsMap(Map("nonValidOption" -> literalInt(42))), containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY OPTIONS {}") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError, OptionsMap(Map.empty)))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {}") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError, OptionsMap(Map.empty), containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY OPTIONS $param") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
-      OptionsParam(parameter("param", CTMap))))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS $$param") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
+              OptionsParam(parameter("param", CTMap)), containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError, NoOptions))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE OR REPLACE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsReplace, NoOptions))
-  }
+          test(s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsReplace, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsDoNothing, NoOptions))
-  }
+          test(s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsDoNothing, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError, NoOptions))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), None, ast.IfExistsThrowError, NoOptions))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), None, ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), None, ast.IfExistsInvalidSyntax, NoOptions))
-  }
+          test(s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), None, ast.IfExistsInvalidSyntax, NoOptions, containsOn, constraintVersion))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}, indexProvider : 'native-btree-1.0'}") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
-      OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
-          "indexConfig"   -> mapOf(
-            "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-            "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-          )
-      ))
-    ))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}, indexProvider : 'native-btree-1.0'}") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
+              OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
+                "indexConfig" -> mapOf(
+                  "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+                  "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+                )
+              )), containsOn, constraintVersion
+            ))
+          }
 
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE OPTIONS $options") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
-      OptionsParam(parameter("options", CTMap))))
-  }
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS $$options") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
+              OptionsParam(parameter("options", CTMap)), containsOn, constraintVersion))
+          }
+
+          // Create constraint: With name
+
+          test(s"USE neo4j CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion, Some(use(varFor("neo4j")))))
+          }
+
+          test(s"USE neo4j CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsInvalidSyntax, NoOptions, containsOn, constraintVersion, Some(use(varFor("neo4j")))))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsReplace, NoOptions, containsOn, constraintVersion))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsDoNothing, NoOptions, containsOn, constraintVersion))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}}") {
+            yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError,
+              OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
+                "indexConfig" -> mapOf(
+                  "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+                  "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+                )
+              )), containsOn, constraintVersion
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsInvalidSyntax, NoOptions, containsOn, constraintVersion))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions, containsOn, constraintVersion))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsReplace, NoOptions, containsOn, constraintVersion))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
+              Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsDoNothing, NoOptions, containsOn, constraintVersion))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexProvider : 'native-btree-1.0'}") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
+              Some("my_constraint"), ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"))), containsOn, constraintVersion))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError,
+              OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
+                "indexConfig" -> mapOf(
+                  "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+                  "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+                )
+              )), containsOn, constraintVersion
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError,
+              OptionsMap(Map("indexConfig" -> mapOf(
+                "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+                "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+              ))), containsOn, constraintVersion
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {nonValidOption : 42}") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
+              Some("my_constraint"), ast.IfExistsThrowError, OptionsMap(Map("nonValidOption" -> literalInt(42))), containsOn, constraintVersion))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE OPTIONS {}") {
+            yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop1"), prop("node", "prop2")),
+              Some("my_constraint"), ast.IfExistsThrowError, OptionsMap(Map.empty), containsOn, constraintVersion))
+          }
+
+          // Create constraint: Without name
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL") {
+            yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsThrowError, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL") {
+            yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsReplace, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL") {
+            yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsInvalidSyntax, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NOT NULL") {
+            yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsDoNothing, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]->() $requireOrAssertString r.prop IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString ()<-[r:R]-() $requireOrAssertString (r.prop) IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT $forOrOnString ()<-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsReplace, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsInvalidSyntax, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r:R]->() $requireOrAssertString r.prop IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsDoNothing, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop) IS NOT NULL OPTIONS {}") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, OptionsMap(Map.empty), containsOn, constraintVersionOneOrTwo))
+          }
+
+          // Create constraint: With name
+
+          test(s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL") {
+            yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsReplace, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL") {
+            yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsInvalidSyntax, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL") {
+            yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsDoNothing, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL OPTIONS {}") {
+            yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsThrowError, OptionsMap(Map.empty), containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT `$$my_constraint` $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsThrowError, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop) IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("my_constraint"), ast.IfExistsThrowError, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsReplace, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` IF NOT EXISTS $forOrOnString ()-[r:R]->() $requireOrAssertString (r.prop) IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsInvalidSyntax, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+
+          test(s"CREATE CONSTRAINT `$$my_constraint` IF NOT EXISTS $forOrOnString ()<-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsDoNothing, NoOptions, containsOn, constraintVersionOneOrTwo))
+          }
+        }
+    }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsThrowError, oldSyntax = true, NoOptions))
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsThrowError, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE OR REPLACE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsReplace, oldSyntax = true, NoOptions))
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsReplace, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsInvalidSyntax, oldSyntax = true, NoOptions))
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsInvalidSyntax, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsDoNothing, oldSyntax = true, NoOptions))
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsDoNothing, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop) OPTIONS {}") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsThrowError, oldSyntax = true, OptionsMap(Map.empty)))
-  }
-
-  test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS NOT NULL") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsThrowError, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT ON (node:Label) ASSERT node.prop IS NOT NULL") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsReplace, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT node.prop IS NOT NULL") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsInvalidSyntax, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT IF NOT EXISTS ON (node:Label) ASSERT (node.prop) IS NOT NULL") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsDoNothing, oldSyntax = false, NoOptions))
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), None, ast.IfExistsThrowError, OptionsMap(Map.empty), containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, oldSyntax = true, NoOptions))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, oldSyntax = true, NoOptions))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, oldSyntax = true, NoOptions))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE OR REPLACE CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsReplace, oldSyntax = true, NoOptions))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsReplace, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsInvalidSyntax, oldSyntax = true, NoOptions))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsInvalidSyntax, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE CONSTRAINT IF NOT EXISTS ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsDoNothing, oldSyntax = true, NoOptions))
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsDoNothing, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
-  test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, oldSyntax = false, NoOptions))
+  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsThrowError, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
-  test("CREATE CONSTRAINT ON ()-[r:R]->() ASSERT r.prop IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, oldSyntax = false, NoOptions))
+  test("CREATE OR REPLACE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsReplace, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
-  test("CREATE CONSTRAINT ON ()<-[r:R]-() ASSERT (r.prop) IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, oldSyntax = false, NoOptions))
+  test("CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsInvalidSyntax, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
-  test("CREATE OR REPLACE CONSTRAINT ON ()<-[r:R]-() ASSERT r.prop IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsReplace, oldSyntax = false, NoOptions))
+  test("CREATE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
+    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsDoNothing, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
-  test("CREATE OR REPLACE CONSTRAINT IF NOT EXISTS ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsInvalidSyntax, oldSyntax = false, NoOptions))
+  test("CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsThrowError, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
-  test("CREATE CONSTRAINT IF NOT EXISTS ON ()-[r:R]->() ASSERT r.prop IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsDoNothing, oldSyntax = false, NoOptions))
+  test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) OPTIONS {}") {
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("my_constraint"), ast.IfExistsThrowError, OptionsMap(Map.empty), containsOn = true, CONSTRAINT_VERSION_0))
   }
 
-  test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT (r.prop) IS NOT NULL OPTIONS {}") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), None, ast.IfExistsThrowError, oldSyntax = false, OptionsMap(Map.empty)))
+  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsReplace, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
+  }
+
+  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsInvalidSyntax, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
+  }
+
+  test("CREATE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsDoNothing, NoOptions, containsOn = true, CONSTRAINT_VERSION_0))
   }
 
   test("CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS NODE KEY") {
@@ -260,180 +445,6 @@ class ConstraintCommandsParserTest extends SchemaCommandsParserTestBase {
 
   test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL") {
     failsToParse
-  }
-
-  // Create constraint: With name
-
-  test("USE neo4j CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions, Some(use(varFor("neo4j")))))
-  }
-
-  test("USE neo4j CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsInvalidSyntax, NoOptions, Some(use(varFor("neo4j")))))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsReplace, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsDoNothing, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS NODE KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}}") {
-    yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError,
-      OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
-          "indexConfig"   -> mapOf(
-            "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-            "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-          )
-      ))
-    ))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsInvalidSyntax, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsThrowError, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsReplace, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"),
-      Seq(prop("node", "prop1"), prop("node", "prop2")), Some("my_constraint"), ast.IfExistsDoNothing, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS UNIQUE OPTIONS {indexProvider : 'native-btree-1.0'}") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
-      Some("my_constraint"), ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0")))))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS UNIQUE OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError,
-      OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
-          "indexConfig"   -> mapOf(
-            "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-            "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
-          )
-      ))
-    ))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError,
-      OptionsMap(Map("indexConfig" -> mapOf(
-        "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-        "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-      )))
-    ))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS UNIQUE OPTIONS {nonValidOption : 42}") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
-      Some("my_constraint"), ast.IfExistsThrowError, OptionsMap(Map("nonValidOption" -> literalInt(42)))))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE OPTIONS {}") {
-    yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop1"), prop("node", "prop2")),
-      Some("my_constraint"), ast.IfExistsThrowError, OptionsMap(Map.empty)))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsThrowError, oldSyntax = true, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsReplace, oldSyntax = true, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsInvalidSyntax, oldSyntax = true, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT EXISTS (node.prop)") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsDoNothing, oldSyntax = true, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop) IS NOT NULL") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsThrowError, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NOT NULL") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsReplace, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT node.prop IS NOT NULL") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsInvalidSyntax, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint IF NOT EXISTS ON (node:Label) ASSERT node.prop IS NOT NULL") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsDoNothing, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NOT NULL OPTIONS {}") {
-    yields(ast.CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"), Some("my_constraint"), ast.IfExistsThrowError, oldSyntax = false, OptionsMap(Map.empty)))
-  }
-
-  test("CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsThrowError, oldSyntax = true, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) OPTIONS {}") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("my_constraint"), ast.IfExistsThrowError, oldSyntax = true, OptionsMap(Map.empty)))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsReplace, oldSyntax = true, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsInvalidSyntax, oldSyntax = true, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsDoNothing, oldSyntax = true, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsThrowError, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT (r.prop) IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("my_constraint"), ast.IfExistsThrowError, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsReplace, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE OR REPLACE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()-[r:R]->() ASSERT (r.prop) IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsInvalidSyntax, oldSyntax = false, NoOptions))
-  }
-
-  test("CREATE CONSTRAINT `$my_constraint` IF NOT EXISTS ON ()<-[r:R]-() ASSERT r.prop IS NOT NULL") {
-    yields(ast.CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"), Some("$my_constraint"), ast.IfExistsDoNothing, oldSyntax = false, NoOptions))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL") {

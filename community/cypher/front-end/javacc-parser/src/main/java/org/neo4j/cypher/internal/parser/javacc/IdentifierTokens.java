@@ -142,6 +142,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RELATIONSH
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REMOVE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RENAME;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPLACE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REQUIRE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REQUIRED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RETURN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REVOKE;
@@ -312,6 +313,7 @@ public class IdentifierTokens
             REMOVE,
             RENAME,
             REPLACE,
+            REQUIRE,
             REQUIRED,
             RETURN,
             REVOKE,

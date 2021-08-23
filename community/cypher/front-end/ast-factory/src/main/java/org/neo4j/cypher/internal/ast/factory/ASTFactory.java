@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.ast.factory;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.util.ConstraintVersion;
+
 /**
  * Factory for constructing ASTs.
  * <p>
@@ -253,7 +255,8 @@ public interface ASTFactory<STATEMENT,
     // Constraint Commands
 
     SCHEMA_COMMAND createConstraint( POS p, ConstraintType constraintType, boolean replace, boolean ifNotExists, String constraintName, VARIABLE variable,
-                                     StringPos<POS> label, List<PROPERTY> properties, SimpleEither<Map<String, EXPRESSION>, PARAMETER> options );
+                                     StringPos<POS> label, List<PROPERTY> properties, SimpleEither<Map<String, EXPRESSION>, PARAMETER> options,
+                                     boolean containsOn, ConstraintVersion constraintVersion );
 
     SCHEMA_COMMAND dropConstraint( POS p, String name, boolean ifExists );
 

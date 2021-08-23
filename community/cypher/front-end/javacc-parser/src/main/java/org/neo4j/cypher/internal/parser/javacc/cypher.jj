@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
+import org.neo4j.cypher.internal.util.ConstraintVersion;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
 
 /** Simple brace matcher. */
@@ -454,6 +455,7 @@ TOKEN [IGNORE_CASE] :
     | < RELATIONSHIPS: "RELATIONSHIPS" >
     | < REMOVE: "REMOVE" >
     | < REPLACE: "REPLACE" >
+    | < REQUIRE: "REQUIRE" >
     | < REQUIRED: "REQUIRED" >
     | < RETURN: "RETURN" >
     | < REVOKE: "REVOKE">
@@ -3284,14 +3286,17 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
     Optional<ConstraintType> constraintType = Optional.empty();
     boolean isNode = false;
     Token errorStart;
+    boolean containsOn = true;
+    ConstraintVersion constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_0;
 }
 {
     <CONSTRAINT>
     (
         //special construct for allowing lookahead since on could also be an identifier
         LOOKAHEAD (<ON> <LPAREN>) <ON> <LPAREN>
-        | LOOKAHEAD (<IF> <NOT>) <IF> <NOT> <EXISTS> { ifNotExists = true; } <ON> <LPAREN>
-        | ( SymbolicNameString() { name = token.image; } )? ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <ON> <LPAREN>
+        | LOOKAHEAD (<FOR> <LPAREN>) <FOR> <LPAREN> { containsOn = false; }
+        | LOOKAHEAD (<IF> <NOT>) <IF> <NOT> <EXISTS> { ifNotExists = true; } (<ON> | <FOR> { containsOn = false; }) <LPAREN>
+        | ( SymbolicNameString() { name = token.image; } )? ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? (<ON> | <FOR> { containsOn = false; }) <LPAREN>
     )
     (
         //(variable:LABEL)
@@ -3301,11 +3306,14 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
         <LBRACKET> variable=Variable() label=LabelOrRelType() <RBRACKET>
         ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN>
     )
-    <ASSERT>
     (
-        // CREATE CONSTRAINT ON (variable:LABEL) ASSERT EXISTS variable.prop
-        errorStart=<EXISTS> { constraintType = Optional.of( isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS ); }
-    )?
+        <REQUIRE> { constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_2; } |
+        <ASSERT> { constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_0; }
+        (
+            // CREATE CONSTRAINT ON (variable:LABEL) ASSERT EXISTS variable.prop
+            errorStart=<EXISTS> { constraintType = Optional.of( isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS ); }
+        )?
+    )
     properties=PropertyList()
     (
         errorStart=<IS>
@@ -3335,6 +3343,10 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
                 // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NOT NULL
                 ConstraintType setType = isNode ? ConstraintType.NODE_IS_NOT_NULL : ConstraintType.REL_IS_NOT_NULL;
                 constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, setType );
+                if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_0)
+                {
+                    constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_1;
+                }
             }
         )
     )?
@@ -3349,7 +3361,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
                 start.beginColumn );
         }
         return astFactory.createConstraint( pos( start ), constraintType.get(), replace, ifNotExists, name, variable,
-        new StringPos<POS>( label.image, pos( label ) ), properties, options );
+        new StringPos<POS>( label.image, pos( label ) ), properties, options, containsOn, constraintVersion );
     }
 }
 
@@ -4820,6 +4832,7 @@ Token SymbolicNameString() :
         | t=<REMOVE>
         | t=<RENAME>
         | t=<REPLACE>
+        | t=<REQUIRE>
         | t=<REQUIRED>
         | t=<RETURN>
         | t=<REVOKE>

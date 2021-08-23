@@ -16,3 +16,10 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
+Apache Software License, Version 2.0
+  Apache Commons Lang
+  Scala Compiler
+
+BSD - Scala License
+  Scala Library
+

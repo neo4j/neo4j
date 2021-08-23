@@ -66,4 +66,13 @@
             </comments>
         </license>
     </licenses>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-util</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
 </project>

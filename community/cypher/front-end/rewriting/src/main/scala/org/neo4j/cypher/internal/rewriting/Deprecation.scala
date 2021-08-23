@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_0
 import org.neo4j.cypher.internal.util.DeprecatedCatalogKeywordForAdminCommandSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
@@ -157,13 +158,13 @@ object Deprecations {
           Some(DeprecatedDropConstraintSyntax(c.position))
         )
 
-      case c: ast.CreateNodePropertyExistenceConstraint if c.oldSyntax =>
+      case c: ast.CreateNodePropertyExistenceConstraint if c.constraintVersion == CONSTRAINT_VERSION_0 =>
         Deprecation(
           None,
           Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
         )
 
-      case c: ast.CreateRelationshipPropertyExistenceConstraint if c.oldSyntax =>
+      case c: ast.CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == CONSTRAINT_VERSION_0 =>
         Deprecation(
           None,
           Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
