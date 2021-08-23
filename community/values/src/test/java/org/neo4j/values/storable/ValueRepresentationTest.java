@@ -71,7 +71,7 @@ class ValueRepresentationTest
         assertEquals( INT32, INT32.coerce( INT16 ) );
         assertEquals( INT32, INT32.coerce( INT32 ) );
         assertEquals( INT64, INT32.coerce( INT64 ) );
-        assertEquals( FLOAT32, INT32.coerce( FLOAT32 ) );
+        assertEquals( FLOAT64, INT32.coerce( FLOAT32 ) );
         assertEquals( FLOAT64, INT32.coerce( FLOAT64 ) );
         assertEquals( ValueRepresentation.UNKNOWN, INT32.coerce( LOCAL_TIME ) );
 
@@ -80,15 +80,15 @@ class ValueRepresentationTest
         assertEquals( INT64, INT64.coerce( INT16 ) );
         assertEquals( INT64, INT64.coerce( INT32 ) );
         assertEquals( INT64, INT64.coerce( INT64 ) );
-        assertEquals( FLOAT32, INT64.coerce( FLOAT32 ) );
+        assertEquals( FLOAT64, INT64.coerce( FLOAT32 ) );
         assertEquals( FLOAT64, INT64.coerce( FLOAT64 ) );
         assertEquals( ValueRepresentation.UNKNOWN, INT64.coerce( LOCAL_TIME ) );
 
         //32 bit floats
         assertEquals( FLOAT32, FLOAT32.coerce( INT8 ) );
         assertEquals( FLOAT32, FLOAT32.coerce( INT16 ) );
-        assertEquals( FLOAT32, FLOAT32.coerce( INT32 ) );
-        assertEquals( FLOAT32, FLOAT32.coerce( INT64 ) );
+        assertEquals( FLOAT64, FLOAT32.coerce( INT32 ) );
+        assertEquals( FLOAT64, FLOAT32.coerce( INT64 ) );
         assertEquals( FLOAT32, FLOAT32.coerce( FLOAT32 ) );
         assertEquals( FLOAT64, FLOAT32.coerce( FLOAT64 ) );
         assertEquals( ValueRepresentation.UNKNOWN, FLOAT32.coerce( LOCAL_TIME ) );

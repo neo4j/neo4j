@@ -268,7 +268,6 @@ public enum ValueRepresentation
                     case INT64:
                         return this;
                     case FLOAT32:
-                        return FLOAT32;
                     case FLOAT64:
                         return FLOAT64;
                     default:
@@ -302,7 +301,6 @@ public enum ValueRepresentation
                     case INT64:
                         return INT64;
                     case FLOAT32:
-                        return FLOAT32;
                     case FLOAT64:
                         return FLOAT64;
                     default:
@@ -443,10 +441,10 @@ public enum ValueRepresentation
                     {
                     case INT8:
                     case INT16:
-                    case INT32:
-                    case INT64:
                     case FLOAT32:
                         return this;
+                    case INT32:
+                    case INT64:
                     case FLOAT64:
                         return FLOAT64;
                     default:

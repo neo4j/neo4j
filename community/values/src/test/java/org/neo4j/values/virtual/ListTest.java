@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.exceptions.CypherTypeException;
+import org.neo4j.values.storable.DoubleArray;
+import org.neo4j.values.storable.FloatArray;
 import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.Values;
 
@@ -39,7 +41,9 @@ import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.storable.Values.charArray;
 import static org.neo4j.values.storable.Values.doubleArray;
+import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.floatArray;
+import static org.neo4j.values.storable.Values.floatValue;
 import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longArray;
@@ -342,5 +346,21 @@ class ListTest
         ListValue list = VirtualValues.list( longArray( new long[] {1, 2, 3}), longArray( new long[] {4, 5, 6}) );
 
         assertThatThrownBy( list::toStorableArray ).isInstanceOf( CypherTypeException.class );
+    }
+
+    @Test
+    void createAppropriateFloatingPointArray()
+    {
+        assertThat( VirtualValues.list( floatValue( Float.MAX_VALUE ), shortValue( (short) 1 ) ).toStorableArray() )
+                .isInstanceOf( FloatArray.class )
+                .isEqualTo( floatArray( new float[] {Float.MAX_VALUE, 1}) );
+        assertThat( VirtualValues.list( floatValue( Float.MAX_VALUE ), intValue( Integer.MAX_VALUE ) ).toStorableArray() )
+                .isInstanceOf( DoubleArray.class )
+                .isEqualTo( doubleArray( new double[] {Float.MAX_VALUE, Integer.MAX_VALUE}) );
+        //NOTE: this is really a lossy conversion but it is assumed that the user doing `SET n.prop=[1, 1.0] will
+        //be aware of this conversion happening
+        assertThat( VirtualValues.list( longValue( 9007199254740993L ), doubleValue( 1.0 )).toStorableArray() )
+                .isInstanceOf( DoubleArray.class )
+                .isEqualTo( doubleArray( new double[] {9007199254740992D, 1.0}) );
     }
 }
