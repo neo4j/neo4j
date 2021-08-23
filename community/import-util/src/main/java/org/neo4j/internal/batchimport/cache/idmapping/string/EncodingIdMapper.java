@@ -38,6 +38,7 @@ import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.cache.idmapping.string.ParallelSort.Comparator;
+import org.neo4j.internal.batchimport.cache.idmapping.string.ParallelSort.SortBucket;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputException;
@@ -94,13 +95,26 @@ public class EncodingIdMapper implements IdMapper
     public interface Monitor
     {
         /**
+         * Called when mapper is starting to prepare, including the sorting.
+         *
+         * @param highestSetDataIndex the highest index in the data cache.
+         * @param highestSetTrackerIndex the highest index in the tracker cache. This is different from the data index
+         * because it doesn't include null values, i.e. node IDs that haven't been set.
+         */
+        default void preparing( long highestSetDataIndex, long highestSetTrackerIndex )
+        {
+        }
+
+        /**
          * @param count Number of eIds that have been marked as collisions.
          */
-        void numberOfCollisions( long count );
+        default void numberOfCollisions( long count )
+        {
+        }
     }
 
-    public static final Monitor NO_MONITOR = count ->
-    {   // Do nothing.
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
     };
 
     // Bit in encoded String --> long values that marks that the particular item has a collision,
@@ -114,7 +128,7 @@ public class EncodingIdMapper implements IdMapper
     // Using 0 as gap value, i.e. value for a node not having an id, i.e. not present in dataCache is safe
     // because the current set of Encoder implementations will always set some amount of bits higher up in
     // the long value representing the length of the id.
-    private static final long GAP_VALUE = 0;
+    static final long GAP_VALUE = 0;
 
     private final Factory<Radix> radixFactory;
     private final NumberArrayFactory cacheFactory;
@@ -125,6 +139,7 @@ public class EncodingIdMapper implements IdMapper
     private final GroupCache groupCache;
     private final HighestId candidateHighestSetIndex = new HighestId( -1 );
     private long highestSetIndex;
+    private long highestSetTrackerIndex;
 
     // Ordering information about values in dataCache; the ordering of values in dataCache remains unchanged.
     // in prepare() this array is populated and changed along with how dataCache items "move around" so that
@@ -144,7 +159,7 @@ public class EncodingIdMapper implements IdMapper
     private Tracker collisionTrackerCache;
 
     private boolean readyForUse;
-    private long[][] sortBuckets;
+    private SortBucket[] sortBuckets;
 
     private final Monitor monitor;
     private final ReadableGroups groups;
@@ -234,11 +249,15 @@ public class EncodingIdMapper implements IdMapper
     {
         highestSetIndex = candidateHighestSetIndex.get();
         updateRadix( dataCache, radix, highestSetIndex );
+        highestSetTrackerIndex = highestSetIndex - radix.getNullCount();
+        // Unfortunately the tracker cache needs to be as large as the data cache even if there are lots of gaps
+        // because it has room for storing the bit that says whether or not a nodeId is a duplicate
         trackerCache = trackerFactory.create( cacheFactory, highestSetIndex + 1 );
+        monitor.preparing( highestSetIndex, highestSetTrackerIndex );
 
         try
         {
-            sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
+            sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, highestSetTrackerIndex, trackerCache,
                     processorsForParallelWork, progress, comparator ).run();
 
             long pessimisticNumberOfCollisions = detectAndMarkCollisions( progress );
@@ -249,7 +268,7 @@ public class EncodingIdMapper implements IdMapper
         }
         catch ( InterruptedException e )
         {
-            Thread.interrupted();
+            Thread.currentThread().interrupt();
             throw new RuntimeException( "Got interrupted while preparing the index. Throwing this exception "
                     + "onwards will cause a chain reaction which will cause a panic in the whole import, "
                     + "so mission accomplished" );
@@ -273,15 +292,15 @@ public class EncodingIdMapper implements IdMapper
     private long binarySearch( Object inputId, int groupId )
     {
         long low = 0;
-        long high = highestSetIndex;
+        long high = highestSetTrackerIndex;
         long x = encode( inputId );
         int rIndex = radixOf( x );
         for ( int k = 0; k < sortBuckets.length; k++ )
         {
-            if ( rIndex <= sortBuckets[k][0] )//bucketRange[k] > rIndex )
+            if ( rIndex <= sortBuckets[k].highRadixRange )//bucketRange[k] > rIndex )
             {
-                low = sortBuckets[k][1];
-                high = (k == sortBuckets.length - 1) ? highestSetIndex : sortBuckets[k + 1][1];
+                low = sortBuckets[k].baseIndex;
+                high = (k == sortBuckets.length - 1) ? highestSetTrackerIndex : sortBuckets[k + 1].baseIndex;
                 break;
             }
         }
@@ -290,7 +309,7 @@ public class EncodingIdMapper implements IdMapper
         if ( returnVal == ID_NOT_FOUND )
         {
             low = 0;
-            high = highestSetIndex;
+            high = highestSetTrackerIndex;
             returnVal = binarySearch( x, inputId, low, high, groupId );
         }
         return returnVal;
@@ -427,7 +446,7 @@ public class EncodingIdMapper implements IdMapper
     private long detectAndMarkCollisions( ProgressListener progress )
     {
         progress.started( "DETECT" );
-        long totalCount = highestSetIndex + 1;
+        long totalCount = highestSetTrackerIndex + 1;
 
         Workers<DetectWorker> workers = new Workers<>( "DETECT" );
         int processors = processorsForParallelWork;
@@ -585,7 +604,7 @@ public class EncodingIdMapper implements IdMapper
             }
         };
 
-        new ParallelSort( radix, as5ByteLongArray( collisionNodeIdCache ), numberOfCollisions - 1,
+        new ParallelSort( radix, as5ByteLongArray( collisionNodeIdCache ), numberOfCollisions - 1, numberOfCollisions - 1,
                 collisionTrackerCache, processorsForParallelWork, progress, duplicateComparator ).run();
 
         // Here we have a populated C
@@ -730,7 +749,7 @@ public class EncodingIdMapper implements IdMapper
                 // read more in detectAndMarkCollisions(). So regardless we need to check previous/next
                 // if they are the same value.
                 boolean leftEq = mid > 0 && Utils.unsignedCompare( x, dataValue( mid - 1 ), Utils.CompareType.EQ );
-                boolean rightEq = mid < highestSetIndex && Utils.unsignedCompare( x, dataValue( mid + 1 ), Utils.CompareType.EQ );
+                boolean rightEq = mid < highestSetTrackerIndex && Utils.unsignedCompare( x, dataValue( mid + 1 ), Utils.CompareType.EQ );
                 if ( leftEq || rightEq )
                 {   // OK so there are actually multiple equal data values here, we need to go through them all
                     // to be sure we find the correct one.
