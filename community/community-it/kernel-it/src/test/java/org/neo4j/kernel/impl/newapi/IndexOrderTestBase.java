@@ -199,6 +199,8 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
         }
     }
 
+    // this test makes sense primarily for a b-tree index which uses space filling curve,
+    // but there is no harm in checking that we get the same result from a range index, too
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
     void shouldNodeIndexScanInOrderWithPointsWithinSameTile( IndexOrder indexOrder ) throws Exception

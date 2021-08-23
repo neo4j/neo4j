@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.junit.jupiter.api.Nested;
+
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -31,92 +34,144 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class NodeIndexOrderTest extends IndexOrderTestBase<NodeValueIndexCursor>
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
+
+class NodeIndexOrderTest
 {
-
-    public static final String DEFAULT_LABEL = "Node";
-
-    protected Pair<Long,Value> entityWithProp( KernelTransaction tx, Object value ) throws Exception
+    abstract static class NodeIndexOrderTestBase extends IndexOrderTestBase<NodeValueIndexCursor>
     {
-        Write write = tx.dataWrite();
-        long node = write.nodeCreate();
-        write.nodeAddLabel( node, tx.tokenWrite().labelGetOrCreateForName( DEFAULT_LABEL ) );
-        Value val = Values.of( value );
-        write.nodeSetProperty( node, tx.tokenWrite().propertyKeyGetOrCreateForName( DEFAULT_PROPERTY_NAME ), val );
-        return Pair.of( node, val );
-    }
+        public static final String DEFAULT_LABEL = "Node";
 
-    @Override
-    protected void createIndex()
-    {
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        protected Pair<Long,Value> entityWithProp( KernelTransaction tx, Object value ) throws Exception
         {
-            tx.schema().indexFor( Label.label( DEFAULT_LABEL ) ).on( DEFAULT_PROPERTY_NAME ).withName( INDEX_NAME ).create();
-            tx.commit();
+            Write write = tx.dataWrite();
+            long node = write.nodeCreate();
+            write.nodeAddLabel( node, tx.tokenWrite().labelGetOrCreateForName( DEFAULT_LABEL ) );
+            Value val = Values.of( value );
+            write.nodeSetProperty( node, tx.tokenWrite().propertyKeyGetOrCreateForName( DEFAULT_PROPERTY_NAME ), val );
+            return Pair.of( node, val );
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        @Override
+        protected void createIndex()
         {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+            {
+                tx.schema().indexFor( Label.label( DEFAULT_LABEL ) )
+                        .on( DEFAULT_PROPERTY_NAME )
+                        .withName( INDEX_NAME )
+                        .withIndexType( indexType() )
+                        .create();
+                tx.commit();
+            }
+
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+            {
+                tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            }
+        }
+
+        @Override
+        protected long entityReference( NodeValueIndexCursor cursor )
+        {
+            return cursor.nodeReference();
+        }
+
+        @Override
+        protected NodeValueIndexCursor getEntityValueIndexCursor( KernelTransaction tx )
+        {
+            return tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
+        }
+
+        @Override
+        protected void entityIndexSeek( KernelTransaction tx, IndexReadSession index, NodeValueIndexCursor cursor,
+                IndexQueryConstraints constraints, PropertyIndexQuery query )
+                throws KernelException
+        {
+            tx.dataRead().nodeIndexSeek( tx.queryContext(), index, cursor, constraints, query );
+        }
+
+        @Override
+        protected void entityIndexScan( KernelTransaction tx, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints )
+                throws KernelException
+        {
+            tx.dataRead().nodeIndexScan( index, cursor, constraints );
+        }
+
+        @Override
+        protected void createCompositeIndex()
+        {
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+            {
+                tx.schema().indexFor( Label.label( DEFAULT_LABEL ) )
+                        .on( COMPOSITE_PROPERTY_1 )
+                        .on( COMPOSITE_PROPERTY_2 )
+                        .withName( INDEX_NAME )
+                        .withIndexType( indexType() )
+                        .create();
+                tx.commit();
+            }
+
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+            {
+                tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            }
+        }
+
+        @Override
+        protected Pair<Long,Value[]> entityWithTwoProps( KernelTransaction tx, Object value1, Object value2 ) throws Exception
+        {
+            Write write = tx.dataWrite();
+            long node = write.nodeCreate();
+            TokenWrite tokenWrite = tx.tokenWrite();
+            write.nodeAddLabel( node, tokenWrite.labelGetOrCreateForName( DEFAULT_LABEL ) );
+            Value val1 = Values.of( value1 );
+            Value val2 = Values.of( value2 );
+            write.nodeSetProperty( node, tokenWrite.propertyKeyGetOrCreateForName( COMPOSITE_PROPERTY_1 ), val1 );
+            write.nodeSetProperty( node, tokenWrite.propertyKeyGetOrCreateForName( COMPOSITE_PROPERTY_2 ), val2 );
+            return Pair.of( node, new Value[]{val1, val2} );
+        }
+
+        abstract IndexType indexType();
+    }
+
+    @Nested
+    class BtreeIndexTest extends NodeIndexOrderTestBase
+    {
+
+        @Override
+        IndexType indexType()
+        {
+            return IndexType.BTREE;
         }
     }
 
-    @Override
-    protected long entityReference( NodeValueIndexCursor cursor )
+    @Nested
+    class RangeIndexTest extends NodeIndexOrderTestBase
     {
-        return cursor.nodeReference();
-    }
 
-    @Override
-    protected NodeValueIndexCursor getEntityValueIndexCursor( KernelTransaction tx )
-    {
-        return tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
-    }
-
-    @Override
-    protected void entityIndexSeek( KernelTransaction tx, IndexReadSession index, NodeValueIndexCursor cursor,
-                                    IndexQueryConstraints constraints, PropertyIndexQuery query )
-            throws KernelException
-    {
-        tx.dataRead().nodeIndexSeek( tx.queryContext(), index, cursor, constraints, query );
-    }
-
-    @Override
-    protected void entityIndexScan( KernelTransaction tx, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints )
-            throws KernelException
-    {
-        tx.dataRead().nodeIndexScan( index, cursor, constraints );
-    }
-
-    @Override
-    protected void createCompositeIndex()
-    {
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        @Override
+        IndexType indexType()
         {
-            tx.schema().indexFor( Label.label( DEFAULT_LABEL ) ).on( COMPOSITE_PROPERTY_1 ).on( COMPOSITE_PROPERTY_2 ).withName( INDEX_NAME ).create();
-            tx.commit();
+            return IndexType.RANGE;
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        @Override
+        public WriteTestSupport newTestSupport()
         {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            return new WriteTestSupport()
+            {
+                @Override
+                protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
+                {
+                    builder.setConfig( range_indexes_enabled, true );
+                    return super.configure( builder );
+                }
+            };
         }
-    }
-
-    @Override
-    protected Pair<Long,Value[]> entityWithTwoProps( KernelTransaction tx, Object value1, Object value2 ) throws Exception
-    {
-        Write write = tx.dataWrite();
-        long node = write.nodeCreate();
-        TokenWrite tokenWrite = tx.tokenWrite();
-        write.nodeAddLabel( node, tokenWrite.labelGetOrCreateForName( DEFAULT_LABEL ) );
-        Value val1 = Values.of( value1 );
-        Value val2 = Values.of( value2 );
-        write.nodeSetProperty( node, tokenWrite.propertyKeyGetOrCreateForName( COMPOSITE_PROPERTY_1 ), val1 );
-        write.nodeSetProperty( node, tokenWrite.propertyKeyGetOrCreateForName( COMPOSITE_PROPERTY_2 ), val2 );
-        return Pair.of( node, new Value[]{val1, val2} );
     }
 }

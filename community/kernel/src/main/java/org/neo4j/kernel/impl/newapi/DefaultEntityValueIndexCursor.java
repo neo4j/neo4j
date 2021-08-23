@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -82,8 +83,12 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     private float score;
     private PropertyIndexQuery[] query;
     private Value[] values;
+    // TODO: The following three fields are related to b-tree index type only
+    // and should be removed together with all related code when b-tree is gone
+    private IndexType indexType;
     private LongObjectPair<Value[]> cachedValues;
     private ResourceIterator<LongObjectPair<Value[]>> eagerPointIterator;
+
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
     private Iterator<EntityWithPropertyValues> addedWithValues = Collections.emptyIterator();
     private ImmutableLongSet removed = LongSets.immutable.empty();
@@ -111,6 +116,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         super.initialize( progressor );
         this.indexOrder = constraints.order();
         this.needsValues = constraints.needsValues();
+        this.indexType = descriptor.getIndexType();
         sortedMergeJoin.initialize( indexOrder );
 
         this.query = query;
@@ -316,7 +322,10 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         }
 
         boolean innerNext = innerNext();
-        if ( values != null && innerNext && indexOrder != IndexOrder.NONE )
+        // b-tree index is the only index type for which geometric points need to be sorted in memory, because it both supports ordering
+        // and stores geometric points in the order based on a space-filling curve, which is different ordering than the one used
+        // by Cypher for this type
+        if ( values != null && innerNext && indexOrder != IndexOrder.NONE && indexType == IndexType.BTREE )
         {
             return eagerizingPoints();
         }
