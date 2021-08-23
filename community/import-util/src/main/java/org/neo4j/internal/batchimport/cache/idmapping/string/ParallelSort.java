@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.internal.batchimport.Utils;
 import org.neo4j.internal.batchimport.cache.LongArray;
+import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
@@ -37,22 +38,23 @@ import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
  */
 public class ParallelSort
 {
-    private final long[] radixIndexCount;
     private final RadixCalculator radixCalculator;
     private final LongArray dataCache;
     private final long highestSetIndex;
     private final Tracker tracker;
     private final int threads;
-    private long[][] sortBuckets;
+    private final Radix radix;
+    private final long highestSetTrackerIndex;
     private final ProgressListener progress;
     private final Comparator comparator;
 
-    public ParallelSort( Radix radix, LongArray dataCache, long highestSetIndex,
+    public ParallelSort( Radix radix, LongArray dataCache, long highestSetIndex, long highestSetTrackerIndex,
             Tracker tracker, int threads, ProgressListener progress, Comparator comparator )
     {
+        this.highestSetTrackerIndex = highestSetTrackerIndex;
         this.progress = progress;
         this.comparator = comparator;
-        this.radixIndexCount = radix.getRadixIndexCounts();
+        this.radix = radix;
         this.radixCalculator = radix.calculator();
         this.dataCache = dataCache;
         this.highestSetIndex = highestSetIndex;
@@ -60,13 +62,13 @@ public class ParallelSort
         this.threads = threads;
     }
 
-    public synchronized long[][] run() throws InterruptedException
+    public synchronized SortBucket[] run() throws InterruptedException
     {
-        long[][] sortParams = sortRadix();
+        SortBucket[] sortBuckets = sortRadix();
         int threadsNeeded = 0;
         for ( int i = 0; i < threads; i++ )
         {
-            if ( sortParams[i][1] == 0 )
+            if ( sortBuckets[i].count == 0 )
             {
                 break;
             }
@@ -77,11 +79,11 @@ public class ParallelSort
         progress.started( "SORT" );
         for ( int i = 0; i < threadsNeeded; i++ )
         {
-            if ( sortParams[i][1] == 0 )
+            if ( sortBuckets[i].count == 0 )
             {
                 break;
             }
-            sortWorkers.start( new SortWorker( sortParams[i][0], sortParams[i][1] ) );
+            sortWorkers.start( new SortWorker( sortBuckets[i].baseIndex, sortBuckets[i].count ) );
         }
         try
         {
@@ -94,39 +96,42 @@ public class ParallelSort
         return sortBuckets;
     }
 
-    private long[][] sortRadix() throws InterruptedException
+    private SortBucket[] sortRadix() throws InterruptedException
     {
-        long[][] rangeParams = new long[threads][2];
+        SortBucket[] sortBuckets = new SortBucket[threads];
+        for ( int i = 0; i < sortBuckets.length; i++ )
+        {
+            sortBuckets[i] = new SortBucket();
+        }
         int[] bucketRange = new int[threads];
         Workers<TrackerInitializer> initializers = new Workers<>( "TrackerInitializer" );
-        sortBuckets = new long[threads][2];
-        long dataSize = highestSetIndex + 1;
+        long dataSize = highestSetTrackerIndex + 1;
         long bucketSize = dataSize / threads;
         long count = 0;
         long fullCount = 0;
+        long[] radixIndexCount = radix.getRadixIndexCounts();
         progress.started( "SPLIT" );
         for ( int i = 0, threadIndex = 0; i < radixIndexCount.length && threadIndex < threads; i++ )
         {
             if ( (count + radixIndexCount[i]) > bucketSize )
             {
                 bucketRange[threadIndex] = count == 0 ? i : i - 1;
-                rangeParams[threadIndex][0] = fullCount;
+                sortBuckets[threadIndex].baseIndex = fullCount;
                 if ( count != 0 )
                 {
-                    rangeParams[threadIndex][1] = count;
+                    sortBuckets[threadIndex].count = count;
                     fullCount += count;
                     progress.add( count );
                     count = radixIndexCount[i];
                 }
                 else
                 {
-                    rangeParams[threadIndex][1] = radixIndexCount[i];
+                    sortBuckets[threadIndex].count = radixIndexCount[i];
                     fullCount += radixIndexCount[i];
                     progress.add( radixIndexCount[i] );
                 }
-                initializers.start( new TrackerInitializer( threadIndex, rangeParams[threadIndex],
-                        threadIndex > 0 ? bucketRange[threadIndex - 1] : -1, bucketRange[threadIndex],
-                        sortBuckets[threadIndex] ) );
+                initializers.start( new TrackerInitializer( threadIndex, sortBuckets[threadIndex],
+                        threadIndex > 0 ? bucketRange[threadIndex - 1] : -1, bucketRange[threadIndex] ) );
                 threadIndex++;
             }
             else
@@ -136,11 +141,10 @@ public class ParallelSort
             if ( threadIndex == threads - 1 || i == radixIndexCount.length - 1 )
             {
                 bucketRange[threadIndex] = radixIndexCount.length;
-                rangeParams[threadIndex][0] = fullCount;
-                rangeParams[threadIndex][1] = dataSize - fullCount;
-                initializers.start( new TrackerInitializer( threadIndex, rangeParams[threadIndex],
-                        threadIndex > 0 ? bucketRange[threadIndex - 1] : -1, bucketRange[threadIndex],
-                        sortBuckets[threadIndex] ) );
+                sortBuckets[threadIndex].baseIndex = fullCount;
+                sortBuckets[threadIndex].count = dataSize - fullCount;
+                initializers.start( new TrackerInitializer( threadIndex, sortBuckets[threadIndex],
+                        threadIndex > 0 ? bucketRange[threadIndex - 1] : -1, bucketRange[threadIndex] ) );
                 break;
             }
         }
@@ -158,19 +162,19 @@ public class ParallelSort
         }
         if ( error != null )
         {
-            throw new AssertionError( error.getMessage() + "\n" + dumpBuckets( rangeParams, bucketRange, bucketIndex ),
+            throw new AssertionError( error.getMessage() + "\n" + dumpBuckets( sortBuckets, bucketRange, bucketIndex ),
                     error );
         }
-        return rangeParams;
+        return sortBuckets;
     }
 
-    private static String dumpBuckets( long[][] rangeParams, int[] bucketRange, long[] bucketIndex )
+    private static String dumpBuckets( SortBucket[] sortBuckets, int[] bucketRange, long[] bucketIndex )
     {
         StringBuilder builder = new StringBuilder();
         builder.append( "rangeParams:\n" );
-        for ( long[] range : rangeParams )
+        for ( SortBucket bucket : sortBuckets )
         {
-            builder.append( "  " ).append( Arrays.toString( range ) ).append( "\n" );
+            builder.append( "  " ).append( bucket ).append( "\n" );
         }
         builder.append( "bucketRange:\n" );
         for ( int range : bucketRange )
@@ -382,21 +386,18 @@ public class ParallelSort
      */
     private class TrackerInitializer implements Runnable
     {
-        private final long[] rangeParams;
-        private final int lowRadixRange;
-        private final int highRadixRange;
+        private final SortBucket sortBucket;
+        private final int lowRadixRangeExclusive;
+        private final int highRadixRangeInclusive;
         private final int threadIndex;
         private long bucketIndex;
-        private final long[] result;
 
-        TrackerInitializer( int threadIndex, long[] rangeParams, int lowRadixRange, int highRadixRange,
-                long[] result )
+        TrackerInitializer( int threadIndex, SortBucket sortBucket, int lowRadixRangeExclusive, int highRadixRangeInclusive )
         {
             this.threadIndex = threadIndex;
-            this.rangeParams = rangeParams;
-            this.lowRadixRange = lowRadixRange;
-            this.highRadixRange = highRadixRange;
-            this.result = result;
+            this.sortBucket = sortBucket;
+            this.lowRadixRangeExclusive = lowRadixRangeExclusive;
+            this.highRadixRangeInclusive = highRadixRangeInclusive;
         }
 
         @Override
@@ -405,19 +406,56 @@ public class ParallelSort
             for ( long i = 0; i <= highestSetIndex; i++ )
             {
                 int rIndex = radixCalculator.radixOf( comparator.dataValue( dataCache.get( i ) ) );
-                if ( rIndex > lowRadixRange && rIndex <= highRadixRange )
+                if ( rIndex > lowRadixRangeExclusive && rIndex <= highRadixRangeInclusive )
                 {
-                    long trackerIndex = rangeParams[0] + bucketIndex++;
+                    long trackerIndex = sortBucket.baseIndex + bucketIndex++;
                     assert tracker.get( trackerIndex ) == -1 :
                             "Overlapping buckets i:" + i + ", k:" + threadIndex + ", index:" + trackerIndex;
                     tracker.set( trackerIndex, i );
-                    if ( bucketIndex == rangeParams[1] )
+                    if ( bucketIndex == sortBucket.count )
                     {
-                        result[0] = highRadixRange;
-                        result[1] = rangeParams[0];
+                        sortBucket.highRadixRange = highRadixRangeInclusive;
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Data about one bucket out of many that data gets divided into and sorted independently. After sorted {@link EncodingIdMapper#get(Object, Group)}
+     * uses this information to know where to look for the real node ID for the given ID, like so:
+     *
+     * <ol>
+     *     <li>Start from radix 0 and go through the buckets to see which one contains data about the desired radix using
+     *     {@link SortBucket#highRadixRange}. The radix is retrieved by encoding the user-requested ID and calculating the radix from it
+     *     ({@link RadixCalculator#radixOf(long)})</li>
+     *     <li>Do a binary search given the {@link SortBucket#baseIndex} as low tracker index and {@link SortBucket#baseIndex} + {@link SortBucket#count}
+     *     as high tracker index</li>
+     * </ol>
+     */
+    static class SortBucket
+    {
+        /**
+         * The high radix range (exclusive) for this bucket. The buckets are ordered so that they are checked for previous low to
+         * the high range for match.
+         */
+        int highRadixRange;
+
+        /**
+         * The tracker index which the values matching the radix range starts at.
+         */
+        long baseIndex;
+
+        /**
+         * The number of values in this bucket, i.e. the tracker index range for this bucket is:
+         * {@code baseIndex (inclusive)} to {@code baseIndex + count (exclusive)}.
+         */
+        long count;
+
+        @Override
+        public String toString()
+        {
+            return "SortBucket{" + "highRadixRange=" + highRadixRange + ", baseIndex=" + baseIndex + ", count=" + count + '}';
         }
     }
 }

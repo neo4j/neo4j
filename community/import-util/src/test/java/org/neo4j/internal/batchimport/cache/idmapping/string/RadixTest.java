@@ -37,7 +37,7 @@ class RadixTest
     private RandomRule random;
 
     @Test
-    void name()
+    void shouldHandleCountsLargerThanInt()
     {
         // when
         Radix radix = Radix.LONG.newInstance();
@@ -50,5 +50,28 @@ class RadixTest
 
         // then
         assertThat( LongStream.of( radix.radixIndexCount ).sum() ).isEqualTo( count );
+    }
+
+    @Test
+    void shouldKeepNullValuesInSeparateCounter()
+    {
+        // given
+        Radix radix = Radix.LONG.newInstance();
+        long nullValue = EncodingIdMapper.GAP_VALUE;
+
+        // when
+        int expectedNumNullValues = 0;
+        for ( int i = 0; i < 100; i++ )
+        {
+            boolean realValue = random.nextBoolean();
+            radix.registerRadixOf( realValue ? random.nextLong( 1, 10_000 ) : nullValue );
+            if ( !realValue )
+            {
+                expectedNumNullValues++;
+            }
+        }
+
+        // then
+        assertThat( radix.getNullCount() ).isEqualTo( expectedNumNullValues );
     }
 }
