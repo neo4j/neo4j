@@ -270,7 +270,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
             BiConsumer<Writer<RawBytes,RawBytes>,Pair<RawBytes,RawBytes>> writerAction )
             throws IOException
     {
-        double checkpointFrequency = 0.05;
+        double checkpointFrequency = 0.005;
         Iterator<Pair<RawBytes,RawBytes>> iterator = entries.iterator();
         while ( iterator.hasNext() )
         {
