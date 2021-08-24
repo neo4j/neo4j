@@ -28,7 +28,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
 
   test("should handle ten simultaneous threads") {
     // Given a constraint on :Label(id), create a linked list
-    execute("CREATE CONSTRAINT ON (n:Label) ASSERT n.id IS UNIQUE")
+    execute("CREATE CONSTRAINT FOR (n:Label) REQUIRE n.id IS UNIQUE")
 
     var exceptionsThrown = List.empty[Throwable]
     val q = "MERGE (a:Label {id:$id}) " +
@@ -66,7 +66,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
   }
 
   test("should handle ten simultaneous threads with only nodes - with constraint") {
-    execute("CREATE CONSTRAINT ON (n:Label) ASSERT n.id IS UNIQUE")
+    execute("CREATE CONSTRAINT FOR (n:Label) REQUIRE n.id IS UNIQUE")
     var exceptionsThrown = List.empty[Throwable]
 
     val runner = new Runnable {

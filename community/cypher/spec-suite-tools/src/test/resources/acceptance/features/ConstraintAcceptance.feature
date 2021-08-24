@@ -26,7 +26,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (n:Label) ASSERT n.prop IS UNIQUE
+      CREATE CONSTRAINT FOR (n:Label) REQUIRE n.prop IS UNIQUE
       """
     And having executed:
       """
@@ -46,7 +46,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (n:Label) ASSERT n.prop IS UNIQUE
+      CREATE CONSTRAINT FOR (n:Label) REQUIRE n.prop IS UNIQUE
       """
     And having executed:
       """
@@ -68,7 +68,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
@@ -90,7 +90,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     When executing query:
       """
@@ -110,11 +110,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.email IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.email IS UNIQUE
       """
     And having executed:
       """
@@ -136,11 +136,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (u:User) ASSERT u.email IS UNIQUE
+      CREATE CONSTRAINT FOR (u:User) REQUIRE u.email IS UNIQUE
       """
     And having executed:
       """
@@ -162,11 +162,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (u:User) ASSERT u.email IS UNIQUE
+      CREATE CONSTRAINT FOR (u:User) REQUIRE u.email IS UNIQUE
       """
     And having executed:
       """
@@ -188,11 +188,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.email IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.email IS UNIQUE
       """
     When executing query:
       """
@@ -212,11 +212,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (u:User) ASSERT u.email IS UNIQUE
+      CREATE CONSTRAINT FOR (u:User) REQUIRE u.email IS UNIQUE
       """
     When executing query:
       """
@@ -237,11 +237,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (u:User) ASSERT u.id IS UNIQUE
+      CREATE CONSTRAINT FOR (u:User) REQUIRE u.id IS UNIQUE
       """
     And having executed:
       """
@@ -258,11 +258,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.email IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.email IS UNIQUE
       """
     And having executed:
       """
@@ -279,11 +279,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.email IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.email IS UNIQUE
       """
     And having executed:
       """
@@ -300,11 +300,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.email IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.email IS UNIQUE
       """
     And having executed:
       """
@@ -321,11 +321,11 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (u:User) ASSERT u.email IS UNIQUE
+      CREATE CONSTRAINT FOR (u:User) REQUIRE u.email IS UNIQUE
       """
     And having executed:
       """
@@ -342,7 +342,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (l:L) ASSERT l.prop IS UNIQUE
+      CREATE CONSTRAINT FOR (l:L) REQUIRE l.prop IS UNIQUE
       """
     And having executed:
       """
@@ -358,7 +358,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """
@@ -381,7 +381,7 @@ Feature: ConstraintAcceptance
       """
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     When executing query:
       """
@@ -397,7 +397,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.ssn IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.ssn IS UNIQUE
       """
     When executing query:
       """
@@ -417,7 +417,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.ssn IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.ssn IS UNIQUE
       """
     And parameters are:
       | p | {ssn: 42, name: 'Robert Paulsen'} |
@@ -440,7 +440,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+      CREATE CONSTRAINT FOR (p:Person) REQUIRE p.id IS UNIQUE
       """
     And having executed:
       """

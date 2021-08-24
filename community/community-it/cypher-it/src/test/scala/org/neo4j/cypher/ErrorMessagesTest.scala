@@ -173,7 +173,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     val node2 = createLabeledNode(Map("name" -> "A"), "Person").getId
 
     expectError(
-      "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
+      "CREATE CONSTRAINT FOR (person:Person) REQUIRE person.name IS UNIQUE",
       String.format("Unable to create Constraint( name='constraint_e26b1a8b', type='UNIQUENESS', schema=(:Person {name}) ):%n" +
         "Both Node(" + node1 + ") and Node(" + node2 + ") have the label `Person` and property `name` = 'A'")
     )
@@ -208,7 +208,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   }
 
   test("should give proper error message when trying to use Node Key constraint on community") {
-    expectError("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname) IS NODE KEY",
+    expectError("CREATE CONSTRAINT FOR (n:Person) REQUIRE (n.firstname) IS NODE KEY",
                 String.format("Unable to create Constraint( type='NODE PROPERTY EXISTENCE', schema=(:Person {firstname}) ):%n" +
                   "Node Key constraint requires Neo4j Enterprise Edition"))
   }

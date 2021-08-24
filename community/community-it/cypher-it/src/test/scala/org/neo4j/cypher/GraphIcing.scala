@@ -71,7 +71,7 @@ trait GraphIcing {
 
     def createUniqueConstraint(label: String, properties: String*): Result = {
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS UNIQUE")
+        tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
       })
     }
 
@@ -83,19 +83,19 @@ trait GraphIcing {
 
     def createUniqueConstraintWithName(name: String, label: String, properties: String*): Result = {
       withTx( tx =>  {
-        tx.execute(s"CREATE CONSTRAINT `$name` ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS UNIQUE")
+        tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
       } )
     }
 
     def createNodeExistenceConstraint(label: String, property: String): Result = {
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.$property) IS NOT NULL")
+        tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.$property) IS NOT NULL")
       })
     }
 
     def createNodeExistenceConstraintWithName(name: String, label: String, property: String): Result = {
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` ON (n:$label) ASSERT (n.$property) IS NOT NULL")
+        tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.$property) IS NOT NULL")
       })
     }
 
@@ -106,7 +106,7 @@ trait GraphIcing {
         case _ => s"()-[r:$relType]-()"
       }
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT ON $relSyntax ASSERT (r.$property) IS NOT NULL")
+        tx.execute(s"CREATE CONSTRAINT FOR $relSyntax REQUIRE (r.$property) IS NOT NULL")
       })
     }
 
@@ -117,19 +117,19 @@ trait GraphIcing {
         case _ => s"()-[r:$relType]-()"
       }
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` ON $relSyntax ASSERT (r.$property) IS NOT NULL")
+        tx.execute(s"CREATE CONSTRAINT `$name` FOR $relSyntax REQUIRE (r.$property) IS NOT NULL")
       })
     }
 
     def createNodeKeyConstraint(label: String, properties: String*): Result = {
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
+        tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
       })
     }
 
     def createNodeKeyConstraintWithName(name: String, label: String, properties: String*): Result = {
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT `$name` ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
+        tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
       })
     }
 
@@ -361,7 +361,7 @@ trait GraphIcing {
 
     def createUniqueIndex(label: String, property: String): Unit = {
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT ON (p:$label) ASSERT p.$property IS UNIQUE")
+        tx.execute(s"CREATE CONSTRAINT FOR (p:$label) REQUIRE p.$property IS UNIQUE")
       } )
 
       withTx( tx => {

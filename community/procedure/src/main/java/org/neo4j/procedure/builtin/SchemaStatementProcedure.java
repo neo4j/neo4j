@@ -182,7 +182,7 @@ public final class SchemaStatementProcedure
             }
             if ( constraint.isNodePropertyExistenceConstraint() )
             {
-                // "create CONSTRAINT ON (a:A) ASSERT (a.p) IS NOT NULL"
+                // "create CONSTRAINT FOR (a:A) REQUIRE (a.p) IS NOT NULL"
                 int labelId = constraint.schema().getLabelId();
                 String label = tokenRead.nodeLabelName( labelId );
                 int propertyId = constraint.schema().getPropertyId();
@@ -192,7 +192,7 @@ public final class SchemaStatementProcedure
             }
             if ( constraint.isRelationshipPropertyExistenceConstraint() )
             {
-                // "create CONSTRAINT ON ()-[r:R]-() ASSERT (r.p) IS NOT NULL"
+                // "create CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL"
                 int relationshipTypeId = constraint.schema().getRelTypeId();
                 String relationshipType = tokenRead.relationshipTypeName( relationshipTypeId );
                 int propertyId = constraint.schema().getPropertyId();

@@ -701,7 +701,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
      * Effectively:
      *
      * <pre><code>
-     *     CREATE CONSTRAINT ON (n:Cybermen) assert n.name is unique
+     *     CREATE CONSTRAINT FOR (n:Cybermen) require n.name is unique
      *     ;
      *
      *     CREATE (a:Cybermen {name: "a"}),
@@ -758,7 +758,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
      * Effectively:
      *
      * <pre><code>
-     *     CREATE CONSTRAINT ON (n:Cybermen) assert n.name is unique
+     *     CREATE CONSTRAINT FOR (n:Cybermen) require n.name is unique
      *     ;
      * </code></pre>
      */
@@ -771,7 +771,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
      * Effectively:
      *
      * <pre><code>
-     *     CREATE CONSTRAINT ON (n:Cybermen) assert n.name is unique
+     *     CREATE CONSTRAINT FOR (n:Cybermen) require n.name is unique
      *     ;
      * </code></pre>
      *

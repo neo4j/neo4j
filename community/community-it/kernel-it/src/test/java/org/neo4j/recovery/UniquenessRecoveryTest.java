@@ -265,7 +265,7 @@ public class UniquenessRecoveryTest
     {
         if ( USE_CYPHER )
         {
-            db.executeTransactionally( "create constraint on (p:Person) assert p.name is unique" );
+            db.executeTransactionally( "create constraint for (p:Person) require p.name is unique" );
         }
         else
         {

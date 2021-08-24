@@ -94,7 +94,7 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                 "{'statements': [{'statement': 'CREATE INDEX FOR (n:Book) ON (n.name)'}]}" ) );
 
         POST( txCommitUri(), quotedJson(
-                "{'statements': [{'statement': 'CREATE CONSTRAINT ON (b:Book) ASSERT b.isbn IS UNIQUE'}]}" ) );
+                "{'statements': [{'statement': 'CREATE CONSTRAINT FOR (b:Book) REQUIRE b.isbn IS UNIQUE'}]}" ) );
 
         POST( txCommitUri(), quotedJson(
                 "{'statements': [{'statement': 'CREATE (b:Book {isbn: " + UNIQUE_ISBN + "})'}]}" ) );
