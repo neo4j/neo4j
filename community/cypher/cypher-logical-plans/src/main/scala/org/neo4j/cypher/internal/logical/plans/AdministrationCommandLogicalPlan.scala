@@ -142,6 +142,7 @@ case class EnsureNodeExists(source: PrivilegePlan, label: String, name: Either[S
 
 // Database administration commands
 case class ShowDatabase(scope: DatabaseScope,
+                        verbose: Boolean,
                         override val returnColumns: List[String],
                         yields: Option[Yield],
                         returns: Option[Return])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan

@@ -1178,6 +1178,11 @@
         <artifactId>scalap</artifactId>
         <version>${scala.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.scala-lang.modules</groupId>
+        <artifactId>scala-java8-compat_${scala.binary.version}</artifactId>
+        <version>0.8.0</version>
+      </dependency>
 
       <!-- scala test dependencies -->
       <dependency>

@@ -89,7 +89,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
       s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
-    case s@ShowDatabase(_, Some(Left((yields, returns))),_) =>
+    case s@ShowDatabase(_, Some(Left((yields, returns))), _) =>
       s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 

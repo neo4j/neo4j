@@ -122,18 +122,18 @@ class JavaccParserPositionTest extends ParserComparisonTestBase with FunSuiteLik
   }
 
   Seq(
-    "DATABASES",
-    "DEFAULT DATABASE",
-    "HOME DATABASE",
-    "DATABASE $db",
-    "DATABASE neo4j"
-  ).foreach( name =>
+    ("DATABASES YIELD name", 21),
+    ("DEFAULT DATABASE YIELD name", 28),
+    ("HOME DATABASE YIELD name", 25),
+    ("DATABASE $db YIELD name", 24),
+    ("DATABASE neo4j YIELD name", 26),
+  ).foreach { case (name, variableOffset) =>
     test(s"SHOW $name") {
       assertSameAST(testName)
       validatePosition(testName, _.isInstanceOf[ShowDatabase], InputPosition(0, 1, 1))
-      validatePosition(testName, _.isInstanceOf[Variable], InputPosition(0, 1, 1))
+      validatePosition(testName, _.isInstanceOf[Variable], InputPosition(variableOffset, 1, variableOffset + 1))
     }
-  )
+  }
 
   test("DROP INDEX ON :Person(name)") {
     // PropertyKeyName in this AST is not the same in JavaCC and parboiled

@@ -97,7 +97,7 @@ import static org.neo4j.procedure.Mode.DBMS;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
-import static org.neo4j.procedure.builtin.StoreIdDecodeUtils.decodeId;
+import static org.neo4j.storageengine.util.StoreIdDecodeUtils.decodeId;
 
 @SuppressWarnings( "unused" )
 public class BuiltInDbmsProcedures

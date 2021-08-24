@@ -472,7 +472,7 @@ case class Prettifier(
 
       // Database commands
 
-      case x @ ShowDatabase(scope, yields,_) =>
+      case x @ ShowDatabase(scope, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
         val optionalName = scope match {
           case NamedDatabaseScope(dbName) => s" ${Prettifier.escapeName(dbName)}"

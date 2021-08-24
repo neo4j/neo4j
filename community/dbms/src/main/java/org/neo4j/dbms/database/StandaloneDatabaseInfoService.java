@@ -30,6 +30,7 @@ import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.store.StoreFileClosedException;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class StandaloneDatabaseInfoService implements DatabaseInfoService
@@ -80,7 +81,17 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService
         return databaseManager.getDatabaseContext( namedDatabaseId )
                               .map( DatabaseContext::dependencies )
                               .map( dependencies -> dependencies.resolveDependency( TransactionIdStore.class ) )
-                              .map( TransactionIdStore::getLastCommittedTransactionId )
+                              .flatMap( transactionIdStore ->
+                                        {
+                                            try
+                                            {
+                                                return Optional.of( transactionIdStore.getLastCommittedTransactionId() );
+                                            }
+                                            catch ( StoreFileClosedException e )
+                                            {
+                                                return Optional.empty();
+                                            }
+                                        } )
                               .orElse( ExtendedDatabaseInfo.COMMITTED_TX_ID_NOT_AVAILABLE );
     }
 
@@ -88,6 +99,6 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService
     {
         var status = stateService.stateOfDatabase( namedDatabaseId ).operatorState().description();
         var error = stateService.causeOfFailure( namedDatabaseId ).map( Throwable::getMessage ).orElse( "" );
-        return new DatabaseInfo( namedDatabaseId, serverId, address, ROLE_LABEL, status, error );
+        return new DatabaseInfo( namedDatabaseId, serverId, address, null, ROLE_LABEL, status, error );
     }
 }

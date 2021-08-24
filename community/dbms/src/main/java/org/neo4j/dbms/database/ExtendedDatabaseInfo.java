@@ -41,10 +41,10 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
     /**
      * If the lastCommittedTxId is set to COMMITTED_TX_ID_NOT_AVAILABLE both lastCommittedTxId() and txCommitLag() will return empty optionals
      */
-    public ExtendedDatabaseInfo( NamedDatabaseId namedDatabaseId, ServerId serverId, SocketAddress address, String role, String status,
-                                 String error, long lastCommittedTxId, long txCommitLag )
+    public ExtendedDatabaseInfo( NamedDatabaseId namedDatabaseId, ServerId serverId, SocketAddress boltAddress, SocketAddress catchupAddress, String role,
+                                 String status, String error, long lastCommittedTxId, long txCommitLag )
     {
-        super( namedDatabaseId, serverId, address, role, status, error );
+        super( namedDatabaseId, serverId, boltAddress, catchupAddress, role, status, error );
         this.committedTxIdNotAvailable = lastCommittedTxId == COMMITTED_TX_ID_NOT_AVAILABLE;
         this.lastCommittedTxId = committedTxIdNotAvailable ? 0 : lastCommittedTxId;
         this.txCommitLag = committedTxIdNotAvailable ? 0 : txCommitLag;
@@ -95,7 +95,8 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
                txCommitLag == that.txCommitLag &&
                Objects.equals( namedDatabaseId, that.namedDatabaseId ) &&
                Objects.equals( serverId, that.serverId ) &&
-               Objects.equals( address, that.address ) &&
+               Objects.equals( boltAddress, that.boltAddress ) &&
+               Objects.equals( catchupAddress, that.catchupAddress ) &&
                Objects.equals( role, that.role ) &&
                Objects.equals( status, that.status ) &&
                Objects.equals( error, that.error );
@@ -104,7 +105,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
     @Override
     public int hashCode()
     {
-        return Objects.hash( namedDatabaseId, serverId, address, role, status, error, lastCommittedTxId, txCommitLag );
+        return Objects.hash( namedDatabaseId, serverId, boltAddress, catchupAddress, role, status, error, lastCommittedTxId, txCommitLag );
     }
 
     @Override
@@ -113,7 +114,8 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
         return "ExtendedDatabaseInfoImpl{" +
                "namedDatabaseId=" + namedDatabaseId +
                ", serverId=" + serverId +
-               ", address=" + address +
+               ", boltAddress=" + boltAddress +
+               ", catchupAddress=" + catchupAddress +
                ", role='" + role + '\'' +
                ", status='" + status + '\'' +
                ", error='" + error + '\'' +

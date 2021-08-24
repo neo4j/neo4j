@@ -1539,7 +1539,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       ShowPrivilegeCommands(Some(privLhsLP), ShowUsersPrivileges(List(util.Left("user1"), util.Right(parameter("user2", CTString))))(pos), asRevoke = false, List(), None, None),
       1.0), adminPlanDescription)
 
-    assertGood(attach(ShowDatabase(AllDatabasesScope()(pos), List("foo", "bar"), None, None), 1.0), adminPlanDescription)
+    assertGood(attach(ShowDatabase(AllDatabasesScope()(pos), false, List("foo", "bar"), None, None), 1.0), adminPlanDescription)
 
     assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1"), NoOptions), 1.0), adminPlanDescription)
 

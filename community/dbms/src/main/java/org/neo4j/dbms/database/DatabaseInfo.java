@@ -36,17 +36,19 @@ public class DatabaseInfo
 {
     final NamedDatabaseId namedDatabaseId;
     final ServerId serverId;
-    final SocketAddress address;
+    final SocketAddress boltAddress;
+    final SocketAddress catchupAddress;
     final String role;
     final String status;
     final String error;
 
-    public DatabaseInfo( NamedDatabaseId namedDatabaseId, ServerId serverId, SocketAddress address, String role, String status,
-                         String error )
+    public DatabaseInfo( NamedDatabaseId namedDatabaseId, ServerId serverId, SocketAddress boltAddress, SocketAddress catchupAddress,
+                         String role, String status, String error )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.serverId = serverId;
-        this.address = address;
+        this.boltAddress = boltAddress;
+        this.catchupAddress = catchupAddress;
         this.role = role;
         this.status = status;
         this.error = error;
@@ -59,7 +61,7 @@ public class DatabaseInfo
 
     public ExtendedDatabaseInfo extendWith( long lastCommittedTxId, long maxCommittedTxId )
     {
-        return new ExtendedDatabaseInfo( namedDatabaseId, serverId, address, role, status, error, lastCommittedTxId,
+        return new ExtendedDatabaseInfo( namedDatabaseId, serverId, boltAddress, catchupAddress, role, status, error, lastCommittedTxId,
                                              lastCommittedTxId - maxCommittedTxId );
     }
 
@@ -85,15 +87,14 @@ public class DatabaseInfo
     /**
      * @return the address of the server or empty if address is not currently known
      */
-    public Optional<SocketAddress> address()
+    public Optional<SocketAddress> boltAddress()
     {
-        return Optional.ofNullable( address );
+        return Optional.ofNullable( boltAddress );
     }
 
-    @Nullable
-    public SocketAddress rawAddress()
+    public Optional<SocketAddress> catchupAddress()
     {
-        return address;
+        return Optional.ofNullable( catchupAddress);
     }
 
     public String role()
@@ -125,7 +126,8 @@ public class DatabaseInfo
         DatabaseInfo that = (DatabaseInfo) o;
         return Objects.equals( namedDatabaseId, that.namedDatabaseId ) &&
                Objects.equals( serverId, that.serverId ) &&
-               Objects.equals( address, that.address ) &&
+               Objects.equals( boltAddress, that.boltAddress ) &&
+               Objects.equals( catchupAddress, that.catchupAddress ) &&
                Objects.equals( role, that.role ) &&
                Objects.equals( status, that.status ) &&
                Objects.equals( error, that.error );
@@ -134,7 +136,7 @@ public class DatabaseInfo
     @Override
     public int hashCode()
     {
-        return Objects.hash( namedDatabaseId, serverId, address, role, status, error );
+        return Objects.hash( namedDatabaseId, serverId, boltAddress, catchupAddress, role, status, error );
     }
 
     @Override
@@ -143,7 +145,8 @@ public class DatabaseInfo
         return "DatabaseInfoImpl{" +
                "namedDatabaseId=" + namedDatabaseId +
                ", serverId=" + serverId +
-               ", address=" + address +
+               ", boltAddress=" + boltAddress +
+               ", catchupAddress=" + catchupAddress +
                ", role='" + role + '\'' +
                ", status='" + status + '\'' +
                ", error='" + error + '\'' +

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin;
+package org.neo4j.storageengine.util;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -27,7 +27,7 @@ import org.neo4j.string.HexString;
 
 import static java.lang.String.format;
 
-class StoreIdDecodeUtils
+public class StoreIdDecodeUtils
 {
     private static final String DEFAULT_ALGORITHM = "SHA-256";
 
@@ -35,7 +35,7 @@ class StoreIdDecodeUtils
     {
     }
 
-    static String decodeId( StoreIdProvider storeIdProvider ) throws NoSuchAlgorithmException
+    public static String decodeId( StoreIdProvider storeIdProvider ) throws NoSuchAlgorithmException
     {
         var externalStoreId = storeIdProvider.getExternalStoreId();
         var storeId = storeIdProvider.getStoreId();

@@ -53,6 +53,13 @@ import org.neo4j.values.virtual.VirtualValues
 
 import java.util.UUID
 
+import AdministrationCommandRuntime.getNameFields
+import AdministrationCommandRuntime.internalKey
+import AdministrationCommandRuntime.internalPrefix
+import AdministrationCommandRuntime.runtimeStringValue
+import AdministrationCommandRuntime.IdentityConverter
+import AdministrationCommandRuntime.NameFields
+
 trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   protected val followerError = "Administration commands must be executed on the LEADER server."
   protected val secureHasher = new SecureHasher
@@ -81,9 +88,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage, e)
   }
 
-  private val internalPrefix: String = "__internal_"
 
-  protected def internalKey(name: String): String = internalPrefix + name
 
   protected case class PasswordExpression(key: String,
                                           value: Value,
@@ -145,56 +150,6 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     param.parameterType match {
       case _: StringType =>
       case _ => throw new ParameterWrongTypeException(s"Only $CTString values are accepted as password, got: " + param.parameterType)
-    }
-  }
-
-  private def runtimeStringValue(parameter: String, params: MapValue): String = {
-    val value: AnyValue = if (params.containsKey(parameter))
-      params.get(parameter)
-    else
-      params.get(internalKey(parameter))
-    value match {
-      case tv: TextValue => tv.stringValue()
-      case _ =>  throw new ParameterWrongTypeException(s"Expected parameter $$$parameter to have type String but was $value")
-    }
-  }
-
-  protected def runtimeStringValue(field: Either[String, Parameter], params: MapValue): String = field match {
-    case Left(u) => u
-    case Right(p)  => runtimeStringValue(p.name, params)
-  }
-
-  /**
-   *
-   * @param key parameter key used in the "inner" cypher
-   * @param name the literal or parameter
-   * @param valueMapper function to apply to the value
-   * @return
-   */
-  protected def getNameFields(key: String,
-                              name: Either[String, Parameter],
-                              valueMapper: String => String = identity): NameFields = name match {
-    case Left(u) =>
-      NameFields(s"$internalPrefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
-    case Right(parameter) =>
-      def rename: String => String = paramName => internalKey(paramName)
-      NameFields(rename(parameter.name), Values.NO_VALUE, RenamingStringParameterConverter(parameter.name, rename, { v => Values.utf8Value(valueMapper(v.stringValue()))}))
-  }
-
-  case class NameFields(nameKey: String, nameValue: Value, nameConverter: (Transaction, MapValue) => MapValue)
-
-  case object IdentityConverter extends ((Transaction, MapValue) => MapValue) {
-    def apply(transaction: Transaction, map: MapValue): MapValue = map
-  }
-
-  case class RenamingStringParameterConverter(parameter: String, rename: String => String = identity _, valueMapper: TextValue => TextValue = identity _)
-    extends ((Transaction, MapValue) => MapValue) {
-    def apply(transaction: Transaction, params: MapValue): MapValue = {
-      val paramValue = params.get(parameter)
-      // Check the parameter is actually the expected type
-      if (!paramValue.isInstanceOf[TextValue]) {
-        throw new ParameterWrongTypeException(s"Expected parameter $$$parameter to have type String but was $paramValue")
-      } else params.updatedWith(rename(parameter), valueMapper(params.get(parameter).asInstanceOf[TextValue]))
     }
   }
 
@@ -360,4 +315,60 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       parameterConverter = mapValueConverter
     )
   }
+}
+
+object AdministrationCommandRuntime {
+  private val internalPrefix: String = "__internal_"
+
+  protected[internal] def internalKey(name: String): String = internalPrefix + name
+
+  /**
+   *
+   * @param key parameter key used in the "inner" cypher
+   * @param name the literal or parameter
+   * @param valueMapper function to apply to the value
+   * @return
+   */
+  protected[internal] def getNameFields(key: String,
+                              name: Either[String, Parameter],
+                              valueMapper: String => String = identity): NameFields = name match {
+    case Left(u) =>
+      NameFields(s"$internalPrefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
+    case Right(parameter) =>
+      def rename: String => String = paramName => internalKey(paramName)
+      NameFields(rename(parameter.name), Values.NO_VALUE, RenamingStringParameterConverter(parameter.name, rename, { v => Values.utf8Value(valueMapper(v.stringValue()))}))
+  }
+
+  protected[internal] def runtimeStringValue(field: Either[String, Parameter], params: MapValue): String = field match {
+    case Left(u) => u
+    case Right(p)  => runtimeStringValue(p.name, params)
+  }
+
+  private def runtimeStringValue(parameter: String, params: MapValue): String = {
+    val value: AnyValue = if (params.containsKey(parameter))
+      params.get(parameter)
+    else
+      params.get(internalKey(parameter))
+    value match {
+      case tv: TextValue => tv.stringValue()
+      case _ =>  throw new ParameterWrongTypeException(s"Expected parameter $$$parameter to have type String but was $value")
+    }
+  }
+
+  case class RenamingStringParameterConverter(parameter: String, rename: String => String = identity _, valueMapper: TextValue => TextValue = identity _)
+    extends ((Transaction, MapValue) => MapValue) {
+    def apply(transaction: Transaction, params: MapValue): MapValue = {
+      val paramValue = params.get(parameter)
+      // Check the parameter is actually the expected type
+      if (!paramValue.isInstanceOf[TextValue]) {
+        throw new ParameterWrongTypeException(s"Expected parameter $$$parameter to have type String but was $paramValue")
+      } else params.updatedWith(rename(parameter), valueMapper(params.get(parameter).asInstanceOf[TextValue]))
+    }
+  }
+
+  case object IdentityConverter extends ((Transaction, MapValue) => MapValue) {
+    def apply(transaction: Transaction, map: MapValue): MapValue = map
+  }
+
+  case class NameFields(nameKey: String, nameValue: Value, nameConverter: (Transaction, MapValue) => MapValue)
 }

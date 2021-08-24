@@ -77,7 +77,7 @@ import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
 import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
-import static org.neo4j.procedure.builtin.StoreIdDecodeUtils.decodeId;
+import static org.neo4j.storageengine.util.StoreIdDecodeUtils.decodeId;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class BuiltInProcedures

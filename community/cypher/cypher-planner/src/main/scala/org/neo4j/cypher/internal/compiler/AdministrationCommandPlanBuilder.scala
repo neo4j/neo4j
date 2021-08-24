@@ -383,7 +383,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
       case sd: ShowDatabase =>
-        Some(plans.ShowDatabase(sd.scope, sd.defaultColumnNames, sd.yields, sd.returns))
+        Some(plans.ShowDatabase(sd.scope, sd.defaultColumns.useAllColumns, sd.defaultColumnNames, sd.yields, sd.returns))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case c@CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>

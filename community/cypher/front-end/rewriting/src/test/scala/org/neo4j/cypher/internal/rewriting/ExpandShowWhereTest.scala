@@ -16,6 +16,14 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.expressions.StartsWith
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.rewriters.expandShowWhere
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -24,10 +32,16 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
   val rewriterUnderTest: Rewriter = expandShowWhere
 
   test("SHOW DATABASES") {
-    assertRewrite(
-      "SHOW DATABASES WHERE name STARTS WITH 's'",
-      "SHOW DATABASES YIELD * WHERE name STARTS WITH 's'"
-    )
+    val originalQuery = "SHOW DATABASES WHERE name STARTS WITH 's'"
+    val original = parseForRewriting(originalQuery)
+    val result = rewrite(original)
+
+    result match {
+      // Rewrite to approximately `SHOW DATABASES YIELD * WHERE name STARTS WITH 's'` but because we didn't have a YIELD * in the original
+      // query the columns are brief and not verbose so it's not exactly the same
+      case ShowDatabase(_, Some(Left((Yield(ReturnItems(returnStar, _, _ ), None, None, None, Some(Where(StartsWith(Variable("name"),StringLiteral("s"))))), None))), _)  if returnStar => ()
+      case _ => fail(s"\n$originalQuery\nshould be rewritten to:\nSHOW DATABASES YIELD * WHERE name STARTS WITH 's'\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
+    }
   }
 
   test("SHOW ROLES") {

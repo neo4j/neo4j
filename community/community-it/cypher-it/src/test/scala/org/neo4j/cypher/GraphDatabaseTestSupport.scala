@@ -55,9 +55,11 @@ import org.scalatest.matchers.Matcher
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.UUID
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.util.Try
 
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite  =>
@@ -77,7 +79,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
    */
   def externalDatabase: Option[(String, String)] = None
 
-  override protected def initTest() {
+  override protected def initTest(): Unit = {
     super.initTest()
     startGraphDatabase()
   }
@@ -379,6 +381,16 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
           s"Expected graph to not have constraints ${expectedConstraints.mkString(", ")}, but it did."
         )
       } )
+    }
+  }
+
+  case class beAValidUUID() extends Matcher[AnyRef] {
+    def apply(value: AnyRef): MatchResult = {
+      MatchResult(
+        Try(UUID.fromString(value.asInstanceOf[String])).isSuccess,
+        s"""$value was not a valid UUID""",
+        s"""$value was a valid UUID"""
+      )
     }
   }
 }

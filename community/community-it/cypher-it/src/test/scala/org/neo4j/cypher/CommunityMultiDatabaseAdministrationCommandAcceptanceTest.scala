@@ -37,11 +37,12 @@ import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.InMemoryUserRepository
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
+import org.scalatest.OptionValues
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import scala.collection.Map
 
-class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
+class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase with OptionValues {
   private val onlineStatus = DatabaseStatus.Online.stringValue()
   private val defaultConfig = Config.defaults()
   private val localHostString = "localhost:7687"
@@ -375,6 +376,62 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     result.toList should be(List(Map("foo" -> DEFAULT_DATABASE_NAME)))
   }
 
+  test("should show default database with all verbose columns") {
+    // GIVEN
+    setup(defaultConfig)
+    selectDatabase(DEFAULT_DATABASE_NAME)
+    val dbId = execute(s"CALL db.info() YIELD id").toList.head("id")
+
+    // WHEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    val result = execute(s"SHOW DATABASE $DEFAULT_DATABASE_NAME YIELD *").toList.head
+
+    // THEN
+    result should contain allElementsOf homeOrdefaultDb(DEFAULT_DATABASE_NAME)
+    result("replicationLag") shouldBe 0
+    result("lastCommittedTxn") shouldBe null
+    result("serverID") should beAValidUUID()
+    result("databaseID") shouldBe dbId
+  }
+
+
+  test("should show database with yield verbose columns should produce verbose but not polled columns") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD name, databaseID, serverID")
+
+    // THEN
+    result.toList.foreach{ map =>
+      map should have size 3
+      map.get("name") should contain oneOf("neo4j", "system")
+
+      // Lookup the real store id from db.info()
+      selectDatabase(map("name").asInstanceOf[String])
+      val dbId = execute(s"CALL db.info() YIELD id").toList.head("id")
+
+      map.get("databaseID").value shouldBe dbId
+      map.get("serverID").value should beAValidUUID()
+    }
+  }
+
+
+  test("should show database and yield only verbose columns") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW DATABASES YIELD lastCommittedTxn, serverID").toList
+
+    // THEN
+    result.foreach{ map =>
+      map should have size 2
+      map.get("serverID").value should beAValidUUID()
+      map.get("lastCommittedTxn").value shouldBe null
+    }
+  }
+
   test("should show default database with yield and return with aliasing") {
     // GIVEN
     setup(defaultConfig)
@@ -583,7 +640,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "error" -> "")
 
   // Disable normal database creation because we need different settings on each test
-  override protected def initTest() {}
+  override protected def initTest(): Unit = {}
 
   private def setup(config: Config): Unit = {
     managementService = graphDatabaseFactory(Path.of("test")).impermanent().setConfig(Config.newBuilder().fromConfig(config).build()).setInternalLogProvider(logProvider).build()

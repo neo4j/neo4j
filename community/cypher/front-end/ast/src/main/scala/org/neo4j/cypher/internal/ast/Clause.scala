@@ -461,10 +461,6 @@ object CommandClause {
   def unapply(cc: CommandClause): Option[(List[ShowColumn], Option[Where])] = Some((cc.unfilteredColumns.columns, cc.where))
 }
 
-case class DefaultOrAllShowColumns(useAllColumns: Boolean, private val brief: List[ShowColumn], private val verbose: List[ShowColumn]) {
-  def columns: List[ShowColumn] = if (useAllColumns) brief ++ verbose else brief
-}
-
 // For a query to be allowed to run on system it needs to consist of:
 // - only ClauseAllowedOnSystem clauses
 // - at least one CommandClauseAllowedOnSystem clause
@@ -498,7 +494,7 @@ object ShowIndexesClause {
       ShowColumn("createStatement")(position)
     )
 
-    ShowIndexesClause(DefaultOrAllShowColumns(hasYield | verbose, briefCols, verboseCols), indexType, brief, verbose, where, hasYield)(position)
+    ShowIndexesClause(DefaultOrAllShowColumns(hasYield | verbose, briefCols, briefCols ++ verboseCols), indexType, brief, verbose, where, hasYield)(position)
   }
 }
 
@@ -525,7 +521,7 @@ object ShowConstraintsClause {
       ShowColumn("createStatement")(position)
     )
 
-    ShowConstraintsClause(DefaultOrAllShowColumns(hasYield | verbose, briefCols, verboseCols), constraintType, brief, verbose, where, hasYield)(position)
+    ShowConstraintsClause(DefaultOrAllShowColumns(hasYield | verbose, briefCols, briefCols ++ verboseCols), constraintType, brief, verbose, where, hasYield)(position)
   }
 }
 
@@ -554,7 +550,7 @@ object ShowProceduresClause {
       ShowColumn("option", CTMap)(position)
     )
 
-    ShowProceduresClause(DefaultOrAllShowColumns(hasYield, briefCols, verboseCols), executable, where, hasYield)(position)
+    ShowProceduresClause(DefaultOrAllShowColumns(hasYield, briefCols, briefCols ++ verboseCols), executable, where, hasYield)(position)
   }
 }
 
@@ -582,7 +578,7 @@ object ShowFunctionsClause {
       ShowColumn("rolesBoostedExecution", CTList(CTString))(position)
     )
 
-    ShowFunctionsClause(DefaultOrAllShowColumns(hasYield, briefCols, verboseCols), functionType, executable, where, hasYield)(position)
+    ShowFunctionsClause(DefaultOrAllShowColumns(hasYield, briefCols, briefCols ++ verboseCols), functionType, executable, where, hasYield)(position)
   }
 }
 
