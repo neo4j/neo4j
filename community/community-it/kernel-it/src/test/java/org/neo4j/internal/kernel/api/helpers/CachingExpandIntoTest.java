@@ -333,7 +333,7 @@ class CachingExpandIntoTest
             assertThat( cursor.relationshipReference() ).isEqualTo( r3 );
             assertThat( cursor.sourceNodeReference() ).isEqualTo( end );
             assertThat( cursor.targetNodeReference() ).isEqualTo( start );
-            assertThat( cursor.otherNodeReference() ).isEqualTo( start );
+            assertThat( cursor.otherNodeReference() ).isEqualTo( end );
             assertThat( cursor.type() ).isEqualTo( t3 );
             cursor.properties( properties );
             assertTrue( properties.next() );
@@ -347,7 +347,7 @@ class CachingExpandIntoTest
             assertThat( cursor.relationshipReference() ).isEqualTo( r3 );
             assertThat( cursor.sourceNodeReference() ).isEqualTo( end );
             assertThat( cursor.targetNodeReference() ).isEqualTo( start );
-            assertThat( cursor.otherNodeReference() ).isEqualTo( start );
+            assertThat( cursor.otherNodeReference() ).isEqualTo( end );
             assertThat( cursor.type() ).isEqualTo( t3 );
             cursor.properties( properties );
             assertTrue( properties.next() );
@@ -361,7 +361,7 @@ class CachingExpandIntoTest
             assertThat( cursor.relationshipReference() ).isEqualTo( r2 );
             assertThat( cursor.sourceNodeReference() ).isEqualTo( start );
             assertThat( cursor.targetNodeReference() ).isEqualTo( end );
-            assertThat( cursor.otherNodeReference() ).isEqualTo( end );
+            assertThat( cursor.otherNodeReference() ).isEqualTo( start );
             assertThat( cursor.type() ).isEqualTo( t2 );
             cursor.properties( properties );
             assertTrue( properties.next() );
@@ -375,7 +375,7 @@ class CachingExpandIntoTest
             assertThat( cursor.relationshipReference() ).isEqualTo( r2 );
             assertThat( cursor.sourceNodeReference() ).isEqualTo( start );
             assertThat( cursor.targetNodeReference() ).isEqualTo( end );
-            assertThat( cursor.otherNodeReference() ).isEqualTo( end );
+            assertThat( cursor.otherNodeReference() ).isEqualTo( start );
             assertThat( cursor.type() ).isEqualTo( t2 );
             cursor.properties( properties );
             assertTrue( properties.next() );
@@ -467,6 +467,68 @@ class CachingExpandIntoTest
                 assertThat( degrees.totalDegree( loop ) ).isEqualTo( 1 );
             }
         }
+    }
+
+    @Test
+    void shouldReturnCorrectNodeReferences() throws KernelException
+    {
+        long nodeA, nodeB;
+        int relType;
+
+        //given
+        try ( KernelTransaction tx = transaction() )
+        {
+            nodeA = tx.dataWrite().nodeCreate();
+            nodeB = tx.dataWrite().nodeCreate();
+            relType = tx.tokenWrite().relationshipTypeGetOrCreateForName( "KNOWS" );
+            tx.dataWrite().relationshipCreate( nodeA, relType, nodeB );
+            tx.commit();
+        }
+        int[] relTypes = new int[] { relType };
+
+        // Then
+        try ( var tx = transaction();
+              var nodeCursor = tx.cursors().allocateNodeCursor( tx.cursorContext() );
+              RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( tx.cursorContext() ) )
+        {
+            var expandInto = new CachingExpandInto( tx.dataRead(), BOTH, MEMORY_TRACKER );
+
+            var cursor = expandInto.connectingRelationships( nodeCursor, traversalCursor, nodeA, relTypes, nodeB );
+            assertThat( cursor.getClass().getSimpleName() ).doesNotContain( "FromCachedSelectionCursor" );
+            assertThat( cursor.next() ).isTrue();
+            testNodeReferences( cursor, nodeA, nodeB, nodeA );
+            assertThat( cursor.next() ).isFalse();
+
+            cursor = expandInto.connectingRelationships( nodeCursor, traversalCursor, nodeA, relTypes, nodeB );
+            assertThat( cursor.getClass().getSimpleName() ).contains( "FromCachedSelectionCursor" );
+            assertThat( cursor.next() ).isTrue();
+            testNodeReferences( cursor, nodeA, nodeB, nodeA );
+            assertThat( cursor.next() ).isFalse();
+
+            // Reset cache
+            expandInto = new CachingExpandInto( tx.dataRead(), BOTH, MEMORY_TRACKER );
+
+            cursor = expandInto.connectingRelationships( nodeCursor, traversalCursor, nodeB, relTypes, nodeA );
+            assertThat( cursor.getClass().getSimpleName() ).doesNotContain( "FromCachedSelectionCursor" );
+            assertThat( cursor.next() ).isTrue();
+            testNodeReferences( cursor, nodeA, nodeB, nodeB );
+            assertThat( cursor.next() ).isFalse();
+
+            cursor = expandInto.connectingRelationships( nodeCursor, traversalCursor, nodeB, relTypes, nodeA );
+            assertThat( cursor.getClass().getSimpleName() ).contains( "FromCachedSelectionCursor" );
+            assertThat( cursor.next() ).isTrue();
+            testNodeReferences( cursor, nodeA, nodeB, nodeB );
+            assertThat( cursor.next() ).isFalse();
+        }
+    }
+
+    private void testNodeReferences( RelationshipTraversalCursor cursor, long source, long target, long origin )
+    {
+        long other = source == origin ? target : source;
+        assertThat( cursor.sourceNodeReference() ).isEqualTo( source );
+        assertThat( cursor.targetNodeReference() ).isEqualTo( target );
+        assertThat( cursor.originNodeReference() ).isEqualTo( origin );
+        assertThat( cursor.otherNodeReference() ).isEqualTo( other );
     }
 
     private LongSet connections( long start, Direction direction, long end, String... types )

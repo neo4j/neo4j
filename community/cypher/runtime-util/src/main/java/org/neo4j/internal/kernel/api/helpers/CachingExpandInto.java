@@ -294,7 +294,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         @Override
         public long originNodeReference()
         {
-            return currentRelationship.from;
+            return firstNode;
         }
 
         @Override
@@ -363,7 +363,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         @Override
         public long otherNodeReference()
         {
-            return currentRelationship.from == firstNode ? secondNode : firstNode;
+            return secondNode;
         }
 
         @Override
@@ -444,7 +444,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         @Override
         public long originNodeReference()
         {
-            return allRelationships.originNodeReference();
+            return firstNode;
         }
 
         @Override
@@ -476,7 +476,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         @Override
         public long otherNodeReference()
         {
-            return allRelationships.otherNodeReference();
+            return secondNode;
         }
 
         @Override
