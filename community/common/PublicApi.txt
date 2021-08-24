@@ -151,6 +151,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::UnboundedVariableLengthPattern
 org.neo4j.kernel.api.exceptions.Status.Statement::UnknownLabelWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::UnknownPropertyKeyWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::UnknownRelationshipTypeWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::UnsupportedAdministrationCommand org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.Statement::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Statement public static
 org.neo4j.kernel.api.exceptions.Status.Statement::values() org.neo4j.kernel.api.exceptions.Status.Statement[] public static

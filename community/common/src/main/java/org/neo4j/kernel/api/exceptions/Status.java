@@ -262,6 +262,7 @@ public interface Status
                 "This feature is deprecated and will be removed in future versions." ),
         ExperimentalFeature( ClientNotification,
                 "This feature is experimental and should not be used in production systems." ),
+        UnsupportedAdministrationCommand( ClientError, "This administration command is not supported." ),
 
         // client notifications (unknown tokens)
         UnknownLabelWarning( ClientNotification,

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import org.neo4j.bolt.runtime.Neo4jError;
+import org.neo4j.exceptions.SecurityAdministrationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -75,6 +76,24 @@ class ErrorReporterTest
                                                 "Database error" );
 
         assertThat( internalLog ).containsMessages( reference.toString(), "Database error" );
+    }
+
+    @Test
+    void clientErrorShouldNotLog()
+    {
+        // given
+        AssertableLogProvider userLog = new AssertableLogProvider();
+        AssertableLogProvider internalLog = new AssertableLogProvider();
+        ErrorReporter reporter = newErrorReporter( userLog, internalLog );
+
+        Neo4jError error = Neo4jError.from( new SecurityAdministrationException( "Unsupported administration command: CREATE DATABASE foo" ) );
+
+        // when
+        reporter.report( error );
+
+        // then
+        assertThat( userLog ).doesNotHaveAnyLogs();
+        assertThat( internalLog ).doesNotHaveAnyLogs();
     }
 
     private static ErrorReporter newErrorReporter( LogProvider userLog, LogProvider internalLog )
