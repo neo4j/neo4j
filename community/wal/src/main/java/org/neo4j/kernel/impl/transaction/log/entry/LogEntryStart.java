@@ -76,6 +76,7 @@ public class LogEntryStart extends AbstractLogEntry
     public String toString()
     {
         return "Start[" +
+                "kernelVersion=" + getVersion() + "," +
                 "time=" + timestamp( timeWritten ) + "," +
                 "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
                 "previousChecksum=" + previousChecksum + "," +
