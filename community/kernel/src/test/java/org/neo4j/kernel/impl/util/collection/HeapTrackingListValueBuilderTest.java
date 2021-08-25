@@ -73,7 +73,7 @@ class HeapTrackingListValueBuilderTest
         // Validate builder size
         long memoryTrackerActualSize = meter.measureDeep( memoryTracker );
         long actualBuilderSize = meter.measureDeep( listValueBuilder ) - memoryTrackerActualSize;
-        long estimatedBuilderSize = memoryTracker.estimatedHeapMemory();
+        long estimatedBuilderSize = memoryTracker.estimatedHeapMemory() + listValueBuilder.getUnAllocatedHeapSize();
         assertEquals( actualBuilderSize, estimatedBuilderSize );
 
         // Validate value size
@@ -121,4 +121,34 @@ class HeapTrackingListValueBuilderTest
         assertFalse( iterator.hasNext() );
     }
 
+    @Test
+    void combine()
+    {
+        int iterations = rnd.nextInt( 10, 1000 );
+        for ( int i = 0; i < iterations; i++ )
+        {
+            listValueBuilder.add( Values.longValue( i ) );
+        }
+
+        // Validate builder size
+        long memoryTrackerActualSize = meter.measureDeep( memoryTracker );
+        long actualBuilderSize = meter.measureDeep( listValueBuilder ) - memoryTrackerActualSize;
+        long estimatedBuilderSize = memoryTracker.estimatedHeapMemory() + listValueBuilder.getUnAllocatedHeapSize();
+        assertEquals( actualBuilderSize, estimatedBuilderSize );
+
+        // Validate value size
+        ListValue listValue = listValueBuilder.build();
+        long actualValueSize = meter.measureDeep( listValue ) - memoryTrackerActualSize;
+        long estimatedValueSize = listValue.estimatedHeapUsage();
+        assertEquals( actualValueSize, estimatedValueSize );
+
+        // Validate items
+        Iterator<AnyValue> iterator = listValue.iterator();
+        for ( int i = 0; i < iterations; i++ )
+        {
+            assertTrue( iterator.hasNext() );
+            assertEquals( i, ((LongValue) iterator.next()).longValue() );
+        }
+        assertFalse( iterator.hasNext() );
+    }
 }

@@ -31,6 +31,7 @@ import java.util.stream.Collector;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ValueRepresentation;
 
@@ -60,10 +61,23 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
 
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingListValueBuilder.class );
 
+    // We wait to track memory (bytes) below this threshold (see `unAllocatedHeapSize`).
+    private static final long HEAP_SIZE_ALLOCATION_THRESHOLD = 1024;
+
     private final HeapTrackingArrayList<AnyValue> values;
     private final MemoryTracker scopedMemoryTracker;
     @Unmetered
     private ValueRepresentation representation;
+
+    /*
+     * Estimated heap usage in bytes of items that has been added to the
+     * builder but not yet accounted for in the memory tracker.
+     *
+     * We have seen queries that spend a lot of time to allocate heap in the
+     * memory tracker when adding lots of small items (RollupApply micro
+     * benchmark). This is an optimisation for such cases.
+     */
+    private long unAllocatedHeapSize;
 
     public HeapTrackingListValueBuilder( MemoryTracker memoryTracker )
     {
@@ -76,13 +90,21 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
 
     public void add( AnyValue value )
     {
-        scopedMemoryTracker.allocateHeap( value.estimatedHeapUsage() );
+        unAllocatedHeapSize += value.estimatedHeapUsage();
+        if ( unAllocatedHeapSize >= HEAP_SIZE_ALLOCATION_THRESHOLD )
+        {
+            scopedMemoryTracker.allocateHeap( unAllocatedHeapSize );
+            unAllocatedHeapSize = 0;
+        }
+
         representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
         values.add( value );
     }
 
     public ListValue build()
     {
+        scopedMemoryTracker.allocateHeap( unAllocatedHeapSize );
+        unAllocatedHeapSize = 0;
         return new ListValue.JavaListListValue( values, payloadSize(), valueRepresentation() );
     }
 
@@ -103,7 +125,13 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
     private long payloadSize()
     {
         // The shallow size should not be transferred to the ListValue (but the ScopedMemoryTracker is)
-        return scopedMemoryTracker.estimatedHeapMemory() - SHALLOW_SIZE;
+        return unAllocatedHeapSize + scopedMemoryTracker.estimatedHeapMemory() - SHALLOW_SIZE;
+    }
+
+    @VisibleForTesting
+    public long getUnAllocatedHeapSize()
+    {
+        return unAllocatedHeapSize;
     }
 
     @Override
