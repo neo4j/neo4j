@@ -22,10 +22,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionAndRelationshipLeafPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.RelationshipIndexMatch
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPlanProvider {
@@ -48,26 +51,39 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
           }
           val singlePredicateSet = indexMatch.predicateSet(Seq(indexPredicate), exactPredicatesCanGetValue = false)
 
-          val hint = singlePredicateSet
-            .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)
-            .headOption
+          def provideRelationshipLeafPlan(patternForLeafPlan: PatternRelationship,
+                                          originalPattern: PatternRelationship,
+                                          hiddenSelections: Seq[Expression]): LogicalPlan = {
 
-          val plan = context.logicalPlanProducer.planRelationshipIndexStringSearchScan(
-            idName = indexMatch.variableName,
-            relationshipType = indexMatch.relationshipTypeToken,
-            pattern = indexMatch.patternRelationship,
-            properties = singlePredicateSet.indexedProperties(context),
-            stringSearchMode = stringSearchMode,
-            solvedPredicates = singlePredicateSet.allSolvedPredicates,
-            solvedHint = hint,
-            valueExpr = valueExpr,
-            argumentIds = argumentIds,
-            providedOrder = indexMatch.providedOrder,
-            indexOrder = indexMatch.indexOrder,
-            context = context,
-            indexType = indexMatch.indexDescriptor.indexType,
-          )
-          Some(plan)
+            val hint = singlePredicateSet
+              .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)
+              .headOption
+
+            context.logicalPlanProducer.planRelationshipIndexStringSearchScan(
+              idName = indexMatch.variableName,
+              relationshipType = indexMatch.relationshipTypeToken,
+              patternForLeafPlan = patternForLeafPlan,
+              originalPattern = originalPattern,
+              properties = singlePredicateSet.indexedProperties(context),
+              stringSearchMode = stringSearchMode,
+              solvedPredicates = singlePredicateSet.allSolvedPredicates,
+              solvedHint = hint,
+              hiddenSelections = hiddenSelections,
+              valueExpr = valueExpr,
+              argumentIds = argumentIds,
+              providedOrder = indexMatch.providedOrder,
+              indexOrder = indexMatch.indexOrder,
+              context = context,
+              indexType = indexMatch.indexDescriptor.indexType,
+            )
+          }
+
+          Some(planHiddenSelectionAndRelationshipLeafPlan(
+            argumentIds,
+            indexMatch.patternRelationship,
+            context,
+            provideRelationshipLeafPlan
+          ))
 
         case _ =>
           None

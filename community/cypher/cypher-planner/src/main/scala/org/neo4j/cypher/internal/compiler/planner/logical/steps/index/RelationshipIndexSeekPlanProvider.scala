@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionAndRelationshipLeafPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexSeekPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexSeekPlanProvider.mergeQueryExpressionsToSingleOne
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexSeekPlanProvider.predicatesForIndexSeek
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.RelationshipIndexMatch
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 
@@ -67,19 +69,26 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
       .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = false)
       .headOption
 
-    context.logicalPlanProducer.planRelationshipIndexSeek(
+    def getRelationshipLeafPlan(patternForLeafPlan: PatternRelationship,
+                                originalPattern: PatternRelationship,
+                                hiddenSelections: Seq[Expression]): LogicalPlan = context.logicalPlanProducer.planRelationshipIndexSeek(
       idName = indexMatch.variableName,
       typeToken = indexMatch.relationshipTypeToken,
       properties = predicateSet.indexedProperties(context),
       valueExpr = queryExpression,
       argumentIds = argumentIds,
       indexOrder = indexMatch.indexOrder,
-      pattern = indexMatch.patternRelationship,
+      patternForLeafPlan = patternForLeafPlan,
+      originalPattern = originalPattern,
       solvedPredicates = predicateSet.allSolvedPredicates,
       solvedHint = hint,
+      hiddenSelections = hiddenSelections,
       providedOrder = indexMatch.providedOrder,
       context = context,
       indexType = indexMatch.indexDescriptor.indexType,
     )
+
+    planHiddenSelectionAndRelationshipLeafPlan(argumentIds, indexMatch.patternRelationship, context, getRelationshipLeafPlan)
+
   }
 }

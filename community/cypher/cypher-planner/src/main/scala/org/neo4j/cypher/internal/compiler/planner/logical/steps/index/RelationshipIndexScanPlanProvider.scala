@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionAndRelationshipLeafPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.Solution
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.mergeSolutions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.predicatesForIndexScan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.RelationshipIndexMatch
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -65,18 +67,30 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
 
     distinctSolutions map { solution =>
 
-      context.logicalPlanProducer.planRelationshipIndexScan(
-        idName = solution.indexScanParameters.idName,
-        solution.indexScanParameters.token,
-        pattern = solution.indexScanParameters.patternRelationship,
-        properties = solution.indexScanParameters.properties,
-        solvedPredicates = solution.solvedPredicates,
-        solvedHint = solution.solvedHint,
-        argumentIds = argumentIds,
-        providedOrder = solution.providedOrder,
-        indexOrder = solution.indexScanParameters.indexOrder,
-        context = context,
-        indexType =  solution.indexType,
+      def provideRelationshipLeafPlan(patternForLeafPlan: PatternRelationship,
+                                      originalPattern: PatternRelationship,
+                                      hiddenSelections: Seq[Expression]): LogicalPlan =
+        context.logicalPlanProducer.planRelationshipIndexScan(
+          idName = solution.indexScanParameters.idName,
+          solution.indexScanParameters.token,
+          patternForLeafPlan,
+          originalPattern,
+          properties = solution.indexScanParameters.properties,
+          solvedPredicates = solution.solvedPredicates,
+          solvedHint = solution.solvedHint,
+          hiddenSelections = hiddenSelections,
+          argumentIds = argumentIds,
+          providedOrder = solution.providedOrder,
+          indexOrder = solution.indexScanParameters.indexOrder,
+          context = context,
+          indexType =  solution.indexType,
+        )
+
+      planHiddenSelectionAndRelationshipLeafPlan(
+        argumentIds,
+        solution.indexScanParameters.patternRelationship,
+        context,
+        provideRelationshipLeafPlan
       )
     }
   }

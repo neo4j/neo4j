@@ -168,7 +168,17 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       relationshipLookupIndex: Boolean = true,
                       propertyIndexes: Seq[IndexDefinition] = Seq.empty,
                     ) {
-    def addPropertyIndex(indexDefinition: IndexDefinition): Indexes = this.copy(propertyIndexes = propertyIndexes :+ indexDefinition)
+    def addPropertyIndex(indexDefinition: IndexDefinition): Indexes = {
+      this.copy(propertyIndexes = propertyIndexes.filterNot(sameKeys(indexDefinition, _)) :+ indexDefinition)
+    }
+
+    private def sameKeys(indexDefinition: IndexDefinition,
+                         oldDef: IndexDefinition) = {
+      oldDef.entityType == indexDefinition.entityType &&
+        oldDef.propertyKeys == indexDefinition.propertyKeys &&
+        oldDef.indexType == indexDefinition.indexType
+    }
+
     def addNodeLookupIndex(): Indexes = this.copy(nodeLookupIndex = true)
     def removeNodeLookupIndex(): Indexes = this.copy(nodeLookupIndex = false)
     def addRelationshipLookupIndex(): Indexes = this.copy(relationshipLookupIndex = true)
@@ -524,9 +534,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     }
 
     val graphStatistics =
-      if (options.useMinimumGraphStatistics) new MinimumGraphStatistics(internalGraphStatistics)
-      else internalGraphStatistics
-
+      if (options.useMinimumGraphStatistics) {
+        new MinimumGraphStatistics(internalGraphStatistics)
+      } else {
+        internalGraphStatistics
+      }
     val planContext: PlanContext = new NotImplementedPlanContext() {
       override def statistics: InstrumentedGraphStatistics =
         InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())

@@ -826,24 +826,4 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       resultPlans should be(empty)
     }
   }
-
-  test("should not plan relationship index scan for self-loop") {
-    new given {
-      qg = QueryGraph(
-        selections = Selections(Set(Predicate(Set(relName), propIsNotNull))),
-        patternRelationships = Set(PatternRelationship(
-          relName,
-          (startNodeName, startNodeName),
-          BOTH,
-          Seq(relTypeName(relTypeName)),
-          SimplePatternLength)))
-      relationshipIndexOn(relTypeName, prop)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = relationshipIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      resultPlans shouldBe empty
-    }
-  }
 }

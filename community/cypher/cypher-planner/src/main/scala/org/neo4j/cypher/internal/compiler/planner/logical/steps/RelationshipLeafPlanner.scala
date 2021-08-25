@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -49,24 +48,24 @@ object RelationshipLeafPlanner {
    * Plan a hidden selection on top of a relationship leaf plan, if needed.
    * This is needed if either the start or end node is already bound, or if the start and end node is the same.
    *
-   * @param queryGraph   the query graph
+   * @param argumentIds  ids of already bound entities, which are fed into this leaf plan as arguments
    * @param relationship the relationship
    * @param context      the context
    * @param relationshipLeafPlanProvider a RelationshipLeafPlanProvider
    * @return the leaf plan, with the correct hidden selections.
    */
-  def planHiddenSelectionAndRelationshipLeafPlan(queryGraph: QueryGraph,
+  def planHiddenSelectionAndRelationshipLeafPlan(argumentIds: Set[String],
                                                  relationship: PatternRelationship,
                                                  context: LogicalPlanningContext,
                                                  relationshipLeafPlanProvider: RelationshipLeafPlanProvider,
                                                  ): LogicalPlan = {
     val startNodeAndEndNodeIsSame = relationship.left == relationship.right
-    val startOrEndNodeIsBound = relationship.coveredIds.intersect(queryGraph.argumentIds).nonEmpty
+    val startOrEndNodeIsBound = relationship.coveredIds.intersect(argumentIds).nonEmpty
     if (!startOrEndNodeIsBound && !startNodeAndEndNodeIsSame) {
       relationshipLeafPlanProvider.getRelationshipLeafPlan(relationship, relationship, Seq.empty)
     } else if (startOrEndNodeIsBound) {
       // if start/end node variables are already bound, generate new variable names and plan a Selection after the seek
-      val newRelationship = generateNewPatternRelationship(relationship, queryGraph.argumentIds, context)
+      val newRelationship = generateNewPatternRelationship(relationship, argumentIds, context)
       // For a pattern (a)-[r]-(b), nodePredicates will be something like `a = new_a AND b = new_B`,
       // where `new_a` and `new_b` are the newly generated variable names.
       // This case covers the scenario where (a)-[r]-(a), because the nodePredicate `a = new_a1 AND a = new_a2` implies `new_a1 = new_a2`

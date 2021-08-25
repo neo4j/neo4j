@@ -61,7 +61,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
             queryGraph.patternRelationships.find(_.name == id) match {
               case Some(relationship) =>
                 Some(planHiddenSelectionAndRelationshipLeafPlan(
-                  queryGraph,
+                  queryGraph.argumentIds,
                   relationship,
                   context,
                   planRelationshipByIdSeek(variable, _, _, _, idValues, Seq(predicate), queryGraph.argumentIds, context)

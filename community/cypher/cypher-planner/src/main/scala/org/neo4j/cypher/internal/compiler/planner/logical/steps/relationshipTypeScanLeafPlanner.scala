@@ -49,7 +49,7 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
       case relationship@PatternRelationship(name, (_, _), _, Seq(typ), SimplePatternLength) if !shouldIgnore(relationship) =>
 
         Some(planHiddenSelectionAndRelationshipLeafPlan(
-          queryGraph,
+          queryGraph.argumentIds,
           relationship,
           context,
           planRelationshipTypeScan(name, typ, _, _, _, queryGraph, interestingOrderConfig, context)

@@ -207,6 +207,16 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
 
   def withHints(hints: Set[Hint]): QueryGraph = copy(hints = hints)
 
+  /**
+   * Sets both patternNodes and patternRelationships from this pattern relationship. Compare with `addPatternRelationship`.
+   * @param pattern the relationship defining the pattern of this query graph
+   */
+  def withPattern(pattern: PatternRelationship): QueryGraph =
+    copy(
+      patternNodes = Set(pattern.nodes._1, pattern.nodes._2),
+      patternRelationships = Set(pattern)
+    )
+
   def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(patternRelationships = patterns)
 

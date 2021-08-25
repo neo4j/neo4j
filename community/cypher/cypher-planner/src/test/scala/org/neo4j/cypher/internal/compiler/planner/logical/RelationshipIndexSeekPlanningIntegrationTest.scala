@@ -37,7 +37,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .setRelationshipCardinality("()-[:REL2]-()", 50)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 0.01, 0.001)
 
   for ((pred, indexStr) <- Seq(
     "r.prop = 123"       -> "prop = 123",
@@ -122,28 +122,57 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       )
     }
 
-    test(s"should not (yet) plan relationship index seek with filter for already bound start node for $pred") {
+    test(s"should plan relationship index seek with filter for already bound start node for $pred") {
       val planner = plannerBuilder().build()
-      withClue("Used relationship index when not expected:") {
         planner.plan(
           s"""MATCH (a) WITH a SKIP 0
-             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin).treeExists {
-          case _: UndirectedRelationshipIndexSeek => true
-          case _: DirectedRelationshipIndexSeek => true
-        } should be(false)
-      }
+             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
+          planner.planBuilder()
+            .produceResults("r")
+            // the filter got pushed up through the apply
+            .filter("a = anon_1")
+            .apply()
+            .|.relationshipIndexOperator(s"(anon_1)-[r:REL($indexStr)]-(b)", argumentIds = Set("a"))
+            .skip(0)
+            .allNodeScan("a")
+            .build()
+        )
     }
 
-    test(s"should not (yet) plan relationship index seek with filter for already bound end node for $pred") {
+    test(s"should plan relationship index seek with filter for already bound end node for $pred") {
       val planner = plannerBuilder().build()
-      withClue("Used relationship index when not expected:") {
-        planner.plan(
-          s"""MATCH (b) WITH b SKIP 0
-             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin).treeExists {
-          case _: UndirectedRelationshipIndexSeek => true
-          case _: DirectedRelationshipIndexSeek => true
-        } should be(false)
-      }
+      planner.plan(
+        s"""MATCH (b) WITH b SKIP 0
+           |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
+        planner.planBuilder()
+          .produceResults("r")
+          // the filter got pushed up through the apply
+          .filter("b = anon_1")
+          .apply()
+          .|.relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(anon_1)", argumentIds = Set("b"))
+          .skip(0)
+          .allNodeScan("b")
+          .build()
+      )
+    }
+
+    test(s"should plan relationship index seek with filter for already bound nodes for $pred") {
+      val planner = plannerBuilder().build()
+      planner.plan(
+        s"""MATCH (a), (b) WITH a, b SKIP 0
+           |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
+        planner.planBuilder()
+          .produceResults("r")
+          // the filter got pushed up through the apply
+          .filter("a = anon_2", "b = anon_3")
+          .apply()
+          .|.relationshipIndexOperator(s"(anon_2)-[r:REL($indexStr)]-(anon_3)", argumentIds = Set("a", "b"))
+          .skip(0)
+          .cartesianProduct()
+          .|.allNodeScan("b")
+          .allNodeScan("a")
+          .build()
+      )
     }
 
     test(s"should not plan relationship index seek for already bound relationship variable for $pred") {
@@ -260,12 +289,15 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       .build()
   }
 
-  test("should not plan relationship index seek for self-loops") {
+  test("should plan relationship index seek for self-loops") {
     val planner = plannerBuilder().build()
 
-    planner.plan(s"MATCH (a)-[r:REL {prop: 1}]-(a) RETURN r").treeExists {
-      case _: UndirectedRelationshipIndexSeek => true
-      case _: DirectedRelationshipIndexSeek => true
-    } should be(false)
+    planner.plan(s"MATCH (a)-[r:REL {prop: 1}]-(a) RETURN r") should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .filter("a = anon_1")
+        .relationshipIndexOperator("(a)-[r:REL(prop = 1)]-(anon_1)")
+        .build()
+    )
   }
 }

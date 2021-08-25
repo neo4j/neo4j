@@ -125,8 +125,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
                                      planningPointIndexesEnabled: Boolean,
                                    ): Set[RelationshipIndexMatch] = {
     def shouldIgnore(pattern: PatternRelationship) =
-      pattern.left == pattern.right ||
-      pattern.coveredIds.intersect(qg.argumentIds).nonEmpty
+      qg.argumentIds.contains(pattern.name)
 
     val predicates = qg.selections.flatPredicatesSet
     val patternRelationshipsMap: Map[String, PatternRelationship] = qg.patternRelationships.collect({
