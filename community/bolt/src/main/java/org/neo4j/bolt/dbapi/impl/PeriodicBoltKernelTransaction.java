@@ -59,6 +59,12 @@ public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl impleme
     }
 
     @Override
+    public void close()
+    {
+        // internal transaction already manage close on commit/rollback
+    }
+
+    @Override
     public void markForTermination( Status reason )
     {
         internalTransaction.kernelTransaction().markForTermination( reason );

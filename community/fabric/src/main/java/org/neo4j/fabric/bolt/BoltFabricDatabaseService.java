@@ -152,6 +152,11 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
         }
 
         @Override
+        public void close()
+        {
+        }
+
+        @Override
         public void markForTermination( Status reason )
         {
             fabricTransaction.markForTermination( reason );

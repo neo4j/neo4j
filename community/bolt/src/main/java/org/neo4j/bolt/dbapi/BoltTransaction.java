@@ -27,11 +27,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * A transaction representation as seen and used by Bolt.
  */
-public interface BoltTransaction extends BoltQueryExecutor
+public interface BoltTransaction extends BoltQueryExecutor, AutoCloseable
 {
     void commit() throws TransactionFailureException;
 
     void rollback() throws TransactionFailureException;
+
+    void close() throws TransactionFailureException;
 
     /**
      * Terminates the transaction. The main difference between this operation and {@link #rollback()} is

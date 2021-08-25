@@ -400,7 +400,7 @@ public class TransactionStateMachine implements StatementProcessor
             ctx.currentTransaction = null;
             if ( tx != null )
             {
-                try
+                try ( tx )
                 {
                     if ( success )
                     {

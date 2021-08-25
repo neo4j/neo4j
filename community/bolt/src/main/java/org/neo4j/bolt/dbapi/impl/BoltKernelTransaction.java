@@ -65,6 +65,12 @@ public class BoltKernelTransaction extends BoltQueryExecutorImpl implements Bolt
     }
 
     @Override
+    public void close() throws TransactionFailureException
+    {
+        kernelTransaction.close();
+    }
+
+    @Override
     public void markForTermination( Status reason )
     {
         kernelTransaction.markForTermination( reason );
