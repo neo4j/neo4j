@@ -20,50 +20,50 @@
 
 #encoding: utf-8
 
-Feature: CallTransactionAcceptance
+Feature: CypherTransactionsAcceptance
 
   Background:
     Given an empty graph
 
-  Scenario: Uncorrelated unit subquery transaction
+  Scenario: Uncorrelated transactional unit subquery with single transaction
     When executing query:
       """
-      CALL TRANSACTION {
+      CALL {
         CREATE (:A)
-      }
+      } IN TRANSACTIONS
       """
     Then the result should be empty
     And the side effects should be:
       | +nodes  | 1 |
       | +labels | 1 |
 
-  Scenario: Uncorrelated unit subquery transactions
+  Scenario: Uncorrelated transactional unit subquery
 
     Subquery is executed once per incoming row.
 
     When executing query:
       """
       UNWIND [1, 2, 3] AS i
-      CALL TRANSACTION {
+      CALL {
         CREATE (:A)
-      }
+      } IN TRANSACTIONS
       """
     Then the result should be empty
     And the side effects should be:
       | +nodes  | 3 |
       | +labels | 1 |
 
-  Scenario: Correlated unit subquery transactions
+  Scenario: Correlated transactional unit subquery
 
     Subquery is executed once per incoming row.
 
     When executing query:
       """
       UNWIND [1, 2, 3] AS i
-      CALL TRANSACTION {
+      CALL {
         WITH i
         CREATE (:A {i: i})
-      }
+      } IN TRANSACTIONS
       """
     Then the result should be empty
     And the side effects should be:
@@ -71,7 +71,7 @@ Feature: CallTransactionAcceptance
       | +properties | 3 |
       | +labels     | 1 |
 
-  Scenario: Correlated unit subquery transactions with multiple writes
+  Scenario: Correlated transactional unit subquery with multiple writes
 
     Each subquery execution is correlated with one incoming row.
     Primitive values can be passed into subquery transactions.
@@ -79,11 +79,11 @@ Feature: CallTransactionAcceptance
     When executing query:
       """
       UNWIND [1, 2, 3] AS i
-      CALL TRANSACTION {
+      CALL {
         WITH i
         UNWIND range(1, i) AS j
         CREATE (:A {i: i, j: j})
-      }
+      } IN TRANSACTIONS
       """
     Then the result should be empty
     And the side effects should be:
@@ -91,7 +91,7 @@ Feature: CallTransactionAcceptance
       | +properties | 12 |
       | +labels     | 1  |
 
-  Scenario: Uncorrelated unit subquery transaction preceded by match
+  Scenario: Uncorrelated transactional unit subquery preceded by match
 
     Reads appearing before the subquery clause should not observe any writes from subquery executions.
 
@@ -102,15 +102,15 @@ Feature: CallTransactionAcceptance
     When executing query:
       """
       MATCH (n:A)
-      CALL TRANSACTION {
+      CALL {
         CREATE (a:A)
-      }
+      } IN TRANSACTIONS
       """
     Then the result should be empty
     And the side effects should be:
       | +nodes | 1 |
 
-  Scenario: Correlated unit subquery transactions using entity values
+  Scenario: Correlated transactional unit subquery using entity values
 
     Each subquery execution is correlated with one incoming row.
     Entity values can be passed into subquery transactions.
@@ -122,16 +122,16 @@ Feature: CallTransactionAcceptance
     When executing query:
       """
       MATCH (n)
-      CALL TRANSACTION {
+      CALL {
         WITH n
         SET n.i = 1
-      }
+      } IN TRANSACTIONS
       """
     Then the result should be empty
     And the side effects should be:
       | +properties | 3 |
 
-  Scenario: Correlated unit subquery transactions followed by property reads
+  Scenario: Correlated transactional unit subquery followed by property reads
 
     Reads appearing after the clause should observe writes from all subquery executions.
 
@@ -142,10 +142,10 @@ Feature: CallTransactionAcceptance
     When executing query:
       """
       MATCH (n)
-      CALL TRANSACTION {
+      CALL {
         WITH n
         SET n.i = 1
-      }
+      } IN TRANSACTIONS
       RETURN n.i AS ni
       """
     Then the result should be, in any order:
@@ -156,7 +156,7 @@ Feature: CallTransactionAcceptance
     And the side effects should be:
       | +properties | 3 |
 
-  Scenario: Correlated unit subquery transactions preceded and followed by property reads
+  Scenario: Correlated transactional unit subquery preceded and followed by property reads
 
     Reads appearing before the clause should not observe any writes from subquery executions.
     Reads appearing after the clause should observe writes from all subquery executions.
@@ -169,10 +169,10 @@ Feature: CallTransactionAcceptance
       """
       MATCH (n)
       WITH n, n.i AS ni1
-      CALL TRANSACTION {
+      CALL {
         WITH n
         SET n.i = n.i * 10
-      }
+      } IN TRANSACTIONS
       RETURN n.i AS ni2
       """
     Then the result should be, in any order:
@@ -184,16 +184,16 @@ Feature: CallTransactionAcceptance
       | -properties | 3 |
       | +properties | 3 |
 
-  Scenario: Uncorrelated unit subquery transactions followed by match
+  Scenario: Uncorrelated transactional unit subquery followed by match
 
     Reads appearing after the subquery clause should observe writes from all subquery executions.
 
     When executing query:
       """
       UNWIND [1, 2, 3] AS i
-      CALL TRANSACTION {
+      CALL {
         CREATE (:A)
-      }
+      } IN TRANSACTIONS
       MATCH (n)
       RETURN count(n) AS nc
       """
@@ -206,7 +206,7 @@ Feature: CallTransactionAcceptance
       | +nodes  | 3 |
       | +labels | 1 |
 
-  Scenario: Uncorrelated unit subquery transactions containing match and create
+  Scenario: Uncorrelated transactional unit subquery containing match and create
 
     Subquery executions should observe writes done in previous executions.
 
@@ -217,17 +217,17 @@ Feature: CallTransactionAcceptance
     When executing query:
       """
       UNWIND [1, 2, 3] AS i
-      CALL TRANSACTION {
+      CALL {
         MATCH (n)
         CREATE (:B)
-      }
+      } IN TRANSACTIONS
       """
     Then the result should be empty
     And the side effects should be:
       | +nodes  | 7 |
       | +labels | 1 |
 
-  Scenario: Uncorrelated unit subquery transactions containing match and create followed by match
+  Scenario: Uncorrelated transactional unit subquery containing match and create followed by match
 
     Subquery executions should observe writes done in previous executions.
     Reads appearing after the clause should observe writes from all subquery executions.
@@ -239,10 +239,10 @@ Feature: CallTransactionAcceptance
     When executing query:
       """
       UNWIND [1, 2, 3] AS i
-      CALL TRANSACTION {
+      CALL {
         MATCH (n)
         CREATE (:B)
-      }
+      } IN TRANSACTIONS
       MATCH (n)
       RETURN i, count(n) AS nc
       """
@@ -255,7 +255,7 @@ Feature: CallTransactionAcceptance
       | +nodes  | 7 |
       | +labels | 1 |
 
-  Scenario: Uncorrelated unit subquery transactions updating the same property value
+  Scenario: Uncorrelated transactional unit subquery updating the same property value
 
     Subquery executions should observe writes done in previous executions.
     Reads appearing after the clause should observe writes from all subquery executions.
@@ -268,10 +268,10 @@ Feature: CallTransactionAcceptance
       """
       UNWIND [1, 2, 3] AS i
       MATCH (n)
-      CALL TRANSACTION {
+      CALL {
         MATCH (m)
         SET m.i = m.i * 10
-      }
+      } IN TRANSACTIONS
       RETURN i, n.i
       """
     Then the result should be, in any order:
@@ -283,7 +283,7 @@ Feature: CallTransactionAcceptance
       | -properties | 1 |
       | +properties | 1 |
 
-  Scenario: Correlated unit subquery transactions updating the same property list value in sequence
+  Scenario: Correlated transactional unit subquery updating the same property list value in sequence
 
     Correlated subquery executions happen in the order of input rows.
 
@@ -296,10 +296,10 @@ Feature: CallTransactionAcceptance
       MATCH (n)
       UNWIND [1, 2, 3] AS i
       WITH * ORDER BY i
-      CALL TRANSACTION {
+      CALL {
         WITH n, i
         SET n.is = n.is + [i]
-      }
+      } IN TRANSACTIONS
       RETURN n.is
       """
     Then the result should be, in any order:
