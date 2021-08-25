@@ -44,8 +44,8 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
+import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +60,6 @@ import static org.neo4j.graphdb.StringSearchMode.SUFFIX;
 import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.conditions.Conditions.condition;
-import static org.neo4j.test.conditions.Conditions.equalityCondition;
 
 @Neo4jLayoutExtension
 public class TextIndexIT
@@ -122,6 +121,51 @@ public class TextIndexIT
     {
         var message = assertThrows( UnsupportedOperationException.class, executable ).getMessage();
         assertThat( message ).isEqualTo( "Composite indexes are not supported for TEXT index type." );
+    }
+
+    @Test
+    void shouldCreateAndDropIndexWithCypher()
+    {
+        //Given
+        var nodeIndex = "some_node_text_index";
+        var relationshipIndex = "some_rel_text_index";
+        var person = label( "PERSON" );
+        var relation = RelationshipType.withName( "FRIEND" );
+        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).setConfig( text_indexes_enabled, true ).build();
+        var db = dbms.database( DEFAULT_DATABASE_NAME );
+
+        // When
+        try ( var tx = db.beginTx() )
+        {
+            tx.execute( format(  "CREATE TEXT INDEX %s FOR (p:PERSON) ON (p.name)", nodeIndex ));
+            tx.execute( format(  "CREATE TEXT INDEX %s FOR ()-[r:FRIEND]-() ON (r.since)", relationshipIndex ));
+            tx.commit();
+        }
+
+        // Then
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 5, MINUTES );
+            assertThat( tx.schema().getIndexByName( nodeIndex ) ).isNotNull();
+            assertThat( tx.schema().getIndexByName( relationshipIndex ) ).isNotNull();
+        }
+
+        // When
+        try ( var tx = db.beginTx() )
+        {
+            tx.execute( format( "DROP INDEX %s", nodeIndex ) );
+            tx.execute( format( "DROP INDEX %s", relationshipIndex ) );
+            tx.commit();
+        }
+
+        // Then
+        try ( var tx = db.beginTx() )
+        {
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().getIndexByName( nodeIndex ) );
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().getIndexByName( relationshipIndex ) );
+        }
+
+        dbms.shutdown();
     }
 
     @Test
