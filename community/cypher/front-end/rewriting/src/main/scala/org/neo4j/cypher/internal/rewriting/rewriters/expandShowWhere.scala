@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
@@ -25,6 +26,7 @@ import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -48,17 +50,55 @@ case object expandShowWhere extends Rewriter with Step with PreparatoryRewriting
   override def apply(v: AnyRef): AnyRef =
     instance(v)
 
-    private val instance = bottomUp(Rewriter.lift {
-      case s @ ShowDatabase(_, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
-      case s @ ShowRoles(_, _, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
-      case s @ ShowPrivileges(_, Some(Right(where)),_) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
-      case s @ ShowPrivilegeCommands(_, _, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
-      case s @ ShowUsers(Some(Right(where)),_) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
-      case s @ ShowCurrentUser(Some(Right(where)),_) => s.copy(yieldOrWhere = Some(Left((whereToYield(where), None))))(s.position)
-    })
+  private val instance = bottomUp(Rewriter.lift {
+    // move freestanding WHERE to YIELD * WHERE and add default columns to the YIELD
+    case s@ShowDatabase(_, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s@ShowRoles(_, _, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s@ShowPrivileges(_, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s@ShowPrivilegeCommands(_, _, Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s@ShowUsers(Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
+    case s@ShowCurrentUser(Some(Right(where)), _) => s.copy(yieldOrWhere = Some(Left((whereToYield(where, s.defaultColumnNames), None))))(s.position)
 
-    private def whereToYield(where: Where): Yield =
-      Yield(ReturnItems(includeExisting = true, Seq.empty)(where.position), None, None, None, Some(where))(where.position)
+    // add default columns to explicit YIELD/RETURN * as well
+    case s@ShowDatabase(_, Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+      s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
+    case s@ShowRoles(_, _, Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+      s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
+    case s@ShowPrivileges(_, Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+      s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
+    case s@ShowPrivilegeCommands(_, _, Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+      s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
+    case s@ShowUsers(Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+      s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
+    case s@ShowCurrentUser(Some(Left((yieldClause, returnClause))), _) if yieldClause.returnItems.includeExisting || returnClause.exists(_.returnItems.includeExisting) =>
+      s.copy(yieldOrWhere = addDefaultColumns(yieldClause, returnClause, s.defaultColumnNames))(s.position)
+  })
+
+  private def whereToYield(where: Where, defaultColumns: List[String]): Yield =
+    Yield(ReturnItems(includeExisting = true, Seq.empty, Some(defaultColumns))(where.position), None, None, None, Some(where))(where.position)
+
+  private def addDefaultColumns(yieldClause: Yield, maybeReturn: Option[Return], defaultColumns: List[String]): YieldOrWhere = {
+    // Update yield clause with default columns if includeExisting
+    val (newYield, yieldColumns) =
+      if (yieldClause.returnItems.includeExisting) {
+        val yieldColumns = yieldClause.returnItems.defaultOrderOnColumns.getOrElse(defaultColumns)
+        val newYield = yieldClause.withReturnItems(yieldClause.returnItems.withDefaultOrderOnColumns(yieldColumns))
+        (newYield, yieldColumns)
+      }
+      else (yieldClause, yieldClause.returnItems.items.map(_.name).toList)
+
+    // Update the return clause with default columns if includeExisting,
+    // using the columns from the yield clause (either the default or the explicitly yielded ones)
+    // Example: `... YIELD a, b, c ... RETURN *` will add List(a, b, c) to the default columns on the return
+    val newReturn = maybeReturn.map(returnClause =>
+      if (returnClause.returnItems.includeExisting) {
+        val returnColumns = returnClause.returnItems.defaultOrderOnColumns.getOrElse(yieldColumns)
+        returnClause.withReturnItems(returnClause.returnItems.withDefaultOrderOnColumns(returnColumns))
+      } else returnClause
+    )
+
+    Some(Left(newYield, newReturn))
+  }
 
   override def getRewriter(cypherExceptionFactory: CypherExceptionFactory,
                            notificationLogger: InternalNotificationLogger): Rewriter = instance
