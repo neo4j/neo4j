@@ -295,6 +295,16 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def newTx(): InternalTransaction = runtimeTestSupport.startNewTx()
 
+  def withNewTx(consumer: InternalTransaction => Unit): Unit = {
+    // replace with scala.util.Using once we are on Scala 2.13
+    val transaction = newTx()
+    try {
+      consumer(transaction)
+    } finally {
+      transaction.close()
+    }
+  }
+
   /**
    * Call this to ensure that everything is commited and a new TX is opened. Be sure to not
    * use data from the previous tx afterwards. If you need to, get them again from the new
