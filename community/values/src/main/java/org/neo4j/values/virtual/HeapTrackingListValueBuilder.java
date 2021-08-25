@@ -21,14 +21,6 @@ package org.neo4j.values.virtual;
 
 import org.github.jamm.Unmetered;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collector;
-
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
@@ -115,13 +107,6 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
         return value;
     }
 
-    public HeapTrackingListValueBuilder combine( HeapTrackingListValueBuilder rhs )
-    {
-        values.addAll( rhs.values );
-        scopedMemoryTracker.allocateHeap( rhs.payloadSize() );
-        return this;
-    }
-
     private long payloadSize()
     {
         // The shallow size should not be transferred to the ListValue (but the ScopedMemoryTracker is)
@@ -143,45 +128,6 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
     private ValueRepresentation valueRepresentation()
     {
         return representation == null ? ValueRepresentation.UNKNOWN : representation;
-    }
-
-    /**
-     * @return a collector for {@link ListValue}s
-     */
-    public static Collector<AnyValue,HeapTrackingListValueBuilder,ListValue> collector( MemoryTracker memoryTracker )
-    {
-        return new Collector<>()
-        {
-            @Override
-            public Supplier<HeapTrackingListValueBuilder> supplier()
-            {
-                return () -> newHeapTrackingListBuilder( memoryTracker );
-            }
-
-            @Override
-            public BiConsumer<HeapTrackingListValueBuilder,AnyValue> accumulator()
-            {
-                return org.neo4j.values.virtual.HeapTrackingListValueBuilder::add;
-            }
-
-            @Override
-            public BinaryOperator<HeapTrackingListValueBuilder> combiner()
-            {
-                return HeapTrackingListValueBuilder::combine;
-            }
-
-            @Override
-            public Function<HeapTrackingListValueBuilder,ListValue> finisher()
-            {
-                return HeapTrackingListValueBuilder::buildAndClose;
-            }
-
-            @Override
-            public Set<Characteristics> characteristics()
-            {
-                return Collections.emptySet();
-            }
-        };
     }
 }
 
