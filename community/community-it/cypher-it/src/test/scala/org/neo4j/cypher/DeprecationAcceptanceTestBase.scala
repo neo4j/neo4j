@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedur
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_DROP_CONSTRAINT_SYNTAX
@@ -101,6 +102,26 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("deprecated create relationship property existence constraint syntax") {
     assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT EXISTS (r.prop)",
       DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX)
+  }
+
+  test("deprecated create node property existence constraint syntax - deprecate version 1") {
+    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NOT NULL",
+      DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
+  }
+
+  test("deprecated create relationship property existence constraint syntax - deprecate version 1") {
+    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT (r.prop) IS NOT NULL",
+      DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
+  }
+
+  test("deprecated create node key constraint syntax") {
+    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NODE KEY",
+      DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
+  }
+
+  test("deprecated create uniqueness constraint syntax") {
+    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (r.prop) IS UNIQUE",
+      DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
   }
 
   test("deprecated show index syntax") {

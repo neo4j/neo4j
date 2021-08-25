@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotific
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedCatalogKeywordForAdminCommandSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
+import org.neo4j.cypher.internal.util.DeprecatedCreateConstraintOnAssertSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultDatabaseSyntax
@@ -124,6 +125,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_DROP_CONSTRAINT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCreatePropertyExistenceConstraintSyntax(pos) =>
       NotificationCode.DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedCreateConstraintOnAssertSyntax(pos) =>
+      NotificationCode.DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedShowSchemaSyntax(pos) =>
       NotificationCode.DEPRECATED_SHOW_SCHEMA_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedShowExistenceConstraintSyntax(pos) =>

@@ -122,7 +122,13 @@ public enum NotificationCode
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "The create property existence constraint syntax `CREATE CONSTRAINT ON ... ASSERT exists(variable.property)` is deprecated, " +
-                    "please use `CREATE CONSTRAINT ON ... ASSERT (variable.property) IS NOT NULL` instead"
+                    "please use `CREATE CONSTRAINT FOR ... REQUIRE (variable.property) IS NOT NULL` instead"
+    ),
+    DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The create constraint syntax `CREATE CONSTRAINT ON ... ASSERT ...` is deprecated, " +
+                    "please use `CREATE CONSTRAINT FOR ... REQUIRE ...` instead"
     ),
     DEPRECATED_SHOW_SCHEMA_SYNTAX(
             SeverityLevel.WARNING,
