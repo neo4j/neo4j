@@ -190,6 +190,9 @@ object topDown {
     new TopDownRewriter(rewriter, stopper)
 }
 
+/**
+ * Top-down rewriter that also lets the rules see the parent of each node as additional context
+ */
 object topDownWithParent {
   private class TopDownWithParentRewriter(rewriter: RewriterWithParent, val stopper: AnyRef => Boolean)
     extends Rewriter {
