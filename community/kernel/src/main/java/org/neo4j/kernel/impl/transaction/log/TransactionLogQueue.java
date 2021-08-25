@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jctools.queues.MessagePassingQueue;
 import org.jctools.queues.MpscChunkedArrayQueue;
 
@@ -234,7 +233,7 @@ public class TransactionLogQueue extends LifecycleAdapter
             private int checksum;
             private final TxQueueElement[] txElements = new TransactionLogQueue.TxQueueElement[CONSUMER_MAX_BATCH];
             private final long[] txIds = new long[CONSUMER_MAX_BATCH];
-            private final MutableInt index = new MutableInt();
+            private int index;
 
             TxConsumer( Health databaseHealth, TransactionIdStore transactionIdStore, TransactionLogWriter transactionLogWriter, int checksum,
                     TransactionMetadataCache transactionMetadataCache )
@@ -249,13 +248,13 @@ public class TransactionLogQueue extends LifecycleAdapter
             @Override
             public void accept( TxQueueElement txQueueElement )
             {
-                txElements[index.getAndIncrement()] = txQueueElement;
+                txElements[index++] = txQueueElement;
             }
 
             private void processBatch() throws IOException
             {
                 databaseHealth.assertHealthy( IOException.class );
-                int drainedElements = index.intValue();
+                int drainedElements = index;
                 for ( int i = 0; i < drainedElements; i++ )
                 {
                     TxQueueElement txQueueElement = txElements[i];
@@ -322,22 +321,22 @@ public class TransactionLogQueue extends LifecycleAdapter
 
             public void complete()
             {
-                for ( int i = 0; i < index.intValue(); i++ )
+                for ( int i = 0; i < index; i++ )
                 {
                     txElements[i].resultFuture.complete( txIds[i] );
                 }
-                Arrays.fill( txElements, 0, index.intValue(), null );
-                index.setValue( 0 );
+                Arrays.fill( txElements, 0, index, null );
+                index = 0;
             }
 
             public void cancelBatch( Exception e )
             {
-                for ( int i = 0; i < index.intValue(); i++ )
+                for ( int i = 0; i < index; i++ )
                 {
                     txElements[i].resultFuture.completeExceptionally( e );
                 }
-                Arrays.fill( txElements, 0, index.intValue(), null );
-                index.setValue( 0 );
+                Arrays.fill( txElements, 0, index, null );
+                index = 0;
             }
         }
 
