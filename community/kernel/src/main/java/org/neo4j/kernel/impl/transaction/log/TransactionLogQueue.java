@@ -101,7 +101,7 @@ public class TransactionLogQueue extends LifecycleAdapter
     }
 
     @Override
-    public void start()
+    public synchronized void start()
     {
         transactionWriter =
                 new TransactionWriter( txAppendQueue, logFiles.getLogFile(), transactionIdStore, databaseHealth, transactionMetadataCache, logRotation, log );
@@ -110,7 +110,7 @@ public class TransactionLogQueue extends LifecycleAdapter
     }
 
     @Override
-    public void shutdown() throws ExecutionException, InterruptedException
+    public synchronized void shutdown() throws ExecutionException, InterruptedException
     {
         stopped = true;
         TransactionWriter writer = this.transactionWriter;
