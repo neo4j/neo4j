@@ -452,22 +452,22 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
       case DropUniquePropertyConstraint(label, props) =>
         val node = props.head.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS UNIQUE")))
+        val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS UNIQUE"), useForAndRequire = false))
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropNodeKeyConstraint(label, props) =>
         val node = props.head.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS NODE KEY")))
+        val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS NODE KEY"), useForAndRequire = false))
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropNodePropertyExistenceConstraint(label, prop) =>
         val node = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, node, scala.util.Left(label), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(None, node, scala.util.Left(label), Seq(prop), scala.util.Left("exists"), useForAndRequire = false))
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropRelationshipPropertyExistenceConstraint(relTypeName, prop) =>
         val relationship = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, relationship,scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
+        val details = Details(constraintInfo(None, relationship,scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists"), useForAndRequire = false))
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropConstraintOnName(name, _) =>
@@ -1276,7 +1276,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
                              entityName: Either[LabelName, RelTypeName],
                              properties: Seq[Property],
                              assertion: Either[String, String],
-                             options: Options = NoOptions): PrettyString = {
+                             options: Options = NoOptions,
+                             useForAndRequire: Boolean = true): PrettyString = {
     val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")
     val (leftAssertion, rightAssertion) = assertion match {
       case scala.util.Left(a) => (asPrettyString.raw(a), pretty"")
@@ -1289,7 +1290,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       case scala.util.Left(label) => pretty"($prettyEntity:${asPrettyString(label)})"
       case scala.util.Right(relType) => pretty"()-[$prettyEntity:${asPrettyString(relType)}]-()"
     }
-    pretty"CONSTRAINT$name ON $entityInfo ASSERT $leftAssertion$propertyString$rightAssertion${prettyOptions(options)}"
+    val onOrFor = if (useForAndRequire) pretty"FOR" else pretty"ON"
+    val assertOrRequire = if (useForAndRequire) pretty"REQUIRE" else pretty"ASSERT"
+
+    pretty"CONSTRAINT$name $onOrFor $entityInfo $assertOrRequire $leftAssertion$propertyString$rightAssertion${prettyOptions(options)}"
   }
 
   private def prettyOptions(options: Options): PrettyString = options match {

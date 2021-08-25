@@ -140,17 +140,17 @@ object ShowConstraintsCommand {
       case UniqueConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         val options = extractOptionsString(providerName, indexConfig, UniqueConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$escapedName` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS UNIQUE OPTIONS $options"
+        s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS UNIQUE OPTIONS $options"
       case NodeKeyConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         val options = extractOptionsString(providerName, indexConfig, NodeKeyConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$escapedName` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $options"
+        s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS NODE KEY OPTIONS $options"
       case _: NodeExistsConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
-        s"CREATE CONSTRAINT `$escapedName` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NOT NULL"
+        s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS NOT NULL"
       case _: RelExistsConstraints =>
         val escapedProperties = asEscapedString(properties, relPropStringJoiner)
-        s"CREATE CONSTRAINT `$escapedName` ON ()-[r$labelsOrTypesWithColons]-() ASSERT ($escapedProperties) IS NOT NULL"
+        s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS NOT NULL"
       case _ => throw new IllegalArgumentException(s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command.")
     }
   }
