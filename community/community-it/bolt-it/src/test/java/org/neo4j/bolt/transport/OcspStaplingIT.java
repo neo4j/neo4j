@@ -175,8 +175,8 @@ class OcspStaplingIT
         jettyServer.setHandler( handler );
 
         jettyServer.setDumpBeforeStop( true );
-        handler.addServletWithMapping( EndUserOcspResponderServlet.class, "/endUserCA" );
-        handler.addServletWithMapping( IntOcspResponderServlet.class, "/intCA" );
+        handler.addServletWithMapping( EndUserOcspResponderServlet.class, "/endUserCA/*" );
+        handler.addServletWithMapping( IntOcspResponderServlet.class, "/intCA/*" );
         jettyServer.start();
 
         return jettyServer.getURI().getPort();
@@ -185,23 +185,32 @@ class OcspStaplingIT
     public static class EndUserOcspResponderServlet extends HttpServlet
     {
         @Override
+        protected void doGet( HttpServletRequest req, HttpServletResponse httpResponse )
+        {
+            serveResponse( httpResponse );
+        }
+
+        @Override
         protected void doPost( HttpServletRequest httpRequest, HttpServletResponse httpResponse )
+        {
+            serveResponse( httpResponse );
+        }
+
+        private void serveResponse( HttpServletResponse httpResponse )
         {
             try
             {
                 X509Certificate[] issueCert = PkiUtils.loadCertificates( endUserCertFile );
                 PrivateKey privateKey = PkiUtils.loadPrivateKey( intKeyFile, null );
 
-                X509CertificateHolder[] certChain = new X509CertificateHolder[]
-                        {new X509CertificateHolder( issueCert[0].getEncoded() ),
-                         new X509CertificateHolder( issueCert[1].getEncoded() )};
+                X509CertificateHolder[] certChain = new X509CertificateHolder[]{new X509CertificateHolder( issueCert[0].getEncoded() ),
+                        new X509CertificateHolder( issueCert[1].getEncoded() )};
 
                 DigestCalculatorProvider digCalcProv = new JcaDigestCalculatorProviderBuilder().build();
 
                 BasicOCSPRespBuilder respGen = new JcaBasicOCSPRespBuilder( issueCert[0].getPublicKey(), digCalcProv.get( RespID.HASH_SHA1 ) );
 
-                CertificateID certificateID = new CertificateID( digCalcProv.get( RespID.HASH_SHA1 ),
-                                                                 certChain[1], issueCert[0].getSerialNumber() );
+                CertificateID certificateID = new CertificateID( digCalcProv.get( RespID.HASH_SHA1 ), certChain[1], issueCert[0].getSerialNumber() );
 
                 respGen.addResponse( certificateID, CertificateStatus.GOOD );
 
@@ -224,6 +233,17 @@ class OcspStaplingIT
     {
         @Override
         protected void doPost( HttpServletRequest httpRequest, HttpServletResponse httpResponse )
+        {
+            serveResponse( httpResponse );
+        }
+
+        @Override
+        protected void doGet( HttpServletRequest req, HttpServletResponse httpResponse )
+        {
+            serveResponse( httpResponse );
+        }
+
+        private void serveResponse( HttpServletResponse httpResponse )
         {
             try
             {
