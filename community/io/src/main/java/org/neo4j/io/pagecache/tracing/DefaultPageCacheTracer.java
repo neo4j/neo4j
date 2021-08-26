@@ -90,7 +90,10 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         public void close()
         {
             evictions.increment();
-            swapperTracer.evictions( 1 );
+            if ( swapperTracer != null )
+            {
+                swapperTracer.evictions( 1 );
+            }
         }
     };
 

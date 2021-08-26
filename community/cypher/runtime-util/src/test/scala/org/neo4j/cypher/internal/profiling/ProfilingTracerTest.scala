@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.profiling
 
+import org.mockito.Answers
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.OperatorProfile
+import org.neo4j.io.pagecache.PageSwapper
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 
@@ -37,6 +39,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   }
 
   private val id = Id.INVALID_ID
+  private val swapper: PageSwapper = mock[PageSwapper](Answers.RETURNS_MOCKS)
 
   test("shouldReportExecutionTimeOfQueryExecution") {
     // given
@@ -142,7 +145,7 @@ class ProfilingTracerTest extends CypherFunSuite {
     val event = tracer.executeOperator(operatorId)
 
     1 to 100 foreach { _ => {
-        val pin = cursorTracer.beginPin(false, 1, null)
+        val pin = cursorTracer.beginPin(false, 1, swapper)
         pin.hit()
         pin.done()
       }
@@ -161,8 +164,8 @@ class ProfilingTracerTest extends CypherFunSuite {
     val event = tracer.executeOperator(operatorId)
 
     1 to 17 foreach { _ => {
-      val pin = cursorTracer.beginPin(false, 1, null)
-      val pageFault = pin.beginPageFault(1, null)
+      val pin = cursorTracer.beginPin(false, 1, swapper)
+      val pageFault = pin.beginPageFault(1, swapper)
       pageFault.done()
       pin.done()
     }
