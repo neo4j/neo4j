@@ -233,6 +233,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
+    public void setExternalStoreUUID( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext,
+                               UUID externalStoreId ) throws IOException
+    {
+        MetaDataStore.setExternalStoreUUID( pageCache, convert( databaseLayout ).metadataStore(), externalStoreId, databaseLayout.getDatabaseName(),
+                                            cursorContext );
+    }
+
+    @Override
     public Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext )
     {
         return MetaDataStore.getDatabaseIdUuid( pageCache, convert( databaseLayout ).metadataStore(), databaseLayout.getDatabaseName(), cursorContext );

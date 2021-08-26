@@ -151,6 +151,9 @@ public interface StorageEngineFactory
     void setStoreId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext,
             StoreId storeId, long upgradeTxChecksum, long upgradeTxCommitTimestamp ) throws IOException;
 
+    void setExternalStoreUUID( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext,
+                               UUID externalStoreId ) throws IOException;
+
     Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext );
 
     SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
