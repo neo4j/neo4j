@@ -27,6 +27,25 @@
         <moduleName>org.neo4j.cypher.internal.ast.factory</moduleName>
     </properties>
 
+    <build>
+        <plugins>
+            <plugin>
+                <!-- disable scala-maven-plugin, because we have no scala -->
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>scala-compile</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <licenses>
         <license>
             <name>GNU General Public License, Version 3</name>
@@ -47,18 +66,4 @@
             </comments>
         </license>
     </licenses>
-
-    <dependencies>
-
-        <!-- scala -->
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-        </dependency>
-
-        <dependency>
-            <artifactId>scala-reflect</artifactId>
-            <groupId>org.scala-lang</groupId>
-        </dependency>
-    </dependencies>
 </project>

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-import scala.util.Either;
-
 import java.util.List;
 import java.util.Map;
 
@@ -255,7 +253,7 @@ public interface ASTFactory<STATEMENT,
     // Constraint Commands
 
     SCHEMA_COMMAND createConstraint( POS p, ConstraintType constraintType, boolean replace, boolean ifNotExists, String constraintName, VARIABLE variable,
-                                     StringPos<POS> label, List<PROPERTY> properties, Either<Map<String, EXPRESSION>, PARAMETER> options );
+                                     StringPos<POS> label, List<PROPERTY> properties, SimpleEither<Map<String, EXPRESSION>, PARAMETER> options );
 
     SCHEMA_COMMAND dropConstraint( POS p, String name, boolean ifExists );
 
@@ -266,13 +264,13 @@ public interface ASTFactory<STATEMENT,
     SCHEMA_COMMAND createIndexWithOldSyntax( POS p, StringPos<POS> label, List<StringPos<POS>> properties );
 
     SCHEMA_COMMAND createLookupIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable,
-                                      StringPos<POS> functionName, VARIABLE functionParameter, Either<Map<String,EXPRESSION>,PARAMETER> options );
+                                      StringPos<POS> functionName, VARIABLE functionParameter, SimpleEither<Map<String,EXPRESSION>,PARAMETER> options );
 
     SCHEMA_COMMAND createIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable, StringPos<POS> label,
-                                List<PROPERTY> properties, Either<Map<String,EXPRESSION>,PARAMETER> options, CreateIndexTypes indexType );
+                                List<PROPERTY> properties, SimpleEither<Map<String,EXPRESSION>,PARAMETER> options, CreateIndexTypes indexType );
 
     SCHEMA_COMMAND createFulltextIndex( POS p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, VARIABLE variable,
-                                        List<StringPos<POS>> labels, List<PROPERTY> properties, Either<Map<String,EXPRESSION>,PARAMETER> options );
+                                        List<StringPos<POS>> labels, List<PROPERTY> properties, SimpleEither<Map<String,EXPRESSION>,PARAMETER> options );
 
     SCHEMA_COMMAND dropIndex( POS p, String name, boolean ifExists );
 
@@ -281,44 +279,48 @@ public interface ASTFactory<STATEMENT,
     // Administration Commands
     // Role Administration Commands
 
-    ADMINISTRATION_COMMAND createRole( POS p, boolean replace, Either<String, PARAMETER> roleName, Either<String, PARAMETER> fromRole, boolean ifNotExists );
+    ADMINISTRATION_COMMAND createRole( POS p,
+                                       boolean replace,
+                                       SimpleEither<String, PARAMETER> roleName,
+                                       SimpleEither<String, PARAMETER> fromRole,
+                                       boolean ifNotExists );
 
-    ADMINISTRATION_COMMAND dropRole( POS p, Either<String, PARAMETER> roleName, boolean ifExists );
+    ADMINISTRATION_COMMAND dropRole( POS p, SimpleEither<String, PARAMETER> roleName, boolean ifExists );
 
-    ADMINISTRATION_COMMAND renameRole( POS p, Either<String, PARAMETER> fromRoleName, Either<String, PARAMETER> toRoleName, boolean ifExists );
+    ADMINISTRATION_COMMAND renameRole( POS p, SimpleEither<String, PARAMETER> fromRoleName, SimpleEither<String, PARAMETER> toRoleName, boolean ifExists );
 
     ADMINISTRATION_COMMAND showRoles( POS p, boolean withUsers, boolean showAll, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
-    ADMINISTRATION_COMMAND grantRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );
+    ADMINISTRATION_COMMAND grantRoles( POS p, List<SimpleEither<String,PARAMETER>> roles, List<SimpleEither<String,PARAMETER>> users );
 
-    ADMINISTRATION_COMMAND revokeRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );
+    ADMINISTRATION_COMMAND revokeRoles( POS p, List<SimpleEither<String,PARAMETER>> roles, List<SimpleEither<String,PARAMETER>> users );
 
     // User Administration Commands
 
     ADMINISTRATION_COMMAND createUser( POS p,
                                        boolean replace,
                                        boolean ifNotExists,
-                                       Either<String, PARAMETER> username,
+                                       SimpleEither<String, PARAMETER> username,
                                        EXPRESSION password,
                                        boolean encrypted,
                                        boolean changeRequired,
                                        Boolean suspended,
-                                       Either<String, PARAMETER> homeDatabase );
+                                       SimpleEither<String, PARAMETER> homeDatabase );
 
-    ADMINISTRATION_COMMAND dropUser( POS p, boolean ifExists, Either<String, PARAMETER> username );
+    ADMINISTRATION_COMMAND dropUser( POS p, boolean ifExists, SimpleEither<String, PARAMETER> username );
 
-    ADMINISTRATION_COMMAND renameUser( POS p, Either<String, PARAMETER> fromUserName, Either<String, PARAMETER> toUserName, boolean ifExists );
+    ADMINISTRATION_COMMAND renameUser( POS p, SimpleEither<String, PARAMETER> fromUserName, SimpleEither<String, PARAMETER> toUserName, boolean ifExists );
 
     ADMINISTRATION_COMMAND setOwnPassword( POS p, EXPRESSION currentPassword, EXPRESSION newPassword );
 
     ADMINISTRATION_COMMAND alterUser( POS p,
                                       boolean ifExists,
-                                      Either<String,PARAMETER> username,
+                                      SimpleEither<String,PARAMETER> username,
                                       EXPRESSION password,
                                       boolean encrypted,
                                       Boolean changeRequired,
                                       Boolean suspended,
-                                      Either<String,PARAMETER> homeDatabase,
+                                      SimpleEither<String,PARAMETER> homeDatabase,
                                       boolean removeHome );
 
     EXPRESSION passwordExpression( PARAMETER password );
@@ -331,11 +333,12 @@ public interface ASTFactory<STATEMENT,
 
     // Privilege Commands
 
-    ADMINISTRATION_COMMAND grantPrivilege( POS p, List<Either<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege );
+    ADMINISTRATION_COMMAND grantPrivilege( POS p, List<SimpleEither<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege );
 
-    ADMINISTRATION_COMMAND denyPrivilege( POS p, List<Either<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege );
+    ADMINISTRATION_COMMAND denyPrivilege( POS p, List<SimpleEither<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege );
 
-    ADMINISTRATION_COMMAND revokePrivilege( POS p, List<Either<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege, boolean revokeGrant, boolean revokeDeny );
+    ADMINISTRATION_COMMAND revokePrivilege( POS p, List<SimpleEither<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege, boolean revokeGrant,
+                                            boolean revokeDeny );
 
     PRIVILEGE_TYPE databasePrivilege( POS p, ADMINISTRATION_ACTION action, List<DATABASE_SCOPE> scope, List<PRIVILEGE_QUALIFIER> qualifier );
 
@@ -379,32 +382,32 @@ public interface ASTFactory<STATEMENT,
 
     List<PRIVILEGE_QUALIFIER> allDatabasesQualifier();
 
-    List<PRIVILEGE_QUALIFIER> userQualifier( List<Either<String,PARAMETER>> users );
+    List<PRIVILEGE_QUALIFIER> userQualifier( List<SimpleEither<String,PARAMETER>> users );
 
     List<PRIVILEGE_QUALIFIER> allUsersQualifier();
 
-    List<GRAPH_SCOPE> graphScopes( POS p, List<Either<String,PARAMETER>> graphNames, ScopeType scopeType );
+    List<GRAPH_SCOPE> graphScopes( POS p, List<SimpleEither<String,PARAMETER>> graphNames, ScopeType scopeType );
 
-    List<DATABASE_SCOPE> databaseScopes( POS p, List<Either<String,PARAMETER>> databaseNames, ScopeType scopeType );
+    List<DATABASE_SCOPE> databaseScopes( POS p, List<SimpleEither<String,PARAMETER>> databaseNames, ScopeType scopeType );
 
     // Database Administration Commands
 
     ADMINISTRATION_COMMAND createDatabase( POS p,
                                            boolean replace,
-                                           Either<String,PARAMETER> databaseName,
+                                           SimpleEither<String,PARAMETER> databaseName,
                                            boolean ifNotExists,
                                            WAIT_CLAUSE waitClause,
-                                           Either<Map<String,EXPRESSION>,PARAMETER> options );
+                                           SimpleEither<Map<String,EXPRESSION>,PARAMETER> options );
 
-    ADMINISTRATION_COMMAND dropDatabase( POS p, Either<String,PARAMETER> databaseName, boolean ifExists, boolean dumpData, WAIT_CLAUSE wait );
+    ADMINISTRATION_COMMAND dropDatabase( POS p, SimpleEither<String,PARAMETER> databaseName, boolean ifExists, boolean dumpData, WAIT_CLAUSE wait );
 
     ADMINISTRATION_COMMAND showDatabase( POS p, DATABASE_SCOPE scope, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
-    ADMINISTRATION_COMMAND startDatabase( POS p, Either<String,PARAMETER> databaseName, WAIT_CLAUSE wait );
+    ADMINISTRATION_COMMAND startDatabase( POS p, SimpleEither<String,PARAMETER> databaseName, WAIT_CLAUSE wait );
 
-    ADMINISTRATION_COMMAND stopDatabase( POS p, Either<String,PARAMETER> databaseName, WAIT_CLAUSE wait );
+    ADMINISTRATION_COMMAND stopDatabase( POS p, SimpleEither<String,PARAMETER> databaseName, WAIT_CLAUSE wait );
 
-    DATABASE_SCOPE databaseScope( POS p, Either<String,PARAMETER> databaseName, boolean isDefault, boolean isHome );
+    DATABASE_SCOPE databaseScope( POS p, SimpleEither<String,PARAMETER> databaseName, boolean isDefault, boolean isHome );
 
     WAIT_CLAUSE wait( boolean wait, long seconds );
 }

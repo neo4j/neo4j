@@ -43,10 +43,6 @@ PARSER_BEGIN(Cypher)
  */
 package org.neo4j.cypher.internal.parser.javacc;
 
-import scala.util.Either;
-import scala.util.Left;
-import scala.util.Right;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,6 +57,7 @@ import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
+import org.neo4j.cypher.internal.ast.factory.SimpleEither;
 
 /** Simple brace matcher. */
 public class Cypher<STATEMENT,
@@ -358,6 +355,7 @@ TOKEN [IGNORE_CASE] :
     | < DESC: "DESC" ("ENDING")? >
     | < DESTROY: "DESTROY">
     | < DETACH: "DETACH" >
+    | < DOLLAR: "$">
     | < DISTINCT: "DISTINCT" >
     | < DIVIDE: "/" >
     | < DOT: "." >
@@ -1158,7 +1156,7 @@ TOKEN :
 
 <*> TOKEN :
 {
-    < UNKNOWN: ~["$", ",", ":", ";", " ", "\t", "\n", "\r"] >
+    < UNKNOWN: ~[",", ":", ";", " ", "\t", "\n", "\r"] >
 }
 
 /** Root production. */
@@ -2692,7 +2690,7 @@ PARAMETER Parameter( ParameterType type ) :
     VARIABLE v;
 }
 {
-    t="$" (
+    t=<DOLLAR> (
         v=Variable() { return astFactory.newParameter( pos( t ), v, type ); }
         | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newParameter( pos( t ), token.image, type ); }
     )
@@ -3282,7 +3280,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
     Token label;
     VARIABLE variable = null;
     List<PROPERTY> properties= new ArrayList<>();
-    Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
     Optional<ConstraintType> constraintType = Optional.empty();
     boolean isNode = false;
     Token errorStart;
@@ -3479,7 +3477,7 @@ SCHEMA_COMMAND createIndex( Token start, boolean replace, CreateIndexTypes index
     VARIABLE variable = null;
     Token label = null;
     List<PROPERTY> properties= new ArrayList<>();
-    Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
     //CREATE [BTREE | TEXT] INDEX FOR (n:label) ON (n.prop)
@@ -3515,7 +3513,7 @@ SCHEMA_COMMAND createFulltextIndex( Token start, boolean replace):
     PROPERTY p = null;
     List<StringPos<POS>> labels = new ArrayList<>();
     List<PROPERTY> properties= new ArrayList<>();
-    Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
     //CREATE FULLTEXT INDEX FOR (n:T1 | T2) ON (v.prop)
@@ -3552,7 +3550,7 @@ SCHEMA_COMMAND createLookupIndex( Token start, boolean replace ):
     VARIABLE variable = null;
     StringPos<POS> funcName = null;
     VARIABLE funcParam = variable;
-    Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
     //CREATE LOOKUP INDEX FOR (n) ON EACH funcName(funcParam)
@@ -3676,8 +3674,8 @@ ADMINISTRATION_COMMAND RevokeCommand() throws Exception:
 
 ADMINISTRATION_COMMAND CreateRole( Token start, boolean replace ):
 {
-    Either<String, PARAMETER> roleName = null;
-    Either<String, PARAMETER>  sourceRoleName = null;
+    SimpleEither<String, PARAMETER> roleName = null;
+    SimpleEither<String, PARAMETER> sourceRoleName = null;
     boolean ifNotExists = false;
 }
 {
@@ -3692,7 +3690,7 @@ ADMINISTRATION_COMMAND CreateRole( Token start, boolean replace ):
 
 ADMINISTRATION_COMMAND DropRole( Token start ):
 {
-    Either<String, PARAMETER> roleName = null;
+    SimpleEither<String, PARAMETER> roleName = null;
     boolean ifExists = false;
 }
 {
@@ -3706,8 +3704,8 @@ ADMINISTRATION_COMMAND DropRole( Token start ):
 
 ADMINISTRATION_COMMAND RenameRole( Token start ):
 {
-    Either<String, PARAMETER> fromRoleName = null;
-    Either<String, PARAMETER> toRoleName = null;
+    SimpleEither<String, PARAMETER> fromRoleName = null;
+    SimpleEither<String, PARAMETER> toRoleName = null;
     boolean ifExists = false;
 }
 {
@@ -3742,8 +3740,8 @@ STATEMENT_WITH_GRAPH ShowRoles( Token start, USE_CLAUSE useClause, boolean showA
 
 ADMINISTRATION_COMMAND GrantRole( Token start ):
 {
-    List<Either<String, PARAMETER>> roles;
-    List<Either<String, PARAMETER>> users;
+    List<SimpleEither<String, PARAMETER>> roles;
+    List<SimpleEither<String, PARAMETER>> users;
 }
 {
     roles=SymbolicNameOrStringParameterList() <TO> users=SymbolicNameOrStringParameterList()
@@ -3754,8 +3752,8 @@ ADMINISTRATION_COMMAND GrantRole( Token start ):
 
 ADMINISTRATION_COMMAND RevokeRole(Token start):
 {
-    List<Either<String, PARAMETER>> roles;
-    List<Either<String, PARAMETER>> users;
+    List<SimpleEither<String, PARAMETER>> roles;
+    List<SimpleEither<String, PARAMETER>> users;
 }
 {
     roles=SymbolicNameOrStringParameterList() <FROM> users=SymbolicNameOrStringParameterList()
@@ -3769,13 +3767,13 @@ ADMINISTRATION_COMMAND RevokeRole(Token start):
 ADMINISTRATION_COMMAND CreateUser( Token start, boolean replace ) throws Exception:
 {
     Token set = null;
-    Either<String, PARAMETER> username = null;
+    SimpleEither<String, PARAMETER> username = null;
     EXPRESSION password = null;
     boolean ifNotExists = false;
     boolean encrypted = false;
     Optional<Boolean> changeRequired = Optional.empty();
     Optional<Boolean> suspended = Optional.empty();
-    Optional<Either<String, PARAMETER>> homeDatabase = Optional.empty();
+    Optional<SimpleEither<String, PARAMETER>> homeDatabase = Optional.empty();
 }
 {
     <USER>
@@ -3801,7 +3799,7 @@ ADMINISTRATION_COMMAND CreateUser( Token start, boolean replace ) throws Excepti
 
 ADMINISTRATION_COMMAND DropUser( Token start ) :
 {
-    Either<String, PARAMETER> username = null;
+    SimpleEither<String, PARAMETER> username = null;
     boolean ifExists = false;
 }
 {
@@ -3815,8 +3813,8 @@ ADMINISTRATION_COMMAND DropUser( Token start ) :
 
 ADMINISTRATION_COMMAND RenameUser(Token start):
 {
-    Either<String, PARAMETER> fromUserName = null;
-    Either<String, PARAMETER> toUserName = null;
+    SimpleEither<String, PARAMETER> fromUserName = null;
+    SimpleEither<String, PARAMETER> toUserName = null;
     boolean ifExists = false;
 }
 {
@@ -3860,13 +3858,13 @@ ADMINISTRATION_COMMAND AlterCurrentUser( Token start ) throws Exception:
 ADMINISTRATION_COMMAND AlterUser( Token start ) throws Exception:
 {
     Token set = null;
-    Either<String, PARAMETER> username = null;
+    SimpleEither<String, PARAMETER> username = null;
     EXPRESSION password = null;
     boolean ifExists = false;
     boolean encrypted = false;
     Optional<Boolean> changeRequired = Optional.empty();
     Optional<Boolean> suspended = Optional.empty();
-    Optional<Either<String, PARAMETER>> homeDatabase = Optional.empty();
+    Optional<SimpleEither<String, PARAMETER>> homeDatabase = Optional.empty();
     boolean removeHome = false;
     String passwordSetError = "Duplicate SET PASSWORD clause";
 }
@@ -3964,10 +3962,10 @@ Optional<Boolean> UserStatus( Token start, Optional<Boolean> suspended ) throws 
     }
 }
 
-Optional<Either<String, PARAMETER>> HomeDatabase( Token start, Optional<Either<String, PARAMETER>> homeDatabase ) throws Exception:
+Optional<SimpleEither<String, PARAMETER>> HomeDatabase( Token start, Optional<SimpleEither<String, PARAMETER>> homeDatabase ) throws Exception:
 {
     String errorMessage = "Duplicate SET HOME DATABASE clause";
-    Either<String, PARAMETER> home = null;
+    SimpleEither<String, PARAMETER> home = null;
 }
 {
     <HOME> <DATABASE> home=SymbolicDatabaseNameStringOrParameter()
@@ -4013,7 +4011,7 @@ STATEMENT_WITH_GRAPH ShowCurrentUser( Token start, USE_CLAUSE useClause ):
 ADMINISTRATION_COMMAND grantRoleManagement(Token start):
 {
     PRIVILEGE_TYPE privilege = null;
-    List<Either<String, PARAMETER>> roles = null;
+    List<SimpleEither<String, PARAMETER>> roles = null;
 }
 {
     privilege=roleManagementPrivilege(start) <TO> roles=SymbolicNameOrStringParameterList()
@@ -4025,7 +4023,7 @@ ADMINISTRATION_COMMAND grantRoleManagement(Token start):
 ADMINISTRATION_COMMAND revokeRoleManagement(Token start, boolean revokeGrant, boolean revokeDeny):
 {
     PRIVILEGE_TYPE privilege = null;
-    List<Either<String, PARAMETER>> roles = null;
+    List<SimpleEither<String, PARAMETER>> roles = null;
 }
 {
     privilege=roleManagementPrivilege(start) <FROM> roles=SymbolicNameOrStringParameterList()
@@ -4036,7 +4034,7 @@ ADMINISTRATION_COMMAND revokeRoleManagement(Token start, boolean revokeGrant, bo
 
 PRIVILEGE_TYPE roleManagementPrivilege(Token start):
 {
-    List<Either<String, PARAMETER>> roles = null;
+    List<SimpleEither<String, PARAMETER>> roles = null;
 }
 {
     <MANAGEMENT> <ON> <DBMS>
@@ -4047,7 +4045,7 @@ PRIVILEGE_TYPE roleManagementPrivilege(Token start):
 
 ADMINISTRATION_COMMAND grantPrivilege(Token start) throws Exception:
 {
-    List<Either<String, PARAMETER>> roles = null;
+    List<SimpleEither<String, PARAMETER>> roles = null;
     PRIVILEGE_TYPE privilege = null;
 }
 {
@@ -4060,7 +4058,7 @@ ADMINISTRATION_COMMAND grantPrivilege(Token start) throws Exception:
 ADMINISTRATION_COMMAND DenyPrivilege() throws Exception:
 {
     Token start;
-    List<Either<String, PARAMETER>> roles = null;
+    List<SimpleEither<String, PARAMETER>> roles = null;
     PRIVILEGE_TYPE privilege = null;
 }
 {
@@ -4078,7 +4076,7 @@ ADMINISTRATION_COMMAND DenyPrivilege() throws Exception:
 
 ADMINISTRATION_COMMAND RevokePrivilege(Token start, boolean revokeGrant, boolean revokeDeny) throws Exception:
 {
-    List<Either<String, PARAMETER>> roles = null;
+    List<SimpleEither<String, PARAMETER>> roles = null;
     PRIVILEGE_TYPE privilege = null;
 }
 {
@@ -4114,7 +4112,7 @@ PRIVILEGE_TYPE privilege(Token start) throws Exception:
 PRIVILEGE_TYPE allPrivilege(Token start) throws Exception:
 {
     ADMINISTRATION_ACTION action = null;
-    List<Either<String, PARAMETER>> names = null;
+    List<SimpleEither<String, PARAMETER>> names = null;
     boolean isAll = false;
     String type = null;
     Token t = null;
@@ -4218,7 +4216,7 @@ PRIVILEGE_TYPE showPrivilege(Token start):
     ADMINISTRATION_ACTION action = null;
     List<DATABASE_SCOPE> databases = null;
     List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allDatabasesQualifier();
-    List<Either<String, PARAMETER>>qualifiers = null;
+    List<SimpleEither<String, PARAMETER>>qualifiers = null;
 }
 {
     <SHOW>
@@ -4288,7 +4286,7 @@ PRIVILEGE_TYPE removePrivilege(Token start):
 PRIVILEGE_TYPE writePrivilege(Token start):
 {
     List<GRAPH_SCOPE> graphs = null;
-    List<Either<String, PARAMETER>> qualifiers = null;
+    List<SimpleEither<String, PARAMETER>> qualifiers = null;
 }
 {
     <WRITE> <ON> graphs=graphScopeList()
@@ -4302,7 +4300,7 @@ PRIVILEGE_TYPE databasePrivilege(Token start):
     ADMINISTRATION_ACTION action = null;
     List<DATABASE_SCOPE> databases = null;
     List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allDatabasesQualifier();
-    List<Either<String, PARAMETER>>qualifiers = null;
+    List<SimpleEither<String, PARAMETER>>qualifiers = null;
 }
 {
     (
@@ -4443,10 +4441,10 @@ List<PRIVILEGE_QUALIFIER> graphQualifier():
 
 ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ):
 {
-    Either<String, PARAMETER> databaseName = null;
+    SimpleEither<String, PARAMETER> databaseName = null;
     boolean ifNotExists = false;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
-    Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+    SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
     <DATABASE>
@@ -4459,9 +4457,9 @@ ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ):
     }
 }
 
-Either<Map<String, EXPRESSION>, PARAMETER> Options() :
+SimpleEither<Map<String, EXPRESSION>, PARAMETER> Options() :
 {
-     Either<Map<String, EXPRESSION>, PARAMETER> options = null;
+     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
     <OPTIONS> options=MapOrParameter()
@@ -4472,7 +4470,7 @@ Either<Map<String, EXPRESSION>, PARAMETER> Options() :
 
 ADMINISTRATION_COMMAND DropDatabase( Token start ):
 {
-    Either<String, PARAMETER> databaseName = null;
+    SimpleEither<String, PARAMETER> databaseName = null;
     boolean ifExists = false;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     boolean dumpData = false;
@@ -4491,7 +4489,7 @@ ADMINISTRATION_COMMAND DropDatabase( Token start ):
 ADMINISTRATION_COMMAND StartDatabase():
 {
     Token start;
-    Either<String, PARAMETER> databaseName;
+    SimpleEither<String, PARAMETER> databaseName;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
@@ -4504,7 +4502,7 @@ ADMINISTRATION_COMMAND StartDatabase():
 ADMINISTRATION_COMMAND StopDatabase():
 {
     Token start;
-    Either<String, PARAMETER> databaseName;
+    SimpleEither<String, PARAMETER> databaseName;
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
@@ -4554,7 +4552,7 @@ STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ):
 DATABASE_SCOPE DatabaseScope():
 {
     Token start = null;
-    Either<String, PARAMETER> name = null;
+    SimpleEither<String, PARAMETER> name = null;
     boolean isDefault = false;
     boolean isHome = false;
 }
@@ -4573,7 +4571,7 @@ DATABASE_SCOPE DatabaseScope():
 List<DATABASE_SCOPE> DatabaseScopeList():
 {
     Token start = null;
-    List<Either<String, PARAMETER>> names = null;
+    List<SimpleEither<String, PARAMETER>> names = null;
     ScopeType type = ScopeType.NAMED;
 }
 {
@@ -4590,7 +4588,7 @@ List<DATABASE_SCOPE> DatabaseScopeList():
 List<GRAPH_SCOPE> graphScopeList():
 {
     Token start = null;
-    List<Either<String, PARAMETER>> names = null;
+    List<SimpleEither<String, PARAMETER>> names = null;
     ScopeType type = ScopeType.NAMED;
 }
 {
@@ -4604,10 +4602,10 @@ List<GRAPH_SCOPE> graphScopeList():
     }
 }
 
-List<Either<String, PARAMETER>> SymbolicDatabaseNameStringOrParameterList():
+List<SimpleEither<String, PARAMETER>> SymbolicDatabaseNameStringOrParameterList():
 {
-    Either<String, PARAMETER> dbSymbol = null;
-    List<Either<String, PARAMETER>> databases = new ArrayList<>();
+    SimpleEither<String, PARAMETER> dbSymbol = null;
+    List<SimpleEither<String, PARAMETER>> databases = new ArrayList<>();
 }
 {
     dbSymbol=SymbolicDatabaseNameStringOrParameter() { databases.add(dbSymbol); }
@@ -4617,7 +4615,7 @@ List<Either<String, PARAMETER>> SymbolicDatabaseNameStringOrParameterList():
     }
 }
 
-Either<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
+SimpleEither<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
 {
     Token nameToken;
     StringBuilder nameBuilder;
@@ -4627,15 +4625,15 @@ Either<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
     nameToken=SymbolicNameString() { nameBuilder =new StringBuilder( nameToken.image ); }
         ( <DOT> nameToken=SymbolicNameString() { nameBuilder.append( "." ); nameBuilder.append( nameToken.image ); } )*
         {
-            return new Left<String, PARAMETER>( nameBuilder.toString() );
+            return SimpleEither.<String, PARAMETER>left( nameBuilder.toString() );
         }
-    | parameter=Parameter(ParameterType.STRING) { return new Right<String, PARAMETER>( parameter ); }
+    | parameter=Parameter(ParameterType.STRING) { return SimpleEither.<String, PARAMETER>right( parameter ); }
 }
 
-List<Either<String, PARAMETER>> SymbolicNameOrStringParameterList() :
+List<SimpleEither<String, PARAMETER>> SymbolicNameOrStringParameterList() :
 {
-    Either<String, PARAMETER> entry;
-    List<Either<String, PARAMETER>> list = new ArrayList<>();
+    SimpleEither<String, PARAMETER> entry;
+    List<SimpleEither<String, PARAMETER>> list = new ArrayList<>();
 }
 {
     entry=SymbolicNameOrStringParameter() { list.add( entry ); }
@@ -4645,24 +4643,24 @@ List<Either<String, PARAMETER>> SymbolicNameOrStringParameterList() :
     }
 }
 
-Either<String, PARAMETER> SymbolicNameOrStringParameter():
+SimpleEither<String, PARAMETER> SymbolicNameOrStringParameter():
 {
     Token name;
     PARAMETER parameter;
 }
 {
-    name=SymbolicNameString() { return new Left<String, PARAMETER>( name.image ); }
-    | parameter=Parameter(ParameterType.STRING) { return new Right<String, PARAMETER>( parameter ); }
+    name=SymbolicNameString() { return SimpleEither.<String, PARAMETER>left( name.image ); }
+    | parameter=Parameter(ParameterType.STRING) { return SimpleEither.<String, PARAMETER>right( parameter ); }
 }
 
-Either<Map<String, EXPRESSION>, PARAMETER> MapOrParameter():
+SimpleEither<Map<String, EXPRESSION>, PARAMETER> MapOrParameter():
 {
     Map<String, EXPRESSION> map = null;
     PARAMETER parameter;
 }
 {
-    map=Map() { return new Left<Map<String,EXPRESSION>,PARAMETER> ( map ); }
-    | parameter=Parameter( ParameterType.MAP ) { return new Right<Map<String,EXPRESSION>,PARAMETER>( parameter ); }
+    map=Map() { return SimpleEither.<Map<String,EXPRESSION>,PARAMETER>left ( map ); }
+    | parameter=Parameter( ParameterType.MAP ) { return SimpleEither.<Map<String,EXPRESSION>,PARAMETER>right( parameter ); }
 }
 
 Map<String, EXPRESSION> Map():

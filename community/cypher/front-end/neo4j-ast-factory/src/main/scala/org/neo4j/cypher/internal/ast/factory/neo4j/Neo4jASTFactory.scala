@@ -256,6 +256,7 @@ import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.ScopeType
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
+import org.neo4j.cypher.internal.ast.factory.SimpleEither
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -362,6 +363,20 @@ import scala.collection.JavaConverters.mapAsScalaMap
 import scala.util.Either
 
 final case class Privilege(privilegeType: PrivilegeType, resource: ActionResource, qualifier: util.List[PrivilegeQualifier])
+
+trait DecorateTuple {
+  class AsScala[A](op: => A) {
+    def asScala: A = op
+  }
+
+  implicit def asScalaEither[L, R](i: SimpleEither[L, R]): AsScala[Either[L, R]] = {
+    new AsScala(if (i.getRight == null) Left[L, R](i.getLeft) else Right[L, R](i.getRight))
+  }
+}
+
+object TupleConverter extends DecorateTuple
+
+import org.neo4j.cypher.internal.ast.factory.neo4j.TupleConverter.asScalaEither
 
 class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVariableNameGenerator)
   extends ASTFactory[Statement,
@@ -1128,7 +1143,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                                 variable: Variable,
                                 label: StringPos[InputPosition],
                                 javaProperties: util.List[Property],
-                                options: Either[util.Map[String, Expression], Parameter]): SchemaCommand = {
+                                options: SimpleEither[util.Map[String, Expression], Parameter]): SchemaCommand = {
     val properties = javaProperties.asScala
     constraintType match {
       case ConstraintType.UNIQUE => ast.CreateUniquePropertyConstraint(variable, LabelName(label.string)(label.pos), properties, Option(name),
@@ -1192,7 +1207,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                                  variable: Variable,
                                  functionName: StringPos[InputPosition],
                                  functionParameter: Variable,
-                                 options: Either[util.Map[String, Expression], Parameter]
+                                 options: SimpleEither[util.Map[String, Expression], Parameter]
                                 ): CreateLookupIndex = {
     val function = FunctionInvocation(FunctionName(functionName.string) (functionName.pos), distinct = false, IndexedSeq(functionParameter))(functionName.pos)
     CreateLookupIndex(variable, isNode, function, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
@@ -1212,7 +1227,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                            variable: Variable,
                            label: StringPos[InputPosition],
                            javaProperties: util.List[Property],
-                           options: Either[util.Map[String, Expression], Parameter],
+                           options: SimpleEither[util.Map[String, Expression], Parameter],
                            indexType: CreateIndexTypes): CreateIndex = {
     val properties = javaProperties.asScala.toList
     (indexType, isNode) match {
@@ -1237,7 +1252,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                                    variable: Variable,
                                    labels: util.List[StringPos[InputPosition]],
                                    javaProperties: util.List[Property],
-                                   options: Either[util.Map[String, Expression], Parameter]): CreateIndex = {
+                                   options: SimpleEither[util.Map[String, Expression], Parameter]): CreateIndex = {
     val properties = javaProperties.asScala.toList
     if (isNode) {
       val labelNames = labels.asScala.toList.map(stringPos => LabelName(stringPos.string)(stringPos.pos))
@@ -1262,18 +1277,18 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def createRole(p: InputPosition,
                           replace: Boolean,
-                          roleName: Either[String, Parameter],
-                          from: Either[String, Parameter],
+                          roleName: SimpleEither[String, Parameter],
+                          from: SimpleEither[String, Parameter],
                           ifNotExists: Boolean): CreateRole = {
-    CreateRole(roleName, Option(from), ifExistsDo(replace, ifNotExists))(p)
+    CreateRole(roleName.asScala, Option(from).map(_.asScala), ifExistsDo(replace, ifNotExists))(p)
   }
 
-  override def dropRole(p: InputPosition, roleName: Either[String, Parameter], ifExists: Boolean): DropRole = {
-    DropRole(roleName, ifExists)(p)
+  override def dropRole(p: InputPosition, roleName: SimpleEither[String, Parameter], ifExists: Boolean): DropRole = {
+    DropRole(roleName.asScala, ifExists)(p)
   }
 
-  override def renameRole(p: InputPosition, fromRoleName: Either[String, Parameter], toRoleName: Either[String, Parameter], ifExists: Boolean): RenameRole = {
-    RenameRole(fromRoleName, toRoleName, ifExists)(p)
+  override def renameRole(p: InputPosition, fromRoleName: SimpleEither[String, Parameter], toRoleName: SimpleEither[String, Parameter], ifExists: Boolean): RenameRole = {
+    RenameRole(fromRoleName.asScala, toRoleName.asScala, ifExists)(p)
   }
 
   override def showRoles(p: InputPosition,
@@ -1286,15 +1301,15 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   }
 
   override def grantRoles(p: InputPosition,
-                          roles: util.List[Either[String, Parameter]],
-                          users: util.List[Either[String, Parameter]]): GrantRolesToUsers = {
-    GrantRolesToUsers(roles.asScala, users.asScala)(p)
+                          roles: util.List[SimpleEither[String, Parameter]],
+                          users: util.List[SimpleEither[String, Parameter]]): GrantRolesToUsers = {
+    GrantRolesToUsers(roles.asScala.map(_.asScala), users.asScala.map(_.asScala))(p)
   }
 
   override def revokeRoles(p: InputPosition,
-                           roles: util.List[Either[String, Parameter]],
-                           users: util.List[Either[String, Parameter]]): RevokeRolesFromUsers = {
-    RevokeRolesFromUsers(roles.asScala, users.asScala)(p)
+                           roles: util.List[SimpleEither[String, Parameter]],
+                           users: util.List[SimpleEither[String, Parameter]]): RevokeRolesFromUsers = {
+    RevokeRolesFromUsers(roles.asScala.map(_.asScala), users.asScala.map(_.asScala))(p)
   }
 
   // User commands
@@ -1302,23 +1317,23 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   override def createUser(p: InputPosition,
                           replace: Boolean,
                           ifNotExists: Boolean,
-                          username: Either[String, Parameter],
+                          username: SimpleEither[String, Parameter],
                           password: Expression,
                           encrypted: Boolean,
                           changeRequired: Boolean,
                           suspended: lang.Boolean,
-                          homeDatabase: Either[String, Parameter]): AdministrationCommand = {
-    val homeAction = if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase))
+                          homeDatabase: SimpleEither[String, Parameter]): AdministrationCommand = {
+    val homeAction = if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase.asScala))
     val userOptions = UserOptions(Some(changeRequired), asBooleanOption(suspended), homeAction)
-    CreateUser(username, encrypted, password, userOptions, ifExistsDo(replace, ifNotExists))(p)
+    CreateUser(username.asScala, encrypted, password, userOptions, ifExistsDo(replace, ifNotExists))(p)
   }
 
-  override def dropUser(p: InputPosition, ifExists: Boolean, username: Either[String, Parameter]): DropUser = {
-    DropUser(username, ifExists)(p)
+  override def dropUser(p: InputPosition, ifExists: Boolean, username: SimpleEither[String, Parameter]): DropUser = {
+    DropUser(username.asScala, ifExists)(p)
   }
 
-  override def renameUser(p: InputPosition, fromUserName: Either[String, Parameter], toUserName: Either[String, Parameter], ifExists: Boolean): RenameUser = {
-    RenameUser(fromUserName, toUserName, ifExists)(p)
+  override def renameUser(p: InputPosition, fromUserName: SimpleEither[String, Parameter], toUserName: SimpleEither[String, Parameter], ifExists: Boolean): RenameUser = {
+    RenameUser(fromUserName.asScala, toUserName.asScala, ifExists)(p)
   }
 
   override def setOwnPassword(p: InputPosition, currentPassword: Expression, newPassword: Expression): SetOwnPassword = {
@@ -1327,18 +1342,18 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def alterUser(p: InputPosition,
                          ifExists: Boolean,
-                         username: Either[String, Parameter],
+                         username: SimpleEither[String, Parameter],
                          password: Expression,
                          encrypted: Boolean,
                          changeRequired: lang.Boolean,
                          suspended: lang.Boolean,
-                         homeDatabase: Either[String, Parameter],
+                         homeDatabase: SimpleEither[String, Parameter],
                          removeHome: Boolean): AlterUser = {
     val maybePassword = Option(password)
     val isEncrypted = if (maybePassword.isDefined) Some(encrypted) else None
-    val homeAction = if (removeHome) Some(RemoveHomeDatabaseAction) else if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase))
+    val homeAction = if (removeHome) Some(RemoveHomeDatabaseAction) else if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase.asScala))
     val userOptions = UserOptions(asBooleanOption(changeRequired), asBooleanOption(suspended), homeAction)
-    AlterUser(username, isEncrypted, maybePassword, userOptions, ifExists)(p)
+    AlterUser(username.asScala, isEncrypted, maybePassword, userOptions, ifExists)(p)
   }
 
   override def passwordExpression(password: Parameter): Expression = new ExplicitParameter(password.name, CTString)(password.position) with SensitiveParameter
@@ -1356,21 +1371,21 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   // Privilege commands
 
   override def grantPrivilege(p: InputPosition,
-                              roles: util.List[Either[String, Parameter]],
+                              roles: util.List[SimpleEither[String, Parameter]],
                               privilege: Privilege): AdministrationCommand =
-    GrantPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala)(p)
+    GrantPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala))(p)
 
-  override def denyPrivilege(p: InputPosition, roles: util.List[Either[String, Parameter]], privilege: Privilege): AdministrationCommand =
-    DenyPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala)(p)
+  override def denyPrivilege(p: InputPosition, roles: util.List[SimpleEither[String, Parameter]], privilege: Privilege): AdministrationCommand =
+    DenyPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala))(p)
 
   override def revokePrivilege(p: InputPosition,
-                               roles: util.List[Either[String, Parameter]],
+                               roles: util.List[SimpleEither[String, Parameter]],
                                privilege: Privilege,
                                revokeGrant: Boolean,
                                revokeDeny: Boolean): AdministrationCommand = (revokeGrant, revokeDeny) match {
-    case (true, false) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala, RevokeGrantType()(p))(p)
-    case (false, true) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala, RevokeDenyType()(p))(p)
-    case _             => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala, RevokeBothType()(p))(p)
+    case (true, false) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala), RevokeGrantType()(p))(p)
+    case (false, true) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala), RevokeDenyType()(p))(p)
+    case _             => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala), RevokeBothType()(p))(p)
   }
 
   override def databasePrivilege(p: InputPosition, action: AdministrationAction, scope: util.List[DatabaseScope], qualifier: util.List[PrivilegeQualifier]): Privilege =
@@ -1479,9 +1494,9 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     list
   }
 
-  override def userQualifier(users: util.List[Either[String, Parameter]]): util.List[PrivilegeQualifier] = {
+  override def userQualifier(users: util.List[SimpleEither[String, Parameter]]): util.List[PrivilegeQualifier] = {
     val list = new util.ArrayList[PrivilegeQualifier]()
-    users.forEach(u => list.add(UserQualifier(u)(InputPosition.NONE)))
+    users.forEach(u => list.add(UserQualifier(u.asScala)(InputPosition.NONE)))
     list
   }
 
@@ -1491,24 +1506,24 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     list
   }
 
-  override def graphScopes(p: InputPosition, graphNames: util.List[Either[String, Parameter]], scopeType: ScopeType): util.List[GraphScope] = {
+  override def graphScopes(p: InputPosition, graphNames: util.List[SimpleEither[String, Parameter]], scopeType: ScopeType): util.List[GraphScope] = {
     val list = new util.ArrayList[GraphScope]()
     scopeType match {
       case ScopeType.ALL     => list.add(AllGraphsScope()(p))
       case ScopeType.HOME    => list.add(HomeGraphScope()(p))
       case ScopeType.DEFAULT => list.add(DefaultGraphScope()(p))
-      case ScopeType.NAMED   => graphNames.asScala.foreach(db => list.add(NamedGraphScope(db)(p)))
+      case ScopeType.NAMED   => graphNames.asScala.foreach(db => list.add(NamedGraphScope(db.asScala)(p)))
     }
     list
   }
 
-  override def databaseScopes(p: InputPosition, databaseNames: util.List[Either[String, Parameter]], scopeType: ScopeType): util.List[DatabaseScope] = {
+  override def databaseScopes(p: InputPosition, databaseNames: util.List[SimpleEither[String, Parameter]], scopeType: ScopeType): util.List[DatabaseScope] = {
     val list = new util.ArrayList[DatabaseScope]()
     scopeType match {
       case ScopeType.ALL     => list.add(AllDatabasesScope()(p))
       case ScopeType.HOME    => list.add(HomeDatabaseScope()(p))
       case ScopeType.DEFAULT => list.add(DefaultDatabaseScope()(p))
-      case ScopeType.NAMED   => databaseNames.asScala.foreach(db => list.add(NamedDatabaseScope(db)(p)))
+      case ScopeType.NAMED   => databaseNames.asScala.foreach(db => list.add(NamedDatabaseScope(db.asScala)(p)))
     }
     list
   }
@@ -1517,21 +1532,21 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def createDatabase(p: InputPosition,
                               replace: Boolean,
-                              databaseName: Either[String, Parameter],
+                              databaseName: SimpleEither[String, Parameter],
                               ifNotExists: Boolean,
                               wait: WaitUntilComplete,
-                              options: Either[util.Map[String, Expression], Parameter]): CreateDatabase = {
-    CreateDatabase(databaseName, ifExistsDo(replace, ifNotExists), asOptionsAst(options), wait)(p)
+                              options: SimpleEither[util.Map[String, Expression], Parameter]): CreateDatabase = {
+    CreateDatabase(databaseName.asScala, ifExistsDo(replace, ifNotExists), asOptionsAst(options), wait)(p)
   }
 
-  override def dropDatabase(p:InputPosition, databaseName: Either[String, Parameter], ifExists: Boolean, dumpData: Boolean, wait: WaitUntilComplete): DropDatabase = {
+  override def dropDatabase(p:InputPosition, databaseName: SimpleEither[String, Parameter], ifExists: Boolean, dumpData: Boolean, wait: WaitUntilComplete): DropDatabase = {
     val action: DropDatabaseAdditionalAction = if (dumpData) {
       DumpData
     } else {
       DestroyData
     }
 
-    DropDatabase(databaseName, ifExists, action, wait)(p)
+    DropDatabase(databaseName.asScala, ifExists, action, wait)(p)
   }
 
   override def showDatabase(p: InputPosition,
@@ -1546,9 +1561,9 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     }
   }
 
-  override def databaseScope(p: InputPosition, databaseName: Either[String, Parameter], isDefault: Boolean, isHome: Boolean): DatabaseScope = {
+  override def databaseScope(p: InputPosition, databaseName: SimpleEither[String, Parameter], isDefault: Boolean, isHome: Boolean): DatabaseScope = {
     if (databaseName != null) {
-      NamedDatabaseScope(databaseName)(p)
+      NamedDatabaseScope(databaseName.asScala)(p)
     } else if (isDefault) {
       DefaultDatabaseScope()(p)
     } else if (isHome) {
@@ -1559,15 +1574,15 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   }
 
   override def startDatabase(p: InputPosition,
-                             databaseName: Either[String, Parameter],
+                             databaseName: SimpleEither[String, Parameter],
                              wait: WaitUntilComplete): StartDatabase = {
-    StartDatabase(databaseName, wait)(p)
+    StartDatabase(databaseName.asScala, wait)(p)
   }
 
   override def stopDatabase(p: InputPosition,
-                             databaseName: Either[String, Parameter],
-                             wait: WaitUntilComplete): StopDatabase = {
-    StopDatabase(databaseName, wait)(p)
+                            databaseName: SimpleEither[String, Parameter],
+                            wait: WaitUntilComplete): StopDatabase = {
+    StopDatabase(databaseName.asScala, wait)(p)
   }
 
   override def wait(wait: Boolean, seconds: Long): WaitUntilComplete = {
@@ -1603,8 +1618,8 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   private def asBooleanOption(bool: lang.Boolean): Option[Boolean] = if (bool == null) None else Some(bool.booleanValue())
 
-  private def asOptionsAst(options: Either[util.Map[String, Expression], Parameter]) =
-    Option(options) match {
+  private def asOptionsAst(options: SimpleEither[util.Map[String, Expression], Parameter]) =
+    Option(options).map(_.asScala) match {
       case Some(Left(map)) => OptionsMap(mapAsScalaMap(map).toMap)
       case Some(Right(param)) => OptionsParam(param)
       case None => NoOptions

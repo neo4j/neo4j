@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.literal.interpreter;
 
-import scala.util.Either;
-
 import java.time.Clock;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -40,6 +38,7 @@ import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
+import org.neo4j.cypher.internal.ast.factory.SimpleEither;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
@@ -413,7 +412,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
 
     @Override
     public NULL createConstraint( NULL p, ConstraintType constraintType, boolean replace, boolean ifNotExsits, String name, Object o, StringPos<NULL> label,
-                                  List<Object> objects, Either<Map<String,Object>,Object> options )
+                                  List<Object> objects, SimpleEither<Map<String,Object>,Object> options )
     {
         throw new UnsupportedOperationException( "createConstraint is not a literal" );
     }
@@ -438,21 +437,21 @@ public class LiteralInterpreter implements ASTFactory<NULL,
 
     @Override
     public NULL createLookupIndex( NULL p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, Object o, StringPos<NULL> functionName,
-                                   Object functionParameter, Either<Map<String,Object>,Object> options )
+                                   Object functionParameter, SimpleEither<Map<String,Object>,Object> options )
     {
         throw new UnsupportedOperationException( "createLookupIndex is not a literal" );
     }
 
     @Override
     public NULL createIndex( NULL p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, Object o, StringPos<NULL> label,
-                             List<Object> objects, Either<Map<String,Object>,Object> options, CreateIndexTypes indexType )
+                             List<Object> objects, SimpleEither<Map<String,Object>,Object> options, CreateIndexTypes indexType )
     {
         throw new UnsupportedOperationException( "createIndex is not a literal" );
     }
 
     @Override
     public NULL createFulltextIndex( NULL p, boolean replace, boolean ifNotExists, boolean isNode, String indexName, Object o,
-                                     List<StringPos<NULL>> labels, List<Object> objects, Either<Map<String,Object>,Object> options )
+                                     List<StringPos<NULL>> labels, List<Object> objects, SimpleEither<Map<String,Object>,Object> options )
     {
         throw new UnsupportedOperationException( "createFulltextIndex is not a literal" );
     }
@@ -486,19 +485,19 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     // Role commands
 
     @Override
-    public NULL createRole( NULL p, boolean replace, Either<String,Object> roleName, Either<String,Object> from, boolean ifNotExists )
+    public NULL createRole( NULL p, boolean replace, SimpleEither<String,Object> roleName, SimpleEither<String,Object> from, boolean ifNotExists )
     {
         throw new UnsupportedOperationException( "createRole is not a literal" );
     }
 
     @Override
-    public NULL dropRole( NULL p, Either<String,Object> roleName, boolean ifExists )
+    public NULL dropRole( NULL p, SimpleEither<String,Object> roleName, boolean ifExists )
     {
         throw new UnsupportedOperationException( "dropRole is not a literal" );
     }
 
     @Override
-    public NULL renameRole( NULL p, Either<String,Object> fromRoleName, Either<String,Object> toRoleName, boolean ifExists )
+    public NULL renameRole( NULL p, SimpleEither<String,Object> fromRoleName, SimpleEither<String,Object> toRoleName, boolean ifExists )
     {
         throw new UnsupportedOperationException( "renameRole is not a literal" );
     }
@@ -510,13 +509,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL grantRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
+    public NULL grantRoles( NULL p, List<SimpleEither<String,Object>> roles, List<SimpleEither<String,Object>> users )
     {
         throw new UnsupportedOperationException( "grantRoles is not a literal" );
     }
 
     @Override
-    public NULL revokeRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
+    public NULL revokeRoles( NULL p, List<SimpleEither<String,Object>> roles, List<SimpleEither<String,Object>> users )
     {
         throw new UnsupportedOperationException( "revokeRoles is not a literal" );
     }
@@ -524,20 +523,20 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     // User commands
 
     @Override
-    public NULL createUser( NULL p, boolean replace, boolean ifNotExists, Either<String,Object> username, Object password, boolean encrypted,
-                            boolean changeRequired, Boolean suspended, Either<String,Object> homeDatabase )
+    public NULL createUser( NULL p, boolean replace, boolean ifNotExists, SimpleEither<String,Object> username, Object password, boolean encrypted,
+                            boolean changeRequired, Boolean suspended, SimpleEither<String,Object> homeDatabase )
     {
         throw new UnsupportedOperationException( "createUser is not a literal" );
     }
 
     @Override
-    public NULL dropUser( NULL p, boolean ifExists, Either<String,Object> username )
+    public NULL dropUser( NULL p, boolean ifExists, SimpleEither<String,Object> username )
     {
         throw new UnsupportedOperationException( "dropUser is not a literal" );
     }
 
     @Override
-    public NULL renameUser( NULL p, Either<String,Object> fromUserName, Either<String,Object> toUserName, boolean ifExists )
+    public NULL renameUser( NULL p, SimpleEither<String,Object> fromUserName, SimpleEither<String,Object> toUserName, boolean ifExists )
     {
         throw new UnsupportedOperationException( "renameUser is not a literal" );
     }
@@ -549,8 +548,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL alterUser( NULL p, boolean ifExists, Either<String,Object> username, Object password, boolean encrypted, Boolean changeRequired,
-                           Boolean suspended, Either<String,Object> homeDatabase, boolean removeHome )
+    public NULL alterUser( NULL p, boolean ifExists, SimpleEither<String,Object> username, Object password, boolean encrypted, Boolean changeRequired,
+                           Boolean suspended, SimpleEither<String,Object> homeDatabase, boolean removeHome )
     {
         throw new UnsupportedOperationException( "alterUser is not a literal" );
     }
@@ -582,19 +581,19 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     // Privilege commands
 
     @Override
-    public NULL grantPrivilege( NULL p, List<Either<String,Object>> roles, NULL privilege )
+    public NULL grantPrivilege( NULL p, List<SimpleEither<String,Object>> roles, NULL privilege )
     {
         throw new UnsupportedOperationException( "grantPrivilege is not a literal" );
     }
 
     @Override
-    public NULL denyPrivilege( NULL p, List<Either<String,Object>> roles, NULL privilege )
+    public NULL denyPrivilege( NULL p, List<SimpleEither<String,Object>> roles, NULL privilege )
     {
         throw new UnsupportedOperationException( "denyPrivilege is not a literal" );
     }
 
     @Override
-    public NULL revokePrivilege( NULL p, List<Either<String,Object>> roles, NULL privilege, boolean revokeGrant, boolean revokeDeny )
+    public NULL revokePrivilege( NULL p, List<SimpleEither<String,Object>> roles, NULL privilege, boolean revokeGrant, boolean revokeDeny )
     {
         throw new UnsupportedOperationException( "revokePrivilege is not a literal" );
     }
@@ -708,7 +707,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public List<NULL> userQualifier( List<Either<String,Object>> users )
+    public List<NULL> userQualifier( List<SimpleEither<String,Object>> users )
     {
         throw new UnsupportedOperationException( "userQualifier is not a literal" );
     }
@@ -720,13 +719,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public List<NULL> graphScopes( NULL p, List<Either<String,Object>> graphNames, ScopeType scopeType )
+    public List<NULL> graphScopes( NULL p, List<SimpleEither<String,Object>> graphNames, ScopeType scopeType )
     {
         throw new UnsupportedOperationException( "graphScopes is not a literal" );
     }
 
     @Override
-    public List<NULL> databaseScopes( NULL p, List<Either<String,Object>> databaseNames, ScopeType scopeType )
+    public List<NULL> databaseScopes( NULL p, List<SimpleEither<String,Object>> databaseNames, ScopeType scopeType )
     {
         throw new UnsupportedOperationException( "databaseScopes is not a literal" );
     }
@@ -734,14 +733,14 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     // Database commands
 
     @Override
-    public NULL createDatabase( NULL p, boolean replace, Either<String,Object> databaseName, boolean ifNotExists, NULL aNull,
-                                Either<Map<String,Object>,Object> options )
+    public NULL createDatabase( NULL p, boolean replace, SimpleEither<String,Object> databaseName, boolean ifNotExists, NULL aNull,
+                                SimpleEither<Map<String,Object>,Object> options )
     {
         throw new UnsupportedOperationException( "createDatabase is not a literal" );
     }
 
     @Override
-    public NULL dropDatabase( NULL p, Either<String,Object> databaseName, boolean ifExists, boolean dumpData, NULL wait )
+    public NULL dropDatabase( NULL p, SimpleEither<String,Object> databaseName, boolean ifExists, boolean dumpData, NULL wait )
     {
         throw new UnsupportedOperationException( "dropDatabase is not a literal" );
     }
@@ -753,19 +752,19 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL databaseScope( NULL p, Either<String,Object> name, boolean isDefault, boolean isHome )
+    public NULL databaseScope( NULL p, SimpleEither<String,Object> name, boolean isDefault, boolean isHome )
     {
         throw new UnsupportedOperationException( "databaseScope is not a literal" );
     }
 
     @Override
-    public NULL startDatabase( NULL p, Either<String,Object> databaseName, NULL wait )
+    public NULL startDatabase( NULL p, SimpleEither<String,Object> databaseName, NULL wait )
     {
         throw new UnsupportedOperationException( "startDatabase is not a literal" );
     }
 
     @Override
-    public NULL stopDatabase( NULL p, Either<String,Object> databaseName, NULL wait )
+    public NULL stopDatabase( NULL p, SimpleEither<String,Object> databaseName, NULL wait )
     {
         throw new UnsupportedOperationException( "stopDatabase is not a literal" );
     }
