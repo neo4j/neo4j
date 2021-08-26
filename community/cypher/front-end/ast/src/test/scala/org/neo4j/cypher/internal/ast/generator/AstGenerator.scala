@@ -50,6 +50,10 @@ import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.ConstraintVersion
+import org.neo4j.cypher.internal.ast.ConstraintVersion0
+import org.neo4j.cypher.internal.ast.ConstraintVersion1
+import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
@@ -369,10 +373,6 @@ import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
-import org.neo4j.cypher.internal.util.ConstraintVersion
-import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_0
-import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_1
-import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_2
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -1296,9 +1296,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- oneOrMore(_variableProperty)
   } yield props
 
-  def _constraintVersion: Gen[ConstraintVersion] = oneOf(CONSTRAINT_VERSION_0, CONSTRAINT_VERSION_1, CONSTRAINT_VERSION_2)
+  def _constraintVersion: Gen[ConstraintVersion] = oneOf(ConstraintVersion0, ConstraintVersion1, ConstraintVersion2)
 
-  def _constraintVersionZeroOrTwo: Gen[ConstraintVersion] = oneOf(CONSTRAINT_VERSION_0, CONSTRAINT_VERSION_2)
+  def _constraintVersionZeroOrTwo: Gen[ConstraintVersion] = oneOf(ConstraintVersion0, ConstraintVersion2)
 
   def _createIndex: Gen[CreateIndex] = for {
     variable          <- _variable

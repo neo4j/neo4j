@@ -53,6 +53,9 @@ import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.ConstraintVersion0
+import org.neo4j.cypher.internal.ast.ConstraintVersion1
+import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
@@ -252,6 +255,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
 import org.neo4j.cypher.internal.ast.factory.ActionType
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
+import org.neo4j.cypher.internal.ast.factory.ConstraintVersion
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.ScopeType
@@ -349,7 +353,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.ConstraintVersion
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -1148,18 +1151,25 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                                 containsOn: Boolean,
                                 constraintVersion: ConstraintVersion
                                ): SchemaCommand = {
+    // Convert ConstraintVersion from Java to Scala
+    val constraintVersionScala = constraintVersion match {
+      case ConstraintVersion.CONSTRAINT_VERSION_0 => ConstraintVersion0
+      case ConstraintVersion.CONSTRAINT_VERSION_1 => ConstraintVersion1
+      case ConstraintVersion.CONSTRAINT_VERSION_2 => ConstraintVersion2
+    }
+
     val properties = javaProperties.asScala
     constraintType match {
       case ConstraintType.UNIQUE => ast.CreateUniquePropertyConstraint(variable, LabelName(label.string)(label.pos), properties, Option(name),
-        ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
+        ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersionScala)(p)
       case ConstraintType.NODE_KEY => ast.CreateNodeKeyConstraint(variable, LabelName(label.string)(label.pos), properties, Option(name),
-        ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
+        ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersionScala)(p)
       case ConstraintType.NODE_EXISTS | ConstraintType.NODE_IS_NOT_NULL =>
         validateSingleProperty(properties, constraintType)
-        ast.CreateNodePropertyExistenceConstraint(variable, LabelName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
+        ast.CreateNodePropertyExistenceConstraint(variable, LabelName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersionScala)(p)
       case ConstraintType.REL_EXISTS | ConstraintType.REL_IS_NOT_NULL =>
         validateSingleProperty(properties, constraintType)
-        ast.CreateRelationshipPropertyExistenceConstraint(variable, RelTypeName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
+        ast.CreateRelationshipPropertyExistenceConstraint(variable, RelTypeName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersionScala)(p)
     }
   }
 

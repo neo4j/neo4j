@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.util;
+package org.neo4j.cypher.internal.ast
 
-public enum ConstraintVersion
-{
-    CONSTRAINT_VERSION_0, // ASSERT EXISTS, ASSERT ... IS UNIQUE, ASSERT ... IS NODE KEY
-    CONSTRAINT_VERSION_1, // ASSERT ... IS NOT NULL
-    CONSTRAINT_VERSION_2; // REQUIRE
-}
+sealed trait ConstraintVersion
+
+case object ConstraintVersion0 extends ConstraintVersion // ASSERT EXISTS, ASSERT ... IS UNIQUE, ASSERT ... IS NODE KEY
+
+case object ConstraintVersion1 extends ConstraintVersion // ASSERT ... IS NOT NULL
+
+case object ConstraintVersion2 extends ConstraintVersion // REQUIRE

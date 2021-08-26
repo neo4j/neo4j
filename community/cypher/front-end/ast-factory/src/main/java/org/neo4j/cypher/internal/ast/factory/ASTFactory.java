@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.ast.factory;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.util.ConstraintVersion;
-
 /**
  * Factory for constructing ASTs.
  * <p>

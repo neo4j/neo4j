@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.ConstraintVersion0
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
@@ -35,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_0
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
 
@@ -340,7 +340,7 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
         IfExistsThrowError,
         NoOptions,
         containsOn = true,
-        CONSTRAINT_VERSION_0,
+        ConstraintVersion0,
         None
       )(pos)
     )
@@ -394,7 +394,7 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
   test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS node2.prop") {
     assertJavaCCAST(testName,
-      CreateNodePropertyExistenceConstraint(Variable("node1")(pos), LabelName("Label")(pos), Property(Variable("node2")(pos), PropertyKeyName("prop")(pos))(pos), None, IfExistsThrowError, NoOptions, containsOn = true, CONSTRAINT_VERSION_0, None)(pos))
+      CreateNodePropertyExistenceConstraint(Variable("node1")(pos), LabelName("Label")(pos), Property(Variable("node2")(pos), PropertyKeyName("prop")(pos))(pos), None, IfExistsThrowError, NoOptions, containsOn = true, ConstraintVersion0, None)(pos))
   }
 
   test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS (node2.prop1, node3.prop2)") {
@@ -411,7 +411,7 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
   test("CREATE CONSTRAINT ON ()-[r1:R]-() ASSERT EXISTS r2.prop") {
     assertJavaCCAST(testName,
-      CreateRelationshipPropertyExistenceConstraint(Variable("r1")(pos), RelTypeName("R")(pos), Property(Variable("r2")(pos), PropertyKeyName("prop")(pos))(pos), None, IfExistsThrowError, NoOptions, containsOn = true, CONSTRAINT_VERSION_0, None)(pos)
+      CreateRelationshipPropertyExistenceConstraint(Variable("r1")(pos), RelTypeName("R")(pos), Property(Variable("r2")(pos), PropertyKeyName("prop")(pos))(pos), None, IfExistsThrowError, NoOptions, containsOn = true, ConstraintVersion0, None)(pos)
     )
   }
 

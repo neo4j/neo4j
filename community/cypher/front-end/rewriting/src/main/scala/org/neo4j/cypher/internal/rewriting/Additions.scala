@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast.ConstraintVersion1
+import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
@@ -41,8 +43,6 @@ import org.neo4j.cypher.internal.ast.UniquePropertyConstraintCommand
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
-import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_1
-import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_2
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
 object Additions {
@@ -121,11 +121,11 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS NOT NULL
-      case c: CreateNodePropertyExistenceConstraint if c.constraintVersion == CONSTRAINT_VERSION_1 =>
+      case c: CreateNodePropertyExistenceConstraint if c.constraintVersion == ConstraintVersion1 =>
         throw cypherExceptionFactory.syntaxException("Creating node existence constraint using `IS NOT NULL` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT r.prop IS NOT NULL
-      case c: CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == CONSTRAINT_VERSION_1 =>
+      case c: CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == ConstraintVersion1 =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IS NOT NULL` is not supported in this Cypher version.", c.position)
 
       // DROP CONSTRAINT name
@@ -175,19 +175,19 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Filtering on text indexes in SHOW INDEXES is not supported in this Cypher version.", s.position)
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS NOT NULL
-      case c: CreateNodePropertyExistenceConstraint if c.constraintVersion == CONSTRAINT_VERSION_2 =>
+      case c: CreateNodePropertyExistenceConstraint if c.constraintVersion == ConstraintVersion2 =>
         throw cypherExceptionFactory.syntaxException("Creating node existence constraint using `FOR ... REQUIRE` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL
-      case c: CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == CONSTRAINT_VERSION_2 =>
+      case c: CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == ConstraintVersion2 =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `FOR ... REQUIRE` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS NODE KEY
-      case c: CreateNodeKeyConstraint if c.constraintVersion == CONSTRAINT_VERSION_2 =>
+      case c: CreateNodeKeyConstraint if c.constraintVersion == ConstraintVersion2 =>
         throw cypherExceptionFactory.syntaxException("Creating node key constraint using `FOR ... REQUIRE` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE
-      case c: CreateUniquePropertyConstraint if c.constraintVersion == CONSTRAINT_VERSION_2 =>
+      case c: CreateUniquePropertyConstraint if c.constraintVersion == ConstraintVersion2 =>
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint using `FOR ... REQUIRE` is not supported in this Cypher version.", c.position)
 
     }

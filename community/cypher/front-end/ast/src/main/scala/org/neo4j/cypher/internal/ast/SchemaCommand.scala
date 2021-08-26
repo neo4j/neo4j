@@ -30,10 +30,6 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
-import org.neo4j.cypher.internal.util.ConstraintVersion
-import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_0
-import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_1
-import org.neo4j.cypher.internal.util.ConstraintVersion.CONSTRAINT_VERSION_2
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -230,8 +226,8 @@ case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, propert
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create node key constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
         constraintVersion match {
-          case CONSTRAINT_VERSION_2 if containsOn => error(errorMessageOnRequire, position)
-          case CONSTRAINT_VERSION_0 if !containsOn => error(errorMessageForAssert, position)
+          case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position)
+          case ConstraintVersion0 if !containsOn => error(errorMessageForAssert, position)
           case _ => checkOptionsMap("node key constraint", options) chain super.semanticCheck
         }
   }
@@ -248,8 +244,8 @@ case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, 
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create uniqueness constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
       constraintVersion match {
-        case CONSTRAINT_VERSION_2 if containsOn => error(errorMessageOnRequire, position)
-        case CONSTRAINT_VERSION_0 if !containsOn => error(errorMessageForAssert, position)
+        case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position)
+        case ConstraintVersion0 if !containsOn => error(errorMessageForAssert, position)
         case _ => checkOptionsMap("uniqueness constraint", options) chain super.semanticCheck
       }
   }
@@ -266,9 +262,9 @@ case class CreateNodePropertyExistenceConstraint(variable: Variable, label: Labe
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create node property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
       constraintVersion match {
-        case CONSTRAINT_VERSION_2 if containsOn => error(errorMessageOnRequire, position)
-        case CONSTRAINT_VERSION_1 if !containsOn => error(errorMessageForAssert, position)
-        case CONSTRAINT_VERSION_0 if !containsOn => error(errorMessageForAssertExists, position)
+        case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position)
+        case ConstraintVersion1 if !containsOn => error(errorMessageForAssert, position)
+        case ConstraintVersion0 if !containsOn => error(errorMessageForAssertExists, position)
         case _ => checkOptionsMap("node property existence constraint", options) chain super.semanticCheck
       }
   }
@@ -285,9 +281,9 @@ case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, rel
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create relationship property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
       constraintVersion match {
-        case CONSTRAINT_VERSION_2 if containsOn => error(errorMessageOnRequire, position)
-        case CONSTRAINT_VERSION_1 if !containsOn => error(errorMessageForAssert, position)
-        case CONSTRAINT_VERSION_0 if !containsOn => error(errorMessageForAssertExists, position)
+        case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position)
+        case ConstraintVersion1 if !containsOn => error(errorMessageForAssert, position)
+        case ConstraintVersion0 if !containsOn => error(errorMessageForAssertExists, position)
         case _ => checkOptionsMap("relationship property existence constraint", options) chain super.semanticCheck
       }
   }
