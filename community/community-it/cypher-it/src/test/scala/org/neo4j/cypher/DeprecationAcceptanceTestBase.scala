@@ -105,12 +105,12 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   test("deprecated create node property existence constraint syntax - deprecate version 1") {
-    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NOT NULL",
+    assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NOT NULL",
       DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
   }
 
   test("deprecated create relationship property existence constraint syntax - deprecate version 1") {
-    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT (r.prop) IS NOT NULL",
+    assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT (r.prop) IS NOT NULL",
       DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
   }
 
@@ -120,7 +120,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   test("deprecated create uniqueness constraint syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (r.prop) IS UNIQUE",
+    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS UNIQUE",
       DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
   }
 
