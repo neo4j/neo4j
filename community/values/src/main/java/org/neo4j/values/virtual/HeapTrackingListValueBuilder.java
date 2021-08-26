@@ -54,7 +54,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingListValueBuilder.class );
 
     // We wait to track memory (bytes) below this threshold (see `unAllocatedHeapSize`).
-    private static final long HEAP_SIZE_ALLOCATION_THRESHOLD = 1024;
+    private static final long HEAP_SIZE_ALLOCATION_THRESHOLD = 4096;
 
     private final HeapTrackingArrayList<AnyValue> values;
     private final MemoryTracker scopedMemoryTracker;
