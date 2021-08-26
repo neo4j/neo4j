@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -186,7 +187,12 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
     @Override
     public void validatePrototype( IndexPrototype prototype )
     {
-        super.validatePrototype( prototype );
+        IndexType indexType = prototype.getIndexType();
+        if ( indexType != IndexType.BTREE )
+        {
+            String providerName = getProviderDescriptor().name();
+            throw new IllegalArgumentException( "The '" + providerName + "' index provider does not support " + indexType + " indexes: " + prototype );
+        }
         if (  !( prototype.schema().isLabelSchemaDescriptor() || prototype.schema().isRelationshipTypeSchemaDescriptor() ) )
         {
             throw new IllegalArgumentException(

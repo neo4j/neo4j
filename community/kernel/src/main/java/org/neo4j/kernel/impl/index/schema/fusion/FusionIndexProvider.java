@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
@@ -191,7 +192,12 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public void validatePrototype( IndexPrototype prototype )
     {
-        super.validatePrototype( prototype );
+        IndexType indexType = prototype.getIndexType();
+        if ( indexType != IndexType.BTREE )
+        {
+            String providerName = getProviderDescriptor().name();
+            throw new IllegalArgumentException( "The '" + providerName + "' index provider does not support " + indexType + " indexes: " + prototype );
+        }
         for ( IndexSlot slot : IndexSlot.values() )
         {
             providers.select( slot ).validatePrototype( prototype );

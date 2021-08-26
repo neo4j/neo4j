@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
@@ -156,6 +155,11 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
+                public void validatePrototype( IndexPrototype prototype )
+                {
+                }
+
+                @Override
                 public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
                         PageCache pageCache, StorageEngineFactory storageEngineFactory )
                 {
@@ -221,27 +225,18 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     public abstract InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext );
 
     /**
+     * Validate that the given index prototype can be used to create an index with the given index provider, or throw an {@link IllegalArgumentException} if
+     * that is not the case.
+     * @param prototype The prototype to be validated.
+     */
+    public abstract  void validatePrototype( IndexPrototype prototype );
+
+    /**
      * @return a description of this index provider
      */
     public IndexProviderDescriptor getProviderDescriptor()
     {
         return providerDescriptor;
-    }
-
-    /**
-     * Validate that the given index prototype can be used to create an index with the given index provider, or throw an {@link IllegalArgumentException} if
-     * that is not the case.
-     * @param prototype The prototype to be validated.
-     */
-    public void validatePrototype( IndexPrototype prototype )
-    {
-        // By default we only accept BTREE indexes.
-        IndexType indexType = prototype.getIndexType();
-        if ( indexType != IndexType.BTREE )
-        {
-            String providerName = getProviderDescriptor().name();
-            throw new IllegalArgumentException( "The '" + providerName + "' index provider does not support " + indexType + " indexes: " + prototype );
-        }
     }
 
     @Override
@@ -318,6 +313,11 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
+        public void validatePrototype( IndexPrototype prototype )
+        {
+        }
+
+        @Override
         public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
         {
             return StoreMigrationParticipant.NOT_PARTICIPATING;
@@ -370,6 +370,12 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
         {
             return provider.getInitialState( descriptor, cursorContext );
+        }
+
+        @Override
+        public void validatePrototype( IndexPrototype prototype )
+        {
+            provider.validatePrototype( prototype );
         }
 
         @Override
