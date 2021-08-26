@@ -234,29 +234,29 @@ trait SchemaCommand extends Parser
 
   private def CreateConstraint: Rule1[ast.SchemaCommand] = rule {
     val constraintStart = CreateConstraintStart
-    group(constraintStart ~~ UniqueConstraintWithOptionsSyntax) ~~>>
+    group(constraintStart ~~ UniqueConstraintWithOptionsSyntaxAssert) ~~>>
       ((name, ifExistsDo, containsOn, variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_0)) |
-    group(constraintStart ~~ UniqueConstraintWithOptionsSyntax_2) ~~>>
+    group(constraintStart ~~ UniqueConstraintWithOptionsSyntaxRequire) ~~>>
       ((name, ifExistsDo, containsOn, variable, label, property, options) => ast.CreateUniquePropertyConstraint(variable, label, Seq(property), name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_2)) |
-    group(constraintStart ~~ UniqueCompositeConstraintWithOptionsSyntax) ~~>>
+    group(constraintStart ~~ UniqueCompositeConstraintWithOptionsSyntaxAssert) ~~>>
       ((name, ifExistsDo, containsOn, variable, labelName, properties, options) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_0)) |
-    group(constraintStart ~~ UniqueCompositeConstraintWithOptionsSyntax_2) ~~>>
+    group(constraintStart ~~ UniqueCompositeConstraintWithOptionsSyntaxRequire) ~~>>
       ((name, ifExistsDo, containsOn, variable, labelName, properties, options) => ast.CreateUniquePropertyConstraint(variable, labelName, properties, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_2)) |
-    group(constraintStart ~~ NodeKeyConstraintWithOptionsSyntax) ~~>>
+    group(constraintStart ~~ NodeKeyConstraintWithOptionsSyntaxAssert) ~~>>
       ((name, ifExistsDo, containsOn, variable, labelName, property, options) => ast.CreateNodeKeyConstraint(variable, labelName, property, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_0)) |
-    group(constraintStart ~~ NodeKeyConstraintWithOptionsSyntax_2) ~~>>
+    group(constraintStart ~~ NodeKeyConstraintWithOptionsSyntaxRequire) ~~>>
       ((name, ifExistsDo, containsOn, variable, labelName, property, options) => ast.CreateNodeKeyConstraint(variable, labelName, property, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_2)) |
-    group(constraintStart ~~ NodePropertyExistenceConstraintWithOptionsSyntax) ~~>>
+    group(constraintStart ~~ NodePropertyExistenceConstraintWithOptionsSyntaxAssertExists) ~~>>
       ((name, ifExistsDo, containsOn, variable, labelName, property, options) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_0)) |
-    group(constraintStart ~~ NodePropertyExistenceConstraintWithOptionsSyntax_1) ~~>>
+    group(constraintStart ~~ NodePropertyExistenceConstraintWithOptionsSyntaxAssertIsNotNull) ~~>>
       ((name, ifExistsDo, containsOn, variable, labelName, property, options) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_1)) |
-    group(constraintStart ~~ NodePropertyExistenceConstraintWithOptionsSyntax_2) ~~>>
+    group(constraintStart ~~ NodePropertyExistenceConstraintWithOptionsSyntaxRequireIsNotNull) ~~>>
       ((name, ifExistsDo, containsOn, variable, labelName, property, options) => ast.CreateNodePropertyExistenceConstraint(variable, labelName, property, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_2)) |
-    group(constraintStart ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax) ~~>>
+    group(constraintStart ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntaxAssertExists) ~~>>
       ((name, ifExistsDo, containsOn, variable, relTypeName, property, options) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_0)) |
-    group(constraintStart ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax_1) ~~>>
+    group(constraintStart ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntaxAssertIsNotNull) ~~>>
       ((name, ifExistsDo, containsOn, variable, relTypeName, property, options) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_1)) |
-    group(constraintStart ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntax_2) ~~>>
+    group(constraintStart ~~ RelationshipPropertyExistenceConstraintWithOptionsSyntaxRequireIsNotNull) ~~>>
       ((name, ifExistsDo, containsOn, variable, relTypeName, property, options) => ast.CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, property, name, ifExistsDo, options, containsOn, CONSTRAINT_VERSION_2))
   }
 
@@ -282,24 +282,24 @@ trait SchemaCommand extends Parser
   }
 
   private def DropUniqueConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
-    group(keyword("DROP CONSTRAINT ON") ~~ UniqueConstraintSyntax) ~~>>
+    group(keyword("DROP CONSTRAINT ON") ~~ UniqueConstraintSyntaxAssert) ~~>>
       ((variable, label, property) => ast.DropUniquePropertyConstraint(variable, label, Seq(property)))
   }
 
   private def DropUniqueCompositeConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
-    group(keyword("DROP CONSTRAINT ON") ~~ UniqueCompositeConstraintSyntax) ~~>> (ast.DropUniquePropertyConstraint(_, _, _))
+    group(keyword("DROP CONSTRAINT ON") ~~ UniqueCompositeConstraintSyntaxAssert) ~~>> (ast.DropUniquePropertyConstraint(_, _, _))
   }
 
   private def DropNodeKeyConstraint: Rule1[ast.DropNodeKeyConstraint] = rule {
-    group(keyword("DROP CONSTRAINT ON") ~~ NodeKeyConstraintSyntax) ~~>> (ast.DropNodeKeyConstraint(_, _, _))
+    group(keyword("DROP CONSTRAINT ON") ~~ NodeKeyConstraintSyntaxAssert) ~~>> (ast.DropNodeKeyConstraint(_, _, _))
   }
 
   private def DropNodePropertyExistenceConstraint: Rule1[ast.DropNodePropertyExistenceConstraint] = rule {
-    group(keyword("DROP CONSTRAINT ON") ~~ NodePropertyExistenceConstraintSyntax_0) ~~>> (ast.DropNodePropertyExistenceConstraint(_, _, _))
+    group(keyword("DROP CONSTRAINT ON") ~~ NodePropertyExistenceConstraintSyntaxAssertExists) ~~>> (ast.DropNodePropertyExistenceConstraint(_, _, _))
   }
 
   private def DropRelationshipPropertyExistenceConstraint: Rule1[ast.DropRelationshipPropertyExistenceConstraint] = rule {
-    group(keyword("DROP CONSTRAINT ON") ~~ RelationshipPropertyExistenceConstraintSyntax_0) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
+    group(keyword("DROP CONSTRAINT ON") ~~ RelationshipPropertyExistenceConstraintSyntaxAssertExists) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
   }
 
   private def DropConstraintOnName: Rule1[ast.DropConstraintOnName] = rule {
@@ -307,99 +307,99 @@ trait SchemaCommand extends Parser
     group(keyword("DROP CONSTRAINT") ~~ SymbolicNameString) ~~>> (ast.DropConstraintOnName(_, ifExists = false))
   }
 
-  private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def NodeKeyConstraintSyntaxAssert: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 
-  private def NodeKeyConstraintSyntax_2: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def NodeKeyConstraintSyntaxRequire: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("REQUIRE") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 
-  private def NodeKeyConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
-    NodeKeyConstraintSyntax ~~ optionsMapOrParameter |
-    NodeKeyConstraintSyntax ~> (_ => NoOptions)
+  private def NodeKeyConstraintWithOptionsSyntaxAssert: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
+    NodeKeyConstraintSyntaxAssert ~~ optionsMapOrParameter |
+    NodeKeyConstraintSyntaxAssert ~> (_ => NoOptions)
   }
 
-  private def NodeKeyConstraintWithOptionsSyntax_2: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
-      NodeKeyConstraintSyntax_2 ~~ optionsMapOrParameter|
-      NodeKeyConstraintSyntax_2 ~> (_ => NoOptions)
+  private def NodeKeyConstraintWithOptionsSyntaxRequire: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
+      NodeKeyConstraintSyntaxRequire ~~ optionsMapOrParameter|
+      NodeKeyConstraintSyntaxRequire ~> (_ => NoOptions)
   }
 
-  private def UniqueConstraintSyntax: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def UniqueConstraintSyntaxAssert: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ VariablePropertyExpression ~~ keyword("IS UNIQUE")
 
-  private def UniqueConstraintSyntax_2: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def UniqueConstraintSyntaxRequire: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("REQUIRE") ~~ VariablePropertyExpression ~~ keyword("IS UNIQUE")
 
-  private def UniqueConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Property, Options] = rule {
-    UniqueConstraintSyntax ~~ optionsMapOrParameter |
-    UniqueConstraintSyntax ~> (_ => NoOptions)
+  private def UniqueConstraintWithOptionsSyntaxAssert: Rule4[Variable, LabelName, Property, Options] = rule {
+    UniqueConstraintSyntaxAssert ~~ optionsMapOrParameter |
+    UniqueConstraintSyntaxAssert ~> (_ => NoOptions)
   }
 
-  private def UniqueConstraintWithOptionsSyntax_2: Rule4[Variable, LabelName, Property, Options] = rule {
-    UniqueConstraintSyntax_2 ~~ optionsMapOrParameter |
-    UniqueConstraintSyntax_2 ~> (_ => NoOptions)
+  private def UniqueConstraintWithOptionsSyntaxRequire: Rule4[Variable, LabelName, Property, Options] = rule {
+    UniqueConstraintSyntaxRequire ~~ optionsMapOrParameter |
+    UniqueConstraintSyntaxRequire ~> (_ => NoOptions)
   }
 
-  private def UniqueCompositeConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def UniqueCompositeConstraintSyntaxAssert: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS UNIQUE")
 
-  private def UniqueCompositeConstraintSyntax_2: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def UniqueCompositeConstraintSyntaxRequire: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("REQUIRE") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS UNIQUE")
 
-  private def UniqueCompositeConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
-    UniqueCompositeConstraintSyntax ~~ optionsMapOrParameter |
-    UniqueCompositeConstraintSyntax ~> (_ => NoOptions)
+  private def UniqueCompositeConstraintWithOptionsSyntaxAssert: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
+    UniqueCompositeConstraintSyntaxAssert ~~ optionsMapOrParameter |
+    UniqueCompositeConstraintSyntaxAssert ~> (_ => NoOptions)
   }
 
-  private def UniqueCompositeConstraintWithOptionsSyntax_2: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
-      UniqueCompositeConstraintSyntax_2 ~~ optionsMapOrParameter |
-      UniqueCompositeConstraintSyntax_2 ~> (_ => NoOptions)
+  private def UniqueCompositeConstraintWithOptionsSyntaxRequire: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
+      UniqueCompositeConstraintSyntaxRequire ~~ optionsMapOrParameter |
+      UniqueCompositeConstraintSyntaxRequire ~> (_ => NoOptions)
   }
 
-  private def NodePropertyExistenceConstraintSyntax_0: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def NodePropertyExistenceConstraintSyntaxAssertExists: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT EXISTS") ~~ "(" ~~ VariablePropertyExpression ~~ ")"
 
-  private def NodePropertyExistenceConstraintSyntax_1: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def NodePropertyExistenceConstraintSyntaxAssertIsNotNull: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
 
-  private def NodePropertyExistenceConstraintSyntax_2: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+  private def NodePropertyExistenceConstraintSyntaxRequireIsNotNull: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("REQUIRE") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
 
-  private def NodePropertyExistenceConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Property, Options] = rule {
-    NodePropertyExistenceConstraintSyntax_0 ~~ optionsMapOrParameter |
-    NodePropertyExistenceConstraintSyntax_0 ~> (_ => NoOptions)
+  private def NodePropertyExistenceConstraintWithOptionsSyntaxAssertExists: Rule4[Variable, LabelName, Property, Options] = rule {
+    NodePropertyExistenceConstraintSyntaxAssertExists ~~ optionsMapOrParameter |
+    NodePropertyExistenceConstraintSyntaxAssertExists ~> (_ => NoOptions)
   }
 
-  private def NodePropertyExistenceConstraintWithOptionsSyntax_1: Rule4[Variable, LabelName, Property, Options] = rule {
-      NodePropertyExistenceConstraintSyntax_1 ~~ optionsMapOrParameter |
-      NodePropertyExistenceConstraintSyntax_1 ~> (_ => NoOptions)
+  private def NodePropertyExistenceConstraintWithOptionsSyntaxAssertIsNotNull: Rule4[Variable, LabelName, Property, Options] = rule {
+      NodePropertyExistenceConstraintSyntaxAssertIsNotNull ~~ optionsMapOrParameter |
+      NodePropertyExistenceConstraintSyntaxAssertIsNotNull ~> (_ => NoOptions)
   }
 
-  private def NodePropertyExistenceConstraintWithOptionsSyntax_2: Rule4[Variable, LabelName, Property, Options] = rule {
-      NodePropertyExistenceConstraintSyntax_2 ~~ optionsMapOrParameter |
-      NodePropertyExistenceConstraintSyntax_2 ~> (_ => NoOptions)
+  private def NodePropertyExistenceConstraintWithOptionsSyntaxRequireIsNotNull: Rule4[Variable, LabelName, Property, Options] = rule {
+      NodePropertyExistenceConstraintSyntaxRequireIsNotNull ~~ optionsMapOrParameter |
+      NodePropertyExistenceConstraintSyntaxRequireIsNotNull ~> (_ => NoOptions)
   }
 
-  private def RelationshipPropertyExistenceConstraintSyntax_0: Rule3[Variable, RelTypeName, Property] = RelationshipPatternSyntax ~~
+  private def RelationshipPropertyExistenceConstraintSyntaxAssertExists: Rule3[Variable, RelTypeName, Property] = RelationshipPatternSyntax ~~
     keyword("ASSERT EXISTS") ~~ "(" ~~ VariablePropertyExpression ~~ ")"
 
-  private def RelationshipPropertyExistenceConstraintSyntax_1: Rule3[Variable, RelTypeName, Property] =  RelationshipPatternSyntax ~~
+  private def RelationshipPropertyExistenceConstraintSyntaxAssertIsNotNull: Rule3[Variable, RelTypeName, Property] =  RelationshipPatternSyntax ~~
     keyword("ASSERT") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
 
-  private def RelationshipPropertyExistenceConstraintSyntax_2: Rule3[Variable, RelTypeName, Property] =  RelationshipPatternSyntax ~~
+  private def RelationshipPropertyExistenceConstraintSyntaxRequireIsNotNull: Rule3[Variable, RelTypeName, Property] =  RelationshipPatternSyntax ~~
     keyword("REQUIRE") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
 
-  private def RelationshipPropertyExistenceConstraintWithOptionsSyntax: Rule4[Variable, RelTypeName, Property, Options] = rule {
-    RelationshipPropertyExistenceConstraintSyntax_0 ~~ optionsMapOrParameter |
-    RelationshipPropertyExistenceConstraintSyntax_0 ~> (_ => NoOptions)
+  private def RelationshipPropertyExistenceConstraintWithOptionsSyntaxAssertExists: Rule4[Variable, RelTypeName, Property, Options] = rule {
+    RelationshipPropertyExistenceConstraintSyntaxAssertExists ~~ optionsMapOrParameter |
+    RelationshipPropertyExistenceConstraintSyntaxAssertExists ~> (_ => NoOptions)
   }
 
-  private def RelationshipPropertyExistenceConstraintWithOptionsSyntax_1: Rule4[Variable, RelTypeName, Property, Options] = rule {
-      RelationshipPropertyExistenceConstraintSyntax_1 ~~ optionsMapOrParameter |
-      RelationshipPropertyExistenceConstraintSyntax_1 ~> (_ => NoOptions)
+  private def RelationshipPropertyExistenceConstraintWithOptionsSyntaxAssertIsNotNull: Rule4[Variable, RelTypeName, Property, Options] = rule {
+      RelationshipPropertyExistenceConstraintSyntaxAssertIsNotNull ~~ optionsMapOrParameter |
+      RelationshipPropertyExistenceConstraintSyntaxAssertIsNotNull ~> (_ => NoOptions)
   }
 
-  private def RelationshipPropertyExistenceConstraintWithOptionsSyntax_2: Rule4[Variable, RelTypeName, Property, Options] = rule {
-      RelationshipPropertyExistenceConstraintSyntax_2 ~~ optionsMapOrParameter |
-      RelationshipPropertyExistenceConstraintSyntax_2 ~> (_ => NoOptions)
+  private def RelationshipPropertyExistenceConstraintWithOptionsSyntaxRequireIsNotNull: Rule4[Variable, RelTypeName, Property, Options] = rule {
+      RelationshipPropertyExistenceConstraintSyntaxRequireIsNotNull ~~ optionsMapOrParameter |
+      RelationshipPropertyExistenceConstraintSyntaxRequireIsNotNull ~> (_ => NoOptions)
   }
 }

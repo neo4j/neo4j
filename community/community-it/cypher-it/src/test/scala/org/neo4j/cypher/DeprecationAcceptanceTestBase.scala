@@ -94,12 +94,12 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotificationInSupportedVersions("EXPLAIN DROP CONSTRAINT ON ()-[r:TYPE]-() ASSERT EXISTS (r.prop)", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
   }
 
-  test("deprecated create node property existence constraint syntax") {
+  test("deprecated create node property existence constraint syntax - deprecate version 0") {
     assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT EXISTS (n.prop)",
       DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX)
   }
 
-  test("deprecated create relationship property existence constraint syntax") {
+  test("deprecated create relationship property existence constraint syntax - deprecate version 0") {
     assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT EXISTS (r.prop)",
       DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX)
   }

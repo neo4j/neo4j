@@ -173,9 +173,9 @@ object ShowIndexesCommand {
 
         maybeConstraint match {
           case Some(constraint) if constraint.isUniquenessConstraint =>
-            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($escapedNodeProperties) IS UNIQUE OPTIONS $optionsString"
+            s"CREATE CONSTRAINT $escapedName FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedNodeProperties) IS UNIQUE OPTIONS $optionsString"
           case Some(constraint) if constraint.isNodeKeyConstraint =>
-            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($escapedNodeProperties) IS NODE KEY OPTIONS $optionsString"
+            s"CREATE CONSTRAINT $escapedName FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedNodeProperties) IS NODE KEY OPTIONS $optionsString"
           case Some(_) =>
             throw new IllegalArgumentException("Expected an index or index backed constraint, found another constraint.")
           case None =>

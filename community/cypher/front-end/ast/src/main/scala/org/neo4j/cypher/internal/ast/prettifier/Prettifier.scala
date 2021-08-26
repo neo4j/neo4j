@@ -227,7 +227,7 @@ case class Prettifier(
     def propertyToStringExistenceConstraint(property: Property, constraintVersion: ConstraintVersion): String = {
       constraintVersion match {
         case CONSTRAINT_VERSION_0 => s"exists(${propertyToString(property)})"
-        case CONSTRAINT_VERSION_1 | CONSTRAINT_VERSION_2 => s"(${propertyToString(property)}) IS NOT NULL"
+        case _ => s"(${propertyToString(property)}) IS NOT NULL"
       }
     }
 

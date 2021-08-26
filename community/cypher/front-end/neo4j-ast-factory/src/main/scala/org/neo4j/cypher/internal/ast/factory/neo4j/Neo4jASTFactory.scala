@@ -1154,16 +1154,10 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
         ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
       case ConstraintType.NODE_KEY => ast.CreateNodeKeyConstraint(variable, LabelName(label.string)(label.pos), properties, Option(name),
         ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
-      case ConstraintType.NODE_EXISTS =>
+      case ConstraintType.NODE_EXISTS | ConstraintType.NODE_IS_NOT_NULL =>
         validateSingleProperty(properties, constraintType)
         ast.CreateNodePropertyExistenceConstraint(variable, LabelName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
-      case ConstraintType.NODE_IS_NOT_NULL =>
-        validateSingleProperty(properties, constraintType)
-        ast.CreateNodePropertyExistenceConstraint(variable, LabelName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
-      case ConstraintType.REL_EXISTS =>
-        validateSingleProperty(properties, constraintType)
-        ast.CreateRelationshipPropertyExistenceConstraint(variable, RelTypeName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
-      case ConstraintType.REL_IS_NOT_NULL =>
+      case ConstraintType.REL_EXISTS | ConstraintType.REL_IS_NOT_NULL =>
         validateSingleProperty(properties, constraintType)
         ast.CreateRelationshipPropertyExistenceConstraint(variable, RelTypeName(label.string)(label.pos), properties.head, Option(name), ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersion)(p)
     }

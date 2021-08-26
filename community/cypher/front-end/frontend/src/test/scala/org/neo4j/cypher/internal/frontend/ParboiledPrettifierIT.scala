@@ -30,7 +30,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
   val parser = ParserFixture.parser
-  val tests: Seq[(String, String)] = queryTests() ++ schemaTests() ++ constraintSchemaTests() ++ showCommandTests() ++ administrationTests()
+  val tests: Seq[(String, String)] = queryTests() ++ indexCommandTests() ++ constraintTests() ++ showCommandTests() ++ administrationTests()
 
   def queryTests(): Seq[(String, String)] = Seq[(String, String)](
     "return 42" -> "RETURN 42",
@@ -191,7 +191,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         |)""".stripMargin
   )
 
-  def schemaTests(): Seq[(String, String)] = Seq[(String, String)](
+  def indexCommandTests(): Seq[(String, String)] = Seq[(String, String)](
 
     // index commands
 
@@ -495,47 +495,10 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "drop INDEX foo if EXISTS" ->
       "DROP INDEX foo IF EXISTS",
 
-    // constraint commands
-
-    "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
-      "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
-
-    "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
-      "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
-
-    "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE" ->
-      "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE",
-
-    "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
-      "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
-
-    "create CONSTRAINT ON (a:A) ASSERT EXISTS (a.p)" ->
-      "CREATE CONSTRAINT ON (a:A) ASSERT exists(a.p)",
-
-    "drop CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
-      "DROP CONSTRAINT ON (a:A) ASSERT exists(a.p)",
-
-    "create CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p)" ->
-      "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
-
-    "drop CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
-      "DROP CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
-
-    "drop CONSTRAINT foo" ->
-      "DROP CONSTRAINT foo",
-
-    "drop CONSTRAINT `foo`" ->
-      "DROP CONSTRAINT foo",
-
-    "drop CONSTRAINT `$foo`" ->
-      "DROP CONSTRAINT `$foo`",
-
-    "drop CONSTRAINT foo IF exists" ->
-      "DROP CONSTRAINT foo IF EXISTS",
   )
 
-  // More constraint commands which allows all combinations of ON, FOR, ASSERT, REQUIRE
-  def constraintSchemaTests(): Seq[(String, String)] =
+  // Constraint commands
+  def constraintTests(): Seq[(String, String)] =
     Seq("ON", "FOR").flatMap(onOrFor =>
       Seq("ASSERT", "REQUIRE").flatMap(assertOrRequired => Seq(
         // constraint commands
@@ -670,7 +633,42 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
         s"create or Replace CONSTRAINT foo $onOrFor ()-[r:R]-() $assertOrRequired r.p IS NOT NULL" ->
           s"CREATE OR REPLACE CONSTRAINT foo $onOrFor ()-[r:R]-() $assertOrRequired (r.p) IS NOT NULL",
-      ))
+      ))) ++ Seq(
+      "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
+        "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
+
+      "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
+        "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
+
+      "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE" ->
+        "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE",
+
+      "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
+        "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
+
+      "create CONSTRAINT ON (a:A) ASSERT EXISTS (a.p)" ->
+        "CREATE CONSTRAINT ON (a:A) ASSERT exists(a.p)",
+
+      "drop CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
+        "DROP CONSTRAINT ON (a:A) ASSERT exists(a.p)",
+
+      "create CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p)" ->
+        "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
+
+      "drop CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
+        "DROP CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
+
+      "drop CONSTRAINT foo" ->
+        "DROP CONSTRAINT foo",
+
+      "drop CONSTRAINT `foo`" ->
+        "DROP CONSTRAINT foo",
+
+      "drop CONSTRAINT `$foo`" ->
+        "DROP CONSTRAINT `$foo`",
+
+      "drop CONSTRAINT foo IF exists" ->
+        "DROP CONSTRAINT foo IF EXISTS",
     )
 
   def showCommandTests(): Seq[(String, String)] = Seq[(String, String)](

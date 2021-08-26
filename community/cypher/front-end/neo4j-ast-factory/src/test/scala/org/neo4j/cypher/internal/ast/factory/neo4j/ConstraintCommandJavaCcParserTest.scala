@@ -459,6 +459,14 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
     assertJavaCCException(testName, "Invalid input '$': expected \"FOR\", \"IF\", \"ON\" or an identifier (line 1, column 19 (offset: 18))")
   }
 
+  test("CREATE CONSTRAINT FOR (node1:Label) REQUIRE EXISTS (node1.prop)") {
+    assertJavaCCException(testName, "Invalid input '(': expected \".\" (line 1, column 52 (offset: 51))")
+  }
+
+  test("CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE EXISTS (r1.prop)") {
+    assertJavaCCException(testName, "Invalid input '(': expected \".\" (line 1, column 51 (offset: 50))")
+  }
+
   // Drop constraint
 
   test("DROP CONSTRAINT ON (node1:Label) ASSERT (node2.prop) IS NODE KEY") {
