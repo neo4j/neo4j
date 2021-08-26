@@ -19,14 +19,19 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTExceptionFactory
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherQueryOptions
+import org.neo4j.cypher.internal.preparser.javacc.CypherPreParser
+import org.neo4j.cypher.internal.preparser.javacc.PreParserCharStream
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.SyntaxException
 
+import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.util.matching.Regex
 
 /**
@@ -90,7 +95,9 @@ class PreParser(
   }
 
   private def actuallyPreParse(queryText: String): PreParsedQuery = {
-    val preParsedStatement = CypherPreParser(queryText)
+    val preParserResult = new CypherPreParser(new Neo4jASTExceptionFactory(Neo4jCypherExceptionFactory(queryText, None)), new PreParserCharStream(queryText)).
+      parse()
+    val preParsedStatement = PreParsedStatement(queryText.substring(preParserResult.position.offset), preParserResult.options.asScala.toList, preParserResult.position)
     val isPeriodicCommit = PreParser.periodicCommitHintRegex.findFirstIn(preParsedStatement.statement.toUpperCase).nonEmpty
 
     val options = PreParser.queryOptions(
