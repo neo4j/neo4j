@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
@@ -134,6 +135,19 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
                 return Iterables.concat( entries ).iterator();
             }
         };
+    }
+
+    @Override
+    public IndexEntriesReader[] newAllIndexEntriesReader( int partitions, PageCursorTracer cursorTracer )
+    {
+        if ( descriptor.schema().getPropertyIds().length == 1 )
+        {
+            return IndexAccessor.super.newAllIndexEntriesReader( partitions, cursorTracer );
+        }
+        // For composite fusion index it is just a plain btree index being used.
+        // So we get the accessor for that slot and use its reader.
+        IndexAccessor accessor = instanceSelector.select( IndexSlot.GENERIC );
+        return accessor.newAllIndexEntriesReader( partitions, cursorTracer );
     }
 
     @Override
