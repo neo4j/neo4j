@@ -2,6 +2,7 @@ org.neo4j.dbms.api.DatabaseManagementServiceBuilder public class extends java.la
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::<T extends java.lang.Object>setConfig(org.neo4j.graphdb.config.Setting<T>, #T) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::DatabaseManagementServiceBuilder(java.io.File) void public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::DatabaseManagementServiceBuilder(java.nio.file.Path) void public
+org.neo4j.dbms.api.DatabaseManagementServiceBuilder::DatabaseManagementServiceBuilder(java.nio.file.Path, java.util.function.Predicate<java.lang.Class<? extends org.neo4j.kernel.extension.ExtensionFactory>>) void public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::addDatabaseListener(org.neo4j.graphdb.event.DatabaseEventListener) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::addURLAccessRule(java.lang.String, org.neo4j.graphdb.security.URLAccessRule) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::augmentConfig(org.neo4j.configuration.Config) org.neo4j.configuration.Config protected
