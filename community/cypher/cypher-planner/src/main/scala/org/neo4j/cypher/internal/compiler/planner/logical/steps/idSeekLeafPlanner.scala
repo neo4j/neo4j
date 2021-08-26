@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.NodeNameGenerator
 
 case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with LeafPlanFromExpression {
 
@@ -89,7 +88,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with Leaf
                 } else {
                   // In the case where `startNodeAndEndNodeIsSame == true` we need to generate 1 new variable name for one side of the relationship
                   // and plan a Selection after the seek so that both sides are the same
-                  val newRightNode = context.allNameGenerators.nodeNameGenerator.nextName
+                  val newRightNode = context.anonymousVariableNameGenerator.nextName
                   val nodePredicate = equalsPredicate(relationship.right, newRightNode)
                   val seekPlan = planRelationshipByIdSeek(relationship, (relationship.left, newRightNode), idValues, Seq(predicate), qg.argumentIds, context)
                   val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)

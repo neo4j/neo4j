@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFeaturesIn4_X
 import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeaturesIn4_X
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
@@ -91,7 +92,7 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
   private def check(query: String) = {
     val logger = new RecordingNotificationLogger()
     val statement = parse(query)
-    val initialState = InitialState(query, None, plannerName, maybeStatement = Some(statement))
+    val initialState = InitialState(query, None, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(statement))
 
     val pipeline =
       SyntaxDeprecationWarningsAndReplacements(syntacticallyDeprecatedFeaturesIn4_X) andThen

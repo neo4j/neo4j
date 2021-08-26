@@ -50,9 +50,9 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 with TestName {
 
-  private def rewriter(nameGenerator: AllNameGenerators): Rewriter = {
+  private def rewriter(nameGenerator: AnonymousVariableNameGenerator): Rewriter = {
     val state = mock[LogicalPlanState]
-    when(state.anonymousVariableNameGenerator).thenReturn(new AnonymousVariableNameGenerator())
+    when(state.anonymousVariableNameGenerator).thenReturn(nameGenerator)
     OptionalMatchRemover.instance(state, null)
   }
 
@@ -391,7 +391,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:B AND c:C
       |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B) AND (a)-[`  UNNAMED2`:R2]->(`  UNNAMED3`:C)
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
         |RETURN COUNT(DISTINCT a) as count""".stripMargin
     )
   }
@@ -412,7 +412,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c), (a)-[r3:R3]-(d) WHERE b:B AND c:C AND d:D
       |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin) {
     assert_that(testName).is_rewritten_to(
-      """OPTIONAL MATCH (a)-[r:R]->(b) WHERE b:B AND (b)-[`  UNNAMED0`:R2]->(`  UNNAMED1`:C) AND (a)-[`  UNNAMED2`:R3]-(`  UNNAMED3`:D)
+      """OPTIONAL MATCH (a)-[r:R]->(b) WHERE b:B AND (b)-[`  UNNAMED0`:R2]->(`  UNNAMED1`:C) AND (a)-[`  UNNAMED4`:R3]-(`  UNNAMED5`:D)
         |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB""".stripMargin
     )
   }
@@ -442,8 +442,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
         |WHERE a:A AND b:B AND c:C
         | AND a.prop = 0 AND b.prop = 1 AND c.prop = 2
         | AND (a)-[`  UNNAMED0`:R3]-(`  UNNAMED1`:D)
-        | AND (b)-[`  UNNAMED2`:R4]-(`  UNNAMED3`:E)
-        | AND (c)-[`  UNNAMED4`:R5]-(`  UNNAMED5`:F)
+        | AND (b)-[`  UNNAMED4`:R4]-(`  UNNAMED5`:E)
+        | AND (c)-[`  UNNAMED8`:R5]-(`  UNNAMED9`:F)
         |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin
     )
   }
@@ -578,17 +578,19 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   case class RewriteTester(originalQuery: String) {
     def is_rewritten_to(newQuery: String): Unit = {
-      val expectedGen = new AllNameGenerators()
-      val actualGen = new AllNameGenerators()
-      val expected = removeGeneratedNamesAndParamsOnTree(getTheWholePlannerQueryFrom(newQuery.stripMargin, expectedGen))
+      val expectedGen = new AnonymousVariableNameGenerator()
+      val actualGen = new AnonymousVariableNameGenerator()
+      val expectedA = getTheWholePlannerQueryFrom(newQuery.stripMargin, expectedGen)
+      val expected = removeGeneratedNamesAndParamsOnTree(expectedA)
       val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin, actualGen)
 
-      val result = removeGeneratedNamesAndParamsOnTree(original.endoRewrite(fixedPoint(rewriter(actualGen))))
+      val resultA = original.endoRewrite(fixedPoint(rewriter(actualGen)))
+      val result = removeGeneratedNamesAndParamsOnTree(resultA)
       assert(result === expected, "\nWas not rewritten correctly\n" + originalQuery)
     }
 
     def is_not_rewritten(): Unit = {
-      val actualGen = new AllNameGenerators()
+      val actualGen = new AnonymousVariableNameGenerator()
       val query = getTheWholePlannerQueryFrom(originalQuery.stripMargin, actualGen)
       val result = query.endoRewrite(fixedPoint(rewriter(actualGen)))
       assert(result === query, "\nShould not have been rewritten\n" + originalQuery)
@@ -597,7 +599,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   private def assert_that(originalQuery: String): RewriteTester = RewriteTester(originalQuery)
 
-  private def getTheWholePlannerQueryFrom(query: String, nameGenerator: AllNameGenerators): PlannerQuery = {
+  private def getTheWholePlannerQueryFrom(query: String, nameGenerator: AnonymousVariableNameGenerator): PlannerQuery = {
     val astOriginal = parseForRewriting(query)
     val orgAstState = SemanticChecker.check(astOriginal).state
     val ast = astOriginal.endoRewrite(inSequence(

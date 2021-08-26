@@ -122,7 +122,7 @@ class CypherPlannerTest extends CypherFunSuite {
       override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = Cardinality.EMPTY
       override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = Cardinality.EMPTY
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = Some(Selectivity.ZERO)
-      override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = Some(Selectivity.ZERO)
+      override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = Some(Selectivity.ZERO)
     }
 
     val getTx = () => 1L
