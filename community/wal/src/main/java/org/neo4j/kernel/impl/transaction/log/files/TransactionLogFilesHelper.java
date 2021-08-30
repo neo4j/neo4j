@@ -45,6 +45,7 @@ public class TransactionLogFilesHelper
 
     private final Path logBaseName;
     private final FileSystemAbstraction fileSystem;
+    private final Path logDirectory;
     private final DirectoryStream.Filter<Path> filenameFilter;
 
     public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, Path directory )
@@ -55,6 +56,7 @@ public class TransactionLogFilesHelper
     public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, Path directory, String name )
     {
         this.fileSystem = fileSystem;
+        this.logDirectory = directory;
         this.logBaseName = directory.resolve( name );
         this.filenameFilter = new LogicalLogFilenameFilter( quote( name ) );
     }
@@ -82,7 +84,7 @@ public class TransactionLogFilesHelper
 
     public Path[] getMatchedFiles() throws IOException
     {
-        Path[] files = fileSystem.listFiles( logBaseName.getParent(), getLogFilenameFilter() );
+        Path[] files = fileSystem.listFiles( logDirectory, getLogFilenameFilter() );
         if ( files.length == 0 )
         {
             return EMPTY_FILES_ARRAY;

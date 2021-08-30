@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,6 +60,38 @@ class LongRangeTest
     void checkInvalidRanges( RangeProvider rangeProvider )
     {
         assertThrows( IllegalArgumentException.class, rangeProvider::get );
+    }
+
+    @Test
+    void joinRanges()
+    {
+        LongRange rangeA = LongRange.range( 10, 12 );
+        LongRange rangeB = LongRange.range( 13, 15 );
+        LongRange joinedRange = LongRange.join( rangeA, rangeB );
+        assertEquals( 10, joinedRange.from() );
+        assertEquals( 15, joinedRange.to() );
+    }
+
+    @Test
+    void failJoinNonAdjacentRanges()
+    {
+        LongRange rangeA = LongRange.range( 10, 12 );
+        LongRange rangeB = LongRange.range( 14, 15 );
+        assertThrows( IllegalArgumentException.class, () -> LongRange.join( rangeA, rangeB ) );
+    }
+
+    @Test
+    void adjacentRangesCheck()
+    {
+        LongRange rangeA = LongRange.range( 10, 12 );
+        LongRange rangeB = LongRange.range( 14, 15 );
+        LongRange rangeC = LongRange.range( 12, 15 );
+        LongRange rangeD = LongRange.range( 10, 11 );
+
+        assertFalse( rangeA.isAdjacent( rangeB ) );
+        assertFalse( rangeA.isAdjacent( rangeC ) );
+        assertTrue( rangeD.isAdjacent( rangeC ) );
+        assertFalse( rangeD.isAdjacent( rangeB ) );
     }
 
     private static Stream<RangeProvider> invalidRanges()

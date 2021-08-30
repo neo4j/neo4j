@@ -83,6 +83,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final TransactionLogFileInformation logFileInformation;
     private final TransactionLogChannelAllocator channelAllocator;
     private final DatabaseHealth databaseHealth;
+    private final String baseName;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
@@ -91,13 +92,14 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final FileSystemAbstraction fileSystem;
     private TransactionLogWriter transactionLogWriter;
 
-    TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context, String name )
+    TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context, String baseName )
     {
+        this.baseName = baseName;
         this.context = context;
         this.rotateAtSize = context.getRotationThreshold();
         this.fileSystem = context.getFileSystem();
         this.databaseHealth = context.getDatabaseHealth();
-        this.fileHelper = new TransactionLogFilesHelper( fileSystem, logFiles.logFilesDirectory(), name );
+        this.fileHelper = new TransactionLogFilesHelper( fileSystem, logFiles.logFilesDirectory(), baseName );
         this.logHeaderCache = new LogHeaderCache( 1000 );
         this.logFileInformation = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
         this.channelAllocator = new TransactionLogChannelAllocator( context, fileHelper, logHeaderCache,
@@ -169,6 +171,12 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     public boolean rotationNeeded() throws IOException
     {
         return writer.getCurrentPosition().getByteOffset() >= rotateAtSize.get();
+    }
+
+    @Override
+    public void truncate() throws IOException
+    {
+        channel.truncate( channel.position() );
     }
 
     @Override
@@ -366,6 +374,17 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     public Path[] getMatchedFiles() throws IOException
     {
         return fileHelper.getMatchedFiles();
+    }
+
+    @Override
+    public void combine( Path additionalLogFilesDirectory ) throws IOException
+    {
+        long highestLogVersion = getHighestLogVersion();
+        var logHelper = new TransactionLogFilesHelper( fileSystem, additionalLogFilesDirectory, baseName );
+        for ( Path matchedFile : logHelper.getMatchedFiles() )
+        {
+            fileSystem.renameFile( matchedFile, fileHelper.getLogFileForVersion( ++highestLogVersion ) );
+        }
     }
 
     /**

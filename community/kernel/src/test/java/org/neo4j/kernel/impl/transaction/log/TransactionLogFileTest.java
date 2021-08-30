@@ -21,11 +21,14 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -60,6 +63,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.Futures;
 
 import static java.util.concurrent.locks.LockSupport.parkNanos;
@@ -87,6 +91,8 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 class TransactionLogFileTest
 {
     @Inject
+    private TestDirectory testDirectory;
+    @Inject
     private DatabaseLayout databaseLayout;
     @Inject
     private FileSystemAbstraction fileSystem;
@@ -103,6 +109,24 @@ class TransactionLogFileTest
     void setUp()
     {
         wrappingFileSystem = new CapturingChannelFileSystem( fileSystem );
+    }
+
+    @Test
+    @DisabledOnOs( OS.WINDOWS )
+    void truncateCurrentLogFile() throws IOException
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.add( logFiles );
+        life.start();
+
+        LogFile logFile = logFiles.getLogFile();
+        long sizeBefore = fileSystem.getFileSize( logFile.getLogFileForVersion( logFile.getCurrentLogVersion() ) );
+
+        logFile.truncate();
+
+        long sizeAfter = fileSystem.getFileSize( logFile.getLogFileForVersion( logFile.getCurrentLogVersion() ) );
+
+        assertThat( sizeBefore ).describedAs( "Truncation should truncate any preallocated space." ).isGreaterThan( sizeAfter );
     }
 
     @Test
@@ -368,7 +392,7 @@ class TransactionLogFileTest
         assertEquals( 1, capturingChannel.getWriteAllCounter().get() - writesBefore );
     }
 
-        @Test
+    @Test
     void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
     {
         LogFiles logFiles = buildLogFiles();
@@ -409,6 +433,82 @@ class TransactionLogFileTest
         }
         assertThat( capturingChannel.getFlushCounter().get() - flushesBefore ).isLessThanOrEqualTo( executors );
         assertThat( capturingChannel.getWriteAllCounter().get() - writesBefore ).isLessThanOrEqualTo( executors );
+    }
+
+    @Test
+    void combineLogFilesFromMultipleLocationsNonOverlappingFiles() throws IOException
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        Path additionalSource = testDirectory.directory( "another" );
+        var filesHelper = new TransactionLogFilesHelper( fileSystem, additionalSource );
+        createFile( filesHelper.getLogFileForVersion( 2 ) );
+        createFile( filesHelper.getLogFileForVersion( 3 ) );
+        createFile( filesHelper.getLogFileForVersion( 4 ) );
+
+        LogFile logFile = logFiles.getLogFile();
+        assertEquals( 1, logFile.getHighestLogVersion() );
+
+        logFile.combine( additionalSource );
+        assertEquals( 4, logFile.getHighestLogVersion() );
+        assertThat( Arrays.stream( logFile.getMatchedFiles() ).map( path -> path.getFileName().toString() ) ).contains( "neostore.transaction.db.1",
+                "neostore.transaction.db.2", "neostore.transaction.db.3", "neostore.transaction.db.4" );
+
+    }
+
+    @Test
+    void combineLogFilesFromMultipleLocationsOverlappingFiles() throws IOException
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        Path additionalSource = testDirectory.directory( "another" );
+        var filesHelper = new TransactionLogFilesHelper( fileSystem, additionalSource );
+        createFile( filesHelper.getLogFileForVersion( 0 ) );
+        createFile( filesHelper.getLogFileForVersion( 1 ) );
+        createFile( filesHelper.getLogFileForVersion( 2 ) );
+
+        LogFile logFile = logFiles.getLogFile();
+        assertEquals( 1, logFile.getHighestLogVersion() );
+
+        logFile.combine( additionalSource );
+        assertEquals( 4, logFile.getHighestLogVersion() );
+        assertThat( Arrays.stream( logFile.getMatchedFiles() ).map( path -> path.getFileName().toString() ) ).contains( "neostore.transaction.db.1",
+                "neostore.transaction.db.2", "neostore.transaction.db.3", "neostore.transaction.db.4" );
+    }
+
+    @Test
+    void combineLogFilesFromMultipleLocationsNonSequentialFiles() throws IOException
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        Path additionalSource1 = testDirectory.directory( "another" );
+        var filesHelper = new TransactionLogFilesHelper( fileSystem, additionalSource1 );
+        createFile( filesHelper.getLogFileForVersion( 0 ) );
+        createFile( filesHelper.getLogFileForVersion( 6 ) );
+        createFile( filesHelper.getLogFileForVersion( 8 ) );
+
+        Path additionalSource2 = testDirectory.directory( "another2" );
+        var oneMoreHelper = new TransactionLogFilesHelper( fileSystem, additionalSource1 );
+        createFile( oneMoreHelper.getLogFileForVersion( 10 ) );
+        createFile( oneMoreHelper.getLogFileForVersion( 26 ) );
+        createFile( oneMoreHelper.getLogFileForVersion( 38 ) );
+
+        LogFile logFile = logFiles.getLogFile();
+        assertEquals( 1, logFile.getHighestLogVersion() );
+
+        logFile.combine( additionalSource1 );
+        logFile.combine( additionalSource2 );
+
+        assertEquals( 7, logFile.getHighestLogVersion() );
+        assertThat( Arrays.stream( logFile.getMatchedFiles() ).map( path -> path.getFileName().toString() ) ).contains( "neostore.transaction.db.1",
+                "neostore.transaction.db.2", "neostore.transaction.db.3", "neostore.transaction.db.4",
+                "neostore.transaction.db.5", "neostore.transaction.db.6", "neostore.transaction.db.7" );
     }
 
     @Test
@@ -494,6 +594,11 @@ class TransactionLogFileTest
         lifeSupport.shutdown();
     }
 
+    private void createFile( Path filePath ) throws IOException
+    {
+        fileSystem.write( filePath ).close();
+    }
+
     private static class CapturingNativeAccess implements NativeAccess
     {
         private int evictionCounter;
@@ -576,7 +681,7 @@ class TransactionLogFileTest
         }
     }
 
-    private class CapturingChannelFileSystem extends DelegatingFileSystemAbstraction
+    private static class CapturingChannelFileSystem extends DelegatingFileSystemAbstraction
     {
         private CapturingStoreChannel capturingChannel;
 

@@ -28,6 +28,15 @@ public final class LongRange
         return new LongRange( from, to );
     }
 
+    public static LongRange join( LongRange rangeA, LongRange rangeB )
+    {
+        if ( !rangeA.isAdjacent( rangeB ) )
+        {
+            throw new IllegalArgumentException( format( "Fail to join ranges %s and %s since they do not form continuous range.", rangeA, rangeB ) );
+        }
+        return LongRange.range( rangeA.from, rangeB.to );
+    }
+
     public static void assertIsRange( long from, long to )
     {
         if ( from < 0 )
@@ -41,7 +50,6 @@ public final class LongRange
     }
 
     private final long from;
-
     private final long to;
 
     private LongRange( long from, long to )
@@ -49,6 +57,11 @@ public final class LongRange
         assertIsRange( from, to );
         this.from = from;
         this.to = to;
+    }
+
+    public boolean isAdjacent( LongRange candidate )
+    {
+        return this.to + 1 == candidate.from;
     }
 
     /**
