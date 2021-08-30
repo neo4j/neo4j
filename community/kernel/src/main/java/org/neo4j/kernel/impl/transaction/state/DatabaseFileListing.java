@@ -42,7 +42,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
 
-public class DatabaseFileListing
+public class DatabaseFileListing implements FileStoreProviderRegistry
 {
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
@@ -70,19 +70,10 @@ public class DatabaseFileListing
         return new StoreFileListingBuilder();
     }
 
+    @Override
     public void registerStoreFileProvider( StoreFileProvider provider )
     {
         additionalProviders.add( provider );
-    }
-
-    public interface StoreFileProvider
-    {
-        /**
-         * @param fileMetadataCollection the collection to add the files to
-         * @return A {@link Resource} that should be closed when we are done working with the files added to the collection
-         * @throws IOException if the provider is unable to prepare the file listing
-         */
-        Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException;
     }
 
     private void placeMetaDataStoreLast( List<StoreFileMetadata> files )

@@ -26,8 +26,8 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -60,8 +60,8 @@ public class BuiltInDelegatingIndexProviderFactory extends ExtensionFactory<Buil
     {
         var provider = delegate.create(
                 dependencies.pageCache(), dependencies.fileSystem(), dependencies.getLogService(), dependencies.monitors(), dependencies.getConfig(),
-                dependencies.readOnlyChecker(), context.dbmsInfo(), dependencies.recoveryCleanupWorkCollector(), dependencies.pageCacheTracer(),
-                dependencies.databaseLayout(), dependencies.tokenHolders(), dependencies.jobScheduler() );
+                dependencies.readOnlyChecker(), context.dbmsInfo(), dependencies.recoveryCleanupWorkCollector(),
+                dependencies.databaseTracer().getPageCacheTracer(), dependencies.databaseLayout(), dependencies.tokenHolders(), dependencies.jobScheduler() );
         return new IndexProvider.Delegating( provider )
         {
             @Override
@@ -96,7 +96,7 @@ public class BuiltInDelegatingIndexProviderFactory extends ExtensionFactory<Buil
 
         DatabaseLayout databaseLayout();
 
-        PageCacheTracer pageCacheTracer();
+        DatabaseTracers databaseTracer();
 
         DatabaseReadOnlyChecker readOnlyChecker();
 

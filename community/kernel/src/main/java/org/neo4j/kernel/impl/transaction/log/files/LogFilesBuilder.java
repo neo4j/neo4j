@@ -29,14 +29,12 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -314,17 +312,13 @@ public class LogFilesBuilder
         // Or the latest version if we can't find the system db version.
         if ( kernelVersionRepository == null )
         {
-            kernelVersionRepository = () -> KernelVersion.LATEST;
-            if ( dependencies != null )
+            if ( dependencies == null || !dependencies.containsDependency( KernelVersionRepository.class ) )
             {
-                try
-                {
-                    this.kernelVersionRepository = dependencies.resolveDependency( KernelVersionRepository.class );
-                }
-                catch ( UnsatisfiedDependencyException e )
-                {
-                    // Use latest version if can't find version repository.
-                }
+                kernelVersionRepository = KernelVersionRepository.LATEST;
+            }
+            else
+            {
+                this.kernelVersionRepository = dependencies.resolveDependency( KernelVersionRepository.class );
             }
         }
 

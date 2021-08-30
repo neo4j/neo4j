@@ -64,20 +64,20 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     }
 
     @Override
-    public void init() throws Exception
+    public void init()
     {
         shutdown = false;
         startupFailure = null;
     }
 
     @Override
-    public void start() throws Exception
+    public void start()
     {
         globalGuard.addDatabaseAvailabilityGuard( this );
     }
 
     @Override
-    public void stop() throws Exception
+    public void stop()
     {
         globalGuard.removeDatabaseAvailabilityGuard( this );
     }

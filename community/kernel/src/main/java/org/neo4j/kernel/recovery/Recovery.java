@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
@@ -43,12 +44,19 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityListener;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.DefaultForceOperation;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
@@ -72,6 +80,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
+import org.neo4j.kernel.impl.transaction.state.FileStoreProviderRegistry;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -338,6 +347,7 @@ public final class Recovery
         }
         checkAllFilesPresence( databaseLayout, fs, pageCache, storageEngineFactory );
         LifeSupport recoveryLife = new LifeSupport();
+        var namedDatabaseId = createRecoveryDatabaseId( fs, pageCache, databaseLayout, storageEngineFactory );
         Monitors monitors = new Monitors( globalMonitors, logProvider );
         DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, IOController.DISABLED );
         SimpleLogService logService = new SimpleLogService( logProvider );
@@ -346,6 +356,8 @@ public final class Recovery
 
         DatabaseSchemaState schemaState = new DatabaseSchemaState( logProvider );
         JobScheduler scheduler = recoveryLife.add( JobSchedulerFactory.createInitialisedScheduler() );
+        DatabaseAvailabilityGuard guard = new RecoveryAvailabilityGuard( namedDatabaseId, clock, recoveryLog );
+        recoveryLife.add( guard );
 
         VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
         DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, recoveryLog );
@@ -359,7 +371,7 @@ public final class Recovery
 
         DatabaseExtensions extensions = recoveryLife.add( instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
                                                                        DbmsInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, readOnlyChecker,
-                                                                       extensionFactories, tracers.getPageCacheTracer() ) );
+                                                                       extensionFactories, guard, tracers, namedDatabaseId ) );
 
         var indexProviderMap = recoveryLife.add( StaticIndexProviderMapFactory.create(
                 recoveryLife, config, databasePageCache, fs, logService, monitors, readOnlyChecker, DbmsInfo.TOOL, recoveryCleanupCollector,
@@ -445,6 +457,13 @@ public final class Recovery
         }
     }
 
+    private static NamedDatabaseId createRecoveryDatabaseId( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout,
+            StorageEngineFactory storageEngineFactory )
+    {
+        UUID uuid = storageEngineFactory.databaseIdUuid( fs, databaseLayout, pageCache, CursorContext.NULL ).orElse( new UUID( 0, 0 ) );
+        return DatabaseIdFactory.from( databaseLayout.getDatabaseName(), uuid );
+    }
+
     public static void validateStoreId( LogFiles logFiles, StoreId storeId, Config config )
     {
         if ( !config.get( GraphDatabaseInternalSettings.recovery_ignore_store_id_validation ) )
@@ -498,7 +517,8 @@ public final class Recovery
                                                                      RecoveryCleanupWorkCollector recoveryCleanupCollector,
                                                                      DatabaseReadOnlyChecker readOnlyChecker,
                                                                      Iterable<ExtensionFactory<?>> extensionFactories,
-                                                                     PageCacheTracer pageCacheTracer )
+                                                                     AvailabilityGuard availabilityGuard, DatabaseTracers tracers,
+            NamedDatabaseId namedDatabaseId )
     {
         List<ExtensionFactory<?>> recoveryExtensions = stream( extensionFactories )
                 .filter( extension -> extension.getClass().isAnnotationPresent( RecoveryExtension.class ) )
@@ -507,7 +527,8 @@ public final class Recovery
         Dependencies deps = new Dependencies();
         NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors, logService.getInternalLogProvider() );
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, nonListenableMonitors, jobScheduler,
-                tokenHolders, recoveryCleanupCollector, pageCacheTracer, databaseLayout, readOnlyChecker );
+                tokenHolders, recoveryCleanupCollector, tracers, databaseLayout, readOnlyChecker, availabilityGuard, namedDatabaseId,
+                FileStoreProviderRegistry.EMPTY );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );
         return new DatabaseExtensions( extensionContext, recoveryExtensions, deps, ExtensionFailureStrategies.fail() );
     }
@@ -534,6 +555,23 @@ public final class Recovery
                         GraphDatabaseInternalSettings.fail_on_corrupted_log_files.name() + "=false'. This will try to recover as much " +
                         "as possible and then truncate the corrupt part of the transaction log. Doing this means your database " +
                         "integrity might be compromised, please consider restoring from a consistent backup instead.", t );
+    }
+
+    private static class RecoveryAvailabilityGuard extends DatabaseAvailabilityGuard
+    {
+        RecoveryAvailabilityGuard( NamedDatabaseId namedDatabaseId, Clock clock, Log log )
+        {
+            super( namedDatabaseId, clock, log, 0, new CompositeDatabaseAvailabilityGuard( clock ) );
+            init();
+            start();
+        }
+
+        @Override
+        public void addListener( AvailabilityListener listener )
+        {
+            super.addListener( listener );
+            listener.available();
+        }
     }
 
     // We need to create monitors that do not allow listener registration here since at this point another version of extensions already stared by owning

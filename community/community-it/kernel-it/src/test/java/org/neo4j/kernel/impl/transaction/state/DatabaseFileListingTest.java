@@ -287,7 +287,7 @@ class DatabaseFileListingTest
         }
     }
 
-    private static class MarkerFileProvider implements DatabaseFileListing.StoreFileProvider
+    private static class MarkerFileProvider implements StoreFileProvider
     {
         @Override
         public Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection )

@@ -337,6 +337,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( ioController );
             databaseDependencies.satisfyDependency( readOnlyDatabaseChecker );
             databaseDependencies.satisfyDependency( databaseLayout );
+            databaseDependencies.satisfyDependency( namedDatabaseId );
             databaseDependencies.satisfyDependency( startupController );
             databaseDependencies.satisfyDependency( databaseConfig );
             databaseDependencies.satisfyDependency( databaseMonitors );
@@ -355,6 +356,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( idController );
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( versionContextSupplier );
+            databaseDependencies.satisfyDependency( tracers );
             databaseDependencies.satisfyDependency( tracers.getDatabaseTracer() );
             databaseDependencies.satisfyDependency( tracers.getPageCacheTracer() );
             databaseDependencies.satisfyDependency( storageEngineFactory );
