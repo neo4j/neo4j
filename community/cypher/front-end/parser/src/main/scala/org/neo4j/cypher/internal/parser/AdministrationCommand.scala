@@ -109,32 +109,34 @@ trait AdministrationCommand extends Parser
   }
 
   private def RenameUser: Rule1[ast.RenameUser] = rule("RENAME USER") {
-    group(keyword("RENAME USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS") ~~ keyword("TO")
-      ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameUser(_, _, ifExists = true)) |
-    group(keyword("RENAME USER") ~~ SymbolicNameOrStringParameter ~~ keyword("TO")
-      ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameUser(_, _, ifExists = false))
+    val renameUserStart = keyword("RENAME USER") ~~ SymbolicNameOrStringParameter
+    group(renameUserStart ~~ keyword("IF EXISTS") ~~ keyword("TO") ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameUser(_, _, ifExists = true)) |
+    group(renameUserStart ~~ keyword("TO") ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameUser(_, _, ifExists = false))
   }
 
   private def DropUser: Rule1[ast.DropUser] = rule("DROP USER") {
-    group(keyword("DROP USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS")) ~~>> (ast.DropUser(_, ifExists = true)) |
-    group(keyword("DROP USER") ~~ SymbolicNameOrStringParameter) ~~>> (ast.DropUser(_, ifExists = false))
+    val dropUserStart = keyword("DROP USER") ~~ SymbolicNameOrStringParameter
+    group(dropUserStart ~~ keyword("IF EXISTS")) ~~>> (ast.DropUser(_, ifExists = true)) |
+    group(dropUserStart) ~~>> (ast.DropUser(_, ifExists = false))
   }
 
   private def AlterUser: Rule1[ast.AlterUser] = rule("ALTER USER") {
+    val alterUserStart = AlterUserStart
     // ALTER USER username [IF EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET HOME DATABASE name}]*
-    group(AlterUserStart ~~ SetPassword ~~ optional(UserOptions)) ~~>>
+    group(alterUserStart ~~ SetPassword ~~ optional(UserOptions)) ~~>>
       ((userName, ifExists, isEncryptedPassword, initialPassword, userOptions) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), userOptions.getOrElse(ast.UserOptions(None, None, None)), ifExists)) |
     //
     // ALTER USER username [IF EXISTS] [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET HOME DATABASE name}]+
-    group(AlterUserStart ~~ UserOptionsWithSetPart) ~~>> ((userName, ifExists, userOptions) => ast.AlterUser(userName, None, None, userOptions, ifExists)) |
+    group(alterUserStart ~~ UserOptionsWithSetPart) ~~>> ((userName, ifExists, userOptions) => ast.AlterUser(userName, None, None, userOptions, ifExists)) |
     // ALTER USER username [IF EXISTS] REMOVE HOME DATABASE
-    group(AlterUserStart ~~ keyword("REMOVE HOME DATABASE")) ~~>> ((userName, ifExists) => ast.AlterUser(userName, None, None, ast.UserOptions(None, None, Some(ast.RemoveHomeDatabaseAction)), ifExists))
+    group(alterUserStart ~~ keyword("REMOVE HOME DATABASE")) ~~>> ((userName, ifExists) => ast.AlterUser(userName, None, None, ast.UserOptions(None, None, Some(ast.RemoveHomeDatabaseAction)), ifExists))
   }
 
   private def AlterUserStart: Rule2[Either[String, Parameter], Boolean] = {
     // returns: userName, IfExists
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS") ~> (_ => true)) |
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~> (_ => false))
+    val alterUserStart = keyword("ALTER USER") ~~ SymbolicNameOrStringParameter
+    group(alterUserStart ~~ keyword("IF EXISTS") ~> (_ => true)) |
+    group(alterUserStart ~> (_ => false))
   }
 
   private def SetOwnPassword: Rule1[ast.SetOwnPassword] = rule("ALTER CURRENT USER SET PASSWORD") {
@@ -197,10 +199,11 @@ trait AdministrationCommand extends Parser
   // Role management commands
 
   private def ShowRoles: Rule1[ast.ShowRoles] = rule("SHOW ROLES") {
+    val showAllRoles = ShowAllRoles
     //SHOW [ ALL | POPULATED ] ROLES WITH USERS
-    group(ShowAllRoles ~~ keyword("WITH USERS") ~~ optional(ShowCommandClauses)) ~~>> (ast.ShowRoles(withUsers = true, _, _)) |
+    group(showAllRoles ~~ keyword("WITH USERS") ~~ optional(ShowCommandClauses)) ~~>> (ast.ShowRoles(withUsers = true, _, _)) |
     // SHOW [ ALL | POPULATED ] ROLES
-    group(ShowAllRoles ~~ optional(ShowCommandClauses)) ~~>> (ast.ShowRoles(withUsers = false, _, _))
+    group(showAllRoles ~~ optional(ShowCommandClauses)) ~~>> (ast.ShowRoles(withUsers = false, _, _))
   }
 
   private def ShowAllRoles: Rule1[Boolean] = rule("return true for SHOW ALL ROLES, false for SHOW POPULATED ROLES") {
@@ -221,15 +224,15 @@ trait AdministrationCommand extends Parser
   }
 
   private def RenameRole: Rule1[ast.RenameRole] = rule("RENAME ROLE") {
-    group(keyword("RENAME ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS") ~~ keyword("TO")
-      ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameRole(_, _, ifExists = true)) |
-    group(keyword("RENAME ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("TO")
-      ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameRole(_, _, ifExists = false))
+    val renameRoleStart = keyword("RENAME ROLE") ~~ SymbolicNameOrStringParameter
+    group(renameRoleStart ~~ keyword("IF EXISTS") ~~ keyword("TO") ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameRole(_, _, ifExists = true)) |
+    group(renameRoleStart ~~ keyword("TO") ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameRole(_, _, ifExists = false))
   }
 
   private def DropRole: Rule1[ast.DropRole] = rule("DROP ROLE") {
-    group(keyword("DROP ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS")) ~~>> (ast.DropRole(_, ifExists = true)) |
-    group(keyword("DROP ROLE") ~~ SymbolicNameOrStringParameter) ~~>> (ast.DropRole(_, ifExists = false))
+    val dropRuleStart = keyword("DROP ROLE") ~~ SymbolicNameOrStringParameter
+    group(dropRuleStart ~~ keyword("IF EXISTS")) ~~>> (ast.DropRole(_, ifExists = true)) |
+    group(dropRuleStart) ~~>> (ast.DropRole(_, ifExists = false))
   }
 
   private def GrantRole: Rule1[ast.GrantRolesToUsers] = rule("GRANT ROLE") {
@@ -243,8 +246,9 @@ trait AdministrationCommand extends Parser
   // Privilege commands
 
   private def ShowPrivileges: Rule1[ast.ReadAdministrationCommand] = rule("SHOW PRIVILEGES") {
-    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ asCommand ~~ optional(ShowCommandClauses) ~~>> ((scope, revoke, yld) => ast.ShowPrivilegeCommands(scope, revoke, yld))) |
-    group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ optional(ShowCommandClauses) ~~>> ((scope, yld) => ast.ShowPrivileges(scope, yld)))
+    val showPrivilegesStart = keyword("SHOW") ~~ ScopeForShowPrivileges
+    group(showPrivilegesStart ~~ asCommand ~~ optional(ShowCommandClauses) ~~>> ((scope, revoke, yld) => ast.ShowPrivilegeCommands(scope, revoke, yld))) |
+    group(showPrivilegesStart ~~ optional(ShowCommandClauses) ~~>> ((scope, yld) => ast.ShowPrivileges(scope, yld)))
   }
 
   private def ScopeForShowPrivileges: Rule1[ast.ShowPrivilegeScope] = rule("show privilege scope") {
@@ -297,9 +301,10 @@ trait AdministrationCommand extends Parser
   }
 
   private def RevokeDatabasePrivilege: Rule1[ast.RevokePrivilege] = rule("REVOKE database privileges") {
-    group(RevokeType ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+    val revokeStart = RevokeType
+    group(revokeStart ~~ QualifiedDatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((revokeType, qualifier, databaseAction, scope, grantees) => ast.RevokePrivilege.databaseAction(databaseAction, scope, grantees, revokeType, qualifier)) |
-    group(RevokeType ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+    group(revokeStart ~~ DatabaseAction ~~ Database ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((revokeType, databaseAction, scope, grantees) => ast.RevokePrivilege.databaseAction(databaseAction, scope, grantees, revokeType))
   }
 
@@ -327,13 +332,14 @@ trait AdministrationCommand extends Parser
   }
 
   private def RevokeGraphPrivilege: Rule1[ast.RevokePrivilege] = rule("REVOKE graph privileges") {
-    group(RevokeType ~~ GraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+    val revokeStart = RevokeType
+    group(revokeStart ~~ GraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((revokeType, graphScope, action, qualifier, roles) => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, revokeType)) |
-    group(RevokeType ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+    group(revokeStart ~~ QualifiedGraphAction ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((revokeType, graphScope, qualifier, action, roles) => ast.RevokePrivilege.graphAction(action, None, graphScope, qualifier, roles, revokeType)) |
-    group(RevokeType ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+    group(revokeStart ~~ GraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((revokeType, resource, graphScope, action, roles) => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, List(ast.LabelAllQualifier()(InputPosition.NONE)), roles, revokeType)) |
-    group(RevokeType ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
+    group(revokeStart ~~ QualifiedGraphActionWithResource ~~ keyword("FROM") ~~ SymbolicNameOrStringParameterList) ~~>>
       ((revokeType, resource, graphScope, qualifier, action, roles) => ast.RevokePrivilege.graphAction(action, Some(resource), graphScope, qualifier, roles, revokeType))
   }
 
@@ -524,9 +530,10 @@ trait AdministrationCommand extends Parser
   }
 
   private def DropDatabase: Rule1[ast.DropDatabase] = rule("DROP DATABASE") {
-    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ keyword("IF EXISTS") ~~ DataAction ~~ WaitUntilComplete) ~~>>
+    val dropDatabaseStart = keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter
+    group(dropDatabaseStart ~~ keyword("IF EXISTS") ~~ DataAction ~~ WaitUntilComplete) ~~>>
       ((dbName, dataAction, wait) => ast.DropDatabase(dbName, ifExists = true, dataAction, wait)) |
-    group(keyword("DROP DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~ DataAction ~~ WaitUntilComplete) ~~>>
+    group(dropDatabaseStart ~~ DataAction ~~ WaitUntilComplete) ~~>>
       ((dbName, dataAction, wait) => ast.DropDatabase(dbName, ifExists = false, dataAction, wait))
   }
 

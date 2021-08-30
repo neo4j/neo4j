@@ -71,15 +71,16 @@ trait SchemaCommand extends Parser
   )
 
   private def NodeIndexPatternSyntax: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
-    group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ optionsMapOrParameter) |
-    group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")") ~> (_ => NoOptions)
+    val nodeIndexPatternSyntaxStart = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")"
+    group(nodeIndexPatternSyntaxStart ~~ optionsMapOrParameter) |
+    group(nodeIndexPatternSyntaxStart) ~> (_ => NoOptions)
   }
 
   private def RelationshipIndexPatternSyntax: Rule4[Variable, RelTypeName, Seq[Property], Options] = rule {
-    group(RelationshipPatternSyntax ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ optionsMapOrParameter) |
-    group(RelationshipPatternSyntax ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")") ~> (_ => NoOptions)
+    val relationshipIndexPatternSyntaxStart = RelationshipPatternSyntax ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")"
+    group(relationshipIndexPatternSyntaxStart ~~ optionsMapOrParameter) |
+    group(relationshipIndexPatternSyntaxStart) ~> (_ => NoOptions)
   }
-
 
   // INDEX commands
 
@@ -88,15 +89,39 @@ trait SchemaCommand extends Parser
   }
 
   private def CreateIndex: Rule1[ast.CreateIndex] = rule {
-    CreateLookupIndex | CreateFulltextIndex | CreateTextIndex | CreateRangeIndex | CreateBtreeIndex
+    CreateDefaultIndex | CreateLookupIndex | CreateFulltextIndex | CreateTextIndex | CreateRangeIndex | CreateBtreeIndex
+  }
+
+  // Default
+
+  private def CreateDefaultIndex: Rule1[ast.CreateIndex] = rule {
+    val createDefaultIndexStart = CreateDefaultIndexStart
+    group(createDefaultIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
+      ((name, ifExistsDo, variable, relType, properties, options) => ast.CreateRangeRelationshipIndex(variable, relType, properties.toList, name, ifExistsDo, options, fromDefault = true)) |
+    group(createDefaultIndexStart ~~ NodeIndexPatternSyntax) ~~>>
+      ((name, ifExistsDo, variable, label, properties, options) => ast.CreateRangeNodeIndex(variable, label, properties.toList, name, ifExistsDo, options, fromDefault = true))
+  }
+
+  private def CreateDefaultIndexStart: Rule2[Option[String], ast.IfExistsDo] = rule {
+    // without name
+    keyword("CREATE OR REPLACE INDEX IF NOT EXISTS FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsInvalidSyntax) |
+    keyword("CREATE OR REPLACE INDEX FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsReplace) |
+    keyword("CREATE INDEX IF NOT EXISTS FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsDoNothing) |
+    keyword("CREATE INDEX FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsThrowError) |
+    // with name
+    group(keyword("CREATE OR REPLACE INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsInvalidSyntax) |
+    group(keyword("CREATE OR REPLACE INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsReplace) |
+    group(keyword("CREATE INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsDoNothing) |
+    group(keyword("CREATE INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsThrowError)
   }
 
   // BTREE
 
   private def CreateBtreeIndex: Rule1[ast.CreateIndex] = rule {
-    group(CreateBtreeIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
+    val btreeIndexStart = CreateBtreeIndexStart
+    group(btreeIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
       ((name, ifExistsDo, variable, relType, properties, options) => ast.CreateBtreeRelationshipIndex(variable, relType, properties.toList, name, ifExistsDo, options)) |
-    group(CreateBtreeIndexStart ~~ NodeIndexPatternSyntax) ~~>>
+    group(btreeIndexStart ~~ NodeIndexPatternSyntax) ~~>>
       ((name, ifExistsDo, variable, label, properties, options) => ast.CreateBtreeNodeIndex(variable, label, properties.toList, name, ifExistsDo, options))
   }
 
@@ -116,27 +141,11 @@ trait SchemaCommand extends Parser
   // RANGE
 
   private def CreateRangeIndex: Rule1[ast.CreateIndex] = rule {
-    group(CreateRangeIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
+    val createRangeIndexStart = CreateRangeIndexStart
+    group(createRangeIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
       ((name, ifExistsDo, variable, relType, properties, options) => ast.CreateRangeRelationshipIndex(variable, relType, properties.toList, name, ifExistsDo, options, fromDefault = false)) |
-    group(CreateRangeIndexStart ~~ NodeIndexPatternSyntax) ~~>>
-      ((name, ifExistsDo, variable, label, properties, options) => ast.CreateRangeNodeIndex(variable, label, properties.toList, name, ifExistsDo, options, fromDefault = false)) |
-    group(CreateDefaultIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
-      ((name, ifExistsDo, variable, relType, properties, options) => ast.CreateRangeRelationshipIndex(variable, relType, properties.toList, name, ifExistsDo, options, fromDefault = true)) |
-    group(CreateDefaultIndexStart ~~ NodeIndexPatternSyntax) ~~>>
-      ((name, ifExistsDo, variable, label, properties, options) => ast.CreateRangeNodeIndex(variable, label, properties.toList, name, ifExistsDo, options, fromDefault = true))
-  }
-
-  private def CreateDefaultIndexStart: Rule2[Option[String], ast.IfExistsDo] = rule {
-    // without name
-    keyword("CREATE OR REPLACE INDEX IF NOT EXISTS FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsInvalidSyntax) |
-    keyword("CREATE OR REPLACE INDEX FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsReplace) |
-    keyword("CREATE INDEX IF NOT EXISTS FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsDoNothing) |
-    keyword("CREATE INDEX FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsThrowError) |
-    // with name
-    group(keyword("CREATE OR REPLACE INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsInvalidSyntax) |
-    group(keyword("CREATE OR REPLACE INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsReplace) |
-    group(keyword("CREATE INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsDoNothing) |
-    group(keyword("CREATE INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsThrowError)
+    group(createRangeIndexStart ~~ NodeIndexPatternSyntax) ~~>>
+      ((name, ifExistsDo, variable, label, properties, options) => ast.CreateRangeNodeIndex(variable, label, properties.toList, name, ifExistsDo, options, fromDefault = false))
   }
 
   private def CreateRangeIndexStart: Rule2[Option[String], ast.IfExistsDo] = rule {
@@ -155,9 +164,10 @@ trait SchemaCommand extends Parser
   // LOOKUP
 
   private def CreateLookupIndex: Rule1[ast.CreateIndex] = rule {
-    group(CreateLookupIndexStart ~~ LookupRelationshipIndexPatternSyntax) ~~>>
+    val lookupIndexStart = CreateLookupIndexStart
+    group(lookupIndexStart ~~ LookupRelationshipIndexPatternSyntax) ~~>>
       ((name, ifExistsDo, variable, function, options) => ast.CreateLookupIndex(variable, isNodeIndex = false, function, name, ifExistsDo, options)) |
-    group(CreateLookupIndexStart ~~ LookupNodeIndexPatternSyntax) ~~>>
+    group(lookupIndexStart ~~ LookupNodeIndexPatternSyntax) ~~>>
       ((name, ifExistsDo, variable, function, options) => ast.CreateLookupIndex(variable, isNodeIndex = true, function, name, ifExistsDo, options))
   }
 
@@ -175,13 +185,15 @@ trait SchemaCommand extends Parser
   }
 
   private def LookupNodeIndexPatternSyntax: Rule3[Variable, expressions.FunctionInvocation, Options] = rule {
-    group("(" ~~ Variable ~~ ")" ~~ keyword("ON EACH") ~~ lookupIndexFunctions ~~ optionsMapOrParameter) |
-    group("(" ~~ Variable ~~ ")" ~~ keyword("ON EACH") ~~ lookupIndexFunctions) ~> (_ => NoOptions)
+    val lookupNodeIndexPatternSyntaxStart = "(" ~~ Variable ~~ ")" ~~ keyword("ON EACH") ~~ lookupIndexFunctions
+    group(lookupNodeIndexPatternSyntaxStart ~~ optionsMapOrParameter) |
+    group(lookupNodeIndexPatternSyntaxStart) ~> (_ => NoOptions)
   }
 
   private def LookupRelationshipIndexPatternSyntax: Rule3[Variable, expressions.FunctionInvocation, Options] = rule {
-    group(LookupRelationshipPatternSyntax ~~ keyword("ON") ~~ optional(keyword("EACH")) ~~ lookupIndexFunctions ~~ optionsMapOrParameter) |
-    group(LookupRelationshipPatternSyntax ~~ keyword("ON") ~~ optional(keyword("EACH")) ~~ lookupIndexFunctions) ~> (_ => NoOptions)
+    val lookupRelationshipPatternIndexSyntaxRule = LookupRelationshipPatternSyntax ~~ keyword("ON") ~~ optional(keyword("EACH")) ~~ lookupIndexFunctions
+    group(lookupRelationshipPatternIndexSyntaxRule ~~ optionsMapOrParameter) |
+    group(lookupRelationshipPatternIndexSyntaxRule) ~> (_ => NoOptions)
   }
 
   private def LookupRelationshipPatternSyntax: Rule1[Variable] = rule(
@@ -197,9 +209,10 @@ trait SchemaCommand extends Parser
   // FULLTEXT
 
   private def CreateFulltextIndex: Rule1[ast.CreateIndex] = rule {
-    group(CreateFulltextIndexStart ~~ FulltextRelationshipIndexPatternSyntax) ~~>>
+    val fullTextIndexStart = CreateFulltextIndexStart
+    group(fullTextIndexStart ~~ FulltextRelationshipIndexPatternSyntax) ~~>>
       ((name, ifExistsDo, variable, relTypes, properties, options) => ast.CreateFulltextRelationshipIndex(variable, relTypes, properties, name, ifExistsDo, options)) |
-    group(CreateFulltextIndexStart ~~ FulltextNodeIndexPatternSyntax) ~~>>
+    group(fullTextIndexStart ~~ FulltextNodeIndexPatternSyntax) ~~>>
       ((name, ifExistsDo, variable, labels, properties, options) => ast.CreateFulltextNodeIndex(variable, labels, properties, name, ifExistsDo, options))
   }
 
@@ -217,8 +230,9 @@ trait SchemaCommand extends Parser
   }
 
   private def FulltextNodeIndexPatternSyntax: Rule4[Variable, List[LabelName], List[Property], Options] = rule {
-    group("(" ~~ Variable ~~ FulltextNodeLabels ~~ ")" ~~ keyword("ON") ~~ FulltextPropertyProjection ~~ optionsMapOrParameter) |
-    group("(" ~~ Variable ~~ FulltextNodeLabels ~~ ")" ~~ keyword("ON") ~~ FulltextPropertyProjection) ~> (_ => NoOptions)
+    val fulltextNodeIndexPatternSyntaxStart = "(" ~~ Variable ~~ FulltextNodeLabels ~~ ")" ~~ keyword("ON") ~~ FulltextPropertyProjection
+    group(fulltextNodeIndexPatternSyntaxStart ~~ optionsMapOrParameter) |
+    group(fulltextNodeIndexPatternSyntaxStart) ~> (_ => NoOptions)
   }
 
   private def FulltextNodeLabels: Rule1[List[LabelName]] = rule(
@@ -227,8 +241,9 @@ trait SchemaCommand extends Parser
   )
 
   private def FulltextRelationshipIndexPatternSyntax: Rule4[Variable, List[RelTypeName], List[Property], Options] = rule {
-    group(FulltextRelationshipPatternSyntax ~~ keyword("ON") ~~ FulltextPropertyProjection ~~ optionsMapOrParameter) |
-    group(FulltextRelationshipPatternSyntax ~~ keyword("ON") ~~ FulltextPropertyProjection) ~> (_ => NoOptions)
+    val fulltextRelationshipIndexPatternSyntaxStart = FulltextRelationshipPatternSyntax ~~ keyword("ON") ~~ FulltextPropertyProjection
+    group(fulltextRelationshipIndexPatternSyntaxStart ~~ optionsMapOrParameter) |
+    group(fulltextRelationshipIndexPatternSyntaxStart) ~> (_ => NoOptions)
   }
 
   private def FulltextRelationshipPatternSyntax: Rule2[Variable, List[RelTypeName]] = rule(
@@ -249,9 +264,10 @@ trait SchemaCommand extends Parser
   // TEXT
 
   private def CreateTextIndex: Rule1[ast.CreateIndex] = rule {
-    group(CreateTextIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
+    val textIndexStart = CreateTextIndexStart
+    group(textIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
       ((name, ifExistsDo, variable, relType, properties, options) => ast.CreateTextRelationshipIndex(variable, relType, properties.toList, name, ifExistsDo, options)) |
-    group(CreateTextIndexStart ~~ NodeIndexPatternSyntax) ~~>>
+    group(textIndexStart ~~ NodeIndexPatternSyntax) ~~>>
       ((name, ifExistsDo, variable, label, properties, options) => ast.CreateTextNodeIndex(variable, label, properties.toList, name, ifExistsDo, options))
   }
 
@@ -275,8 +291,9 @@ trait SchemaCommand extends Parser
   }
 
   private def DropIndexOnName: Rule1[ast.DropIndexOnName] = rule {
-    group(keyword("DROP INDEX") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropIndexOnName(_, ifExists = true)) |
-    group(keyword("DROP INDEX") ~~ SymbolicNameString) ~~>> (ast.DropIndexOnName(_, ifExists = false))
+    val dropIndexOnNameStart = keyword("DROP INDEX") ~~ SymbolicNameString
+    group(dropIndexOnNameStart ~~ keyword("IF EXISTS")) ~~>> (ast.DropIndexOnName(_, ifExists = true)) |
+    group(dropIndexOnNameStart) ~~>> (ast.DropIndexOnName(_, ifExists = false))
   }
 
   // CONSTRAINT commands
@@ -352,8 +369,9 @@ trait SchemaCommand extends Parser
   }
 
   private def DropConstraintOnName: Rule1[ast.DropConstraintOnName] = rule {
-    group(keyword("DROP CONSTRAINT") ~~ SymbolicNameString ~~ keyword("IF EXISTS")) ~~>> (ast.DropConstraintOnName(_, ifExists = true)) |
-    group(keyword("DROP CONSTRAINT") ~~ SymbolicNameString) ~~>> (ast.DropConstraintOnName(_, ifExists = false))
+    val dropConstraintOnNameStart = keyword("DROP CONSTRAINT") ~~ SymbolicNameString
+    group(dropConstraintOnNameStart ~~ keyword("IF EXISTS")) ~~>> (ast.DropConstraintOnName(_, ifExists = true)) |
+    group(dropConstraintOnNameStart) ~~>> (ast.DropConstraintOnName(_, ifExists = false))
   }
 
   private def NodeKeyConstraintSyntaxAssert: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
@@ -363,13 +381,15 @@ trait SchemaCommand extends Parser
     keyword("REQUIRE") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 
   private def NodeKeyConstraintWithOptionsSyntaxAssert: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
-    NodeKeyConstraintSyntaxAssert ~~ optionsMapOrParameter |
-    NodeKeyConstraintSyntaxAssert ~> (_ => NoOptions)
+    val nodeKeyConstraintSyntaxAssert = NodeKeyConstraintSyntaxAssert
+    nodeKeyConstraintSyntaxAssert ~~ optionsMapOrParameter |
+    nodeKeyConstraintSyntaxAssert ~> (_ => NoOptions)
   }
 
   private def NodeKeyConstraintWithOptionsSyntaxRequire: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
-      NodeKeyConstraintSyntaxRequire ~~ optionsMapOrParameter|
-      NodeKeyConstraintSyntaxRequire ~> (_ => NoOptions)
+    val nodeKeyConstraintSyntaxRequire = NodeKeyConstraintSyntaxRequire
+    nodeKeyConstraintSyntaxRequire ~~ optionsMapOrParameter|
+    nodeKeyConstraintSyntaxRequire ~> (_ => NoOptions)
   }
 
   private def UniqueConstraintSyntaxAssert: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
@@ -379,13 +399,15 @@ trait SchemaCommand extends Parser
     keyword("REQUIRE") ~~ VariablePropertyExpression ~~ keyword("IS UNIQUE")
 
   private def UniqueConstraintWithOptionsSyntaxAssert: Rule4[Variable, LabelName, Property, Options] = rule {
-    UniqueConstraintSyntaxAssert ~~ optionsMapOrParameter |
-    UniqueConstraintSyntaxAssert ~> (_ => NoOptions)
+    val uniqueConstraintSyntaxAssert = UniqueConstraintSyntaxAssert
+    uniqueConstraintSyntaxAssert ~~ optionsMapOrParameter |
+    uniqueConstraintSyntaxAssert ~> (_ => NoOptions)
   }
 
   private def UniqueConstraintWithOptionsSyntaxRequire: Rule4[Variable, LabelName, Property, Options] = rule {
-    UniqueConstraintSyntaxRequire ~~ optionsMapOrParameter |
-    UniqueConstraintSyntaxRequire ~> (_ => NoOptions)
+    val uniqueConstraintSyntaxRequire = UniqueConstraintSyntaxRequire
+    uniqueConstraintSyntaxRequire ~~ optionsMapOrParameter |
+    uniqueConstraintSyntaxRequire ~> (_ => NoOptions)
   }
 
   private def UniqueCompositeConstraintSyntaxAssert: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
@@ -395,13 +417,15 @@ trait SchemaCommand extends Parser
     keyword("REQUIRE") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS UNIQUE")
 
   private def UniqueCompositeConstraintWithOptionsSyntaxAssert: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
-    UniqueCompositeConstraintSyntaxAssert ~~ optionsMapOrParameter |
-    UniqueCompositeConstraintSyntaxAssert ~> (_ => NoOptions)
+    val uniqueCompositeConstraintSyntaxAssert = UniqueCompositeConstraintSyntaxAssert
+    uniqueCompositeConstraintSyntaxAssert ~~ optionsMapOrParameter |
+    uniqueCompositeConstraintSyntaxAssert ~> (_ => NoOptions)
   }
 
   private def UniqueCompositeConstraintWithOptionsSyntaxRequire: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
-      UniqueCompositeConstraintSyntaxRequire ~~ optionsMapOrParameter |
-      UniqueCompositeConstraintSyntaxRequire ~> (_ => NoOptions)
+    val uniqueCompositeConstraintSyntaxRequire = UniqueCompositeConstraintSyntaxRequire
+    uniqueCompositeConstraintSyntaxRequire ~~ optionsMapOrParameter |
+    uniqueCompositeConstraintSyntaxRequire ~> (_ => NoOptions)
   }
 
   private def NodePropertyExistenceConstraintSyntaxAssertExists: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
@@ -414,18 +438,21 @@ trait SchemaCommand extends Parser
     keyword("REQUIRE") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
 
   private def NodePropertyExistenceConstraintWithOptionsSyntaxAssertExists: Rule4[Variable, LabelName, Property, Options] = rule {
-    NodePropertyExistenceConstraintSyntaxAssertExists ~~ optionsMapOrParameter |
-    NodePropertyExistenceConstraintSyntaxAssertExists ~> (_ => NoOptions)
+    val nodePropertyExistenceConstraintSyntaxAssertExists = NodePropertyExistenceConstraintSyntaxAssertExists
+    nodePropertyExistenceConstraintSyntaxAssertExists ~~ optionsMapOrParameter |
+    nodePropertyExistenceConstraintSyntaxAssertExists ~> (_ => NoOptions)
   }
 
   private def NodePropertyExistenceConstraintWithOptionsSyntaxAssertIsNotNull: Rule4[Variable, LabelName, Property, Options] = rule {
-      NodePropertyExistenceConstraintSyntaxAssertIsNotNull ~~ optionsMapOrParameter |
-      NodePropertyExistenceConstraintSyntaxAssertIsNotNull ~> (_ => NoOptions)
+    val nodePropertyExistenceConstraintSyntaxAssertIsNotNull = NodePropertyExistenceConstraintSyntaxAssertIsNotNull
+    nodePropertyExistenceConstraintSyntaxAssertIsNotNull ~~ optionsMapOrParameter |
+    nodePropertyExistenceConstraintSyntaxAssertIsNotNull ~> (_ => NoOptions)
   }
 
   private def NodePropertyExistenceConstraintWithOptionsSyntaxRequireIsNotNull: Rule4[Variable, LabelName, Property, Options] = rule {
-      NodePropertyExistenceConstraintSyntaxRequireIsNotNull ~~ optionsMapOrParameter |
-      NodePropertyExistenceConstraintSyntaxRequireIsNotNull ~> (_ => NoOptions)
+    val nodePropertyExistenceConstraintSyntaxRequireIsNotNull = NodePropertyExistenceConstraintSyntaxRequireIsNotNull
+    nodePropertyExistenceConstraintSyntaxRequireIsNotNull ~~ optionsMapOrParameter |
+    nodePropertyExistenceConstraintSyntaxRequireIsNotNull ~> (_ => NoOptions)
   }
 
   private def RelationshipPropertyExistenceConstraintSyntaxAssertExists: Rule3[Variable, RelTypeName, Property] = RelationshipPatternSyntax ~~
@@ -438,17 +465,20 @@ trait SchemaCommand extends Parser
     keyword("REQUIRE") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
 
   private def RelationshipPropertyExistenceConstraintWithOptionsSyntaxAssertExists: Rule4[Variable, RelTypeName, Property, Options] = rule {
-    RelationshipPropertyExistenceConstraintSyntaxAssertExists ~~ optionsMapOrParameter |
-    RelationshipPropertyExistenceConstraintSyntaxAssertExists ~> (_ => NoOptions)
+    val relationshipPropertyExistenceConstraintSyntaxAssertExists = RelationshipPropertyExistenceConstraintSyntaxAssertExists
+    relationshipPropertyExistenceConstraintSyntaxAssertExists ~~ optionsMapOrParameter |
+    relationshipPropertyExistenceConstraintSyntaxAssertExists ~> (_ => NoOptions)
   }
 
   private def RelationshipPropertyExistenceConstraintWithOptionsSyntaxAssertIsNotNull: Rule4[Variable, RelTypeName, Property, Options] = rule {
-      RelationshipPropertyExistenceConstraintSyntaxAssertIsNotNull ~~ optionsMapOrParameter |
-      RelationshipPropertyExistenceConstraintSyntaxAssertIsNotNull ~> (_ => NoOptions)
+    val relationshipPropertyExistenceConstraintSyntaxAssertIsNotNull = RelationshipPropertyExistenceConstraintSyntaxAssertIsNotNull
+    relationshipPropertyExistenceConstraintSyntaxAssertIsNotNull ~~ optionsMapOrParameter |
+    relationshipPropertyExistenceConstraintSyntaxAssertIsNotNull ~> (_ => NoOptions)
   }
 
   private def RelationshipPropertyExistenceConstraintWithOptionsSyntaxRequireIsNotNull: Rule4[Variable, RelTypeName, Property, Options] = rule {
-      RelationshipPropertyExistenceConstraintSyntaxRequireIsNotNull ~~ optionsMapOrParameter |
-      RelationshipPropertyExistenceConstraintSyntaxRequireIsNotNull ~> (_ => NoOptions)
+    val relationshipPropertyExistenceConstraintSyntaxRequireIsNotNull = RelationshipPropertyExistenceConstraintSyntaxRequireIsNotNull
+    relationshipPropertyExistenceConstraintSyntaxRequireIsNotNull ~~ optionsMapOrParameter |
+    relationshipPropertyExistenceConstraintSyntaxRequireIsNotNull ~> (_ => NoOptions)
   }
 }

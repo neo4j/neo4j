@@ -35,8 +35,8 @@ trait ShowCommand extends Parser
 
   private def ExecutableByClause: Rule1[ast.ExecutableBy] = rule("EXECUTABLE BY") {
     keyword("EXECUTABLE BY CURRENT USER") ~~~> (_ => ast.CurrentUser) |
-      keyword("EXECUTABLE BY") ~~ SymbolicNameString ~~>> (name => _ => ast.User(name)) |
-      keyword("EXECUTABLE") ~~~> (_ => ast.CurrentUser)
+    keyword("EXECUTABLE BY") ~~ SymbolicNameString ~~>> (name => _ => ast.User(name)) |
+    keyword("EXECUTABLE") ~~~> (_ => ast.CurrentUser)
   }
 
   // SHOW INDEXES
@@ -150,10 +150,11 @@ trait ShowCommand extends Parser
   }
 
   private def ShowProceduresClauses: Rule1[Seq[ast.Clause]] = rule("SHOW PROCEDURES YIELD / WHERE / RETURN") {
-    keyword("SHOW") ~~ ProcedureKeyword ~~ ExecutableByClause ~~ ShowCommandClauses ~~>> ((executable, clauses) => pos => showProcClauses(Some(executable), clauses, pos)) |
-    keyword("SHOW") ~~ ProcedureKeyword ~~ ExecutableByClause ~~>> (executable => pos => Seq(ast.ShowProceduresClause(Some(executable), None, hasYield = false)(pos))) |
-    keyword("SHOW") ~~ ProcedureKeyword ~~ ShowCommandClauses ~~>> (clauses => pos => showProcClauses(None, clauses, pos)) |
-    keyword("SHOW") ~~ ProcedureKeyword ~~~> (pos => Seq(ast.ShowProceduresClause(None, None, hasYield = false)(pos)))
+    val showProceduresClausesStart = keyword("SHOW") ~~ ProcedureKeyword
+    showProceduresClausesStart ~~ ExecutableByClause ~~ ShowCommandClauses ~~>> ((executable, clauses) => pos => showProcClauses(Some(executable), clauses, pos)) |
+    showProceduresClausesStart ~~ ExecutableByClause ~~>> (executable => pos => Seq(ast.ShowProceduresClause(Some(executable), None, hasYield = false)(pos))) |
+    showProceduresClausesStart ~~ ShowCommandClauses ~~>> (clauses => pos => showProcClauses(None, clauses, pos)) |
+    showProceduresClausesStart ~~~> (pos => Seq(ast.ShowProceduresClause(None, None, hasYield = false)(pos)))
   }
 
   private def showProcClauses(executableBy: Option[ast.ExecutableBy], clauses: Either[(ast.Yield, Option[ast.Return]), ast.Where], pos: InputPosition): Seq[ast.Clause] = clauses match {
@@ -170,20 +171,21 @@ trait ShowCommand extends Parser
   }
 
   private def ShowFunctionsClauses: Rule1[Seq[ast.Clause]] = rule("SHOW FUNCTIONS YIELD / WHERE / RETURN") {
-    keyword("SHOW") ~~ FunctionType ~~ FunctionKeyword ~~ ExecutableByClause ~~ ShowCommandClauses ~~>>
+    val showFunctionClausesStart = keyword("SHOW") ~~ FunctionType ~~ FunctionKeyword
+    showFunctionClausesStart ~~ ExecutableByClause ~~ ShowCommandClauses ~~>>
       ((functionType, executable, clauses) => pos => showFuncClauses(functionType, Some(executable), clauses, pos)) |
-    keyword("SHOW") ~~ FunctionType ~~ FunctionKeyword ~~ ExecutableByClause ~~>>
+    showFunctionClausesStart ~~ ExecutableByClause ~~>>
       ((functionType, executable) => pos => Seq(ast.ShowFunctionsClause(functionType, Some(executable), None, hasYield = false)(pos))) |
-    keyword("SHOW") ~~ FunctionType ~~ FunctionKeyword ~~ ShowCommandClauses ~~>>
+    showFunctionClausesStart ~~ ShowCommandClauses ~~>>
       ((functionType, clauses) => pos => showFuncClauses(functionType, None, clauses, pos)) |
-    keyword("SHOW") ~~ FunctionType ~~ FunctionKeyword ~~>>
+    showFunctionClausesStart ~~>>
       (functionType => pos => Seq(ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(pos)))
   }
 
   private def FunctionType: Rule1[ast.ShowFunctionType] = rule("type of functions") {
     keyword("BUILT IN") ~~~> (_ => ast.BuiltInFunctions) |
-      keyword("USER DEFINED") ~~~> (_ => ast.UserDefinedFunctions) |
-      optional(keyword("ALL")) ~~~> (_ => ast.AllFunctions)
+    keyword("USER DEFINED") ~~~> (_ => ast.UserDefinedFunctions) |
+    optional(keyword("ALL")) ~~~> (_ => ast.AllFunctions)
   }
 
   private def showFuncClauses(functionType: ast.ShowFunctionType,
