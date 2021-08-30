@@ -85,8 +85,6 @@ import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.rel
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleCreate;
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleDelete;
 import static org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor.NULL_MONITOR;
-import static org.neo4j.internal.recordstorage.RecordResourceTypes.RELATIONSHIP_DELETE;
-import static org.neo4j.internal.recordstorage.RecordResourceTypes.RELATIONSHIP_GROUP;
 import static org.neo4j.internal.recordstorage.RelationshipChainVisitor.relationshipCollector;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
@@ -95,6 +93,8 @@ import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_DELETE;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;

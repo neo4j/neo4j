@@ -38,8 +38,6 @@ import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications.RelationshipBatch;
 
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
-import static org.neo4j.internal.recordstorage.RecordResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
-import static org.neo4j.internal.recordstorage.RecordResourceTypes.RELATIONSHIP_GROUP;
 import static org.neo4j.internal.recordstorage.RelationshipCreator.NodeDataLookup.DIR_IN;
 import static org.neo4j.internal.recordstorage.RelationshipCreator.NodeDataLookup.DIR_LOOP;
 import static org.neo4j.internal.recordstorage.RelationshipCreator.NodeDataLookup.DIR_OUT;
@@ -50,7 +48,9 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
 import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
 /**
  * Manages locking and creation/delete of relationships. Will call on {@link RelationshipCreator} and {@link RelationshipDeleter} for actual

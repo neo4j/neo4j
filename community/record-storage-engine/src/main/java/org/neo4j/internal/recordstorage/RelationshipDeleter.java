@@ -28,8 +28,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications.RelationshipBatch;
 
-import static org.neo4j.internal.recordstorage.RecordResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
-import static org.neo4j.internal.recordstorage.RecordResourceTypes.RELATIONSHIP_GROUP;
 import static org.neo4j.internal.recordstorage.RelationshipConnection.END_NEXT;
 import static org.neo4j.internal.recordstorage.RelationshipConnection.END_PREV;
 import static org.neo4j.internal.recordstorage.RelationshipConnection.START_NEXT;
@@ -40,6 +38,8 @@ import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.deleteGro
 import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.groupIsEmpty;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
 import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
 /**
  * A utility class to handle all record changes necessary for deleting relationships

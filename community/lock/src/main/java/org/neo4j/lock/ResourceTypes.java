@@ -32,7 +32,11 @@ public enum ResourceTypes implements ResourceType
     INDEX_ENTRY( 2 ),
     LABEL( 3 ),
     RELATIONSHIP_TYPE( 4 ),
-    SCHEMA_NAME( 5 );
+    SCHEMA_NAME( 5 ),
+    RELATIONSHIP_DELETE( 6 ),
+    NODE_RELATIONSHIP_GROUP_DELETE( 7 ),
+    DEGREES( 8 ),
+    RELATIONSHIP_GROUP( 9 );
 
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
 
