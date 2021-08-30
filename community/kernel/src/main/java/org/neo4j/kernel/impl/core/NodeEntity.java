@@ -60,6 +60,7 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.indexOf;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
@@ -377,14 +378,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         nodes.properties( propertyCursor, PropertySelection.selection( propertyIds ) );
         while ( propertyCursor.next() )
         {
-            //Do a linear check if this is a property we are interested in.
-            int key = propertyCursor.propertyKey();
-            int i = 0;
-            while ( propertyIds[i] != key )
-            {
-                i = (i + 1) % propertyIds.length;
-            }
-            properties.put( keys[i], propertyCursor.propertyValue().asObjectCopy() );
+            properties.put( keys[indexOf( propertyIds, propertyCursor.propertyKey() )], propertyCursor.propertyValue().asObjectCopy() );
         }
         return properties;
     }

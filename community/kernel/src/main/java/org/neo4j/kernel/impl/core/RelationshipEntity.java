@@ -52,6 +52,7 @@ import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.indexOf;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
@@ -317,14 +318,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
                 PropertySelection.selection( propertyIds ) );
         while ( propertyCursor.next() )
         {
-            //Do a linear check if this is a property we are interested in.
-            int key = propertyCursor.propertyKey();
-            int i = 0;
-            while ( propertyIds[i] != key )
-            {
-                i++;
-            }
-            properties.put( keys[i], propertyCursor.propertyValue().asObjectCopy() );
+            properties.put( keys[indexOf( propertyIds, propertyCursor.propertyKey() )], propertyCursor.propertyValue().asObjectCopy() );
         }
         return properties;
     }
