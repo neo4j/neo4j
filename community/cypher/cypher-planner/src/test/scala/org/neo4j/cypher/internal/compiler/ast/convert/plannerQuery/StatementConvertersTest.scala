@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.SyntaxException
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -204,26 +205,31 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("CALL correlated unit subquery in transactions") {
-    val query = buildSinglePlannerQuery("WITH 1 AS n CALL { WITH n CREATE (x) } IN TRANSACTIONS RETURN 2 as y")
+    assertThrows[SyntaxException] {
+      buildSinglePlannerQuery("WITH 1 AS n CALL { WITH n CREATE (x) } IN TRANSACTIONS RETURN 2 as y")
+    }
 
-    query.horizon shouldEqual RegularQueryProjection(Map("n" -> literalInt(1)))
-
-    query.tail should not be empty
-    val subQuery = query.tail.get
-
-    subQuery.horizon shouldEqual CallSubqueryHorizon(
-      RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-        .addMutatingPatterns(createPattern(Seq(createNode("x"))))
-        .addArgumentId("n")),
-      correlated = true,
-      yielding = false,
-      inTransactionsParameters = Some(inTransactionsParameters())
-    )
-
-    subQuery.tail should not be empty
-
-    val nextQuery = subQuery.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map("y" -> literalInt(2))))
+    // re-enable this once correlated subqueries are enabled again
+//    val query = buildSinglePlannerQuery("WITH 1 AS n CALL { WITH n CREATE (x) } IN TRANSACTIONS RETURN 2 as y")
+//
+//    query.horizon shouldEqual RegularQueryProjection(Map("n" -> literalInt(1)))
+//
+//    query.tail should not be empty
+//    val subQuery = query.tail.get
+//
+//    subQuery.horizon shouldEqual CallSubqueryHorizon(
+//      RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+//        .addMutatingPatterns(createPattern(Seq(createNode("x"))))
+//        .addArgumentId("n")),
+//      correlated = true,
+//      yielding = false,
+//      inTransactionsParameters = Some(inTransactionsParameters())
+//    )
+//
+//    subQuery.tail should not be empty
+//
+//    val nextQuery = subQuery.tail.get
+//    nextQuery.horizon should equal(RegularQueryProjection(Map("y" -> literalInt(2))))
   }
 
   test("CALL subquery in transactions") {
@@ -245,29 +251,34 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("CALL correlated subquery in transactions") {
-    val query = buildSinglePlannerQuery("WITH 1 AS n CALL { WITH n CREATE (x) RETURN x } IN TRANSACTIONS RETURN 2 as y")
+    assertThrows[SyntaxException] {
+      val query = buildSinglePlannerQuery("WITH 1 AS n CALL { WITH n CREATE (x) RETURN x } IN TRANSACTIONS RETURN 2 as y")
+    }
 
-    query.horizon shouldEqual RegularQueryProjection(Map("n" -> literalInt(1)))
-
-    query.tail should not be empty
-    val subQuery = query.tail.get
-
-    subQuery.horizon shouldEqual CallSubqueryHorizon(
-      RegularSinglePlannerQuery(
-        horizon = RegularQueryProjection(Map("x" -> varFor("x"))),
-        queryGraph = QueryGraph.empty
-          .addMutatingPatterns(createPattern(Seq(createNode("x"))))
-          .addArgumentId("n")
-      ),
-      correlated = true,
-      yielding = true,
-      inTransactionsParameters = Some(inTransactionsParameters())
-    )
-
-    subQuery.tail should not be empty
-
-    val nextQuery = subQuery.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map("y" -> literalInt(2))))
+    // re-enable this once correlated subqueries are enabled again
+//    val query = buildSinglePlannerQuery("WITH 1 AS n CALL { WITH n CREATE (x) RETURN x } IN TRANSACTIONS RETURN 2 as y")
+//
+//    query.horizon shouldEqual RegularQueryProjection(Map("n" -> literalInt(1)))
+//
+//    query.tail should not be empty
+//    val subQuery = query.tail.get
+//
+//    subQuery.horizon shouldEqual CallSubqueryHorizon(
+//      RegularSinglePlannerQuery(
+//        horizon = RegularQueryProjection(Map("x" -> varFor("x"))),
+//        queryGraph = QueryGraph.empty
+//          .addMutatingPatterns(createPattern(Seq(createNode("x"))))
+//          .addArgumentId("n")
+//      ),
+//      correlated = true,
+//      yielding = true,
+//      inTransactionsParameters = Some(inTransactionsParameters())
+//    )
+//
+//    subQuery.tail should not be empty
+//
+//    val nextQuery = subQuery.tail.get
+//    nextQuery.horizon should equal(RegularQueryProjection(Map("y" -> literalInt(2))))
   }
 
   test("RETURN 42") {

@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.SyntaxException
 
 class SubqueryCallPlanningIntegrationTest
   extends CypherFunSuite
@@ -869,13 +869,18 @@ class SubqueryCallPlanningIntegrationTest
         |RETURN a
         |""".stripMargin
 
-    val plan = cfg.plan(query).stripProduceResults
-    plan shouldEqual cfg.subPlanBuilder()
-      .transactionForeach()
-      .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
-      .|.argument("a")
-      .allNodeScan("a")
-      .build()
+    assertThrows[SyntaxException] {
+      cfg.plan(query)
+    }
+
+    // re-enable this once correlated subqueries are enabled again
+//    val plan = cfg.plan(query).stripProduceResults
+//    plan shouldEqual cfg.subPlanBuilder()
+//      .transactionForeach()
+//      .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
+//      .|.argument("a")
+//      .allNodeScan("a")
+//      .build()
   }
 
   test("call returning subquery in transactions") {
@@ -922,13 +927,18 @@ class SubqueryCallPlanningIntegrationTest
         |RETURN a, b
         |""".stripMargin
 
-    val plan = cfg.plan(query).stripProduceResults
-    plan shouldEqual cfg.subPlanBuilder()
-      .transactionApply()
-      .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
-      .|.argument("a")
-      .allNodeScan("a")
-      .build()
+    assertThrows[SyntaxException] {
+      cfg.plan(query)
+    }
+
+    // re-enable this once correlated subqueries are enabled again
+//    val plan = cfg.plan(query).stripProduceResults
+//    plan shouldEqual cfg.subPlanBuilder()
+//      .transactionApply()
+//      .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
+//      .|.argument("a")
+//      .allNodeScan("a")
+//      .build()
   }
 
   test("call subquery in transactions with internal read-write conflict is eagerized") {
@@ -1003,6 +1013,13 @@ class SubqueryCallPlanningIntegrationTest
         |RETURN a.prop
         |""".stripMargin
 
+    assertThrows[SyntaxException] {
+      cfg.plan(query)
+    }
+
+    // TODO: re-enable this once correlated subqueries are enabled again
+
+/*
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("a.prop AS `a.prop`")
@@ -1012,6 +1029,7 @@ class SubqueryCallPlanningIntegrationTest
       .|.argument("a")
       .allNodeScan("a")
       .build()
+*/
   }
 
   test("consecutive call subquery in transactions with write-read conflict is eagerized") {

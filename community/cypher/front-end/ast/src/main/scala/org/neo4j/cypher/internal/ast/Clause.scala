@@ -604,7 +604,7 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
   override def name = "CREATE UNIQUE"
 
-  override def semanticCheck =
+  override def semanticCheck: SemanticCheck =
     SemanticError("CREATE UNIQUE is no longer supported. Please use MERGE instead", position)
 
 }
@@ -1003,6 +1003,8 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
         _.semanticCheck chain {
           when (part.isYielding) {
             requireFeatureSupport("The returning CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallReturningSubqueryInTransactions, position)
+          } chain when (part.isCorrelated) {
+            s => SemanticCheckResult.error(s, SemanticError("CALL { ... } IN TRANSACTIONS importing a variable is not supported at the moment", position))
           }
         } chain checkNoNestedCallInTransactions
       } chain

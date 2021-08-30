@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCWithFallbackParsing
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -40,7 +41,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
   private def pipelineWithSemanticFeatures(semanticFeatures: SemanticFeature*) =
-    OpenCypherJavaCCWithFallbackParsing andThen SemanticAnalysis(warn = true, semanticFeatures:_*) andThen SemanticAnalysis(warn = false, semanticFeatures:_*)
+    OpenCypherJavaCCWithFallbackParsing andThen PreparatoryRewriting andThen SemanticAnalysis(warn = true, semanticFeatures:_*) andThen SemanticAnalysis(warn = false, semanticFeatures:_*)
 
   private val pipeline = pipelineWithSemanticFeatures()
 
@@ -249,8 +250,34 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
+  test("should not (yet) allow for correlated transactional subqueries") {
+
+    val query =
+      """UNWIND 1 as i
+        |CALL {
+        |  WITH i
+        |  CREATE (n)
+        |} IN TRANSACTIONS
+        |RETURN i AS result""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions).transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "CALL { ... } IN TRANSACTIONS importing a variable is not supported at the moment"
+    )
+  }
+
   test("returning CALL { ... } IN TRANSACTIONS with feature enabled") {
-    val query = "WITH 1 AS x CALL { WITH x AS x MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
+    val query =
+      """WITH 1 AS x
+        |CALL {
+        |  WITH x AS x
+        |  MATCH (n)
+        |  RETURN n AS n
+        |} IN TRANSACTIONS
+        |RETURN n AS n""".stripMargin
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
@@ -258,7 +285,11 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallReturningSubqueryInTransactions)
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) shouldBe empty
+    context.errors.map(_.msg) shouldBe Seq(
+      "CALL { ... } IN TRANSACTIONS importing a variable is not supported at the moment"
+    )
+    // ENABLE ONCE CORRELATED TRANSACTIONAL SUBQUERIES ARE ALLOWED
+//    context.errors.map(_.msg) shouldBe empty
   }
 
   test("nested CALL { ... } IN TRANSACTIONS") {
