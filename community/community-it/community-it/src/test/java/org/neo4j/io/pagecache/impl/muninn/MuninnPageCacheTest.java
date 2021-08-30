@@ -308,7 +308,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void finishPinEventWhenOpenedWithNoFaultOption() throws IOException
     {
         writeInitialDataTo( file( "a" ) );
-        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer( true );
         PageCursorTracer pageCursorTracer = cacheTracer.createPageCursorTracer( "finishPinEventWhenOpenedWithNoFaultOption" );
         try ( MuninnPageCache pageCache = createPageCache( fs, 4, cacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
@@ -332,7 +332,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         writeInitialDataTo( file( "b" ) );
-        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer( true );
         PageCursorTracer pageCursorTracer = cacheTracer.createPageCursorTracer( "finishPinEventReportedPerFile" );
         try ( MuninnPageCache pageCache = createPageCache( fs, 4, cacheTracer );
                 PagedFile pagedFileA = map( pageCache, file( "a" ), 8 );
@@ -941,7 +941,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void flushSequentialPagesOnPageFileFlushWithNoBuffers() throws IOException
     {
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new DefaultPageCacheTracer();
+        var pageCacheTracer = new DefaultPageCacheTracer( true );
         try ( MuninnPageCache pageCache = createPageCache( fs, 4, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -970,7 +970,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         writeInitialDataTo( file( "a" ) );
         writeInitialDataTo( file( "b" ) );
-        var pageCacheTracer = new DefaultPageCacheTracer();
+        var pageCacheTracer = new DefaultPageCacheTracer( true );
         try ( MuninnPageCache pageCache = createPageCache( fs, 4, pageCacheTracer );
                 PagedFile pagedFileA = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) );
                 PagedFile pagedFileB = map( pageCache, file( "b" ), (int) ByteUnit.kibiBytes( 8 ) ) )
@@ -1007,7 +1007,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void flushSequentialPagesOnPageFileFlushWithBuffers() throws IOException
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new DefaultPageCacheTracer();
+        var pageCacheTracer = new DefaultPageCacheTracer( true );
         try ( MuninnPageCache pageCache = createPageCache( fs, 4, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -1033,7 +1033,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     void doNotMergeNonSequentialPageBuffersOnPageFileFlush() throws IOException
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
+        var pageCacheTracer = new DefaultPageCacheTracer( true );
         try ( MuninnPageCache pageCache = createPageCache( fs, 6, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {

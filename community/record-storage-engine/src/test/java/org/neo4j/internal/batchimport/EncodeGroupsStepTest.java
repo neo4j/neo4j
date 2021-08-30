@@ -30,6 +30,7 @@ import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -91,7 +93,7 @@ class EncodeGroupsStepTest
     {
         when( store.nextId( any( CursorContext.class ) ) ).thenAnswer( invocation -> {
             CursorContext cursorContext = invocation.getArgument( 0 );
-            var event = cursorContext.getCursorTracer().beginPin( false, 1, null );
+            var event = cursorContext.getCursorTracer().beginPin( false, 1, mock( PageSwapper.class, RETURNS_MOCKS ) );
             event.hit();
             event.done();
             return 1L;

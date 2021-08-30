@@ -38,7 +38,7 @@ class DefaultPageFileTracerTest
     @BeforeEach
     public void setUp()
     {
-        pageCacheTracer = new DefaultPageCacheTracer();
+        pageCacheTracer = new DefaultPageCacheTracer( true );
         swapperTracer = pageCacheTracer.createFileSwapperTracer();
         swapper = new DummyPageSwapper( "filename", (int) ByteUnit.kibiBytes( 8 ), swapperTracer );
     }

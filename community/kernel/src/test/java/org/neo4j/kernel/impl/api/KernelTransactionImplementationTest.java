@@ -90,6 +90,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -852,7 +853,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
                         PageCursorTracer cursorTracer = executionContext.cursorContext().getCursorTracer();
                         for ( int j = 0; j <= iterations; j++ )
                         {
-                            PageSwapper swapper = mock( PageSwapper.class );
+                            PageSwapper swapper = mock( PageSwapper.class, RETURNS_MOCKS );
                             PinEvent pinEvent = cursorTracer.beginPin( false, 1, swapper );
                             PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
                             pageFaultEvent.addBytesRead( 42 );

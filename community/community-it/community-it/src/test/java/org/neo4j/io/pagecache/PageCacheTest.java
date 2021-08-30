@@ -2463,7 +2463,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
-            DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
+            DefaultPageCacheTracer tracer = new DefaultPageCacheTracer( true );
             getPageCache( fs, maxPages, tracer );
 
             generateFileWithRecords( file( "a" ), recordCount, recordSize );
@@ -2530,7 +2530,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             long pagesToGenerate = 142;
-            DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
+            DefaultPageCacheTracer tracer = new DefaultPageCacheTracer( true );
             getPageCache( fs, maxPages, tracer );
 
             long initialPins = tracer.pins();

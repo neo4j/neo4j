@@ -46,6 +46,7 @@ import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.id.IdSlotDistribution.Slot;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator.InternalMarker;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
@@ -56,6 +57,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.id.IdSlotDistribution.evenSlotDistribution;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
@@ -825,7 +827,7 @@ class FreeIdScannerTest
         public InternalMarker getMarker( CursorContext cursorContext )
         {
             InternalMarker actual = instantiateRealMarker();
-            PinEvent pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, null );
+            PinEvent pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, mock( PageSwapper.class, RETURNS_MOCKS ) );
             pinEvent.hit();
             pinEvent.done();
             return new InternalMarker()

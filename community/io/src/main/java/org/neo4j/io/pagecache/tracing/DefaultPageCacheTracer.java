@@ -55,6 +55,8 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     protected final LongAdder closedCursors = new LongAdder();
     protected final AtomicLong maxPages = new AtomicLong();
 
+    private final boolean tracePageFileIndividually;
+
     private final PageCacheFlushEvent flushEvent = new PageCacheFlushEvent();
 
     private final EvictionEvent evictionEvent = new EvictionEvent()
@@ -166,10 +168,20 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
     };
 
+    public DefaultPageCacheTracer()
+    {
+        this( false );
+    }
+
+    public DefaultPageCacheTracer( boolean tracePageFileIndividually )
+    {
+        this.tracePageFileIndividually = tracePageFileIndividually;
+    }
+
     @Override
     public PageFileSwapperTracer createFileSwapperTracer()
     {
-        return new DefaultPageFileSwapperTracer();
+        return tracePageFileIndividually ? new DefaultPageFileSwapperTracer() : PageFileSwapperTracer.NULL;
     }
 
     @Override

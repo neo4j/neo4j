@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -112,9 +113,10 @@ class KernelStatementTest
             statement.initialize( mock( Locks.Client.class ), cursorContext, 100 );
             statement.acquire();
 
-            cursorContext.getCursorTracer().beginPin( false, 1, null ).hit();
-            cursorContext.getCursorTracer().beginPin( false, 1, null ).hit();
-            cursorContext.getCursorTracer().beginPin( false, 1, null ).beginPageFault( 1, mock( PageSwapper.class ) ).done();
+            PageSwapper swapper = mock( PageSwapper.class, RETURNS_MOCKS );
+            cursorContext.getCursorTracer().beginPin( false, 1, swapper ).hit();
+            cursorContext.getCursorTracer().beginPin( false, 1, swapper ).hit();
+            cursorContext.getCursorTracer().beginPin( false, 1, swapper ).beginPageFault( 1, swapper ).done();
             assertEquals( 2, statement.getHits() );
             assertEquals( 1, statement.getFaults() );
 

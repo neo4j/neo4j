@@ -763,4 +763,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Allow database to use dedicated transaction appender writer thread." )
     public static final Setting<Boolean> dedicated_transaction_appender =
             newBuilder( "unsupported.dbms.tx.logs.dedicated.appender", BOOL, Boolean.FALSE ).build();
+
+    @Internal
+    @Description( "Enable per page file metrics collection in a default page cache and cursor tracer." )
+    public static final Setting<Boolean> per_file_metrics_counters = newBuilder( "unsupported.dbms.page.file.tracer", BOOL, false ).build();
+
 }
