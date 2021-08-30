@@ -89,7 +89,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     } else None
 
   val logicalToExecutable: PartialFunction[LogicalPlan, RuntimeContext => ExecutionPlan] = {
-    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
     case CreateNodeKeyConstraint(source, _, label, props, name, options) => context =>
       SchemaExecutionPlan("CreateNodeKeyConstraint", (ctx, params) => {
         val (indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("node key constraint").convert(options, params) match {
@@ -111,8 +111,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS UNIQUE [OPTIONS {...}]
-    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
     case CreateUniquePropertyConstraint(source, _, label, props, name, options) => context =>
       SchemaExecutionPlan("CreateUniqueConstraint", (ctx, params) => {
         val (indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("uniqueness constraint").convert(options, params) match {
@@ -135,7 +135,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS NOT NULL
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS NOT NULL
     case CreateNodePropertyExistenceConstraint(source, label, prop, name, options) => context =>
       SchemaExecutionPlan("CreateNodePropertyExistenceConstraint", (ctx, params) => {
         PropertyExistenceConstraintOptionsConverter("node").convert(options, params) // Assert empty options
@@ -150,7 +150,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT r.prop IS NOT NULL
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL
     case CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name, options) => context =>
       SchemaExecutionPlan("CreateRelationshipPropertyExistenceConstraint", (ctx, params) => {
         PropertyExistenceConstraintOptionsConverter("relationship").convert(options, params) // Assert empty options

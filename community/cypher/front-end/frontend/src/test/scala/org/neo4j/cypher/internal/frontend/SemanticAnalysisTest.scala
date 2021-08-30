@@ -183,8 +183,8 @@ class SemanticAnalysisTest extends CypherFunSuite {
   }
 
   test("Should allow escaped backtick in constraints") {
-    // Query without proper escaping: CREATE CONSTRAINT abc123` ON (n:``Label) ASSERT (n.pr``op) IS NODE KEY
-    val query = "CREATE CONSTRAINT `abc123``` ON (n:`````Label`) ASSERT (n.`pr````op`) IS NODE KEY"
+    // Query without proper escaping: CREATE CONSTRAINT abc123` FOR (n:``Label) REQUIRE (n.pr``op) IS NODE KEY
+    val query = "CREATE CONSTRAINT `abc123``` FOR (n:`````Label`) REQUIRE (n.`pr````op`) IS NODE KEY"
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()

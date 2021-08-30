@@ -3320,6 +3320,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
         (
             <UNIQUE> {
                     // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS UNIQUE
+                    // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS UNIQUE
                     constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.UNIQUE );
                     if ( !isNode )
                     {
@@ -3331,6 +3332,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
             | <NODE> <KEY>
                 {
                     // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NODE KEY
+                    // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS NODE KEY
                     constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.NODE_KEY );
                     if ( !isNode )
                     {
@@ -3341,6 +3343,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
                 }
             | <NOT> <NULL> {
                 // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NOT NULL
+                // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS NOT NULL
                 ConstraintType setType = isNode ? ConstraintType.NODE_IS_NOT_NULL : ConstraintType.REL_IS_NOT_NULL;
                 constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, setType );
                 if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_0)
