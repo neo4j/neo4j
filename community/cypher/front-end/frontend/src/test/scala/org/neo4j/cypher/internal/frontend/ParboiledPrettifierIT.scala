@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.ParserFixture
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -29,8 +30,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
-  val parser = ParserFixture.parser
-  val tests: Seq[(String, String)] = queryTests() ++ indexCommandTests() ++ constraintTests() ++ showCommandTests() ++ administrationTests()
+  val parser: CypherParser = ParserFixture.parser
+  val tests: Seq[(String, String)] = queryTests() ++ indexCommandTests() ++ constraintCommandTests() ++ showCommandTests() ++ administrationTests()
 
   def queryTests(): Seq[(String, String)] = Seq[(String, String)](
     "return 42" -> "RETURN 42",
@@ -498,7 +499,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
   )
 
   // Constraint commands
-  def constraintTests(): Seq[(String, String)] =
+  def constraintCommandTests(): Seq[(String, String)] =
     Seq("ON", "FOR").flatMap(onOrFor =>
       Seq("ASSERT", "REQUIRE").flatMap(assertOrRequired => Seq(
         // constraint commands
@@ -634,6 +635,12 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         s"create or Replace CONSTRAINT foo $onOrFor ()-[r:R]-() $assertOrRequired r.p IS NOT NULL" ->
           s"CREATE OR REPLACE CONSTRAINT foo $onOrFor ()-[r:R]-() $assertOrRequired (r.p) IS NOT NULL",
       ))) ++ Seq(
+      "create CONSTRAINT ON (a:A) ASSERT EXISTS (a.p)" ->
+        "CREATE CONSTRAINT ON (a:A) ASSERT exists(a.p)",
+
+      "create CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p)" ->
+        "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
+
       "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
         "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
 
@@ -646,14 +653,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
         "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
 
-      "create CONSTRAINT ON (a:A) ASSERT EXISTS (a.p)" ->
-        "CREATE CONSTRAINT ON (a:A) ASSERT exists(a.p)",
-
       "drop CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
         "DROP CONSTRAINT ON (a:A) ASSERT exists(a.p)",
-
-      "create CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p)" ->
-        "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
 
       "drop CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
         "DROP CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
