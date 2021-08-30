@@ -19,15 +19,46 @@
  */
 package org.neo4j.lock;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+
 /**
  * Generic Locking types. See storage engine specific resource types for details
  */
 public enum ResourceTypes implements ResourceType
 {
-    NODE,
-    RELATIONSHIP,
-    INDEX_ENTRY,
-    LABEL,
-    RELATIONSHIP_TYPE,
-    SCHEMA_NAME,
+    NODE( 0 ),
+    RELATIONSHIP( 1 ),
+    INDEX_ENTRY( 2 ),
+    LABEL( 3 ),
+    RELATIONSHIP_TYPE( 4 ),
+    SCHEMA_NAME( 5 );
+
+    private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
+
+    static
+    {
+        for ( ResourceTypes resourceTypes : ResourceTypes.values() )
+        {
+            idToType.put( resourceTypes.typeId, resourceTypes );
+        }
+    }
+
+    private final int typeId;
+
+    ResourceTypes( int typeId )
+    {
+        this.typeId = typeId;
+    }
+
+    @Override
+    public int typeId()
+    {
+        return typeId;
+    }
+
+    public static ResourceType fromId( int typeId )
+    {
+        return idToType.get( typeId );
+    }
 }

@@ -38,7 +38,9 @@ public interface ResourceLocker
 
     /**
      * Can be grabbed when no other client holds locks on the relevant resources. No other clients can hold locks
-     * while one client holds an exclusive lock.     *
+     * while one client holds an exclusive lock. If the lock cannot be acquired,
+     * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
+     *
      * @param tracer lock tracer
      * @param resourceType type or resource(s) to lock.
      * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
@@ -55,7 +57,9 @@ public interface ResourceLocker
     void releaseExclusive( ResourceType resourceType, long... resourceIds );
 
     /**
-     * Can be grabbed when there are no locks or only share locks on a resource.
+     * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
+     * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
+     *
      * @param tracer a tracer for listening on lock events.
      * @param resourceType type or resource(s) to lock.
      * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers

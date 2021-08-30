@@ -19,12 +19,14 @@
  */
 package org.neo4j.lock;
 
-/** Locks are split by resource types. It is up to the implementation to define the contract for these. */
-public interface ResourceType
+/** What to do if we need to wait. */
+public interface WaitStrategy
 {
-    /** Must be unique among all existing resource types, should preferably be a sequence starting at 0. */
-    int typeId();
-
-    /** Must be unique among all existing resource types. */
-    String name();
+    /**
+     * Throws Exception to force users of this interface to handle any possible failure, since this is used in
+     * potentially very sensitive code.
+     *
+     * @throws AcquireLockTimeoutException in case of timeout
+     */
+    void apply( long iteration );
 }
