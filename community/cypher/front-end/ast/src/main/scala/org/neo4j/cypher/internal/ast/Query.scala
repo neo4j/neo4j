@@ -280,10 +280,15 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         optError.fold(semanticErrors)(semanticErrors :+ _)
     }
 
+    val validLastClauses = "a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD"
+
     val concludeError = clauses match {
       // standalone procedure call
       case Seq(_: CallClause)                    => None
       case Seq(_: GraphSelection, _: CallClause) => None
+
+      case Seq() =>
+        Some(SemanticError(s"Query must conclude with $validLastClauses", this.position))
 
       // otherwise
       case seq => seq.last match {
@@ -293,7 +298,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         case call: CallClause                                                 =>
           Some(SemanticError(s"Query cannot conclude with ${call.name} together with YIELD", call.position))
         case clause                                                           =>
-          Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN, an update clause, or a procedure call with no YIELD)", clause.position))
+          Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be $validLastClauses)", clause.position))
       }
     }
 

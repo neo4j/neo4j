@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQueries
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseGraphSelector
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.InitialState
@@ -38,11 +40,13 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
-  private val pipeline =
+  private def pipelineWithFeatures(features: Seq[SemanticFeature]) =
     Parsing andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, CorrelatedSubQueries) andThen
-      SemanticAnalysis(warn = false, CorrelatedSubQueries)
+      SemanticAnalysis(warn = true, features: _*) andThen
+      SemanticAnalysis(warn = false, features: _*)
+
+  private val pipeline = pipelineWithFeatures(Seq(CorrelatedSubQueries))
 
   private val emptyTokenErrorMessage = "'' is not a valid token name. Token names cannot be empty or contain any null-bytes."
 
@@ -707,17 +711,49 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   test("UNION with incomplete first part") {
     val query = "MATCH (a) WITH a UNION MATCH (a) RETURN a"
-    expectErrorMessagesFrom(query, List("Query cannot conclude with WITH (must be RETURN, an update clause, or a procedure call with no YIELD)"))
+    expectErrorMessagesFrom(query, List("Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)"))
   }
 
   test("UNION with incomplete second part") {
     val query = "MATCH (a) RETURN a UNION MATCH (a) WITH a"
-    expectErrorMessagesFrom(query, List("Query cannot conclude with WITH (must be RETURN, an update clause, or a procedure call with no YIELD)"))
+    expectErrorMessagesFrom(query, List("Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)"))
   }
 
   test("Query ending in CALL ... YIELD ...") {
     val query = "MATCH (a) CALL proc.foo() YIELD bar"
     expectErrorMessagesFrom(query, List("Query cannot conclude with CALL together with YIELD"))
+  }
+
+  test("Query with only importing WITH") {
+    val query = "WITH a"
+    expectErrorMessagesFrom(query, List(
+      "Variable `a` not defined",
+      "Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)"
+    ))
+  }
+
+  test("Subquery with only importing WITH") {
+    val query = "WITH 1 AS a CALL { WITH a } RETURN a"
+    expectErrorMessagesFrom(query, List("Query must conclude with a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD"))
+  }
+
+  test("Subquery with only USE") {
+    val query = "WITH 1 AS a CALL { USE x } RETURN a"
+    expectErrorMessagesWithFeaturesFrom(Seq(UseGraphSelector), query, List(
+      "Query must conclude with a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD",
+    ))
+  }
+
+  test("Subquery with only USE and importing WITH") {
+    val query = "WITH 1 AS a CALL { USE x WITH a } RETURN a"
+    expectErrorMessagesWithFeaturesFrom(Seq(UseGraphSelector, CorrelatedSubQueries), query, List(
+      "Query must conclude with a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD",
+    ))
+  }
+
+  test("Subquery with only MATCH") {
+    val query = "WITH 1 AS a CALL { MATCH (n) } RETURN a"
+    expectErrorMessagesFrom(query, List("Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)"))
   }
 
   private def initStartState(query: String) =
@@ -728,6 +764,15 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(expectedErrors)
+  }
+
+  private def expectErrorMessagesWithFeaturesFrom(features: Seq[SemanticFeature], query: String, expectedErrors: Seq[String]): Unit = {
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipelineWithFeatures(features).transform(startState, context)
 
     context.errors.map(_.msg) should equal(expectedErrors)
   }
