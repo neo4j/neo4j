@@ -79,6 +79,12 @@ class DateTimeValueTest
         assertEquals(
                 datetime( date( -1, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
                 parse( "-1-12-17T17:14:35.123456789+0000", orFail ) );
+        assertEquals(
+                datetime( date( 2015, 2, 1 ), time( 5, 6, 7, 123456789, UTC ) ),
+                parse( "2015-02T5:6:7.123456789Z", orFail ) );
+        assertEquals(
+                datetime( date( 2015, 2, 1 ), time( 5, 6, 7, 123456789, UTC ) ),
+                parse( "2015-032T5:6:7.123456789Z", orFail ) );
     }
 
     @Test
@@ -125,6 +131,10 @@ class DateTimeValueTest
                 "Invalid value for SecondOfMinute" );
         assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:14:61Z", orFail ) ).getMessage() ).startsWith(
                 "Invalid value for SecondOfMinute" );
+
+        // Format is ambiguous between year+month or ordinal date
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2015-2T12:00:00", inUTC ) ).getMessage() ).startsWith(
+                "Text cannot be parsed to a Date" );
     }
 
     @Test

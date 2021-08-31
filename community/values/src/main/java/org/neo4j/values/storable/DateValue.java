@@ -37,6 +37,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.TemporalParseException;
 import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -424,7 +425,25 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         String month = matcher.group( MONTH );
         if ( month != null )
         {
-            return assertParsable( () -> LocalDate.of( year, parseInt( month ), optInt( matcher.group( DAY ) ) ) );
+            var day = matcher.group( DAY );
+
+            /*
+             * Validation
+             *
+             * ISO 8601 standard specifies the use of two digits for month.
+             * We sometimes allow a single digit. But for year+month dates
+             * with a single digit for month (e.g. 2015-2), which are ambiguous
+             * to ordinal dates, we fail in this validation.
+             */
+            if ( day == null && month.length() == 1 )
+            {
+                throw new TemporalParseException(
+                        "Text cannot be parsed to a Date. Hint, year+month needs to have two digits for " +
+                        "month (e.g. 2015-02) and " + "ordinal dates three digits (e.g. 2015-032).", null
+                );
+            }
+
+            return assertParsable( () -> LocalDate.of( year, parseInt( month ), optInt( day ) ) );
         }
         String week = matcher.group( WEEK );
         if ( week != null )

@@ -61,10 +61,10 @@ class DateValueTest
     {
         assertEquals( date( 2015, 3, 1 ), parse( "201503" ) );
         assertEquals( date( 2015, 3, 1 ), parse( "2015-03" ) );
-        assertEquals( date( 2015, 3, 1 ), parse( "2015-3" ) );
         assertEquals( date( 2015, 3, 1 ), parse( "+2015-03" ) );
         assertCannotParse( "2018-00" );
         assertCannotParse( "2018-13" );
+        assertCannotParse( "2015-3" ); // Ambiguous if this should be interpreted as a year+month or ordinal date
     }
 
     @Test
@@ -94,6 +94,7 @@ class DateValueTest
     void shouldParseCalendarDate()
     {
         assertEquals( date( 2016, 1, 27 ), parse( "20160127" ) );
+        assertEquals( date( 2016, 1, 27), parse( "2016-1-27" ) );
         assertEquals( date( 2016, 1, 27 ), parse( "+2016-01-27" ) );
         assertEquals( date( 2016, 1, 27 ), parse( "+2016-1-27" ) );
         assertCannotParse( "2015-01-32" );
