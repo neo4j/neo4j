@@ -21,14 +21,18 @@ package org.neo4j.kernel.impl.api.constraints;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -40,7 +44,7 @@ import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
@@ -87,11 +91,19 @@ class ConstraintCreationIT
         assertFalse( Files.exists( indexDir ) );
     }
 
-    @Test
-    void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails()
+    @ExtensionCallback
+    void enableRangeIndex( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = {"RANGE", "BTREE"} )
+    @DbmsExtension( configurationCallback = "enableRangeIndex" )
+    void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails( IndexType indexType )
     {
         // given
-        attemptAndFailConstraintCreation();
+        attemptAndFailConstraintCreation( indexType );
 
         // then
         IndexProvider indexProvider = indexProviderMap.getDefaultProvider();
@@ -101,6 +113,11 @@ class ConstraintCreationIT
     }
 
     private void attemptAndFailConstraintCreation()
+    {
+        attemptAndFailConstraintCreation( IndexType.BTREE );
+    }
+
+    private void attemptAndFailConstraintCreation( IndexType indexType )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -114,15 +131,14 @@ class ConstraintCreationIT
         }
 
         // when
-        try ( Transaction tx = db.beginTx() )
+        assertThrows( ConstraintViolationException.class, () ->
         {
-            tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).create();
-            fail( "Should have failed with ConstraintViolationException" );
-            tx.commit();
-        }
-        catch ( ConstraintViolationException ignored )
-        {
-        }
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).withIndexType( indexType ).create();
+                tx.commit();
+            }
+        } );
 
         // then
         try ( Transaction tx = db.beginTx() )

@@ -1224,7 +1224,7 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
     {
         Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, PropertyIndexProviderCompatibilityTestSuite.uniqueIndexPrototype() );
+            super( testSuite, testSuite.uniqueIndexPrototype() );
         }
 
         @Test

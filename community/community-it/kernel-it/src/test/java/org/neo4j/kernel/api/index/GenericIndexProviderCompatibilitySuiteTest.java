@@ -25,6 +25,7 @@ import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -37,7 +38,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_B
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
-class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCompatibilityIncludingConstraintsTestSuite
+class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
 {
     @Override
     IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
@@ -49,6 +50,12 @@ class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCo
         return GenericNativeIndexProviderFactory.
                 create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, PageCacheTracer.NULL,
                         DEFAULT_DATABASE_NAME );
+    }
+
+    @Override
+    IndexType indexType()
+    {
+        return IndexType.BTREE;
     }
 
     @Override

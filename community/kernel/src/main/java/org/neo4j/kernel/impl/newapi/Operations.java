@@ -1222,8 +1222,7 @@ public class Operations implements Write, SchemaWrite
         while ( constraintWithSameSchema.hasNext() )
         {
             final ConstraintDescriptor constraint = constraintWithSameSchema.next();
-            // TODO: use actual index type that backs constraint?
-            if ( constraint.type() != ConstraintType.EXISTS && prototype.getIndexType() == IndexType.BTREE )
+            if ( constraint.type() != ConstraintType.EXISTS && ( prototype.getIndexType() == IndexType.BTREE || prototype.getIndexType() == IndexType.RANGE ) )
             {
                 throw new AlreadyConstrainedException( constraint, INDEX_CREATION, token );
             }
@@ -1274,8 +1273,13 @@ public class Operations implements Write, SchemaWrite
         // Already indexed
         if ( constraint.type() != ConstraintType.EXISTS )
         {
-            // TODO use index type of actual index that backs this constraint? or block both range and btree indexes?
+            // A RANGE or BTREE index on the schema blocks constraint creation.
             IndexDescriptor existingIndex = allStoreHolder.index( constraint.schema(), IndexType.BTREE );
+            if ( existingIndex != IndexDescriptor.NO_INDEX )
+            {
+                throw new AlreadyIndexedException( existingIndex.schema(), CONSTRAINT_CREATION, token );
+            }
+            existingIndex = allStoreHolder.index( constraint.schema(), IndexType.RANGE );
             if ( existingIndex != IndexDescriptor.NO_INDEX )
             {
                 throw new AlreadyIndexedException( existingIndex.schema(), CONSTRAINT_CREATION, token );
@@ -1672,10 +1676,11 @@ public class Operations implements Write, SchemaWrite
             {
                 throw new AlreadyConstrainedException( constraint, CONSTRAINT_CREATION, token );
             }
-            if ( prototype.getIndexType() != IndexType.BTREE )
+            IndexType indexType = prototype.getIndexType();
+            if ( !( indexType == IndexType.BTREE || indexType == IndexType.RANGE ) )
             {
                 throw new CreateConstraintFailureException(
-                        constraint, "Cannot create backing constraint index with index type " + prototype.getIndexType() + "." );
+                        constraint, "Cannot create backing constraint index with index type " + indexType + "." );
             }
             if ( prototype.schema().isFulltextSchemaDescriptor() )
             {

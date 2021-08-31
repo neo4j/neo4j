@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.index;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -35,11 +34,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
@@ -113,10 +112,8 @@ public abstract class SchemaConstraintProviderApprovalTest
     private static Map<TestValue, Set<Object>> noIndexRun;
     private static Map<TestValue, Set<Object>> constraintRun;
 
-    @BeforeAll
-    public static void init()
+    public static void setupBeforeAllTests( DatabaseManagementService managementService, IndexType indexType )
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         for ( TestValue value : TestValue.values() )
         {
@@ -124,7 +121,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         }
 
         noIndexRun = runFindByLabelAndProperty( db );
-        createConstraint( db, label( LABEL ), PROPERTY_KEY );
+        createConstraint( db, indexType, label( LABEL ), PROPERTY_KEY );
         constraintRun = runFindByLabelAndProperty( db );
         managementService.shutdown();
     }
@@ -213,11 +210,11 @@ public abstract class SchemaConstraintProviderApprovalTest
         }
     }
 
-    private static void createConstraint( GraphDatabaseService db, Label label, String propertyKey )
+    private static void createConstraint( GraphDatabaseService db, IndexType indexType, Label label, String propertyKey )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withIndexType( indexType ).create();
             tx.commit();
         }
     }

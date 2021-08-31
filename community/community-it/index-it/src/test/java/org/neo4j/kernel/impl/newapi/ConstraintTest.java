@@ -19,28 +19,70 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.junit.jupiter.api.Nested;
+
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class ConstraintTest extends ConstraintTestBase<WriteTestSupport>
+public class ConstraintTest
 {
-    @Override
-    public WriteTestSupport newTestSupport()
+    abstract static class AbstractConstraintTest extends ConstraintTestBase<WriteTestSupport>
     {
-        return new WriteTestSupport();
+        @Override
+        public WriteTestSupport newTestSupport()
+        {
+            return new WriteTestSupport();
+        }
+
+        @Override
+        protected LabelSchemaDescriptor labelSchemaDescriptor( int labelId, int... propertyIds )
+        {
+            return SchemaDescriptors.forLabel( labelId, propertyIds );
+        }
+
+        @Override
+        protected ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds )
+        {
+            return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds );
+        }
     }
 
-    @Override
-    protected LabelSchemaDescriptor labelSchemaDescriptor( int labelId, int... propertyIds )
+    @Nested
+    class BTreeIndexTest extends AbstractConstraintTest
     {
-        return SchemaDescriptors.forLabel( labelId, propertyIds );
+        @Override
+        protected IndexType indexType()
+        {
+            return IndexType.BTREE;
+        }
     }
 
-    @Override
-    protected ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds )
+    @Nested
+    class RangeIndexTest extends AbstractConstraintTest
     {
-        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds );
+        @Override
+        protected IndexType indexType()
+        {
+            return IndexType.RANGE;
+        }
+
+        @Override
+        public WriteTestSupport newTestSupport()
+        {
+            return new WriteTestSupport()
+            {
+                @Override
+                protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
+                {
+                    builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
+                    return super.configure( builder );
+                }
+            };
+        }
     }
 }

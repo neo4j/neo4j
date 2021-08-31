@@ -25,6 +25,7 @@ import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -47,6 +48,12 @@ class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderComp
         return RangeIndexProviderFactory.
                 create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, PageCacheTracer.NULL,
                         DEFAULT_DATABASE_NAME );
+    }
+
+    @Override
+    IndexType indexType()
+    {
+        return IndexType.RANGE;
     }
 
     @Override

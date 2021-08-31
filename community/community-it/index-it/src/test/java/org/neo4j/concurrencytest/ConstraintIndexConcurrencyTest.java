@@ -19,11 +19,14 @@
  */
 package org.neo4j.concurrencytest;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -36,6 +39,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Threading;
@@ -47,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 @ExtendWith( ThreadingExtension.class )
 class ConstraintIndexConcurrencyTest
 {
@@ -56,8 +61,15 @@ class ConstraintIndexConcurrencyTest
     @Inject
     private Threading threads;
 
-    @Test
-    void shouldNotAllowConcurrentViolationOfConstraint() throws Exception
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = {"RANGE", "BTREE"} )
+    void shouldNotAllowConcurrentViolationOfConstraint( IndexType indexType ) throws Exception
     {
         // Given
         Label label = label( "Foo" );
@@ -68,7 +80,7 @@ class ConstraintIndexConcurrencyTest
         // a constraint
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( constraintName ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( constraintName ).withIndexType( indexType ).create();
             tx.commit();
         }
 

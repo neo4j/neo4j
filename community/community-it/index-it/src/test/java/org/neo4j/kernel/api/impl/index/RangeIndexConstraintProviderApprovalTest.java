@@ -19,8 +19,21 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
+import org.junit.jupiter.api.BeforeAll;
 
-public class DatabaseIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
-{
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+
+public class RangeIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
+    {
+        @BeforeAll
+        public static void init()
+        {
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfig(
+                    GraphDatabaseInternalSettings.range_indexes_enabled, true ).build();
+            setupBeforeAllTests( managementService, IndexType.RANGE );
+        }
 }

@@ -17,22 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.impl.index;
 
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.BeforeAll;
 
-/**
- * Temporary class until we have support for creating constraints backed by range indexes.
- * When that support is added, this should be moved back into PropertyIndexProviderCompatibilityTestSuite.
- */
-abstract class PropertyIndexProviderCompatibilityIncludingConstraintsTestSuite extends PropertyIndexProviderCompatibilityTestSuite
-{
-    @Nested
-    class UniqueConstraint extends UniqueConstraintCompatibility
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+
+public class BTreeIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
     {
-        UniqueConstraint()
+        @BeforeAll
+        public static void init()
         {
-            super( PropertyIndexProviderCompatibilityIncludingConstraintsTestSuite.this );
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+            setupBeforeAllTests( managementService, IndexType.BTREE );
         }
-    }
 }

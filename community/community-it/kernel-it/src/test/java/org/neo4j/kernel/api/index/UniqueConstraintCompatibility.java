@@ -65,7 +65,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
 
     UniqueConstraintCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, PropertyIndexProviderCompatibilityTestSuite.uniqueIndexPrototype() );
+        super( testSuite, testSuite.uniqueIndexPrototype() );
     }
 
     /*
@@ -785,7 +785,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
             {
                 preCreateLatch.countDown();
             }
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).withIndexType( testSuite.indexType().toPublicApi() ).create();
             tx.commit();
         }
     }

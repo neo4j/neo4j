@@ -378,7 +378,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     {
         Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, PropertyIndexProviderCompatibilityTestSuite.uniqueIndexPrototype() );
+            super( testSuite, testSuite.uniqueIndexPrototype() );
         }
 
         /**
