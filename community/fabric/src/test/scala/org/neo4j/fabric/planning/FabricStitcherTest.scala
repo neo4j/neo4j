@@ -19,8 +19,9 @@
  */
 package org.neo4j.fabric.planning
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
+import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.FabricTest
 import org.neo4j.fabric.FragmentTestUtils
 import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
@@ -249,6 +250,65 @@ class FabricStitcherTest
             .exec(query(with_(parameter("@@a", ct.any).as("a")), with_(varFor("a").as("a")), return_(literal(2).as("b"))), Seq("b")))
           .exec(query(input(varFor("a"), varFor("b")), return_(literal(3).as("c"))), Seq("c"))
       )
+    }
+
+    "errors" - {
+      val inTransactionParameters = Some(InTransactionsParameters()(pos))
+
+      "disallows call in transactions as apply" in {
+        val e = the[SyntaxException].thrownBy(
+          stitching(
+            init(defaultUse)
+              .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
+              .apply(_ => init(Declared(use("foo")), Seq("a"), Seq("a"))
+                .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")), inTransactionParameters)
+              .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
+          ))
+
+        e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
+      }
+
+      "disallows call in transactions as nested apply" in {
+        val e = the[SyntaxException].thrownBy(
+          stitching(
+            init(defaultUse)
+              .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
+              .apply(oldUse => init(Inherited(oldUse)(pos), Seq("a"), Seq("a"))
+                .apply(_ => init(Declared(use("foo")), Seq("a"), Seq("a"))
+                  .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")), inTransactionParameters))
+              .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
+          ))
+
+        e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
+      }
+
+      "disallows call in transactions as apply under union" in {
+        val e = the[SyntaxException].thrownBy(
+          stitching(
+            init(defaultUse)
+              .union(
+                init(defaultUse)
+                  .leaf(Seq(return_(literal(3).as("c"))), Seq("c")),
+                init(defaultUse)
+                  .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
+                  .apply(_ => init(Declared(use("foo")), Seq("a"), Seq("a"))
+                    .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")), inTransactionParameters)
+                  .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
+              )
+          ))
+
+        e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
+      }
+
+      // TODO: Enable once SemanticFeature.CallSubqueryInTransactions is enabled
+      "disallows call in transactions as subquery call" ignore {
+        val e = the[SyntaxException].thrownBy(
+          stitching(
+            init(defaultUse)
+              .leaf(Seq(with_(literal(1).as("a")), subqueryCallInTransactions(create(nodePat("n")))), Seq("a"))))
+
+        e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
+      }
     }
   }
 }

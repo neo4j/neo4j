@@ -64,18 +64,24 @@ case class FabricStitcher(
    * Exec fragments formed by recursively stitching same-graph Leaf:s together
    * and adding appropriate glue clauses
    */
-  def convert(fragment: Fragment): Fragment = fragment match {
-    case chain: Fragment.Chain => convertChain(chain)
-    case union: Fragment.Union => convertUnion(union)
-    case command: Fragment.Command =>
-      if (!allowMultiGraph && !UseEvaluation.isStatic(command.use.graphSelection)) {
-        failDynamicGraph(command.use)
-      }
-      asExec(
-        Fragment.Init(command.use),
-        command.command,
-        command.outputColumns,
-      )
+  def convert(fragment: Fragment): Fragment = {
+    val result = fragment match {
+      case chain: Fragment.Chain => convertChain(chain)
+      case union: Fragment.Union => convertUnion(union)
+      case command: Fragment.Command =>
+        if (!allowMultiGraph && !UseEvaluation.isStatic(command.use.graphSelection)) {
+          failDynamicGraph(command.use)
+        }
+        asExec(
+          Fragment.Init(command.use),
+          command.command,
+          command.outputColumns,
+        )
+    }
+
+    if (allowMultiGraph) validateNoTransactionalSubquery(result)
+
+    result
   }
 
   def convertUnion(union: Fragment.Union): Fragment =
@@ -101,6 +107,15 @@ case class FabricStitcher(
 
     case apply: Fragment.Apply =>
       apply.copy(input = convertSeparate(apply.input, lastInChain = false), inner = convert(apply.inner))(apply.pos)
+  }
+
+  def validateNoTransactionalSubquery(fragment: Fragment): Unit = {
+    fragment.flatten.foreach {
+      case apply: Fragment.Apply if apply.inTransactionsParameters.isDefined => failFabricTransactionalSubquery(apply.pos)
+      case exec: Fragment.Exec => SubqueryCall.findTransactionalSubquery(exec.query).foreach(subquery => failFabricTransactionalSubquery(subquery.position))
+      case leaf: Fragment.Leaf => leaf.clauses.foreach(c => SubqueryCall.findTransactionalSubquery(c).foreach(subquery => failFabricTransactionalSubquery(subquery.position)))
+      case _ => ()
+    }
   }
 
   /**
@@ -204,6 +219,11 @@ case class FabricStitcher(
          |Attempted to access graph ${Use.show(use)}""".stripMargin,
       queryString, use.position.offset)
 
+  private def failFabricTransactionalSubquery(pos: InputPosition): Nothing =
+    throw new SyntaxException(
+      "Transactional subquery is not allowed here. This feature is not supported in a Fabric database.",
+      queryString, pos.offset)
+
   private case class StitchResult(
     queryPart: QueryPart,
     lastUse: Use,
@@ -285,7 +305,7 @@ case class FabricStitcher(
           val before = stitchChain(apply.input, outermost, outerUse)
           val inner = stitch(apply.inner, outermost = false, Some(before.lastUse))
           before.copy(
-            clauses = before.clauses :+ SubqueryCall(inner.queryPart, None)(apply.pos),
+            clauses = before.clauses :+ SubqueryCall(inner.queryPart, apply.inTransactionsParameters)(apply.pos),
             useAppearances = before.useAppearances ++ inner.useAppearances)
 
       }

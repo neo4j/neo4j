@@ -124,7 +124,7 @@ class FabricFragmenterTest
           |RETURN x
           |""".stripMargin)
 
-      inside(frag) { case Leaf(Apply(_, inner: Leaf), _, _) =>
+      inside(frag) { case Leaf(Apply(_, inner: Leaf, _), _, _) =>
         inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
       }
     }
@@ -140,7 +140,7 @@ class FabricFragmenterTest
           |RETURN x
           |""".stripMargin)
 
-      inside(frag) { case Leaf(Apply(_, inner: Leaf), _, _) =>
+      inside(frag) { case Leaf(Apply(_, inner: Leaf, _), _, _) =>
         inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
       }
     }

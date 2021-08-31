@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -62,7 +63,9 @@ trait FragmentTestUtils {
     Init(use, argumentColumns, importColumns)
 
   implicit class FragBuilder(input: Chain) {
-    def apply(fragmentInheritUse: Use => Fragment, pos: InputPosition = InputPosition.NONE): Apply = Apply(input, fragmentInheritUse(input.use))(pos)
+    def apply(fragmentInheritUse: Use => Fragment,
+              inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters] = None,
+              pos: InputPosition = InputPosition.NONE): Apply = Apply(input, fragmentInheritUse(input.use), inTransactionsParameters)(pos)
     def leaf(clauses: Seq[ast.Clause], outputColumns: Seq[String], pos: InputPosition = InputPosition.NONE): Leaf = Leaf(input, clauses, outputColumns)(pos)
     def exec(query: Query, outputColumns: Seq[String]): Exec = Exec(input, query, dummyLocalQuery, dummyRemoteQuery, false, outputColumns)
   }

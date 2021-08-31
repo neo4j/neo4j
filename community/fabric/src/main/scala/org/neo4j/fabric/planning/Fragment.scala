@@ -24,12 +24,16 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 import org.neo4j.cypher.rendering.QueryRenderer
+import org.neo4j.fabric.planning.Fragment.Apply
+import org.neo4j.fabric.planning.Fragment.Segment
+import org.neo4j.fabric.planning.Fragment.Union
 import org.neo4j.fabric.util.Folded
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.PrettyPrinting
@@ -52,6 +56,15 @@ sealed trait Fragment extends Fragment.RewritingSupport {
   def description: Fragment.Description
   /* Original input position */
   def pos: InputPosition
+
+  def flatten: Seq[Fragment] = {
+    this match {
+      case apply: Apply        => apply.input.flatten ++ Seq(apply) ++ apply.inner.flatten
+      case union: Union        => union.lhs.flatten ++ Seq(union) ++ union.rhs.flatten
+      case segment: Segment    => segment.input.flatten ++ Seq(segment)
+      case fragment: Fragment  => Seq(fragment)
+    }
+  }
 }
 
 object Fragment {
@@ -94,6 +107,7 @@ object Fragment {
   final case class Apply(
     input: Fragment.Chain,
     inner: Fragment,
+    inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters],
   )(
     val pos: InputPosition
   ) extends Fragment.Segment {
@@ -275,6 +289,7 @@ object Fragment {
         name = "apply",
         fields = Seq(
           "out" -> list(f.outputColumns),
+          "tx" -> f.inTransactionsParameters,
         ),
         children = Seq(f.inner, f.input)
       )

@@ -990,7 +990,7 @@ object SubqueryCall {
 
   def isTransactionalSubquery(clause: SubqueryCall): Boolean = clause.inTransactionsParameters.isDefined
 
-  def findTransactionalSubquery(part: QueryPart) : Option[SubqueryCall] = part.treeFind[SubqueryCall] { case s if isTransactionalSubquery(s) => true }
+  def findTransactionalSubquery(node: ASTNode) : Option[SubqueryCall] = node.treeFind[SubqueryCall] { case s if isTransactionalSubquery(s) => true }
 }
 
 case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters])(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {

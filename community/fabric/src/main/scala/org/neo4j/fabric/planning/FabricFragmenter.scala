@@ -88,7 +88,7 @@ class FabricFragmenter(
         case Left(subquery) =>
           // Subquery: Recurse and start the child chain with Init
           val use = Use.Inherited(input.use)(subquery.part.position)
-          Apply(input, fragmentPart(Init(use, input.outputColumns, Seq.empty), subquery.part))(subquery.position)
+          Apply(input, fragmentPart(Init(use, input.outputColumns, Seq.empty), subquery.part), subquery.inTransactionsParameters)(subquery.position)
       }
     }
   }
