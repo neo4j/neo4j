@@ -22,9 +22,11 @@ import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFeaturesIn4_X
 import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeaturesIn4_X
+import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
+import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
@@ -68,6 +70,18 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
     ))
   }
 
+  test("should warn about exists() in both union branches") {
+    val q = """MATCH (n:Label) WHERE exists(n.prop) RETURN n
+              |UNION
+              |MATCH (n:OtherLabel) WHERE exists(n.prop) RETURN n
+              |""".stripMargin
+
+    check(q) shouldBe Set(
+      DeprecatedPropertyExistenceSyntax(InputPosition(22, 1, 23)),
+      DeprecatedPropertyExistenceSyntax(InputPosition(79, 3, 28))
+    )
+  }
+
   private val plannerName = new PlannerName {
     override def name: String = "fake"
     override def toTextOutput: String = "fake"
@@ -85,7 +99,11 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
         SemanticAnalysis(warn = true) andThen
         SyntaxDeprecationWarningsAndReplacements(semanticallyDeprecatedFeaturesIn4_X)
 
-    pipeline.transform(initialState, TestContext(logger))
+    val transformedState = pipeline.transform(initialState, TestContext(logger))
+
+    // Check that we didn't introduce any duplicate AST nodes
+    noReferenceEqualityAmongVariables(transformedState.statement()) shouldBe empty
+
     logger.notifications
   }
 

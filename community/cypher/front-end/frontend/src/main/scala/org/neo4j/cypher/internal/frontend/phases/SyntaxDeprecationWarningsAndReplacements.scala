@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.SemanticDeprecations
 import org.neo4j.cypher.internal.rewriting.SyntacticDeprecations
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -61,7 +62,7 @@ case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations) 
 
     // apply replacements
     val rewriter: Rewriter = bottomUp(Rewriter.lift {
-      case astNode: ASTNode => replacements.getOrElse(astNode, astNode)
+      case astNode: ASTNode => replacements.getOrElse(Ref(astNode), astNode)
     })
     val newStatement = state.statement().endoRewrite(rewriter)
     state.withStatement(newStatement)
