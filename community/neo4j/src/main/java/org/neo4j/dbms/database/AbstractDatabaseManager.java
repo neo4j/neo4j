@@ -30,7 +30,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementException;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -138,14 +137,14 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         return unmodifiableNavigableMap( new TreeMap<>( databaseMap ) );
     }
 
-    protected abstract DB createDatabaseContext( NamedDatabaseId namedDatabaseId, Map<Setting<?>,Object> databaseSpecificSettings ) throws Exception;
+    protected abstract DB createDatabaseContext( NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions ) throws Exception;
 
-    protected ModularDatabaseCreationContext newDatabaseCreationContext( NamedDatabaseId namedDatabaseId, Map<Setting<?>,Object> databaseSpecificSettings,
+    protected ModularDatabaseCreationContext newDatabaseCreationContext( NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions,
             Dependencies parentDependencies, Monitors parentMonitors )
     {
         EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( namedDatabaseId );
         var globalProcedures = parentDependencies.resolveDependency( GlobalProcedures.class );
-        var databaseConfig = new DatabaseConfig( databaseSpecificSettings, config, namedDatabaseId );
+        var databaseConfig = new DatabaseConfig( databaseOptions.settings(), config, namedDatabaseId );
 
         return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors,
                                                    editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ),
