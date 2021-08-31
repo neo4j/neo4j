@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQueries
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseGraphSelector
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.InitialState
@@ -39,11 +41,13 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
-  private val pipeline =
+  private def pipelineWithFeatures(features: Seq[SemanticFeature]) =
     Parsing andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, CorrelatedSubQueries) andThen
-      SemanticAnalysis(warn = false, CorrelatedSubQueries)
+      SemanticAnalysis(warn = true, features: _*) andThen
+      SemanticAnalysis(warn = false, features: _*)
+
+  private val pipeline = pipelineWithFeatures(Seq(CorrelatedSubQueries))
 
   private val emptyTokenErrorMessage = "'' is not a valid token name. Token names cannot be empty or contain any null-bytes."
 
@@ -1129,6 +1133,58 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     ))
   }
 
+  test("Query with only importing WITH") {
+    val query = "WITH a"
+    expectErrorMessagesFrom(query, List(
+      "Query cannot conclude with WITH (must be RETURN or an update clause)",
+      "Variable `a` not defined",
+      ))
+  }
+
+  test("Subquery with only importing WITH") {
+    val query = "WITH 1 AS a CALL { WITH a } RETURN a"
+    expectErrorMessagesFrom(query, List(
+      "CALL subquery must conclude with RETURN",
+      "Query must conclude with RETURN or an update clause",
+      "Variable `a` already declared in outer scope",
+      ))
+  }
+
+  test("Subquery with only USE") {
+    val query = "WITH 1 AS a CALL { USE x } RETURN a"
+    expectErrorMessagesWithFeaturesFrom(Seq(UseGraphSelector), query, List(
+      "CALL subquery must conclude with RETURN",
+      "Query must conclude with RETURN or an update clause",
+    ))
+  }
+
+  test("Subquery with only USE and importing WITH") {
+    val query = "WITH 1 AS a CALL { USE x WITH a } RETURN a"
+    expectErrorMessagesWithFeaturesFrom(Seq(UseGraphSelector, CorrelatedSubQueries), query, List(
+      "CALL subquery must conclude with RETURN",
+      "Query must conclude with RETURN or an update clause",
+      "Variable `a` already declared in outer scope",
+    ))
+  }
+
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator, initialFields)
+
+  private def expectErrorMessagesFrom(query: String, expectedErrors: Seq[String]): Unit = {
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(expectedErrors)
+  }
+
+  private def expectErrorMessagesWithFeaturesFrom(features: Seq[SemanticFeature], query: String, expectedErrors: Seq[String]): Unit = {
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipelineWithFeatures(features).transform(startState, context)
+
+    context.errors.map(_.msg) should equal(expectedErrors)
+  }
 }

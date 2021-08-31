@@ -171,9 +171,10 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 
   private def checkConcludesWithReturn(clauses: Seq[Clause]): SemanticCheck =
-    clauses.last match {
-      case _: Return => success
-      case clause    => error(s"CALL subquery cannot conclude with ${clause.name} (must be RETURN)", clause.position)
+    clauses.lastOption match {
+      case Some(_: Return) => success
+      case Some(clause)    => error(s"CALL subquery cannot conclude with ${clause.name} (must be RETURN)", clause.position)
+      case None            => error(s"CALL subquery must conclude with RETURN", position)
     }
 
   private def checkCorrelatedSubQueriesFeature: SemanticCheck =
@@ -269,16 +270,21 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         optError.fold(semanticErrors)(semanticErrors :+ _)
     }
 
+    val validLastClauses = "RETURN or an update clause"
+
     val concludeError = clauses match {
       // standalone procedure call
       case Seq(_: CallClause)                    => None
       case Seq(_: GraphSelection, _: CallClause) => None
 
+      case Seq() =>
+        Some(SemanticError(s"Query must conclude with $validLastClauses", this.position))
+
       // otherwise
       case seq => seq.last match {
         case _: UpdateClause | _: Return | _: CommandClause => None
         case clause                                         =>
-          Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.position))
+          Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be $validLastClauses)", clause.position))
       }
     }
 
