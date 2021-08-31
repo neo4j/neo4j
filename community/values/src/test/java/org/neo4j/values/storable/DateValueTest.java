@@ -72,11 +72,12 @@ class DateValueTest
     {
         assertEquals( weekDate( 2015, 5, 1 ), parse( "2015W05" ) );
         assertEquals( weekDate( 2015, 53, 1 ), parse( "2015W53" ) ); // 2015 had 53 weeks
-        assertCannotParse( "2015W5" );
+        assertEquals( weekDate( 2015, 5, 1 ), parse( "2015W5" ) );
         assertEquals( weekDate( 2015, 5, 1 ), parse( "2015-W05" ) );
         assertEquals( weekDate( 2015, 5, 1 ), parse( "2015-W5" ) );
         assertEquals( weekDate( 2015, 5, 1 ), parse( "+2015-W05" ) );
-        assertCannotParse( "+2015W05" );
+        assertEquals( weekDate( 2015, 5, 1 ), parse( "+2015-W05" ) );
+        assertEquals( weekDate( 2015, 5, 1 ), parse( "+2015W05" ) );
     }
 
     @Test
@@ -86,6 +87,7 @@ class DateValueTest
         assertEquals( quarterDate( 2017, 3, 1 ), parse( "2017Q3" ) );
         assertEquals( quarterDate( 2017, 3, 1 ), parse( "2017-Q3" ) );
         assertEquals( quarterDate( 2017, 3, 1 ), parse( "+2017-Q3" ) );
+        assertEquals( quarterDate( 2017, 3, 1 ), parse( "+2017Q3" ) );
         assertCannotParse( "2015Q0" );
         assertCannotParse( "2015Q5" );
     }

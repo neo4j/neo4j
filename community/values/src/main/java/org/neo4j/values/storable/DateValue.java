@@ -355,17 +355,17 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
      * <li>Year & Week:<ul>
      * <li>{@code [0-9]{4} W [0-9]{2}}<br>
      * Parsing: {@code shortYear, shortWeek}</li>
-     * <li>{@code [0-9]{4} - W [0-9]{2}}<br>
+     * <li>{@code [0-9]{4} -? W [0-9]{1,2}} - dash optional<br>
      * Parsing: {@code longYear, longWeek}</li>
-     * <li>{@code [+-] [0-9]{1,9} - W [0-9]{2}}<br>
+     * <li>{@code [+-] [0-9]{1,9} -? W [0-9]{2}} - dash optional<br>
      * Parsing: {@code longYear, longWeek}</li>
      * </ul></li>
      * <li>Week date (year & week & day of week):<ul>
      * <li>{@code [0-9]{4} W [0-9]{2} [0-9]} - unique without dashes, contains W followed by 2 numbers<br>
      * Parsing: {@code shortYear, shortWeek, shortDOW}</li>
-     * <li>{@code [0-9]{4} - W [0-9]{1,2} - [0-9]}<br>
+     * <li>{@code [0-9]{4} -? W [0-9]{1,2} - [0-9]} - dash before week optional<br>
      * Parsing: {@code longYear, longWeek, longDOW}</li>
-     * <li>{@code [+-] [0-9]{1,9} - W [0-9]{2} - [0-9]}<br>
+     * <li>{@code [+-] [0-9]{1,9} -? W [0-9]{2} - [0-9]} - dash before week optional<br>
      * Parsing: {@code longYear, longWeek, longDOW}</li>
      * </ul></li>
      * <li>Ordinal date (year & day of year):<ul>
@@ -389,8 +389,8 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
                                        // long formats - includes dashes:
                                        + "(?<longYear>(?:[0-9]{4}|[+-][0-9]{1,9}))(?:"
                                        + "-(?<longMonth>[0-9]{1,2})(?:-(?<longDay>[0-9]{1,2}))?|" // calendar date
-                                       + "-W(?<longWeek>[0-9]{1,2})(?:-(?<longDOW>[0-9]))?|" // week date
-                                       + (QUARTER_DATES ? "-Q(?<longQuarter>[0-9])(?:-(?<longDOQ>[0-9]{1,2}))?|" : "")
+                                       + "-?W(?<longWeek>[0-9]{1,2})(?:-(?<longDOW>[0-9]))?|" // week date
+                                       + (QUARTER_DATES ? "-?Q(?<longQuarter>[0-9])(?:-(?<longDOQ>[0-9]{1,2}))?|" : "")
                                        // quarter date
                                        + "-(?<longDOY>[0-9]{3}))?" + ")"; // ordinal date
     private static final Pattern PATTERN = Pattern.compile( DATE_PATTERN );
