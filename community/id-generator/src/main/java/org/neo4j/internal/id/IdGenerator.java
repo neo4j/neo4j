@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.id;
 
+import org.eclipse.collections.api.list.primitive.LongList;
+
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -26,6 +28,9 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.util.VisibleForTesting;
+
+import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
+import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
 
 public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 {
@@ -103,12 +108,32 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         void markUsed( long id, int numberOfIds );
 
+        /**
+         * Marks a batch of IDs as used.
+         *
+         * @param ids each entry is a combination of ID and number of IDs, see {@link IdUtils#combinedIdAndNumberOfIds(long, int)}.
+         */
+        default void markUsedBatch( LongList ids )
+        {
+            ids.forEach( id -> markUsed( idFromCombinedId( id ), numberOfIdsFromCombinedId( id ) ) );
+        }
+
         default void markDeleted( long id )
         {
             markDeleted( id, 1 );
         }
 
         void markDeleted( long id, int numberOfIds );
+
+        /**
+         * Marks a batch of IDs as deleted.
+         *
+         * @param ids each entry is a combination of ID and number of IDs, see {@link IdUtils#combinedIdAndNumberOfIds(long, int)}.
+         */
+        default void markDeletedBatch( LongList ids )
+        {
+            ids.forEach( id -> markDeleted( idFromCombinedId( id ), numberOfIdsFromCombinedId( id ) ) );
+        }
 
         default void markFree( long id )
         {
@@ -123,7 +148,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
     class Delegate implements IdGenerator
     {
-        private final IdGenerator delegate;
+        protected final IdGenerator delegate;
 
         public Delegate( IdGenerator delegate )
         {

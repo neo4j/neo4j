@@ -72,12 +72,6 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     }
 
     @Override
-    public void clear()
-    {
-        bufferingIdGeneratorFactory.clear();
-    }
-
-    @Override
     public void maintenance()
     {
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( BUFFERED_ID_CONTROLLER ) ) )
@@ -87,8 +81,8 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     }
 
     @Override
-    public void initialize( Supplier<ConditionSnapshot> conditionSnapshotSupplier )
+    public void initialize( Supplier<IdFreeCondition> conditionSupplier )
     {
-        bufferingIdGeneratorFactory.initialize( conditionSnapshotSupplier );
+        bufferingIdGeneratorFactory.initialize( conditionSupplier );
     }
 }

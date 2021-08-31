@@ -22,9 +22,7 @@ package org.neo4j.storageengine.util;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -36,9 +34,6 @@ import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.internal.id.IdUtils.combinedIdAndNumberOfIds;
-import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
-import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
-import static org.neo4j.internal.id.IdUtils.usedFromCombinedId;
 
 /**
  * Convenience for updating one or more {@link IdGenerator} in a concurrent fashion. Supports applying in batches, e.g. multiple transactions
@@ -132,34 +127,18 @@ public class IdGeneratorUpdatesWorkSync
 
     private static class ChangedIds
     {
-        private final MutableLongList ids = LongLists.mutable.empty();
+        private final MutableLongList createdIds = LongLists.mutable.empty();
+        private final MutableLongList deleteIds = LongLists.mutable.empty();
         private AsyncApply asyncApply;
 
         private void addUsedId( long id, int numberOfIds )
         {
-            ids.add( combinedIdAndNumberOfIds( id, numberOfIds, true ) );
+            createdIds.add( combinedIdAndNumberOfIds( id, numberOfIds ) );
         }
 
         void addUnusedId( long id, int numberOfIds )
         {
-            ids.add( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
-        }
-
-        void accept( IdGenerator.Marker visitor )
-        {
-            ids.forEach( combined ->
-            {
-                long id = idFromCombinedId( combined );
-                int slots = numberOfIdsFromCombinedId( combined );
-                if ( usedFromCombinedId( combined ) )
-                {
-                    visitor.markUsed( id, slots );
-                }
-                else
-                {
-                    visitor.markDeleted( id, slots );
-                }
-            } );
+            deleteIds.add( combinedIdAndNumberOfIds( id, numberOfIds ) );
         }
 
         void applyAsync( WorkSync<IdGenerator,IdGeneratorUpdateWork> workSync, PageCacheTracer cacheTracer )
@@ -175,19 +154,20 @@ public class IdGeneratorUpdatesWorkSync
 
     private static class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdateWork>
     {
-        private final List<ChangedIds> changeList = new ArrayList<>();
+        private final ChangedIds changes;
         private final PageCacheTracer cacheTracer;
 
         IdGeneratorUpdateWork( ChangedIds changes, PageCacheTracer cacheTracer )
         {
             this.cacheTracer = cacheTracer;
-            this.changeList.add( changes );
+            this.changes = changes;
         }
 
         @Override
         public IdGeneratorUpdateWork combine( IdGeneratorUpdateWork work )
         {
-            changeList.addAll( work.changeList );
+            changes.createdIds.addAll( work.changes.createdIds );
+            changes.deleteIds.addAll( work.changes.deleteIds );
             return this;
         }
 
@@ -198,10 +178,8 @@ public class IdGeneratorUpdatesWorkSync
                     var cursorContext = new CursorContext( cursorTracer );
                     IdGenerator.Marker marker = idGenerator.marker( cursorContext ) )
             {
-                for ( ChangedIds changes : this.changeList )
-                {
-                    changes.accept( marker );
-                }
+                marker.markUsedBatch( changes.createdIds );
+                marker.markDeletedBatch( changes.deleteIds );
             }
         }
     }

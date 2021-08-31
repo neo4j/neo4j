@@ -30,7 +30,7 @@ import org.neo4j.internal.id.IdController;
  * Creating a snapshot creates a list and one additional book keeping object per open transaction.
  * No thread doing normal transaction work should create snapshots, only threads that monitor transactions.
  */
-public class KernelTransactionsSnapshot implements IdController.ConditionSnapshot
+public class KernelTransactionsSnapshot implements IdController.IdFreeCondition
 {
     private Tx relevantTransactions;
 
@@ -57,7 +57,7 @@ public class KernelTransactionsSnapshot implements IdController.ConditionSnapsho
     }
 
     @Override
-    public boolean conditionMet()
+    public boolean eligibleForFreeing()
     {
         while ( relevantTransactions != null )
         {

@@ -30,29 +30,22 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public interface IdController extends Lifecycle
 {
     /**
-     * Essentially a snapshot of whatever data this {@link IdController} needs to decide whether or not
-     * a batch of ids can be released, in maintenance. For a concrete example it can be a snapshot of
-     * ongoing transactions. Then given that snapshot {@link #conditionMet()} would check whether or not
-     * all of those transactions from the snapshot were closed.
+     * Essentially a condition to check whether or not the {@link IdController} can free a batch of IDs, in maintenance.
+     * For a concrete example it can be a snapshot of ongoing transactions. Then given that snapshot {@link #eligibleForFreeing()}
+     * would check whether or not all of those transactions from the snapshot were closed.
      */
-    interface ConditionSnapshot
+    interface IdFreeCondition
     {
         /**
-         * @return whether or not the condition in this snapshot has been met so that maintenance can
-         * release a specific batch of ids.
+         * @return whether or not the condition for freeing has been met so that maintenance can free a specific batch of ids.
          */
-        boolean conditionMet();
+        boolean eligibleForFreeing();
     }
-
-    /**
-     * Clear underlying id generation infrastructure (clear buffer of ids to reuse, reset buffers, etc.)
-     */
-    void clear();
 
     /**
      * Perform ids related maintenance.
      */
     void maintenance();
 
-    void initialize( Supplier<ConditionSnapshot> conditionSnapshotSupplier );
+    void initialize( Supplier<IdFreeCondition> conditionSupplier );
 }

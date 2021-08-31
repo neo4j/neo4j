@@ -27,32 +27,40 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
-import org.neo4j.internal.id.IdController.ConditionSnapshot;
+import org.neo4j.internal.id.IdController.IdFreeCondition;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class BufferingIdGeneratorFactoryTest
@@ -103,42 +111,104 @@ class BufferingIdGeneratorFactoryTest
     }
 
     @Test
-    void shouldDelayFreeingOfDeletedIdsUntilCheckpoint()
+    void shouldHandleDeletingAndFreeingConcurrently()
     {
-        // WHEN
-        try ( Marker marker = idGenerator.marker( NULL ) )
+        // given
+        AtomicLong nextId = new AtomicLong();
+        AtomicInteger numMaintenanceCalls = new AtomicInteger();
+        Race race = new Race().withEndCondition( () -> numMaintenanceCalls.get() >= 10 && nextId.get() >= 1_000 );
+        race.addContestants( 4, () ->
         {
-            marker.markDeleted( 7, 1 );
+            int numIds = ThreadLocalRandom.current().nextInt( 1, 5 );
+            try ( Marker marker = idGenerator.marker( NULL ) )
+            {
+                for ( int i = 0; i < numIds; i++ )
+                {
+                    marker.markDeleted( nextId.getAndIncrement(), 1 );
+                }
+            }
+        } );
+        List<ControllableIdFreeCondition> conditions = new ArrayList<>();
+        race.addContestant( throwing( () ->
+        {
+            bufferingIdGeneratorFactory.maintenance( NULL );
+            if ( boundaries.mostRecentlyReturned == null )
+            {
+                return;
+            }
+
+            ControllableIdFreeCondition condition = boundaries.mostRecentlyReturned;
+            boundaries.mostRecentlyReturned = null;
+            if ( ThreadLocalRandom.current().nextBoolean() )
+            {
+                // Chance to let this condition be true immediately
+                condition.enable();
+            }
+            if ( ThreadLocalRandom.current().nextBoolean() )
+            {
+                // Chance to enable a previously disabled condition
+                for ( ControllableIdFreeCondition olderCondition : conditions )
+                {
+                    if ( !olderCondition.eligibleForFreeing() )
+                    {
+                        olderCondition.enable();
+                        break;
+                    }
+                }
+            }
+            conditions.add( condition );
+            numMaintenanceCalls.incrementAndGet();
+        } ) );
+
+        // when
+        race.goUnchecked();
+        for ( ControllableIdFreeCondition condition : conditions )
+        {
+            condition.enable();
         }
-        verify( actual.markers.get( TestIdType.TEST ) ).markDeleted( 7, 1 );
-        verify( actual.markers.get( TestIdType.TEST ) ).close();
-        verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
-
-        // after some maintenance and transaction still not closed
-        idGenerator.checkpoint( NULL );
-        verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
-
-        // although after transactions have all closed
-        boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        idGenerator.checkpoint( NULL );
-
-        // THEN
-        verify( actual.markers.get( TestIdType.TEST ) ).markFree( 7, 1 );
+        boundaries.automaticallyEnableConditions = true;
+        bufferingIdGeneratorFactory.maintenance( NULL );
+        for ( long id = 0; id < nextId.get(); id++ )
+        {
+            verify( actual.markers.get( TestIdType.TEST ), times( 1 ) ).markFree( id, 1 );
+        }
     }
 
-    private static class ControllableSnapshotSupplier implements Supplier<ConditionSnapshot>
+    private static class ControllableSnapshotSupplier implements Supplier<IdFreeCondition>
     {
-        ConditionSnapshot mostRecentlyReturned;
+        boolean automaticallyEnableConditions;
+        volatile ControllableIdFreeCondition mostRecentlyReturned;
 
         @Override
-        public ConditionSnapshot get()
+        public IdFreeCondition get()
         {
-            return mostRecentlyReturned = mock( ConditionSnapshot.class );
+            return mostRecentlyReturned = new ControllableIdFreeCondition( automaticallyEnableConditions );
         }
 
         void setMostRecentlyReturnedSnapshotToAllClosed()
         {
-            when( mostRecentlyReturned.conditionMet() ).thenReturn( true );
+            mostRecentlyReturned.enable();
+        }
+    }
+
+    private static class ControllableIdFreeCondition implements IdFreeCondition
+    {
+        private volatile boolean conditionMet;
+
+        ControllableIdFreeCondition( boolean enabled )
+        {
+            conditionMet = enabled;
+        }
+
+        void enable()
+        {
+            conditionMet = true;
+        }
+
+        @Override
+        public boolean eligibleForFreeing()
+        {
+            return conditionMet;
         }
     }
 

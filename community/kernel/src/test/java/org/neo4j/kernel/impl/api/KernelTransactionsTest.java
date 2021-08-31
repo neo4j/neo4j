@@ -236,21 +236,21 @@ class KernelTransactionsTest
         KernelTransaction a = getKernelTransaction( transactions );
         KernelTransaction b = getKernelTransaction( transactions );
         KernelTransaction c = getKernelTransaction( transactions );
-        IdController.ConditionSnapshot snapshot = transactions.get();
-        assertFalse( snapshot.conditionMet() );
+        IdController.IdFreeCondition snapshot = transactions.get();
+        assertFalse( snapshot.eligibleForFreeing() );
 
         // WHEN a gets closed
         a.close();
-        assertFalse( snapshot.conditionMet() );
+        assertFalse( snapshot.eligibleForFreeing() );
 
         // WHEN c gets closed and (test knowing too much) that instance getting reused in another transaction "d".
         c.close();
         KernelTransaction d = getKernelTransaction( transactions );
-        assertFalse( snapshot.conditionMet() );
+        assertFalse( snapshot.eligibleForFreeing() );
 
         // WHEN b finally gets closed
         b.close();
-        assertTrue( snapshot.conditionMet() );
+        assertTrue( snapshot.eligibleForFreeing() );
     }
 
     @Test
@@ -261,7 +261,7 @@ class KernelTransactionsTest
         Race race = new Race();
         final int threads = 50;
         final AtomicBoolean end = new AtomicBoolean();
-        final AtomicReferenceArray<IdController.ConditionSnapshot> snapshots = new AtomicReferenceArray<>( threads );
+        final AtomicReferenceArray<IdController.IdFreeCondition> snapshots = new AtomicReferenceArray<>( threads );
 
         // Representing "transaction" threads
         for ( int i = 0; i < threads; i++ )
@@ -297,8 +297,8 @@ class KernelTransactionsTest
             while ( snapshotsLeft > 0 )
             {
                 int threadIndex = random.nextInt( threads );
-                IdController.ConditionSnapshot snapshot = snapshots.get( threadIndex );
-                if ( snapshot != null && snapshot.conditionMet() )
+                IdController.IdFreeCondition snapshot = snapshots.get( threadIndex );
+                if ( snapshot != null && snapshot.eligibleForFreeing() )
                 {
                     snapshotsLeft--;
                     snapshots.set( threadIndex, null );

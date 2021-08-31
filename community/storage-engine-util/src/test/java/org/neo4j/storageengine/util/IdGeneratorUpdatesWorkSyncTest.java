@@ -19,17 +19,20 @@
  */
 package org.neo4j.storageengine.util;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class IdGeneratorUpdatesWorkSyncTest
@@ -40,7 +43,7 @@ class IdGeneratorUpdatesWorkSyncTest
         // given
         IdGeneratorUpdatesWorkSync workSync = new IdGeneratorUpdatesWorkSync();
         IdGenerator idGenerator = mock( IdGenerator.class );
-        IdGenerator.Marker marker = mock( IdGenerator.Marker.class );
+        RecordingMarker marker = new RecordingMarker();
         when( idGenerator.marker( any() ) ).thenReturn( marker );
         workSync.add( idGenerator );
 
@@ -53,9 +56,47 @@ class IdGeneratorUpdatesWorkSyncTest
         batch.apply( PageCacheTracer.NULL );
 
         // then
-        verify( marker ).markUsed( 10, 1 );
-        verify( marker ).markDeleted( 11, 1 );
-        verify( marker ).markUsed( 270, 4 );
-        verify( marker ).markDeleted( 513, 7 );
+        assertThat( marker.used( 10, 1 ) ).isTrue();
+        assertThat( marker.deleted( 11, 1 ) ).isTrue();
+        assertThat( marker.used( 270, 4 ) ).isTrue();
+        assertThat( marker.deleted( 513, 7 ) ).isTrue();
+    }
+
+    private static class RecordingMarker implements IdGenerator.Marker
+    {
+        private final Set<Pair<Long,Integer>> used = new HashSet<>();
+        private final Set<Pair<Long,Integer>> deleted = new HashSet<>();
+
+        @Override
+        public void markUsed( long id, int numberOfIds )
+        {
+            used.add( Pair.of( id, numberOfIds ) );
+        }
+
+        @Override
+        public void markDeleted( long id, int numberOfIds )
+        {
+            deleted.add( Pair.of( id, numberOfIds ) );
+        }
+
+        @Override
+        public void markFree( long id, int numberOfIds )
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        boolean used( long id, int numberOfIds )
+        {
+            return used.contains( Pair.of( id, numberOfIds ) );
+        }
+
+        boolean deleted( long id, int numberOfIds )
+        {
+            return deleted.contains( Pair.of( id, numberOfIds ) );
+        }
     }
 }

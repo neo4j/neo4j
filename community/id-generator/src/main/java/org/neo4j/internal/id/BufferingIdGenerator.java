@@ -19,27 +19,29 @@
  */
 package org.neo4j.internal.id;
 
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
+
+import java.util.List;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 
 import static org.neo4j.internal.id.IdUtils.combinedIdAndNumberOfIds;
-import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
-import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
 {
-    private DelayedBuffer<IdController.ConditionSnapshot> buffer;
+    private MutableLongList bufferedDeletedIds;
 
     BufferingIdGenerator( IdGenerator delegate )
     {
         super( delegate );
+        newFreeBuffer();
     }
 
-    void initialize( Supplier<IdController.ConditionSnapshot> boundaries, Predicate<IdController.ConditionSnapshot> safeThreshold )
+    private void newFreeBuffer()
     {
-        buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, new FreeIdChunkConsumer() );
+        bufferedDeletedIds = LongLists.mutable.empty();
     }
 
     @Override
@@ -60,7 +62,20 @@ class BufferingIdGenerator extends IdGenerator.Delegate
             {
                 // Run these by the buffering too
                 actual.markDeleted( id, numberOfIds );
-                buffer.offer( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
+                synchronized ( BufferingIdGenerator.this )
+                {
+                    bufferedDeletedIds.add( combinedIdAndNumberOfIds( id, numberOfIds ) );
+                }
+            }
+
+            @Override
+            public void markDeletedBatch( LongList ids )
+            {
+                actual.markDeletedBatch( ids );
+                synchronized ( BufferingIdGenerator.this )
+                {
+                    bufferedDeletedIds.addAll( ids );
+                }
             }
 
             @Override
@@ -77,60 +92,12 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         };
     }
 
-    @Override
-    public void maintenance( CursorContext cursorContext )
+    synchronized void collectBufferedIds( List<BufferingIdGeneratorFactory.IdBuffer> idBuffers )
     {
-        // Check and potentially release ids onto the IdGenerator
-        buffer.maintenance( cursorContext );
-
-        // Do IdGenerator maintenance, typically ensure ID cache is full
-        super.maintenance( cursorContext );
-    }
-
-    @Override
-    public void clearCache( CursorContext cursorContext )
-    {
-        buffer.clear();
-
-        super.clearCache( cursorContext );
-    }
-
-    void clear()
-    {
-        buffer.clear();
-    }
-
-    @Override
-    public void checkpoint( CursorContext cursorContext )
-    {
-        // Flush buffered data to consumer
-        buffer.maintenance( cursorContext );
-        super.checkpoint( cursorContext );
-    }
-
-    @Override
-    public void close()
-    {
-        if ( buffer != null )
+        if ( !bufferedDeletedIds.isEmpty() )
         {
-            buffer.close();
-            buffer = null;
-        }
-        super.close();
-    }
-
-    private class FreeIdChunkConsumer implements ChunkConsumer
-    {
-        @Override
-        public void consume( long[] freedIds, CursorContext cursorContext )
-        {
-            try ( Marker reuseMarker = BufferingIdGenerator.super.marker( cursorContext ) )
-            {
-                for ( long freedId : freedIds )
-                {
-                    reuseMarker.markFree( idFromCombinedId( freedId ), numberOfIdsFromCombinedId( freedId ) );
-                }
-            }
+            idBuffers.add( new BufferingIdGeneratorFactory.IdBuffer( delegate, bufferedDeletedIds ) );
+            newFreeBuffer();
         }
     }
 }

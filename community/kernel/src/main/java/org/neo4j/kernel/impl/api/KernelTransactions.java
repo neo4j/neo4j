@@ -84,7 +84,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_d
  * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
-public class KernelTransactions extends LifecycleAdapter implements Supplier<IdController.ConditionSnapshot>
+public class KernelTransactions extends LifecycleAdapter implements Supplier<IdController.IdFreeCondition>
 {
     public static final long SYSTEM_TRANSACTION_ID = 0;
     private final Locks locks;
@@ -320,7 +320,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     }
 
     @Override
-    public IdController.ConditionSnapshot get()
+    public IdController.IdFreeCondition get()
     {
         return new KernelTransactionsSnapshot( activeTransactionsStamps() );
     }

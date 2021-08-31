@@ -245,12 +245,12 @@ class FreeIdScanner implements Closeable
 
     void queueSkippedHighId( long id, int numberOfIds )
     {
-        queuedSkippedHighIds.offer( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
+        queuedSkippedHighIds.offer( combinedIdAndNumberOfIds( id, numberOfIds ) );
     }
 
     void queueWastedCachedId( long id, int numberOfIds )
     {
-        queuedWastedCachedIds.offer( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
+        queuedWastedCachedIds.offer( combinedIdAndNumberOfIds( id, numberOfIds ) );
     }
 
     private void markIdsAsReserved( PendingIdQueue pendingIdQueue, CursorContext cursorContext )

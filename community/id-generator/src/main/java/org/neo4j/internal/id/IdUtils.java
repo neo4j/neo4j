@@ -21,26 +21,24 @@ package org.neo4j.internal.id;
 
 public class IdUtils
 {
-    // [usss,ssss][siii,iiii][iiii,iiii][iiii,iiii] [iiii,iiii][iiii,iiii][iiii,iiii][iiii,iiii]
-    private static final long MASK_USED = 0x80000000_00000000L;
+    // [ssss,ssss][iiii,iiii][iiii,iiii][iiii,iiii] [iiii,iiii][iiii,iiii][iiii,iiii][iiii,iiii]
     private static final int NUM_BITS_NUMBER_OF_IDS = 8;
-    private static final int SHIFT_NUMBER_OF_IDS = Long.SIZE - 1 - NUM_BITS_NUMBER_OF_IDS;
+    private static final int SHIFT_NUMBER_OF_IDS = Long.SIZE - NUM_BITS_NUMBER_OF_IDS;
     private static final long MASK_NUMBER_OF_IDS = ((1L << NUM_BITS_NUMBER_OF_IDS) - 1) << SHIFT_NUMBER_OF_IDS;
-    private static final long MASK_ID = ~(MASK_USED | MASK_NUMBER_OF_IDS);
+    private static final long MASK_ID = ~MASK_NUMBER_OF_IDS;
 
     static final long MAX_ID = MASK_ID;
     static final int MAX_NUMBER_OF_IDS = 1 << NUM_BITS_NUMBER_OF_IDS;
 
     /**
-     * Combines an starting ID, the number of IDs available and whether or not the IDs are used into a single {@code long} for convenience.
-     * This works with the assumption that IDs don't use the high 9 bits, something which is also verified in this call.
+     * Combines an starting ID, the number of IDs available into a single {@code long} for convenience.
+     * This works with the assumption that IDs don't use the high 8 bits, something which is also verified in this call.
      *
      * @param id the ID, or for numberOfIds > 1 the starting ID.
      * @param numberOfIds number of IDs including the given ID this is about.
-     * @param used whether or not the ID(s) are used.
      * @return ID, number of IDs and used combined into a single {@code long}.
      */
-    public static long combinedIdAndNumberOfIds( long id, int numberOfIds, boolean used )
+    public static long combinedIdAndNumberOfIds( long id, int numberOfIds )
     {
         int storedNumberOfIds = numberOfIds - 1;
         if ( (id & ~MASK_ID) != 0 )
@@ -51,7 +49,7 @@ public class IdUtils
         {
             throw new IllegalArgumentException( "Number of IDs " + numberOfIds + " is too big" );
         }
-        return id | (((long) storedNumberOfIds) << SHIFT_NUMBER_OF_IDS) | (used ? MASK_USED : 0);
+        return id | (((long) storedNumberOfIds) << SHIFT_NUMBER_OF_IDS);
     }
 
     public static long idFromCombinedId( long combinedId )
@@ -62,10 +60,5 @@ public class IdUtils
     public static int numberOfIdsFromCombinedId( long combinedId )
     {
         return (int) ((combinedId & MASK_NUMBER_OF_IDS) >>> SHIFT_NUMBER_OF_IDS) + 1;
-    }
-
-    public static boolean usedFromCombinedId( long combined )
-    {
-        return (combined & MASK_USED) != 0;
     }
 }

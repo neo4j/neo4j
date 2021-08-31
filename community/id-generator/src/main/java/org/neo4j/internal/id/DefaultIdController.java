@@ -34,17 +34,12 @@ public class DefaultIdController extends LifecycleAdapter implements IdControlle
     }
 
     @Override
-    public void clear()
-    {
-    }
-
-    @Override
     public void maintenance()
     {
     }
 
     @Override
-    public void initialize( Supplier<ConditionSnapshot> conditionSnapshotSupplier )
+    public void initialize( Supplier<IdFreeCondition> conditionSupplier )
     {
     }
 }
