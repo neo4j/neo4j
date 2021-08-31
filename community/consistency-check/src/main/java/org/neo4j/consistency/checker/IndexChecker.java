@@ -34,8 +34,6 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
-import org.neo4j.internal.recordstorage.RecordNodeCursor;
-import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -214,7 +212,8 @@ public class IndexChecker implements Checker
                 {
                     Value[] left = lastValues[i];
                     Value[] right = firstValues[i + 1];
-                    if ( Arrays.equals( left, right ) )
+                    // Skip any empty partition - can be empty if all entries in a partition of the index were for nodes outside of the current range.
+                    if ( left != null && right != null && Arrays.equals( left, right ) )
                     {
                         long leftEntityId = lastEntityIds[i];
                         long rightEntityId = firstEntityIds[i + 1];
