@@ -310,6 +310,12 @@ class SocketAddressParserTest
         assertTrue( unspecified.getPort() < 0 );
     }
 
+    @Test
+    void shouldNotAllowURIs()
+    {
+        assertThrows( IllegalArgumentException.class, () -> SocketAddressParser.socketAddress( "neo4j://18.117.195.94:7687", SocketAddress::new ) );
+    }
+
     private static String whitespace( int numberOfWhitespaces )
     {
         return " ".repeat( numberOfWhitespaces );

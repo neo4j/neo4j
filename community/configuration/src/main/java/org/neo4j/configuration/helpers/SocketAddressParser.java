@@ -77,6 +77,13 @@ public class SocketAddressParser
             throw new IllegalArgumentException( "Cannot parse socket address from null" );
         }
 
+        if ( settingValue.contains( "://" ) )
+        {
+            throw new IllegalArgumentException( format(
+                    "Configured socket address seems to be an URI. The socket address must be in the format " +
+                    "\"hostname:port\", \"hostname\" or \":port\". \"%s\" does not conform to these formats", settingValue ) );
+        }
+
         settingValue = settingValue.trim();
 
         T socketAddress;
@@ -97,7 +104,7 @@ public class SocketAddressParser
 
         throw new IllegalArgumentException( format(
                 "Configured socket address must be in the format " +
-                "\"hostname:port\". \"%s\" does not conform to this format", settingValue ) );
+                "\"hostname:port\", \"hostname\" or \":port\". \"%s\" does not conform to these formats", settingValue ) );
     }
 
     private static <T extends SocketAddress> T matchHostname( String settingValue, int defaultPort, BiFunction<String,Integer,T> constructor )

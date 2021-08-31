@@ -468,7 +468,7 @@ public final class SettingValueParsers
         @Override
         public String getDescription()
         {
-            return "a socket address";
+            return "a socket address in the format 'hostname:port', 'hostname' or ':port'";
         }
 
         @Override

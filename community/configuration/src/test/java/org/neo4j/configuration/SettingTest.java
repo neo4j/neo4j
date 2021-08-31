@@ -681,7 +681,8 @@ class SettingTest
         tests.add( dynamicTest( "Test int dependency description",
                 () -> testDescDependency( INT, "setting.child, an integer. If unset the value is inherited from setting.parent" ) ) );
         tests.add( dynamicTest( "Test socket dependency description", () -> testDescDependency( SOCKET_ADDRESS,
-                "setting.child, a socket address. If missing port or hostname it is acquired from setting.parent" ) ) );
+                "setting.child, a socket address in the format 'hostname:port', 'hostname' or ':port'. " +
+                "If missing port or hostname it is acquired from setting.parent" ) ) );
         tests.add( dynamicTest( "Test path dependency description",
                 () -> testDescDependency( PATH, "setting.child, a path. If relative it is resolved from setting.parent" ) ) );
         return tests;
