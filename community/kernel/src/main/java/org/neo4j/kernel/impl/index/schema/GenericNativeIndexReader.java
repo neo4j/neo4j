@@ -154,6 +154,12 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
                     treeKeyTo.stateSlot( i ).writePointDerived( crs, range.max + 1, HIGH );
                     needsFiltering = true;
                 }
+                else if ( predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY )
+                {
+                    treeKeyFrom.initValueAsLowest( i, ValueGroup.GEOMETRY_ARRAY );
+                    treeKeyTo.initValueAsHighest( i, ValueGroup.GEOMETRY_ARRAY );
+                    needsFiltering = true;
+                }
                 else
                 {
                     RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;
@@ -239,5 +245,4 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
     {
         return predicate instanceof PropertyIndexQuery.GeometryRangePredicate;
     }
-
 }
