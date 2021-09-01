@@ -122,8 +122,6 @@ class QueryState(val query: QueryContext,
     // Reusing the expressionVariables should work as long as we do not implement parallelism
     val newExpressionVariables = expressionVariables
 
-    // We want to PROFILE to include sub-transactions as well.
-    // TODO test that this works with all kinds of decorators
     val newDecorator = decorator
 
     // Reusing the IN cache should work as long as we do not implement parallelism
