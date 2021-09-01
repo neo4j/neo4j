@@ -28,18 +28,26 @@ import org.junit.jupiter.api.parallel.Resources;
 import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.DataStatistics;
 import org.neo4j.internal.batchimport.ImportLogic;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.batchimport.NodeDegreeCountStage;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
+import org.neo4j.internal.batchimport.cache.PageCacheArrayFactoryMonitor;
+import org.neo4j.internal.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.DataGeneratorInput;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
+import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -53,8 +61,11 @@ import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
@@ -107,6 +118,30 @@ class HumanUnderstandableExecutionMonitorIT
             // then
             progress.assertAllProgressReachedEnd();
         }
+    }
+
+    @Test
+    void shouldStartFromNonFirstStage()
+    {
+        // given
+        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( HumanUnderstandableExecutionMonitor.NO_MONITOR );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( Input.knownEstimates( 10, 10, 10, 10, 10, 10, 10 ) );
+        BatchingNeoStores neoStores = mock( BatchingNeoStores.class );
+        NodeStore nodeStore = mock( NodeStore.class );
+        RelationshipStore relationshipStore = mock( RelationshipStore.class );
+        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
+        when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
+        dependencies.satisfyDependency( neoStores );
+        dependencies.satisfyDependency( IdMappers.actual() );
+        dependencies.satisfyDependency( mock( PageCacheArrayFactoryMonitor.class ) );
+        dependencies.satisfyDependency( new DataStatistics( 10, 10, new DataStatistics.RelationshipTypeCount[0] ) );
+        monitor.initialize( dependencies );
+
+        // when/then
+        StageExecution execution = mock( StageExecution.class );
+        when( execution.getStageName() ).thenReturn( NodeDegreeCountStage.NAME );
+        assertThatCode( () -> monitor.start( execution ) ).doesNotThrowAnyException();
     }
 
     private static class CapturingMonitor implements HumanUnderstandableExecutionMonitor.Monitor
