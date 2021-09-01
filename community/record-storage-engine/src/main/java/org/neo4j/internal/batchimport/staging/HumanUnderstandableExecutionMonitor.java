@@ -122,7 +122,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         Input.Estimates estimates = dependencyResolver.resolveDependency( Input.Estimates.class );
         BatchingNeoStores neoStores = dependencyResolver.resolveDependency( BatchingNeoStores.class );
         IdMapper idMapper = dependencyResolver.resolveDependency( IdMapper.class );
-        NodeRelationshipCache nodeRelationshipCache = dependencyResolver.resolveDependency( NodeRelationshipCache.class );
         pageCacheArrayFactoryMonitor = dependencyResolver.resolveDependency( PageCacheArrayFactoryMonitor.class );
 
         long biggestCacheMemory = estimatedCacheSize( neoStores,
@@ -197,7 +196,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             // - forward linking
             initializeLinking(
                     dependencyResolver.resolveDependency( BatchingNeoStores.class ),
-                    dependencyResolver.resolveDependency( NodeRelationshipCache.class ),
                     dependencyResolver.resolveDependency( DataStatistics.class ) );
         }
         else if ( execution.getStageName().equals( CountGroupsStage.NAME ) )
@@ -223,7 +221,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private void endPrevious()
     {
         updateProgress( goal );
-        System.out.printf( "%s COMPLETED in %s%n%n", currentStage.description(), duration( currentTimeMillis() - stageStartTime ) );
+        if ( currentStage != null )
+        {
+            System.out.printf( "%s COMPLETED in %s%n%n", currentStage.description(), duration( currentTimeMillis() - stageStartTime ) );
+        }
     }
 
     private void initializeNodeImport( Input.Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores )
@@ -262,8 +263,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         initializeProgress( numberOfRelationships, ImportStage.relationshipImport );
     }
 
-    private void initializeLinking( BatchingNeoStores neoStores,
-            NodeRelationshipCache nodeRelationshipCache, DataStatistics distribution )
+    private void initializeLinking( BatchingNeoStores neoStores, DataStatistics distribution )
     {
         startStage( ImportStage.linking,
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString(
