@@ -47,11 +47,23 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
   override def semanticCheck: SemanticCheck =
     part.semanticCheck chain
     periodicCommitHint.semanticCheck chain
+    disallowNonUpdatingInPeriodicCommit chain
+    disallowCallInTransactionsInPeriodicCommit
+
+  override def containsUpdates: Boolean = part.containsUpdates
+
+  private def disallowNonUpdatingInPeriodicCommit: SemanticCheck =
     when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
       SemanticError("Cannot use periodic commit in a non-updating query", periodicCommitHint.get.position)
     }
 
-  override def containsUpdates: Boolean = part.containsUpdates
+  private def disallowCallInTransactionsInPeriodicCommit: SemanticCheck =
+    when(periodicCommitHint.nonEmpty) {
+      SubqueryCall.findTransactionalSubquery(part) match {
+        case Some(subqueryCall) => SemanticError("CALL { ... } IN TRANSACTIONS in a PERIODIC COMMIT query is not supported", subqueryCall.position)
+        case None               => success
+      }
+    }
 }
 
 sealed trait QueryPart extends ASTNode with SemanticCheckable {
