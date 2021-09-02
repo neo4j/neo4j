@@ -23,9 +23,13 @@ import java.io.PrintWriter
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -413,6 +417,65 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("count")
       .withSingleRow(testRange.size.toLong)
       .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
+  }
+
+  test("should close open cursors on periodic commit - scenario") {
+    val url = multipleColumnCsvFile(withHeaders = true)
+
+    given {
+      nodeIndex("L", "prop")
+    }
+
+    val setupQuery = new LogicalQueryBuilder(this, hasLoadCsv = true)
+      .produceResults("a", "b")
+      .apply()
+      .|.merge(Seq(createNodeWithProperties("b", Seq("L"), "{prop: row.b}")), Seq(), Seq(), Seq(), Set())
+      .|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .eager()
+      .apply()
+      .|.merge(Seq(createNodeWithProperties("a", Seq("L"), "{prop: row.a}")), Seq(), Seq(), Seq(), Set())
+      .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .loadCSV(url, "row", HasHeaders, None)
+      .argument()
+      .build()
+
+    val setupResult = given {
+      val setupPlan = buildPlan(setupQuery, runtime)
+      val setupResult = execute(setupPlan, readOnly = false, periodicCommit = true)
+      consume(setupResult)
+      setupResult
+    }
+
+    setupResult should beColumns("a", "b")
+      .withRows(RowCount(testRange.size))
+      .withStatistics(nodesCreated = testRange.size * 2, labelsAdded = testRange.size * 2, propertiesSet = testRange.size * 2)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this,
+                                               hasLoadCsv = true,
+                                               periodicCommitBatchSize = Some(2))
+      .produceResults("r")
+      .apply()
+      .|.merge(Seq(), Seq(createRelationship("r", "a", "T", "b", OUTGOING)), Seq(), Seq(), Set("a", "b"))
+      .|.filter("a = aa", "b = bb")
+      .|.relationshipTypeScan("(aa)-[r:T]->(bb)", IndexOrderNone, "a", "b")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .loadCSV(url, "row", HasHeaders)
+      .argument()
+      .build()
+
+    val executablePlan = buildPlan(logicalQuery, runtime)
+
+    val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("r")
+      .withRows(RowCount(testRange.size))
+      .withStatistics(relationshipsCreated = testRange.size)
   }
 
   Seq(1, 2, 3, 4, testRange.size/5, testRange.size).foreach { explicitBatchSize =>

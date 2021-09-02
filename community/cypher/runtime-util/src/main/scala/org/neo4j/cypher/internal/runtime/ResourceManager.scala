@@ -92,6 +92,13 @@ object ResourceMonitor {
   }
 }
 
+/**
+ * Used by LoadCsvPeriodicCommitObserver to close all cursors in a cursor pool
+ */
+trait ResourceManagedCursorPool {
+  def closeCursors(): Unit
+}
+
 trait ResourcePool {
   def add(resource: AutoCloseablePlus): Unit
   def remove(resource: AutoCloseablePlus): Boolean

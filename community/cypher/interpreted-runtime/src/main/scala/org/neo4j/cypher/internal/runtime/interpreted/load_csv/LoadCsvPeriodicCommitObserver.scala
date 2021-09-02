@@ -23,6 +23,7 @@ import java.net.URL
 
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ResourceManagedCursorPool
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
@@ -65,6 +66,7 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
       // We want that, because they are still traced by the RuntimeResult and will be closed from there as well.
       case c: Cursor => c.closeInternal()
       case ec: ExpressionCursors => ec.closeInternal()
+      case cp: ResourceManagedCursorPool => cp.closeCursors()
       case e =>
         //save so that we can remove and re-add them
         trackedResources += e
