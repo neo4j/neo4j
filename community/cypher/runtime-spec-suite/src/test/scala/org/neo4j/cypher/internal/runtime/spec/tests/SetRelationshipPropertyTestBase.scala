@@ -380,4 +380,29 @@ abstract class SetRelationshipPropertyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p").withSingleRow(100L).withStatistics(propertiesSet = 1)
     property shouldBe "prop"
   }
+
+  test("should set relationship properties between two loops with continuation") {
+    val rels = given {
+      val (_, rs) = circleGraph(sizeHint)
+      rs.foreach(_.setProperty("prop", 0))
+      rs
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .setRelationshipProperty("r", "prop", "r.prop + 1")
+      .relationshipTypeScan("(n)-[r:R]->(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r")
+      .withRows(singleColumn(rels.flatMap(r => Seq.fill(10)(r))))
+      .withStatistics(propertiesSet = sizeHint)
+    rels.map(_.getProperty("prop")).foreach(i => i should equal(1))
+  }
 }
