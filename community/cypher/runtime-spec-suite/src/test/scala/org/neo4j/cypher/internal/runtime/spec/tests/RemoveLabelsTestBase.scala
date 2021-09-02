@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -28,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 
+import java.util
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
@@ -121,6 +120,28 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n", "labels")
       .withRows(expected)
       .withStatistics(labelsRemoved = nodeCount)
+  }
+
+  test("should not remove too many labels if setLabel is between two loops with continuation") {
+    val nodes = given {
+      nodeGraph(sizeHint, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .removeLabels("n", "Label")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
+      .withStatistics(labelsRemoved = sizeHint)
   }
 
   private def removeLabelsTest(removeLabels: Seq[String], expectedLabelsRemoved: Int): Unit = {
