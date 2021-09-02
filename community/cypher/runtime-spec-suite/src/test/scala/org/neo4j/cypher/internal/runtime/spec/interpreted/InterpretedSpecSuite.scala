@@ -139,11 +139,13 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SkipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SortTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubqueryForeachTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ThreadUnsafeExpressionTests
 import org.neo4j.cypher.internal.runtime.spec.tests.Top1WithTiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TopTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachDbHitsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachProfileRowsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TriadicSelectionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UndirectedRelationshipByIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnionTestBase
@@ -224,10 +226,12 @@ class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITIO
                                    with ProcedureCallDbHitsTestBase[CommunityRuntimeContext]
                                    with NestedPlanDbHitsTestBase[CommunityRuntimeContext]
                                    with NonFusedWriteOperatorsDbHitsTestBase[CommunityRuntimeContext]
+                                   with TransactionForeachDbHitsTestBase[CommunityRuntimeContext]
 class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, 1)
                                   with EagerLimitProfileRowsTestBase[CommunityRuntimeContext]
                                   with MergeProfileRowsTestBase[CommunityRuntimeContext]
                                   with NonParallelProfileRowsTestBase[CommunityRuntimeContext]
+                                  with TransactionForeachProfileRowsTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementTest extends MemoryManagementTestBase(COMMUNITY.EDITION, InterpretedRuntime)
                                       with FullSupportMemoryManagementTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementDisabledTest extends MemoryManagementDisabledTestBase(COMMUNITY.EDITION, InterpretedRuntime)

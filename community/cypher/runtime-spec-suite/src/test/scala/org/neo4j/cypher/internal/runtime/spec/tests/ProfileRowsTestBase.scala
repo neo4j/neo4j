@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -1798,40 +1797,6 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(1).rows() shouldBe 2 * aRels.size // project endpoints
     queryProfile.operatorProfile(2).rows() shouldBe aRels.size // input
   }
-
-  test("should profile rows of operations in transactionForeach") {
-    assume(runtime == InterpretedRuntime)
-
-    given (
-      nodeGraph(sizeHint),
-      KernelTransaction.Type.IMPLICIT
-    )
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .transactionForeach()
-      .|.emptyResult()
-      .|.create(createNode("n", "N"))
-      .|.allNodeScan("m")
-      .unwind("[1, 2] AS x")
-      .argument()
-      .build(readOnly = false)
-
-    // then
-    val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-
-    queryProfile.operatorProfile(0).rows() shouldBe  2 // produce results
-    queryProfile.operatorProfile(1).rows() shouldBe  2 // transactionForeach
-    queryProfile.operatorProfile(2).rows() shouldBe  0 // emptyResult
-    queryProfile.operatorProfile(3).rows() shouldBe  (1 + 2) * sizeHint // create
-    queryProfile.operatorProfile(4).rows() shouldBe  (1 + 2) * sizeHint // allNodeScan
-    queryProfile.operatorProfile(5).rows() shouldBe  2 // unwind
-    queryProfile.operatorProfile(6).rows() shouldBe  1 // argument
-  }
 }
 
 trait EagerLimitProfileRowsTestBase[CONTEXT <: RuntimeContext] {
@@ -2145,5 +2110,41 @@ trait MergeProfileRowsTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(0).rows() shouldBe 1 // produce results
     queryProfile.operatorProfile(1).rows() shouldBe 1 // merge
     queryProfile.operatorProfile(2).rows() shouldBe 0 // all nodes scan
+  }
+}
+
+trait TransactionForeachProfileRowsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileRowsTestBase[CONTEXT] =>
+
+  test("should profile rows of operations in transactionForeach") {
+    given (
+      nodeGraph(sizeHint),
+      KernelTransaction.Type.IMPLICIT
+    )
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.allNodeScan("m")
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    queryProfile.operatorProfile(0).rows() shouldBe  2 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe  2 // transactionForeach
+    queryProfile.operatorProfile(2).rows() shouldBe  0 // emptyResult
+    queryProfile.operatorProfile(3).rows() shouldBe  (1 + 2) * sizeHint // create
+    queryProfile.operatorProfile(4).rows() shouldBe  (1 + 2) * sizeHint // allNodeScan
+    queryProfile.operatorProfile(5).rows() shouldBe  2 // unwind
+    queryProfile.operatorProfile(6).rows() shouldBe  1 // argument
   }
 }

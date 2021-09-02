@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
@@ -488,8 +487,6 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
   }
 
   test("should profile memory of operators inside transactionForeach") {
-    assume(runtime == InterpretedRuntime)
-
     // given
     given (
       nodePropertyGraph(SIZE, {

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -847,40 +846,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (sizeHint * (1 /* read node */ + 2 * costOfProperty)) // produceresults
   }
-
-  test("should profile dbHits of populating nodes inside transactionForeach") {
-    assume(runtime == InterpretedRuntime)
-
-    given (
-      nodeGraph(sizeHint),
-      KernelTransaction.Type.IMPLICIT
-    )
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .transactionForeach()
-      .|.emptyResult()
-      .|.create(createNode("n", "N"))
-      .|.allNodeScan("m")
-      .unwind("[1, 2] AS x")
-      .argument()
-      .build(readOnly = false)
-
-    // then
-    val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
-    consume(runtimeResult)
-
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-
-    val numberOfAllNodeScans = 2
-    val numberOfNodesFoundByAllNodeScans = (1 + 2) * sizeHint
-    // allNodeScan is the 5th operator in the plan
-    val allNodeScanPlanId = 4
-    queryProfile.operatorProfile(allNodeScanPlanId).dbHits() should(
-      be (numberOfNodesFoundByAllNodeScans) or
-        be (numberOfNodesFoundByAllNodeScans + numberOfAllNodeScans)
-      )
-  }
 }
 
 trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
@@ -962,6 +927,43 @@ trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe OperatorProfile.NO_DATA // procedure call
     queryProfile.operatorProfile(2).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all node scan
+  }
+}
+
+trait TransactionForeachDbHitsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileDbHitsTestBase[CONTEXT] =>
+
+  test("should profile dbHits of populating nodes inside transactionForeach") {
+
+    given (
+      nodeGraph(sizeHint),
+      KernelTransaction.Type.IMPLICIT
+    )
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.allNodeScan("m")
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
+    consume(runtimeResult)
+
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val numberOfAllNodeScans = 2
+    val numberOfNodesFoundByAllNodeScans = (1 + 2) * sizeHint
+    // allNodeScan is the 5th operator in the plan
+    val allNodeScanPlanId = 4
+    queryProfile.operatorProfile(allNodeScanPlanId).dbHits() should(
+      be (numberOfNodesFoundByAllNodeScans) or
+        be (numberOfNodesFoundByAllNodeScans + numberOfAllNodeScans)
+      )
   }
 }
 
