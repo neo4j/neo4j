@@ -611,4 +611,29 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
     runtimeResult should beColumns("p1", "p2", "p3").withSingleRow(200, 300, null).withStatistics(propertiesSet = 3)
     properties shouldEqual Seq("prop1", "prop2", "prop3")
   }
+
+  test("should set relationship properties from map between two loops with continuation") {
+    val rels = given {
+      val (_, rs) = circleGraph(sizeHint)
+      rs.foreach(_.setProperty("prop", 0))
+      rs
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .setRelationshipPropertiesFromMap("r", "{prop: r.prop + 1}", removeOtherProps = true)
+      .relationshipTypeScan("(n)-[r:R]->(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r")
+      .withRows(singleColumn(rels.flatMap(r => Seq.fill(10)(r))))
+      .withStatistics(propertiesSet = sizeHint)
+    rels.map(_.getProperty("prop")).foreach(i => i should equal(1))
+  }
 }
