@@ -564,4 +564,27 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p1", "p2", "p3").withSingleRow(100, null, 400).withStatistics(propertiesSet = 3)
     properties shouldEqual Seq("prop1", "prop2", "prop3")
   }
+
+  test("should set properties from map between two loops with continuation") {
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {case _ => Map("prop" -> 0)})
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .setPropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = true)
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
+      .withStatistics(propertiesSet = sizeHint)
+    nodes.map(_.getProperty("prop")).foreach(i => i should equal(1))
+  }
 }
