@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.cypher.testing.api.CypherExecutorTransaction
+import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
@@ -52,7 +53,10 @@ case class FeatureDatabaseManagementService(private val databaseManagementServic
 
   def clearQueryCaches(): Unit = executionEngine.clearQueryCaches()
 
-  def begin(): CypherExecutorTransaction = cypherExecutor.begin()
+  def begin(): CypherExecutorTransaction = cypherExecutor.beginTransaction()
+
+  def execute[T](statement: String, parameters: Map[String, Object], converter: StatementResult => T): T =
+    cypherExecutor.execute(statement, parameters, converter)
 
   def shutdown(): Unit = {
     cypherExecutor.close()

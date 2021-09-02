@@ -199,9 +199,7 @@ Feature: CypherTransactionsAcceptance
       """
     Then the result should be, in any order:
       | nc |
-      | 3  |
-      | 3  |
-      | 3  |
+      | 9  |
     And the side effects should be:
       | +nodes  | 3 |
       | +labels | 1 |

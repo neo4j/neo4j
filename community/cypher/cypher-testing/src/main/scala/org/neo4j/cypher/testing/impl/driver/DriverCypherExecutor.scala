@@ -21,11 +21,20 @@ package org.neo4j.cypher.testing.impl.driver
 
 import org.neo4j.cypher.testing.api.CypherExecutor
 import org.neo4j.cypher.testing.api.CypherExecutorTransaction
+import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.driver.Session
+import org.neo4j.driver.TransactionConfig
+
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 case class DriverCypherExecutor(private val session: Session) extends CypherExecutor {
 
-  override def begin(): CypherExecutorTransaction = DriverTransaction(session.beginTransaction())
+  override def beginTransaction(): CypherExecutorTransaction = DriverTransaction(session.beginTransaction())
+
+  override def execute[T](queryToExecute: String,
+                          neo4jParams: Map[String, Object],
+                          converter: StatementResult => T): T =
+    converter(DriverStatementResult(session.run(queryToExecute, neo4jParams.asJava, TransactionConfig.empty())))
 
   override def close(): Unit = session.close()
 }

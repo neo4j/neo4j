@@ -20,6 +20,7 @@
 package org.neo4j.cypher.testing.api
 
 trait CypherExecutor extends AutoCloseable {
+  def execute[T](queryToExecute: String, neo4jParams: Map[String, Object], converter: StatementResult => T): T
 
-  def begin(): CypherExecutorTransaction
+  def beginTransaction(): CypherExecutorTransaction
 }

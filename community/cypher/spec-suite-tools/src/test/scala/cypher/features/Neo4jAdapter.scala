@@ -19,8 +19,6 @@
  */
 package cypher.features
 
-import java.lang.Boolean.TRUE
-
 import cypher.features.Neo4jExceptionToExecutionFailed.convert
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error
@@ -38,6 +36,7 @@ import org.opencypher.tools.tck.api.QueryType
 import org.opencypher.tools.tck.api.StringRecords
 import org.opencypher.tools.tck.values.CypherValue
 
+import java.lang.Boolean.TRUE
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.util.Failure
 import scala.util.Success
@@ -74,20 +73,14 @@ class Neo4jAdapter(var dbms: FeatureDatabaseManagementService,
   override def cypher(query: String, params: Map[String, CypherValue], meta: QueryType): Result = {
     val neo4jParams = params.mapValues(v => TCKValueToNeo4jValue(v))
 
-    var tx = dbms.begin()
     val queryToExecute = if (meta == ExecQuery) {
       s"$executionPrefix $query"
     } else query
-    Try(tx.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
+    Try(dbms.execute(queryToExecute, neo4jParams, convertResult)) match {
       case Success(converted) =>
-        Try(tx.commit()) match {
-          case Failure(exception) =>
-            convert(Phase.runtime, exception)
-          case Success(_)         => converted
-        }
+        converted
       case Failure(exception) =>
-        tx.rollback()
-        tx = dbms.begin()
+        val tx = dbms.begin()
         val explainedResult = Try(tx.execute(explainPrefix + queryToExecute, neo4jParams).consume())
         val phase = explainedResult match {
           case Failure(_) => Phase.compile
