@@ -316,9 +316,9 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     }
 
     static final String TIME_PATTERN = "(?:(?:(?<longHour>[0-9]{1,2})(?::(?<longMinute>[0-9]{1,2})"
-                                       + "(?::(?<longSecond>[0-9]{1,2})(?:\\.(?<longFraction>[0-9]{1,9}))?)?)?)|"
+                                       + "(?::(?<longSecond>[0-9]{1,2})(?:[\\.,](?<longFraction>[0-9]{1,9}))?)?)?)|"
                                        + "(?:(?<shortHour>[0-9]{2})(?:(?<shortMinute>[0-9]{2})"
-                                       + "(?:(?<shortSecond>[0-9]{2})(?:\\.(?<shortFraction>[0-9]{1,9}))?)?)?))";
+                                       + "(?:(?<shortSecond>[0-9]{2})(?:[\\.,](?<shortFraction>[0-9]{1,9}))?)?)?))";
     private static final Pattern PATTERN = Pattern.compile( "(?:T)?" + TIME_PATTERN );
 
     private static LocalTimeValue parse( Matcher matcher )

@@ -85,6 +85,28 @@ class DateTimeValueTest
         assertEquals(
                 datetime( date( 2015, 2, 1 ), time( 5, 6, 7, 123456789, UTC ) ),
                 parse( "2015-032T5:6:7.123456789Z", orFail ) );
+
+        assertEquals(
+                datetime( date( 2017, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
+                parse( "2017-12-17T17:14:35,123456789", inUTC ) );
+        assertEquals(
+                datetime( date( 2017, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
+                parse( "2017-12-17T17:14:35,123456789Z", orFail ) );
+        assertEquals(
+                datetime( date( 2017, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
+                parse( "2017-12-17T17:14:35,123456789+0000", orFail ) );
+        assertEquals(
+                datetime( date( 10000, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
+                parse( "+10000-12-17T17:14:35,123456789+0000", orFail ) );
+        assertEquals(
+                datetime( date( -1, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
+                parse( "-1-12-17T17:14:35,123456789+0000", orFail ) );
+        assertEquals(
+                datetime( date( 2015, 2, 1 ), time( 5, 6, 7, 123456789, UTC ) ),
+                parse( "2015-02T5:6:7,123456789Z", orFail ) );
+        assertEquals(
+                datetime( date( 2015, 2, 1 ), time( 5, 6, 7, 123456789, UTC ) ),
+                parse( "2015-032T5:6:7,123456789Z", orFail ) );
     }
 
     @Test
