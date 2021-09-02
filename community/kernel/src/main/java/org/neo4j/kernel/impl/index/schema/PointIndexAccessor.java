@@ -28,6 +28,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 class PointIndexAccessor extends NativeIndexAccessor<PointKey>
 {
@@ -67,5 +68,12 @@ class PointIndexAccessor extends NativeIndexAccessor<PointKey>
         Map<String,Value> map = new HashMap<>();
         spaceFillingCurveSettings.visitIndexSpecificSettings( new SpatialConfigVisitor( map ) );
         return map;
+    }
+
+    @Override
+    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy()
+    {
+        // Ignore everything except GEOMETRY values
+        return update -> update.values()[0].valueGroup() != ValueGroup.GEOMETRY;
     }
 }

@@ -52,7 +52,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
             IndexDescriptor descriptor )
     {
         super( databaseIndexContext, layout, indexFiles, descriptor );
-        singleUpdater = new NativeIndexUpdater<>( layout.newKey() );
+        singleUpdater = new NativeIndexUpdater<>( layout.newKey(), indexUpdateIgnoreStrategy() );
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE );
     }
 
@@ -76,6 +76,17 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    /**
+     * {@link IndexUpdateIgnoreStrategy Ignore strategy} to be used by index updater.
+     * Sub-classes are expected to override this method if they want to use something
+     * other than {@link IndexUpdateIgnoreStrategy#NO_IGNORE}.
+     * @return {@link IndexUpdateIgnoreStrategy} to be used by index updater.
+     */
+    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy()
+    {
+        return IndexUpdateIgnoreStrategy.NO_IGNORE;
     }
 
     @Override

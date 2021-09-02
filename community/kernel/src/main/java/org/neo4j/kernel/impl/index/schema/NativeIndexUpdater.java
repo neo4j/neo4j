@@ -32,14 +32,16 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRA
 class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdater
 {
     private final KEY treeKey;
+    private final IndexUpdateIgnoreStrategy ignoreStrategy;
     private final ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger = new ThrowingConflictDetector<>( true );
     private Writer<KEY,NullValue> writer;
 
     private boolean closed = true;
 
-    NativeIndexUpdater( KEY treeKey )
+    NativeIndexUpdater( KEY treeKey, IndexUpdateIgnoreStrategy ignoreStrategy )
     {
         this.treeKey = treeKey;
+        this.ignoreStrategy = ignoreStrategy;
     }
 
     NativeIndexUpdater<KEY> initialize( Writer<KEY,NullValue> writer )
@@ -59,6 +61,10 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
     {
         assertOpen();
         ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+        if ( ignoreStrategy.ignore( valueUpdate ) )
+        {
+            return;
+        }
         processUpdate( treeKey, valueUpdate, writer, conflictDetectingValueMerger );
     }
 

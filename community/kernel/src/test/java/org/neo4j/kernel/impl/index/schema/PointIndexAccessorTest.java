@@ -23,21 +23,27 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
@@ -65,7 +71,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
     private static final IndexDescriptor indexDescriptor = forSchema( forLabel( 42, 666 ) ).withIndexType( IndexType.POINT )
                                                                                            .withName( "index" ).materialise( 0 );
 
-    private final ValueType[] supportedTypes = new ValueType[]{CARTESIAN_POINT, CARTESIAN_POINT_3D, GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_3D};
+    private static final ValueType[] supportedTypes = new ValueType[]{CARTESIAN_POINT, CARTESIAN_POINT_3D, GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_3D};
     private final IndexLayoutFactory<PointKey> indexLayoutFactory = () -> new PointLayout( spaceFillingCurveSettings );
 
     @Override
@@ -116,18 +122,6 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
         }
     }
 
-    private static Stream<Arguments> unsupportedPredicates()
-    {
-        return Stream.of(
-                PropertyIndexQuery.exists( 0 ),
-                PropertyIndexQuery.range( 0, ValueGroup.UNKNOWN ),
-                PropertyIndexQuery.stringPrefix( 0, Values.stringValue( "myValue" ) ),
-                PropertyIndexQuery.stringSuffix( 0, Values.stringValue( "myValue" ) ),
-                PropertyIndexQuery.stringContains( 0, Values.stringValue( "myValue" ) ),
-                PropertyIndexQuery.fulltextSearch( "myValue" )
-        ).map( Arguments::of );
-    }
-
     @ParameterizedTest
     @MethodSource( "unsupportedOrders" )
     void readerShouldThrowOnUnsupportedOrder( IndexOrder indexOrder )
@@ -142,11 +136,58 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
         }
     }
 
+    @ParameterizedTest
+    @MethodSource( "unsupportedTypes" )
+    void updaterShouldIgnoreUnsupportedTypes( ValueType unsupportedType ) throws Exception
+    {
+        // Given
+        // Empty index
+        try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+        {
+            assertThat( reader.iterator().hasNext() ).as( "has values" ).isFalse();
+        }
+
+        // When
+        // Processing unsupported values
+        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+        {
+            // Then
+            // We should not throw
+            Value unsupportedValue = random.nextValue( unsupportedType );
+            updater.process( IndexEntryUpdate.add( random.nextInt(), indexDescriptor, unsupportedValue ) );
+        }
+
+        // And then
+        // Index should still be empty
+        try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+        {
+            assertThat( reader.iterator().hasNext() ).as( "has values" ).isFalse();
+        }
+    }
+
+    private static Stream<Arguments> unsupportedPredicates()
+    {
+        return Stream.of(
+                PropertyIndexQuery.exists( 0 ),
+                PropertyIndexQuery.range( 0, ValueGroup.UNKNOWN ),
+                PropertyIndexQuery.stringPrefix( 0, Values.stringValue( "myValue" ) ),
+                PropertyIndexQuery.stringSuffix( 0, Values.stringValue( "myValue" ) ),
+                PropertyIndexQuery.stringContains( 0, Values.stringValue( "myValue" ) ),
+                PropertyIndexQuery.fulltextSearch( "myValue" )
+        ).map( Arguments::of );
+    }
+
     private static Stream<Arguments> unsupportedOrders()
     {
         return Stream.of(
                 IndexOrder.DESCENDING,
                 IndexOrder.ASCENDING
         ).map( Arguments::of );
+    }
+
+    private static Stream<ValueType> unsupportedTypes()
+    {
+        return Arrays.stream( ValueType.values() )
+                .filter( type -> !ArrayUtil.contains( supportedTypes, type ) );
     }
 }
