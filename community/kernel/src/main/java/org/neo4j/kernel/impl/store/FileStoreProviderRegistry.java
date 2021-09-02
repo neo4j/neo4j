@@ -17,21 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
-
-import java.io.IOException;
-import java.util.Collection;
-
-import org.neo4j.graphdb.Resource;
-import org.neo4j.storageengine.api.StoreFileMetadata;
+package org.neo4j.kernel.impl.store;
 
 @FunctionalInterface
-public interface StoreFileProvider
+public interface FileStoreProviderRegistry
 {
-    /**
-     * @param fileMetadataCollection the collection to add the files to
-     * @return A {@link Resource} that should be closed when we are done working with the files added to the collection
-     * @throws IOException if the provider is unable to prepare the file listing
-     */
-    Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException;
+    FileStoreProviderRegistry EMPTY = provider -> {};
+
+    void registerStoreFileProvider( StoreFileProvider provider );
 }

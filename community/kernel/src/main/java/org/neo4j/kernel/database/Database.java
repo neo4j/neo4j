@@ -131,7 +131,7 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLog
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
-import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
+import org.neo4j.kernel.impl.store.StoreFileListing;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -809,8 +809,8 @@ public class Database extends LifecycleAdapter
 
         life.add( kernel );
 
-        final DatabaseFileListing fileListing =
-                new DatabaseFileListing( databaseLayout, logFiles, indexingService, storageEngine, idGeneratorFactory );
+        final StoreFileListing fileListing =
+                new StoreFileListing( databaseLayout, logFiles, indexingService, storageEngine, idGeneratorFactory );
         databaseDependencies.satisfyDependency( fileListing );
 
         return new DatabaseKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
@@ -980,7 +980,7 @@ public class Database extends LifecycleAdapter
 
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
-        DatabaseFileListing.StoreFileListingBuilder fileListingBuilder = getDatabaseFileListing().builder();
+        StoreFileListing.Builder fileListingBuilder = getStoreFileListing().builder();
         fileListingBuilder.excludeIdFiles();
         if ( !includeLogs )
         {
@@ -989,7 +989,7 @@ public class Database extends LifecycleAdapter
         return fileListingBuilder.build();
     }
 
-    public DatabaseFileListing getDatabaseFileListing()
+    public StoreFileListing getStoreFileListing()
     {
         return kernelModule.fileListing();
     }

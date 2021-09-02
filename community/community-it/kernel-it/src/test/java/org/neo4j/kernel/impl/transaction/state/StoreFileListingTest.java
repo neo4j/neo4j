@@ -42,6 +42,8 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.store.StoreFileListing;
+import org.neo4j.kernel.impl.store.StoreFileProvider;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -63,7 +65,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles.DEFAULT_FILENAME_FILTER;
 
 @DbmsExtension
-class DatabaseFileListingTest
+class StoreFileListingTest
 {
     @Inject
     private GraphDatabaseAPI db;
@@ -131,8 +133,8 @@ class DatabaseFileListingTest
         filesInStoreDirAre( databaseLayout, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
-        DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles,
-                indexingService, storageEngine, idGeneratorFactory );
+        StoreFileListing fileListing = new StoreFileListing( databaseLayout, logFiles,
+                                                             indexingService, storageEngine, idGeneratorFactory );
 
         ResourceIterator<Path> indexSnapshot = indexFilesAre( indexingService, new String[]{"schema/index/my.index"} );
 
@@ -218,11 +220,11 @@ class DatabaseFileListingTest
     @Test
     void doNotListFilesFromAdditionalProviderThatRegisterTwice() throws IOException
     {
-        DatabaseFileListing databaseFileListing = database.getDatabaseFileListing();
+        StoreFileListing storeFileListing = database.getStoreFileListing();
         MarkerFileProvider provider = new MarkerFileProvider();
-        databaseFileListing.registerStoreFileProvider( provider );
-        databaseFileListing.registerStoreFileProvider( provider );
-        ResourceIterator<StoreFileMetadata> metadataResourceIterator = databaseFileListing.builder().build();
+        storeFileListing.registerStoreFileProvider( provider );
+        storeFileListing.registerStoreFileProvider( provider );
+        ResourceIterator<StoreFileMetadata> metadataResourceIterator = storeFileListing.builder().build();
         assertEquals( 1, metadataResourceIterator.stream().filter( metadata -> "marker".equals( metadata.path().getFileName().toString() ) ).count() );
     }
 

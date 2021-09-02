@@ -186,7 +186,7 @@ class DatabaseIT
     @Test
     void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws Throwable
     {
-        int databaseFiles = (int) database.getDatabaseFileListing().builder().build().stream().count();
+        int databaseFiles = (int) database.getStoreFileListing().builder().build().stream().count();
         int flushesBefore = pageCacheWrapper.getFlushes();
         int filesFlushesBefore = pageCacheWrapper.getFileFlushes();
         database.stop();
@@ -201,7 +201,7 @@ class DatabaseIT
         var databaseHealth = database.getDatabaseHealth();
         databaseHealth.panic( new Throwable( "Critical failure" ) );
         int fileFlushesBefore = pageCacheWrapper.getFileFlushes();
-        int databaseFiles = (int) database.getDatabaseFileListing().builder().excludeLogFiles().build().stream().count();
+        int databaseFiles = (int) database.getStoreFileListing().builder().excludeLogFiles().build().stream().count();
 
         database.stop();
 

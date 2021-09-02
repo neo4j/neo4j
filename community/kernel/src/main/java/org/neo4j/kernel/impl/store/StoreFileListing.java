@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.kernel.impl.store;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -42,7 +42,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
 
-public class DatabaseFileListing implements FileStoreProviderRegistry
+public class StoreFileListing implements FileStoreProviderRegistry
 {
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
@@ -52,7 +52,7 @@ public class DatabaseFileListing implements FileStoreProviderRegistry
     private final SchemaAndIndexingFileIndexListing fileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 
-    public DatabaseFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
+    public StoreFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
             IndexingService indexingService,
             StorageEngine storageEngine,
             IdGeneratorFactory idGeneratorFactory )
@@ -65,9 +65,9 @@ public class DatabaseFileListing implements FileStoreProviderRegistry
         this.additionalProviders = new CopyOnWriteArraySet<>();
     }
 
-    public StoreFileListingBuilder builder()
+    public Builder builder()
     {
-        return new StoreFileListingBuilder();
+        return new Builder();
     }
 
     @Override
@@ -103,7 +103,7 @@ public class DatabaseFileListing implements FileStoreProviderRegistry
         }
     }
 
-    public class StoreFileListingBuilder
+    public class Builder
     {
         private boolean excludeLogFiles;
         private boolean excludeAtomicStorageFiles;
@@ -112,7 +112,7 @@ public class DatabaseFileListing implements FileStoreProviderRegistry
         private boolean excludeAdditionalProviders;
         private boolean excludeIdFiles;
 
-        private StoreFileListingBuilder()
+        private Builder()
         {
         }
 
@@ -126,85 +126,85 @@ public class DatabaseFileListing implements FileStoreProviderRegistry
             this.excludeIdFiles = initiateInclusive;
         }
 
-        public StoreFileListingBuilder excludeAll()
+        public Builder excludeAll()
         {
             excludeAll( true );
             return this;
         }
 
-        public StoreFileListingBuilder includeAll()
+        public Builder includeAll()
         {
             excludeAll( false );
             return this;
         }
 
-        public StoreFileListingBuilder excludeLogFiles()
+        public Builder excludeLogFiles()
         {
             excludeLogFiles = true;
             return this;
         }
 
-        public StoreFileListingBuilder excludeAtomicStorageFiles()
+        public Builder excludeAtomicStorageFiles()
         {
             excludeAtomicStorageFiles = true;
             return this;
         }
 
-        public StoreFileListingBuilder excludeReplayableStorageFiles()
+        public Builder excludeReplayableStorageFiles()
         {
             excludeReplayableStorageFiles = true;
             return this;
         }
 
-        public StoreFileListingBuilder excludeSchemaIndexStoreFiles()
+        public Builder excludeSchemaIndexStoreFiles()
         {
             excludeSchemaIndexStoreFiles = true;
             return this;
         }
 
-        public StoreFileListingBuilder excludeAdditionalProviders()
+        public Builder excludeAdditionalProviders()
         {
             excludeAdditionalProviders = true;
             return this;
         }
 
-        public StoreFileListingBuilder excludeIdFiles()
+        public Builder excludeIdFiles()
         {
             excludeIdFiles = true;
             return this;
         }
 
-        public StoreFileListingBuilder includeLogFiles()
+        public Builder includeLogFiles()
         {
             excludeLogFiles = false;
             return this;
         }
 
-        public StoreFileListingBuilder includeAtomicStorageFiles()
+        public Builder includeAtomicStorageFiles()
         {
             excludeAtomicStorageFiles = false;
             return this;
         }
 
-        public StoreFileListingBuilder includeReplayableStorageFiles()
+        public Builder includeReplayableStorageFiles()
         {
             excludeReplayableStorageFiles = false;
             return this;
         }
 
-        public StoreFileListingBuilder includeSchemaIndexStoreFiles()
+        public Builder includeSchemaIndexStoreFiles()
         {
             excludeSchemaIndexStoreFiles = false;
             return this;
         }
 
-        public StoreFileListingBuilder includeAdditionalProviders()
+        public Builder includeAdditionalProviders()
         {
             excludeAdditionalProviders = false;
             return this;
         }
 
-        public StoreFileListingBuilder includeIdFiles()
+        public Builder includeIdFiles()
         {
             excludeIdFiles = false;
             return this;
