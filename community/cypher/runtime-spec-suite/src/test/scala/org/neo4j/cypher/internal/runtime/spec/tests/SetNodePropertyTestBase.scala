@@ -363,4 +363,27 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("p").withSingleRow(1).withStatistics(propertiesSet = 1).withLockedNodes(Set(n.getId))
   }
+
+  test("should set node properties between two loops with continuation") {
+    val nodes = given {
+      nodePropertyGraph(sizeHint, {case _ => Map("prop" -> 0)})
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .setNodeProperty("n", "prop", "n.prop + 1")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
+      .withStatistics(propertiesSet = sizeHint)
+    nodes.map(_.getProperty("prop")).foreach(i => i should equal(1))
+  }
 }
