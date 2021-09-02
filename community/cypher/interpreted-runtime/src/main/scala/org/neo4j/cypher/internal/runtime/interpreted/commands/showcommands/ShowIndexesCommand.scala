@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.LookupIndexes
+import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.ast.TextIndexes
@@ -68,6 +69,10 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
       case BtreeIndexes =>
         indexes.filter {
           case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.BTREE)
+        }
+      case RangeIndexes =>
+        indexes.filter {
+          case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.RANGE)
         }
       case FulltextIndexes =>
         indexes.filter {
@@ -181,12 +186,24 @@ object ShowIndexesCommand {
           case None =>
             entityType match {
               case EntityType.NODE =>
-                s"CREATE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
+                s"CREATE BTREE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
               case EntityType.RELATIONSHIP =>
                 val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-                s"CREATE INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
+                s"CREATE BTREE INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
               case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
             }
+        }
+      case IndexType.RANGE =>
+        val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+
+        entityType match {
+          case EntityType.NODE =>
+            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
+            s"CREATE RANGE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties)"
+          case EntityType.RELATIONSHIP =>
+            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+            s"CREATE RANGE INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties)"
+          case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.FULLTEXT =>
         val labelsOrTypesWithBars = asEscapedString(labelsOrTypes, barStringJoiner)

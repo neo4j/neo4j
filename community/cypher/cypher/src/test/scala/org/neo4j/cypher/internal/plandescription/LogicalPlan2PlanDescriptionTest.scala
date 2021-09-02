@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
@@ -119,7 +120,6 @@ import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
@@ -128,8 +128,10 @@ import org.neo4j.cypher.internal.logical.plans.Anti
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
+import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
 import org.neo4j.cypher.internal.logical.plans.AssertNotBlocked
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
@@ -145,6 +147,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
@@ -170,6 +173,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForRangeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForTextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
@@ -235,6 +239,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.PreserveOrder
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
@@ -372,7 +377,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     plan
   }
 
-  private val privLhsLP = attach(plans.AssertAllowedDbmsActions(ShowUserAction), 2.0, providedOrder = ProvidedOrder.empty)
+  private val privLhsLP = attach(AssertAllowedDbmsActions(ShowUserAction), 2.0, providedOrder = ProvidedOrder.empty)
 
   private val lhsLP = attach(AllNodesScan("a", Set.empty), EffectiveCardinality(2.0, Some(10.0)), ProvidedOrder.empty)
   private val lhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(2, Some(10))), Set(pretty"a"))
@@ -584,10 +589,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("Argument") {
-    assertGood(attach(plans.Argument(Set.empty), 95.0),
+    assertGood(attach(Argument(Set.empty), 95.0),
       planDescription(id, "EmptyRow", NoChildren, Seq.empty, Set.empty))
 
-    assertGood(attach(plans.Argument(Set("a", "b")), 95.0),
+    assertGood(attach(Argument(Set("a", "b")), 95.0),
       planDescription(id, "Argument", NoChildren, Seq(details("a, b")), Set("a", "b")))
   }
 
@@ -679,37 +684,72 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // BTREE
 
     assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX FOR (:Label) ON (prop)")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""BTREE INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(Some(DoNothingIfExistsForBtreeIndex(Left(label("Label")), List(key("prop")), None)),
       Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
-        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty)
-      ), Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("BTREE INDEX FOR (:Label) ON (prop)")), Set.empty)
+      ), Seq(details("BTREE INDEX FOR (:Label) ON (prop)")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""BTREE INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(Some(DoNothingIfExistsForBtreeIndex(Right(relType("Label")), List(key("prop")), None)),
       Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
-        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
-      ), Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("BTREE INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
+      ), Seq(details("BTREE INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsParam(parameter("options", CTMap))), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")), Set.empty))
+
+    // RANGE
+
+    assertGood(attach(CreateRangeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("RANGE INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateRangeIndex(None, Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("RANGE INDEX FOR (:Label) ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateRangeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""RANGE INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "range-1.0"}""")), Set.empty))
+
+    assertGood(attach(CreateRangeIndex(Some(DoNothingIfExistsForRangeIndex(Left(label("Label")), List(key("prop")), None)),
+      Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("RANGE INDEX FOR (:Label) ON (prop)")), Set.empty)
+      ), Seq(details("RANGE INDEX FOR (:Label) ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateRangeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("RANGE INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateRangeIndex(None, Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("RANGE INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateRangeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""RANGE INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "range-1.0"}""")), Set.empty))
+
+    assertGood(attach(CreateRangeIndex(Some(DoNothingIfExistsForRangeIndex(Right(relType("Label")), List(key("prop")), None)),
+      Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("RANGE INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
+      ), Seq(details("RANGE INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateRangeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsParam(parameter("options", CTMap))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("RANGE INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")), Set.empty))
 
     // LOOKUP
 
@@ -808,10 +848,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("DropIndex") {
     assertGood(attach(DropIndex(label("Label"), List(key("prop"))), 63.2),
-      planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
+      planDescription(id, "DropIndex", NoChildren, Seq(details("BTREE INDEX FOR (:Label) ON (prop)")), Set.empty))
 
     assertGood(attach(DropIndex(label("Label"), List(key("prop1"), key("prop2"))), 63.2),
-      planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop1, prop2)")), Set.empty))
+      planDescription(id, "DropIndex", NoChildren, Seq(details("BTREE INDEX FOR (:Label) ON (prop1, prop2)")), Set.empty))
   }
 
   test("DropIndexOnName") {
@@ -828,6 +868,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(ShowIndexes(BtreeIndexes, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("btreeIndexes, defaultColumns")), Set.empty))
+
+    assertGood(attach(ShowIndexes(RangeIndexes, verbose = false, List.empty), 1.0),
+      planDescription(id, "ShowIndexes", NoChildren, Seq(details("rangeIndexes, defaultColumns")), Set.empty))
 
     assertGood(attach(ShowIndexes(FulltextIndexes, verbose = true, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("fulltextIndexes, allColumns")), Set.empty))
@@ -1458,7 +1501,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("PreserveOrder") {
-    assertGood(attach(plans.PreserveOrder(lhsLP), 1.0),
+    assertGood(attach(PreserveOrder(lhsLP), 1.0),
                planDescription(id, "PreserveOrder", SingleChild(lhsPD), Seq.empty,  Set("a")))
   }
 
@@ -1571,7 +1614,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(WaitForCompletion(
       StartDatabase(
-        plans.AssertAllowedDatabaseAction(StartDatabaseAction, Left("db1"), Some(privLhsLP)), Left("db1")), util.Left("db1"), IndefiniteWait), 1.0), adminPlanDescription)
+        AssertAllowedDatabaseAction(StartDatabaseAction, Left("db1"), Some(privLhsLP)), Left("db1")), util.Left("db1"), IndefiniteWait), 1.0), adminPlanDescription)
   }
 
   test("AntiConditionalApply") {

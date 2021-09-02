@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
@@ -37,6 +38,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForRangeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForTextIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
@@ -175,8 +177,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       })
 
     // CREATE INDEX ON :LABEL(prop)
-    // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
-    // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
+    // CREATE [BTREE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+    // CREATE [BTREE] INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateBtreeIndex(source, entityName, props, name, options) => context =>
       SchemaExecutionPlan("CreateIndex", (ctx, params) => {
         val (entityId, entityType) = getEntityInfo(entityName, ctx)
@@ -190,6 +192,21 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
         ctx.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, indexProvider, indexConfig)
+        SuccessResult
+      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+
+    // CREATE RANGE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+    // CREATE RANGE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
+    case CreateRangeIndex(source, entityName, props, name, options) => context =>
+      SchemaExecutionPlan("CreateIndex", (ctx, params) => {
+        val (entityId, entityType) = getEntityInfo(entityName, ctx)
+        val schemaType = entityType match {
+          case EntityType.NODE => "range node property index"
+          case EntityType.RELATIONSHIP =>"range relationship property index"
+        }
+        val provider = CreateRangeIndexOptionsConverter(schemaType).convert(options, params).flatMap(_.provider)
+        val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
+        ctx.addRangeIndexRule(entityId, entityType, propertyKeyIds, name, provider)
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
@@ -250,6 +267,19 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         val (entityId, entityType) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
         if (Try(ctx.btreeIndexReference(entityId, entityType, propertyKeyIds: _*).getName).isSuccess) {
+          IgnoredResult
+        } else if (name.exists(ctx.indexExists)) {
+          IgnoredResult
+        } else {
+          SuccessResult
+        }
+      }, None)
+
+    case DoNothingIfExistsForRangeIndex(entityName, propertyKeyNames, name) => _ =>
+      SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
+        val (entityId, entityType) = getEntityInfo(entityName, ctx)
+        val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
+        if (Try(ctx.rangeIndexReference(entityId, entityType, propertyKeyIds: _*).getName).isSuccess) {
           IgnoredResult
         } else if (name.exists(ctx.indexExists)) {
           IgnoredResult

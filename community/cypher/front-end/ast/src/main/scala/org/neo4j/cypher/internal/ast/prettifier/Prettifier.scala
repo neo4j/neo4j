@@ -43,6 +43,8 @@ import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
+import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
@@ -247,11 +249,21 @@ case class Prettifier(
         s"CREATE INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
 
       case CreateBtreeNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "INDEX")
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "BTREE INDEX")
         s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
 
       case CreateBtreeRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "INDEX")
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "BTREE INDEX")
+        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
+
+      case CreateRangeNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, fromDefault, _) =>
+        val schemaType = if (fromDefault) "INDEX" else "RANGE INDEX"
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, schemaType)
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
+
+      case CreateRangeRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, fromDefault, _) =>
+        val schemaType = if (fromDefault) "INDEX" else "RANGE INDEX"
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, schemaType)
         s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
 
       case CreateLookupIndex(Variable(variable), isNodeIndex, function, name, ifExistsDo, options, _) =>

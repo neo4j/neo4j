@@ -157,6 +157,22 @@ trait GraphIcing {
       createRelationshipIndex(Some(name), relType, properties)
     }
 
+    def createRangeNodeIndex(label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(None, label, properties, IndexType.RANGE)
+    }
+
+    def createRangeNodeIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(Some(name), label, properties, IndexType.RANGE)
+    }
+
+    def createRangeRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(None, relType, properties, IndexType.RANGE)
+    }
+
+    def createRangeRelationshipIndexWithName(name: String, relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(Some(name), relType, properties, IndexType.RANGE)
+    }
+
     def createTextNodeIndex(label: String, properties: String*): IndexDefinition = {
       createNodeIndex(None, label, properties, IndexType.TEXT)
     }

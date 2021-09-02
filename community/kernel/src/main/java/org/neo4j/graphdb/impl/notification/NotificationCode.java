@@ -108,6 +108,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The create index syntax `CREATE INDEX ON :Label(property)` is deprecated, please use `CREATE INDEX FOR (n:Label) ON (n.property)` instead"
     ),
+    DEPRECATED_BTREE_INDEX_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "Btree indexes are deprecated and will need migration before upgrading to 5.0"
+    ),
     DEPRECATED_DROP_INDEX_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

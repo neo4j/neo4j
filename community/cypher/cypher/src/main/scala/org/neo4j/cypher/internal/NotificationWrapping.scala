@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCatalogKeywordForAdminCommandSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedCreateConstraintOnAssertSyntax
@@ -119,6 +120,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_PARAMETER_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCreateIndexSyntax(pos) =>
       NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedBtreeIndexSyntax(pos) =>
+      NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedDropIndexSyntax(pos) =>
       NotificationCode.DEPRECATED_DROP_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedDropConstraintSyntax(pos) =>

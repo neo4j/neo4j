@@ -375,24 +375,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     relCursor
   }
 
-  override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = {
-    val descriptor = entityType match {
-      case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, properties: _*)
-      case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, properties: _*)
-    }
+  override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
+    indexReference(IndexType.BTREE, entityId, entityType, properties)
 
-    // Get all text and btree indexes matching the schema
-    val indexes = transactionalContext.kernelTransaction.schemaRead().index(descriptor)
-
-    // Return the btree index if it exists
-    while (indexes.hasNext) {
-      val i = indexes.next()
-      if (i.getIndexType.equals(IndexType.BTREE)) return i
-    }
-
-    // No btree index existed, throw same exception type that Iterators.single gives if no index exists
-    throw new NoSuchElementException("No such btree index exists.")
-  }
+  override def rangeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
+    indexReference(IndexType.RANGE, entityId, entityType, properties)
 
   override def lookupIndexReference(entityType: EntityType): IndexDescriptor = {
     val descriptor = SchemaDescriptors.forAnyEntityTokens(entityType)
@@ -404,22 +391,25 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
 
-  override def textIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = {
+  override def textIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
+    indexReference(IndexType.TEXT, entityId, entityType, properties)
+
+  private def indexReference(indexType: IndexType, entityId: Int, entityType: EntityType, properties: Seq[Int]): IndexDescriptor = {
     val descriptor = entityType match {
       case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, properties: _*)
       case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, properties: _*)
     }
-    // Get all text and btree indexes matching the schema
+    // Get all indexes matching the schema
     val indexes = transactionalContext.kernelTransaction.schemaRead().index(descriptor)
 
-    // Return the text index if it exists
+    // Return the wanted index type if it exists
     while (indexes.hasNext) {
       val i = indexes.next()
-      if (i.getIndexType.equals(IndexType.TEXT)) return i
+      if (i.getIndexType.equals(indexType)) return i
     }
 
-    // No text index existed, throw same exception type that Iterators.single gives if no index exists
-    throw new NoSuchElementException("No such text index exists.")
+    // No such index existed, throw same exception type that Iterators.single gives if no index exists
+    throw new NoSuchElementException(s"No such ${indexType.toString.toLowerCase} index exists.")
   }
 
   private def innerNodeIndexSeek(index: IndexReadSession,
@@ -943,6 +933,16 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val prototype = provider.map(p => IndexPrototype.forSchema(descriptor,schemaWrite.indexProviderByName(p))).getOrElse(IndexPrototype.forSchema(descriptor))
       .withIndexType(IndexType.BTREE)
       .withIndexConfig(indexConfig)
+    val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
+    addIndexRule(descriptor, namedPrototype)
+  }
+
+  override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = {
+    val descriptor = entityType match {
+      case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, propertyKeyIds: _*)
+      case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, propertyKeyIds: _*)
+    }
+    val prototype = provider.map(p => IndexPrototype.forSchema(descriptor, p)).getOrElse(IndexPrototype.forSchema(descriptor)).withIndexType(IndexType.RANGE)
     val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
     addIndexRule(descriptor, namedPrototype)
   }

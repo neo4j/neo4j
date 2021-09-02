@@ -94,6 +94,22 @@ case class CreateBtreeRelationshipIndex(variable: Variable, relType: RelTypeName
   override def semanticCheck: SemanticCheck = checkOptionsMap("btree relationship property index", options) chain super.semanticCheck
 }
 
+case class CreateRangeNodeIndex(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, fromDefault: Boolean, useGraph: Option[GraphSelection] = None)(override val position: InputPosition)
+  extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+
+  // We want to make RANGE default eventually, but for now we keep the behavior of BTREE being default
+  override def semanticCheck: SemanticCheck = checkOptionsMap(if (fromDefault) "btree node index" else "range node property index", options) chain super.semanticCheck
+}
+
+case class CreateRangeRelationshipIndex(variable: Variable, relType: RelTypeName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, fromDefault: Boolean, useGraph: Option[GraphSelection] = None)(override val position: InputPosition)
+  extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+
+  // We want to make RANGE default eventually, but for now we keep the behavior of BTREE being default
+  override def semanticCheck: SemanticCheck = checkOptionsMap(if (fromDefault) "btree relationship property index" else "range relationship property index", options) chain super.semanticCheck
+}
+
 case class CreateLookupIndex(variable: Variable, isNodeIndex: Boolean, function: FunctionInvocation, name: Option[String], ifExistsDo: IfExistsDo, options: Options, useGraph: Option[GraphSelection] = None)(override val position: InputPosition)
   extends CreateIndex(variable, List.empty, ifExistsDo, isNodeIndex)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)

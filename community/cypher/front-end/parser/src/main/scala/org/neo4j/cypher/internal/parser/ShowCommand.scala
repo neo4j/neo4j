@@ -66,6 +66,7 @@ trait ShowCommand extends Parser
 
   private def IndexType: Rule1[ast.ShowIndexType] = rule("type of indexes") {
     keyword("BTREE") ~~~> (_ => ast.BtreeIndexes) |
+    keyword("RANGE") ~~~> (_ => ast.RangeIndexes) |
     keyword("FULLTEXT") ~~~> (_ => ast.FulltextIndexes) |
     keyword("TEXT") ~~~> (_ => ast.TextIndexes) |
     keyword("LOOKUP") ~~~> (_ => ast.LookupIndexes) |

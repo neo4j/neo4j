@@ -61,6 +61,10 @@ case class CreateBtreeIndex(source: Option[DoNothingIfExistsForBtreeIndex], enti
   override def lhs: Option[LogicalPlan] = source
 }
 
+case class CreateRangeIndex(source: Option[DoNothingIfExistsForRangeIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
+
 case class CreateLookupIndex(source: Option[DoNothingIfExistsForLookupIndex], entityType: EntityType, name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
@@ -77,6 +81,7 @@ case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class DoNothingIfExistsForBtreeIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DoNothingIfExistsForRangeIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DoNothingIfExistsForLookupIndex(entityType: EntityType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DoNothingIfExistsForFulltextIndex(entityNames: Either[List[LabelName], List[RelTypeName]], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DoNothingIfExistsForTextIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)

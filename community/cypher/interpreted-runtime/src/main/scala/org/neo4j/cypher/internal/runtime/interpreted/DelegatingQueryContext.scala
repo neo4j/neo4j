@@ -170,6 +170,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
     singleDbHit(inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
 
+  override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
+    singleDbHit(inner.addRangeIndexRule(entityId, entityType, propertyKeyIds, name, provider))
+
   override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
     singleDbHit(inner.addLookupIndexRule(entityType, name, provider))
 
@@ -193,6 +196,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     singleDbHit(inner.constraintExists(matchFn, entityId, properties: _*))
 
   override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.btreeIndexReference(entityId, entityType, properties:_*))
+
+  override def rangeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.rangeIndexReference(entityId, entityType, properties:_*))
 
   override def lookupIndexReference(entityType: EntityType): IndexDescriptor = singleDbHit(inner.lookupIndexReference(entityType))
 

@@ -59,14 +59,14 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
     assertSameAST(testName)
   }
 
-  // default type loop
+  // default type loop (parses as range, planned as btree)
   Seq(
-    ("(n1:Person)", btreeNodeIndex: CreateIndexFunction),
-    ("()-[n1:R]-()", btreeRelIndex: CreateIndexFunction),
-    ("()-[n1:R]->()", btreeRelIndex: CreateIndexFunction),
-    ("()<-[n1:R]-()", btreeRelIndex: CreateIndexFunction)
+    ("(n1:Person)", rangeNodeIndex: CreateRangeIndexFunction),
+    ("()-[n1:R]-()", rangeRelIndex: CreateRangeIndexFunction),
+    ("()-[n1:R]->()", rangeRelIndex: CreateRangeIndexFunction),
+    ("()<-[n1:R]-()", rangeRelIndex: CreateRangeIndexFunction)
   ).foreach {
-    case (pattern, createIndex: CreateIndexFunction) =>
+    case (pattern, createIndex: CreateRangeIndexFunction) =>
       test(s"CREATE INDEX FOR $pattern ON (n2.name)") {
         assertSameAST(testName)
       }
@@ -148,15 +148,15 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
       }
 
       test(s"CREATE INDEX FOR $pattern ON n2.name") {
-        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsThrowError, NoOptions))
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsThrowError, NoOptions, true))
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON n2.name") {
-        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions, true))
       }
 
       test(s"CREATE OR REPLACE INDEX IF NOT EXISTS FOR $pattern ON n2.name") {
-        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsInvalidSyntax, NoOptions))
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsInvalidSyntax, NoOptions, true))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) {indexProvider : 'native-btree-1.0'}") {
@@ -164,6 +164,115 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS") {
+        assertSameAST(testName)
+      }
+  }
+
+  // range loop
+  Seq(
+    ("(n1:Person)", rangeNodeIndex: CreateRangeIndexFunction),
+    ("()-[n1:R]-()", rangeRelIndex: CreateRangeIndexFunction),
+    ("()-[n1:R]->()", rangeRelIndex: CreateRangeIndexFunction),
+    ("()<-[n1:R]-()", rangeRelIndex: CreateRangeIndexFunction)
+  ).foreach {
+    case (pattern, createIndex: CreateRangeIndexFunction) =>
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"USE neo4j CREATE RANGE INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX `$$my_index` FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE RANGE INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE RANGE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE RANGE INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'range-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'range-1.0', indexConfig : {someConfig: 'toShowItCanBePrettified'}}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {someConfig: 'toShowItCanBePrettified'}, indexProvider : 'range-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {}}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX $$my_index FOR $pattern ON (n2.name)") {
+        assertJavaCCExceptionStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsThrowError, NoOptions, false))
+      }
+
+      test(s"CREATE RANGE INDEX my_index FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions, false))
+      }
+
+      test(s"CREATE OR REPLACE RANGE INDEX IF NOT EXISTS FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsInvalidSyntax, NoOptions, false))
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) {indexProvider : 'range-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS") {
         assertSameAST(testName)
       }
   }
@@ -853,6 +962,22 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
                             ifExistsDo: ast.IfExistsDo,
                             options: Options): InputPosition => ast.CreateIndex =
     ast.CreateBtreeRelationshipIndex(varFor("n1"), relTypeName("R"), props, name, ifExistsDo, options)
+
+  type CreateRangeIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Options, Boolean) => InputPosition => ast.CreateIndex
+
+  private def rangeNodeIndex(props: List[expressions.Property],
+                             name: Option[String],
+                             ifExistsDo: ast.IfExistsDo,
+                             options: Options,
+                             fromDefault: Boolean): InputPosition => ast.CreateIndex =
+    ast.CreateRangeNodeIndex(varFor("n1"), labelName("Person"), props, name, ifExistsDo, options, fromDefault)
+
+  private def rangeRelIndex(props: List[expressions.Property],
+                            name: Option[String],
+                            ifExistsDo: ast.IfExistsDo,
+                            options: Options,
+                            fromDefault: Boolean): InputPosition => ast.CreateIndex =
+    ast.CreateRangeRelationshipIndex(varFor("n1"), relTypeName("R"), props, name, ifExistsDo, options, fromDefault)
 
   private def textNodeIndex(props: List[expressions.Property],
                              name: Option[String],

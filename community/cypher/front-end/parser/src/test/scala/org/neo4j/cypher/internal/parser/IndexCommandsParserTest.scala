@@ -51,65 +51,65 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
 
   // Create index
 
-  // default type loop
+  // default type loop (parses as range, planned as btree)
   Seq(
-    ("(n:Person)", btreeNodeIndex: CreateIndexFunction),
-    ("()-[n:R]-()", btreeRelIndex: CreateIndexFunction),
-    ("()-[n:R]->()", btreeRelIndex: CreateIndexFunction),
-    ("()<-[n:R]-()", btreeRelIndex: CreateIndexFunction)
+    ("(n:Person)", rangeNodeIndex: CreateRangeIndexFunction),
+    ("()-[n:R]-()", rangeRelIndex: CreateRangeIndexFunction),
+    ("()-[n:R]->()", rangeRelIndex: CreateRangeIndexFunction),
+    ("()<-[n:R]-()", rangeRelIndex: CreateRangeIndexFunction)
   ).foreach {
-    case (pattern, createIndex: CreateIndexFunction) =>
+    case (pattern, createIndex: CreateRangeIndexFunction) =>
       test(s"CREATE INDEX FOR $pattern ON (n.name)") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions))
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions, true))
       }
 
       test(s"USE neo4j CREATE INDEX FOR $pattern ON (n.name)") {
-        yields(_ => createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions).withGraph(Some(use(varFor("neo4j")))))
+        yields(_ => createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions, true).withGraph(Some(use(varFor("neo4j")))))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name, n.age)") {
-        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsThrowError, NoOptions))
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsThrowError, NoOptions, true))
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON (n.name)") {
-        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions, true))
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON (n.name, n.age)") {
-        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsThrowError, NoOptions, true))
       }
 
       test(s"CREATE INDEX `$$my_index` FOR $pattern ON (n.name)") {
-        yields(createIndex(List(prop("n", "name")), Some("$my_index"), ast.IfExistsThrowError, NoOptions))
+        yields(createIndex(List(prop("n", "name")), Some("$my_index"), ast.IfExistsThrowError, NoOptions, true))
       }
 
       test(s"CREATE OR REPLACE INDEX FOR $pattern ON (n.name)") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsReplace, NoOptions))
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsReplace, NoOptions, true))
       }
 
       test(s"CREATE OR REPLACE INDEX my_index FOR $pattern ON (n.name, n.age)") {
-        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsReplace, NoOptions))
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsReplace, NoOptions, true))
       }
 
       test(s"CREATE OR REPLACE INDEX IF NOT EXISTS FOR $pattern ON (n.name)") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsInvalidSyntax, NoOptions))
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsInvalidSyntax, NoOptions, true))
       }
 
       test(s"CREATE OR REPLACE INDEX my_index IF NOT EXISTS FOR $pattern ON (n.name)") {
-        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsInvalidSyntax, NoOptions))
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsInvalidSyntax, NoOptions, true))
       }
 
       test(s"CREATE INDEX IF NOT EXISTS FOR $pattern ON (n.name, n.age)") {
-        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsDoNothing, NoOptions))
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsDoNothing, NoOptions, true))
       }
 
       test(s"CREATE INDEX my_index IF NOT EXISTS FOR $pattern ON (n.name)") {
-        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsDoNothing, NoOptions))
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsDoNothing, NoOptions, true))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS {indexProvider : 'native-btree-1.0'}") {
         yields(createIndex(List(prop("n", "name")),
-          None, ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0")))))
+          None, ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"))), true))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
@@ -119,7 +119,7 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
               "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
             )
-          ))
+          )), true
         ))
       }
 
@@ -130,7 +130,7 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
               "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
             )
-          ))
+          )), true
         ))
       }
 
@@ -139,22 +139,20 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
           OptionsMap(Map("indexConfig" -> mapOf(
             "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
             "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-          )))
+          ))), true
         ))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS $$options") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
-          OptionsParam(parameter("options", CTMap))
-        ))
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, OptionsParam(parameter("options", CTMap)), true))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS {nonValidOption : 42}") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, OptionsMap(Map("nonValidOption" -> literalInt(42)))))
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, OptionsMap(Map("nonValidOption" -> literalInt(42))), true))
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON (n.name) OPTIONS {}") {
-        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, OptionsMap(Map.empty)))
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, OptionsMap(Map.empty), true))
       }
 
       test(s"CREATE INDEX $$my_index FOR $pattern ON (n.name)") {
@@ -170,6 +168,120 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS") {
+        failsToParse
+      }
+  }
+
+  // range loop
+  Seq(
+    ("(n:Person)", rangeNodeIndex: CreateRangeIndexFunction),
+    ("()-[n:R]-()", rangeRelIndex: CreateRangeIndexFunction),
+    ("()-[n:R]->()", rangeRelIndex: CreateRangeIndexFunction),
+    ("()<-[n:R]-()", rangeRelIndex: CreateRangeIndexFunction)
+  ).foreach {
+    case (pattern, createIndex: CreateRangeIndexFunction) =>
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions, false))
+      }
+
+      test(s"USE neo4j CREATE RANGE INDEX FOR $pattern ON (n.name)") {
+        yields(_ => createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions, false).withGraph(Some(use(varFor("neo4j")))))
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsThrowError, NoOptions, false))
+      }
+
+      test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions, false))
+      }
+
+      test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsThrowError, NoOptions, false))
+      }
+
+      test(s"CREATE RANGE INDEX `$$my_index` FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("$my_index"), ast.IfExistsThrowError, NoOptions, false))
+      }
+
+      test(s"CREATE OR REPLACE RANGE INDEX FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsReplace, NoOptions, false))
+      }
+
+      test(s"CREATE OR REPLACE RANGE INDEX my_index FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsReplace, NoOptions, false))
+      }
+
+      test(s"CREATE OR REPLACE RANGE INDEX IF NOT EXISTS FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsInvalidSyntax, NoOptions, false))
+      }
+
+      test(s"CREATE OR REPLACE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsInvalidSyntax, NoOptions, false))
+      }
+
+      test(s"CREATE RANGE INDEX IF NOT EXISTS FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsDoNothing, NoOptions, false))
+      }
+
+      test(s"CREATE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsDoNothing, NoOptions, false))
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS {indexProvider : 'range-1.0'}") {
+        yields(createIndex(List(prop("n", "name")),
+          None, ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("range-1.0"))), false))
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS {indexProvider : 'range-1.0', indexConfig : {someConfig: 'toShowItCanBePrettified'}}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          OptionsMap(Map(
+            "indexProvider" -> literalString("range-1.0"),
+            "indexConfig"   -> mapOf("someConfig" -> literalString("toShowItCanBePrettified"))
+          )), false
+        ))
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS {indexConfig : {someConfig: 'toShowItCanBePrettified'}, indexProvider : 'range-1.0'}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          OptionsMap(Map(
+            "indexProvider" -> literalString("range-1.0"),
+            "indexConfig"   -> mapOf("someConfig" -> literalString("toShowItCanBePrettified"))
+          )), false
+        ))
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS {indexConfig : {}}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          OptionsMap(Map("indexConfig" -> mapOf())), false
+        ))
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS $$options") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, OptionsParam(parameter("options", CTMap)), false))
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS {nonValidOption : 42}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, OptionsMap(Map("nonValidOption" -> literalInt(42))), false))
+      }
+
+      test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n.name) OPTIONS {}") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, OptionsMap(Map.empty), false))
+      }
+
+      test(s"CREATE RANGE INDEX $$my_index FOR $pattern ON (n.name)") {
+        failsToParse
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON n.name") {
+        failsToParse
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) {indexProvider : 'range-1.0'}") {
+        failsToParse
+      }
+
+      test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS") {
         failsToParse
       }
   }
@@ -882,6 +994,22 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
                             ifExistsDo: ast.IfExistsDo,
                             options: Options): InputPosition => ast.CreateIndex =
     ast.CreateBtreeRelationshipIndex(varFor("n"), relTypeName("R"), props, name, ifExistsDo, options)
+
+  type CreateRangeIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Options, Boolean) => InputPosition => ast.CreateIndex
+
+  private def rangeNodeIndex(props: List[expressions.Property],
+                             name: Option[String],
+                             ifExistsDo: ast.IfExistsDo,
+                             options: Options,
+                             fromDefault: Boolean): InputPosition => ast.CreateIndex =
+    ast.CreateRangeNodeIndex(varFor("n"), labelName("Person"), props, name, ifExistsDo, options, fromDefault)
+
+  private def rangeRelIndex(props: List[expressions.Property],
+                            name: Option[String],
+                            ifExistsDo: ast.IfExistsDo,
+                            options: Options,
+                            fromDefault: Boolean): InputPosition => ast.CreateIndex =
+    ast.CreateRangeRelationshipIndex(varFor("n"), relTypeName("R"), props, name, ifExistsDo, options, fromDefault)
 
   type CreateLookupIndexFunction = (Option[String], ast.IfExistsDo, Options) => InputPosition => ast.CreateIndex
 

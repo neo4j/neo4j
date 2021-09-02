@@ -71,6 +71,8 @@ import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
+import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
+import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRole
@@ -167,6 +169,7 @@ import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
+import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
@@ -1199,7 +1202,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _indexType: Gen[(ShowIndexType, Option[Boolean])] = for {
     verbose   <- frequency(8 -> const(None), 2 -> some(boolean)) // option(boolean) but None more often than Some
     // BRIEF/VERBOSE is only allowed with ALL and BTREE
-    indexType <- oneOf((AllIndexes, verbose), (BtreeIndexes, verbose), (FulltextIndexes, None), (TextIndexes, None), (LookupIndexes, None))
+    indexType <- oneOf((AllIndexes, verbose), (BtreeIndexes, verbose), (RangeIndexes, None), (FulltextIndexes, None), (TextIndexes, None), (LookupIndexes, None))
   } yield indexType
 
   def _listOfLabels: Gen[List[LabelName]] = for {
@@ -1310,16 +1313,19 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     name              <- option(_identifier)
     ifExistsDo        <- _ifExistsDo
     options           <- _optionsMapAsEither
+    fromDefault       <- boolean
     use               <- option(_use)
     btreeNodeIndex    = CreateBtreeNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     btreeRelIndex     = CreateBtreeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    rangeNodeIndex    = CreateRangeNodeIndex(variable, labelName, props, name, ifExistsDo, options, fromDefault, use)(pos)
+    rangeRelIndex     = CreateRangeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, fromDefault, use)(pos)
     lookupNodeIndex   = CreateLookupIndex(variable, isNodeIndex = true, FunctionInvocation(FunctionName(Labels.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
     lookupRelIndex    = CreateLookupIndex(variable, isNodeIndex = false, FunctionInvocation(FunctionName(Type.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
     fulltextNodeIndex = CreateFulltextNodeIndex(variable, labels, props, name, ifExistsDo, options, use)(pos)
     fulltextRelIndex  = CreateFulltextRelationshipIndex(variable, types, props, name, ifExistsDo, options, use)(pos)
     textNodeIndex     = CreateTextNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     textRelIndex      = CreateTextRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    command           <- oneOf(btreeNodeIndex, btreeRelIndex, lookupNodeIndex, lookupRelIndex, fulltextNodeIndex, fulltextRelIndex, textNodeIndex, textRelIndex)
+    command           <- oneOf(btreeNodeIndex, btreeRelIndex, rangeNodeIndex, rangeRelIndex, lookupNodeIndex, lookupRelIndex, fulltextNodeIndex, fulltextRelIndex, textNodeIndex, textRelIndex)
   } yield command
 
   def _dropIndex: Gen[DropIndexOnName] = for {

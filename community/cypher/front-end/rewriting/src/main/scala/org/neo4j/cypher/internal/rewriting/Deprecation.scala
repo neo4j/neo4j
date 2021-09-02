@@ -17,17 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.ConstraintVersion0
-import org.neo4j.cypher.internal.ast.ConstraintVersion1
-import org.neo4j.cypher.internal.ast.DeprecatedSyntax
-import org.neo4j.cypher.internal.ast.ExistsConstraints
-import org.neo4j.cypher.internal.ast.HasCatalog
-import org.neo4j.cypher.internal.ast.NodeExistsConstraints
-import org.neo4j.cypher.internal.ast.RelExistsConstraints
-import org.neo4j.cypher.internal.ast.ShowConstraintsClause
-import org.neo4j.cypher.internal.ast.ShowIndexesClause
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
@@ -56,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCatalogKeywordForAdminCommandSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedCreateConstraintOnAssertSyntax
@@ -130,6 +120,18 @@ object Deprecations {
           Some(DeprecatedCreateIndexSyntax(i.position))
         )
 
+      case i: ast.CreateBtreeNodeIndex =>
+        Deprecation(
+          None,
+          Some(DeprecatedBtreeIndexSyntax(i.position))
+        )
+
+      case i: ast.CreateBtreeRelationshipIndex =>
+        Deprecation(
+          None,
+          Some(DeprecatedBtreeIndexSyntax(i.position))
+        )
+
       case i: ast.DropIndex =>
         Deprecation(
           None,
@@ -161,42 +163,42 @@ object Deprecations {
         )
 
       // ASSERT EXISTS
-      case c: ast.CreateNodePropertyExistenceConstraint if c.constraintVersion == ConstraintVersion0 =>
+      case c: ast.CreateNodePropertyExistenceConstraint if c.constraintVersion == ast.ConstraintVersion0 =>
         Deprecation(
           None,
           Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
         )
 
       // ASSERT EXISTS
-      case c: ast.CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == ConstraintVersion0 =>
+      case c: ast.CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == ast.ConstraintVersion0 =>
         Deprecation(
           None,
           Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
         )
 
       // CREATE CONSTRAINT ON ... ASSERT ...
-      case c: ast.CreateNodePropertyExistenceConstraint if c.constraintVersion == ConstraintVersion1 =>
+      case c: ast.CreateNodePropertyExistenceConstraint if c.constraintVersion == ast.ConstraintVersion1 =>
         Deprecation(
           None,
           Some(DeprecatedCreateConstraintOnAssertSyntax(c.position))
         )
 
       // CREATE CONSTRAINT ON ... ASSERT ...
-      case c: ast.CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == ConstraintVersion1 =>
+      case c: ast.CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == ast.ConstraintVersion1 =>
         Deprecation(
           None,
           Some(DeprecatedCreateConstraintOnAssertSyntax(c.position))
         )
 
       // CREATE CONSTRAINT ON ... ASSERT ...
-      case c: ast.CreateNodeKeyConstraint if c.constraintVersion == ConstraintVersion0 =>
+      case c: ast.CreateNodeKeyConstraint if c.constraintVersion == ast.ConstraintVersion0 =>
         Deprecation(
           None,
           Some(DeprecatedCreateConstraintOnAssertSyntax(c.position))
         )
 
       // CREATE CONSTRAINT ON ... ASSERT ...
-      case c: ast.CreateUniquePropertyConstraint if c.constraintVersion == ConstraintVersion0 =>
+      case c: ast.CreateUniquePropertyConstraint if c.constraintVersion == ast.ConstraintVersion0 =>
         Deprecation(
           None,
           Some(DeprecatedCreateConstraintOnAssertSyntax(c.position))
@@ -208,10 +210,16 @@ object Deprecations {
           Some(DeprecatedPropertyExistenceSyntax(e.position))
         )
 
-      case s: ShowIndexesClause if s.verbose || s.brief =>
+      case s: ast.ShowIndexesClause if s.verbose || s.brief =>
         Deprecation(
           None,
           Some(DeprecatedShowSchemaSyntax(s.position))
+        )
+
+      case i: ast.ShowIndexesClause if i.indexType == ast.BtreeIndexes =>
+        Deprecation(
+          None,
+          Some(DeprecatedBtreeIndexSyntax(i.position))
         )
 
       case c@ast.GrantPrivilege(ast.DatabasePrivilege(_, List(ast.DefaultDatabaseScope())), _, _, _) =>
@@ -250,42 +258,42 @@ object Deprecations {
           Some(DeprecatedDefaultGraphSyntax(c.position))
         )
 
-      case c@ShowConstraintsClause(_, ExistsConstraints(DeprecatedSyntax), _, _, _, _) =>
+      case c@ast.ShowConstraintsClause(_, ast.ExistsConstraints(ast.DeprecatedSyntax), _, _, _, _) =>
         Deprecation(
           None,
           Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
 
-      case c@ShowConstraintsClause(_, NodeExistsConstraints(DeprecatedSyntax), _, _, _, _) =>
+      case c@ast.ShowConstraintsClause(_, ast.NodeExistsConstraints(ast.DeprecatedSyntax), _, _, _, _) =>
         Deprecation(
           None,
           Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
 
-      case c@ShowConstraintsClause(_, RelExistsConstraints(DeprecatedSyntax), _, _, _, _) =>
+      case c@ast.ShowConstraintsClause(_, ast.RelExistsConstraints(ast.DeprecatedSyntax), _, _, _, _) =>
         Deprecation(
           None,
           Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
 
-      case s: ShowConstraintsClause if s.verbose || s.brief =>
+      case s: ast.ShowConstraintsClause if s.verbose || s.brief =>
         Deprecation(
           None,
           Some(DeprecatedShowSchemaSyntax(s.position))
         )
 
-      case c: HasCatalog =>
+      case c: ast.HasCatalog =>
         Deprecation(
           Some(c -> c.source),
           Some(DeprecatedCatalogKeywordForAdminCommandSyntax(c.position))
         )
     }
 
-    override def findWithContext(statement: Statement): Set[Deprecation] = {
+    override def findWithContext(statement: ast.Statement): Set[Deprecation] = {
       val replacementsFromExistsToIsNotNull = statement.treeFold[Set[Deprecation]](Set.empty) {
-        case w: Where =>
+        case w: ast.Where =>
           val deprecations = w.treeFold[Set[Deprecation]](Set.empty) {
-            case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
+            case _: ast.Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
               acc => TraverseChildren(acc)
 
             case e@Exists(p@(_: Property | _: ContainerIndex)) =>
@@ -326,7 +334,7 @@ object Deprecations {
 
     }
 
-    override def findWithContext(statement: Statement,
+    override def findWithContext(statement: ast.Statement,
                                  semanticTable: SemanticTable): Set[Deprecation] = {
       val deprecationsOfPatternExpressionsOutsideExists = statement.treeFold[Set[Deprecation]](Set.empty) {
         case Exists(_) =>
@@ -430,10 +438,10 @@ sealed trait Deprecations
 
 trait SyntacticDeprecations extends Deprecations {
   def find: PartialFunction[Any, Deprecation]
-  def findWithContext(statement: Statement): Set[Deprecation] = Set.empty
+  def findWithContext(statement: ast.Statement): Set[Deprecation] = Set.empty
 }
 
 trait SemanticDeprecations extends Deprecations {
   def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation]
-  def findWithContext(statement: Statement, semanticTable: SemanticTable): Set[Deprecation] = Set.empty
+  def findWithContext(statement: ast.Statement, semanticTable: SemanticTable): Set[Deprecation] = Set.empty
 }

@@ -163,6 +163,7 @@ class ShowFunctionCommandJavaCcParserTest extends ParserComparisonTestBase with 
         |  "PROCEDURE"
         |  "PROCEDURES"
         |  "PROPERTY"
+        |  "RANGE"
         |  "REL"
         |  "RELATIONSHIP"
         |  "ROLES"

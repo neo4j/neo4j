@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
+import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
@@ -71,10 +73,10 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
     def createBtreeIndex(entityName: Either[LabelName, RelTypeName],
-                    props: List[Property],
-                    name: Option[String],
-                    ifExistsDo: IfExistsDo,
-                    options: Options): Option[LogicalPlan] = {
+                         props: List[Property],
+                         name: Option[String],
+                         ifExistsDo: IfExistsDo,
+                         options: Options): Option[LogicalPlan] = {
       val propKeys = props.map(_.propertyKey)
       val source = ifExistsDo match {
         case IfExistsDoNothing => Some(plans.DoNothingIfExistsForBtreeIndex(entityName, propKeys, name))
@@ -83,11 +85,24 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       Some(plans.CreateBtreeIndex(source, entityName, propKeys, name, options))
     }
 
+    def createRangeIndex(entityName: Either[LabelName, RelTypeName],
+                         props: List[Property],
+                         name: Option[String],
+                         ifExistsDo: IfExistsDo,
+                         options: Options): Option[LogicalPlan] = {
+      val propKeys = props.map(_.propertyKey)
+      val source = ifExistsDo match {
+        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForRangeIndex(entityName, propKeys, name))
+        case _ => None
+      }
+      Some(plans.CreateRangeIndex(source, entityName, propKeys, name, options))
+    }
+
     def createFulltextIndex(entityNames: Either[List[LabelName], List[RelTypeName]],
-                    props: List[Property],
-                    name: Option[String],
-                    ifExistsDo: IfExistsDo,
-                    options: Options): Option[LogicalPlan] = {
+                            props: List[Property],
+                            name: Option[String],
+                            ifExistsDo: IfExistsDo,
+                            options: Options): Option[LogicalPlan] = {
       val propKeys = props.map(_.propertyKey)
       val source = ifExistsDo match {
         case IfExistsDoNothing => Some(plans.DoNothingIfExistsForFulltextIndex(entityNames, propKeys, name))
@@ -168,13 +183,25 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case CreateIndexOldSyntax(label, props, _) =>
         Some(plans.CreateBtreeIndex(None, Left(label), props, None, NoOptions))
 
-      // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+      // CREATE BTREE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
       case CreateBtreeNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
         createBtreeIndex(Left(label), props, name, ifExistsDo, options)
 
-      // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
+      // CREATE BTREE INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
       case CreateBtreeRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
         createBtreeIndex(Right(relType), props, name, ifExistsDo, options)
+
+      // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+      case CreateRangeNodeIndex(_, label, props, name, ifExistsDo, options, fromDefault, _) =>
+        // We want to make RANGE default eventually, but for now we keep the behavior of BTREE being default
+        if (fromDefault) createBtreeIndex(Left(label), props, name, ifExistsDo, options)
+        else createRangeIndex(Left(label), props, name, ifExistsDo, options)
+
+      // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
+      case CreateRangeRelationshipIndex(_, relType, props, name, ifExistsDo, options, fromDefault, _) =>
+        // We want to make RANGE default eventually, but for now we keep the behavior of BTREE being default
+        if (fromDefault) createBtreeIndex(Right(relType), props, name, ifExistsDo, options)
+        else createRangeIndex(Right(relType), props, name, ifExistsDo, options)
 
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)

@@ -23,6 +23,7 @@ public enum ShowCommandFilterTypes
 {
     // index specific
     BTREE( "BTREE" ),
+    RANGE( "RANGE" ),
     FULLTEXT( "FULLTEXT" ),
     TEXT( "TEXT" ),
     LOOKUP( "LOOKUP" ),

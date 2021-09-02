@@ -207,6 +207,8 @@ object StaticEvaluation {
 
     override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
 
+    override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = notAvailable()
+
     override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = notAvailable()
 
     override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
@@ -226,6 +228,8 @@ object StaticEvaluation {
     override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean = notAvailable()
 
     override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
+
+    override def rangeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
 
     override def lookupIndexReference(entityType: EntityType): IndexDescriptor = notAvailable()
 

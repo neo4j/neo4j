@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX
@@ -72,6 +73,12 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("deprecated create index syntax") {
     assertNotificationInSupportedVersions("EXPLAIN CREATE INDEX ON :Label(prop)", DEPRECATED_CREATE_INDEX_SYNTAX)
+  }
+
+  test("deprecated create btree index syntax") {
+    // Note: This index syntax was introduced in 4.X
+    assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE BTREE INDEX FOR (n:Label) ON (n.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
+    assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE BTREE INDEX name FOR ()-[r:TYPE]-() ON (r.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
   }
 
   test("deprecated drop index syntax") {
@@ -134,6 +141,11 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
     // Note: Show indexes was introduced in Neo4j 4.2
     assertNotificationInSupportedVersions_4_X(queries, DEPRECATED_SHOW_SCHEMA_SYNTAX)
+  }
+
+  test("deprecated show btree index syntax") {
+    // Note: Show indexes was introduced in Neo4j 4.2
+    assertNotificationInSupportedVersions_4_X("EXPLAIN SHOW BTREE INDEXES", DEPRECATED_BTREE_INDEX_SYNTAX)
   }
 
   test("deprecated show constraint syntax") {

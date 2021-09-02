@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
+import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
@@ -33,6 +35,7 @@ import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
@@ -58,12 +61,18 @@ object Additions {
       case c: UnresolvedCall if c.yieldAll =>
         throw cypherExceptionFactory.syntaxException("Procedure call using `YIELD *` is not supported in this Cypher version.", c.position)
 
-      // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:Label) ON (n.prop) [OPTIONS {...}]
+      // CREATE [BTREE] INDEX [name] [IF NOT EXISTS] FOR (n:Label) ON (n.prop) [OPTIONS {...}]
       case c: CreateBtreeNodeIndex =>
         throw cypherExceptionFactory.syntaxException("Creating index using this syntax is not supported in this Cypher version.", c.position)
+      case c: CreateRangeNodeIndex if c.fromDefault =>
+        // Range index with `fromDefault` is a btree index, this was done to prepare for RANGE being the default index
+        throw cypherExceptionFactory.syntaxException("Creating index using this syntax is not supported in this Cypher version.", c.position)
 
-      // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:RelType]-() ON (n.prop) [OPTIONS {...}]
+      // CREATE [BTREE] INDEX [name] [IF NOT EXISTS] FOR ()-[n:RelType]-() ON (n.prop) [OPTIONS {...}]
       case c: CreateBtreeRelationshipIndex =>
+        throw cypherExceptionFactory.syntaxException("Relationship property indexes are not supported in this Cypher version.", c.position)
+      case c: CreateRangeRelationshipIndex if c.fromDefault =>
+        // Range index with `fromDefault` is a btree index, this was done to prepare for RANGE being the default index
         throw cypherExceptionFactory.syntaxException("Relationship property indexes are not supported in this Cypher version.", c.position)
 
       // CREATE LOOKUP INDEX ...
@@ -172,6 +181,16 @@ object Additions {
 
       case c: UniquePropertyConstraintCommand if c.properties.size > 1 =>
         throw cypherExceptionFactory.syntaxException("Multi-property uniqueness constraints are not supported in this Cypher version.", c.position)
+
+      // CREATE RANGE INDEX ...
+      case c: CreateRangeNodeIndex if !c.fromDefault =>
+        throw cypherExceptionFactory.syntaxException("Range indexes are not supported in this Cypher version.", c.position)
+      case c: CreateRangeRelationshipIndex if !c.fromDefault =>
+        throw cypherExceptionFactory.syntaxException("Range indexes are not supported in this Cypher version.", c.position)
+
+      // SHOW RANGE INDEXES
+      case s: ShowIndexesClause if s.indexType == RangeIndexes =>
+        throw cypherExceptionFactory.syntaxException("Filtering on range indexes in SHOW INDEXES is not supported in this Cypher version.", s.position)
 
       // CREATE TEXT INDEX ...
       case c: CreateTextNodeIndex =>

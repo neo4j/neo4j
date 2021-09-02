@@ -135,6 +135,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
     translateException(tokenNameLookup, inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
 
+  override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addRangeIndexRule(entityId, entityType, propertyKeyIds, name, provider))
+
   override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
     translateException(tokenNameLookup, inner.addLookupIndexRule(entityType, name, provider))
 
@@ -164,6 +167,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
     translateException(tokenNameLookup, inner.btreeIndexReference(entityId, entityType, properties:_*))
+
+  override def rangeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
+    translateException(tokenNameLookup, inner.rangeIndexReference(entityId, entityType, properties:_*))
 
   override def lookupIndexReference(entityType: EntityType): IndexDescriptor =
     translateException(tokenNameLookup, inner.lookupIndexReference(entityType))

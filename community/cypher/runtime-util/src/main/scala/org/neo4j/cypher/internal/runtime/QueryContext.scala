@@ -127,6 +127,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor
 
+  def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
+
   def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
 
   def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor
@@ -140,6 +142,8 @@ trait QueryContext extends TokenContext with DbAccess {
   def getAllIndexes(): Map[IndexDescriptor, IndexInfo]
 
   def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor
+
+  def rangeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor
 
   def lookupIndexReference(entityType: EntityType): IndexDescriptor
 

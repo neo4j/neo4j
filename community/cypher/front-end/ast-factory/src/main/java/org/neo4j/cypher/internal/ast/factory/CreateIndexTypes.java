@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.ast.factory;
 public enum CreateIndexTypes
 {
     BTREE( "BTREE" ),
+    RANGE( "RANGE" ),
     FULLTEXT( "FULLTEXT" ),
     LOOKUP( "LOOKUP" ),
     TEXT( "TEXT" ),
+    DEFAULT( "DEFAULT" ),
     INVALID( "INVALID" );
 
     private final String description;

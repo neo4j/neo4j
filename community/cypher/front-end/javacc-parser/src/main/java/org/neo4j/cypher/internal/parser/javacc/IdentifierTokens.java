@@ -134,6 +134,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIVILEGES
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTY;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RANGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.READ;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REDUCE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REL;
@@ -305,6 +306,7 @@ public class IdentifierTokens
             PROCEDURE,
             PROCEDURES,
             PROPERTY,
+            RANGE,
             READ,
             REDUCE,
             REL,

@@ -444,6 +444,7 @@ TOKEN [IGNORE_CASE] :
     | < PROCEDURE: "PROCEDURE" >
     | < PROCEDURES: "PROCEDURES" >
     | < PROPERTY: "PROPERTY" >
+    | < RANGE: "RANGE" >
     | < RBRACKET: "]" >
     | < RCURLY: "}" >
     | < READ: "READ" >
@@ -2879,6 +2880,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         showCommandType=<ALL> statement=ShowAllCommand( start, useClause )
         | <POPULATED> statement=ShowRoles( start, useClause, false )
         | showCommandType=<BTREE> statement = ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.BTREE )
+        | showCommandType=<RANGE> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.RANGE )
         | showCommandType=<FULLTEXT> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.FULLTEXT )
         | showCommandType=<TEXT> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.TEXT )
         | showCommandType=<LOOKUP> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.LOOKUP )
@@ -3454,12 +3456,13 @@ SCHEMA_COMMAND CreateIndex( Token start, boolean replace ) throws Exception:
 {
     (
         <BTREE> <INDEX> command=createIndex( start, replace, CreateIndexTypes.BTREE )
+        | <RANGE> <INDEX> command=createIndex( start, replace, CreateIndexTypes.RANGE )
         | <FULLTEXT> <INDEX> command=createFulltextIndex( start, replace )
         | <TEXT> <INDEX> command=createIndex( start, replace, CreateIndexTypes.TEXT )
         | <LOOKUP> <INDEX> command=createLookupIndex( start, replace )
         | <INDEX> (
             <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
-            | command=createIndex( start, replace, CreateIndexTypes.BTREE )
+            | command=createIndex( start, replace, CreateIndexTypes.DEFAULT )
         )
     )
     {
@@ -3495,7 +3498,7 @@ SCHEMA_COMMAND createIndex( Token start, boolean replace, CreateIndexTypes index
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
-    //CREATE [BTREE | TEXT] INDEX FOR (n:label) ON (n.prop)
+    //CREATE [RANGE | BTREE | TEXT] INDEX FOR (n:label) ON (n.prop)
     (
         //lookaheads for potential symbolicNames "for", "if"
         LOOKAHEAD(<FOR> <LPAREN>) <FOR> <LPAREN>
@@ -4827,6 +4830,7 @@ Token SymbolicNameString() :
         | t=<PROCEDURE>
         | t=<PROCEDURES>
         | t=<PROPERTY>
+        | t=<RANGE>
         | t=<READ>
         | t=<REDUCE>
         | t=<REL>
