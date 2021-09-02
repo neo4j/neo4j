@@ -117,7 +117,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
         value match {
           case seed: TextValue => ops.copy(databaseSeed = Some(seed.stringValue()))
           case _ =>
-            throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected server uuid string.")
+            throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected instance uuid string.")
         }
       } else {
         throw new InvalidArgumentsException(s"Could not create database with unrecognised option: '$key'. Expected $PERMITTED_OPTIONS.")
