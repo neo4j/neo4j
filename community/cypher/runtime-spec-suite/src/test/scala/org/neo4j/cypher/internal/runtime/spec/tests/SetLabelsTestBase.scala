@@ -417,4 +417,26 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
     labelNames should contain theSameElementsAs labelNamesInUse
     labelNames should contain theSameElementsAs Seq("Label")
   }
+
+  test("should not create too many labels if setLabel is between two loops with continuation") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .setLabels("n", "Label")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
+      .withStatistics(labelsAdded = sizeHint)
+  }
 }
