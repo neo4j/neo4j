@@ -77,6 +77,13 @@ public interface SystemGraphComponent
      */
     void upgradeToCurrent( GraphDatabaseService system ) throws Exception;
 
+    /**
+     * Delete unused parts of the system graph.
+     */
+    default void cleanup( GraphDatabaseService system ) throws Exception
+    {
+    }
+
     static void executeWithFullAccess( GraphDatabaseService system, ThrowingConsumer<Transaction,Exception> consumer ) throws Exception
     {
         try ( TransactionImpl tx = (TransactionImpl) system.beginTx();

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -61,6 +62,14 @@ public class SystemGraphComponents
         if ( removed != null )
         {
             components.remove( removed );
+        }
+    }
+
+    public void forEachThrowing( ThrowingConsumer<SystemGraphComponent,Exception> process ) throws Exception
+    {
+        for ( SystemGraphComponent component : components )
+        {
+            process.accept( component );
         }
     }
 
