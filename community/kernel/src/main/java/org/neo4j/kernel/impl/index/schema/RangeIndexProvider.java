@@ -175,6 +175,31 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
         }
 
         @Override
+        public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+        {
+            switch ( queryType )
+            {
+            case exists:
+            case exact:
+            case stringPrefix:
+                return true;
+            case range:
+                return valueCategory != ValueCategory.UNKNOWN && valueCategory != ValueCategory.GEOMETRY;
+            case stringSuffix:
+            case stringContains:
+            case fulltextSearch:
+            default:
+                return false;
+            }
+        }
+
+        @Override
+        public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+        {
+            return 1.0;
+        }
+
+        @Override
         public boolean supportPartitionedScan( IndexQuery... queries )
         {
             Preconditions.requireNoNullElements( queries );

@@ -74,6 +74,47 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
         }
 
         @Override
+        public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+        {
+            if ( valueCategory != ValueCategory.TEXT )
+            {
+                return false;
+            }
+
+            switch ( queryType )
+            {
+            case exact:
+            case stringPrefix:
+            case stringSuffix:
+            case stringContains:
+            case range:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        @Override
+        public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+        {
+            for ( int i = 0; i < queryTypes.length; i++ )
+            {
+                // for now, just make the operations which are also supported by GBP+ tree
+                // slightly more expensive so the planner would choose GBP-based index
+                // instead of lucene-based if there is a choice
+                IndexQuery.IndexQueryType indexQueryType = queryTypes[i];
+                if ( indexQueryType == IndexQuery.IndexQueryType.exact
+                        || indexQueryType == IndexQuery.IndexQueryType.stringPrefix
+                        || indexQueryType == IndexQuery.IndexQueryType.range )
+                {
+                    return 1.1;
+                }
+            }
+
+            return 1.0;
+        }
+
+        @Override
         public boolean supportPartitionedScan( IndexQuery... queries )
         {
             Preconditions.requireNoNullElements( queries );

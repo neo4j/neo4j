@@ -60,6 +60,24 @@ public interface IndexCapability
     IndexValueCapability valueCapability( ValueCategory... valueCategories );
 
     /**
+     * Checks whether the index supports a query type for a given value category.
+     * This does not take into account how query types can be combined for composite index queries.
+     * <p>
+     * Even thought the method is implemented for all index types, this check is useful only for value indexes.
+     */
+    boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory );
+
+    /**
+     * The multiplier for the cost per returned row of executing a (potentially composite) index query with the given types.
+     * A multiplier of 1.0 means that it’s an "average" cost. A higher value means more expensive and a lower value means cheaper.
+     * <p>
+     * This method does not provide the absolute cost per row, but just a multiplier that can be used to decide between different index types.
+     * <p>
+     * Even thought the method is implemented for all index types, this check is useful only for value indexes.
+     */
+    double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes );
+
+    /**
      * Does the index support {@link org.neo4j.internal.kernel.api.PartitionedScan PartitionedScan} for a given {@code queries}.
      * @param queries a relevant set of query for the index; such as {@link org.neo4j.internal.kernel.api.TokenPredicate TokenPredicate}, for token indexes;
      * or {@link org.neo4j.internal.kernel.api.PropertyIndexQuery PropertyIndexQuery}, for property indexes.
@@ -89,6 +107,18 @@ public interface IndexCapability
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.NO;
+        }
+
+        @Override
+        public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+        {
+            return false;
+        }
+
+        @Override
+        public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+        {
+            return 1.0;
         }
 
         @Override

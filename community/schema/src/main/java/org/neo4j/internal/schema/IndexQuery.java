@@ -48,4 +48,17 @@ public interface IndexQuery
      * @return Target {@link ValueCategory} for query
      */
     ValueCategory valueCategory();
+
+    IndexQueryType type();
+
+    enum IndexQueryType
+    {
+        exists,
+        exact,
+        range,
+        stringPrefix,
+        stringSuffix,
+        stringContains,
+        fulltextSearch
+    }
 }

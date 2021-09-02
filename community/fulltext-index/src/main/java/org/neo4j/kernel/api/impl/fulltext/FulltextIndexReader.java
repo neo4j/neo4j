@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -102,7 +103,7 @@ public class FulltextIndexReader implements ValueIndexReader
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         for ( PropertyIndexQuery indexQuery : queries )
         {
-            if ( indexQuery.type() == PropertyIndexQuery.IndexQueryType.fulltextSearch )
+            if ( indexQuery.type() == IndexQuery.IndexQueryType.fulltextSearch )
             {
                 PropertyIndexQuery.FulltextSearchPredicate fulltextSearch = (PropertyIndexQuery.FulltextSearchPredicate) indexQuery;
                 try
@@ -120,21 +121,21 @@ public class FulltextIndexReader implements ValueIndexReader
                 assertNotComposite( queries );
                 assertCypherCompatible();
                 Query query;
-                if ( indexQuery.type() == PropertyIndexQuery.IndexQueryType.stringContains )
+                if ( indexQuery.type() == IndexQuery.IndexQueryType.stringContains )
                 {
                     PropertyIndexQuery.StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) indexQuery;
                     String searchTerm = QueryParser.escape( scp.contains().stringValue() );
                     Term term = new Term( propertyNames[0], "*" + searchTerm + "*" );
                     query = new WildcardQuery( term );
                 }
-                else if ( indexQuery.type() == PropertyIndexQuery.IndexQueryType.stringSuffix )
+                else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringSuffix )
                 {
                     PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) indexQuery;
                     String searchTerm = QueryParser.escape( ssp.suffix().stringValue() );
                     Term term = new Term( propertyNames[0], "*" + searchTerm );
                     query = new WildcardQuery( term );
                 }
-                else if ( indexQuery.type() == PropertyIndexQuery.IndexQueryType.stringPrefix )
+                else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringPrefix )
                 {
                     PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) indexQuery;
                     String searchTerm = spp.prefix().stringValue();

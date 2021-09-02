@@ -82,6 +82,18 @@ public class FusionIndexCapability implements IndexCapability
     }
 
     @Override
+    public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+    {
+        return queryType != IndexQuery.IndexQueryType.fulltextSearch;
+    }
+
+    @Override
+    public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+    {
+        return 1.0;
+    }
+
+    @Override
     public boolean supportPartitionedScan( IndexQuery... queries )
     {
         Preconditions.requireNoNullElements( queries );

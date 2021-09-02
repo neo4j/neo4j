@@ -31,11 +31,11 @@ import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery.IndexQueryType;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
@@ -52,7 +52,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.IndexQueryType.exact;
+import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.exact;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 
 /**
@@ -138,7 +138,7 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
         case exists:
             for ( PropertyIndexQuery p : predicates )
             {
-                if ( p.type() != IndexQueryType.exists )
+                if ( p.type() != IndexQuery.IndexQueryType.exists )
                 {
                     throw new IndexNotApplicableKernelException(
                             "Exists followed by another query predicate type is not supported." );

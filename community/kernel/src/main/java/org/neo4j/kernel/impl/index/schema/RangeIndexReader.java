@@ -24,8 +24,8 @@ import java.util.Arrays;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -145,8 +145,8 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
 
     private static void throwIfStringSuffixOrContains( PropertyIndexQuery[] predicates, PropertyIndexQuery predicate )
     {
-        IndexQueryType type = predicate.type();
-        if ( type == IndexQueryType.stringSuffix || type == IndexQueryType.stringContains )
+        IndexQuery.IndexQueryType type = predicate.type();
+        if ( type == IndexQuery.IndexQueryType.stringSuffix || type == IndexQuery.IndexQueryType.stringContains )
         {
             throw new IllegalArgumentException( format( "Tried to query index with illegal query. %s predicate is not allowed " +
                                                         "for RANGE index. Query was: %s ", type, Arrays.toString( predicates ) ) );
