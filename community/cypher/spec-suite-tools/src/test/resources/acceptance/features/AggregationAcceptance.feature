@@ -58,7 +58,7 @@ Feature: AggregationAcceptance
      RETURN b.book as book, count(r), count(distinct a)
      ORDER BY book
      """
-    Then the result should be, in any order:
+    Then the result should be, in order:
       | book                | count(r) | count(distinct a) |
       | 'NW'                | 1        | 1                 |
       | 'On Beauty'         | 1        | 1                 |

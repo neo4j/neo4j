@@ -92,7 +92,7 @@ Feature: ListComprehensionAcceptance
         WITH company.nbr AS nbr
         RETURN nbr ORDER BY nbr
         """
-    Then the result should be, in any order:
+    Then the result should be, in order:
       | nbr |
       | 1   |
       | 2   |
@@ -115,7 +115,7 @@ Feature: ListComprehensionAcceptance
         WITH company.nbr AS nbr
         RETURN nbr ORDER BY nbr
         """
-    Then the result should be, in any order:
+    Then the result should be, in order:
       | nbr |
       | 1   |
       | 3   |

@@ -54,7 +54,7 @@ Feature: MatchAcceptance
       WHERE n:X OR (n:Y AND n.id = 42)
       RETURN n.foo ORDER BY n.foo
       """
-    Then the result should be, in any order:
+    Then the result should be, in order:
       | n.foo |
       | 1     |
       | 3     |
