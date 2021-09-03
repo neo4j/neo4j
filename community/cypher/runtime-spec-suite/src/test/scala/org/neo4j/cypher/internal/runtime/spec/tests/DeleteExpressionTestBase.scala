@@ -30,7 +30,14 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.ConstraintViolationException
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
+import org.neo4j.kernel.api.procedure.CallableUserFunction.BasicUserFunction
+import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
@@ -40,6 +47,27 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  private val function =
+    new BasicUserFunction(UserFunctionSignature.functionSignature( "findNodeToDelete")
+      .in("nodes", Neo4jTypes.NTList(Neo4jTypes.NTNode))
+      .out(Neo4jTypes.NTList(Neo4jTypes.NTNode)
+      ).build()) {
+    override def apply(ctx: Context,
+                       input: Array[AnyValue]): AnyValue = {
+      val iterator = input(0).asInstanceOf[ListValue].iterator()
+      while (iterator.hasNext) {
+        val node = iterator.next().asInstanceOf[NodeValue]
+        if (!tx.kernelTransaction().dataRead().nodeDeletedInTransaction(node.id())) {
+          return node
+        }
+      }
+      null
+    }
+  }
+  override protected def initTest(): Unit = {
+    registerFunction(function)
+  }
 
   test("delete node in map") {
     val nodeCount = sizeHint
@@ -139,5 +167,29 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
     // Nodes and relationships should still be there
     tx.getAllNodes.stream().count() shouldBe 3*2
     tx.getAllRelationships.stream().count() shouldBe 3
+  }
+
+  test("should not delete too many nodes if delete is between two loops with continuation") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r2")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .deleteExpression("findNodeToDelete(nodes)")
+      .unwind(s"range(1,10) AS i")
+      .aggregation(Seq.empty, Seq("collect(n) AS nodes"))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r2")
+      .withRows(singleColumn((1 to 10).flatMap(i => Seq.fill(10)(i))))
+      .withStatistics(nodesDeleted = 10)
   }
 }
