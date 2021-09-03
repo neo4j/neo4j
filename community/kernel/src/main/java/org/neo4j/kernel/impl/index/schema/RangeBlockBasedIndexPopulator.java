@@ -26,15 +26,23 @@ import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.memory.MemoryTracker;
 
-class BlockBasedRangeIndexPopulator extends BlockBasedIndexPopulator<RangeKey>
+class RangeBlockBasedIndexPopulator extends BlockBasedIndexPopulator<RangeKey>
 {
     private final TokenNameLookup tokenNameLookup;
 
-    BlockBasedRangeIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<RangeKey> layout,
+    RangeBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<RangeKey> layout,
             IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker );
+        this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, tokenNameLookup,
+                BlockStorage.Monitor.NO_MONITOR );
+    }
+
+    RangeBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<RangeKey> layout,
+            IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
+            TokenNameLookup tokenNameLookup, BlockStorage.Monitor blockStorageMonitor )
+    {
+        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor );
         this.tokenNameLookup = tokenNameLookup;
     }
 

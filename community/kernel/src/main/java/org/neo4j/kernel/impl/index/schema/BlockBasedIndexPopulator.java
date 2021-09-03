@@ -106,6 +106,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
     private final List<ThreadLocalBlockStorage> allScanUpdates = new CopyOnWriteArrayList<>();
     private final ThreadLocal<ThreadLocalBlockStorage> scanUpdates;
     private final ByteBufferFactory bufferFactory;
+    private final IndexUpdateIgnoreStrategy ignoreStrategy;
     private IndexUpdateStorage<KEY> externalUpdates;
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean scanCompleted;
@@ -137,6 +138,18 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         this.blockStorageMonitor = blockStorageMonitor;
         this.scanUpdates = ThreadLocal.withInitial( this::newThreadLocalBlockStorage );
         this.bufferFactory = bufferFactory;
+        this.ignoreStrategy = indexUpdateIgnoreStrategy();
+    }
+
+    /**
+     * {@link IndexUpdateIgnoreStrategy Ignore strategy} to be used by index updater.
+     * Sub-classes are expected to override this method if they want to use something
+     * other than {@link IndexUpdateIgnoreStrategy#NO_IGNORE}.
+     * @return {@link IndexUpdateIgnoreStrategy} to be used by index updater.
+     */
+    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy()
+    {
+        return IndexUpdateIgnoreStrategy.NO_IGNORE;
     }
 
     private synchronized ThreadLocalBlockStorage newThreadLocalBlockStorage()
@@ -183,10 +196,24 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
     {
         if ( !updates.isEmpty() )
         {
-            BlockStorage<KEY,NullValue> blockStorage = scanUpdates.get().blockStorage;
+            BlockStorage<KEY,NullValue> blockStorage = null;
             for ( IndexEntryUpdate<?> update : updates )
             {
-                storeUpdate( (ValueIndexEntryUpdate<?>) update, blockStorage );
+                ValueIndexEntryUpdate<?> valueUpdate = (ValueIndexEntryUpdate<?>) update;
+                if ( ignoreStrategy.ignore( valueUpdate ) )
+                {
+                    continue;
+                }
+
+                // Allocate the block storage lazily, so we don't end up with
+                // an empty block storage in case all updates in the batch are ignored.
+                // Producing an empty block storage is slightly illogical
+                // and the code dealing with the block storage is not ready for this option.
+                if ( blockStorage == null )
+                {
+                    blockStorage = scanUpdates.get().blockStorage;
+                }
+                storeUpdate( update.getEntityId(), valueUpdate.values(), blockStorage );
             }
         }
     }
@@ -204,11 +231,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         {
             throw new UncheckedIOException( e );
         }
-    }
-
-    private void storeUpdate( ValueIndexEntryUpdate<?> update, BlockStorage<KEY,NullValue> blockStorage )
-    {
-        storeUpdate( update.getEntityId(), update.values(), blockStorage );
     }
 
     private synchronized boolean markMergeStarted()
@@ -447,6 +469,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                 {
                     ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
                     validateUpdate( valueUpdate );
+                    if ( ignoreStrategy.ignore( valueUpdate ) )
+                    {
+                        return;
+                    }
                     numberOfIndexUpdatesSinceSample.incrementAndGet();
                     super.process( valueUpdate );
                 }
@@ -465,6 +491,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                 try
                 {
                     validateUpdate( valueUpdate );
+                    if ( ignoreStrategy.ignore( valueUpdate ) )
+                    {
+                        return;
+                    }
                     externalUpdates.add( valueUpdate );
                 }
                 catch ( IOException e )

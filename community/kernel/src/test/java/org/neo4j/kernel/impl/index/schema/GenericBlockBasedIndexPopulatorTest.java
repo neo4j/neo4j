@@ -19,56 +19,115 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
 import java.io.IOException;
+import java.util.Collection;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.internal.schema.IndexType;
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
-import org.neo4j.kernel.api.index.IndexValueValidator;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
-import org.neo4j.memory.MemoryTracker;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.Race;
+import org.neo4j.values.storable.Value;
 
-class GenericBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorTest<BtreeKey>
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
+import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.values.storable.Values.stringValue;
+
+abstract class GenericBlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>> extends BlockBasedIndexPopulatorTest<KEY>
 {
-
-    @Override
-    IndexType indexType()
+    @ValueSource( booleans = {true, false} )
+    @ParameterizedTest
+    void shouldAcceptUpdatedMaxSizeValue( boolean updateBeforeScanCompleted ) throws Throwable
     {
-        return IndexType.BTREE;
-    }
-
-    @Override
-    BlockBasedIndexPopulator<BtreeKey> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker ) throws IOException
-    {
-        GenericLayout layout = layout();
-        BlockBasedIndexPopulator<BtreeKey> populator =
-                new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory,
-                        Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 ),
-                        memoryTracker, monitor )
+        // given
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        try
+        {
+            int size = populator.tree.keyValueSizeCap();
+            Layout<KEY,NullValue> layout = layout();
+            Value value = generateStringValueResultingInIndexEntrySize( layout, size );
+            IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value );
+            Race.ThrowingRunnable updateAction = () ->
+            {
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
                 {
-                    @Override
-                    NativeIndexReader<BtreeKey> newReader()
-                    {
-                        throw new UnsupportedOperationException( "Not needed in this test" );
-                    }
+                    updater.process( update );
+                }
+            };
+            if ( updateBeforeScanCompleted )
+            {
+                updateAction.run();
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            }
+            else
+            {
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+                updateAction.run();
+            }
 
-                    @Override
-                    protected IndexValueValidator instantiateValueValidator()
-                    {
-                        return new GenericIndexKeyValidator( tree.keyValueSizeCap(), descriptor, layout, tokenNameLookup );
-                    }
-                };
-        populator.create();
-        return populator;
+            // when
+            try ( Seeker<KEY,NullValue> seek = seek( populator.tree, layout ) )
+            {
+                // then
+                assertTrue( seek.next() );
+                assertEquals( value, seek.key().asValues()[0] );
+                assertFalse( seek.next() );
+            }
+        }
+        finally
+        {
+            populator.close( true, NULL );
+        }
+    }
+
+    @Test
+    void shouldAcceptBatchAddedMaxSizeValue() throws IndexEntryConflictException, IOException
+    {
+        // given
+        ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
+        try
+        {
+            int size = populator.tree.keyValueSizeCap();
+            Layout<KEY,NullValue> layout = layout();
+            Value value = generateStringValueResultingInIndexEntrySize( layout, size );
+            Collection<? extends IndexEntryUpdate<?>> data = singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value ) );
+            populator.add( data, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+
+            // when
+            try ( Seeker<KEY,NullValue> seek = seek( populator.tree, layout ) )
+            {
+                // then
+                assertTrue( seek.next() );
+                assertEquals( value, seek.key().asValues()[0] );
+                assertFalse( seek.next() );
+            }
+        }
+        finally
+        {
+            populator.close( true, NULL );
+        }
     }
 
     @Override
-    GenericLayout layout()
+    protected Value supportedValue( int i )
     {
-        IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-        return new GenericLayout( 1, spatialSettings );
+        return stringValue( "Value" + i );
     }
-
 }

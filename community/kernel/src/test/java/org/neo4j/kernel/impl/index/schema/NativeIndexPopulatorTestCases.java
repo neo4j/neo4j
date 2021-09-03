@@ -46,7 +46,7 @@ class NativeIndexPopulatorTestCases
     static NativeIndexPopulatorTestCases.PopulatorFactory<RangeKey> rangeBlockBasedPopulatorFactory()
     {
         return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
-                new BlockBasedRangeIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, false,
+                new RangeBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, false,
                         heapBufferFactory( 10 * 1024 ), config, INSTANCE, tokenNameLookup );
     }
 

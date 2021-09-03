@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.concurrent.Callable;
 
 import org.neo4j.common.TokenNameLookup;
@@ -50,12 +48,9 @@ import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singleton;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -71,14 +66,12 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
-import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
-import static org.neo4j.values.storable.Values.stringValue;
 
 @PageCacheExtension
 abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KEY>>
 {
-    private final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).withName( "index" ).withIndexType( indexType() ).materialise( 1 );
+    final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).withName( "index" ).withIndexType( indexType() ).materialise( 1 );
     private final IndexDescriptor UNIQUE_INDEX_DESCRIPTOR =
             uniqueForSchema( forLabel( 1, 1 ) ).withName( "constraint" ).withIndexType( indexType() ).materialise( 1 );
     final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
@@ -92,10 +85,11 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
     IndexFiles indexFiles;
     DatabaseIndexContext databaseIndexContext;
     private JobScheduler jobScheduler;
-    private IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
+    IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
 
     abstract IndexType indexType();
     abstract BlockBasedIndexPopulator<KEY> instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException;
+    abstract Value supportedValue( int identifier );
 
     @BeforeEach
     void setup()
@@ -130,17 +124,17 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         try
         {
             // when
-            TextValue hakuna = stringValue( "hakuna" );
-            TextValue matata = stringValue( "matata" );
-            int hakunaId = 1;
-            int matataId = 2;
-            externalUpdate( populator, hakuna, hakunaId );
+            Value first = supportedValue( 1 );
+            Value second = supportedValue( 2 );
+            int firstId = 1;
+            int secondId = 2;
+            externalUpdate( populator, first, firstId );
             populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-            externalUpdate( populator, matata, matataId );
+            externalUpdate( populator, second, secondId );
 
             // then
-            assertMatch( populator, hakuna, hakunaId );
-            assertMatch( populator, matata, matataId );
+            assertMatch( populator, first, firstId );
+            assertMatch( populator, second, secondId );
         }
         finally
         {
@@ -156,7 +150,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         try
         {
             // when
-            Value duplicate = Values.of( "duplicate" );
+            Value duplicate = supportedValue( 1 );
             ValueIndexEntryUpdate<?> firstScanUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
             ValueIndexEntryUpdate<?> secondScanUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             assertThrows( IndexEntryConflictException.class, () ->
@@ -180,7 +174,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         try
         {
             // when
-            Value duplicate = Values.of( "duplicate" );
+            Value duplicate = supportedValue( 1 );
             ValueIndexEntryUpdate<?> firstExternalUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
             ValueIndexEntryUpdate<?> secondExternalUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             assertThrows( IndexEntryConflictException.class, () ->
@@ -207,7 +201,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         try
         {
             // when
-            Value duplicate = Values.of( "duplicate" );
+            Value duplicate = supportedValue( 1 );
             ValueIndexEntryUpdate<?> externalUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
             ValueIndexEntryUpdate<?> scanUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             assertThrows( IndexEntryConflictException.class, () ->
@@ -234,8 +228,8 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         try
         {
             // when
-            Value duplicate = Values.of( "duplicate" );
-            Value unique = Values.of( "unique" );
+            Value duplicate = supportedValue( 1 );
+            Value unique = supportedValue( 2 );
             ValueIndexEntryUpdate<?> firstScanUpdate = ValueIndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
             ValueIndexEntryUpdate<?> secondScanUpdate = ValueIndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
             ValueIndexEntryUpdate<?> externalUpdate = ValueIndexEntryUpdate.change( 1, INDEX_DESCRIPTOR, duplicate, unique );
@@ -257,61 +251,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         }
     }
 
-    @Test
-    void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException, IOException
-    {
-        // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
-        try
-        {
-            int maxKeyValueSize = populator.tree.keyValueSizeCap();
-            ValueIndexEntryUpdate<IndexDescriptor> update =
-                    add( 1, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( populator.layout, maxKeyValueSize ) );
-
-            // when
-            Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
-            populator.add( updates, NULL );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-
-            // then
-            assertHasEntry( populator, update.values()[0], 1 );
-        }
-        finally
-        {
-            populator.close( true, NULL );
-        }
-    }
-
-    @Test
-    void shouldThrowForEntriesLargerThanMaxSize() throws IOException
-    {
-        // given
-        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
-        try
-        {
-            int maxKeyValueSize = populator.tree.keyValueSizeCap();
-            ValueIndexEntryUpdate<IndexDescriptor> update =
-                    add( 1, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( populator.layout, maxKeyValueSize + 1 ) );
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
-            {
-                Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
-                populator.add( updates, NULL );
-                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-            } );
-            // then
-            assertThat( e.getMessage(), Matchers.containsString(
-                    "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index', " +
-                            "type='GENERAL " + indexType() + "', schema=(:Label1 {property1}), indexProvider='Undecided-0' ), entity id: 1, property size: " +
-                            "8176, value: [String(\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA...." ) );
-
-        }
-        finally
-        {
-            populator.close( true, NULL );
-        }
-    }
-
-    private void assertHasEntry( BlockBasedIndexPopulator<KEY> populator, Value entry, int expectedId )
+    void assertHasEntry( BlockBasedIndexPopulator<KEY> populator, Value entry, int expectedId )
     {
         try ( NativeIndexReader<KEY> reader = populator.newReader() )
         {
@@ -324,13 +264,16 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         }
     }
 
-    private void externalUpdate( BlockBasedIndexPopulator<KEY> populator, TextValue matata, int matataId )
-        throws IndexEntryConflictException
+    void externalUpdate( BlockBasedIndexPopulator<KEY> populator, Value value, int entityId )
     {
         try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( NULL ) )
         {
             // After scanCompleted
-            indexUpdater.process( add( matataId, INDEX_DESCRIPTOR, matata ) );
+            indexUpdater.process( add( entityId, INDEX_DESCRIPTOR, value ) );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
         }
     }
 

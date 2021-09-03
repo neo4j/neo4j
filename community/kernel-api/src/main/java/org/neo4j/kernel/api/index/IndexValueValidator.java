@@ -31,6 +31,8 @@ public interface IndexValueValidator
 {
     void validate( long entityId, Value... values );
 
+    IndexValueValidator NO_VALIDATION = ( entityId, values ) -> {};
+
     static void throwSizeViolationException( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, long entityId, int size,
             Value... values )
     {

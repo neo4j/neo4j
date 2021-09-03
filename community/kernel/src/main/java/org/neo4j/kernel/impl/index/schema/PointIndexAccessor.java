@@ -32,6 +32,9 @@ import org.neo4j.values.storable.ValueGroup;
 
 class PointIndexAccessor extends NativeIndexAccessor<PointKey>
 {
+    // Ignore everything except GEOMETRY values
+    static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = update -> update.values()[0].valueGroup() != ValueGroup.GEOMETRY;
+
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
 
@@ -73,7 +76,6 @@ class PointIndexAccessor extends NativeIndexAccessor<PointKey>
     @Override
     protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy()
     {
-        // Ignore everything except GEOMETRY values
-        return update -> update.values()[0].valueGroup() != ValueGroup.GEOMETRY;
+        return UPDATE_IGNORE_STRATEGY;
     }
 }

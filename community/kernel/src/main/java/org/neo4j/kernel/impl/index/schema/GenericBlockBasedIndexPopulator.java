@@ -42,7 +42,16 @@ class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<BtreeKey>
             IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings, SpaceFillingCurveConfiguration configuration,
             boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker );
+        this( databaseIndexContext, indexFiles, layout, descriptor, spatialSettings, configuration, archiveFailedIndex, bufferFactory, config, memoryTracker,
+                tokenNameLookup, BlockStorage.Monitor.NO_MONITOR );
+    }
+
+    GenericBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<BtreeKey> layout,
+            IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings, SpaceFillingCurveConfiguration configuration,
+            boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+            BlockStorage.Monitor blockStorageMonitor )
+    {
+        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
         this.tokenNameLookup = tokenNameLookup;

@@ -132,7 +132,7 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
     protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, RangeLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
-        return new BlockBasedRangeIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex,
+        return new RangeBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex,
                 bufferFactory, config, memoryTracker, tokenNameLookup );
     }
 

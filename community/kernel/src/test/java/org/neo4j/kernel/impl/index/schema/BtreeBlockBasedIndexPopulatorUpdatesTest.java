@@ -22,28 +22,33 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-class RangeBlockBasedIndexPopulatorUpdatesTest extends GenericBlockBasedIndexPopulatorUpdatesTest<RangeKey>
+class BtreeBlockBasedIndexPopulatorUpdatesTest extends GenericBlockBasedIndexPopulatorUpdatesTest<BtreeKey>
 {
     @Override
     IndexType indexType()
     {
-        return IndexType.RANGE;
+        return IndexType.BTREE;
     }
 
     @Override
-    RangeBlockBasedIndexPopulator instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException
+    GenericBlockBasedIndexPopulator instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException
     {
         Config config = Config.defaults();
-        RangeLayout layout = new RangeLayout( 1 );
-        RangeBlockBasedIndexPopulator populator =
-                new RangeBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, indexDescriptor,false,
+        IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
+        GenericLayout layout = new GenericLayout( 1, spatialSettings );
+        SpaceFillingCurveConfiguration configuration = SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
+        GenericBlockBasedIndexPopulator populator =
+                new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, indexDescriptor, spatialSettings, configuration, false,
                 heapBufferFactory( (int) kibiBytes( 40 ) ), config, INSTANCE, tokenNameLookup );
         populator.create();
         return populator;

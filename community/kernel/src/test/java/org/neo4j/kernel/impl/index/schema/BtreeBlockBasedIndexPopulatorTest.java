@@ -23,34 +23,39 @@ import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.MemoryTracker;
 
-class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorTest<RangeKey>
+class BtreeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorTest<BtreeKey>
 {
+    private final Config config = Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 );
+    private final IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
+
     @Override
     IndexType indexType()
     {
-        return IndexType.RANGE;
+        return IndexType.BTREE;
     }
 
     @Override
-    BlockBasedIndexPopulator<RangeKey> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
+    BlockBasedIndexPopulator<BtreeKey> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker ) throws IOException
     {
-        RangeLayout layout = layout();
-        Config config = Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 );
-        RangeBlockBasedIndexPopulator populator =
-                new RangeBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory, config, memoryTracker,
-                        tokenNameLookup, monitor );
+        GenericLayout layout = layout();
+        StandardConfiguration configuration = new StandardConfiguration();
+        GenericBlockBasedIndexPopulator populator =
+                new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, spatialSettings, configuration, false,
+                        bufferFactory, config, memoryTracker, tokenNameLookup, monitor );
         populator.create();
         return populator;
     }
 
     @Override
-    RangeLayout layout()
+    GenericLayout layout()
     {
-        return new RangeLayout( 1 );
+        return new GenericLayout( 1, spatialSettings );
     }
 }

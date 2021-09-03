@@ -19,38 +19,85 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
+import java.util.Collection;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
-import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static java.util.Collections.singleton;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
-class GenericBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPopulatorUpdatesTest<BtreeKey>
+abstract class GenericBlockBasedIndexPopulatorUpdatesTest<KEY extends GenericKey<KEY>> extends BlockBasedIndexPopulatorUpdatesTest<KEY>
 {
-    @Override
-    IndexType indexType()
+    @Test
+    void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException, IOException
     {
-        return IndexType.BTREE;
+        // given
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        try
+        {
+            int maxKeyValueSize = populator.tree.keyValueSizeCap();
+            ValueIndexEntryUpdate<IndexDescriptor> update =
+                    add( 1, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( populator.layout, maxKeyValueSize ) );
+
+            // when
+            Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
+            populator.add( updates, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+
+            // then
+            assertHasEntry( populator, update.values()[0], 1 );
+        }
+        finally
+        {
+            populator.close( true, NULL );
+        }
+    }
+
+    @Test
+    void shouldThrowForEntriesLargerThanMaxSize() throws IOException
+    {
+        // given
+        BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        try
+        {
+            int maxKeyValueSize = populator.tree.keyValueSizeCap();
+            ValueIndexEntryUpdate<IndexDescriptor> update =
+                    add( 1, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( populator.layout, maxKeyValueSize + 1 ) );
+            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
+            {
+                Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
+                populator.add( updates, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            } );
+            // then
+            assertThat( e.getMessage(), Matchers.containsString(
+                    "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index', " +
+                            "type='GENERAL " + indexType() + "', schema=(:Label1 {property1}), indexProvider='Undecided-0' ), entity id: 1, property size: " +
+                            "8176, value: [String(\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA...." ) );
+
+        }
+        finally
+        {
+            populator.close( true, NULL );
+        }
     }
 
     @Override
-    GenericBlockBasedIndexPopulator instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException
+    Value supportedValue( int identifier )
     {
-        Config config = Config.defaults();
-        IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
-        GenericLayout layout = new GenericLayout( 1, spatialSettings );
-        SpaceFillingCurveConfiguration configuration = SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
-        GenericBlockBasedIndexPopulator populator =
-                new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, indexDescriptor, spatialSettings, configuration, false,
-                heapBufferFactory( (int) kibiBytes( 40 ) ), config, INSTANCE, tokenNameLookup );
-        populator.create();
-        return populator;
+        return Values.stringValue( "StringValue " + identifier );
     }
 }
