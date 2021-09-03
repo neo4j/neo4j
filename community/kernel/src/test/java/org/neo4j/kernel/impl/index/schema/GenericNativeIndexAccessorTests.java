@@ -363,7 +363,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         assertEquals( i, expectedValues.length, "found all values" );
     }
 
-    private static Value valueOf( ValueIndexEntryUpdate<IndexDescriptor> update )
+    protected static Value valueOf( ValueIndexEntryUpdate<IndexDescriptor> update )
     {
         return update.values()[0];
     }

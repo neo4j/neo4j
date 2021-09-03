@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -39,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
@@ -109,6 +112,27 @@ class NativeIndexAccessorTest extends GenericNativeIndexAccessorTests<BtreeKey>
                     reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
                                   constrained( unsupportedOrder, false ), unsupportedQuery ) );
             assertThat( e.getMessage() ).contains( "unsupported order" ).contains( unsupportedOrder.toString() ).contains( unsupportedQuery.toString() );
+        }
+    }
+
+    @Test
+    void shouldReturnMatchingEntriesForPointArrayRangePredicate() throws Exception
+    {
+        // given
+        final var updates = someUpdatesSingleTypeNoDuplicates( ValueType.CARTESIAN_POINT_ARRAY );
+        processAll( updates );
+        ValueCreatorUtil.sort( updates );
+
+        final int fromInclusive = 2;
+        final int toExclusive = updates.length - 1;
+
+        // when
+        try ( var reader = accessor.newValueReader();
+              var result = query( reader, ValueCreatorUtil.rangeQuery( valueOf( updates[fromInclusive] ), true,
+                                                                       valueOf( updates[toExclusive] ), false ) ) )
+        {
+            // then
+            assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, fromInclusive, toExclusive ), alwaysTrue() ), result );
         }
     }
 }

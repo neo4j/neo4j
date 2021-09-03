@@ -672,7 +672,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         return someUpdatesSingleTypeNoDuplicates( valueCreatorUtil.supportedTypes() );
     }
 
-    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates( ValueType[] types )
+    ValueIndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates( ValueType... types )
     {
         ValueType type;
         do
