@@ -94,6 +94,7 @@ object LogicalPlanToPlanBuilderString {
       sb += '('
       sb ++= par(plan)
       sb += ')'
+      sb ++= meta(plan)
       extra.foreach(e => sb ++= e.apply(plan))
 
       plan.lhs.foreach(lhs => childrenStack ::= LevelPlanItem(level, lhs))
@@ -107,10 +108,19 @@ object LogicalPlanToPlanBuilderString {
       sb ++= ".build()"
     }
 
-
     sb.toString()
   }
 
+  /**
+   * Formats meta information about the plan as a comment to be placed after the method.
+   */
+  def meta(plan: LogicalPlan): String = {
+    s" // id: ${plan.id.x}"
+  }
+
+  /**
+   * Formats the plan's name as method name.
+   */
   private def pre(logicalPlan: LogicalPlan): String = {
     val specialCases: PartialFunction[LogicalPlan, String] = {
       case _:ProduceResult => "produceResults"
@@ -149,6 +159,9 @@ object LogicalPlanToPlanBuilderString {
     head +: className.tail
   }
 
+  /**
+   * Formats the plan's parameters to be represented inside the parameters' parentheses.
+   */
   private def par(logicalPlan: LogicalPlan): String = {
     val plansWithContent: PartialFunction[LogicalPlan, String] = {
       case Aggregation(_, groupingExpressions, aggregationExpression) =>
