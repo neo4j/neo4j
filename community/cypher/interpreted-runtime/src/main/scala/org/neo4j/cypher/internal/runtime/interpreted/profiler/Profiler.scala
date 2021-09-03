@@ -50,48 +50,60 @@ import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.Value
 
+import scala.collection.mutable
+
 class Profiler(dbmsInfo: DbmsInfo,
                stats: InterpretedProfileInformation) extends PipeDecorator {
   outerProfiler =>
 
-  private var planIdStack: List[Id] = Nil
-  private var lastObservedStats = PageCacheStats(0, 0)
+  private case class StackEntry(planId: Id, transactionBoundStatisticProvider: KernelStatisticProvider)
 
-  private def startAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, id: Id): Unit = {
-    val currentStats = PageCacheStats(statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
+  private var planIdStack: List[StackEntry] = Nil
+  private val lastObservedStats = mutable.Map[KernelStatisticProvider, PageCacheStats]().withDefaultValue(PageCacheStats(0, 0))
 
+  private def startAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, planId: Id): Unit = {
+    // The current top of the stack hands over control to the plan with the provided planId.
+    // Account any statistic updates that happened until now towards the previousId.
     planIdStack.headOption.foreach {
-      previousId =>
-        stats.pageCacheMap(previousId) += (currentStats - lastObservedStats)
+      case StackEntry(previousId, previousStatisticProvider) =>
+        val currentStatsOfPreviousPlan = PageCacheStats(previousStatisticProvider.getPageCacheHits, previousStatisticProvider.getPageCacheMisses)
+        stats.pageCacheMap(previousId) += (currentStatsOfPreviousPlan - lastObservedStats(previousStatisticProvider))
     }
 
-    planIdStack ::= id
-    lastObservedStats = currentStats
+    val currentStats = PageCacheStats(statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
+
+    planIdStack ::= StackEntry(planId, statisticProvider)
+    lastObservedStats.update(statisticProvider, currentStats)
   }
 
-  private def stopAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, id: Id): Unit = {
+  private def stopAccountingPageCacheStatsFor(statisticProvider: KernelStatisticProvider, planId: Id): Unit = {
     val head :: rest = planIdStack
-    require(head == id,
-            s"We messed up accounting the page cache statistics. Expected to pop $id but popped $head. Remaining stack: $planIdStack")
+    require(head.planId == planId,
+            s"We messed up accounting the page cache statistics. Expected to pop $planId but popped ${head.planId}. Remaining stack: $planIdStack")
 
     val currentStats = PageCacheStats(statisticProvider.getPageCacheHits, statisticProvider.getPageCacheMisses)
-    stats.pageCacheMap(id) += (currentStats - lastObservedStats)
+    stats.pageCacheMap(planId) += (currentStats - lastObservedStats(statisticProvider))
 
     planIdStack = rest
-    lastObservedStats = currentStats
+    // To not leave any memory leak where we reference a transactionBoundStatisticProvider of an already committed
+    // transaction, we have to clean up transactionBoundStatisticProvider whenever control goes back to another transaction.
+    if (rest.isEmpty || rest.head.transactionBoundStatisticProvider != head.transactionBoundStatisticProvider) {
+      lastObservedStats.remove(head.transactionBoundStatisticProvider)
+    }
+    lastObservedStats.update(statisticProvider, currentStats)
   }
 
   override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
     val oldCount = stats.rowMap.get(planId).map(_.count).getOrElse(0L)
 
-    val statisticsProvider = state.query.transactionalContext.kernelStatisticProvider
+    val transactionalContext = state.query.transactionalContext
 
     val resultIter =
       new ProfilingIterator(
         iter,
         oldCount,
-        if (trackPageCacheStats) () => startAccountingPageCacheStatsFor(statisticsProvider, planId) else () => (),
-        if (trackPageCacheStats) () => stopAccountingPageCacheStatsFor(statisticsProvider, planId) else () => (),
+        if (trackPageCacheStats) () => startAccountingPageCacheStatsFor(transactionalContext.kernelStatisticProvider, planId) else () => (),
+        if (trackPageCacheStats) () => stopAccountingPageCacheStatsFor(transactionalContext.kernelStatisticProvider, planId) else () => (),
       )
 
     stats.rowMap(planId) = resultIter

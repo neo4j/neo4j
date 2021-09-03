@@ -220,7 +220,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         // We rely on the close callback of the inner transaction to be called on close. Otherwise, the worst thing that could happen is that the outer
         // transaction cannot commit because of inner transactions still being open. But the close callback not being called, should be such an off scenario
         // that we may not want to commit the outer transaction anyways.
-        newTransaction.addCloseCallback(() -> innerTransactionHandler.removeInnerTransaction( newTransactionId ));
+        newTransaction.addCloseCallback( () -> innerTransactionHandler.removeInnerTransaction( newTransactionId ) );
 
         KernelStatement newStatement = (KernelStatement) newTransaction.kernelTransaction().acquireStatement();
         // Bind the new transaction/statement to the executingQuery

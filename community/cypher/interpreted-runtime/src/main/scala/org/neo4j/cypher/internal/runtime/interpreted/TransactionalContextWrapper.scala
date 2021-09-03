@@ -63,7 +63,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
 
   override def close(): Unit = tc.close()
 
-  override def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
+  override def kernelStatisticProvider: KernelStatisticProvider = ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 
   override def dbmsInfo: DbmsInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DbmsInfo])
 
