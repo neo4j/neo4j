@@ -930,4 +930,121 @@ class SubqueryCallPlanningIntegrationTest
       .allNodeScan("a")
       .build()
   }
+
+  test("call subquery in transactions with internal read-write conflict is eagerized") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  MATCH (b)
+        |  CREATE (c)
+        |} IN TRANSACTIONS
+        |RETURN a
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionForeach()
+      .|.create(createNode("c"))
+      .|.eager()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call subquery in transactions with internal read-write, and external write-read conflict is eagerized") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  MATCH (b)
+        |  CREATE (c)
+        |} IN TRANSACTIONS
+        |MATCH (d)
+        |RETURN a
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .apply()
+      .|.allNodeScan("d", "a")
+      .eager()
+      .transactionForeach()
+      .|.create(createNode("c"))
+      .|.eager()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call subquery in transactions with external property write-read conflict is eagerized") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  WITH a
+        |  SET a.prop = 1
+        |} IN TRANSACTIONS
+        |RETURN a.prop
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("a.prop AS `a.prop`")
+      .eager()
+      .transactionForeach()
+      .|.setNodeProperty("a", "prop", "1")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("consecutive call subquery in transactions with write-read conflict is eagerized") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS
+        |CALL {
+        |  MATCH (n)
+        |  SET n.prop = 1
+        |} IN TRANSACTIONS
+        |RETURN 1 AS x
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("1 AS x")
+      .transactionForeach()
+      .|.setNodeProperty("n", "prop", "1")
+      .|.allNodeScan("n")
+      .eager()
+      .transactionForeach()
+      .|.create(createNode("n"))
+      .|.argument()
+      .allNodeScan("a")
+      .build()
+  }
+
 }
