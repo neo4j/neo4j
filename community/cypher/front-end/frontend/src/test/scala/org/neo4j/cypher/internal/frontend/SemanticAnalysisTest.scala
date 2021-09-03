@@ -500,7 +500,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val query =
       """USING PERIODIC COMMIT 500 LOAD CSV FROM 'file:///artists.csv' AS line
         |CALL { CREATE (x) } IN TRANSACTIONS
-        |RETURN line""".stripMargin
+        |RETURN line AS line""".stripMargin
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
