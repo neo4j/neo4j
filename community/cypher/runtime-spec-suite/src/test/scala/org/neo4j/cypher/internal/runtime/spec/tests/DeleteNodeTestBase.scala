@@ -165,6 +165,29 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
     tx.getAllRelationships.stream().count() shouldBe 1
   }
 
+  test("should not delete too many nodes if delete is between two loops with continuation") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .deleteNode("n")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
+      .withStatistics(nodesDeleted = sizeHint)
+    tx.getAllNodes.iterator().hasNext shouldBe false
+  }
+
   private def deleteAllTest(nodeCount: Int): Unit = {
 
     val allNodes = tx.getAllNodes.iterator().asScala.toIndexedSeq.map(n => Array(n))
