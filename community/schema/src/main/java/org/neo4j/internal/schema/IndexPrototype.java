@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.neo4j.common.TokenNameLookup;
 
 import static org.neo4j.internal.schema.IndexType.BTREE;
+import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 /**
  * The prototype of an index that may or may not exist.
@@ -182,5 +183,11 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     public IndexDescriptor materialise( long id )
     {
         return new IndexDescriptor( id, this );
+    }
+
+    @Override
+    public String toString()
+    {
+        return userDescription( TOKEN_ID_NAME_LOOKUP );
     }
 }
