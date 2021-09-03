@@ -935,7 +935,7 @@ trait TransactionForeachDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile dbHits of populating nodes inside transactionForeach") {
 
-    given (
+    givenWithTransactionType (
       nodeGraph(sizeHint),
       KernelTransaction.Type.IMPLICIT
     )

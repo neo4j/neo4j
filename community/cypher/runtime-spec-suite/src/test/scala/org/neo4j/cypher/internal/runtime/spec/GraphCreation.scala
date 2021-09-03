@@ -42,14 +42,26 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   /**
    * This method should be invoked with the complete graph setup given as a block.
    * It creates a new transaction and converts the result to entities that are valid in the new transaction.
-   * It could be overridden to simply call `f` to test the case where the data is created in the same transaction
+   * It could be overridden to simply call `f` to test the case where the data is created in the same transaction.
    *
    * There is no need to call this method if the setup does not create any graph entities, e.g. if you use input.
    *
    * @param f the graph creation
    * @return the graph, with entities that are valid in the new transaction
    */
-  def given[T <: AnyRef](f: => T, transactionType: KernelTransaction.Type = runtimeTestSupport.getTransactionType): T = {
+  def given[T <: AnyRef](f: => T): T = {
+    givenWithTransactionType(f, runtimeTestSupport.getTransactionType)
+  }
+
+  /**
+   * This method should be invoked with the complete graph setup given as a block.
+   * It creates a new transaction with the supplied transactionType and converts the result to entities that are valid in the new transaction.
+   *
+   * @param f the graph creation
+   * @param transactionType the requested type of the restarted transaction, IMPLICIT or EXPLICIT
+   * @return the graph, with entities that are valid in the new transaction
+   */
+  def givenWithTransactionType[T <: AnyRef](f: => T, transactionType: KernelTransaction.Type): T = {
     val result = f
     runtimeTestSupport.restartTx(transactionType)
     reattachEntitiesToNewTransaction(result).asInstanceOf[T]
@@ -65,8 +77,22 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * @param f the graph creation
    */
   def given(f: => Unit): Unit = {
-    f
-    runtimeTestSupport.restartTx()
+    givenWithTransactionType(unitF = f, runtimeTestSupport.getTransactionType)
+  }
+
+  /**
+   * This method should be invoked with the complete graph setup given as a block, if the graph is not needed later on (e.g. for assertions).
+   * It creates a new transaction with the supplied transactionType.
+   * It could be overridden to simply call `f` to test the case where the data is created in the same transaction
+   *
+   * There is no need to call this method if the setup does not create any graph entities, e.g. if you use input.
+   *
+   * @param f the graph creation
+   * @param transactionType the requested type of the restarted transaction, IMPLICIT or EXPLICIT
+   */
+  def givenWithTransactionType(unitF: => Unit, transactionType: KernelTransaction.Type): Unit = {
+    unitF
+    runtimeTestSupport.restartTx(transactionType)
   }
 
   private val reattachEntitiesToNewTransaction: Rewriter = topDown {

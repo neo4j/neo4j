@@ -488,7 +488,7 @@ trait FullSupportProfileMemoryTestBase [CONTEXT <: RuntimeContext] {
 
   test("should profile memory of operators inside transactionForeach") {
     // given
-    given (
+    givenWithTransactionType (
       nodePropertyGraph(SIZE, {
         case i => Map("prop" -> i)
       }),

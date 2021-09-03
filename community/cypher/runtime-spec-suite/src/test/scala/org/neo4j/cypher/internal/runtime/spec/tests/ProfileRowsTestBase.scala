@@ -2117,7 +2117,7 @@ trait TransactionForeachProfileRowsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileRowsTestBase[CONTEXT] =>
 
   test("should profile rows of operations in transactionForeach") {
-    given (
+    givenWithTransactionType (
       nodeGraph(sizeHint),
       KernelTransaction.Type.IMPLICIT
     )
