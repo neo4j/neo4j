@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.io.File
-import java.io.PrintWriter
-import java.util
-import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherRuntime
@@ -55,6 +51,7 @@ import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
+import org.neo4j.kernel.api.procedure.CallableUserFunction
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.NonRecordingQuerySubscriber
@@ -79,12 +76,16 @@ import org.scalatest.Tag
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
+import java.io.File
+import java.io.PrintWriter
 import java.time.LocalTime
 import java.time.OffsetTime
 import java.time.chrono.ChronoLocalDate
 import java.time.chrono.ChronoLocalDateTime
 import java.time.chrono.ChronoZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util
+import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -278,6 +279,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def registerProcedure(proc: CallableProcedure): Unit = {
     kernel.registerProcedure(proc)
+  }
+
+  def registerFunction(function: CallableUserFunction): Unit = {
+    kernel.registerUserFunction(function)
   }
 
   def registerUserAggregation(func: CallableUserAggregationFunction): Unit = {
