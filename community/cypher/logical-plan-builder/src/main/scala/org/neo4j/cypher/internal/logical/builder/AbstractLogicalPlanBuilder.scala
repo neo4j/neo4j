@@ -405,7 +405,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         )(pos),
         NodePattern(Some(varFor(p.to)), Seq.empty, None)(pos) // labels and properties are not used at runtime
       )(pos), !all)(pos)),
-      predicates.map(Parser.parseExpression),
+      predicates.map(parseExpression),
       withFallback,
       disallowSameNode
     )(_)))
@@ -441,7 +441,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                         predicate: Option[String] = None): IMPL =
     optionalExpandAll(
       patternParser.parse(pattern),
-      predicate.map(Parser.parseExpression).map(p => Ands(Seq(p))(p.position)),
+      predicate.map(parseExpression).map(p => Ands(Seq(p))(p.position)),
     )
 
   private def optionalExpandAll(pattern: PatternParser.Pattern,
@@ -467,7 +467,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val p = patternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
-        val pred = predicate.map(Parser.parseExpression).map(p => Ands(Seq(p))(p.position))
+        val pred = predicate.map(parseExpression).map(p => Ands(Seq(p))(p.position))
         appendAtCurrentIndent(UnaryOperator(lp => OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto, pred)(_)))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
@@ -536,37 +536,37 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def deleteNode(node: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DeleteNode(lp, Parser.parseExpression(node))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteNode(lp, parseExpression(node))(_)))
     self
   }
 
   def detachDeleteNode(node: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, Parser.parseExpression(node))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, parseExpression(node))(_)))
     self
   }
 
   def deleteRelationship(rel: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, Parser.parseExpression(rel))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, parseExpression(rel))(_)))
     self
   }
 
   def deletePath(path: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DeletePath(lp, Parser.parseExpression(path))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => DeletePath(lp, parseExpression(path))(_)))
     self
   }
 
   def detachDeletePath(path: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DetachDeletePath(lp, Parser.parseExpression(path))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => DetachDeletePath(lp, parseExpression(path))(_)))
     self
   }
 
   def deleteExpression(expression: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DeleteExpression(lp, Parser.parseExpression(expression))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteExpression(lp, parseExpression(expression))(_)))
     self
   }
 
   def detachDeleteExpression(expression: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteExpression(lp, Parser.parseExpression(expression))(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteExpression(lp, parseExpression(expression))(_)))
     self
   }
 
@@ -606,7 +606,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def orderedDistinct(orderToLeverage: Seq[String], projectionStrings: String*): IMPL = {
-    val order = orderToLeverage.map(Parser.parseExpression)
+    val order = orderToLeverage.map(parseExpression)
     val projections = Parser.parseProjections(projectionStrings: _*)
     appendAtCurrentIndent(UnaryOperator(lp => OrderedDistinct(lp, projections, order)(_)))
     self
@@ -846,7 +846,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def orderedAggregation(groupingExpressions: Seq[String],
                          aggregationExpression: Seq[String],
                          orderToLeverage: Seq[String]): IMPL = {
-    val order = orderToLeverage.map(Parser.parseExpression)
+    val order = orderToLeverage.map(parseExpression)
     appendAtCurrentIndent(UnaryOperator(lp => OrderedAggregation(lp,
       Parser.parseProjections(groupingExpressions: _*),
       Parser.parseProjections(aggregationExpression: _*),
@@ -875,29 +875,29 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AntiConditionalApply(lhs, rhs, items)(_)))
 
   def selectOrSemiApply(predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrSemiApply(lhs, rhs, Parser.parseExpression(predicate))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrSemiApply(lhs, rhs, parseExpression(predicate))(_)))
 
   def selectOrSemiApply(predicate: Expression): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrSemiApply(lhs, rhs, predicate)(_)))
 
   def selectOrAntiSemiApply(predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrAntiSemiApply(lhs, rhs, Parser.parseExpression(predicate))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrAntiSemiApply(lhs, rhs, parseExpression(predicate))(_)))
 
   def letSelectOrSemiApply(idName: String, predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrSemiApply(lhs, rhs, idName, Parser.parseExpression(predicate))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrSemiApply(lhs, rhs, idName, parseExpression(predicate))(_)))
 
   def letSelectOrAntiSemiApply(idName: String, predicate: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrAntiSemiApply(lhs, rhs, idName, Parser.parseExpression(predicate))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => LetSelectOrAntiSemiApply(lhs, rhs, idName, parseExpression(predicate))(_)))
 
   def rollUpApply(collectionName: String,
                   variableToCollect: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => RollUpApply(lhs, rhs, collectionName, variableToCollect)(_)))
 
   def foreachApply(variable: String, expression: String): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ForeachApply(lhs, rhs, variable, Parser.parseExpression(expression))(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ForeachApply(lhs, rhs, variable, parseExpression(expression))(_)))
 
   def foreach(variable: String, expression: String, mutations: Seq[SimpleMutatingPattern]): IMPL =
-    appendAtCurrentIndent(UnaryOperator(lp => Foreach(lp, variable, Parser.parseExpression(expression), mutations)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => Foreach(lp, variable, parseExpression(expression), mutations)(_)))
 
   def cartesianProduct(fromSubquery: Boolean = false): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs, fromSubquery)(_)))
@@ -923,7 +923,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => Prober(lp, probe)(_)))
 
   def cacheProperties(properties: String*): IMPL = {
-    cacheProperties(properties.map(Parser.parseExpression(_).asInstanceOf[LogicalProperty]).toSet)
+    cacheProperties(properties.map(parseExpression(_).asInstanceOf[LogicalProperty]).toSet)
   }
 
   def cacheProperties(properties: Set[LogicalProperty]): IMPL = {
@@ -931,27 +931,27 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def setProperty(entity: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetProperty(source, Parser.parseExpression(entity), PropertyKeyName(propertyKey)(pos), Parser.parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetProperty(source, parseExpression(entity), PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)))
   }
 
   def setNodeProperty(node: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), Parser.parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)))
   }
 
   def setRelationshipProperty(relationship: String, propertyKey: String, value: String): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), Parser.parseExpression(value))(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)))
   }
 
   def setPropertiesFromMap(entity: String, map: String, removeOtherProps: Boolean): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetPropertiesFromMap(source, Parser.parseExpression(entity), Parser.parseExpression(map), removeOtherProps)(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetPropertiesFromMap(source, parseExpression(entity), parseExpression(map), removeOtherProps)(_)))
   }
 
   def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetNodePropertiesFromMap(source, node, Parser.parseExpression(map), removeOtherProps)(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetNodePropertiesFromMap(source, node, parseExpression(map), removeOtherProps)(_)))
   }
 
   def setRelationshipPropertiesFromMap(relationship: String, map: String, removeOtherProps: Boolean): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipPropertiesFromMap(source, relationship, Parser.parseExpression(map), removeOtherProps)(_)))
+    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipPropertiesFromMap(source, relationship, parseExpression(map), removeOtherProps)(_)))
   }
 
   def create(nodes: CreateNode*): IMPL = {
@@ -991,7 +991,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def valueHashJoin(predicate: String): IMPL = {
-    val expression = Parser.parseExpression(predicate)
+    val expression = parseExpression(predicate)
     expression match {
       case e: Equals =>
         appendAtCurrentIndent(BinaryOperator((left, right) => ValueHashJoin(left, right, e)(_)))
@@ -1016,7 +1016,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def filter(predicateStrings: String*): IMPL = {
-    val predicates = predicateStrings.map(Parser.parseExpression)
+    val predicates = predicateStrings.map(parseExpression)
     appendAtCurrentIndent(UnaryOperator(lp => {
       val rewrittenPredicates = predicates.map(rewriteExpression)
       Selection(rewrittenPredicates, lp)(_)
@@ -1032,7 +1032,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def nestedPlanCollectExpressionProjection(resultList: String, resultPart: String): IMPL = {
-    val inner = Parser.parseExpression(resultPart)
+    val inner = parseExpression(resultPart)
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Projection(lhs, Map(resultList -> NestedPlanCollectExpression(rhs, inner, "collect(...)")(NONE)))(_)))
   }
 
@@ -1053,7 +1053,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
               variableName: String,
               format: CSVFormat,
               fieldTerminator: Option[String] = None): IMPL = {
-    val urlExpr = Parser.parseExpression(url)
+    val urlExpr = parseExpression(url)
     appendAtCurrentIndent(UnaryOperator(lp => LoadCSV(
       lp,
       urlExpr,
@@ -1125,6 +1125,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   protected def build(readOnly: Boolean = true): T
 
   // HELPERS
+  private def parseExpression(expression: String): Expression = {
+    Parser.parseExpression(expression) match {
+      case f: FunctionInvocation if f.needsToBeResolved =>
+        ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
+      case e => e
+    }
+  }
 
   protected def appendAtCurrentIndent(operatorBuilder: OperatorBuilder): IMPL = {
     if (tree == null) {
