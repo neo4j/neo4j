@@ -27,6 +27,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
@@ -40,11 +43,11 @@ import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -76,7 +79,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldRangeScanInOrderWithTxState( IndexOrder indexOrder ) throws Exception
+    void shouldRangeSeekInOrderWithTxState( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
@@ -111,7 +114,6 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                 PropertyIndexQuery query = PropertyIndexQuery.range( prop, "hello", true, "trello", true );
 
                 entityIndexSeek( tx, index, cursor, constrained( indexOrder, true ), query );
-
                 assertResultsInOrder( expected, cursor, indexOrder );
             }
         }
@@ -119,7 +121,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldPrefixScanInOrder( IndexOrder indexOrder ) throws Exception
+    void shouldPrefixSeekInOrder( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
@@ -153,47 +155,6 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
                 PropertyIndexQuery query = PropertyIndexQuery.stringPrefix( prop, stringValue( "b" ) );
                 entityIndexSeek( tx, index, cursor, constrained( indexOrder, true ), query );
-
-                assertResultsInOrder( expected, cursor, indexOrder );
-            }
-        }
-    }
-
-    @ParameterizedTest
-    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithPointsAndSingleNodeAfterwards( IndexOrder indexOrder ) throws Exception
-    {
-        List<Pair<Long,Value>> expected = new ArrayList<>();
-
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            //NOTE: strings come after points in natural ascending sort order
-            expected.add( entityWithProp( tx, "a" ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, -500000, -500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, 500000, -500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, -500000, 500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, 500000, 500000 ) ) );
-
-            tx.commit();
-        }
-
-        createIndex();
-
-        // when
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
-
-            try ( var cursor = getEntityValueIndexCursor( tx ) )
-            {
-                expected.add( entityWithProp( tx, pointValue( Cartesian, -400000, -400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, 400000, -400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, -400000, 400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, 400000, 400000 ) ) );
-                expected.add( entityWithProp( tx, "b" ) );
-
-                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
-
                 assertResultsInOrder( expected, cursor, indexOrder );
             }
         }
@@ -203,7 +164,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
     // but there is no harm in checking that we get the same result from a range index, too
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithPointsWithinSameTile( IndexOrder indexOrder ) throws Exception
+    void shouldEntityIndexScanInOrderWithPointsWithinSameTile( IndexOrder indexOrder ) throws Exception
     {
         Config config = Config.defaults();
         IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
@@ -212,7 +173,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
         // given
         // Many random points that all are close enough to each other to belong to the same tile on the space filling curve.
         int nbrOfValues = 10000;
-        PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
+        PointValue origin = pointValue( WGS84, 0.0, 0.0 );
         Long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
         double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint );
         double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2;
@@ -222,7 +183,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            //NOTE: strings come after points in natural ascending sort order
+            // NOTE: strings come after points in natural ascending sort order
             expected.add( entityWithProp( tx, "a" ) );
             expected.add( entityWithProp( tx, "b" ) );
             for ( int i = 0; i < nbrOfValues / 8; i++ )
@@ -231,10 +192,10 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                 double x2 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
                 double y1 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
                 double y2 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
-                expected.add( entityWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
-                expected.add( entityWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
-                expected.add( entityWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
-                expected.add( entityWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
+                expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
+                expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
+                expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
+                expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
             }
 
             tx.commit();
@@ -255,33 +216,33 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                     double x2 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
                     double y1 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
                     double y2 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
-                    expected.add( entityWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
-                    expected.add( entityWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
-                    expected.add( entityWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
-                    expected.add( entityWithProp( tx, Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
+                    expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
+                    expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
+                    expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
+                    expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
                 }
                 expected.add( entityWithProp( tx, "c" ) );
                 expected.add( entityWithProp( tx, "d" ) );
 
                 entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
-
                 assertResultsInOrder( expected, cursor, indexOrder );
             }
         }
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexOrder.class, names = { "ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderPointsOnly( IndexOrder indexOrder ) throws Exception
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldEntityIndexScanInOrderPointsOnly( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            expected.add( entityWithProp( tx, pointValue( Cartesian, -500000, -500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, 500000, -500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, -500000, 500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, 500000, 500000 ) ) );
+            Iterator<PointValue> points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithProp( tx, points.next() ) );
+            }
 
             tx.commit();
         }
@@ -295,13 +256,13 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
             try ( var cursor = getEntityValueIndexCursor( tx ) )
             {
-                expected.add( entityWithProp( tx, pointValue( Cartesian, -400000, -400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, 400000, -400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, -400000, 400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, 400000, 400000 ) ) );
+                Iterator<PointValue> points = generateBox( 400_000 ).iterator();
+                while ( points.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, points.next() ) );
+                }
 
                 entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
-
                 assertResultsInOrder( expected, cursor, indexOrder );
             }
         }
@@ -309,24 +270,241 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithPointsAndNodesOnBothSides( IndexOrder indexOrder ) throws Exception
+    void shouldEntityIndexScanInOrderPointArraysOnly( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            //NOTE: arrays come before points in natural ascending sort order
+            Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+            }
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 100_000 ).iterator();
+                while ( arraysOfPoints.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+                }
+
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldEntityIndexScanInOrderWithPointsAndEntitiesBefore( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            // NOTE: arrays come before points in natural ascending sort order
             expected.add( entityWithProp( tx, new String[]{"a"} ) );
             expected.add( entityWithProp( tx, new String[]{"b"} ) );
             expected.add( entityWithProp( tx, new String[]{"c"} ) );
-            //NOTE: strings come after points in natural ascending sort order
+
+            Iterator<PointValue> points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithProp( tx, points.next() ) );
+            }
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                expected.add( entityWithProp( tx, new String[]{"d"} ) );
+
+                Iterator<PointValue> points = generateBox( 400_000 ).iterator();
+                while ( points.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, points.next() ) );
+                }
+
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldEntityIndexScanInOrderWithPointArraysAndEntitiesBefore( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            // NOTE: geometric arrays are ordered first; thus using minimum PointValues
+            expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE} ) );
+            expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE, PointValue.MIN_VALUE} ) );
+            expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE, PointValue.MIN_VALUE, PointValue.MIN_VALUE} ) );
+
+            Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+            }
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE, PointValue.MIN_VALUE, PointValue.MIN_VALUE, PointValue.MIN_VALUE} ) );
+
+                Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 100_000 ).iterator();
+                while ( arraysOfPoints.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+                }
+
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldEntityIndexScanInOrderWithPointsAndEntitiesAfter( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            Iterator<PointValue> points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithProp( tx, points.next() ) );
+            }
+
+            // NOTE: strings come after points in natural ascending sort order
+            expected.add( entityWithProp( tx, "a" ) );
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                Iterator<PointValue> points = generateBox( 400_000 ).iterator();
+                while ( points.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, points.next() ) );
+                }
+
+                expected.add( entityWithProp( tx, "b" ) );
+
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldEntityIndexScanInOrderWithPointArraysAndEntitiesAfter( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+            }
+
+            // NOTE: strings come after geometric arrays in natural ascending sort order
+            expected.add( entityWithProp( tx, "a" ) );
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 100_000 ).iterator();
+                while ( arraysOfPoints.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+                }
+
+                expected.add( entityWithProp( tx, "b" ) );
+
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldEntityIndexScanInOrderWithPointsAndEntitiesOnBothSides( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            // NOTE: arrays come before points in natural ascending sort order
+            expected.add( entityWithProp( tx, new String[]{"a"} ) );
+            expected.add( entityWithProp( tx, new String[]{"b"} ) );
+            expected.add( entityWithProp( tx, new String[]{"c"} ) );
+
+            Iterator<PointValue> points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithProp( tx, points.next() ) );
+            }
+
+            // NOTE: strings come after points in natural ascending sort order
             expected.add( entityWithProp( tx, "a" ) );
             expected.add( entityWithProp( tx, "b" ) );
             expected.add( entityWithProp( tx, "c" ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, -500000, -500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, 500000, -500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, -500000, 500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, 500000, 500000 ) ) );
 
             tx.commit();
         }
@@ -340,15 +518,17 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
             try ( var cursor = getEntityValueIndexCursor( tx ) )
             {
-                expected.add( entityWithProp( tx, pointValue( Cartesian, -400000, -400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, 400000, -400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, -400000, 400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, 400000, 400000 ) ) );
                 expected.add( entityWithProp( tx, new String[]{"d"} ) );
+
+                Iterator<PointValue> points = generateBox( 400_000 ).iterator();
+                while ( points.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, points.next() ) );
+                }
+
                 expected.add( entityWithProp( tx, "d" ) );
 
                 entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
-
                 assertResultsInOrder( expected, cursor, indexOrder );
             }
         }
@@ -356,20 +536,27 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithPointsAndNodesBefore( IndexOrder indexOrder ) throws Exception
+    void shouldEntityIndexScanInOrderWithPointArraysAndEntitiesOnBothSides( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            //NOTE: arrays come before points in natural ascending sort order
-            expected.add( entityWithProp( tx, new String[]{"a"} ) );
-            expected.add( entityWithProp( tx, new String[]{"b"} ) );
-            expected.add( entityWithProp( tx, new String[]{"c"} ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, -500000, -500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, 500000, -500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, -500000, 500000 ) ) );
-            expected.add( entityWithProp( tx, pointValue( Cartesian, 500000, 500000 ) ) );
+            // NOTE: geometric arrays are ordered first; thus using minimum PointValues
+            expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE} ) );
+            expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE, PointValue.MIN_VALUE} ) );
+            expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE, PointValue.MIN_VALUE, PointValue.MIN_VALUE} ) );
+
+            Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+            }
+
+            // NOTE: strings come after geometric arrays in natural ascending sort order
+            expected.add( entityWithProp( tx, "a" ) );
+            expected.add( entityWithProp( tx, "b" ) );
+            expected.add( entityWithProp( tx, "c" ) );
 
             tx.commit();
         }
@@ -383,14 +570,138 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
             try ( var cursor = getEntityValueIndexCursor( tx ) )
             {
-                expected.add( entityWithProp( tx, pointValue( Cartesian, -400000, -400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, 400000, -400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, -400000, 400000 ) ) );
-                expected.add( entityWithProp( tx, pointValue( Cartesian, 400000, 400000 ) ) );
-                expected.add( entityWithProp( tx, new String[]{"d"} ) );
+                expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE, PointValue.MIN_VALUE, PointValue.MIN_VALUE, PointValue.MIN_VALUE} ) );
+
+                Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 100_000 ).iterator();
+                while ( arraysOfPoints.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+                }
+
+                expected.add( entityWithProp( tx, "d" ) );
 
                 entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
 
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldEntityIndexScanInOrderPointsAndPointArrays( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            // NOTE: geometric arrays are ordered before points
+            Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+            }
+
+            Iterator<PointValue> points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithProp( tx, points.next() ) );
+            }
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 100_000 ).iterator();
+                while ( arraysOfPoints.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+                }
+
+                // add points with values in between some points within the geometric array
+                Iterator<PointValue> points = generateBox( 250_000 ).iterator();
+                while ( points.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, points.next() ) );
+                }
+
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldEntityIndexScanInOrderPointsAndPointArraysAndEntitiesOnBothSides( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            // NOTE: geometric arrays are ordered first; thus using minimum PointValues
+            expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE} ) );
+            expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE, PointValue.MIN_VALUE} ) );
+
+            Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+            }
+
+            // NOTE: string arrays are between geometric arrays and points
+            expected.add( entityWithProp( tx, new String[]{"a"} ) );
+            expected.add( entityWithProp( tx, new String[]{"b"} ) );
+
+            Iterator<PointValue> points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithProp( tx, points.next() ) );
+            }
+
+            // NOTE: strings come after points
+            expected.add( entityWithProp( tx, "a" ) );
+            expected.add( entityWithProp( tx, "b" ) );
+
+            tx.commit();
+        }
+
+        createIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                expected.add( entityWithProp( tx, new PointValue[]{PointValue.MIN_VALUE, PointValue.MIN_VALUE, PointValue.MIN_VALUE} ) );
+
+                Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 100_000 ).iterator();
+                while ( arraysOfPoints.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, arraysOfPoints.next() ) );
+                }
+
+                expected.add( entityWithProp( tx, new String[]{"c"} ) );
+
+                // add points with values in between some points within the geometric array
+                Iterator<PointValue> points = generateBox( 250_000 ).iterator();
+                while ( points.hasNext() )
+                {
+                    expected.add( entityWithProp( tx, points.next() ) );
+                }
+
+                expected.add( entityWithProp( tx, "c" ) );
+
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
                 assertResultsInOrder( expected, cursor, indexOrder );
             }
         }
@@ -404,18 +715,14 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "b" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "b" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "b" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "b" ) );
-            expected.add( entityWithTwoProps( tx, "a", pointValue( Cartesian, -500000, -500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "a", pointValue( Cartesian, 500000, -500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "a", pointValue( Cartesian, -500000, 500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "a", pointValue( Cartesian, 500000, 500000 ) ) );
+            Iterator<PointValue> points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                PointValue point = points.next();
+                expected.add( entityWithTwoProps( tx, point, "a" ) );
+                expected.add( entityWithTwoProps( tx, point, "b" ) );
+                expected.add( entityWithTwoProps( tx, "a", point ) );
+            }
 
             tx.commit();
         }
@@ -430,7 +737,77 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
             try ( var cursor = getEntityValueIndexCursor( tx ) )
             {
                 entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
 
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldDoOrderedCompositeIndexScanWithPointArraysInBothValues( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                PointValue[] points = arraysOfPoints.next();
+                expected.add( entityWithTwoProps( tx, points, "a" ) );
+                expected.add( entityWithTwoProps( tx, points, "b" ) );
+                expected.add( entityWithTwoProps( tx, "a", points ) );
+            }
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldDoOrderedCompositeIndexScanWithPointsAndPointArraysInBothValues( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            List<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).collect( Collectors.toUnmodifiableList() );
+            List<PointValue> points = generateBox( 500_000 ).collect( Collectors.toUnmodifiableList() );
+
+            int length = Math.min( arraysOfPoints.size(), points.size() );
+            for ( int i = 0; i < length; i++ )
+            {
+                expected.add( entityWithTwoProps( tx, arraysOfPoints.get( i ), points.get( i ) ) );
+                expected.add( entityWithTwoProps( tx, points.get( i ), arraysOfPoints.get( i ) ) );
+            }
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
                 assertCompositeResultsInOrder( expected, cursor, indexOrder );
             }
         }
@@ -445,15 +822,21 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
         try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( entityWithTwoProps( tx, new String[]{"a"}, new String[]{"b"} ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "a" ) );
+
+            Iterator<PointValue> points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, points.next(), "a" ) );
+            }
+
             expected.add( entityWithTwoProps( tx, "b", new String[]{"b"} ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, -500000, -500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, 500000, -500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, -500000, 500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, 500000, 500000 ) ) );
+
+            points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, "b", points.next() ) );
+            }
+
             expected.add( entityWithTwoProps( tx, "c", new String[]{"b"} ) );
 
             tx.commit();
@@ -469,7 +852,50 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
             try ( var cursor = getEntityValueIndexCursor( tx ) )
             {
                 entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
 
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldDoOrderedCompositeIndexScanWithPointArraysInBothValuesWithOneGapBetween( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            expected.add( entityWithTwoProps( tx, new PointValue[]{PointValue.MIN_VALUE}, new PointValue[]{PointValue.MIN_VALUE} ) );
+
+            Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, arraysOfPoints.next(), "a" ) );
+            }
+
+            expected.add( entityWithTwoProps( tx, "b", new PointValue[]{PointValue.MIN_VALUE} ) );
+
+            arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, "b", arraysOfPoints.next() ) );
+            }
+
+            expected.add( entityWithTwoProps( tx, "c", new PointValue[]{PointValue.MIN_VALUE} ) );
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
                 assertCompositeResultsInOrder( expected, cursor, indexOrder );
             }
         }
@@ -484,16 +910,22 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
         try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( entityWithTwoProps( tx, new String[]{"a"}, new String[]{"b"} ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "a" ) );
+
+            Iterator<PointValue> points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, points.next(), "a" ) );
+            }
+
             expected.add( entityWithTwoProps( tx, "b", new String[]{"b"} ) );
             expected.add( entityWithTwoProps( tx, "b", new String[]{"c"} ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, -500000, -500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, 500000, -500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, -500000, 500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, 500000, 500000 ) ) );
+
+            points = generateBox( 500_000 ).iterator();
+            while ( points.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, "b", points.next() ) );
+            }
+
             expected.add( entityWithTwoProps( tx, "c", new String[]{"b"} ) );
 
             tx.commit();
@@ -509,7 +941,6 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
             try ( var cursor = getEntityValueIndexCursor( tx ) )
             {
                 entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
-
                 assertCompositeResultsInOrder( expected, cursor, indexOrder );
             }
         }
@@ -517,27 +948,75 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeCompositeIndexScanInOrderWithPointsAndSingleNodeAfterwards( IndexOrder indexOrder ) throws Exception
+    void shouldDoOrderedCompositeIndexScanWithPointArraysInBothValuesWithTwoGapsBetween( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            expected.add( entityWithTwoProps( tx, new PointValue[]{PointValue.MIN_VALUE}, new PointValue[]{PointValue.MIN_VALUE} ) );
+
+            Iterator<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, arraysOfPoints.next(), "a" ) );
+            }
+
+            expected.add( entityWithTwoProps( tx, "b", new PointValue[]{PointValue.MIN_VALUE} ) );
+            expected.add( entityWithTwoProps( tx, "b", new PointValue[]{PointValue.MIN_VALUE, PointValue.MIN_VALUE} ) );
+
+            arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( arraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, "b", arraysOfPoints.next() ) );
+            }
+
+            expected.add( entityWithTwoProps( tx, "c", new PointValue[]{PointValue.MIN_VALUE} ) );
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldDoOrderedCompositeIndexScanWithPointsInBothValuesWithGapsAndMiddlePoint( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value[]>> expected = new ArrayList<>();
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             expected.add( entityWithTwoProps( tx, new String[]{"a"}, new String[]{"b"} ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "a" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, -500000 ), "b" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, -500000 ), "b" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, -500000, 500000 ), "b" ) );
-            expected.add( entityWithTwoProps( tx, pointValue( Cartesian, 500000, 500000 ), "b" ) );
-            expected.add( entityWithTwoProps( tx, "a", pointValue( Cartesian, 500000, 500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", new String[]{"b"} ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, -500000, -500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, 500000, -500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, -500000, 500000 ) ) );
-            expected.add( entityWithTwoProps( tx, "b", pointValue( Cartesian, 500000, 500000 ) ) );
+
+            List<PointValue> firstPoints = generateBox( 500_000 ).collect( Collectors.toUnmodifiableList() );
+            int i = 0;
+            for ( ; i < firstPoints.size() - 1; i++ )
+            {
+                expected.add( entityWithTwoProps( tx, firstPoints.get( i ), "a" ) );
+            }
+
+            expected.add( entityWithTwoProps( tx, "a", firstPoints.get( i ) ) );
+            expected.add( entityWithTwoProps( tx, "b", new String[]{"c"} ) );
+
+            Iterator<PointValue> secondPoints = generateBox( 500_000 ).iterator();
+            while ( secondPoints.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, "b", secondPoints.next() ) );
+            }
+
             expected.add( entityWithTwoProps( tx, "c", new String[]{"b"} ) );
 
             tx.commit();
@@ -553,7 +1032,6 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
             try ( var cursor = getEntityValueIndexCursor( tx ) )
             {
                 entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
-
                 assertCompositeResultsInOrder( expected, cursor, indexOrder );
             }
         }
@@ -561,7 +1039,93 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
     @ParameterizedTest
     @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
-    void shouldNodeIndexScanInOrderWithStringInMemoryAndConcurrentUpdate( IndexOrder indexOrder ) throws Exception
+    void shouldDoOrderedCompositeIndexScanWithPointArraysInBothValuesWithGapsAndMiddlePointArray( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            expected.add( entityWithTwoProps( tx, new PointValue[]{PointValue.MIN_VALUE}, new PointValue[]{PointValue.MIN_VALUE} ) );
+
+            List<PointValue[]> firstArraysOfPoints = generateArraysOfPoints( 4, 10_000 ).collect( Collectors.toUnmodifiableList() );
+            int i = 0;
+            for ( ; i < firstArraysOfPoints.size() - 1; i++ )
+            {
+                expected.add( entityWithTwoProps( tx, firstArraysOfPoints.get( i ), "a" ) );
+            }
+
+            expected.add( entityWithTwoProps( tx, "a", firstArraysOfPoints.get( i ) ) );
+            expected.add( entityWithTwoProps( tx, "b", new PointValue[]{PointValue.MIN_VALUE} ) );
+
+            Iterator<PointValue[]> secondArraysOfPoints = generateArraysOfPoints( 4, 10_000 ).iterator();
+            while ( secondArraysOfPoints.hasNext() )
+            {
+                expected.add( entityWithTwoProps( tx, "b", secondArraysOfPoints.next() ) );
+            }
+
+            expected.add( entityWithTwoProps( tx, "c", new PointValue[]{PointValue.MIN_VALUE} ) );
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldDoOrderedCompositeIndexScanWithPointsAndPointArraysAndEntitiesMixed( IndexOrder indexOrder ) throws Exception
+    {
+        List<Pair<Long,Value[]>> expected = new ArrayList<>();
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            List<PointValue[]> arraysOfPoints = generateArraysOfPoints( 4, 10_000 ).collect( Collectors.toUnmodifiableList() );
+            List<PointValue> points = generateBox( 500_000 ).collect( Collectors.toUnmodifiableList() );
+
+            int length = Math.min( arraysOfPoints.size(), points.size() );
+            for ( int i = 0; i < length; i++ )
+            {
+                expected.add( entityWithTwoProps( tx, arraysOfPoints.get( i ), points.get( i ) ) );
+                expected.add( entityWithTwoProps( tx, arraysOfPoints.get( i ), "a" ) );
+                expected.add( entityWithTwoProps( tx, points.get( i ), arraysOfPoints.get( i ) ) );
+                expected.add( entityWithTwoProps( tx, points.get( i ), "a" ) );
+                expected.add( entityWithTwoProps( tx, "a", arraysOfPoints.get( i ) ) );
+                expected.add( entityWithTwoProps( tx, "a", points.get( i ) ) );
+            }
+
+            tx.commit();
+        }
+
+        createCompositeIndex();
+
+        // when
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
+
+            try ( var cursor = getEntityValueIndexCursor( tx ) )
+            {
+                entityIndexScan( tx, index, cursor, constrained( indexOrder, true ) );
+                assertCompositeResultsInOrder( expected, cursor, indexOrder );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldEntityIndexSeekInOrderWithStringInMemoryAndConcurrentUpdate( IndexOrder indexOrder ) throws Exception
     {
         String a = "a";
         String b = "b";
@@ -634,12 +1198,29 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
         } ).get();
     }
 
+    private static Stream<PointValue> generateBox( double scale )
+    {
+        return Stream.of( IntStream.of( -1, -1 ),
+                          IntStream.of( +1, -1 ),
+                          IntStream.of( -1, +1 ),
+                          IntStream.of( +1, +1 ) )
+                     .map( rs -> rs.mapToDouble( r -> r * scale ) )
+                     .map( rs -> pointValue( Cartesian, rs.toArray() ) );
+    }
+
+    // Values.of cannot take an instance of Value; have to pass as Object[]
+    private static Stream<PointValue[]> generateArraysOfPoints( int n, double scale )
+    {
+        return IntStream.rangeClosed( 1, n )
+                        .mapToObj( i -> generateBox( i * scale ) )
+                        .map( points -> points.toArray( PointValue[]::new ) );
+    }
+
     protected void assertResultsInOrder( List<Pair<Long,Value>> expected, ENTITY_VALUE_INDEX_CURSOR cursor, IndexOrder indexOrder )
     {
-        Comparator<Pair<Long,Value>> comparator = indexOrder == IndexOrder.ASCENDING ? ( a, b ) -> Values.COMPARATOR.compare( a.other(), b.other() )
-                                                                                     : ( a, b ) -> Values.COMPARATOR.compare( b.other(), a.other() );
+        Comparator<Pair<Long,Value>> comparator = Comparator.comparing( Pair::other, Values.COMPARATOR );
+        expected.sort( indexOrder == IndexOrder.ASCENDING ? comparator : comparator.reversed() );
 
-        expected.sort( comparator );
         Iterator<Pair<Long,Value>> expectedRows = expected.iterator();
         while ( cursor.next() && expectedRows.hasNext() )
         {
@@ -660,35 +1241,19 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
     private void assertCompositeResultsInOrder( List<Pair<Long,Value[]>> expected, ENTITY_VALUE_INDEX_CURSOR cursor, IndexOrder indexOrder )
     {
-        Comparator<Pair<Long,Value[]>> comparator = indexOrder ==
-                                                    IndexOrder.ASCENDING ?
-                                                    ( a, b ) ->
-                                                    {
-                                                        int compare = Values.COMPARATOR.compare( a.other()[0], b.other()[0] );
-                                                        if ( compare == 0 )
-                                                        {
-                                                            return Values.COMPARATOR.compare( a.other()[1], b.other()[1] );
-                                                        }
-                                                        return compare;
-                                                    }
-                                                                         :
-                                                    ( a, b ) ->
-                                                    {
-                                                        int compare = -Values.COMPARATOR.compare( a.other()[0], b.other()[0] );
-                                                        if ( compare == 0 )
-                                                        {
-                                                            return -Values.COMPARATOR.compare( a.other()[1], b.other()[1] );
-                                                        }
-                                                        return compare;
-                                                    };
+        Comparator<Pair<Long,Value[]>> comparator = ( a, b ) ->
+        {
+            int compare = Values.COMPARATOR.compare( a.other()[0], b.other()[0] );
+            return compare != 0 ? compare : Values.COMPARATOR.compare( a.other()[1], b.other()[1] );
+        };
+        expected.sort( indexOrder == IndexOrder.ASCENDING ? comparator : comparator.reversed() );
 
-        expected.sort( comparator );
         Iterator<Pair<Long,Value[]>> expectedRows = expected.iterator();
         while ( cursor.next() && expectedRows.hasNext() )
         {
             Pair<Long,Value[]> expectedRow = expectedRows.next();
             assertThat( entityReference( cursor ) )
-                    .as( expectedRow.other()[0] + " == " + cursor.propertyValue( 0 ) + " && " + expectedRow.other()[1] + " == " + cursor.propertyValue( 1  ))
+                    .as( expectedRow.other()[0] + " == " + cursor.propertyValue( 0 ) + " && " + expectedRow.other()[1] + " == " + cursor.propertyValue( 1 ) )
                     .isEqualTo( expectedRow.first() );
             for ( int i = 0; i < cursor.numberOfProperties(); i++ )
             {
@@ -724,5 +1289,4 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
 
     protected abstract void entityIndexSeek( KernelTransaction tx, IndexReadSession index, ENTITY_VALUE_INDEX_CURSOR cursor,
                                              IndexQueryConstraints constraints, PropertyIndexQuery query ) throws KernelException;
-
 }
