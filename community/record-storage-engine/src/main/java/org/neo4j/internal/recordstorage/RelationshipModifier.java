@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 
-import java.util.Arrays;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
@@ -416,22 +417,16 @@ public class RelationshipModifier
             {
                 //The current length plus our additions in this transaction is above threshold, it will be converted so we need to lock all the relationships
                 //Since it is sparse and locked we can trust this chain read to be stable
-                // find all id's and lock them as we will create new chains based on type and direction
-                long[] ids = new long[currentDegree];
-                int index = 0;
+                //find all id's and lock them as we will create new chains based on type and direction
+                MutableLongList ids = LongLists.mutable.withInitialCapacity( currentDegree );
                 do
                 {
-                    ids[index++] = nextRel;
+                    ids.add( nextRel );
                     nextRel = relRecords.getOrLoad( nextRel, null ).forReadingData().getNextRel( nodeId );
                 }
                 while ( !isNull( nextRel ) );
 
-                if ( index != currentDegree )
-                {
-                    throw new IllegalStateException( "Degree " + currentDegree + " for " + node + " doesn't match actual relationship count " + index );
-                }
-                Arrays.sort( ids );
-                locks.acquireExclusive( lockTracer, RELATIONSHIP, ids );
+                locks.acquireExclusive( lockTracer, RELATIONSHIP, ids.toSortedArray() );
                 return true;
             }
         }
