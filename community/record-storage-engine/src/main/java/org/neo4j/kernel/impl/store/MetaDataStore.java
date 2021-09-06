@@ -351,6 +351,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, upgradeTxCommitTimestamp, cursorTracer );
     }
 
+    public static void setExternalStoreUUID( PageCache pageCache, File neoStore, UUID externalStoreId,
+                                             PageCursorTracer cursorTracer ) throws IOException
+    {
+        setRecord( pageCache, neoStore, Position.EXTERNAL_STORE_UUID_MOST_SIGN_BITS, externalStoreId.getMostSignificantBits(), cursorTracer );
+        setRecord( pageCache, neoStore, Position.EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, externalStoreId.getLeastSignificantBits(), cursorTracer );
+    }
+
     @Override
     public StoreId getStoreId()
     {

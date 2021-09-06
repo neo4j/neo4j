@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.neo4j.annotations.service.Service;
@@ -173,4 +174,7 @@ public interface StorageEngineFactory
     {
         return Iterables.single( Services.loadAll( StorageEngineFactory.class ) );
     }
+
+    void setExternalStoreUUID( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer,
+                               UUID externalStoreId ) throws IOException;
 }
