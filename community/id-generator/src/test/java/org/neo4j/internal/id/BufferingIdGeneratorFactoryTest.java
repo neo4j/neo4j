@@ -47,9 +47,14 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdController.IdFreeCondition;
 import org.neo4j.internal.id.IdGenerator.Marker;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
+import org.neo4j.memory.MemoryGroup;
+import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -74,6 +79,7 @@ class BufferingIdGeneratorFactoryTest
     private PageCache pageCache;
     private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private IdGenerator idGenerator;
+    private ScopedMemoryPool dbMemoryPool;
 
     @BeforeEach
     void setup() throws IOException
@@ -81,8 +87,11 @@ class BufferingIdGeneratorFactoryTest
         actual = new MockedIdGeneratorFactory();
         boundaries = new ControllableSnapshotSupplier();
         pageCache = mock( PageCache.class );
+        GlobalMemoryGroupTracker globalMemoryGroupTracker =
+                new GlobalMemoryGroupTracker( new MemoryPools(), MemoryGroup.OTHER, ByteUnit.mebiBytes( 1 ), true, true, null );
+        dbMemoryPool = globalMemoryGroupTracker.newDatabasePool( "test", ByteUnit.mebiBytes( 1 ), null );
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
-        bufferingIdGeneratorFactory.initialize( boundaries );
+        bufferingIdGeneratorFactory.initialize( boundaries, dbMemoryPool.getPoolMemoryTracker() );
         idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), TestIdType.TEST, () -> 0L, Integer.MAX_VALUE, writable(),
                 Config.defaults(), NULL, immutable.empty(), SINGLE_IDS );
     }
@@ -176,6 +185,32 @@ class BufferingIdGeneratorFactoryTest
         {
             actual.markers.get( TestIdType.TEST ).verifyFreed( id, 1 );
         }
+    }
+
+    @Test
+    void shouldMemoryTrackBufferedIDs()
+    {
+        // given
+        long heapSizeBeforeDeleting = dbMemoryPool.usedHeap();
+
+        // when deleting some IDs
+        try ( Marker marker = idGenerator.marker( NULL ) )
+        {
+            for ( int i = 0; i < 100; i++ )
+            {
+                marker.markDeleted( i, 1 );
+            }
+        }
+        assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
+        // maintenance where transactions are still open
+        bufferingIdGeneratorFactory.maintenance( NULL );
+        assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
+        // maintenance where transactions are closed and i.e. the buffered IDs gets released
+        boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
+        bufferingIdGeneratorFactory.maintenance( NULL );
+
+        // then heap usage should go down again
+        assertThat( dbMemoryPool.usedHeap() ).isEqualTo( heapSizeBeforeDeleting );
     }
 
     private static class ControllableSnapshotSupplier implements Supplier<IdFreeCondition>

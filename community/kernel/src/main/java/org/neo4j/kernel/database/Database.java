@@ -429,7 +429,7 @@ public class Database extends LifecycleAdapter
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
 
             Supplier<IdController.IdFreeCondition> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
-            idController.initialize( transactionsSnapshotSupplier );
+            idController.initialize( transactionsSnapshotSupplier, otherDatabaseMemoryTracker );
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider, userLogProvider,

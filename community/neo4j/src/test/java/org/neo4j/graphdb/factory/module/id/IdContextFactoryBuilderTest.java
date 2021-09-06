@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -88,7 +89,7 @@ class IdContextFactoryBuilderTest
         assertThat( idContext.getIdController() ).isInstanceOf( BufferedIdController.class );
         assertThat( bufferedGeneratorFactory ).isInstanceOf( BufferingIdGeneratorFactory.class );
 
-        ((BufferingIdGeneratorFactory)bufferedGeneratorFactory).initialize( () -> mock( KernelTransactionsSnapshot.class ) );
+        ((BufferingIdGeneratorFactory)bufferedGeneratorFactory).initialize( () -> mock( KernelTransactionsSnapshot.class ), EmptyMemoryTracker.INSTANCE );
         Path file = testDirectory.file( "a" );
         RecordIdType idType = RecordIdType.NODE;
         LongSupplier highIdSupplier = () -> 0;
@@ -123,7 +124,7 @@ class IdContextFactoryBuilderTest
         var idContext = idContextFactory.createIdContext( from( "test", UUID.randomUUID() ) );
         var idGeneratorFactory = idContext.getIdGeneratorFactory();
         var idController = idContext.getIdController();
-        idController.initialize( () -> () -> true );
+        idController.initialize( () -> () -> true, EmptyMemoryTracker.INSTANCE );
 
         Path file = testDirectory.file( "b" );
         RecordIdType idType = RecordIdType.NODE;

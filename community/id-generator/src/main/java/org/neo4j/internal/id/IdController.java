@@ -22,6 +22,7 @@ package org.neo4j.internal.id;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Represent abstraction that responsible for any id related operations on a storage engine level: buffering,
@@ -47,5 +48,5 @@ public interface IdController extends Lifecycle
      */
     void maintenance();
 
-    void initialize( Supplier<IdFreeCondition> conditionSupplier );
+    void initialize( Supplier<IdFreeCondition> conditionSupplier, MemoryTracker memoryTracker );
 }

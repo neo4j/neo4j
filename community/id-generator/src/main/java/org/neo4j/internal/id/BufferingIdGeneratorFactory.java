@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.id;
 
-import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
@@ -36,10 +35,13 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
 import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
@@ -54,6 +56,7 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 
     private final Map<IdType, BufferingIdGenerator> overriddenIdGenerators = new HashMap<>();
     private Supplier<IdController.IdFreeCondition> boundaries;
+    private MemoryTracker memoryTracker;
     private final IdGeneratorFactory delegate;
     private final Deque<IdBuffers> bufferQueue = new ArrayDeque<>();
 
@@ -62,9 +65,10 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
         this.delegate = delegate;
     }
 
-    public void initialize( Supplier<IdController.IdFreeCondition> conditionSupplier )
+    public void initialize( Supplier<IdController.IdFreeCondition> conditionSupplier, MemoryTracker memoryTracker )
     {
         boundaries = conditionSupplier;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -116,7 +120,7 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 
     private IdGenerator wrapAndKeep( IdType idType, IdGenerator generator )
     {
-        BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator );
+        BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator, memoryTracker );
         overriddenIdGenerators.put( idType, bufferingGenerator );
         return bufferingGenerator;
     }
@@ -179,9 +183,9 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     static class IdBuffer
     {
         private final IdGenerator idGenerator;
-        private final LongList ids;
+        private final HeapTrackingLongArrayList ids;
 
-        IdBuffer( IdGenerator idGenerator, LongList ids )
+        IdBuffer( IdGenerator idGenerator, HeapTrackingLongArrayList ids )
         {
             this.idGenerator = idGenerator;
             this.ids = ids;
@@ -191,7 +195,18 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
         {
             try ( IdGenerator.Marker marker = idGenerator.marker( cursorContext ) )
             {
-                ids.forEach( id -> marker.markFree( idFromCombinedId( id ), numberOfIdsFromCombinedId( id ) ) );
+                try ( PrimitiveLongResourceIterator idIterator = ids.iterator() )
+                {
+                    while ( idIterator.hasNext() )
+                    {
+                        long id = idIterator.next();
+                        marker.markFree( idFromCombinedId( id ), numberOfIdsFromCombinedId( id ) );
+                    }
+                }
+            }
+            finally
+            {
+                ids.close();
             }
         }
     }

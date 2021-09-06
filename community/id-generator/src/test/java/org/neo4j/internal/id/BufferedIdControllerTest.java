@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -59,6 +60,7 @@ class BufferedIdControllerTest
     void setUp()
     {
         idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ) );
+        idGeneratorFactory.initialize( () -> () -> true, EmptyMemoryTracker.INSTANCE );
     }
 
     @Test
@@ -96,7 +98,7 @@ class BufferedIdControllerTest
     private BufferedIdController newController( PageCacheTracer pageCacheTracer )
     {
         BufferedIdController controller = new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler(), pageCacheTracer, "test db" );
-        controller.initialize( () -> () -> true );
+        controller.initialize( () -> () -> true, EmptyMemoryTracker.INSTANCE );
         return controller;
     }
 }

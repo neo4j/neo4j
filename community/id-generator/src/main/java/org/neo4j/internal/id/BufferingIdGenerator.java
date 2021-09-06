@@ -19,28 +19,29 @@
  */
 package org.neo4j.internal.id;
 
-import org.eclipse.collections.api.list.primitive.MutableLongList;
-import org.eclipse.collections.impl.factory.primitive.LongLists;
-
 import java.util.List;
 
+import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.id.IdUtils.combinedIdAndNumberOfIds;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
 {
-    private MutableLongList bufferedDeletedIds;
+    private final MemoryTracker memoryTracker;
+    private HeapTrackingLongArrayList bufferedDeletedIds;
 
-    BufferingIdGenerator( IdGenerator delegate )
+    BufferingIdGenerator( IdGenerator delegate, MemoryTracker memoryTracker )
     {
         super( delegate );
+        this.memoryTracker = memoryTracker;
         newFreeBuffer();
     }
 
     private void newFreeBuffer()
     {
-        bufferedDeletedIds = LongLists.mutable.empty();
+        bufferedDeletedIds = HeapTrackingLongArrayList.newLongArrayList( 10, memoryTracker );
     }
 
     @Override

@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
@@ -81,8 +82,8 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     }
 
     @Override
-    public void initialize( Supplier<IdFreeCondition> conditionSupplier )
+    public void initialize( Supplier<IdFreeCondition> conditionSupplier, MemoryTracker memoryTracker )
     {
-        bufferingIdGeneratorFactory.initialize( conditionSupplier );
+        bufferingIdGeneratorFactory.initialize( conditionSupplier, memoryTracker );
     }
 }

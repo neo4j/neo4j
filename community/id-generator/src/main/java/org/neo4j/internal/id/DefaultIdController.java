@@ -22,6 +22,7 @@ package org.neo4j.internal.id;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Default implementation of {@link IdController}.
@@ -39,7 +40,7 @@ public class DefaultIdController extends LifecycleAdapter implements IdControlle
     }
 
     @Override
-    public void initialize( Supplier<IdFreeCondition> conditionSupplier )
+    public void initialize( Supplier<IdFreeCondition> conditionSupplier, MemoryTracker memoryTracker )
     {
     }
 }
