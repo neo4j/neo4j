@@ -30,6 +30,7 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Byte Buddy (without dependencies)
   Byte Buddy agent
+  Java Native Access
   Objenesis
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
@@ -55,9 +56,6 @@ Eclipse Public License v2.0
   JUnit Jupiter API
   JUnit Jupiter Params
   JUnit Platform Commons
-
-GNU Lesser General Public License, Version 2.1
-  Java Native Access
 
 MIT License
   mockito-core

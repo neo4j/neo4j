@@ -30,6 +30,7 @@ Apache Software License, Version 2.0
   jackson-databind
   Java Agent for Memory Measurements
   Java Concurrency Tools Core Library
+  Java Native Access
   Jettison
   jPowerShell
   jProcesses
@@ -53,9 +54,6 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-
-GNU Lesser General Public License, Version 2.1
-  Java Native Access
 
 Dependencies with multiple licenses
 -----------------------------------

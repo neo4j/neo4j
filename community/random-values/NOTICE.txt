@@ -28,6 +28,7 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Lang
   Java Agent for Memory Measurements
+  Java Native Access
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
 
@@ -52,9 +53,6 @@ Eclipse Public License v2.0
   JUnit Jupiter API
   JUnit Jupiter Params
   JUnit Platform Commons
-
-GNU Lesser General Public License, Version 2.1
-  Java Native Access
 
 Dependencies with multiple licenses
 -----------------------------------

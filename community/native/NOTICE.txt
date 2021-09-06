@@ -27,7 +27,5 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-
-GNU Lesser General Public License, Version 2.1
   Java Native Access
 

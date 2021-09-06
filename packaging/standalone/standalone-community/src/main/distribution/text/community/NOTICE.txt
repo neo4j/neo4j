@@ -82,6 +82,7 @@ Apache Software License, Version 2.0
   Jakarta Bean Validation API
   Java Agent for Memory Measurements
   Java Concurrency Tools Core Library
+  Java Native Access
   Javassist
   jersey-container-servlet
   jersey-container-servlet-core
@@ -201,9 +202,6 @@ Eclipse Public License v2.0
 
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
-
-GNU Lesser General Public License, Version 2.1
-  Java Native Access
 
 ISC
   abbrev
