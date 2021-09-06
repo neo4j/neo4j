@@ -104,6 +104,7 @@ public final class StoreSnapshot implements AutoCloseable
         checkPointMutex.close();
     }
 
+    @FunctionalInterface
     public interface Factory
     {
         /**

@@ -47,9 +47,6 @@ public final class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
         this.log = database.getInternalLogProvider().getLog( getClass() );
     }
 
-    /**
-     * @return a snapshot of the store files for this database, if available
-     */
     public Optional<StoreSnapshot> createStoreSnapshot() throws IOException
     {
         if ( !database.getDatabaseAvailabilityGuard().isAvailable() )
