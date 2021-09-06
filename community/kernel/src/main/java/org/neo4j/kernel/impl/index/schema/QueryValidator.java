@@ -57,7 +57,7 @@ class QueryValidator
      * for example that a range predicate can not be followed by an exact
      * predicate.
      * The reason for this is that because the index is sorted in lexicographic
-     * order with regards to the slots a predicate with increasing precision
+     * order in regard to the slots a predicate with increasing precision
      * does not narrow down the search space in the index.
      * It could of course be implemented by scanning the search space and do
      * post filtering, but this is not how the implementation currently works.
@@ -66,33 +66,40 @@ class QueryValidator
      * Contains or suffix queries are not allowed in composite queries at all.
      * This is because they both demand a full scan of the search space, just like
      * "exist", and the post filtering of the result. This is how it works in the
-     * non-composite case but it has not yet been implemented for the composite case.
+     * non-composite case, but it has not yet been implemented for the composite case.
+     *
+     * 3. AllEntries
+     * The allEntries query also is not allowed in composite queries, due to its semantic
+     * meaning to return everything in the index; thus does a full scan of the search
+     * space. This is similar to "exist", but is tied to the index, rather than a
+     * particular property key.
      *
      * @param predicates The query for which we want to check the composite validity.
      */
     static void validateCompositeQuery( PropertyIndexQuery[] predicates )
     {
+        String illegalQueryMessage = "Tried to query index with illegal composite query.";
         PropertyIndexQuery prev = null;
         for ( PropertyIndexQuery current : predicates )
         {
-            String illegalQueryMessage = "Tried to query index with illegal composite query.";
-            if ( current instanceof PropertyIndexQuery.StringContainsPredicate ||
-                    current instanceof PropertyIndexQuery.StringSuffixPredicate )
+            if ( current instanceof PropertyIndexQuery.AllEntriesPredicate
+                 || current instanceof PropertyIndexQuery.StringContainsPredicate
+                 || current instanceof PropertyIndexQuery.StringSuffixPredicate )
             {
                 if ( predicates.length > 1 )
                 {
-                    throw new IllegalArgumentException( format( "%s Suffix or contains predicate are not allowed in composite query. Query was: %s ",
-                            illegalQueryMessage, Arrays.toString( predicates ) ) );
+                    throw new IllegalArgumentException( format( "%s %s queries are not allowed in composite query. Query was: %s ",
+                                                                illegalQueryMessage, current.type(), Arrays.toString( predicates ) ) );
                 }
             }
-            if ( prev instanceof PropertyIndexQuery.RangePredicate ||
-                    prev instanceof PropertyIndexQuery.StringPrefixPredicate ||
-                    prev instanceof PropertyIndexQuery.ExistsPredicate )
+            if ( prev instanceof PropertyIndexQuery.RangePredicate
+                 || prev instanceof PropertyIndexQuery.StringPrefixPredicate
+                 || prev instanceof PropertyIndexQuery.ExistsPredicate )
             {
                 if ( !(current instanceof PropertyIndexQuery.ExistsPredicate) )
                 {
                     throw new IllegalArgumentException( format( "%s Composite query must have decreasing precision. Query was: %s ",
-                            illegalQueryMessage, Arrays.toString( predicates ) ) );
+                                                                illegalQueryMessage, Arrays.toString( predicates ) ) );
                 }
             }
             prev = current;

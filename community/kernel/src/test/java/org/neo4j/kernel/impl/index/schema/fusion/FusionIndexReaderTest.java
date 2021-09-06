@@ -249,6 +249,33 @@ abstract class FusionIndexReaderTest
     }
 
     @Test
+    void mustCombineResultFromAllEntriesPredicate() throws Exception
+    {
+        // given
+        PropertyIndexQuery.AllEntriesPredicate all = PropertyIndexQuery.allEntries();
+        long lastId = 0;
+        for ( var aliveReader : aliveReaders )
+        {
+            doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR, lastId++, lastId++ ) ).when( aliveReader ).query(
+                    any(), any(), any(), any(), any() );
+        }
+
+        // when
+        LongSet resultSet;
+        try ( NodeValueIterator result = new NodeValueIterator() )
+        {
+            fusionIndexReader.query( result, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), all );
+
+            // then
+            resultSet = PrimitiveLongCollections.asSet( result );
+            for ( long i = 0L; i < lastId; i++ )
+            {
+                assertTrue( resultSet.contains( i ), "Expected to contain " + i + ", but was " + resultSet );
+            }
+        }
+    }
+
+    @Test
     void mustCombineResultFromExistsPredicate() throws Exception
     {
         // given

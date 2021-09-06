@@ -25,6 +25,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
@@ -43,6 +44,16 @@ import static org.neo4j.values.storable.Values.utf8Value;
 
 public abstract class PropertyIndexQuery implements IndexQuery
 {
+    /**
+     * Scans over the whole index
+     *
+     * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
+     */
+    public static AllEntriesPredicate allEntries()
+    {
+        return new AllEntriesPredicate();
+    }
+
     /**
      * Searches the index for all entries that has the given property.
      *
@@ -264,6 +275,32 @@ public abstract class PropertyIndexQuery implements IndexQuery
     public ValueCategory valueCategory()
     {
         return valueGroup().category();
+    }
+
+    public static final class AllEntriesPredicate extends PropertyIndexQuery
+    {
+        private AllEntriesPredicate()
+        {
+            super( TokenConstants.ANY_PROPERTY_KEY );
+        }
+
+        @Override
+        public boolean acceptsValue( Value value )
+        {
+            return value != null && value != NO_VALUE;
+        }
+
+        @Override
+        public ValueGroup valueGroup()
+        {
+            return ValueGroup.UNKNOWN;
+        }
+
+        @Override
+        public IndexQueryType type()
+        {
+            return IndexQueryType.ALL_ENTRIES;
+        }
     }
 
     public static final class ExistsPredicate extends PropertyIndexQuery

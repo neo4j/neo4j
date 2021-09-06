@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
@@ -75,13 +76,16 @@ class PointIndexReader extends NativeIndexReader<PointKey>
 
     private void validateSupportedPredicates( PropertyIndexQuery predicate )
     {
-        if ( predicate instanceof PropertyIndexQuery.GeometryRangePredicate || predicate.type() == IndexQueryType.EXACT )
+        if ( predicate instanceof PropertyIndexQuery.AllEntriesPredicate
+             || predicate instanceof PropertyIndexQuery.ExactPredicate
+             || predicate instanceof PropertyIndexQuery.GeometryRangePredicate )
         {
             return;
         }
 
-        throw new IllegalArgumentException( format( "Tried to query index with illegal query. Only geometry range predicate and exact predicate are supported" +
-                " by a point index. Query was: %s ", predicate ) );
+        throw new IllegalArgumentException( format(
+                "Tried to query index with illegal query. Only %s, %s, and %s %s queries are supported by a point index. Query was: %s",
+                IndexQueryType.ALL_ENTRIES, IndexQueryType.EXACT, ValueGroup.GEOMETRY, IndexQueryType.RANGE, predicate ) );
     }
 
     @Override
@@ -140,10 +144,23 @@ class PointIndexReader extends NativeIndexReader<PointKey>
     @Override
     boolean initializeRangeForQuery( PointKey treeKeyFrom, PointKey treeKeyTo, PropertyIndexQuery[] predicates )
     {
-        // if we are here, we made it past the validation and we know there is only one predicate and it is an exact match
-        PropertyIndexQuery.ExactPredicate exactPredicate = (PropertyIndexQuery.ExactPredicate) predicates[0];
-        treeKeyFrom.initFromValue( -1, exactPredicate.value(), NEUTRAL );
-        treeKeyTo.initFromValue( -1, exactPredicate.value(), NEUTRAL );
+        // if we are here, we made it past the validation, and we know there is only one predicate, and it is either allEntries, or an exact match
+        PropertyIndexQuery predicate = predicates[0];
+        switch ( predicate.type() )
+        {
+        case ALL_ENTRIES:
+            treeKeyFrom.initValueAsLowest( -1, ValueGroup.GEOMETRY );
+            treeKeyTo.initValueAsHighest( -1, ValueGroup.GEOMETRY );
+            return false;
+        case EXACT:
+            PropertyIndexQuery.ExactPredicate exactPredicate = (PropertyIndexQuery.ExactPredicate) predicate;
+            treeKeyFrom.initFromValue( -1, exactPredicate.value(), NEUTRAL );
+            treeKeyTo.initFromValue( -1, exactPredicate.value(), NEUTRAL );
+            return false;
+        default:
+            // just in case, throw
+            validateSupportedPredicates( predicate );
+        }
         return false;
     }
 }

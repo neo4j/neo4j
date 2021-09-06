@@ -67,6 +67,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
 {
     // Ignore everything except TEXT values
     public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = update -> update.values()[0].valueGroup() != ValueGroup.TEXT;
+
     private final IndexStorageFactory indexStorageFactory;
     private final Config config;
     private final DatabaseReadOnlyChecker readOnlyChecker;

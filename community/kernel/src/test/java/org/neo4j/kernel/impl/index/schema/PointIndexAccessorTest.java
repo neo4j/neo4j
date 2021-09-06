@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -49,7 +50,7 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
@@ -112,13 +113,12 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
     {
         try ( var reader = accessor.newValueReader() )
         {
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( new SimpleEntityValueClient(),
-                    NULL_CONTEXT,
-                    AccessMode.Static.ACCESS,
-                    unorderedValues(),
-                    predicate ) );
-            assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. Only geometry range predicate and exact predicate are " +
-                    "supported by a point index. Query was:" );
+            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
+                                                    unorderedValues(), predicate ),
+                                "%s is an unsupported query", predicate )
+                    .isInstanceOf( IllegalArgumentException.class )
+                    .hasMessageContaining( "Tried to query index with illegal query. Only %s, %s, and %s %s queries are supported by a point index",
+                                           IndexQueryType.ALL_ENTRIES, IndexQueryType.EXACT, ValueGroup.GEOMETRY, IndexQueryType.RANGE );
         }
     }
 
@@ -128,11 +128,12 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
     {
         try ( var reader = accessor.newValueReader() )
         {
-            PropertyIndexQuery.ExactPredicate unsupportedQuery = PropertyIndexQuery.exact( 0, PointValue.MAX_VALUE );
-
-            var e = assertThrows( IllegalArgumentException.class, () ->
-                    reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS, constrained( indexOrder, false ), unsupportedQuery ) );
-            assertThat( e.getMessage() ).contains( "Tried to query a point index with order. Order is not supported by a point index" );
+            PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact( 0, PointValue.MAX_VALUE );
+            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
+                                                    constrained( indexOrder, false ), query ),
+                                "order is not supported with point index" )
+                    .isInstanceOf( IllegalArgumentException.class )
+                    .hasMessageContainingAll( "Tried to query a point index with order", "Order is not supported by a point index" );
         }
     }
 

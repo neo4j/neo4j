@@ -295,6 +295,25 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     }
 
     @Test
+    void shouldReturnAllEntriesForAllEntriesPredicate() throws Exception
+    {
+        // given
+        final var updates = someUpdatesSingleType();
+        processAll( updates );
+
+        final var expectedIds = Stream.of( updates )
+                                      .mapToLong( ValueIndexEntryUpdate::getEntityId )
+                                      .toArray();
+        // when
+        try ( var reader = accessor.newValueReader();
+              var result = query( reader, PropertyIndexQuery.allEntries() ) )
+        {
+            // then
+            assertEntityIdHits( expectedIds, result );
+        }
+    }
+
+    @Test
     void shouldReturnMatchingEntriesForExactPredicate() throws Exception
     {
         // given

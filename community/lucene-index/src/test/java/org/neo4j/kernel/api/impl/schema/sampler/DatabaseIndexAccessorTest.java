@@ -76,7 +76,9 @@ import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
@@ -179,12 +181,44 @@ public class DatabaseIndexAccessorTest
         var reader = accessor.newValueReader();
 
         // WHEN
-        Set<Long> results = resultSet( reader, PropertyIndexQuery.exists( PROP_ID ) );
-        Set<Long> results2 = resultSet( reader, exact( PROP_ID, value ) );
+        Set<Long> results = resultSet( reader, allEntries() );
 
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), results );
-        assertEquals( asSet( nodeId ), results2 );
+        reader.close();
+    }
+
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void indexReaderExistsQuery( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
+    {
+        init( index, accessorFactory );
+        // GIVEN
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        var reader = accessor.newValueReader();
+
+        // WHEN
+        Set<Long> results = resultSet( reader, exists( PROP_ID ) );
+
+        // THEN
+        assertEquals( asSet( nodeId, nodeId2 ), results );
+        reader.close();
+    }
+
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void indexReaderExactQuery( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
+    {
+        init( index, accessorFactory );
+        // GIVEN
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        var reader = accessor.newValueReader();
+
+        // WHEN
+        Set<Long> results = resultSet( reader, exact( PROP_ID, value ) );
+
+        // THEN
+        assertEquals( asSet( nodeId ), results );
         reader.close();
     }
 

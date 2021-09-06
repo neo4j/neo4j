@@ -135,6 +135,7 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
             PropertyIndexQuery predicate = query[i];
             switch ( predicate.type() )
             {
+            case ALL_ENTRIES:
             case EXISTS:
                 treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
                 treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );

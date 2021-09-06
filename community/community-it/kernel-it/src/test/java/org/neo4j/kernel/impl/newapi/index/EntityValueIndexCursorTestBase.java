@@ -891,6 +891,28 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         // given
         assumeTrue( indexParams.indexProvidesAllValues() );
 
+        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( WHAT_EVER_INDEX_NAME ) );
+        IndexValueCapability valueCapability = index.reference().getCapability().valueCapability( ValueCategory.UNKNOWN );
+        assertEquals( IndexValueCapability.YES, valueCapability );
+
+        try ( var cursor = entityParams.allocateEntityValueIndexCursor( tx, cursors ) )
+        {
+            MutableLongSet uniqueIds = new LongHashSet();
+
+            // when
+            entityParams.entityIndexSeek( tx, index, cursor, unorderedValues(), PropertyIndexQuery.allEntries() );
+
+            // then
+            assertFoundEntitiesAndValue( cursor, uniqueIds, valueCapability, true, entitiesOfAllPropertyTypes );
+        }
+    }
+
+    @Test
+    void shouldProvideValuesForAllTypesOnPropKey() throws Exception
+    {
+        // given
+        assumeTrue( indexParams.indexProvidesAllValues() );
+
         int prop = token.propertyKey( EVER_PROP_NAME );
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( WHAT_EVER_INDEX_NAME ) );
         IndexValueCapability valueCapability = index.reference().getCapability().valueCapability( ValueCategory.UNKNOWN );

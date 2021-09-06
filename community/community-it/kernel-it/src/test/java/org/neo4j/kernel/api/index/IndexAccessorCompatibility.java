@@ -223,7 +223,9 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
      */
     private boolean passesFilter( long entityId, PropertyIndexQuery[] predicates )
     {
-        if ( predicates.length == 1 && predicates[0] instanceof PropertyIndexQuery.ExistsPredicate )
+        if ( (predicates.length == 1)
+             && (predicates[0] instanceof PropertyIndexQuery.AllEntriesPredicate
+                 || predicates[0] instanceof PropertyIndexQuery.ExistsPredicate) )
         {
             return true;
         }
@@ -232,8 +234,8 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
         for ( int i = 0; i < values.length; i++ )
         {
             PropertyIndexQuery predicate = predicates[i];
-            if ( predicate.valueGroup() == ValueGroup.GEOMETRY || predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY ||
-                    (predicate.valueGroup() == ValueGroup.NUMBER && !testSuite.supportFullValuePrecisionForNumbers()) )
+            if ( predicate.valueGroup() == ValueGroup.GEOMETRY || predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY
+                 || (predicate.valueGroup() == ValueGroup.NUMBER && !testSuite.supportFullValuePrecisionForNumbers()) )
             {
                 if ( !predicates[i].acceptsValue( values[i] ) )
                 {

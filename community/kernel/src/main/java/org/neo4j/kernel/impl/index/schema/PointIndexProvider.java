@@ -193,6 +193,11 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
         @Override
         public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
+            if ( queryType == IndexQueryType.ALL_ENTRIES )
+            {
+                return true;
+            }
+
             if ( valueCategory != GEOMETRY )
             {
                 return false;

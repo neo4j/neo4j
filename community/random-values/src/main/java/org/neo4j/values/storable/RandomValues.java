@@ -217,7 +217,7 @@ public class RandomValues
      */
     public Value nextValue()
     {
-        return nextValueOfType( among( ALL_TYPES ) );
+        return nextValueOfTypes( ALL_TYPES );
     }
 
     /**
@@ -228,6 +228,16 @@ public class RandomValues
     public Value nextValueOfTypes( ValueType... types )
     {
         return nextValueOfType( among( types ) );
+    }
+
+    /**
+     * Returns the next size number of {@link Value}, distributed uniformly among the supported value types.
+     *
+     * @see RandomValues
+     */
+    public Value[] nextValues( int size )
+    {
+        return nextValuesOfTypes( size, ALL_TYPES );
     }
 
     /**

@@ -36,6 +36,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
@@ -80,6 +83,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Pair.of;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
@@ -107,6 +111,18 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     CompositeIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
+    }
+
+    @Test
+    void testIndexScan() throws Exception
+    {
+        List<Long> ids = LongStream.rangeClosed( 1L, 10L ).boxed().collect( Collectors.toUnmodifiableList() );
+        Supplier<Value> randomValue = () -> random.randomValues().nextValueOfTypes( testSuite.supportedValueTypes() );
+
+        updateAndCommit( ids.stream().map( id -> add( id, descriptor.schema(), randomValue.get(), randomValue.get() ) )
+                            .collect( Collectors.toUnmodifiableList() ) );
+
+        assertThat( query( allEntries() ) ).isEqualTo( ids );
     }
 
     /* testIndexSeekAndScan */
@@ -417,14 +433,14 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 9L, descriptor.schema(), "b", "apA" ),
                 add( 10L, descriptor.schema(), "b", "b" ) ) );
 
-        assertThat( query( exact( 0, "a" ), PropertyIndexQuery.stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 1L, 3L, 4L ) );
-        assertThat( query( exact( 0, "a" ), PropertyIndexQuery.stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( Collections.singletonList( 2L ) );
-        assertThat( query( exact( 0, "a" ), PropertyIndexQuery.stringPrefix( 1, stringValue( "ba" ) ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( exact( 0, "a" ), PropertyIndexQuery.stringPrefix( 1, stringValue( "" ) ) ) ).isEqualTo( asList( 1L, 2L, 3L, 4L, 5L ) );
-        assertThat( query( exact( 0, "b" ), PropertyIndexQuery.stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 6L, 8L, 9L ) );
-        assertThat( query( exact( 0, "b" ), PropertyIndexQuery.stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( Collections.singletonList( 7L ) );
-        assertThat( query( exact( 0, "b" ), PropertyIndexQuery.stringPrefix( 1, stringValue( "ba" ) ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( exact( 0, "b" ), PropertyIndexQuery.stringPrefix( 1, stringValue( "" ) ) ) ).isEqualTo( asList( 6L, 7L, 8L, 9L, 10L ) );
+        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 1L, 3L, 4L ) );
+        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( Collections.singletonList( 2L ) );
+        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "ba" ) ) ) ).isEqualTo( EMPTY_LIST );
+        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "" ) ) ) ).isEqualTo( asList( 1L, 2L, 3L, 4L, 5L ) );
+        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 6L, 8L, 9L ) );
+        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( Collections.singletonList( 7L ) );
+        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "ba" ) ) ) ).isEqualTo( EMPTY_LIST );
+        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "" ) ) ) ).isEqualTo( asList( 6L, 7L, 8L, 9L, 10L ) );
     }
 
     @Test
@@ -445,10 +461,10 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 10L, descriptor.schema(), "b", false )
         ) );
 
-        assertThat( query( PropertyIndexQuery.stringPrefix( 0, stringValue( "a" ) ), exists( 1 ) ) ).isEqualTo( asList( 1L, 3L, 4L, 6L, 8L, 9L ) );
-        assertThat( query( PropertyIndexQuery.stringPrefix( 0, stringValue( "A" ) ), exists( 1 ) ) ).isEqualTo( asList( 2L, 7L ) );
-        assertThat( query( PropertyIndexQuery.stringPrefix( 0, stringValue( "ba" ) ), exists( 1 ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( PropertyIndexQuery.stringPrefix( 0, stringValue( "" ) ), exists( 1 ) ) )
+        assertThat( query( stringPrefix( 0, stringValue( "a" ) ), exists( 1 ) ) ).isEqualTo( asList( 1L, 3L, 4L, 6L, 8L, 9L ) );
+        assertThat( query( stringPrefix( 0, stringValue( "A" ) ), exists( 1 ) ) ).isEqualTo( asList( 2L, 7L ) );
+        assertThat( query( stringPrefix( 0, stringValue( "ba" ) ), exists( 1 ) ) ).isEqualTo( EMPTY_LIST );
+        assertThat( query( stringPrefix( 0, stringValue( "" ) ), exists( 1 ) ) )
                 .isEqualTo( asList( 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L ) );
     }
 
@@ -512,8 +528,8 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     void testIndexSeekExactWithExistsBySpatialArray() throws Exception
     {
         testIndexSeekExactWithExists(
-                pointArray( new PointValue[] {pointValue( Cartesian, 100D, 100D ), pointValue( Cartesian, 101D, 101D )} ),
-                pointArray( new PointValue[] {pointValue( Cartesian, 0D, 0D ), pointValue( Cartesian, 1D, 1D )} ) );
+                pointArray( new PointValue[]{pointValue( Cartesian, 100D, 100D ), pointValue( Cartesian, 101D, 101D )} ),
+                pointArray( new PointValue[]{pointValue( Cartesian, 0D, 0D ), pointValue( Cartesian, 1D, 1D )} ) );
     }
 
     private void testIndexSeekExactWithExists( Object a, Object b ) throws Exception
@@ -638,11 +654,11 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     void testIndexSeekRangeWithExistsBySpatialArray() throws Exception
     {
         testIndexSeekRangeWithExists(
-                pointArray( new PointValue[] {pointValue( Cartesian, 0D, 0D ), pointValue( Cartesian, 0D, 1D )} ),
-                pointArray( new PointValue[] {pointValue( Cartesian, 10D, 1D ), pointValue( Cartesian, 10D, 2D )} ),
-                pointArray( new PointValue[] {pointValue( Cartesian, 20D, 2D ), pointValue( Cartesian, 20D, 3D )} ),
-                pointArray( new PointValue[] {pointValue( Cartesian, 30D, 3D ), pointValue( Cartesian, 30D, 4D )} ),
-                pointArray( new PointValue[] {pointValue( Cartesian, 40D, 4D ), pointValue( Cartesian, 40D, 5D )} ) );
+                pointArray( new PointValue[]{pointValue( Cartesian, 0D, 0D ), pointValue( Cartesian, 0D, 1D )} ),
+                pointArray( new PointValue[]{pointValue( Cartesian, 10D, 1D ), pointValue( Cartesian, 10D, 2D )} ),
+                pointArray( new PointValue[]{pointValue( Cartesian, 20D, 2D ), pointValue( Cartesian, 20D, 3D )} ),
+                pointArray( new PointValue[]{pointValue( Cartesian, 30D, 3D ), pointValue( Cartesian, 30D, 4D )} ),
+                pointArray( new PointValue[]{pointValue( Cartesian, 40D, 4D ), pointValue( Cartesian, 40D, 5D )} ) );
     }
 
     @Test
@@ -1161,9 +1177,10 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
      * Contains or suffix queries are not allowed in a composite query at all.
      *
      * Those are all the different combinations:
+     * a = allEntries
+     * - = exists
      * x = exact
      * < = range (also include stringPrefix)
-     * - = exists
      * ! = stringContains or stringSuffix
      * ? = any predicate
      * Index patterns
@@ -1177,6 +1194,8 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
      * - < not ok
      * - - ok
      * ! ? not ok
+     * a ? not ok
+     * ? a not ok
      */
     @Test
     void mustThrowOnIllegalCompositeQueriesAndMustNotThrowOnLegalQueries() throws Exception
@@ -1186,6 +1205,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         // given
         Value someValue = Values.of( true );
         TextValue someString = stringValue( "" );
+        PropertyIndexQuery allEntries = allEntries();
         PropertyIndexQuery firstExact = exact( 100, someValue );
         PropertyIndexQuery firstRange = range( 100, someValue, true, someValue, true );
         PropertyIndexQuery firstPrefix = stringPrefix( 100, someString );
@@ -1200,44 +1220,58 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         PropertyIndexQuery secondContains = stringContains( 100, someString );
 
         List<Pair<PropertyIndexQuery[],Boolean>> queries = Arrays.asList(
-                of( new PropertyIndexQuery[]{firstExact, secondExact}, true ),
-                of( new PropertyIndexQuery[]{firstExact, secondRange}, true ),
-                of( new PropertyIndexQuery[]{firstExact, secondExist}, true ),
-                of( new PropertyIndexQuery[]{firstExact, secondPrefix}, true ),
-                of( new PropertyIndexQuery[]{firstExact, secondSuffix}, false ),
-                of( new PropertyIndexQuery[]{firstExact, secondContains}, false ),
+                of( new PropertyIndexQuery[]{allEntries, allEntries}, false ),
+                of( new PropertyIndexQuery[]{allEntries, secondExist}, false ),
+                of( new PropertyIndexQuery[]{allEntries, secondExact}, false ),
+                of( new PropertyIndexQuery[]{allEntries, secondRange}, false ),
+                of( new PropertyIndexQuery[]{allEntries, secondPrefix}, false ),
+                of( new PropertyIndexQuery[]{allEntries, secondSuffix}, false ),
+                of( new PropertyIndexQuery[]{allEntries, secondContains}, false ),
 
-                of( new PropertyIndexQuery[]{firstRange, secondExact}, false ),
-                of( new PropertyIndexQuery[]{firstRange, secondRange}, false ),
-                of( new PropertyIndexQuery[]{firstRange, secondExist}, true ),
-                of( new PropertyIndexQuery[]{firstRange, secondPrefix}, false ),
-                of( new PropertyIndexQuery[]{firstRange, secondSuffix}, false ),
-                of( new PropertyIndexQuery[]{firstRange, secondContains}, false ),
-
-                of( new PropertyIndexQuery[]{firstPrefix, secondExact}, false ),
-                of( new PropertyIndexQuery[]{firstPrefix, secondRange}, false ),
-                of( new PropertyIndexQuery[]{firstPrefix, secondExist}, true ),
-                of( new PropertyIndexQuery[]{firstPrefix, secondPrefix}, false ),
-                of( new PropertyIndexQuery[]{firstPrefix, secondSuffix}, false ),
-                of( new PropertyIndexQuery[]{firstPrefix, secondContains}, false ),
-
+                of( new PropertyIndexQuery[]{firstExist, allEntries}, false ),
+                of( new PropertyIndexQuery[]{firstExist, secondExist}, true ),
                 of( new PropertyIndexQuery[]{firstExist, secondExact}, false ),
                 of( new PropertyIndexQuery[]{firstExist, secondRange}, false ),
-                of( new PropertyIndexQuery[]{firstExist, secondExist}, true ),
                 of( new PropertyIndexQuery[]{firstExist, secondPrefix}, false ),
                 of( new PropertyIndexQuery[]{firstExist, secondSuffix}, false ),
                 of( new PropertyIndexQuery[]{firstExist, secondContains}, false ),
 
+                of( new PropertyIndexQuery[]{firstExact, allEntries}, false ),
+                of( new PropertyIndexQuery[]{firstExact, secondExist}, true ),
+                of( new PropertyIndexQuery[]{firstExact, secondExact}, true ),
+                of( new PropertyIndexQuery[]{firstExact, secondRange}, true ),
+                of( new PropertyIndexQuery[]{firstExact, secondPrefix}, true ),
+                of( new PropertyIndexQuery[]{firstExact, secondSuffix}, false ),
+                of( new PropertyIndexQuery[]{firstExact, secondContains}, false ),
+
+                of( new PropertyIndexQuery[]{firstRange, allEntries}, false ),
+                of( new PropertyIndexQuery[]{firstRange, secondExist}, true ),
+                of( new PropertyIndexQuery[]{firstRange, secondExact}, false ),
+                of( new PropertyIndexQuery[]{firstRange, secondRange}, false ),
+                of( new PropertyIndexQuery[]{firstRange, secondPrefix}, false ),
+                of( new PropertyIndexQuery[]{firstRange, secondSuffix}, false ),
+                of( new PropertyIndexQuery[]{firstRange, secondContains}, false ),
+
+                of( new PropertyIndexQuery[]{firstPrefix, allEntries}, false ),
+                of( new PropertyIndexQuery[]{firstPrefix, secondExist}, true ),
+                of( new PropertyIndexQuery[]{firstPrefix, secondExact}, false ),
+                of( new PropertyIndexQuery[]{firstPrefix, secondRange}, false ),
+                of( new PropertyIndexQuery[]{firstPrefix, secondPrefix}, false ),
+                of( new PropertyIndexQuery[]{firstPrefix, secondSuffix}, false ),
+                of( new PropertyIndexQuery[]{firstPrefix, secondContains}, false ),
+
+                of( new PropertyIndexQuery[]{firstSuffix, allEntries}, false ),
+                of( new PropertyIndexQuery[]{firstSuffix, secondExist}, false ),
                 of( new PropertyIndexQuery[]{firstSuffix, secondExact}, false ),
                 of( new PropertyIndexQuery[]{firstSuffix, secondRange}, false ),
-                of( new PropertyIndexQuery[]{firstSuffix, secondExist}, false ),
                 of( new PropertyIndexQuery[]{firstSuffix, secondPrefix}, false ),
                 of( new PropertyIndexQuery[]{firstSuffix, secondSuffix}, false ),
                 of( new PropertyIndexQuery[]{firstSuffix, secondContains}, false ),
 
+                of( new PropertyIndexQuery[]{firstContains, allEntries}, false ),
+                of( new PropertyIndexQuery[]{firstContains, secondExist}, false ),
                 of( new PropertyIndexQuery[]{firstContains, secondExact}, false ),
                 of( new PropertyIndexQuery[]{firstContains, secondRange}, false ),
-                of( new PropertyIndexQuery[]{firstContains, secondExist}, false ),
                 of( new PropertyIndexQuery[]{firstContains, secondPrefix}, false ),
                 of( new PropertyIndexQuery[]{firstContains, secondSuffix}, false ),
                 of( new PropertyIndexQuery[]{firstContains, secondContains}, false )

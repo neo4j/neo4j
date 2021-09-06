@@ -153,13 +153,14 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
                 PropertyIndexQuery nextQuery = query[i];
                 switch ( nextQuery.type() )
                 {
+                case ALL_ENTRIES:
                 case EXISTS:
                     // This also covers the rewritten suffix/contains for composite index
                     // If composite index all following will be exists as well so no need to consider those
                     setNeedsValuesIfRequiresOrder();
                     if ( exactQueryValues.isEmpty() )
                     {
-                        // First query is exists, use scan
+                        // First query is allEntries or exists, use scan
                         scanQuery( descriptor );
                     }
                     else

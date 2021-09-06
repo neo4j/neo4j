@@ -86,7 +86,8 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALY
 
 public class FulltextIndexProvider extends IndexProvider
 {
-    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = update -> false;
+    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = IndexUpdateIgnoreStrategy.NO_IGNORE;
+
     private final FileSystemAbstraction fileSystem;
     private final Config config;
     private final TokenHolders tokenHolders;

@@ -19,10 +19,12 @@
  */
 package org.neo4j.internal.kernel.api;
 
-
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExistsPredicate;
@@ -30,7 +32,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringSuffixPredicate;
-import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -41,14 +43,37 @@ import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static org.assertj.core.util.Arrays.array;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class IndexQueryTest
 {
     private final int propId = 0;
+
+    // ALL
+
+    @Test
+    void testAll()
+    {
+        final var allEntries = PropertyIndexQuery.allEntries();
+        Stream.of( 999,
+                   array( -999, 999 ),
+                   "foo",
+                   array( "foo", "bar" ),
+                   pointValue( CoordinateReferenceSystem.WGS84, 12.994807, 55.612088 ),
+                   array( pointValue( CoordinateReferenceSystem.WGS84, 12.994807, 55.612088 ),
+                          pointValue( CoordinateReferenceSystem.WGS84, -0.101008, 51.503773 ) ),
+                   ZonedDateTime.now(),
+                   array( ZonedDateTime.now(), ZonedDateTime.now().plusWeeks( 2 ) ),
+                   true,
+                   array( false, true ) )
+              .map( value -> test( allEntries, value ) )
+              .forEach( Assertions::assertTrue );
+    }
 
     // EXISTS
 
@@ -62,7 +87,7 @@ class IndexQueryTest
         assertTrue( test( p, 1.0 ) );
         assertTrue( test( p, true ) );
         assertTrue( test( p, new long[]{1L} ) );
-        assertTrue( test( p, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) ) );
+        assertTrue( test( p, pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) ) );
 
         assertFalse( test( p, null ) );
     }
@@ -77,7 +102,7 @@ class IndexQueryTest
         assertExactPredicate( 1.0 );
         assertExactPredicate( true );
         assertExactPredicate( new long[]{1L} );
-        assertExactPredicate( Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) );
+        assertExactPredicate( pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) );
     }
 
     private void assertExactPredicate( Object value )
@@ -260,19 +285,19 @@ class IndexQueryTest
 
     // GEOMETRY RANGE
 
-    private final PointValue gps1 = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, -56.7 );
-    private final PointValue gps2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, -55.7 );
-    private final PointValue gps3 = Values.pointValue( CoordinateReferenceSystem.WGS84, -11.0, -55 );
-    private final PointValue gps4 = Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 );
-    private final PointValue gps5 = Values.pointValue( CoordinateReferenceSystem.WGS84, 14.6, 56.7 );
-    private final PointValue gps6 = Values.pointValue( CoordinateReferenceSystem.WGS84, 14.6, 58.7 );
-    private final PointValue gps7 = Values.pointValue( CoordinateReferenceSystem.WGS84, 15.6, 59.7 );
-    private final PointValue car1 = Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 );
-    private final PointValue car2 = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2, 2 );
-    private final PointValue car3 = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2, 3 );
-    private final PointValue car4 = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 2, 3, 4 );
-    private final PointValue gps1_3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.6, 56.8, 100.0 );
-    private final PointValue gps2_3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.8, 56.9, 200.0 );
+    private final PointValue gps1 = pointValue( CoordinateReferenceSystem.WGS84, -12.6, -56.7 );
+    private final PointValue gps2 = pointValue( CoordinateReferenceSystem.WGS84, -12.6, -55.7 );
+    private final PointValue gps3 = pointValue( CoordinateReferenceSystem.WGS84, -11.0, -55 );
+    private final PointValue gps4 = pointValue( CoordinateReferenceSystem.WGS84, 0, 0 );
+    private final PointValue gps5 = pointValue( CoordinateReferenceSystem.WGS84, 14.6, 56.7 );
+    private final PointValue gps6 = pointValue( CoordinateReferenceSystem.WGS84, 14.6, 58.7 );
+    private final PointValue gps7 = pointValue( CoordinateReferenceSystem.WGS84, 15.6, 59.7 );
+    private final PointValue car1 = pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 );
+    private final PointValue car2 = pointValue( CoordinateReferenceSystem.Cartesian, 2, 2 );
+    private final PointValue car3 = pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2, 3 );
+    private final PointValue car4 = pointValue( CoordinateReferenceSystem.Cartesian_3D, 2, 3, 4 );
+    private final PointValue gps1_3d = pointValue( CoordinateReferenceSystem.WGS84_3D, 12.6, 56.8, 100.0 );
+    private final PointValue gps2_3d = pointValue( CoordinateReferenceSystem.WGS84_3D, 12.8, 56.9, 200.0 );
 
     //TODO: Also insert points which can't be compared e.g. Cartesian and (-100, 100)
 
@@ -542,7 +567,7 @@ class IndexQueryTest
     {
         TokenPredicate query = new TokenPredicate( 1 );
 
-        assertThat( query.type() ).isEqualTo( IndexQuery.IndexQueryType.TOKEN_LOOKUP );
+        assertThat( query.type() ).isEqualTo( IndexQueryType.TOKEN_LOOKUP );
     }
 
     // HELPERS

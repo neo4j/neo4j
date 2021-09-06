@@ -202,6 +202,19 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
         Long[] allNodes = valueSet1.stream().map( x -> x.nodeId ).toArray( Long[]::new );
 
         // THEN
+        List<Long> result = query( PropertyIndexQuery.allEntries() );
+        assertThat( result ).contains( allNodes );
+    }
+
+    @Test
+    void shouldScanAllValuesThatExistWithPropKey() throws Exception
+    {
+        // GIVEN
+        List<ValueIndexEntryUpdate<?>> updates = updates( valueSet1 );
+        updateAndCommit( updates );
+        Long[] allNodes = valueSet1.stream().map( x -> x.nodeId ).toArray( Long[]::new );
+
+        // THEN
         int propertyKeyId = descriptor.schema().getPropertyId();
         List<Long> result = query( PropertyIndexQuery.exists( propertyKeyId ) );
         assertThat( result ).contains( allNodes );
