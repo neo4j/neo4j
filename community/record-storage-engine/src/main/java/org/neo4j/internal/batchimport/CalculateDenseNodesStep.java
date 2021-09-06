@@ -19,29 +19,43 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.internal.batchimport.staging.ForkedProcessorStep;
+import org.neo4j.internal.batchimport.staging.BatchSender;
+import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
  * Increments counts for each visited relationship, once for start node and once for end node
  * (unless for loops). This to be able to determine which nodes are dense before starting to import relationships.
  */
-public class CalculateDenseNodesStep extends ForkedProcessorStep<RelationshipRecord[]>
+public class CalculateDenseNodesStep extends ProcessorStep<RelationshipRecord[]>
 {
+    private static final int NUM_LATCHES = 1024;
+    private static final int LATCH_STRIPE_MASK = Integer.highestOneBit( NUM_LATCHES ) - 1;
+
+    private final Lock[] latches = new Lock[NUM_LATCHES];
     private final NodeRelationshipCache cache;
 
     public CalculateDenseNodesStep( StageControl control, Configuration config, NodeRelationshipCache cache,
             StatsProvider... statsProviders )
     {
-        super( control, "CALCULATE", config, statsProviders );
+        super( control, "CALCULATE", config, config.maxNumberOfProcessors(), PageCacheTracer.NULL, statsProviders );
         this.cache = cache;
+        for ( int i = 0; i < latches.length; i++ )
+        {
+            latches[i] = new ReentrantLock();
+        }
     }
 
     @Override
-    protected void forkedProcess( int id, int processors, RelationshipRecord[] batch )
+    protected void process( RelationshipRecord[] batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
     {
         for ( RelationshipRecord record : batch )
         {
@@ -49,21 +63,28 @@ public class CalculateDenseNodesStep extends ForkedProcessorStep<RelationshipRec
             {
                 long startNodeId = record.getFirstNode();
                 long endNodeId = record.getSecondNode();
-                processNodeId( id, processors, startNodeId );
+                processNodeId( startNodeId );
                 if ( startNodeId != endNodeId ) // avoid counting loops twice
                 {
                     // Loops only counts as one
-                    processNodeId( id, processors, endNodeId );
+                    processNodeId( endNodeId );
                 }
             }
         }
     }
 
-    private void processNodeId( int id, int processors, long nodeId )
+    private void processNodeId( long nodeId )
     {
-        if ( nodeId % processors == id )
+        int hash = (int) (nodeId & LATCH_STRIPE_MASK);
+        Lock latch = latches[hash];
+        latch.lock();
+        try
         {
             cache.incrementCount( nodeId );
+        }
+        finally
+        {
+            latch.unlock();
         }
     }
 }

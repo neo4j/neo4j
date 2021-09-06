@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -39,11 +39,10 @@ class CalculateDenseNodesStepTest
     {
         // GIVEN
         NodeRelationshipCache cache = mock( NodeRelationshipCache.class );
-        try ( CalculateDenseNodesStep step = new CalculateDenseNodesStep( mock( StageControl.class ),
-                Configuration.DEFAULT, cache ) )
+        try ( CalculateDenseNodesStep step = new CalculateDenseNodesStep( new SimpleStageControl(), Configuration.DEFAULT, cache ) )
         {
-            step.processors( 4 );
             step.start( 0 );
+            step.processors( 4 );
 
             // WHEN
             long id = 0;
