@@ -32,14 +32,15 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreResource;
+import org.neo4j.storageengine.api.StoreSnapshot;
 
-public final class StoreSnapshotProvider
+public final class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
 {
     private final Database database;
     private final FileSystemAbstraction fs;
     private final Log log;
 
-    public StoreSnapshotProvider( Database database, FileSystemAbstraction fs )
+    public DefaultStoreSnapshotFactory( Database database, FileSystemAbstraction fs )
     {
         this.database = database;
         this.fs = fs;
@@ -49,7 +50,7 @@ public final class StoreSnapshotProvider
     /**
      * @return a snapshot of the store files for this database, if available
      */
-    public Optional<StoreSnapshot> prepareStoreCopySnapshot() throws IOException
+    public Optional<StoreSnapshot> createStoreSnapshot() throws IOException
     {
         if ( !database.getDatabaseAvailabilityGuard().isAvailable() )
         {

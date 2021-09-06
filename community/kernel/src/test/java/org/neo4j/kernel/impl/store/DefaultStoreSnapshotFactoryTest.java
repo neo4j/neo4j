@@ -43,12 +43,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @TestDirectoryExtension
-class StoreSnapshotProviderTest
+class DefaultStoreSnapshotFactoryTest
 {
     @Inject
     public TestDirectory testDirectory;
 
-    private StoreSnapshotProvider storeSnapshotProvider;
+    private DefaultStoreSnapshotFactory defaultStoreSnapshotFactory;
     private DatabaseLayout databaseLayout;
     private StoreFileListing.Builder fileListingBuilder;
 
@@ -62,14 +62,14 @@ class StoreSnapshotProviderTest
         var storeFileListing = mock( StoreFileListing.class );
         when( storeFileListing.builder() ).thenReturn( fileListingBuilder );
         when( dataSource.getStoreFileListing() ).thenReturn( storeFileListing );
-        storeSnapshotProvider = new StoreSnapshotProvider( dataSource, testDirectory.getFileSystem() );
+        defaultStoreSnapshotFactory = new DefaultStoreSnapshotFactory( dataSource, testDirectory.getFileSystem() );
     }
 
     @Test
     void shouldHanldeEmptyListOfFilesForeEachType() throws Exception
     {
         setExpectedFiles( new StoreFileMetadata[0] );
-        var prepareStoreCopyFiles = storeSnapshotProvider.prepareStoreCopySnapshot().get();
+        var prepareStoreCopyFiles = defaultStoreSnapshotFactory.createStoreSnapshot().get();
         var files = prepareStoreCopyFiles.recoverableFiles();
         var atomicFilesSnapshotLength = prepareStoreCopyFiles.unrecoverableFiles().count();
         assertEquals( 0, files.length );
@@ -90,7 +90,7 @@ class StoreSnapshotProviderTest
         setExpectedFiles( expectedFiles );
 
         // when
-        var prepareStoreCopyFiles = storeSnapshotProvider.prepareStoreCopySnapshot().get();
+        var prepareStoreCopyFiles = defaultStoreSnapshotFactory.createStoreSnapshot().get();
         var files = prepareStoreCopyFiles.recoverableFiles();
         var atomicFilesSnapshot = prepareStoreCopyFiles.unrecoverableFiles().toArray( StoreResource[]::new );
 
