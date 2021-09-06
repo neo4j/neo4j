@@ -371,6 +371,29 @@ class RelationshipModifierTest
         assertThat( readRelationshipsFromStore( node, store ) ).isEqualTo( asSet( expectedRelationships ) );
     }
 
+    @Test
+    void shouldUpgradeToDenseEvenOnMismatchingDegree()
+    {
+        // given
+        long node = createEmptyNode();
+        long node2 = createEmptyNode();
+        int numRels = 10;
+        createRelationships( generateRelationshipData( numRels, node, () -> 0, () -> node2, () -> OUTGOING ) );
+        NodeRecord nodeRecord = store.loadNode( node );
+        assertThat( nodeRecord.isDense() ).isFalse();
+        RelationshipRecord relationshipRecord = store.loadRelationship( nodeRecord.getNextRel() );
+        // change the degree of 'node' to something less than what it really is
+        assertThat( relationshipRecord.getPrevRel( node ) ).isEqualTo( numRels );
+        relationshipRecord.setPrevRel( numRels / 2, node );
+        store.write( relationshipRecord );
+
+        // when
+        createRelationships( generateRelationshipData( 100, node, () -> 1, () -> node2, () -> OUTGOING ) );
+
+        // then
+        assertThat( store.loadNode( node ).isDense() ).isTrue();
+    }
+
     private static Set<RelationshipData> readRelationshipsFromStore( long node, MapRecordStore store )
     {
         Set<RelationshipData> relationships = new HashSet<>();
