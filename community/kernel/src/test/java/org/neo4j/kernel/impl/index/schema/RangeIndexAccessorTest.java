@@ -130,7 +130,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
                                                                                                            AccessMode.Static.ACCESS,
                                                                                                            unorderedValues(),
                                                                                                            suffixPredicate ) );
-            assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. stringSuffix predicate is not allowed" );
+            assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. STRING_SUFFIX predicate is not allowed" );
         }
     }
 
@@ -146,7 +146,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
                                                                                                            AccessMode.Static.ACCESS,
                                                                                                            unorderedValues(),
                                                                                                            containsPredicate ) );
-            assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. stringContains predicate is not allowed" );
+            assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. STRING_CONTAINS predicate is not allowed" );
         }
     }
 

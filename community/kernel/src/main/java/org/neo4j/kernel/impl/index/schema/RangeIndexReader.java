@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -59,23 +60,23 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
             PropertyIndexQuery predicate = predicates[i];
             switch ( predicate.type() )
             {
-            case exists:
+            case EXISTS:
                 treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
                 treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
                 break;
-            case exact:
+            case EXACT:
                 PropertyIndexQuery.ExactPredicate exactPredicate = (PropertyIndexQuery.ExactPredicate) predicate;
                 treeKeyFrom.initFromValue( i, exactPredicate.value(), NEUTRAL );
                 treeKeyTo.initFromValue( i, exactPredicate.value(), NEUTRAL );
                 break;
-            case range:
+            case RANGE:
                 throwIfGeometryRangeQuery( predicates, predicate );
 
                 PropertyIndexQuery.RangePredicate<?> rangePredicate = (PropertyIndexQuery.RangePredicate<?>) predicate;
                 initFromForRange( i, rangePredicate, treeKeyFrom );
                 initToForRange( i, rangePredicate, treeKeyTo );
                 break;
-            case stringPrefix:
+            case STRING_PREFIX:
                 PropertyIndexQuery.StringPrefixPredicate prefixPredicate = (PropertyIndexQuery.StringPrefixPredicate) predicate;
                 treeKeyFrom.stateSlot( i ).initAsPrefixLow( prefixPredicate.prefix() );
                 treeKeyTo.stateSlot( i ).initAsPrefixHigh( prefixPredicate.prefix() );
@@ -145,8 +146,8 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
 
     private static void throwIfStringSuffixOrContains( PropertyIndexQuery[] predicates, PropertyIndexQuery predicate )
     {
-        IndexQuery.IndexQueryType type = predicate.type();
-        if ( type == IndexQuery.IndexQueryType.stringSuffix || type == IndexQuery.IndexQueryType.stringContains )
+        IndexQueryType type = predicate.type();
+        if ( type == IndexQueryType.STRING_SUFFIX || type == IndexQueryType.STRING_CONTAINS )
         {
             throw new IllegalArgumentException( format( "Tried to query index with illegal query. %s predicate is not allowed " +
                                                         "for RANGE index. Query was: %s ", type, Arrays.toString( predicates ) ) );

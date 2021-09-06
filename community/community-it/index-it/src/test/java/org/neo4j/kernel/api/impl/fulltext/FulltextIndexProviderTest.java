@@ -68,6 +68,7 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -1024,7 +1025,7 @@ class FulltextIndexProviderTest
             IndexNotApplicableKernelException e =
                     assertThrows( IndexNotApplicableKernelException.class, () -> assertQueryResult( ktx, exactQuery( containsPropertyId, 1 ) ) );
             assertThat( e.getMessage() ).contains(
-                    "A fulltext schema index cannot answer " + IndexQuery.IndexQueryType.exact + " queries on " + ValueCategory.NUMBER + " values." );
+                    "A fulltext schema index cannot answer " + IndexQueryType.EXACT + " queries on " + ValueCategory.NUMBER + " values." );
         }
         controller.restartDbms();
         try ( Transaction tx = db.beginTx() )
@@ -1040,7 +1041,7 @@ class FulltextIndexProviderTest
             IndexNotApplicableKernelException e =
                     assertThrows( IndexNotApplicableKernelException.class, () -> assertQueryResult( ktx, exactQuery( containsPropertyId, 1 ) ) );
             assertThat( e.getMessage() ).contains(
-                    "A fulltext schema index cannot answer " + IndexQuery.IndexQueryType.exact + " queries on " + ValueCategory.NUMBER + " values." );
+                    "A fulltext schema index cannot answer " + IndexQueryType.EXACT + " queries on " + ValueCategory.NUMBER + " values." );
         }
     }
 

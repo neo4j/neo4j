@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -45,6 +44,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -87,8 +87,6 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringSuffix;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
-import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.stringContains;
-import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.stringSuffix;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -1287,7 +1285,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     private boolean hasContainsOrEndsWithQuery( PropertyIndexQuery[] theQuery )
     {
         return Arrays.stream( theQuery )
-                .anyMatch( predicate -> predicate.type().equals( stringContains ) || predicate.type().equals( stringSuffix ) );
+                .anyMatch( predicate -> predicate.type().equals( IndexQueryType.STRING_CONTAINS ) || predicate.type().equals( IndexQueryType.STRING_SUFFIX ) );
     }
 
     @Test

@@ -275,7 +275,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
         @Override
         public IndexQueryType type()
         {
-            return IndexQuery.IndexQueryType.exists;
+            return IndexQueryType.EXISTS;
         }
 
         @Override
@@ -310,7 +310,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
         @Override
         public IndexQueryType type()
         {
-            return IndexQuery.IndexQueryType.exact;
+            return IndexQueryType.EXACT;
         }
 
         @Override
@@ -354,7 +354,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
         @Override
         public IndexQueryType type()
         {
-            return IndexQuery.IndexQueryType.range;
+            return IndexQueryType.RANGE;
         }
 
         @Override
@@ -534,7 +534,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
         @Override
         public IndexQueryType type()
         {
-            return IndexQuery.IndexQueryType.stringPrefix;
+            return IndexQueryType.STRING_PREFIX;
         }
 
         @Override
@@ -563,7 +563,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
         @Override
         public IndexQueryType type()
         {
-            return IndexQuery.IndexQueryType.stringContains;
+            return IndexQueryType.STRING_CONTAINS;
         }
 
         @Override
@@ -592,7 +592,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
         @Override
         public IndexQueryType type()
         {
-            return IndexQuery.IndexQueryType.stringSuffix;
+            return IndexQueryType.STRING_SUFFIX;
         }
 
         @Override
@@ -620,7 +620,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
         @Override
         public IndexQueryType type()
         {
-            return IndexQuery.IndexQueryType.fulltextSearch;
+            return IndexQueryType.FULLTEXT_SEARCH;
         }
 
         @Override

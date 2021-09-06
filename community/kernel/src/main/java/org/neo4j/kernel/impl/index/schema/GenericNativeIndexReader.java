@@ -134,16 +134,16 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
             PropertyIndexQuery predicate = query[i];
             switch ( predicate.type() )
             {
-            case exists:
+            case EXISTS:
                 treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
                 treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
                 break;
-            case exact:
+            case EXACT:
                 ExactPredicate exactPredicate = (ExactPredicate) predicate;
                 treeKeyFrom.initFromValue( i, exactPredicate.value(), NEUTRAL );
                 treeKeyTo.initFromValue( i, exactPredicate.value(), NEUTRAL );
                 break;
-            case range:
+            case RANGE:
                 if ( isGeometryRangeQuery( predicate ) )
                 {
                     // Use the supplied SpaceFillingCurve range instead of the GeometryRangePredicate because at the time of calling this method
@@ -161,13 +161,13 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
                     initToForRange( i, rangePredicate, treeKeyTo );
                 }
                 break;
-            case stringPrefix:
+            case STRING_PREFIX:
                 StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
                 treeKeyFrom.stateSlot( i ).initAsPrefixLow( prefixPredicate.prefix() );
                 treeKeyTo.stateSlot( i ).initAsPrefixHigh( prefixPredicate.prefix() );
                 break;
-            case stringSuffix:
-            case stringContains:
+            case STRING_SUFFIX:
+            case STRING_CONTAINS:
                 treeKeyFrom.initValueAsLowest( i, ValueGroup.TEXT );
                 treeKeyTo.initValueAsHighest( i, ValueGroup.TEXT );
                 needsFiltering = true;

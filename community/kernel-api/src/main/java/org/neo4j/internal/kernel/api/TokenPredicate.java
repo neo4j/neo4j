@@ -45,6 +45,6 @@ public class TokenPredicate implements IndexQuery
     @Override
     public IndexQueryType type()
     {
-        return IndexQueryType.tokenLookup;
+        return IndexQueryType.TOKEN_LOOKUP;
     }
 }

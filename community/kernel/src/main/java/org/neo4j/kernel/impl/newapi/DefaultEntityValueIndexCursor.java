@@ -153,7 +153,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
                 PropertyIndexQuery nextQuery = query[i];
                 switch ( nextQuery.type() )
                 {
-                case exists:
+                case EXISTS:
                     // This also covers the rewritten suffix/contains for composite index
                     // If composite index all following will be exists as well so no need to consider those
                     setNeedsValuesIfRequiresOrder();
@@ -168,22 +168,22 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
                     }
                     break;
 
-                case range:
+                case RANGE:
                     // This case covers first query to be range or exact followed by range
                     // If composite index all following will be exists as well so no need to consider those
                     setNeedsValuesIfRequiresOrder();
                     rangeQuery( descriptor, exactValues, (PropertyIndexQuery.RangePredicate<?>) nextQuery );
                     break;
 
-                case stringPrefix:
+                case STRING_PREFIX:
                     // This case covers first query to be prefix or exact followed by prefix
                     // If composite index all following will be exists as well so no need to consider those
                     setNeedsValuesIfRequiresOrder();
                     prefixQuery( descriptor, exactValues, (PropertyIndexQuery.StringPrefixPredicate) nextQuery );
                     break;
 
-                case stringSuffix:
-                case stringContains:
+                case STRING_SUFFIX:
+                case STRING_CONTAINS:
                     // This case covers suffix/contains for singular indexes
                     // for composite index, the suffix/contains should already
                     // have been rewritten as exists + filter, so no need to consider it here

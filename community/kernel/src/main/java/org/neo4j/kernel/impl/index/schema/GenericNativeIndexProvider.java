@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -243,22 +244,22 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         }
 
         @Override
-        public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
-            return queryType != IndexQuery.IndexQueryType.fulltextSearch;
+            return queryType != IndexQueryType.FULLTEXT_SEARCH;
         }
 
         @Override
-        public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+        public double getCostMultiplier( IndexQueryType... queryTypes )
         {
             for ( int i = 0; i < queryTypes.length; i++ )
             {
                 // for now, just make the operations which are more efficiently supported
                 // by lucene-based indexes slightly more expensive so the planner
                 // would choose a lucene-based index instead of b-tree if there is a choice
-                IndexQuery.IndexQueryType indexQueryType = queryTypes[i];
-                if ( indexQueryType == IndexQuery.IndexQueryType.stringSuffix
-                        || indexQueryType == IndexQuery.IndexQueryType.stringContains )
+                IndexQueryType indexQueryType = queryTypes[i];
+                if ( indexQueryType == IndexQueryType.STRING_SUFFIX
+                        || indexQueryType == IndexQueryType.STRING_CONTAINS )
                 {
                     return 1.1;
                 }

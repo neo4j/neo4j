@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
@@ -52,7 +53,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.schema.IndexQuery.IndexQueryType.exact;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 
 /**
@@ -126,26 +126,26 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
         PropertyIndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
-        case exact:
+        case EXACT:
             Value[] values = new Value[predicates.length];
             for ( int i = 0; i < predicates.length; i++ )
             {
-                assert predicates[i].type() == exact :
+                assert predicates[i].type() == IndexQueryType.EXACT :
                         "Exact followed by another query predicate type is not supported at this moment.";
                 values[i] = ((PropertyIndexQuery.ExactPredicate) predicates[i]).value();
             }
             return LuceneDocumentStructure.newSeekQuery( values );
-        case exists:
+        case EXISTS:
             for ( PropertyIndexQuery p : predicates )
             {
-                if ( p.type() != IndexQuery.IndexQueryType.exists )
+                if ( p.type() != IndexQueryType.EXISTS )
                 {
                     throw new IndexNotApplicableKernelException(
                             "Exists followed by another query predicate type is not supported." );
                 }
             }
             return LuceneDocumentStructure.newScanQuery();
-        case range:
+        case RANGE:
             assertNotComposite( predicates );
             if ( predicate.valueGroup() == ValueGroup.TEXT )
             {
@@ -154,15 +154,15 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
             }
             throw new UnsupportedOperationException( format( "Range scans of value group %s are not supported", predicate.valueGroup() ) );
 
-        case stringPrefix:
+        case STRING_PREFIX:
             assertNotComposite( predicates );
             PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
             return LuceneDocumentStructure.newRangeSeekByPrefixQuery( spp.prefix().stringValue() );
-        case stringContains:
+        case STRING_CONTAINS:
             assertNotComposite( predicates );
             PropertyIndexQuery.StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
             return LuceneDocumentStructure.newWildCardStringQuery( scp.contains().stringValue() );
-        case stringSuffix:
+        case STRING_SUFFIX:
             assertNotComposite( predicates );
             PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
             return LuceneDocumentStructure.newSuffixStringQuery( ssp.suffix().stringValue() );

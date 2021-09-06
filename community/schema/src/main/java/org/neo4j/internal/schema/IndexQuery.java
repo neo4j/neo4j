@@ -33,13 +33,13 @@ public interface IndexQuery
 
     enum IndexQueryType
     {
-        tokenLookup,
-        exists,
-        exact,
-        range,
-        stringPrefix,
-        stringSuffix,
-        stringContains,
-        fulltextSearch
+        TOKEN_LOOKUP,
+        EXISTS,
+        EXACT,
+        RANGE,
+        STRING_PREFIX,
+        STRING_SUFFIX,
+        STRING_CONTAINS,
+        FULLTEXT_SEARCH
     }
 }

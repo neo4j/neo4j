@@ -26,6 +26,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -74,7 +75,7 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
         }
 
         @Override
-        public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
             if ( valueCategory != ValueCategory.TEXT )
             {
@@ -83,11 +84,11 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
 
             switch ( queryType )
             {
-            case exact:
-            case stringPrefix:
-            case stringSuffix:
-            case stringContains:
-            case range:
+            case EXACT:
+            case STRING_PREFIX:
+            case STRING_SUFFIX:
+            case STRING_CONTAINS:
+            case RANGE:
                 return true;
             default:
                 return false;
@@ -95,17 +96,17 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
         }
 
         @Override
-        public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+        public double getCostMultiplier( IndexQueryType... queryTypes )
         {
             for ( int i = 0; i < queryTypes.length; i++ )
             {
                 // for now, just make the operations which are also supported by GBP+ tree
                 // slightly more expensive so the planner would choose GBP-based index
                 // instead of lucene-based if there is a choice
-                IndexQuery.IndexQueryType indexQueryType = queryTypes[i];
-                if ( indexQueryType == IndexQuery.IndexQueryType.exact
-                        || indexQueryType == IndexQuery.IndexQueryType.stringPrefix
-                        || indexQueryType == IndexQuery.IndexQueryType.range )
+                IndexQueryType indexQueryType = queryTypes[i];
+                if ( indexQueryType == IndexQueryType.EXACT
+                        || indexQueryType == IndexQueryType.STRING_PREFIX
+                        || indexQueryType == IndexQueryType.RANGE )
                 {
                     return 1.1;
                 }

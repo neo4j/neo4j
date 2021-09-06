@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -176,15 +177,15 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
         }
 
         @Override
-        public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
             switch ( queryType )
             {
-            case exists:
-            case exact:
-            case stringPrefix:
+            case EXISTS:
+            case EXACT:
+            case STRING_PREFIX:
                 return true;
-            case range:
+            case RANGE:
                 return valueCategory != ValueCategory.UNKNOWN && valueCategory != ValueCategory.GEOMETRY;
             default:
                 return false;
@@ -192,7 +193,7 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
         }
 
         @Override
-        public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+        public double getCostMultiplier( IndexQueryType... queryTypes )
         {
             return 1.0;
         }
