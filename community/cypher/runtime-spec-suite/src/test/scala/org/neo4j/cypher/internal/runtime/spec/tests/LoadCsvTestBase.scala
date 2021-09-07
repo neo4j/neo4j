@@ -419,6 +419,64 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
   }
 
+  Seq(1, 2, 3, 4, testRange.size/5, testRange.size).foreach { explicitBatchSize =>
+    test(s"should load csv create node with properties with periodic commit with batch size $explicitBatchSize") {
+      // given an empty data base
+      val url = multipleColumnCsvFile(withHeaders = true)
+      val periodicCommitBatchSize = explicitBatchSize
+
+      // when
+      var beforeTxId: Long = Long.MinValue
+      val numberOfNewTokens = 4 // Creating new tokens will result in implicit transactions being committed
+
+      val beforeProbe: Probe = new Probe() {
+        override def onRow(row: AnyRef): Unit = {
+          beforeTxId = runtimeTestSupport.getLastClosedTransactionId
+        }
+      }
+
+      val txIdAssertingProbe: Probe = new Probe() {
+        var seenRowsCount = 0
+
+        override def onRow(row: AnyRef): Unit = {
+          val lastTxId = runtimeTestSupport.getLastClosedTransactionId
+          val expectedTxId = beforeTxId + numberOfNewTokens + (seenRowsCount / periodicCommitBatchSize)
+          seenRowsCount += 1
+          if (lastTxId != expectedTxId && beforeTxId != Long.MinValue) {
+            // Beware that for some values on explicitBatchSize this may not match exactly and could be a false positive
+            fail(s"Expected last closed transaction #$expectedTxId but was #$lastTxId at seen row $seenRowsCount with batch size $periodicCommitBatchSize")
+          }
+        }
+      }
+
+      val logicalQuery = new LogicalQueryBuilder(this,
+                                                 hasLoadCsv = true,
+                                                 periodicCommitBatchSize = Some(periodicCommitBatchSize))
+        .produceResults("n")
+        .prober(txIdAssertingProbe)
+        .create(createNodeWithProperties("n", Seq("A"), "{p1: line.a, p2: line.b, p3: line.c}"))
+        .loadCSV(url, variableName = "line", HasHeaders)
+        .prober(beforeProbe)
+        .argument()
+        .build(readOnly = false)
+
+      val executablePlan = buildPlan(logicalQuery, runtime)
+
+      val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
+      consume(runtimeResult)
+
+      // then
+      runtimeResult should beColumns("n")
+        .withRows(RowCount(testRange.size))
+        .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
+    }
+  }
+}
+
+// In pipelined this is only supported with fusing
+trait LoadCsvWithMergeTestBase[CONTEXT <: RuntimeContext] {
+  self: LoadCsvTestBase[CONTEXT] =>
+
   test("should close open cursors on periodic commit - scenario") {
     val url = multipleColumnCsvFile(withHeaders = true)
 
@@ -476,58 +534,5 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r")
       .withRows(RowCount(testRange.size))
       .withStatistics(relationshipsCreated = testRange.size)
-  }
-
-  Seq(1, 2, 3, 4, testRange.size/5, testRange.size).foreach { explicitBatchSize =>
-    test(s"should load csv create node with properties with periodic commit with batch size $explicitBatchSize") {
-      // given an empty data base
-      val url = multipleColumnCsvFile(withHeaders = true)
-      val periodicCommitBatchSize = explicitBatchSize
-
-      // when
-      var beforeTxId: Long = Long.MinValue
-      val numberOfNewTokens = 4 // Creating new tokens will result in implicit transactions being committed
-
-      val beforeProbe: Probe = new Probe() {
-        override def onRow(row: AnyRef): Unit = {
-          beforeTxId = runtimeTestSupport.getLastClosedTransactionId
-        }
-      }
-
-      val txIdAssertingProbe: Probe = new Probe() {
-        var seenRowsCount = 0
-
-        override def onRow(row: AnyRef): Unit = {
-          val lastTxId = runtimeTestSupport.getLastClosedTransactionId
-          val expectedTxId = beforeTxId + numberOfNewTokens + (seenRowsCount / periodicCommitBatchSize)
-          seenRowsCount += 1
-          if (lastTxId != expectedTxId && beforeTxId != Long.MinValue) {
-            // Beware that for some values on explicitBatchSize this may not match exactly and could be a false positive
-            fail(s"Expected last closed transaction #$expectedTxId but was #$lastTxId at seen row $seenRowsCount with batch size $periodicCommitBatchSize")
-          }
-        }
-      }
-
-      val logicalQuery = new LogicalQueryBuilder(this,
-                                                 hasLoadCsv = true,
-                                                 periodicCommitBatchSize = Some(periodicCommitBatchSize))
-        .produceResults("n")
-        .prober(txIdAssertingProbe)
-        .create(createNodeWithProperties("n", Seq("A"), "{p1: line.a, p2: line.b, p3: line.c}"))
-        .loadCSV(url, variableName = "line", HasHeaders)
-        .prober(beforeProbe)
-        .argument()
-        .build(readOnly = false)
-
-      val executablePlan = buildPlan(logicalQuery, runtime)
-
-      val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
-      consume(runtimeResult)
-
-      // then
-      runtimeResult should beColumns("n")
-        .withRows(RowCount(testRange.size))
-        .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
-    }
   }
 }
