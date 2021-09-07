@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.apache.lucene.document.Document;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.function.ToLongFunction;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -28,6 +31,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
@@ -49,6 +53,12 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
     protected IndexUpdater getIndexUpdater( IndexUpdateMode mode )
     {
         return new LuceneSchemaIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
+    }
+
+    @Override
+    public IndexEntriesReader[] newAllEntriesValueReader( ToLongFunction<Document> entityIdReader, int numPartitions )
+    {
+        return super.newAllEntriesValueReader( LuceneDocumentStructure::getNodeId, numPartitions );
     }
 
     @Override

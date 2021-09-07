@@ -48,6 +48,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.consistency.checker.RecordLoading.lightClear;
 import static org.neo4j.consistency.checker.RecordLoading.safeGetNodeLabels;
+import static org.neo4j.consistency.checker.SchemaComplianceChecker.valuesContainTextProperty;
 
 public class IndexChecker implements Checker
 {
@@ -264,34 +265,56 @@ public class IndexChecker implements Checker
                         {
                             IndexContext index = indexes.get( i );
                             IndexDescriptor descriptor = index.descriptor;
-                            Value[] values = RecordLoading.entityIntersectionWithSchema( entityTokens, allValues, descriptor.schema() );
                             long cachedValue = client.getFromCache( entityId, i );
                             boolean nodeIsInIndex = (cachedValue & IN_USE_MASK ) != 0;
-                            if ( values != null )
+                            Value[] values = RecordLoading.entityIntersectionWithSchema( entityTokens, allValues, descriptor.schema() );
+                            if ( index.descriptor.schema().isFulltextSchemaDescriptor() )
                             {
-                                // This node should really be in the index, is it?
-                                if ( !nodeIsInIndex )
+                                // The strategy for fulltext indexes is way simpler. Simply check of the sets of tokens (label tokens and property key tokens)
+                                // and if they match the index schema descriptor then the node should be in the index, otherwise not
+                                int[] nodePropertyKeys = allValues.keySet().toArray();
+                                int[] indexPropertyKeys = index.descriptor.schema().getPropertyIds();
+                                boolean nodeShouldBeInIndex =
+                                        index.descriptor.schema().isAffected( entityTokens ) && containsAny( indexPropertyKeys, nodePropertyKeys ) &&
+                                                valuesContainTextProperty( values );
+                                if ( nodeShouldBeInIndex && !nodeIsInIndex )
                                 {
-                                    // It wasn't, report it
-                                    getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor, Values.asObjects( values ) );
+                                    getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor, new Object[0] );
                                 }
-                                else if ( index.hasValues )
+                                else if ( !nodeShouldBeInIndex && nodeIsInIndex )
                                 {
-                                    int cachedChecksum = (int) cachedValue & CHECKSUM_MASK;
-                                    int actualChecksum = checksum( values );
-                                    if ( cachedChecksum != actualChecksum )
-                                    {
-                                        getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor,
-                                                Values.asObjects( values ) );
-                                    }
+                                    getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor, new Object[0] );
                                 }
                             }
                             else
                             {
-                                if ( nodeIsInIndex )
+                                if ( values != null )
                                 {
-                                    reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
-                                            context.recordLoader.node( entityId, cursorContext ) );
+                                    // This node should really be in the index, is it?
+                                    if ( !nodeIsInIndex )
+                                    {
+                                        // It wasn't, report it
+                                        getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor,
+                                                Values.asObjects( values ) );
+                                    }
+                                    else if ( index.hasValues )
+                                    {
+                                        int cachedChecksum = (int) cachedValue & CHECKSUM_MASK;
+                                        int actualChecksum = checksum( values );
+                                        if ( cachedChecksum != actualChecksum )
+                                        {
+                                            getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor,
+                                                    Values.asObjects( values ) );
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if ( nodeIsInIndex )
+                                    {
+                                        reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
+                                                context.recordLoader.node( entityId, cursorContext ) );
+                                    }
                                 }
                             }
                         }
@@ -320,6 +343,21 @@ public class IndexChecker implements Checker
     public String toString()
     {
         return String.format( "%s[entityType:%s,indexesToCheck:%d]", getClass().getSimpleName(), entityType, indexes.size() );
+    }
+
+    private static boolean containsAny( int[] values, int[] toCheck )
+    {
+        for ( int value : values )
+        {
+            for ( int candidate : toCheck )
+            {
+                if ( value == candidate )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

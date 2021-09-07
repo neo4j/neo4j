@@ -98,7 +98,7 @@ class IndexSizes
         int threshold = 0;
         for ( IndexDescriptor index : indexes )
         {
-            if ( !hasValues( index ) )
+            if ( !index.schema().isFulltextSchemaDescriptor() && !hasValues( index ) )
             {
                 // Skip those that we cannot read values from. They should not be checked by the IndexChecker,
                 // but the "inefficient" way of doing a lookup per node/index in NodeChecker instead

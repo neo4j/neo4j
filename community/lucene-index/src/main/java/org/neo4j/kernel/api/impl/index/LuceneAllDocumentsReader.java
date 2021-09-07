@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.document.Document;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -29,6 +30,8 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
 
+import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
 import static java.util.stream.Collectors.toList;
 
 public class LuceneAllDocumentsReader implements BoundedIterable<Document>
@@ -55,6 +58,30 @@ public class LuceneAllDocumentsReader implements BoundedIterable<Document>
                 .iterator();
 
         return Iterators.concat( iterators );
+    }
+
+    /**
+     * Partitions all documents in this index into (at most) {@code numPartitions} partitions, each reading its own document ID range.
+     *
+     * @param numPartitions number of desired partitions to return.
+     * @return a list of document iterators, each reading its own document ID range.
+     */
+    public List<Iterator<Document>> partition( int numPartitions )
+    {
+        int partitionsPerIndexPartition = max( 1, numPartitions / partitionReaders.size() );
+        List<Iterator<Document>> result = new ArrayList<>();
+        for ( LucenePartitionAllDocumentsReader partitionReader : partitionReaders )
+        {
+            int indexPartitionMaxCount = toIntExact( partitionReader.maxCount() );
+            int roughCountPerIndexPartition = indexPartitionMaxCount / partitionsPerIndexPartition;
+            for ( int i = 0; i < partitionsPerIndexPartition; i++ )
+            {
+                int from = i * roughCountPerIndexPartition;
+                int to = i == partitionsPerIndexPartition - 1 ? indexPartitionMaxCount : from + roughCountPerIndexPartition;
+                result.add( partitionReader.iterator( from, to ) );
+            }
+        }
+        return result;
     }
 
     @Override

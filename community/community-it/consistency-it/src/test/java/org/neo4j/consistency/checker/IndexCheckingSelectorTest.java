@@ -211,8 +211,8 @@ class IndexCheckingSelectorTest
         assertTrue( result.isSuccessful() );
 
         assertThat( output.toString() )
-                .contains( "IndexChecker[entityType:NODE,indexesToCheck:0]" )
-                .containsPattern( "NodeChecker\\[highId:.,indexesToCheck:1\\]" );
+                .contains( "IndexChecker[entityType:NODE,indexesToCheck:1]" )
+                .containsPattern( "NodeChecker\\[highId:.,indexesToCheck:0\\]" );
     }
 
     @Test

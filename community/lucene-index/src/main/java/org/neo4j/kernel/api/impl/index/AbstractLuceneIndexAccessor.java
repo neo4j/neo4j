@@ -24,7 +24,11 @@ import org.apache.lucene.document.Document;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
@@ -36,6 +40,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -141,6 +146,16 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
         return new LuceneAllEntriesIndexAccessorReader( luceneIndex.allDocumentsReader(), entityIdReader, fromIdInclusive, toIdExclusive );
     }
 
+    public IndexEntriesReader[] newAllEntriesValueReader( ToLongFunction<Document> entityIdReader, int numPartitions )
+    {
+        LuceneAllDocumentsReader allDocumentsReader = luceneIndex.allDocumentsReader();
+        List<Iterator<Document>> partitions = allDocumentsReader.partition( numPartitions );
+        AtomicInteger closeCount = new AtomicInteger( partitions.size() );
+        List<IndexEntriesReader> readers = partitions.stream().map( partitionDocuments -> new PartitionIndexEntriesReader( closeCount, allDocumentsReader,
+                entityIdReader, partitionDocuments ) ).collect( Collectors.toList() );
+        return readers.toArray( IndexEntriesReader[]::new );
+    }
+
     @Override
     public ResourceIterator<Path> snapshotFiles()
     {
@@ -173,6 +188,58 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     public long estimateNumberOfEntries( CursorContext ignored )
     {
         return luceneIndex.allDocumentsReader().maxCount();
+    }
+
+    private static class PartitionIndexEntriesReader implements IndexEntriesReader
+    {
+        private final AtomicInteger closeCount;
+        private final LuceneAllDocumentsReader allDocumentsReader;
+        private final ToLongFunction<Document> entityIdReader;
+        private final Iterator<Document> partitionDocuments;
+
+        PartitionIndexEntriesReader( AtomicInteger closeCount, LuceneAllDocumentsReader allDocumentsReader, ToLongFunction<Document> entityIdReader,
+                Iterator<Document> partitionDocuments )
+        {
+            this.closeCount = closeCount;
+            this.allDocumentsReader = allDocumentsReader;
+            this.entityIdReader = entityIdReader;
+            this.partitionDocuments = partitionDocuments;
+        }
+
+        @Override
+        public Value[] values()
+        {
+            return null;
+        }
+
+        @Override
+        public void close()
+        {
+            // Since all these (sub-range) readers come from the one LuceneAllDocumentsReader it will have to remain open until the last reader is closed
+            if ( closeCount.decrementAndGet() == 0 )
+            {
+                try
+                {
+                    allDocumentsReader.close();
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            }
+        }
+
+        @Override
+        public long next()
+        {
+            return entityIdReader.applyAsLong( partitionDocuments.next() );
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return partitionDocuments.hasNext();
+        }
     }
 
     protected abstract class AbstractLuceneIndexUpdater implements IndexUpdater

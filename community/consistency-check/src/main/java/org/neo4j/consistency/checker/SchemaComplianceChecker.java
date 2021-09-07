@@ -182,7 +182,7 @@ class SchemaComplianceChecker implements AutoCloseable
         }
     }
 
-    private static boolean valuesContainTextProperty( Value[] values )
+    static boolean valuesContainTextProperty( Value[] values )
     {
         for ( Value value : values )
         {

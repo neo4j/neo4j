@@ -65,7 +65,6 @@ import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFacto
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -77,7 +76,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
@@ -567,46 +565,6 @@ class FulltextIndexConsistencyCheckIT
         }
         managementService.shutdown();
 
-        ConsistencyCheckService.Result result = checkConsistency();
-        assertFalse( result.isSuccessful() );
-    }
-
-    @Test
-    public void mustDiscoverNodePropertyIndexMismatch() throws Exception
-    {
-        //Given
-        GraphDatabaseService db = createDatabase();
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "L1", "L2" ), asStrList( "p1", "p2" ) ) ).close();
-            tx.commit();
-        }
-        long nodeId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
-            Node node = tx.createNode( Label.label( "L1" ), Label.label( "L2" ) );
-            nodeId = node.getId();
-            node.setProperty( "p1", "value" );
-            node.setProperty( "p2", "value" );
-            tx.commit();
-        }
-
-        //when
-        NeoStores stores = getNeoStores( db );
-        NodeRecord record = stores.getNodeStore().getRecord( nodeId, stores.getNodeStore().newRecord(), RecordLoad.NORMAL, NULL );
-        long propId = record.getNextProp();
-
-        // Find and remove property p2
-        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL, NULL );
-        List<NamedToken> propertyKeyTokens = stores.getPropertyKeyTokenStore().getAllReadableTokens( NULL );
-        NamedToken propertyKeyToken = propertyKeyTokens.stream().filter( token -> "p2".equals( token.name() ) ).findFirst().orElseThrow();
-        propRecord.removePropertyBlock( propertyKeyToken.id() );
-        stores.getPropertyStore().updateRecord( propRecord, NULL );
-
-        managementService.shutdown();
-
-        //then
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse( result.isSuccessful() );
     }
