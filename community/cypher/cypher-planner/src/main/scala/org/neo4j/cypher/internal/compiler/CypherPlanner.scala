@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
@@ -61,9 +62,9 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     val pipeLine = if(config.planSystemCommands)
       systemPipeLine
     else if (context.debugOptions.toStringEnabled)
-      planPipeLine() andThen DebugPrinter
+      planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures) andThen DebugPrinter
     else
-      planPipeLine()
+      planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures)
 
     pipeLine.transform(state, context)
   }
@@ -86,6 +87,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                  monitors)
     CompilationPhases.parsing(ParsingConfig(
       compatibilityMode,
+      semanticFeatures = config.enabledSemanticFeatures,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
       useJavaCCParser = config.useJavaCCParser,
       obfuscateLiterals = config.obfuscateLiterals
@@ -127,4 +129,5 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   def obfuscateLiterals: Boolean = config.obfuscateLiterals
   def pipelinedBatchSizeSmall: Int = config.pipelinedBatchSizeSmall
   def pipelinedBatchSizeBig: Int = config.pipelinedBatchSizeBig
+  def enabledSemanticFeatures: Seq[SemanticFeature] = CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures)
 }

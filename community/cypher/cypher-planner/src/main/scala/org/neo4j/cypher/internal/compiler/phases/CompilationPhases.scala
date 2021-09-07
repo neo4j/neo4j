@@ -74,6 +74,9 @@ object CompilationPhases {
     CorrelatedSubQueries,
   )
 
+  def enabledSemanticFeatures(extra: Set[String]): Seq[SemanticFeature] =
+    defaultSemanticFeatures ++ extra.map(SemanticFeature.fromString)
+
   private val AccumulatedSteps(orderedPlanPipelineSteps, _) = StepSequencer(ListStepAccumulator[StepSequencer.Step with PlanPipelineTransformerFactory]())
     .orderSteps(
       Set(

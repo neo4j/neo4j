@@ -45,4 +45,22 @@ object SemanticFeature {
 
   case object ExpressionsInViewInvocations extends SemanticFeature
   case object WithInitialQuerySignature extends SemanticFeature
+
+  private val allSemanticFeatures = Set(
+    CorrelatedSubQueries,
+    MultipleDatabases,
+    MultipleGraphs,
+    UseGraphSelector,
+    CallSubqueryInTransactions,
+    CallReturningSubqueryInTransactions,
+    ExpressionsInViewInvocations,
+    WithInitialQuerySignature,
+  )
+
+  def fromString(str: String): SemanticFeature =
+    allSemanticFeatures.find(_.productPrefix == str).getOrElse(
+      throw new IllegalArgumentException(
+        s"No such SemanticFeature: $str. Valid options are: ${allSemanticFeatures.map(_.productPrefix).mkString(", ")}"
+      )
+    )
 }

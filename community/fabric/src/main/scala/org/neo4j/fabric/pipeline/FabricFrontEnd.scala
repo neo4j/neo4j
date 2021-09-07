@@ -116,17 +116,16 @@ case class FabricFrontEnd(
         case CypherVersion.v4_4 => Compatibility4_4
       }
 
-    private val semanticFeatures =
-      CompilationPhases.defaultSemanticFeatures ++ Seq(
-        MultipleGraphs,
-        UseGraphSelector,
-        ExpressionsInViewInvocations
-      )
+    private val semanticFeatures = Seq(
+      MultipleGraphs,
+      UseGraphSelector,
+      ExpressionsInViewInvocations
+    )
 
     private val parsingConfig = CompilationPhases.ParsingConfig(
       compatibilityMode = compatibilityMode,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
-      semanticFeatures = semanticFeatures,
+      semanticFeatures = CompilationPhases.enabledSemanticFeatures(cypherConfig.enableExtraSemanticFeatures) ++ semanticFeatures,
       useJavaCCParser = cypherConfig.useJavaCCParser,
       obfuscateLiterals = cypherConfig.obfuscateLiterals
     )

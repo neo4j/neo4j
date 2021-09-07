@@ -21,6 +21,7 @@ package org.neo4j.configuration;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Set;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Setting;
@@ -44,6 +45,7 @@ import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
@@ -263,6 +265,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Determines whether the planner is allowed to push down the sort portion of an ORDER BY + LIMIT combination" )
     public static final Setting<SplittingTopBehavior> cypher_splitting_top_behavior =
             newBuilder( "unsupported.cypher.splitting_top_behavior", ofEnum( SplittingTopBehavior.class ), SplittingTopBehavior.DEFAULT ).build();
+
+    @Internal
+    @Description( "Enables extra SemanticFeature:s during cypher semantic checking" )
+    public static final Setting<Set<String>> cypher_enable_extra_semantic_features =
+            newBuilder( "unsupported.cypher.enable_extra_semantic_features", setOf(STRING), Set.of() ).build();
 
     @Internal
     @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +
