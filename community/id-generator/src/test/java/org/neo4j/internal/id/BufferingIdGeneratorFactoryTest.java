@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,11 +54,9 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
@@ -94,20 +95,20 @@ class BufferingIdGeneratorFactoryTest
         {
             marker.markDeleted( 7, 2 );
         }
-        verify( actual.markers.get( TestIdType.TEST ) ).markDeleted( 7, 2 );
-        verify( actual.markers.get( TestIdType.TEST ) ).close();
-        verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
+        actual.markers.get( TestIdType.TEST ).verifyDeleted( 7, 2 );
+        actual.markers.get( TestIdType.TEST ).verifyClosed();
+        actual.markers.get( TestIdType.TEST ).verifyNoMoreMarks();
 
         // after some maintenance and transaction still not closed
         bufferingIdGeneratorFactory.maintenance( NULL );
-        verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
+        actual.markers.get( TestIdType.TEST ).verifyNoMoreMarks();
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
         bufferingIdGeneratorFactory.maintenance( NULL );
 
         // THEN
-        verify( actual.markers.get( TestIdType.TEST ) ).markFree( 7, 2 );
+        actual.markers.get( TestIdType.TEST ).verifyFreed( 7, 2 );
     }
 
     @Test
@@ -168,9 +169,12 @@ class BufferingIdGeneratorFactoryTest
         }
         boundaries.automaticallyEnableConditions = true;
         bufferingIdGeneratorFactory.maintenance( NULL );
+        // the second maintenance call is because the first call will guarantee that the queued buffers will be freed,
+        // making room to queue the last deleted IDs from the ID generator in the second call.
+        bufferingIdGeneratorFactory.maintenance( NULL );
         for ( long id = 0; id < nextId.get(); id++ )
         {
-            verify( actual.markers.get( TestIdType.TEST ), times( 1 ) ).markFree( id, 1 );
+            actual.markers.get( TestIdType.TEST ).verifyFreed( id, 1 );
         }
     }
 
@@ -215,7 +219,7 @@ class BufferingIdGeneratorFactoryTest
     private static class MockedIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Map<IdType,IdGenerator> generators = new HashMap<>();
-        private final Map<IdType,Marker> markers = new HashMap<>();
+        private final Map<IdType,MockedMarker> markers = new HashMap<>();
 
         @Override
         public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId,
@@ -223,7 +227,7 @@ class BufferingIdGeneratorFactoryTest
                 IdSlotDistribution slotDistribution )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
-            Marker marker = mock( Marker.class );
+            MockedMarker marker = new MockedMarker();
             generators.put( idType, idGenerator );
             markers.put( idType, marker );
             when( idGenerator.marker( NULL ) ).thenReturn( marker );
@@ -260,6 +264,65 @@ class BufferingIdGeneratorFactoryTest
         public Collection<Path> listIdFiles()
         {
             return Collections.emptyList();
+        }
+    }
+
+    private static class MockedMarker implements Marker
+    {
+        private final Set<Pair<Long,Integer>> used = ConcurrentHashMap.newKeySet();
+        private final Set<Pair<Long,Integer>> deleted = ConcurrentHashMap.newKeySet();
+        private final Set<Pair<Long,Integer>> freed = ConcurrentHashMap.newKeySet();
+        private boolean closed;
+
+        @Override
+        public void markUsed( long id, int numberOfIds )
+        {
+            used.add( Pair.of( id, numberOfIds ) );
+        }
+
+        @Override
+        public void markDeleted( long id, int numberOfIds )
+        {
+            deleted.add( Pair.of( id, numberOfIds ) );
+        }
+
+        @Override
+        public void markFree( long id, int numberOfIds )
+        {
+            freed.add( Pair.of( id, numberOfIds ) );
+        }
+
+        void verifyUsed( long id, int numberOfIds )
+        {
+            assertThat( used.remove( Pair.of( id, numberOfIds ) ) ).isTrue();
+        }
+
+        void verifyDeleted( long id, int numberOfIds )
+        {
+            assertThat( deleted.remove( Pair.of( id, numberOfIds ) ) ).isTrue();
+        }
+
+        void verifyFreed( long id, int numberOfIds )
+        {
+            assertThat( freed.remove( Pair.of( id, numberOfIds ) ) ).isTrue();
+        }
+
+        @Override
+        public void close()
+        {
+            closed = true;
+        }
+
+        void verifyClosed()
+        {
+            assertThat( closed ).isTrue();
+        }
+
+        void verifyNoMoreMarks()
+        {
+            assertThat( used ).isEmpty();
+            assertThat( deleted ).isEmpty();
+            assertThat( freed ).isEmpty();
         }
     }
 }
