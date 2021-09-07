@@ -30,6 +30,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -54,6 +56,7 @@ import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -757,6 +760,28 @@ class MetaDataStoreTest
 
             TransactionId expectedTx = new TransactionId( upgradeTxId, upgradeTxChecksum, upgradeTxCommitTimestamp );
             assertEquals( expectedTx, store.getUpgradeTransaction() );
+        }
+    }
+
+    @Test
+    void setExternalStoreIdShouldSetAllRelatedFields() throws IOException
+    {
+        // given
+        UUID externalStoreId = UUID.randomUUID();
+
+        // when
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            MetaDataStore.setExternalStoreUUID( pageCache, store.getStorageFile(), externalStoreId, NULL );
+        }
+
+        // then
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            Optional<ExternalStoreId> retrievedExternalStoreIdOptional = store.getExternalStoreId();
+            assertTrue( retrievedExternalStoreIdOptional.isPresent() );
+            ExternalStoreId retrievedExternalStoreId = retrievedExternalStoreIdOptional.get();
+            assertEquals( externalStoreId, retrievedExternalStoreId.getId() );
         }
     }
 

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
@@ -195,6 +196,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException
     {
         return MetaDataStore.getStoreId( pageCache, databaseLayout.metadataStore(), cursorTracer );
+    }
+
+    @Override
+    public void setExternalStoreUUID( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer,
+                                      UUID externalStoreId ) throws IOException
+    {
+        MetaDataStore.setExternalStoreUUID( pageCache, databaseLayout.metadataStore(), externalStoreId,
+                                            cursorTracer );
     }
 
     @Override
