@@ -71,6 +71,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.LetSelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LimitTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LoadCsvTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.LoadCsvWithMergeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryDeallocationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementDisabledTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase
@@ -189,6 +190,7 @@ class InterpretedNodeIndexPointDistanceSeekTest extends NodeIndexPointDistanceSe
 class InterpretedMultiNodeIndexSeekTest extends MultiNodeIndexSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedInputTest extends InputTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLoadCsvTest extends LoadCsvTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+                                with LoadCsvWithMergeTestBase[CommunityRuntimeContext]
 class InterpretedPartialSortTest extends PartialSortTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedTopTest extends TopTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedTop1WithTiesTest extends Top1WithTiesTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
