@@ -19,6 +19,14 @@
  */
 package cypher.features
 
+import cypher.features.Neo4jAdapter.defaultTestConfig
+import org.junit.jupiter.api.DynamicTest
+import org.junit.jupiter.api.function.Executable
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
+import org.opencypher.tools.tck.api.ExpectError
+import org.opencypher.tools.tck.api.Scenario
+
 import java.net.URI
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -28,18 +36,9 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util
-
-import cypher.features.Neo4jAdapter.defaultTestConfig
-import org.junit.jupiter.api.DynamicTest
-import org.junit.jupiter.api.function.Executable
-import org.neo4j.graphdb.config.Setting
-import org.neo4j.test.TestDatabaseManagementServiceBuilder
-import org.opencypher.tools.tck.api.ExpectError
-import org.opencypher.tools.tck.api.Scenario
-
 import scala.collection.JavaConverters.asJavaCollectionConverter
-import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable
 import scala.util.Failure
 import scala.util.Success
@@ -49,7 +48,7 @@ object ScenarioTestHelper {
   def createTests(scenarios: Seq[Scenario],
                   config: TestConfig,
                   graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
-                  dbConfig: collection.Map[Setting[_], Object],
+                  dbConfigPerFeature: String => collection.Map[Setting[_], AnyRef],
                   useBolt: Boolean = false,
                   debugOutput: Boolean = false): util.Collection[DynamicTest] = {
     val denylist = config.denylist.map(parseDenylist).getOrElse(Set.empty[DenylistEntry])
@@ -69,7 +68,7 @@ object ScenarioTestHelper {
       val executable = new Executable {
         override def execute(): Unit = {
           Try {
-            scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig, useBolt)).run()
+            scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfigPerFeature(scenario.featureName), useBolt)).run()
           } match {
             case Success(_) =>
               if (!config.experimental) {
@@ -104,7 +103,7 @@ object ScenarioTestHelper {
 
     val expectPassTests: Seq[DynamicTest] = expectPass.map { scenario =>
       val name = scenario.toString()
-      val runnable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig, useBolt))
+      val runnable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfigPerFeature(scenario.featureName), useBolt))
       DynamicTest.dynamicTest(name, () => runnable.run())
     }
     (expectPassTests ++ expectFailTests).asJavaCollection
@@ -184,7 +183,7 @@ object ScenarioTestHelper {
     println("Evaluating scenarios")
     val numberOfScenarios = scenarios.size
     val denylist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
-      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), defaultTestConfig, useBolt)).run()).isFailure
+      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), defaultTestConfig(scenario.featureName), useBolt)).run()).isFailure
       print(s"Processing scenario ${index + 1}/$numberOfScenarios\n")
       Console.out.flush() // to make sure we see progress
       if (isFailure) Some(scenarioToString(scenario)) else None

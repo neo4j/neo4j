@@ -43,7 +43,9 @@ import scala.util.Success
 import scala.util.Try
 
 object Neo4jAdapter {
-  val defaultTestConfig: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
+  val defaultTestConfig: String => collection.Map[Setting[_], Object] = _ => defaultTestConfigValues
+
+  val defaultTestConfigValues: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
 
   def apply(executionPrefix: String, graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
             dbConfig: collection.Map[Setting[_], Object], useBolt: Boolean): Neo4jAdapter = {

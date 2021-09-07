@@ -19,8 +19,6 @@
  */
 package cypher.features
 
-import java.util
-
 import cypher.features.Neo4jAdapter.defaultTestConfig
 import cypher.features.ScenarioTestHelper.createTests
 import cypher.features.ScenarioTestHelper.printComputedDenylist
@@ -28,15 +26,27 @@ import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
+
+import java.util
 
 class InterpretedAcceptanceTests extends BaseAcceptanceTest {
 
   // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
+  private val cypherTransactionsSemanticFeature = SemanticFeature.CallSubqueryInTransactions.productPrefix
+
+  // TODO: Remove once CallSubqueryInTransactions is enabled by default
+  def featureSpecificSettings(featureName: String): collection.Map[Setting[_], AnyRef] = featureName match {
+    case "CypherTransactionsAcceptance" => collection.Map(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> java.util.Set.of(Array(cypherTransactionsSemanticFeature):_*))
+    case _ => Map.empty
+  }
 
   @TestFactory
   def runCostInterpreted(): util.Collection[DynamicTest] = {
-    createTests(scenarios, InterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder(), defaultTestConfig)
+    createTests(scenarios, InterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder(), featureName => defaultTestConfig(featureName) ++ featureSpecificSettings(featureName))
   }
 
   @Disabled
