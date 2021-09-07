@@ -214,7 +214,8 @@ public class IndexChecker implements Checker
                 {
                     Value[] left = lastValues[i];
                     Value[] right = firstValues[i + 1];
-                    if ( Arrays.equals( left, right ) )
+                    // Skip any empty partition - can be empty if all entries in a partition of the index were for nodes outside of the current range.
+                    if ( left != null && right != null && Arrays.equals( left, right ) )
                     {
                         long leftEntityId = lastEntityIds[i];
                         long rightEntityId = firstEntityIds[i + 1];
