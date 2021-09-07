@@ -27,27 +27,38 @@ public class SystemGraphDbmsModel
 {
     public enum HostedOnMode
     {
-        raft,replica,single;
+        raft( GraphDatabaseSettings.Mode.CORE ),
+        replica( GraphDatabaseSettings.Mode.READ_REPLICA ),
+        single( GraphDatabaseSettings.Mode.SINGLE );
 
-        public static SystemGraphDbmsModel.HostedOnMode from( GraphDatabaseSettings.Mode mode )
+        private final GraphDatabaseSettings.Mode instanceMode;
+
+        HostedOnMode( GraphDatabaseSettings.Mode instanceMode )
         {
-            switch ( mode )
+            this.instanceMode = instanceMode;
+        }
+
+        public GraphDatabaseSettings.Mode instanceMode()
+        {
+            return instanceMode;
+        }
+
+        public static HostedOnMode from( GraphDatabaseSettings.Mode instanceMode )
+        {
+            for ( HostedOnMode mode : values() )
             {
-            case CORE:
-                return SystemGraphDbmsModel.HostedOnMode.raft;
-            case READ_REPLICA:
-                return SystemGraphDbmsModel.HostedOnMode.replica;
-            case SINGLE:
-                return SystemGraphDbmsModel.HostedOnMode.single;
-            default:
-                throw new IllegalArgumentException( "Invalid instance mode found:" + mode );
+                if ( mode.instanceMode == instanceMode )
+                {
+                    return mode;
+                }
             }
+            throw new IllegalArgumentException( "Invalid instance mode found: " + instanceMode );
         }
     }
 
     public enum DatabaseStatus
     {
-        online,offline;
+        online,offline
     }
 
     public enum InstanceStatus
@@ -69,7 +80,7 @@ public class SystemGraphDbmsModel
     public static final String DATABASE_DESIGNATED_SEEDER_PROPERTY = "designated_seeder";
     public static final String DATABASE_STORAGE_ENGINE_PROPERTY = "storage_engine";
     public static final String DATABASE_PRIMARIES_PROPERTY = "primaries";
-    public static final String DATABASE_REPLICAS_PROPERTY = "replicas";
+    public static final String DATABASE_SECONDARIES_PROPERTY = "secondaries";
     public static final String DATABASE_CREATED_AT_PROPERTY = "created_at";
     public static final String DATABASE_STARTED_AT_PROPERTY = "started_at";
     public static final String DATABASE_UPDATED_AT_PROPERTY = "updated_at";
@@ -91,4 +102,7 @@ public class SystemGraphDbmsModel
     public static final String HOSTED_ON_INSTALLED_AT_PROPERTY = "installed_at";
     public static final String HOSTED_ON_MODE_PROPERTY = "mode";
     public static final String WAS_HOSTED_ON_REMOVED_AT_PROPERTY = "removed_at";
+
+    public static final Label TOPOLOGY_GRAPH_SETTINGS_LABEL = Label.label( "TopologyGraphSettings" );
+    public static final String TOPOLOGY_GRAPH_SETTINGS_ALLOCATOR_PROPERTY = "allocator";
 }
