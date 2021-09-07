@@ -80,7 +80,12 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
     @Override
     void installService() throws BootFailureException
     {
-        MutableList<String> argList = baseServiceCommandArgList( "IS" );
+        runServiceCommand( "IS" );
+    }
+
+    private void runServiceCommand( String baseCommand )
+    {
+        MutableList<String> argList = baseServiceCommandArgList( baseCommand );
         Path home = ctx.home();
         Path logs = ctx.config().get( logs_directory );
         Path jvmDll = Path.of( getJavaCmd() ).getParent().resolve( Path.of( "server", "jvm.dll" ) );
@@ -169,7 +174,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
     @Override
     void updateService() throws BootFailureException
     {
-        installService();
+        runServiceCommand( "US" );
     }
 
     @Override
