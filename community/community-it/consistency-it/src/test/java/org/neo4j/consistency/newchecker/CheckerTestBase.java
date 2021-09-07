@@ -212,6 +212,12 @@ class CheckerTestBase
 
     CheckerContext context( int numberOfThreads, ConsistencyFlags consistencyFlags ) throws Exception
     {
+        ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
+        return context( numberOfThreads, consistencyFlags, inconsistenciesSummary );
+    }
+
+    CheckerContext context( int numberOfThreads, ConsistencyFlags consistencyFlags, ConsistencySummaryStatistics inconsistenciesSummary ) throws Exception
+    {
         if ( context != null )
         {
             return context;
@@ -225,7 +231,6 @@ class CheckerTestBase
         IndexingService indexingService = dependencies.resolveDependency( IndexingService.class );
         IndexAccessors indexAccessors = new IndexAccessors( indexProviders, neoStores, new IndexSamplingConfig( config ),
                 new LookupAccessorsFromRunningDb( indexingService ), PageCacheTracer.NULL, tokenHolders );
-        ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );
         reporter = new ConsistencyReporter( new DirectRecordAccess( new StoreAccess( neoStores ), cacheAccess ), report, monitor, PageCacheTracer.NULL );
