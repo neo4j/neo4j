@@ -233,19 +233,99 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     }
 
     // when
+    /*
+      pipeline 0 => input =>       RegularBufferVariant
+                                    * id = BufferId(1)
+                                    * reducers = ASM(0)
+                                    * workCanceller = ASM(0)
+                    output =>      MorselArgumentStateBufferOutput
+                                    * id = BufferId(3)
+                                    * nextPipelineHeadPlanId = 7
+                    WorkLimiter => ASM(0)
+      pipeline 1 => input =>       RegularBufferVariant
+                                    * id = BufferId(2)
+                                    * reducers = ASM(1), ASM(4)
+                                    * workCanceller = ASM(1), ASM(4)
+                    output =>      MorselArgumentStateBufferOutput
+                                    * id = BufferId(4)
+                                    * nextPipelineHeadPlanId = 7
+                    WorkLimiter => ASM(1)
+      pipeline 2 => lhs         => pipeline 0
+                    rhs         => pipeline 1
+                    input       => LHSAccumulatingRHSStreamingBufferVariant(InnerVariant)
+                                    * id = BufferId(5)
+                                    * reducers = ASM(4)
+                                    * workCanceller = ASM(4)
+                                    * lhsSink = BufferId(3) / ASM(0)
+                                      * reducers = ASM(4)
+                                      * workCanceller = ASM(4)
+                                    * rhsSink = BufferId(4) / ASM(1)
+                                      * reducers = ASM(4)
+                                      * workCanceller = ASM(4)
+                    output      => MorselArgumentStateBufferOutput
+                                    * id = BufferId(11)
+                                    * nextPipelineHeadPlanId = 1
+                    WorkLimiter => ASM(4)
+      pipeline 3 => input       => RegularBufferVariant
+                                    * id = BufferId(6)
+                                    * reducers = ASM(2)
+                                    * workCanceller = ASM(2)
+                    output      => MorselArgumentStateBufferOutput
+                                    * id = BufferId(8)
+                                    * nextPipelineHeadPlanId = 2
+                    WorkLimiter => ASM(2)
+      pipeline 4 => input       => RegularBufferVariant
+                                    * id = BufferId(7)
+                                    * reducers = ASM(3), ASM(5)
+                                    * workCanceller = ASM(3), ASM(5)
+                    output      => MorselArgumentStateBufferOutput
+                                    * id = BufferId(9)
+                                    * nextPipelineHeadPlanId = 2
+                    WorkLimiter => ASM(3)
+      pipeline 5 => lhs         => pipeline 3
+                    rhs         => pipeline 4
+                    input       => LHSAccumulatingRHSStreamingBufferVariant(InnerVariant)
+                                    * id = BufferId(10)
+                                    * reducers = ASM(5)
+                                    * workCanceller = ASM(5)
+                                    * lhsSink = BufferId(8) / ASM(2)
+                                      * reducers = ASM(5)
+                                      * workCanceller = ASM(5)
+                                    * rhsSink = BufferId(9) / ASM(3)
+                                      * reducers = ASM(5)
+                                      * workCanceller = ASM(5)
+                    output      => MorselArgumentStateBufferOutput
+                                    * id = BufferId(12)
+                                    * nextPipelineHeadPlanId = 1
+                    WorkLimiter => ASM(5)
+      pipeline 6 => lhs         => pipeline 2
+                    rhs         => pipeline 5
+                    input       => LHSAccumulatingRHSStreamingBufferVariant(InnerVariant)
+                                    * id = BufferId(13)
+                                    * reducers =
+                                    * workCanceller =
+                                    * lhsSink = BufferId(11) / ASM(4)
+                                      * reducers =
+                                      * workCanceller =
+                                    * rhsSink = BufferId(12) / ASM(5)
+                                      * reducers =
+                                      * workCanceller =
+                    output      => ProduceResultOutput
+                    WorkLimiter =>
+     */
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a")
-      .nodeHashJoin("a")
-      .|.nodeHashJoin("a")
-      .|.|.filter("a:D", "a.prop % 20 = 0")
-      .|.|.allNodeScan("a")
-      .|.filter("a:C", "a.prop <= 80")
-      .|.allNodeScan("a")
-      .nodeHashJoin("a")
-      .|.filter("a:B", "a.prop % 10 = 0")
-      .|.allNodeScan("a")
-      .filter("a:A", "a.prop < 100")
-      .allNodeScan("a")
+      .produceResults("a") // pipeline 6
+      .nodeHashJoin("a") // pipeline 6
+      .|.nodeHashJoin("a") // pipeline 5
+      .|.|.filter("a:D", "a.prop % 20 = 0") // pipeline 4
+      .|.|.allNodeScan("a") // pipeline 4
+      .|.filter("a:C", "a.prop <= 80") // pipeline 3
+      .|.allNodeScan("a") // pipeline 3
+      .nodeHashJoin("a") // pipeline 2
+      .|.filter("a:B", "a.prop % 10 = 0") // pipeline 1
+      .|.allNodeScan("a")  // pipeline 1
+      .filter("a:A", "a.prop < 100") // pipeline 0
+      .allNodeScan("a") // pipeline 0
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
