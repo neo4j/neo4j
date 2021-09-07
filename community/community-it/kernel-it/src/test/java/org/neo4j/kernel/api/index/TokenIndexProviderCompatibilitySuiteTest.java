@@ -26,6 +26,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -40,6 +41,12 @@ class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
     IndexPrototype indexPrototype()
     {
         return IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
+    }
+
+    @Override
+    IndexType indexType()
+    {
+        return IndexType.LOOKUP;
     }
 
     @Override

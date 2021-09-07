@@ -290,6 +290,12 @@ public class FulltextIndexProvider extends IndexProvider
         validateIndexRef( prototype );
     }
 
+    @Override
+    public IndexType getIndexType()
+    {
+        return IndexType.FULLTEXT;
+    }
+
     private void validateIndexRef( IndexRef<?> ref )
     {
         String providerName = getProviderDescriptor().name();

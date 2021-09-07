@@ -163,6 +163,12 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
         }
     }
 
+    @Override
+    public IndexType getIndexType()
+    {
+        return IndexType.POINT;
+    }
+
     private static class PointIndexCapability implements IndexCapability
     {
         @Override

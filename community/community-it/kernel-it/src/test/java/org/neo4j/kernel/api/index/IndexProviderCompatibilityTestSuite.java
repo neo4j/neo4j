@@ -25,6 +25,7 @@ import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 
@@ -33,6 +34,8 @@ abstract class IndexProviderCompatibilityTestSuite
     abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config );
 
     abstract IndexPrototype indexPrototype();
+
+    abstract IndexType indexType();
 
     void consistencyCheck( IndexPopulator populator )
     {

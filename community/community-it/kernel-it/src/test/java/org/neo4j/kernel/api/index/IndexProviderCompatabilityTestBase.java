@@ -43,10 +43,10 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -64,7 +64,7 @@ abstract class IndexProviderCompatabilityTestBase
 
     private TestDirectory testDirectory;
     private final IndexPrototype incompleteIndexPrototype;
-    private final IndexProviderCompatibilityTestSuite testSuite;
+    final IndexProviderCompatibilityTestSuite testSuite;
     private final JobScheduler jobScheduler;
     IndexProvider indexProvider;
     IndexDescriptor descriptor;

@@ -31,6 +31,7 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -111,5 +112,11 @@ abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCo
         IndexDescriptor index = descriptor.withIndexCapability( capability );
         IndexDescriptor completed = indexProvider.completeConfiguration( index );
         assertSame( capability, completed.getCapability() );
+    }
+
+    @Test
+    void indexProviderMustReturnCorrectIndexType()
+    {
+        assertThat( indexProvider.getIndexType() ).isEqualTo( testSuite.indexType() );
     }
 }

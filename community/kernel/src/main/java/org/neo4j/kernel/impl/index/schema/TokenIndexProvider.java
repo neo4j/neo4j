@@ -179,6 +179,12 @@ public class TokenIndexProvider extends IndexProvider
         }
     }
 
+    @Override
+    public IndexType getIndexType()
+    {
+        return IndexType.LOOKUP;
+    }
+
     private Path storeFile( IndexDescriptor descriptor )
     {
         IndexFiles indexFiles = indexFiles( descriptor );

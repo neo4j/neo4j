@@ -49,6 +49,17 @@ public interface SchemaWrite
     IndexProviderDescriptor indexProviderByName( String providerName );
 
     /**
+     * Translate an index provider name, into an {@link IndexType}.
+     *
+     * This method is only used when creating constraints using custom or specific index providers.
+     *
+     * @param providerName The name of the index provider to resolve the type for.
+     * @return The index type that the given provider corresponds to.
+     * @throws RuntimeException if there is no index provider by the given name.
+     */
+    IndexType indexTypeByProviderName( String providerName );
+
+    /**
      * Create index using the given {@link IndexPrototype}.
      *
      * @param prototype the prototype specifying the relevant schema and configuration of the index to create.

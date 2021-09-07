@@ -162,6 +162,12 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
         }
     }
 
+    @Override
+    public IndexType getIndexType()
+    {
+        return IndexType.RANGE;
+    }
+
     private static class RangeIndexCapability implements IndexCapability
     {
         @Override

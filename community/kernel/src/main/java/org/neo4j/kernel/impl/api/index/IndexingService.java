@@ -61,6 +61,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -508,6 +509,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     public IndexProviderDescriptor indexProviderByName( String providerName )
     {
         return providerMap.lookup( providerName ).getProviderDescriptor();
+    }
+
+    @Override
+    public IndexType indexTypeByProviderName( String providerName )
+    {
+        return providerMap.lookup( providerName ).getIndexType();
     }
 
     /**

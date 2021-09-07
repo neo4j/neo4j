@@ -45,6 +45,12 @@ class PointIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
     }
 
     @Override
+    IndexType indexType()
+    {
+        return IndexType.POINT;
+    }
+
+    @Override
     IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
     {
         Monitors monitors = new Monitors();

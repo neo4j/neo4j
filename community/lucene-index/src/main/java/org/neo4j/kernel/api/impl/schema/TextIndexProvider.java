@@ -60,6 +60,12 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
         return index.getCapability().equals( NO_CAPABILITY ) ? index.withIndexCapability( CAPABILITY ) : index;
     }
 
+    @Override
+    public IndexType getIndexType()
+    {
+        return IndexType.TEXT;
+    }
+
     public static class TextIndexCapability implements IndexCapability
     {
         @Override

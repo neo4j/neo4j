@@ -23,6 +23,7 @@ import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.Value;
 
@@ -35,6 +36,13 @@ public interface IndexingProvidersService extends IndexConfigCompleter
      * @param providerName name of the wanted index provider
      */
     IndexProviderDescriptor indexProviderByName( String providerName );
+
+    /**
+     * Get the index type for the index provider with the given name.
+     *
+     * @param providerName name of the index provider to get matching index type for
+     */
+    IndexType indexTypeByProviderName( String providerName );
 
     /**
      * Validate that the given value tuple can be stored in the index associated with the given schema.

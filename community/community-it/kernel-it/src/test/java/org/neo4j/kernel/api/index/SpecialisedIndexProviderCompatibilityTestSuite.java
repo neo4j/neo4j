@@ -22,9 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.junit.jupiter.api.Nested;
 
 import org.neo4j.annotations.documented.ReporterFactories;
-import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;

@@ -30,6 +30,7 @@ import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
@@ -237,6 +238,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     public IndexProviderDescriptor getProviderDescriptor()
     {
         return providerDescriptor;
+    }
+
+    /**
+     * @return the index type this provider works with.
+     */
+    public IndexType getIndexType()
+    {
+        return IndexType.BTREE;
     }
 
     @Override

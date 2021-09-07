@@ -921,6 +921,13 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
+    public IndexType indexTypeByProviderName( String providerName )
+    {
+        ktx.assertOpen();
+        return indexProviders.indexTypeByProviderName( providerName );
+    }
+
+    @Override
     public IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException
     {
         if ( prototype.isTokenIndex() )

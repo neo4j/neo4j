@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -61,8 +60,6 @@ abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProvider
     {
         return IndexPrototype.uniqueForSchema( forLabel( 1000, 100 ) ).withIndexType( indexType() );
     }
-
-    abstract IndexType indexType();
 
     abstract boolean supportsSpatial();
 
