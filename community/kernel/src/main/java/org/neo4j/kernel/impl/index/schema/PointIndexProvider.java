@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSett
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -186,7 +188,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
         }
 
         @Override
-        public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
             if ( valueCategory != GEOMETRY )
             {
@@ -204,7 +206,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
         }
 
         @Override
-        public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+        public double getCostMultiplier( IndexQueryType... queryTypes )
         {
             return 1.0;
         }
@@ -212,6 +214,8 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
         @Override
         public boolean supportPartitionedScan( IndexQuery... queries )
         {
+            Preconditions.requireNonEmpty( queries );
+            Preconditions.requireNoNullElements( queries );
             return false;
         }
     }

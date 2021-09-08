@@ -49,10 +49,9 @@ public class NoSupportPartitionedScanTest extends SupportPartitionedScanTestSuit
     @Nested
     class Point extends SupportPartitionedScanTestSuite
     {
-        // capability has yet to be implemented
         Point()
         {
-            super( NO_CAPABILITY, NO_SUPPORT );
+            super( PointIndexProvider.CAPABILITY, NO_SUPPORT );
         }
     }
 
