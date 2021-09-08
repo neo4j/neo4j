@@ -1393,6 +1393,29 @@ class FabricPlannerTest
     }
   }
 
+  "Misc:" - {
+    "allow length() on lists in CYPHER 3.5 mode" in {
+      val q =
+        """EXPLAIN
+          |CYPHER 3.5
+          |WITH range(1, 10) AS list
+          |RETURN length(list) AS result
+          |""".stripMargin
+
+      val res = plan(q).query.withoutLocalAndRemote
+
+      val expectedResult = init(defaultUse).exec(
+        query = query(
+          with_(function("range", literal(1), literal(10)) as "list"),
+          return_(length3_5(varFor("list")) as "result"),
+        ),
+        outputColumns = Seq("result")
+      )
+
+      res shouldBe expectedResult
+    }
+  }
+
   implicit class CheckSyntax[A](a: A) {
     def check(f: A => Any): A = {
       f(a)
