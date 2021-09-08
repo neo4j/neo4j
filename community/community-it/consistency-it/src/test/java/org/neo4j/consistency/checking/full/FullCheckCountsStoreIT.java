@@ -30,7 +30,6 @@ import java.util.function.Function;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.RecordType;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -65,13 +64,15 @@ public class FullCheckCountsStoreIT
         {
             Files.delete( path );
             return true;
-        }, DatabaseLayout::countStore, RecordType.COUNTS );
+        }, DatabaseLayout::countStore,
+                "Counts store is missing, broken or of an older format" );
     }
 
     @Test
     void shouldReportBrokenCountsStore() throws Exception
     {
-        shouldReportBadCountsStore( this::corruptFileIfExists, DatabaseLayout::countStore, RecordType.COUNTS );
+        shouldReportBadCountsStore( this::corruptFileIfExists, DatabaseLayout::countStore,
+                "Counts store is missing, broken or of an older format" );
     }
 
     @Test
@@ -81,17 +82,19 @@ public class FullCheckCountsStoreIT
         {
             Files.delete( path );
             return true;
-        }, DatabaseLayout::relationshipGroupDegreesStore, RecordType.RELATIONSHIP_GROUP );
+        }, DatabaseLayout::relationshipGroupDegreesStore,
+                "Relationship group degrees store is missing, broken or of an older format" );
     }
 
     @Test
     void shouldReportBrokenGroupDegreesStore() throws Exception
     {
-        shouldReportBadCountsStore( this::corruptFileIfExists, DatabaseLayout::relationshipGroupDegreesStore, RecordType.RELATIONSHIP_GROUP );
+        shouldReportBadCountsStore( this::corruptFileIfExists, DatabaseLayout::relationshipGroupDegreesStore,
+                "Relationship group degrees store is missing, broken or of an older format" );
     }
 
     private void shouldReportBadCountsStore( ThrowingFunction<Path,Boolean,IOException> fileAction, Function<DatabaseLayout,Path> store,
-            RecordType recordType ) throws Exception
+            String errorMessage ) throws Exception
     {
         // given
         DatabaseLayout databaseLayout = db.databaseLayout();
@@ -104,7 +107,7 @@ public class FullCheckCountsStoreIT
                 defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() ), NONE, nullLogProvider(), false, DEFAULT );
 
         // then
-        assertThat( result.summary().getInconsistencyCountForRecordType( recordType ) ).isEqualTo( 1 );
+        assertThat( result.summary().getGenericErrors() ).contains( errorMessage );
     }
 
     private boolean corruptFileIfExists( Path file ) throws IOException
