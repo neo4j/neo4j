@@ -40,12 +40,14 @@ class IdUtilsTest
         // given
         long id = random.nextLong( IdUtils.MAX_ID + 1 );
         int numberOfIds = random.intBetween( 1, IdUtils.MAX_NUMBER_OF_IDS );
+        boolean used = random.nextBoolean();
 
         // when
-        long combinedId = IdUtils.combinedIdAndNumberOfIds( id, numberOfIds );
+        long combinedId = IdUtils.combinedIdAndNumberOfIds( id, numberOfIds, used );
 
         // then
         assertThat( IdUtils.idFromCombinedId( combinedId ) ).isEqualTo( id );
         assertThat( IdUtils.numberOfIdsFromCombinedId( combinedId ) ).isEqualTo( numberOfIds );
+        assertThat( IdUtils.usedFromCombinedId( combinedId ) ).isEqualTo( used );
     }
 }

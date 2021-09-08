@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.id;
 
-import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 
@@ -64,17 +63,7 @@ class BufferingIdGenerator extends IdGenerator.Delegate
                 actual.markDeleted( id, numberOfIds );
                 synchronized ( BufferingIdGenerator.this )
                 {
-                    bufferedDeletedIds.add( combinedIdAndNumberOfIds( id, numberOfIds ) );
-                }
-            }
-
-            @Override
-            public void markDeletedBatch( LongList ids )
-            {
-                actual.markDeletedBatch( ids );
-                synchronized ( BufferingIdGenerator.this )
-                {
-                    bufferedDeletedIds.addAll( ids );
+                    bufferedDeletedIds.add( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
                 }
             }
 
