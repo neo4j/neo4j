@@ -291,6 +291,11 @@ public final class SettingValueParsers
         return new CollectionValueParser( Set.class, Collectors.toCollection(() -> EnumSet.noneOf( enumClass )), delegate );
     }
 
+    public static <T> SettingValueParser<Set<T>> setOf( SettingValueParser<T> parser )
+    {
+        return new CollectionValueParser( Set.class, Collectors.toSet(), parser );
+    }
+
     /** An ENUM parser accepting a subset of the ENUM values
      *
      * @param values a subset of valid ENUM values to be accepted.
