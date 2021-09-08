@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.collection.Dependencies;
@@ -69,10 +70,15 @@ public class DatabaseManagementServiceBuilder
     protected File homeDirectory;
     protected Config.Builder config = Config.newBuilder();
 
-    public DatabaseManagementServiceBuilder( File homeDirectory )
+    public DatabaseManagementServiceBuilder( File homeDirectory, Predicate<Class<? extends ExtensionFactory>> extensionFilter )
     {
         this.homeDirectory = homeDirectory;
-        Services.loadAll( ExtensionFactory.class ).forEach( extensions::add );
+        Services.loadAll( ExtensionFactory.class ).stream().filter( e -> extensionFilter.test( e.getClass() ) ).forEach( extensions::add );
+    }
+
+    public DatabaseManagementServiceBuilder( File homeDirectory )
+    {
+        this( homeDirectory, extension -> true );
     }
 
     public DatabaseManagementService build()

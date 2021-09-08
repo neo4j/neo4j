@@ -30,6 +30,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.helpers.DatabaseNameValidator;
@@ -271,6 +274,60 @@ public final class SettingValueParsers
     public static <T extends Enum<T>> SettingValueParser<T> ofPartialEnum( T... values )
     {
         return internalEnum( Arrays.asList( values ) );
+    }
+
+    public static <T> SettingValueParser<Set<T>> setOf( SettingValueParser<T> parser )
+    {
+        return new CollectionValueParser( Set.class, Collectors.toSet(), parser );
+    }
+
+    /**
+     * Base class delegating to another parser for creating collections of settings.
+     *
+     * @param <CT> The type of the collection.
+     * @param <T>  The type of the actual element in the collection.
+     */
+    private static class CollectionValueParser<CT extends Collection<T>, T> implements SettingValueParser<CT>
+    {
+        private final Class<CT> collectionClass;
+        private final Collector<T,?,CT> collector;
+        private final SettingValueParser<T> parser;
+
+        CollectionValueParser( Class<CT> collectionClass, Collector<T,?,CT> collector, SettingValueParser<T> parser )
+        {
+            this.collectionClass = collectionClass;
+            this.collector = collector;
+            this.parser = parser;
+        }
+
+        @Override
+        public CT parse( String value )
+        {
+            return Arrays.stream( value.split( LIST_SEPARATOR ) )
+                         .map( String::trim )
+                         .filter( StringUtils::isNotEmpty )
+                         .map( parser::parse )
+                         .collect( collector );
+        }
+
+        @Override
+        public Class<CT> getType()
+        {
+            return collectionClass;
+        }
+
+        @Override
+        public String valueToString( CT value )
+        {
+            return StringUtils.join( value, LIST_SEPARATOR );
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return format( "a '%s' separated %s with elements of type '%s'.", LIST_SEPARATOR, collectionClass.getSimpleName().toLowerCase( Locale.ENGLISH ),
+                           parser.getDescription() );
+        }
     }
 
     private static <T extends Enum<T>> SettingValueParser<T> internalEnum( final Collection<T> values )
