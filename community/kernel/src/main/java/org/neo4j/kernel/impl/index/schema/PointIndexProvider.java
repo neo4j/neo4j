@@ -189,8 +189,8 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
 
             switch ( queryType )
             {
-            case exact:
-            case range:
+            case EXACT:
+            case RANGE:
                 return true;
             default:
                 return false;
