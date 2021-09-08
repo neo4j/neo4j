@@ -34,6 +34,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.util.VisibleForTesting;
 
 public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<TokenIndexProvider>
 {
@@ -60,6 +61,7 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
                        databaseLayout, pageCacheTracer );
     }
 
+    @VisibleForTesting
     public static TokenIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
             String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )

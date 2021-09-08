@@ -21,25 +21,27 @@ package org.neo4j.kernel.api.index;
 
 import java.nio.file.Path;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
 import org.neo4j.monitoring.Monitors;
 
-class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderCompatibilityTestSuite
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+
+class PointIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderCompatibilityTestSuite
 {
+
     @Override
     IndexPrototype indexPrototype()
     {
-        return IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
+        return IndexPrototype.forSchema( forLabel( 1000, 100 ) ).withIndexType( IndexType.POINT );
     }
 
     @Override
@@ -48,9 +50,8 @@ class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
         Monitors monitors = new Monitors();
         String monitorTag = "";
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-        DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( graphDbDir );
-        var readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, databaseLayout.getDatabaseName() );
-        return TokenIndexProviderFactory.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                databaseLayout, PageCacheTracer.NULL );
+        var readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
+        return PointIndexProviderFactory.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
+                PageCacheTracer.NULL, DEFAULT_DATABASE_NAME );
     }
 }

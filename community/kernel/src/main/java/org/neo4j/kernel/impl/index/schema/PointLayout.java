@@ -93,4 +93,9 @@ class PointLayout extends IndexLayout<PointKey>
             into.setEntityId( NO_ENTITY_ID );
         }
     }
+
+    IndexSpecificSpaceFillingCurveSettings getSpaceFillingCurveSettings()
+    {
+        return spatialSettings;
+    }
 }

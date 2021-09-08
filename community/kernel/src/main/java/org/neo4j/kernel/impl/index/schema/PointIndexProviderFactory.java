@@ -38,41 +38,39 @@ import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
-public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFactory<GenericNativeIndexProvider>
+public class PointIndexProviderFactory extends AbstractIndexProviderFactory<PointIndexProvider>
 {
     @Override
     protected Class<?> loggingClass()
     {
-        return GenericNativeIndexProvider.class;
+        return PointIndexProvider.class;
     }
 
     @Override
     public IndexProviderDescriptor descriptor()
     {
-        return GenericNativeIndexProvider.DESCRIPTOR;
+        return PointIndexProvider.DESCRIPTOR;
     }
 
     @Override
-    protected GenericNativeIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors,
-                                                         String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
-                                                         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                                         DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, Log log,
-                                                         TokenHolders tokenHolders, JobScheduler scheduler )
+    protected PointIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag, Config config,
+            DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
+            PageCacheTracer pageCacheTracer, Log log, TokenHolders tokenHolders, JobScheduler scheduler )
     {
         return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                       pageCacheTracer, databaseLayout.getDatabaseName() );
+                pageCacheTracer, databaseLayout.getDatabaseName() );
     }
 
     @VisibleForTesting
-    public static GenericNativeIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
-                                                     String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
-                                                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer,
-                                                     String databaseName )
+    public static PointIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
+            String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer,
+            String databaseName )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, databaseName ).withMonitors( monitors ).withTag( monitorTag )
-                                                                        .withReadOnlyChecker( readOnlyChecker ).withPageCacheTracer( pageCacheTracer )
-                                                                        .build();
-        return new GenericNativeIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config );
+                .withReadOnlyChecker( readOnlyChecker ).withPageCacheTracer( pageCacheTracer )
+                .build();
+        return new PointIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config );
     }
 }

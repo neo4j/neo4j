@@ -30,9 +30,9 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-abstract class TokenIndexPopulatorCompatibility extends TokenIndexProviderCompatibilityTestSuite.Compatibility
+abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexProviderCompatibilityTestSuite.Compatibility
 {
-    TokenIndexPopulatorCompatibility( TokenIndexProviderCompatibilityTestSuite testSuite )
+    SpecialisedIndexPopulatorCompatibility( SpecialisedIndexProviderCompatibilityTestSuite testSuite )
     {
         super( testSuite, testSuite.indexPrototype() );
     }

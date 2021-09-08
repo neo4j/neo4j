@@ -110,6 +110,9 @@ class NativeIndexProviderTest extends IndexProviderTests
         return List.of(
                 forSchema( forAnyEntityTokens( EntityType.NODE ) ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.FULLTEXT ).withName( "unsupported" ),
+                forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.RANGE ).withName( "unsupported" ),
+                forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.POINT ).withName( "unsupported" ),
+                forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.TEXT ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ) );
     }
 

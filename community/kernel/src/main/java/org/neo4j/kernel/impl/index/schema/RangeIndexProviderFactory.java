@@ -34,6 +34,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
@@ -62,6 +63,7 @@ public class RangeIndexProviderFactory extends AbstractIndexProviderFactory<Rang
                        pageCacheTracer, databaseLayout.getDatabaseName() );
     }
 
+    @VisibleForTesting
     public static RangeIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
             String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer,

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -31,82 +29,54 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
-class RangeIndexProviderTest extends IndexProviderTests
+class PointIndexProviderTest extends IndexProviderTests
 {
     private static final ProviderFactory factory =
             ( pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout ) ->
             {
                 DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withMonitors( monitors )
-                        .withReadOnlyChecker( readOnlyChecker ).build();
-                return new RangeIndexProvider( context, dir, collector, Config.defaults() );
+                                                                   .withReadOnlyChecker( readOnlyChecker ).build();
+                return new PointIndexProvider( context, dir, collector, Config.defaults() );
             };
 
-    RangeIndexProviderTest()
+    PointIndexProviderTest()
     {
         super( factory );
     }
 
-    @Test
-    void shouldNotCheckConflictsWhenApplyingUpdatesInOnlineAccessor() throws IOException, IndexEntryConflictException
+    @Override
+    void setupIndexFolders( FileSystemAbstraction fs ) throws IOException
     {
-        // given
-        Value someValue = Values.of( 1 );
-        provider = newProvider();
-
-        // when
-        IndexDescriptor descriptor = descriptorUnique();
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig(), tokenNameLookup );
-              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
-        {
-            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor, someValue ) );
-
-            // then
-            // ... expect no failure on duplicate value
-            indexUpdater.process( IndexEntryUpdate.add( 2, descriptor, someValue ) );
-        }
-    }
-
-    private IndexDescriptor descriptorUnique()
-    {
-        return completeConfiguration( uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.RANGE )
-                .withName( "constraint" ).materialise( indexId ) );
+        Path nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
+        fs.mkdirs( nativeSchemaIndexStoreDirectory );
     }
 
     @Override
     IndexDescriptor descriptor()
     {
-        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.RANGE )
-                .withName( "index" ).materialise( indexId ) );
+        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.POINT )
+                                                                                                   .withName( "index" ).materialise( indexId ) );
     }
 
     @Override
     IndexDescriptor otherDescriptor()
     {
-        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.RANGE )
-                .withName( "otherIndex" ).materialise( indexId + 1 ) );
+        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.POINT )
+                                                                                                   .withName( "otherIndex" ).materialise( indexId + 1 ) );
     }
 
     @Override
     IndexPrototype validPrototype()
     {
-        return forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.RANGE ).withName( "index" );
+        return forSchema( forLabel( labelId, propId ), PointIndexProvider.DESCRIPTOR ).withIndexType( IndexType.POINT ).withName( "index" );
     }
 
     @Override
@@ -116,15 +86,8 @@ class RangeIndexProviderTest extends IndexProviderTests
                 forSchema( forAnyEntityTokens( EntityType.NODE ) ).withName( "unsupported" ),
                 forSchema( fulltext( EntityType.NODE, new int[]{labelId}, new int[]{propId} ) ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.BTREE ).withName( "unsupported" ),
-                forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.POINT ).withName( "unsupported" ),
+                forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.RANGE ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.TEXT ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ) );
-    }
-
-    @Override
-    void setupIndexFolders( FileSystemAbstraction fs ) throws IOException
-    {
-        Path nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
-        fs.mkdirs( nativeSchemaIndexStoreDirectory );
     }
 }

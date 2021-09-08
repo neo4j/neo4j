@@ -29,22 +29,19 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
-
-abstract class TokenIndexProviderCompatibilityTestSuite extends IndexProviderCompatibilityTestSuite
+/**
+ * There are a couple of very specialised indexes that cannot be tested using {@link PropertyIndexProviderCompatibilityTestSuite},
+ * which is designed for testing general-purpose (supporting all types, operations and being used as a constraints ) property indexes.
+ */
+abstract class SpecialisedIndexProviderCompatibilityTestSuite extends IndexProviderCompatibilityTestSuite
 {
     @Nested
-    class TokenIndexPopulator extends TokenIndexPopulatorCompatibility
+    class SpecialisedIndexPopulator extends SpecialisedIndexPopulatorCompatibility
     {
-        TokenIndexPopulator()
+        SpecialisedIndexPopulator()
         {
-            super( TokenIndexProviderCompatibilityTestSuite.this );
+            super( SpecialisedIndexProviderCompatibilityTestSuite.this );
         }
-    }
-
-    @Override
-    IndexPrototype indexPrototype()
-    {
-        return IndexPrototype.forSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
     }
 
     @Override
@@ -55,9 +52,9 @@ abstract class TokenIndexProviderCompatibilityTestSuite extends IndexProviderCom
 
     abstract static class Compatibility extends IndexProviderCompatabilityTestBase
     {
-        final TokenIndexProviderCompatibilityTestSuite testSuite;
+        final SpecialisedIndexProviderCompatibilityTestSuite testSuite;
 
-        Compatibility( TokenIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
+        Compatibility( SpecialisedIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
         {
             super( testSuite, prototype );
             this.testSuite = testSuite;
