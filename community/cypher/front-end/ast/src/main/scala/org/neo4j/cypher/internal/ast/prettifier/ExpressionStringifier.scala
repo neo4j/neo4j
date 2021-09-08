@@ -89,6 +89,8 @@ import org.neo4j.cypher.internal.expressions.UnarySubtract
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.expressions.functions.Length
+import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -316,6 +318,9 @@ case class ExpressionStringifier(
 
       case CoerceTo(expr, typ) =>
         apply(expr)
+
+      case length3_5@Length3_5(argument) =>
+        apply(Length.asInvocation(argument)(length3_5.position))
 
       case _ =>
         extension(this)(ast)
