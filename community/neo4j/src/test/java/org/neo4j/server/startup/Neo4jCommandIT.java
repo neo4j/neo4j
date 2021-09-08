@@ -94,12 +94,40 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
         assertThat( err.toString() ).isEmpty();
     }
 
+    @EnabledOnOs( OS.WINDOWS )
+    @Test
+    void shouldBeAbleToUpdateRealServerOnWindows()
+    {
+        assumeThat( isCurrentlyRunningAsWindowsAdmin() ).isTrue();
+        addConf( BootloaderSettings.windows_service_name, "neo4j-" + currentTimeMillis() );
+        try
+        {
+            assertThat( execute( "install-service" ) ).isEqualTo( 0 );
+
+            int updatedSetting = 2 * INITIAL_HEAP_MB;
+            addConf( BootloaderSettings.initial_heap_size, String.format( "%dm", updatedSetting ) );
+            assertThat( execute( "update-service" ) ).isEqualTo( 0 );
+
+            shouldBeAbleToStartAndStopRealServer( updatedSetting );
+        }
+        finally
+        {
+            assertThat( execute( "uninstall-service" ) ).isEqualTo( 0 );
+        }
+        assertThat( err.toString() ).isEmpty();
+    }
+
     private void shouldBeAbleToStartAndStopRealServer()
+    {
+        shouldBeAbleToStartAndStopRealServer( INITIAL_HEAP_MB );
+    }
+
+    private void shouldBeAbleToStartAndStopRealServer( int initialHeapSize )
     {
         int startSig = execute( List.of( "start" ), Map.of( Bootloader.ENV_NEO4J_START_WAIT, "3" ) );
         assertThat( startSig ).isEqualTo( EXIT_CODE_OK );
         assertEventually( this::getDebugLogLines,
-                          s -> s.contains( String.format( "VM Arguments: [-Xms%dk, -Xmx%dk", INITIAL_HEAP_MB * 1024, MAX_HEAP_MB * 1024 ) ), 5, MINUTES );
+                          s -> s.contains( String.format( "VM Arguments: [-Xms%dk, -Xmx%dk", initialHeapSize * 1024, MAX_HEAP_MB * 1024 ) ), 5, MINUTES );
         assertEventually( this::getDebugLogLines, s -> s.contains( getVersion() + "NeoWebServer] ========" ), 5, MINUTES );
         assertEventually( this::getUserLogLines, s -> s.contains( "Remote interface available at" ), 5, MINUTES );
         assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
