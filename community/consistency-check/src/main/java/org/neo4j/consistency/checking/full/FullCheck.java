@@ -136,7 +136,7 @@ public class FullCheck
             catch ( Exception e )
             {
                 log.error( "Counts store is missing, broken or of an older format and will not be consistency checked", e );
-                summary.update( RecordType.COUNTS, 1, 0 );
+                summary.genericError( "Counts store is missing, broken or of an older format" );
             }
         }
         return countsStore;
@@ -155,7 +155,7 @@ public class FullCheck
             catch ( Exception e )
             {
                 log.error( "Relationship group degrees store is missing, broken or of an older format and will not be consistency checked", e );
-                summary.update( RecordType.RELATIONSHIP_GROUP, 1, 0 );
+                summary.genericError( "Relationship group degrees store is missing, broken or of an older format" );
             }
         }
         return store;

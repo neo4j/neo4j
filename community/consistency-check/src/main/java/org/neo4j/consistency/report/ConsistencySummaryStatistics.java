@@ -19,8 +19,11 @@
  */
 package org.neo4j.consistency.report;
 
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -32,6 +35,7 @@ public class ConsistencySummaryStatistics
     private final AtomicLong totalInconsistencyCount = new AtomicLong();
     private final AtomicLong errorCount = new AtomicLong();
     private final AtomicLong warningCount = new AtomicLong();
+    private final List<String> genericErrors = new CopyOnWriteArrayList<>();
 
     public ConsistencySummaryStatistics()
     {
@@ -54,6 +58,11 @@ public class ConsistencySummaryStatistics
                 result.append( "\n\tNumber of inconsistent " )
                       .append( entry.getKey() ).append( " records: " ).append( entry.getValue() );
             }
+        }
+        if ( !genericErrors.isEmpty() )
+        {
+            result.append( "\n\tGeneric errors: " );
+            genericErrors.forEach( message -> result.append( "\n\t\t" ).append( message ) );
         }
         return result.append( "\n}" ).toString();
     }
@@ -78,6 +87,11 @@ public class ConsistencySummaryStatistics
         return warningCount.get();
     }
 
+    public List<String> getGenericErrors()
+    {
+        return Collections.unmodifiableList( genericErrors );
+    }
+
     public void update( RecordType recordType, int errors, int warnings )
     {
         if ( errors > 0 )
@@ -90,5 +104,11 @@ public class ConsistencySummaryStatistics
         {
             warningCount.addAndGet( warnings );
         }
+    }
+
+    public void genericError( String message )
+    {
+        errorCount.addAndGet( 1 );
+        genericErrors.add( message );
     }
 }
