@@ -42,4 +42,8 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
       "RETURN datetime().epochMillis AS t"
     )
   }
+
+  test("should not rewrite test.timestamp()") {
+    assertNotRewritten("RETURN test.timestamp() AS t")
+  }
 }
