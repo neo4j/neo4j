@@ -811,4 +811,30 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .nodeIndexOperator("a:Label(prop)")
       .build()
   }
+
+  test("should plan index usage for a pattern comprehension with exists() predicate") {
+    val cfg = plannerConfigForIndexOnLabelPropTests()
+    val plan = cfg.plan("RETURN [ (a:Label)-[r]->(b) WHERE exists(a.prop) | [a, a.prop] ] AS result ").stripProduceResults
+
+    plan shouldBe cfg.subPlanBuilder()
+      .rollUpApply("result", "anon_0")
+      .|.projection("[a, a.prop] AS anon_0")
+      .|.expandAll("(a)-[r]->(b)")
+      .|.nodeIndexOperator("a:Label(prop)")
+      .argument()
+      .build()
+  }
+
+  test("should plan index usage for a pattern comprehension with exists() predicate inside a node pattern") {
+    val cfg = plannerConfigForIndexOnLabelPropTests()
+    val plan = cfg.plan("RETURN [ (a:Label WHERE exists(a.prop))-[r]->(b) | [a, a.prop] ] AS result ").stripProduceResults
+
+    plan shouldBe cfg.subPlanBuilder()
+      .rollUpApply("result", "anon_0")
+      .|.projection("[a, a.prop] AS anon_0")
+      .|.expandAll("(a)-[r]->(b)")
+      .|.nodeIndexOperator("a:Label(prop)")
+      .argument()
+      .build()
+  }
 }
