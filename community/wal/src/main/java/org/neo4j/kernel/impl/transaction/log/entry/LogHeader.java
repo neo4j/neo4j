@@ -59,6 +59,12 @@ public class LogHeader
         this.startPosition = new LogPosition( logVersion, headerSize );
     }
 
+    public LogHeader( LogHeader logHeader, long version )
+    {
+        this( logHeader.getLogFormatVersion(), version, logHeader.getLastCommittedTxId(), logHeader.getStoreId(),
+                logHeader.getStartPosition().getByteOffset() );
+    }
+
     public LogPosition getStartPosition()
     {
         return startPosition;
