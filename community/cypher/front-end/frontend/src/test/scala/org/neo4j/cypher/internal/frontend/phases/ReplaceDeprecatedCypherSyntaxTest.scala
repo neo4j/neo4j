@@ -29,6 +29,8 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
       SemanticAnalysis(warn = true) andThen
       SyntaxDeprecationWarningsAndReplacements(semanticallyDeprecatedFeaturesIn4_X)
 
+  override def astRewriteAndAnalyze: Boolean = false
+
   test("should rewrite timestamp()") {
     assertRewritten(
       "RETURN timestamp() AS t",
@@ -69,12 +71,20 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
       "MATCH (n) WHERE exists(n.prop) RETURN n",
       "MATCH (n) WHERE n.prop IS NOT NULL RETURN n"
     )
+    assertRewritten(
+      "MATCH (n WHERE exists(n.prop)) RETURN n",
+      "MATCH (n WHERE n.prop IS NOT NULL) RETURN n"
+    )
   }
 
   test("should rewrite exists with dynamic property in where") {
     assertRewritten(
       "MATCH (n) WHERE exists(n['prop']) RETURN n",
       "MATCH (n) WHERE n['prop'] IS NOT NULL RETURN n"
+    )
+    assertRewritten(
+      "MATCH (n WHERE exists(n['prop'])) RETURN n",
+      "MATCH (n WHERE n['prop'] IS NOT NULL) RETURN n"
     )
   }
 
@@ -91,6 +101,18 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
       "MATCH (n) WHERE (exists(n.prop) OR n.foo > 0) AND n:N RETURN n",
       "MATCH (n) WHERE (n.prop IS NOT NULL OR n.foo > 0) AND n:N RETURN n"
     )
+    assertRewritten(
+      "MATCH (n WHERE exists(n.prop) AND n.foo > 0) RETURN n",
+      "MATCH (n WHERE n.prop IS NOT NULL AND n.foo > 0) RETURN n"
+    )
+    assertRewritten(
+      "MATCH (n WHERE exists(n.prop) OR n.foo > 0) RETURN n",
+      "MATCH (n WHERE n.prop IS NOT NULL OR n.foo > 0) RETURN n"
+    )
+    assertRewritten(
+      "MATCH (n WHERE (exists(n.prop) OR n.foo > 0) AND n:N) RETURN n",
+      "MATCH (n WHERE (n.prop IS NOT NULL OR n.foo > 0) AND n:N) RETURN n"
+    )
   }
 
   test("should not rewrite exists in with") {
@@ -102,6 +124,9 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
   test("should not rewrite exists in where if nested more complicated") {
     assertNotRewritten(
       "MATCH (n) WHERE exists(n.prop) = n.prop RETURN n"
+    )
+    assertNotRewritten(
+      "MATCH (n WHERE exists(n.prop) = n.prop) RETURN n"
     )
   }
 

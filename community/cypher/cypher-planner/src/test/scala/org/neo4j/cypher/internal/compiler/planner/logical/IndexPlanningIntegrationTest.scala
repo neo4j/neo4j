@@ -801,4 +801,14 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)")
       .build()
   }
+
+  test("should plan index usage for node pattern with exists() predicate") {
+    val cfg = plannerConfigForIndexOnLabelPropTests()
+    val plan = cfg.plan("MATCH (a:Label WHERE exists(a.prop)) RETURN a, a.prop").stripProduceResults
+
+    plan shouldBe cfg.subPlanBuilder()
+      .projection("a.prop AS `a.prop`")
+      .nodeIndexOperator("a:Label(prop)")
+      .build()
+  }
 }

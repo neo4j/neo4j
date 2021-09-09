@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -291,22 +292,30 @@ object Deprecations {
     }
 
     override def findWithContext(statement: ast.Statement): Set[Deprecation] = {
+      def findExistsToIsNotNullReplacements(astNode: ASTNode): Set[Deprecation] = {
+        astNode.treeFold[Set[Deprecation]](Set.empty) {
+          case _: ast.Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
+            acc => TraverseChildren(acc)
+
+          case e@Exists(p@(_: Property | _: ContainerIndex)) =>
+            val deprecation = Deprecation(
+              Some(Ref(e) -> IsNotNull(p)(e.position)),
+              None
+            )
+            acc => SkipChildren(acc + deprecation)
+
+          case _ =>
+            acc => SkipChildren(acc)
+        }
+      }
+
       val replacementsFromExistsToIsNotNull = statement.treeFold[Set[Deprecation]](Set.empty) {
         case w: ast.Where =>
-          val deprecations = w.treeFold[Set[Deprecation]](Set.empty) {
-            case _: ast.Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
-              acc => TraverseChildren(acc)
+          val deprecations = findExistsToIsNotNullReplacements(w)
+          acc => SkipChildren(acc ++ deprecations)
 
-            case e@Exists(p@(_: Property | _: ContainerIndex)) =>
-              val deprecation = Deprecation(
-                Some(Ref(e) -> IsNotNull(p)(e.position)),
-                None
-              )
-              acc => SkipChildren(acc + deprecation)
-
-            case _ =>
-              acc => SkipChildren(acc)
-          }
+        case n: NodePattern =>
+          val deprecations = n.predicate.fold(Set.empty[Deprecation])(findExistsToIsNotNullReplacements)
           acc => SkipChildren(acc ++ deprecations)
       }
 
