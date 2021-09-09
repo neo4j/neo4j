@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checker.DebugContext;
@@ -72,6 +73,7 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.PageCache;
@@ -142,6 +144,7 @@ import static org.neo4j.consistency.checking.SchemaRuleUtil.relPropertyExistence
 import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraintRule;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
@@ -213,6 +216,7 @@ public class FullCheckIntegrationTest
     @BeforeEach
     protected void setUp()
     {
+        settings.put( GraphDatabaseInternalSettings.range_indexes_enabled, true );
         fixture = createFixture();
     }
 
@@ -441,7 +445,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.INDEX, 3 ) // 3 index entries are pointing to nodes not in use
+        on( stats ).verify( RecordType.INDEX, 6 ) // 6 (3 BTREE and 3 RANGE) index entries are pointing to nodes not in use
                    .verify( RecordType.LABEL_SCAN_DOCUMENT, 2 ) // the label scan is pointing to 2 nodes not in use
                    .verify( RecordType.COUNTS, 2 )
                    .andThatsAllFolks();
@@ -595,7 +599,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 3 ) // 1 node missing from 1 index + 1 node missing from 2 indexes
+        on( stats ).verify( RecordType.NODE, 6 ) // 1 node missing from 1 index + 1 node missing from 2 indexes (for both RANGE and BTREE)
                    .andThatsAllFolks();
     }
 
@@ -628,7 +632,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.RELATIONSHIP, 3 ) // 1 relationship missing from 1 index + 1 relationship missing from 2 indexes
+        on( stats ).verify( RecordType.RELATIONSHIP, 6 )
+                // 1 relationship missing from 1 index + 1 relationship missing from 2 indexes (for both RANGE and BTREE)
                 .andThatsAllFolks();
     }
 
@@ -662,7 +667,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in unique index
-                   .verify( RecordType.INDEX, 3 ) // the index entries pointing to node that should not be in index
+                   .verify( RecordType.INDEX, 5 ) // the index entries pointing to node that should not be in index (3 BTREE and 2 RANGE indexes)
                    .andThatsAllFolks();
     }
 
@@ -1868,6 +1873,24 @@ public class FullCheckIntegrationTest
 
     @ParameterizedTest
     @EnumSource( EntityType.class )
+    void shouldNotReportDuplicatedIndexRulesForDifferentIndexTypes( EntityType entityType ) throws Exception
+    {
+        // Given
+        int entityTokenId = createEntityToken( entityType );
+        int propertyKeyId = createPropertyKey();
+        createIndexRule( entityType, IndexType.BTREE, entityTokenId, propertyKeyId );
+        createIndexRule( entityType, IndexType.RANGE, entityTokenId, propertyKeyId );
+        createIndexRule( entityType, IndexType.TEXT, entityTokenId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).andThatsAllFolks();
+    }
+
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
     void shouldReportDuplicatedCompositeIndexRules( EntityType entityType ) throws Exception
     {
         // Given
@@ -2568,12 +2591,16 @@ public class FullCheckIntegrationTest
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
+                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).withIndexType( RANGE ).create();
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).create();
+                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).withIndexType( RANGE ).create();
 
                     tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
 
                     tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).create();
+                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).withIndexType( RANGE ).create();
                     tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).on( PROP2 ).create();
+                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).on( PROP2 ).withIndexType( RANGE ).create();
                     tx.commit();
                 }
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -2816,6 +2843,11 @@ public class FullCheckIntegrationTest
 
     private void createIndexRule( EntityType entityType, final int entityTokenId, final int... propertyKeyIds ) throws Exception
     {
+        createIndexRule( entityType, IndexType.BTREE, entityTokenId, propertyKeyIds );
+    }
+
+    private void createIndexRule( EntityType entityType, IndexType indexType, final int entityTokenId, final int... propertyKeyIds ) throws Exception
+    {
         AtomicReference<String> indexName = new AtomicReference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
         {
@@ -2828,11 +2860,11 @@ public class FullCheckIntegrationTest
                 switch ( entityType )
                 {
                 case RELATIONSHIP:
-                    index = forSchema( forRelType( entityTokenId, propertyKeyIds ), DESCRIPTOR ).withName( name ).materialise( id );
+                    index = forSchema( forRelType( entityTokenId, propertyKeyIds ), DESCRIPTOR ).withIndexType( indexType ).withName( name ).materialise( id );
                     break;
                 case NODE:
                 default:
-                    index = forSchema( forLabel( entityTokenId, propertyKeyIds ), DESCRIPTOR ).withName( name ).materialise( id );
+                    index = forSchema( forLabel( entityTokenId, propertyKeyIds ), DESCRIPTOR ).withIndexType( indexType ).withName( name ).materialise( id );
                     break;
                 }
                 indexName.set( name );

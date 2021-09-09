@@ -48,6 +48,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -107,11 +108,11 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
@@ -131,6 +132,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.internal.schema.IndexType.BTREE;
+import static org.neo4j.internal.schema.IndexType.RANGE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -309,6 +311,10 @@ public class DetectRandomSabotageIT
                 {
                     constraintCreator = constraintCreator.assertPropertyIsUnique( key );
                 }
+                if ( random.nextBoolean() )
+                {
+                    constraintCreator = constraintCreator.withIndexType( IndexType.RANGE );
+                }
                 // TODO also make it so that it's possible to add other types of constraints... this would mean
                 //      guaranteeing e.g. property existence on entities given certain entity tokens and such
                 constraintCreator.create();
@@ -336,6 +342,10 @@ public class DetectRandomSabotageIT
             for ( String key : keys )
             {
                 indexCreator = indexCreator.on( key );
+            }
+            if ( random.nextBoolean() )
+            {
+                indexCreator = indexCreator.withIndexType( IndexType.RANGE );
             }
             indexCreator.create();
             tx.commit();
@@ -470,6 +480,7 @@ public class DetectRandomSabotageIT
 
     protected <T> T addConfig( T t, SetConfigAction<T> action )
     {
+        action.setConfig( t, GraphDatabaseInternalSettings.range_indexes_enabled, true );
         return t;
     }
 
@@ -818,14 +829,16 @@ public class DetectRandomSabotageIT
                         IndexProxy indexProxy = null;
                         while ( indexProxy == null )
                         {
-                            // Make sure we get an index proxy representing a BTREE index (and not e.g. TokenIndex)
+                            // Make sure we get an index proxy representing a BTREE or RANGE index (and not e.g. TokenIndex)
                             long indexId = indexIds[random.nextInt( indexIds.length )];
                             indexProxy = indexing.getIndexProxy( indexId );
                             while ( indexProxy instanceof AbstractDelegatingIndexProxy )
                             {
                                 indexProxy = ((AbstractDelegatingIndexProxy) indexProxy).getDelegate();
                             }
-                            if ( indexProxy.getDescriptor().getIndexType() != BTREE )
+
+                            org.neo4j.internal.schema.IndexType type = indexProxy.getDescriptor().getIndexType();
+                            if ( type != BTREE && type != RANGE )
                             {
                                 indexProxy = null;
                             }
