@@ -139,6 +139,7 @@ class TransactionLogChannelAllocatorIT
     }
 
     @Test
+    @EnabledOnOs( OS.LINUX )
     void failToPreallocateFileWithOutOfDiskSpaceError() throws IOException
     {
         var logFileContext = createLogFileContext( getUnavailableBytes(), new PreallocationFailingChannelNativeAccess() );
@@ -153,6 +154,7 @@ class TransactionLogChannelAllocatorIT
     }
 
     @Test
+    @EnabledOnOs( OS.LINUX )
     void failToPreallocateFileWithOutOfDiskSpaceErrorAndDisabledFailover() throws IOException
     {
         config.setDynamic( dynamic_read_only_failover, false, "test" );
