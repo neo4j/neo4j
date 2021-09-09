@@ -19,10 +19,25 @@
  */
 package org.neo4j.consistency.checker.full;
 
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.util.Iterator;
+
+import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
+import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 import static org.neo4j.consistency.checking.cache.CacheSlots.CACHE_LINE_SIZE_BYTES;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 class LimitedFullCheckIT extends FullCheckIntegrationTest
 {
@@ -32,5 +47,40 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
         // Make it so that it will have to do the checking in a couple of node id ranges
         return ( pageCacheMemory, highNodeId ) -> new NodeBasedMemoryLimiter( pageCacheMemory, 0, pageCacheMemory + highNodeId * CACHE_LINE_SIZE_BYTES / 3,
                 CACHE_LINE_SIZE_BYTES, highNodeId, 1 );
+    }
+
+    @Test
+    void shouldFindDuplicatesInUniqueIndexEvenWhenInDifferentRanges() throws ConsistencyCheckIncompleteException, IndexEntryConflictException, IOException
+    {
+        // given
+        Iterator<IndexDescriptor> indexRuleIterator = getValueIndexDescriptors();
+
+        // Create 2 extra nodes to guarantee that the node id of our duplicate is not in the same range as the original entry.
+        createOneNode();
+        createOneNode();
+        // Create a node so the duplicate in the index refers to a valid node
+        // (IndexChecker only reports the duplicate if it refers to a node id lower than highId)
+        long nodeId = createOneNode();
+        while ( indexRuleIterator.hasNext() )
+        {
+            IndexDescriptor indexRule = indexRuleIterator.next();
+                // Don't close this accessor. It will be done when shutting down db.
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
+
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                {
+                    // There is already another node (created in generateInitialData()) that has this value
+                    updater.process( IndexEntryUpdate.add( nodeId, indexRule, values( indexRule ) ) );
+                }
+                accessor.force( NULL );
+        }
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in unique index
+                .verify( RecordType.INDEX, 3 ) // the index entries pointing to node that should not be in index
+                .andThatsAllFolks();
     }
 }

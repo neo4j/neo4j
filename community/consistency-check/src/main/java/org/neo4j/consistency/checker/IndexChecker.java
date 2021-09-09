@@ -161,6 +161,17 @@ public class IndexChecker implements Checker
                                     reporter.forIndexEntry( new IndexEntry( index.descriptor, this.context.tokenNameLookup, entityId ) )
                                             .nodeNotInUse( this.context.recordLoader.node( entityId, localStoreCursors ) );
                                 }
+                                else if ( firstRange && index.descriptor.isUnique() && index.hasValues )
+                                {
+                                    // We check all values belonging to unique indexes while we are checking the first range, to not
+                                    // miss duplicated values belonging to different ranges.
+                                    Value[] indexedValues = partition.values();
+                                    int checksum = checksum( indexedValues );
+                                    assert checksum <= CHECKSUM_MASK;
+
+                                    lastChecksum = verifyUniquenessInPartition( index, firstValues, lastValues, firstEntityIds, lastEntityIds, slot,
+                                            lastChecksum, localStoreCursors, entityId, indexedValues, checksum );
+                                }
                                 continue;
                             }
 
@@ -173,27 +184,10 @@ public class IndexChecker implements Checker
                                 data |= checksum;
 
                                 // Also take the opportunity to verify uniqueness, if the index is a uniqueness index
-                                if ( index.descriptor.isUnique() )
+                                if ( firstRange && index.descriptor.isUnique() )
                                 {
-                                    if ( firstValues[slot] == null )
-                                    {
-                                        firstValues[slot] = indexedValues;
-                                        firstEntityIds[slot] = entityId;
-                                    }
-                                    if ( lastValues[slot] != null )
-                                    {
-                                        if ( lastChecksum == checksum )
-                                        {
-                                            if ( Arrays.equals( lastValues[slot], indexedValues ) )
-                                            {
-                                                reporter.forNode( this.context.recordLoader.node( entityId, localStoreCursors ) )
-                                                        .uniqueIndexNotUnique( index.descriptor, indexedValues, lastEntityIds[slot] );
-                                            }
-                                        }
-                                    }
-                                    lastValues[slot] = indexedValues;
-                                    lastChecksum = checksum;
-                                    lastEntityIds[slot] = entityId;
+                                    lastChecksum = verifyUniquenessInPartition( index, firstValues, lastValues, firstEntityIds, lastEntityIds, slot,
+                                            lastChecksum, localStoreCursors, entityId, indexedValues, checksum );
                                 }
                             }
                             client.putToCacheSingle( entityId, index.cacheSlotOffset, data );
@@ -212,7 +206,7 @@ public class IndexChecker implements Checker
             context.execution.run( "Cache index", workers );
 
             // Then, also if the index is unique then do uniqueness checking of the seams between the partitions
-            if ( index.descriptor.isUnique() && !context.isCancelled() )
+            if ( firstRange && index.descriptor.isUnique() && !context.isCancelled() )
             {
                 for ( int i = 0; i < partitions.length - 1; i++ )
                 {
@@ -233,6 +227,30 @@ public class IndexChecker implements Checker
         {
             IOUtils.closeAll( partitions );
         }
+    }
+
+    private int verifyUniquenessInPartition( IndexContext index, Value[][] firstValues, Value[][] lastValues, long[] firstEntityIds, long[] lastEntityIds,
+            int slot, int lastChecksum, CachedStoreCursors localStoreCursors, long entityId, Value[] indexedValues, int checksum )
+    {
+        if ( firstValues[slot] == null )
+        {
+            firstValues[slot] = indexedValues;
+            firstEntityIds[slot] = entityId;
+        }
+        if ( lastValues[slot] != null )
+        {
+            if ( lastChecksum == checksum )
+            {
+                if ( Arrays.equals( lastValues[slot], indexedValues ) )
+                {
+                    reporter.forNode( this.context.recordLoader.node( entityId, localStoreCursors ) )
+                            .uniqueIndexNotUnique( index.descriptor, indexedValues, lastEntityIds[slot] );
+                }
+            }
+        }
+        lastValues[slot] = indexedValues;
+        lastEntityIds[slot] = entityId;
+        return checksum;
     }
 
     private void checkVsEntities( List<IndexContext> indexes, LongRange nodeIdRange ) throws Exception
