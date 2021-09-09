@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -443,10 +444,9 @@ class TransactionLogFileTest
         life.add( logFiles );
 
         Path additionalSource = testDirectory.directory( "another" );
-        var filesHelper = new TransactionLogFilesHelper( fileSystem, additionalSource );
-        createFile( filesHelper.getLogFileForVersion( 2 ) );
-        createFile( filesHelper.getLogFileForVersion( 3 ) );
-        createFile( filesHelper.getLogFileForVersion( 4 ) );
+        createFile( additionalSource, 2 );
+        createFile( additionalSource, 3 );
+        createFile( additionalSource, 4 );
 
         LogFile logFile = logFiles.getLogFile();
         assertEquals( 1, logFile.getHighestLogVersion() );
@@ -466,10 +466,9 @@ class TransactionLogFileTest
         life.add( logFiles );
 
         Path additionalSource = testDirectory.directory( "another" );
-        var filesHelper = new TransactionLogFilesHelper( fileSystem, additionalSource );
-        createFile( filesHelper.getLogFileForVersion( 0 ) );
-        createFile( filesHelper.getLogFileForVersion( 1 ) );
-        createFile( filesHelper.getLogFileForVersion( 2 ) );
+        createFile( additionalSource, 0 );
+        createFile( additionalSource, 1 );
+        createFile( additionalSource, 2 );
 
         LogFile logFile = logFiles.getLogFile();
         assertEquals( 1, logFile.getHighestLogVersion() );
@@ -488,16 +487,14 @@ class TransactionLogFileTest
         life.add( logFiles );
 
         Path additionalSource1 = testDirectory.directory( "another" );
-        var filesHelper = new TransactionLogFilesHelper( fileSystem, additionalSource1 );
-        createFile( filesHelper.getLogFileForVersion( 0 ) );
-        createFile( filesHelper.getLogFileForVersion( 6 ) );
-        createFile( filesHelper.getLogFileForVersion( 8 ) );
+        createFile( additionalSource1, 0 );
+        createFile( additionalSource1, 6 );
+        createFile( additionalSource1, 8 );
 
         Path additionalSource2 = testDirectory.directory( "another2" );
-        var oneMoreHelper = new TransactionLogFilesHelper( fileSystem, additionalSource1 );
-        createFile( oneMoreHelper.getLogFileForVersion( 10 ) );
-        createFile( oneMoreHelper.getLogFileForVersion( 26 ) );
-        createFile( oneMoreHelper.getLogFileForVersion( 38 ) );
+        createFile( additionalSource2, 10 );
+        createFile( additionalSource2, 26 );
+        createFile( additionalSource2, 38 );
 
         LogFile logFile = logFiles.getLogFile();
         assertEquals( 1, logFile.getHighestLogVersion() );
@@ -594,9 +591,13 @@ class TransactionLogFileTest
         lifeSupport.shutdown();
     }
 
-    private void createFile( Path filePath ) throws IOException
+    private void createFile( Path filePath, long version ) throws IOException
     {
-        fileSystem.write( filePath ).close();
+        var filesHelper = new TransactionLogFilesHelper( fileSystem, filePath );
+        try ( StoreChannel storeChannel = fileSystem.write( filesHelper.getLogFileForVersion( version ) ) )
+        {
+            LogHeaderWriter.writeLogHeader( storeChannel, new LogHeader( version, 1, StoreId.UNKNOWN ), INSTANCE );
+        }
     }
 
     private static class CapturingNativeAccess implements NativeAccess
