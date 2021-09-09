@@ -269,7 +269,7 @@ object StepSequencer {
     // In production, let's use the same seed to generate the same sequences reproducibly
     val random = new Random(fixedProductionSeed)
     if (AssertionRunner.isAssertionsEnabled) {
-      val seed = random.nextLong()
+      val seed = new Random().nextLong()
       // If tests start failing because of a wrong order, print the seed here and use to reproduce the same order.
       random.setSeed(seed)
       // Putting the steps in a random order in test setup will help us discover dependencies we didn't know about.
