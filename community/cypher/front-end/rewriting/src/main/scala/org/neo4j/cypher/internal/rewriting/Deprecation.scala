@@ -72,7 +72,7 @@ object Deprecations {
         )
 
       // timestamp
-      case f@FunctionInvocation(namespace, FunctionName(name), distinct, args) if name.equalsIgnoreCase("timestamp")=>
+      case f@FunctionInvocation(namespace, FunctionName(name), distinct, args) if namespace.parts.isEmpty && name.equalsIgnoreCase("timestamp")=>
         Deprecation(
           () => renameFunctionTo("datetime").andThen(propertyOf("epochMillis"))(f),
           () => None
