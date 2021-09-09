@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -331,8 +332,33 @@ trait UpdateGraph {
     val hasDynamicProperties = qgWithInfo.treeExists {
       case _: ContainerIndex => true
     }
-    setNodePropertyOverlap(qgWithInfo.allKnownUnstableNodeProperties(semanticTable), hasDynamicProperties) ||
-      setRelPropertyOverlap(qgWithInfo.allKnownUnstableRelProperties(semanticTable), hasDynamicProperties)
+
+    val readPropKeys = getReadPropKeys(qgWithInfo)
+
+    setNodePropertyOverlap(readPropKeys.nodePropertyKeys, hasDynamicProperties) ||
+      setRelPropertyOverlap(readPropKeys.relPropertyKeys, hasDynamicProperties)
+  }
+
+  private case class ReadPropKeys(nodePropertyKeys: Set[PropertyKeyName], relPropertyKeys: Set[PropertyKeyName])
+
+  private def getReadPropKeys(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): ReadPropKeys = {
+    val (readNodePropKeys, readRelPropKeys, readOtherPropKeys) =
+      // Don't do this when comparing against self, to avoid finding overlap for e.g. SET n.prop = n.prop + 1
+      if (this != qgWithInfo.queryGraph) {
+        val readProps = qgWithInfo.queryGraph.mutatingPatterns.findByAllClass[Property]
+        val (readNodeProps, readRelOrOtherProps) = readProps.partition(p => semanticTable.isNodeNoFail(p.map))
+        val (readRelProps, readOtherProps) = readRelOrOtherProps.partition(p => semanticTable.isRelationshipNoFail(p.map))
+
+        (readNodeProps.map(_.propertyKey), readRelProps.map(_.propertyKey), readOtherProps.map(_.propertyKey))
+      } else {
+        (Set.empty, Set.empty, Set.empty)
+      }
+
+
+    ReadPropKeys(
+      qgWithInfo.allKnownUnstableNodeProperties(semanticTable) ++ readNodePropKeys ++ readOtherPropKeys,
+      qgWithInfo.allKnownUnstableRelProperties(semanticTable) ++ readRelPropKeys ++ readOtherPropKeys
+    )
   }
 
   /*
