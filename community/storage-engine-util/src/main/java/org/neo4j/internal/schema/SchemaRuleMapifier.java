@@ -24,6 +24,7 @@ import org.eclipse.collections.api.tuple.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalLong;
 
 import org.neo4j.common.EntityType;
@@ -170,6 +171,7 @@ public class SchemaRuleMapifier
         {
         case UNIQUE:
             putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE" );
+            putStringProperty( map, PROP_INDEX_TYPE, rule.asIndexBackedConstraint().indexType().name() );
             if ( rule.asIndexBackedConstraint().hasOwnedIndexId() )
             {
                 putLongProperty( map, PROP_OWNED_INDEX, rule.asIndexBackedConstraint().ownedIndexId() );
@@ -180,6 +182,7 @@ public class SchemaRuleMapifier
             break;
         case UNIQUE_EXISTS:
             putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE_EXISTS" );
+            putStringProperty( map, PROP_INDEX_TYPE, rule.asIndexBackedConstraint().indexType().name() );
             if ( rule.asIndexBackedConstraint().hasOwnedIndexId() )
             {
                 putLongProperty( map, PROP_OWNED_INDEX, rule.asIndexBackedConstraint().ownedIndexId() );
@@ -228,6 +231,16 @@ public class SchemaRuleMapifier
             return ((TextValue) value).stringValue();
         }
         throw new MalformedSchemaRuleException( "Expected property " + property + " to be a TextValue but was " + value );
+    }
+
+    private static Optional<String> getOptionalString( String property, Map<String,Value> map )
+    {
+        Value value = map.get( property );
+        if ( value instanceof TextValue )
+        {
+            return Optional.of( ((TextValue) value).stringValue() );
+        }
+        return Optional.empty();
     }
 
     private static void putLongProperty( Map<String,Value> map, String property, long value )
@@ -298,11 +311,14 @@ public class SchemaRuleMapifier
         String constraintRuleType = getString( PROP_CONSTRAINT_RULE_TYPE, props );
         String name = getString( PROP_SCHEMA_RULE_NAME, props );
         OptionalLong ownedIndex = getOptionalLong( PROP_OWNED_INDEX, props );
+        Optional<String> indexTypeString = getOptionalString( PROP_INDEX_TYPE, props );
         ConstraintDescriptor constraint;
         switch ( constraintRuleType )
         {
         case "UNIQUE":
-            constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
+            constraint = indexTypeString.isPresent() ? ConstraintDescriptorFactory.uniqueForSchema( schema, getIndexType( indexTypeString.get() ) ) :
+                         ConstraintDescriptorFactory.uniqueForSchema( schema );
+
             if ( ownedIndex.isPresent() )
             {
                 constraint = constraint.withOwnedIndexId( ownedIndex.getAsLong() );
@@ -312,7 +328,9 @@ public class SchemaRuleMapifier
             constraint = ConstraintDescriptorFactory.existsForSchema( schema );
             return constraint.withId( id ).withName( name );
         case "UNIQUE_EXISTS":
-            constraint = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
+            constraint = indexTypeString.isPresent() ? ConstraintDescriptorFactory.nodeKeyForSchema( schema, getIndexType( indexTypeString.get() ) ) :
+                         ConstraintDescriptorFactory.nodeKeyForSchema( schema );
+
             if ( ownedIndex.isPresent() )
             {
                 constraint = constraint.withOwnedIndexId( ownedIndex.getAsLong() );

@@ -20,6 +20,7 @@
 package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -48,6 +49,11 @@ public class ConstraintDescriptorFactory
     public static UniquenessConstraintDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
         return uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ) );
+    }
+
+    public static UniquenessConstraintDescriptor uniqueForLabel( IndexType indexType, int labelId, int... propertyIds )
+    {
+        return uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ), indexType );
     }
 
     public static NodeKeyConstraintDescriptor nodeKeyForLabel( int labelId, int... propertyIds )
@@ -81,11 +87,21 @@ public class ConstraintDescriptorFactory
 
     public static UniquenessConstraintDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return new ConstraintDescriptorImplementation( UNIQUE, schema );
+        return new ConstraintDescriptorImplementation( UNIQUE, schema, IndexType.BTREE );
+    }
+
+    public static UniquenessConstraintDescriptor uniqueForSchema( SchemaDescriptor schema, IndexType indexType )
+    {
+        return new ConstraintDescriptorImplementation( UNIQUE, schema, indexType );
     }
 
     public static NodeKeyConstraintDescriptor nodeKeyForSchema( SchemaDescriptor schema )
     {
-        return new ConstraintDescriptorImplementation( UNIQUE_EXISTS, schema ).asNodeKeyConstraint();
+        return new ConstraintDescriptorImplementation( UNIQUE_EXISTS, schema, IndexType.BTREE ).asNodeKeyConstraint();
+    }
+
+    public static NodeKeyConstraintDescriptor nodeKeyForSchema( SchemaDescriptor schema, IndexType indexType )
+    {
+        return new ConstraintDescriptorImplementation( UNIQUE_EXISTS, schema, indexType ).asNodeKeyConstraint();
     }
 }

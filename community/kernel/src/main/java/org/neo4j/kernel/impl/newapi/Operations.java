@@ -1194,7 +1194,7 @@ public class Operations implements Write, SchemaWrite
         ktx.assertOpen();
         prototype = ensureIndexPrototypeHasIndexProvider( prototype );
 
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema, prototype.getIndexType() );
         try
         {
             assertValidDescriptor( schema, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
@@ -1248,9 +1248,13 @@ public class Operations implements Write, SchemaWrite
         while ( constraintWithSameSchema.hasNext() )
         {
             final ConstraintDescriptor constraint = constraintWithSameSchema.next();
-            if ( constraint.type() != ConstraintType.EXISTS && ( prototype.getIndexType() == IndexType.BTREE || prototype.getIndexType() == IndexType.RANGE ) )
+            if ( constraint.isIndexBackedConstraint() )
             {
-                throw new AlreadyConstrainedException( constraint, INDEX_CREATION, token );
+                // Index-backed constraints only blocks indexes of the same type.
+                if ( constraint.asIndexBackedConstraint().indexType() == prototype.getIndexType() )
+                {
+                    throw new AlreadyConstrainedException( constraint, INDEX_CREATION, token );
+                }
             }
         }
 
@@ -1292,20 +1296,22 @@ public class Operations implements Write, SchemaWrite
             final boolean existingIsExistenceConstraint = constraintWithSameSchema.type() == ConstraintType.EXISTS;
             if ( creatingExistenceConstraint == existingIsExistenceConstraint )
             {
-                throw new AlreadyConstrainedException( constraintWithSameSchema, CONSTRAINT_CREATION, token );
+                // Only index-backed constraints of the same index type block each other.
+                if ( creatingExistenceConstraint ||
+                     constraintWithSameSchema.asIndexBackedConstraint().indexType() == constraint.asIndexBackedConstraint().indexType() )
+                {
+                    throw new AlreadyConstrainedException( constraintWithSameSchema, CONSTRAINT_CREATION, token );
+                }
             }
         }
 
         // Already indexed
-        if ( constraint.type() != ConstraintType.EXISTS )
+        // A node-key or uniqueness constraint with relationship schema is not counted as index-backed so we don't check
+        // blocking indexes for them. But that will fail later anyway since we don't support such constraints.
+        if ( constraint.isIndexBackedConstraint() )
         {
-            // A RANGE or BTREE index on the schema blocks constraint creation.
-            IndexDescriptor existingIndex = allStoreHolder.index( constraint.schema(), IndexType.BTREE );
-            if ( existingIndex != IndexDescriptor.NO_INDEX )
-            {
-                throw new AlreadyIndexedException( existingIndex.schema(), CONSTRAINT_CREATION, token );
-            }
-            existingIndex = allStoreHolder.index( constraint.schema(), IndexType.RANGE );
+            IndexDescriptor existingIndex = allStoreHolder.index( constraint.schema(), constraint.asIndexBackedConstraint().indexType() );
+            // An index of the same type on the schema blocks constraint creation.
             if ( existingIndex != IndexDescriptor.NO_INDEX )
             {
                 throw new AlreadyIndexedException( existingIndex.schema(), CONSTRAINT_CREATION, token );
@@ -1314,19 +1320,20 @@ public class Operations implements Write, SchemaWrite
 
         // Constraint backed by similar index dropped in this transaction.
         // We cannot allow this because if we crash while new backing index
-        // is being populated we will end up with two indexes on the same schema.
+        // is being populated we will end up with two indexes on the same schema and type.
         if ( constraint.isIndexBackedConstraint() && ktx.hasTxStateWithChanges() )
         {
             for ( ConstraintDescriptor droppedConstraint : ktx.txState().constraintsChanges().getRemoved() )
             {
                 // If dropped and new constraint have similar backing index we cannot allow this constraint creation
-                if ( droppedConstraint.isIndexBackedConstraint() && constraint.schema().equals( droppedConstraint.schema() ) )
+                if ( droppedConstraint.isIndexBackedConstraint() && constraint.schema().equals( droppedConstraint.schema() )
+                     && droppedConstraint.asIndexBackedConstraint().indexType() == constraint.asIndexBackedConstraint().indexType() )
                 {
                     throw new UnsupportedOperationException(
                             format( "Trying to create constraint '%s' in same transaction as dropping '%s'. " +
                                     "This is not supported because they are both backed by similar indexes. " +
                                     "Please drop constraint in a separate transaction before creating the new one.",
-                            constraint.getName(), droppedConstraint.getName() ) );
+                                    constraint.getName(), droppedConstraint.getName() ) );
                 }
             }
         }
@@ -1359,7 +1366,7 @@ public class Operations implements Write, SchemaWrite
         exclusiveSchemaLock( schema );
         ktx.assertOpen();
         prototype = ensureIndexPrototypeHasIndexProvider( prototype );
-        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
+        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( schema, prototype.getIndexType() );
 
         try
         {
@@ -1743,7 +1750,16 @@ public class Operations implements Write, SchemaWrite
             }
             else
             {
-                constraint = (T) allStoreHolder.constraintsGetForSchema( constraint.schema() );
+                Iterator<ConstraintDescriptor> constraintsWithSchema = allStoreHolder.constraintsGetForSchema( constraint.schema() );
+                while ( constraintsWithSchema.hasNext() )
+                {
+                    ConstraintDescriptor next = constraintsWithSchema.next();
+                    if ( next.isIndexBackedConstraint() && next.asIndexBackedConstraint().indexType() == constraint.indexType() )
+                    {
+                        constraint = (T) constraintsWithSchema;
+                        break;
+                    }
+                }
             }
             return constraint;
         }

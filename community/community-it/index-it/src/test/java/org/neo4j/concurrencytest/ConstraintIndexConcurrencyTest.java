@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
 @ExtendWith( ThreadingExtension.class )
@@ -117,7 +118,7 @@ class ConstraintIndexConcurrencyTest
 
             var e = assertThrows( UniquePropertyValueValidationException.class,
                     () -> ktx.dataWrite().nodeSetProperty( node, propertyKeyId, Values.of( conflictingValue ) ) );
-            assertEquals( ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), e.constraint() );
+            assertEquals( ConstraintDescriptorFactory.uniqueForLabel( fromPublicApi( indexType ), labelId, propertyKeyId ), e.constraint() );
             IndexEntryConflictException conflict = Iterators.single( e.conflicts().iterator() );
             assertEquals( Values.stringValue( conflictingValue ), conflict.getSinglePropertyValue() );
 

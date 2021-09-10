@@ -20,6 +20,7 @@
 package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexType;
 
 public interface IndexBackedConstraintDescriptor extends ConstraintDescriptor
 {
@@ -33,4 +34,10 @@ public interface IndexBackedConstraintDescriptor extends ConstraintDescriptor
      * @return the id of the index backing this constraint.
      */
     long ownedIndexId();
+
+    /**
+     * Return the type of the index that is owned by this constraint, if any, or throw an {@link IllegalStateException}.
+     * @return the type of the index backing this constraint.
+     */
+    IndexType indexType();
 }

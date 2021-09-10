@@ -239,7 +239,7 @@ class SchemaCacheTest
     }
 
     @Test
-    void shouldResolveMultipeIndexDescriptorsForSameSchema()
+    void shouldResolveMultipleIndexDescriptorsForSameSchema()
     {
         // Given
         SchemaCache cache = newSchemaCache();
@@ -261,7 +261,7 @@ class SchemaCacheTest
     }
 
     @Test
-    void shouldStoreMultipeIndexDescriptorsForSameSchema()
+    void shouldStoreMultipleIndexDescriptorsForSameSchema()
     {
         // Given
         SchemaCache cache = newSchemaCache();
@@ -275,6 +275,26 @@ class SchemaCacheTest
 
         // When
         var actual = cache.indexesForSchema( forLabel( 1, 3 ) );
+
+        // Then
+        assertThat( actual ).toIterable().containsExactlyInAnyOrder( expected, expected2 );
+    }
+
+    @Test
+    void shouldStoreMultipleConstraintDescriptorsForSameSchema()
+    {
+        // Given
+        SchemaCache cache = newSchemaCache();
+
+        ConstraintDescriptor expected;
+        ConstraintDescriptor expected2;
+        cache.addSchemaRule( uniquenessConstraint( 1L, 1, 2, 3 ) );
+        cache.addSchemaRule( expected = uniquenessConstraint( 2L, 1, 3, 4, IndexType.BTREE ) );
+        cache.addSchemaRule( expected2 = uniquenessConstraint( 3L, 1, 3, 5, IndexType.RANGE ) );
+        cache.addSchemaRule( uniquenessConstraint( 4L, 1, 2, 6 ) );
+
+        // When
+        var actual = cache.constraintsForSchema( forLabel( 1, 3 ) );
 
         // Then
         assertThat( actual ).toIterable().containsExactlyInAnyOrder( expected, expected2 );
@@ -722,12 +742,23 @@ class SchemaCacheTest
     }
 
     @Test
-    void hasConstraintRuleShouldMatchBySchemaAndType()
+    void hasConstraintRuleShouldMatchBySchemaAndTypeAndIndexType()
     {
-        ConstraintDescriptor existing = uniquenessConstraint( 1, 2, 3, 4 );
-        ConstraintDescriptor checked = uniquenessConstraint( 0, 2, 3, 4 ); // Different rule id, but same type and schema.
+        ConstraintDescriptor existing = uniquenessConstraint( 1, 2, 3, 4, IndexType.BTREE );
+        // Different rule id, but same type, schema and index type.
+        ConstraintDescriptor checked = uniquenessConstraint( 0, 2, 3, 4, IndexType.BTREE );
         SchemaCache cache = newSchemaCache( existing );
         assertTrue( cache.hasConstraintRule( checked ) );
+    }
+
+    @Test
+    void hasConstraintRuleShouldNotMatchOnDifferentIndexType()
+    {
+        ConstraintDescriptor existing = uniquenessConstraint( 1, 2, 3, 4, IndexType.BTREE );
+        // Different index type.
+        ConstraintDescriptor checked = uniquenessConstraint( 0, 2, 3, 4, IndexType.RANGE );
+        SchemaCache cache = newSchemaCache( existing );
+        assertFalse( cache.hasConstraintRule( checked ) );
     }
 
     @Test
@@ -821,6 +852,11 @@ class SchemaCacheTest
     private static ConstraintDescriptor uniquenessConstraint( long ruleId, int labelId, int propertyId, long indexId )
     {
         return uniqueForLabel( labelId, propertyId ).withId( ruleId ).withOwnedIndexId( indexId );
+    }
+
+    private static ConstraintDescriptor uniquenessConstraint( long ruleId, int labelId, int propertyId, long indexId, IndexType type )
+    {
+        return uniqueForLabel( type, labelId, propertyId ).withId( ruleId ).withOwnedIndexId( indexId );
     }
 
     private SchemaCache newSchemaCache( SchemaRule... rules )

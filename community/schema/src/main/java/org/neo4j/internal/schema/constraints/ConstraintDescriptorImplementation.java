@@ -23,9 +23,11 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.SchemaUserDescription;
+import org.neo4j.util.Preconditions;
 
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.schema.ConstraintType.EXISTS;
@@ -42,23 +44,39 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
     private final long id;
     private final String name;
     private final Long ownedIndex;
+    private final IndexType ownedIndexType;
 
     ConstraintDescriptorImplementation( ConstraintType type, SchemaDescriptor schema )
+    {
+        Preconditions.checkState( type == EXISTS, "Index type should be supplied for index-backed constraints" );
+        this.type = type;
+        this.schema = schema;
+        this.id = NO_ID;
+        this.name = null;
+        this.ownedIndex = null;
+        this.ownedIndexType = null;
+    }
+
+    ConstraintDescriptorImplementation( ConstraintType type, SchemaDescriptor schema, IndexType ownedIndexType )
     {
         this.type = type;
         this.schema = schema;
         this.id = NO_ID;
         this.name = null;
         this.ownedIndex = null;
+        Preconditions.checkState( (type != EXISTS && ownedIndexType != null) || (type == EXISTS && ownedIndexType == null),
+                "Index type should be supplied for index-backed constraints" );
+        this.ownedIndexType = ownedIndexType;
     }
 
-    private ConstraintDescriptorImplementation( ConstraintType type, SchemaDescriptor schema, long id, String name, Long ownedIndex )
+    private ConstraintDescriptorImplementation( ConstraintType type, SchemaDescriptor schema, long id, String name, Long ownedIndex, IndexType ownedIndexType )
     {
         this.type = type;
         this.schema = schema;
         this.id = id;
         this.name = name;
         this.ownedIndex = ownedIndex;
+        this.ownedIndexType = ownedIndexType;
     }
 
     // METHODS
@@ -188,7 +206,12 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
         if ( o instanceof ConstraintDescriptor )
         {
             ConstraintDescriptor that = (ConstraintDescriptor) o;
-            return this.type() == that.type() && this.schema().equals( that.schema() );
+            boolean compare = this.type() == that.type() && this.schema().equals( that.schema() );
+            if ( compare && that.isIndexBackedConstraint() )
+            {
+                compare = compare && this.indexType().equals( that.asIndexBackedConstraint().indexType() );
+            }
+            return compare;
         }
         return false;
     }
@@ -232,9 +255,19 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
     }
 
     @Override
+    public IndexType indexType()
+    {
+        if ( ownedIndexType == null )
+        {
+            throw new IllegalStateException( "This constraint does not own an index." );
+        }
+        return ownedIndexType;
+    }
+
+    @Override
     public ConstraintDescriptorImplementation withId( long id )
     {
-        return new ConstraintDescriptorImplementation( type, schema, id, name, ownedIndex );
+        return new ConstraintDescriptorImplementation( type, schema, id, name, ownedIndex, ownedIndexType );
     }
 
     @Override
@@ -245,12 +278,13 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
             return this;
         }
         name = SchemaNameUtil.sanitiseName( name );
-        return new ConstraintDescriptorImplementation( type, schema, id, name, ownedIndex );
+        return new ConstraintDescriptorImplementation( type, schema, id, name, ownedIndex, ownedIndexType );
     }
 
     @Override
     public ConstraintDescriptorImplementation withOwnedIndexId( long ownedIndex )
     {
-        return new ConstraintDescriptorImplementation( type, schema, id, name, ownedIndex );
+        Preconditions.checkState( ownedIndexType != null, "ConstraintDescriptor missing IndexType when connected to index" );
+        return new ConstraintDescriptorImplementation( type, schema, id, name, ownedIndex, ownedIndexType );
     }
 }

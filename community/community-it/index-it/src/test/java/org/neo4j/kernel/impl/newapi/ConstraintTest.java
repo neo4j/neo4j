@@ -29,6 +29,8 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+import static org.neo4j.internal.schema.IndexType.fromPublicApi;
+
 public class ConstraintTest
 {
     abstract static class AbstractConstraintTest extends ConstraintTestBase<WriteTestSupport>
@@ -48,7 +50,7 @@ public class ConstraintTest
         @Override
         protected ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds )
         {
-            return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds );
+            return ConstraintDescriptorFactory.uniqueForLabel( fromPublicApi( indexType() ), labelId, propertyIds );
         }
     }
 
