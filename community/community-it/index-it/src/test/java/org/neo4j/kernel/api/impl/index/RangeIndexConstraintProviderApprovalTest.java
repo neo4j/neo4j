@@ -28,12 +28,12 @@ import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class RangeIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
+{
+    @BeforeAll
+    public static void init()
     {
-        @BeforeAll
-        public static void init()
-        {
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfig(
-                    GraphDatabaseInternalSettings.range_indexes_enabled, true ).build();
-            setupBeforeAllTests( managementService, IndexType.RANGE );
-        }
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfig(
+                GraphDatabaseInternalSettings.range_indexes_enabled, true ).build();
+        setupBeforeAllTests( managementService, IndexType.RANGE );
+    }
 }
