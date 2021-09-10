@@ -80,7 +80,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in unique index
-                .verify( RecordType.INDEX, 3 ) // the index entries pointing to node that should not be in index
+                .verify( RecordType.INDEX, 5 ) // the index entries pointing to node that should not be in index (3 BTREE and 2 RANGE)
                 .andThatsAllFolks();
     }
 }
