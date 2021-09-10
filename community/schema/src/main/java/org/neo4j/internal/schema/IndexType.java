@@ -47,7 +47,7 @@ public enum IndexType
      */
     RANGE,
     /**
-     * TODO add a corresponding public type when we have everything for creating POINT indexes
+     * @see org.neo4j.graphdb.schema.IndexType#POINT
      */
     POINT;
 
@@ -69,6 +69,8 @@ public enum IndexType
             return TEXT;
         case RANGE:
             return RANGE;
+        case POINT:
+            return POINT;
         default:
             throw new IllegalArgumentException( "Unknown index type: " + type );
         }
@@ -88,6 +90,8 @@ public enum IndexType
             return org.neo4j.graphdb.schema.IndexType.TEXT;
         case RANGE:
             return org.neo4j.graphdb.schema.IndexType.RANGE;
+        case POINT:
+            return org.neo4j.graphdb.schema.IndexType.POINT;
         default:
             throw new IllegalStateException( "Missing index type variant in IndexType.toPublicApi: " + this );
         }

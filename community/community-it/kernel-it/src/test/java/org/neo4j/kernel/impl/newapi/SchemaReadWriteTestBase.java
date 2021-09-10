@@ -115,7 +115,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT" } )
+    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT", "POINT" } )
     void shouldCreateIndex( IndexType type ) throws Exception
     {
         IndexDescriptor index;
@@ -175,7 +175,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT" } )
+    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT", "POINT" } )
     void shouldDropIndex( IndexType type ) throws Exception
     {
         IndexDescriptor index;
@@ -222,7 +222,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT" } )
+    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT", "POINT" } )
     void shouldDropIndexByName( IndexType type ) throws Exception
     {
         String indexName = "My fancy index";
@@ -328,7 +328,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT" } )
+    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT", "POINT" } )
     void shouldFailIfExistingIndex( IndexType type ) throws Exception
     {
         //Given

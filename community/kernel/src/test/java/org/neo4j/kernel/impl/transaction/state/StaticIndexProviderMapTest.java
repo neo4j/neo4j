@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
@@ -52,12 +53,14 @@ class StaticIndexProviderMapTest
         var textIndexProvider = mockProvider( TextIndexProvider.class );
         var fulltextIndexProvider = mockProvider( FulltextIndexProvider.class );
         var rangeIndexProvider = mockProvider( RangeIndexProvider.class );
+        var pointIndexProvider = mockProvider( PointIndexProvider.class );
         var map = new StaticIndexProviderMap( tokenIndexProvider,
                                               btreeIndexProvider,
                                               fusionIndexProvider,
                                               textIndexProvider,
                                               fulltextIndexProvider,
                                               rangeIndexProvider,
+                                              pointIndexProvider,
                                               Config.newBuilder().build(),
                                               new Dependencies() );
         map.init();
@@ -67,6 +70,7 @@ class StaticIndexProviderMapTest
         assertThat( map.getTokenIndexProvider() ).isEqualTo( tokenIndexProvider );
         assertThat( map.getDefaultProvider() ).isEqualTo( btreeIndexProvider );
         assertThat( map.getRangeIndexProvider() ).isEqualTo( rangeIndexProvider );
+        assertThat( map.getPointIndexProvider() ).isEqualTo( pointIndexProvider );
     }
 
     @Test
@@ -78,17 +82,19 @@ class StaticIndexProviderMapTest
         var textIndexProvider = mockProvider( TextIndexProvider.class );
         var fulltextIndexProvider = mockProvider( FulltextIndexProvider.class );
         var rangeIndexProvider = mockProvider( RangeIndexProvider.class );
+        var pointIndexProvider = mockProvider( PointIndexProvider.class );
         var map = new StaticIndexProviderMap( tokenIndexProvider,
                                               btreeIndexProvider,
                                               fusionIndexProvider,
                                               textIndexProvider,
                                               fulltextIndexProvider,
                                               rangeIndexProvider,
+                                              pointIndexProvider,
                                               Config.newBuilder().build(),
                                               new Dependencies() );
         map.init();
 
-        asList( tokenIndexProvider, btreeIndexProvider, fusionIndexProvider, textIndexProvider, fulltextIndexProvider, rangeIndexProvider )
+        asList( tokenIndexProvider, btreeIndexProvider, fusionIndexProvider, textIndexProvider, fulltextIndexProvider, rangeIndexProvider, pointIndexProvider )
                 .forEach(
                         p ->
                         {
@@ -107,12 +113,14 @@ class StaticIndexProviderMapTest
         var textIndexProvider = mockProvider( TextIndexProvider.class );
         var fulltextIndexProvider = mockProvider( FulltextIndexProvider.class );
         var rangeIndexProvider = mockProvider( RangeIndexProvider.class );
+        var pointIndexProvider = mockProvider( PointIndexProvider.class );
         var map = new StaticIndexProviderMap( tokenIndexProvider,
                                               btreeIndexProvider,
                                               fusionIndexProvider,
                                               textIndexProvider,
                                               fulltextIndexProvider,
                                               rangeIndexProvider,
+                                              pointIndexProvider,
                                               Config.newBuilder().build(),
                                               new Dependencies() );
         map.init();
@@ -120,8 +128,8 @@ class StaticIndexProviderMapTest
         var accepted = new ArrayList<>();
         map.accept( accepted::add );
 
-        assertThat( accepted ).containsExactlyInAnyOrder( tokenIndexProvider, btreeIndexProvider,
-                                                          fusionIndexProvider, textIndexProvider, fulltextIndexProvider, rangeIndexProvider );
+        assertThat( accepted ).containsExactlyInAnyOrder( tokenIndexProvider, btreeIndexProvider, fusionIndexProvider, textIndexProvider,
+                fulltextIndexProvider, rangeIndexProvider, pointIndexProvider );
     }
 
     @Test
@@ -139,6 +147,7 @@ class StaticIndexProviderMapTest
                                               mockProvider( TextIndexProvider.class ),
                                               mockProvider( FulltextIndexProvider.class ),
                                               mockProvider( RangeIndexProvider.class ),
+                                              mockProvider( PointIndexProvider.class ),
                                               config,
                                               dependencies );
         map.init();

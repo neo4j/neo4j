@@ -500,6 +500,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
+    public IndexProviderDescriptor getPointIndexProvider()
+    {
+        return providerMap.getPointIndexProvider().getProviderDescriptor();
+    }
+
+    @Override
     public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
         return providerMap.completeConfiguration( index );

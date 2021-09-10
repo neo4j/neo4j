@@ -97,5 +97,23 @@ public enum IndexType
      *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
      * </ul>
      */
-    RANGE
+    RANGE,
+
+    /**
+     * Point indexes only index point values (point arrays are not supported).
+     * They are designed to answer geometric queries like getting points within a given distance from another point
+     * or getting points within a given bounding box.
+     *
+     * <p>
+     * POINT indexes have the following abilities and limitations:
+     * <ul>
+     *     <li>They cannot be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
+     *     <li>They do not support composite indexes.</li>
+     *     <li>They can have their spatial indexing behaviour fine-tuned, using the {@linkplain IndexSetting index settings} that start with "spatial_".</li>
+     *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
+     *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
+     *     <li>They do not support ordering.</li>
+     * </ul>
+     */
+    POINT
 }

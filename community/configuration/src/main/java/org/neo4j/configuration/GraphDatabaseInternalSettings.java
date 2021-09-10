@@ -749,6 +749,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> range_indexes_enabled = newBuilder( "unsupported.dbms.range_indexes_enabled", BOOL, false ).build();
 
     @Internal
+    @Description( "Feature flag to enable/disable point indexes. Temporary setting to be able to test the ongoing work with point indexes, " +
+            "will be removed when feature is complete." )
+    public static final Setting<Boolean> point_indexes_enabled = newBuilder( "unsupported.dbms.point_indexes_enabled", BOOL, false ).build();
+
+    @Internal
     @Description( "Limits the maximum amount of off-heap memory the consistency checker will allocate. The value is given as a factor between 0.1 .. 1 " +
             "and will be multiplied with actual available memory to get the effectively available amount of memory taken into consideration" )
     public static final Setting<Double> consistency_check_memory_limit_factor =

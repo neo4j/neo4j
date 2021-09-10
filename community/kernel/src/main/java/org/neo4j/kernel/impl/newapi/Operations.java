@@ -114,6 +114,7 @@ import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.point_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -162,6 +163,7 @@ public class Operations implements Write, SchemaWrite
     private DefaultRelationshipScanCursor relationshipCursor;
     private final boolean textIndexesEnabled;
     private final boolean rangeIndexesEnabled;
+    private final boolean pointIndexesEnabled;
 
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
             StorageLocks storageLocks, KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors,
@@ -185,6 +187,7 @@ public class Operations implements Write, SchemaWrite
         this.additionLockVerification = config.get( additional_lock_verification );
         this.textIndexesEnabled = config.get( text_indexes_enabled );
         this.rangeIndexesEnabled  = config.get( range_indexes_enabled );
+        this.pointIndexesEnabled  = config.get( point_indexes_enabled );
     }
 
     public void initialize( CursorContext cursorContext )
@@ -947,6 +950,10 @@ public class Operations implements Write, SchemaWrite
         {
             assertRangeIndexesSupported();
         }
+        if ( indexType == IndexType.POINT )
+        {
+            assertPointIndexesSupported();
+        }
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();
         assertValidDescriptor( prototype.schema(), INDEX_CREATION );
@@ -978,6 +985,14 @@ public class Operations implements Write, SchemaWrite
         if ( !rangeIndexesEnabled )
         {
             throw new UnsupportedOperationException( "Index of RANGE type is not supported yet." );
+        }
+    }
+
+    private void assertPointIndexesSupported()
+    {
+        if ( !pointIndexesEnabled )
+        {
+            throw new UnsupportedOperationException( "Index of POINT type is not supported yet." );
         }
     }
 
@@ -1078,6 +1093,10 @@ public class Operations implements Write, SchemaWrite
             else if ( prototype.getIndexType() == IndexType.RANGE )
             {
                 provider = indexProviders.getRangeIndexProvider();
+            }
+            else if ( prototype.getIndexType() == IndexType.POINT )
+            {
+                provider = indexProviders.getPointIndexProvider();
             }
             else
             {
