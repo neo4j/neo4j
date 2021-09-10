@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
@@ -316,5 +317,34 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x", "y", "z").withRows(rowCount(sizeHint))
+  }
+
+  test("should handle repeated pattern with loop") {
+    val node = given {
+      val node = tx.createNode()
+      node.createRelationshipTo(node, RelationshipType.withName("R"))
+      (1 to sizeHint).foreach(_ => {
+        node.createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
+        node.createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
+      })
+      node
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.triadicSelection(positivePredicate = false, "b", "c", "d")
+      .|.|.expand("(c)-->(d)")
+      .|.|.argument("c")
+      .|.expand("(b)-->(c)")
+      .|.argument("b")
+      .expand("(a)-->(b)")
+      .nodeByIdSeek("a", Set.empty, node.getId)
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("a", "b", "c").withNoRows()
   }
 }
