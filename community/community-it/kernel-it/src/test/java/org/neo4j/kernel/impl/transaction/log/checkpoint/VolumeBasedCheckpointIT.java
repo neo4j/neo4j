@@ -32,6 +32,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
+import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +47,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 @TestDirectoryExtension
 class VolumeBasedCheckpointIT
 {
-    private static final int WAIT_TIMEOUT_SECONDS = 300;
+    private static final int WAIT_TIMEOUT_MINUTES = 10;
 
     @Inject
     private TestDirectory testDirectory;
@@ -77,14 +78,14 @@ class VolumeBasedCheckpointIT
             transaction.commit();
         }
 
-        await().atMost( ofSeconds( WAIT_TIMEOUT_SECONDS ) ).untilAsserted(
+        await().atMost( ofSeconds( WAIT_TIMEOUT_MINUTES ) ).untilAsserted(
                 () -> assertThat( checkPointer.lastCheckPointedTransactionId() ).isGreaterThan( lastCheckpointedTransactionId ) );
     }
 
     @Test
     void checkpointOnVolumeThresholdMultipleLogFiles()
     {
-        Config volumeCheckpointConfig = Config.newBuilder().set( check_point_policy, VOLUME ).set( check_point_interval_volume, mebiBytes( 128 ) ).set(
+        Config volumeCheckpointConfig = Config.newBuilder().set( check_point_policy, VOLUME ).set( check_point_interval_volume, mebiBytes( 2 ) ).set(
                 GraphDatabaseSettings.logical_log_rotation_threshold, kibiBytes( 128 ) ).build();
 
         dbms = startDbms( volumeCheckpointConfig );
@@ -102,7 +103,7 @@ class VolumeBasedCheckpointIT
             }
         }
 
-        await().atMost( ofSeconds( WAIT_TIMEOUT_SECONDS ) ).untilAsserted(
+        await().atMost( ofMinutes( WAIT_TIMEOUT_MINUTES ) ).untilAsserted(
                 () -> assertThat( checkPointer.lastCheckPointedTransactionId() ).isGreaterThan( lastCheckpointedTransactionId ) );
     }
 
@@ -130,7 +131,7 @@ class VolumeBasedCheckpointIT
             transaction.commit();
         }
 
-        await().atMost( ofSeconds( WAIT_TIMEOUT_SECONDS ) ).untilAsserted(
+        await().atMost( ofSeconds( WAIT_TIMEOUT_MINUTES ) ).untilAsserted(
                 () -> assertThat( checkPointer.lastCheckPointedTransactionId() ).isGreaterThan( lastCheckpointedTransactionId ) );
     }
 
