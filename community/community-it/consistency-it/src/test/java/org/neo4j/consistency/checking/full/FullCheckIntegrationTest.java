@@ -542,7 +542,7 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private long createOneNode()
+    protected long createOneNode()
     {
         final AtomicLong id = new AtomicLong();
         fixture.apply( tx ->
@@ -552,7 +552,7 @@ public class FullCheckIntegrationTest
         return id.get();
     }
 
-    private Value[] values( IndexDescriptor indexRule )
+    protected Value[] values( IndexDescriptor indexRule )
     {
         switch ( indexRule.schema().getPropertyIds().length )
         {
@@ -2562,7 +2562,7 @@ public class FullCheckIntegrationTest
         schemaRuleAccess.writeSchemaRule( rule, NULL, INSTANCE );
     }
 
-    private Iterator<IndexDescriptor> getIndexDescriptors()
+    protected Iterator<IndexDescriptor> getIndexDescriptors()
     {
         return fixture.getIndexDescriptors();
     }
