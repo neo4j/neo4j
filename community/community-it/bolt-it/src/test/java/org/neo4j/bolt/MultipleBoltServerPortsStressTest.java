@@ -56,7 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceivesSelectedProtocolVersion;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newMessageEncoder;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
@@ -140,16 +140,16 @@ class MultipleBoltServerPortsStressTest
 
     private static void initializeConnection( SocketConnection connection, HostnamePort address ) throws Exception
     {
-        connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 2, 4} ) );
+        connection.connect( address ).send( TransportTestUtil.defaultAcceptedVersions() );
+        assertThat( connection ).satisfies( eventuallyReceivesSelectedProtocolVersion() );
 
         connection.send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
-    private static Condition<AnyValue> longValueCondition( long expected )
+    private static Condition<AnyValue> longValueCondition()
     {
-        return new Condition<>( value -> value.equals( longValue( expected ) ), "equals" );
+        return new Condition<>( value -> value.equals( longValue( 1 ) ), "equals" );
     }
 
     private static Runnable workload( AtomicBoolean failureFlag, SocketConnection connection, long finishTimeMillis )
@@ -170,7 +170,7 @@ class MultipleBoltServerPortsStressTest
                 try
                 {
                     assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
-                    assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( longValueCondition( 1L ) ) ) ) );
+                    assertThat( connection ).satisfies( util.eventuallyReceives( msgRecord( eqRecord( longValueCondition() ) ) ) );
                     assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
                 }
                 catch ( AssertionError e )

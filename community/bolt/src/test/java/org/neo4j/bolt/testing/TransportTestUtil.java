@@ -46,6 +46,7 @@ import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v42.BoltProtocolV42;
 import org.neo4j.bolt.v43.BoltProtocolV43;
+import org.neo4j.bolt.v44.BoltProtocolV44;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.memory.ByteBuffers;
@@ -64,7 +65,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 public class TransportTestUtil
 {
-    private static final BoltProtocolVersion DEFAULT_BOLT_VERSION = BoltProtocolV42.VERSION;
+    private static final BoltProtocolVersion DEFAULT_BOLT_VERSION = BoltProtocolV44.VERSION;
     protected final Neo4jPack neo4jPack;
     private final MessageEncoder messageEncoder;
 

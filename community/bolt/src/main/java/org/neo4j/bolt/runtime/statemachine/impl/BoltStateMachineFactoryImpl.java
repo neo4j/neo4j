@@ -38,6 +38,8 @@ import org.neo4j.bolt.v42.BoltProtocolV42;
 import org.neo4j.bolt.v42.BoltStateMachineV42;
 import org.neo4j.bolt.v43.BoltProtocolV43;
 import org.neo4j.bolt.v43.BoltStateMachineV43;
+import org.neo4j.bolt.v44.BoltProtocolV44;
+import org.neo4j.bolt.v44.BoltStateMachineV44;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.internal.LogService;
@@ -89,6 +91,10 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         else if ( protocolVersion.equals( BoltProtocolV43.VERSION ) )
         {
             return newStateMachineV43( boltChannel, connectionHints, memoryTracker );
+        }
+        else if ( protocolVersion.equals( BoltProtocolV44.VERSION ) )
+        {
+            return newStateMachineV44( boltChannel, connectionHints, memoryTracker );
         }
         else
         {
@@ -150,5 +156,16 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
                                                                                boltChannel, clock, memoryTracker );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider, boltChannel );
         return new BoltStateMachineV43( boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker, transactionManager );
+    }
+
+    private BoltStateMachine newStateMachineV44( BoltChannel boltChannel, MapValue connectionHints, MemoryTracker memoryTracker )
+    {
+        memoryTracker.allocateHeap(
+                TransactionStateMachineSPIProviderV4.SHALLOW_SIZE + BoltStateMachineSPIImpl.SHALLOW_SIZE + BoltStateMachineV44.SHALLOW_SIZE );
+
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
+                                                                               boltChannel, clock, memoryTracker );
+        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider, boltChannel );
+        return new BoltStateMachineV44( boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker, transactionManager );
     }
 }
