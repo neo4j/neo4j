@@ -1004,8 +1004,6 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
         _.semanticCheck chain {
           when (part.isYielding) {
             requireFeatureSupport("The returning CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallReturningSubqueryInTransactions, position)
-          } chain when (part.isCorrelated) {
-            s => SemanticCheckResult.error(s, SemanticError("CALL { ... } IN TRANSACTIONS importing a variable is not supported at the moment", position))
           }
         } chain checkNoNestedCallInTransactions
       } chain

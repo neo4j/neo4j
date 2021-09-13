@@ -248,6 +248,8 @@ case object PushdownPropertyReads {
           val argumentAcc = null
           foldSingleChildPlan(rhsAcc, argumentAcc, plan)
 
+          // TODO: disallow caching across a transactionForeach
+
         case _ =>
           val mergedVariableOptima =
             lhsAcc.variableOptima ++ rhsAcc.variableOptima.map {

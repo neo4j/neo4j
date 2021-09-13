@@ -173,7 +173,7 @@ Feature: CypherTransactionsAcceptance
         WITH n
         SET n.i = n.i * 10
       } IN TRANSACTIONS
-      RETURN n.i AS ni2
+      RETURN ni1, n.i AS ni2
       """
     Then the result should be, in any order:
       | ni1 | ni2 |
@@ -308,3 +308,283 @@ Feature: CypherTransactionsAcceptance
     And the side effects should be:
       | -properties | 1 |
       | +properties | 1 |
+
+  Scenario: should support call in tx importing values
+    When executing query:
+      """
+      UNWIND range(1, 5) as i
+      CALL { WITH i CREATE ({prop: i}) } IN TRANSACTIONS
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 5 |
+      | +properties | 5 |
+
+  Scenario: should support call in tx returning values
+    Given having executed:
+      """
+      UNWIND range(1, 5) as i
+      CREATE ( {prop: i})
+      """
+    When executing query:
+      """
+      CALL { MATCH (n) RETURN n.prop AS prop } IN TRANSACTIONS
+      RETURN prop ORDER BY prop
+      """
+    Then the result should be, in any order:
+      | prop |
+      | 1    |
+      | 2    |
+      | 3    |
+      | 4    |
+      | 5    |
+    And no side effects
+
+  Scenario: should support call in tx importing nodes
+    Given having executed:
+      """
+      UNWIND range(1, 5) as i
+      CREATE ( {prop: i})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL { WITH n SET n.prop = 10 * n.prop } IN TRANSACTIONS
+      RETURN n.prop AS prop
+      """
+    Then the result should be, in any order:
+      | prop |
+      | 10   |
+      | 20   |
+      | 30   |
+      | 40   |
+      | 50   |
+    And the side effects should be:
+      | -properties | 5 |
+      | +properties | 5 |
+
+  Scenario: should support call in tx returning nodes
+    Given having executed:
+      """
+      UNWIND range(1, 5) as i
+      CREATE ( {prop: i})
+      """
+    When executing query:
+      """
+      MATCH ()
+      CALL { CREATE (n {prop: 1}) RETURN n } IN TRANSACTIONS
+      RETURN n.prop AS prop ORDER BY prop
+      """
+    Then the result should be, in any order:
+      | prop |
+      | 1    |
+      | 2    |
+      | 3    |
+      | 4    |
+      | 5    |
+    And the side effects should be:
+      | +nodes      | 5 |
+      | +properties | 5 |
+
+  Scenario: should support call in tx importing rels
+    Given having executed:
+      """
+      UNWIND range(1, 5) as i
+      CREATE ()-[:R {prop: i}]->()
+      """
+    When executing query:
+      """
+      MATCH ()-[r]->()
+      CALL { WITH r SET r.prop = 10 * r.prop } IN TRANSACTIONS
+      RETURN r.prop AS prop
+      """
+    Then the result should be, in any order:
+      | prop |
+      | 10   |
+      | 20   |
+      | 30   |
+      | 40   |
+      | 50   |
+    And the side effects should be:
+      | -properties | 5 |
+      | +properties | 5 |
+
+  Scenario: should support call in tx returning rels
+    Given having executed:
+      """
+      UNWIND range(1, 5) as i
+      CREATE ( {prop: i})
+      """
+    When executing query:
+      """
+      MATCH ()
+      CALL { CREATE ()-[r:R {prop: 1}]->() RETURN r } IN TRANSACTIONS
+      RETURN r.prop AS prop ORDER BY prop
+      """
+    Then the result should be, in any order:
+      | prop |
+      | 1    |
+      | 2    |
+      | 3    |
+      | 4    |
+      | 5    |
+    And the side effects should be:
+      | +relationships | 5  |
+      | +nodes         | 10 |
+      | +properties    | 5  |
+
+  Scenario: should support call in tx importing paths
+    Given having executed:
+      """
+      UNWIND range(1, 5) as i
+      CREATE ()-[:R {prop: i}]->()
+      """
+    When executing query:
+      """
+      MATCH p=()-[]->()
+      CALL { WITH p UNWIND relationships(p) AS r SET r.prop = 10 * r.prop } IN TRANSACTIONS
+      UNWIND relationships(p) AS r
+      RETURN r.prop AS prop
+      """
+    Then the result should be, in any order:
+      | prop |
+      | 10   |
+      | 20   |
+      | 30   |
+      | 40   |
+      | 50   |
+    And the side effects should be:
+      | -properties | 5 |
+      | +properties | 5 |
+
+  Scenario: should support call in tx returning paths
+    Given having executed:
+      """
+      UNWIND range(1, 5) as i
+      CREATE ( {prop: i})
+      """
+    When executing query:
+      """
+      MATCH ()
+      CALL { CREATE p=()-[r:R {prop: 1}]->() RETURN p } IN TRANSACTIONS
+      UNWIND relationships(p) AS r
+      RETURN r.prop AS prop
+      """
+    Then the result should be, in any order:
+      | prop |
+      | 1    |
+      | 2    |
+      | 3    |
+      | 4    |
+      | 5    |
+    And the side effects should be:
+      | +relationships | 5  |
+      | +nodes         | 10 |
+      | +properties    | 5  |
+
+  Scenario: Observe changes from within uncorrelated transactional unit subqueries and not use stale property caches
+    Given having executed:
+      """
+      CREATE ( { prop: 1 } )
+      """
+    When executing query:
+      """
+        MATCH (n)
+        WITH n, n.prop as prop
+        CALL {
+          MATCH (n)
+          SET n.prop = 42
+        } IN TRANSACTIONS
+        RETURN n.prop
+      """
+    Then the result should be, in any order:
+      | n.prop |
+      |   42   |
+
+  Scenario: Observe changes between uncorrelated transactional unit subqueries and not use stale property caches
+    Given having executed:
+      """
+      CREATE ( { prop: 1 } )
+      """
+    When executing query:
+      """
+        MATCH (n)
+        WITH n, n.prop as prop
+        UNWIND range(1,41) as i
+        CALL {
+          MATCH (n)
+          SET n.prop = n.prop + 1
+        } IN TRANSACTIONS
+        RETURN n.prop LIMIT 1
+      """
+    Then the result should be, in any order:
+      | n.prop |
+      |   42   |
+
+  Scenario: Observe changes between correlated transactional unit subqueries and not use stale property caches
+    Given having executed:
+      """
+      CREATE (:A { prop: 1} )-[:R]->(:B { prop: 1} )
+      """
+    When executing query:
+      """
+        MATCH (n:A)--(m:B)
+        WITH n, m, n.prop as prop, m.prop as mprop
+        UNWIND range(1,42) as i
+        CALL {
+          WITH n, m
+          SET n.prop = m.prop
+          SET m.prop = n.prop + 1
+        } IN TRANSACTIONS
+        RETURN n.prop LIMIT 1
+      """
+    Then the result should be, in any order:
+      | n.prop |
+      |   42   |
+
+  Scenario: Observe changes from within correlated transactional unit subqueries and not use stale property caches
+    Given having executed:
+      """
+      CREATE ( { prop: 42 } )
+      """
+    When executing query:
+      """
+        MATCH (n)
+        WITH n, n.prop as prop
+        UNWIND [0, 1, 2] as i
+        CALL {
+          WITH n, i
+          FOREACH (ignored in CASE i WHEN 1 THEN [1] ELSE [] END | SET n.prop = i )
+          WITH n, n.prop as prop2
+          SET n.prop2 = "dummy"
+        } IN TRANSACTIONS
+        RETURN prop, n.prop
+      """
+    Then the result should be, in any order:
+      | prop | n.prop |
+      |  42  |   1    |
+      |  42  |   1    |
+      |  42  |   1    |
+
+  Scenario: Observe changes from within correlated transactional returning subqueries and not use stale property caches
+    Given having executed:
+      """
+      CREATE ( { prop: 42 } )
+      """
+    When executing query:
+      """
+        MATCH (n)
+        WITH n, n.prop as prop
+        UNWIND [0, 1, 2] as i
+        CALL {
+          WITH n, i
+          FOREACH (ignored in CASE i WHEN 1 THEN [1] ELSE [] END | SET n.prop = i )
+          RETURN n.prop as prop2
+        } IN TRANSACTIONS
+        RETURN prop, n.prop, prop2
+      """
+    Then the result should be, in any order:
+      | prop | n.prop | prop2 |
+      |  42  |   1    |   42  |
+      |  42  |   1    |    1  |
+      |  42  |   1    |    1  |

@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.traversal.Paths
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.LogProvider
@@ -496,5 +497,247 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
         (100 to 102) ++ // rels from LHS of Union
         (11 to 15 by 2) // rels from RHS of Union
       )
+  }
+
+  test("should allow node entity values as params") {
+    val nodes = given {
+      val n = runtimeTestSupport.tx.createNode()
+      n.setProperty("prop", 1L)
+      val m = runtimeTestSupport.tx.createNode()
+      m.setProperty("prop", 1L)
+      Seq(n, m)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("m.prop AS prop")
+      .apply()
+      .|.allNodeScan("m")
+      .eager()
+      .transactionForeach()
+      .|.emptyResult()
+      .|.setProperty("n", "prop", "2")
+      .|.argument("n")
+      .input(variables = Seq("n"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(
+      query,
+      runtime,
+      inputStream = inputStreamWithSideEffectInNewTxn(
+        inputValues(nodes.map(n => Array[Any](n)):_*).stream(),
+        (externalTx, offset) => {
+          offset match {
+            case 0L =>
+              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(1L, 1L)
+              parentVisible shouldEqual List(1L, 1L)
+            case 1L =>
+              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(2L, 1L)
+              parentVisible shouldEqual List(2L, 1L)
+          }
+        }))
+
+    consume(runtimeResult)
+    runtimeResult should beColumns("prop")
+      .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
+  }
+
+  test("should allow relationship entity values as params") {
+    val relationships = given {
+      val n = runtimeTestSupport.tx.createNode()
+      val m = runtimeTestSupport.tx.createNode()
+      val r = n.createRelationshipTo(m, RelationshipType.withName("R"))
+      r.setProperty("prop", 1L)
+      val s = n.createRelationshipTo(m, RelationshipType.withName("R"))
+      s.setProperty("prop", 1L)
+      Seq(r, s)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("s.prop AS prop")
+      .apply()
+      .|.relationshipTypeScan("(a)-[s:R]->(b)")
+      .eager()
+      .transactionForeach()
+      .|.emptyResult()
+      .|.setProperty("r", "prop", "2")
+      .|.argument("r")
+      .input(variables = Seq("r"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(
+      query,
+      runtime,
+      inputStream = inputStreamWithSideEffectInNewTxn(
+        inputValues(relationships.map(r => Array[Any](r)):_*).stream(),
+        (externalTx, offset) => {
+          offset match {
+            case 0L =>
+              val externallyVisible = externalTx.getAllRelationships.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllRelationships.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(1L, 1L)
+              parentVisible shouldEqual List(1L, 1L)
+            case 1L =>
+              val externallyVisible = externalTx.getAllRelationships.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllRelationships.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(2L, 1L)
+              parentVisible shouldEqual List(2L, 1L)
+          }
+        }))
+
+    consume(runtimeResult)
+    runtimeResult should beColumns("prop")
+      .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
+  }
+
+  test("should allow path entity values as params") {
+    val paths = given {
+      val n = runtimeTestSupport.tx.createNode()
+      n.setProperty("prop", 1L)
+      val p = Paths.singleNodePath(n)
+      val m = runtimeTestSupport.tx.createNode()
+      m.setProperty("prop", 1L)
+      val q = Paths.singleNodePath(m)
+      Seq(p, q)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("m.prop AS prop")
+      .apply()
+      .|.allNodeScan("m")
+      .eager()
+      .transactionForeach()
+      .|.emptyResult()
+      .|.setProperty("n", "prop", "2")
+      .|.unwind("nodes(p) AS n")
+      .|.argument("p")
+      .input(variables = Seq("p"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(
+      query,
+      runtime,
+      inputStream = inputStreamWithSideEffectInNewTxn(
+        inputValues(paths.map(p => Array[Any](p)):_*).stream(),
+        (externalTx, offset) => {
+          offset match {
+            case 0L =>
+              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(1L, 1L)
+              parentVisible shouldEqual List(1L, 1L)
+            case 1L =>
+              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(2L, 1L)
+              parentVisible shouldEqual List(2L, 1L)
+          }
+        }))
+
+    consume(runtimeResult)
+    runtimeResult should beColumns("prop")
+      .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
+  }
+
+  test("should allow lists of node entity values as params") {
+    val nodes = given {
+      val n = runtimeTestSupport.tx.createNode()
+      n.setProperty("prop", 1L)
+      val m = runtimeTestSupport.tx.createNode()
+      m.setProperty("prop", 1L)
+      Seq(n, m)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("m.prop AS prop")
+      .apply()
+      .|.allNodeScan("m")
+      .eager()
+      .transactionForeach()
+      .|.emptyResult()
+      .|.setProperty("n", "prop", "2")
+      .|.unwind("l AS n")
+      .|.argument("l")
+      .input(variables = Seq("l"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(
+      query,
+      runtime,
+      inputStream = inputStreamWithSideEffectInNewTxn(
+        inputValues(Array[Any](nodes.toArray)).stream(),
+        (externalTx, offset) => {
+          offset match {
+            case 0L =>
+              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(1L, 1L)
+              parentVisible shouldEqual List(1L, 1L)
+            case 1L =>
+              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(2L, 1L)
+              parentVisible shouldEqual List(2L, 1L)
+          }
+        }))
+
+    consume(runtimeResult)
+    runtimeResult should beColumns("prop")
+      .withRows(singleColumn(Seq(2L, 2L)))
+  }
+
+  test("should allow maps of node entity values as params") {
+    val nodes = given {
+      val n = runtimeTestSupport.tx.createNode()
+      n.setProperty("prop", 1L)
+      val m = runtimeTestSupport.tx.createNode()
+      m.setProperty("prop", 1L)
+      Seq(n, m)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("o.prop AS prop")
+      .apply()
+      .|.allNodeScan("o")
+      .eager()
+      .transactionForeach()
+      .|.emptyResult()
+      .|.setProperty("n", "prop", "2")
+      .|.projection("m.n AS n")
+      .|.argument("m")
+      .input(variables = Seq("m"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(
+      query,
+      runtime,
+      inputStream = inputStreamWithSideEffectInNewTxn(
+        inputValues(nodes.map(n => Array[Any](java.util.Map.of("n", n))):_*).stream(),
+        (externalTx, offset) => {
+          offset match {
+            case 0L =>
+              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(1L, 1L)
+              parentVisible shouldEqual List(1L, 1L)
+            case 1L =>
+              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
+              externallyVisible shouldEqual List(2L, 1L)
+              parentVisible shouldEqual List(2L, 1L)
+          }
+        }))
+
+    consume(runtimeResult)
+    runtimeResult should beColumns("prop")
+      .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
 }

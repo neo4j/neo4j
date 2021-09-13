@@ -80,6 +80,7 @@ trait CypherRow extends ReadWriteRow with Measurable {
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): CypherRow
   def copyWith(newEntries: Seq[(String, AnyValue)]): CypherRow
 
+  def transformRefs(func: AnyValue => AnyValue): Unit
 
   def isNull(key: String): Boolean
 }
@@ -191,6 +192,9 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
     cloneFromMap(m.clone() ++ newEntries)
   }
 
+  def transformRefs(func: AnyValue => AnyValue): Unit =
+    m.transform( { case (k, v) => func(v) })
+
   override def createClone(): CypherRow = cloneFromMap(m.clone())
 
   override def isNull(key: String): Boolean =
@@ -222,6 +226,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
     if (cachedProperties != null) {
       cachedProperties.keys.foreach(cnp => setCachedProperty(cnp, null))
     }
+    // TODO: set to null?
   }
 
   override def invalidateCachedNodeProperties(node: Long): Unit = {
