@@ -29,8 +29,6 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
-import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -39,9 +37,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -52,7 +48,6 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -61,46 +56,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.DESCRIPTOR;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 @PageCacheExtension
 @ExtendWith( RandomExtension.class )
-class GenericAccessorPointsTest
+abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
 {
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
     private static final Config config = Config.defaults();
-    private static final IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
-    private static final SpaceFillingCurve curve = indexSettings.forCrs( crs );
+    static final IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
+    static final SpaceFillingCurve curve = indexSettings.forCrs( crs );
 
     @Inject
-    private FileSystemAbstraction fs;
+    FileSystemAbstraction fs;
     @Inject
-    private TestDirectory directory;
+    TestDirectory directory;
     @Inject
-    private PageCache pageCache;
+    PageCache pageCache;
     @Inject
-    private RandomSupport random;
+    RandomSupport random;
 
-    private NativeIndexAccessor accessor;
-    private IndexDescriptor descriptor;
+    private NativeIndexAccessor<KEY> accessor;
+    IndexDescriptor descriptor;
+
+    abstract IndexDescriptor createDescriptor();
+
+    abstract NativeIndexAccessor<KEY> createAccessor();
 
     @BeforeEach
     void setup()
     {
-        IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( directory.homePath() ).forProvider( DESCRIPTOR );
-        descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 );
-        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
-        GenericLayout layout = new GenericLayout( 1, indexSettings );
-        RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).build();
-        StandardConfiguration configuration = new StandardConfiguration();
-        accessor = new GenericNativeIndexAccessor( databaseIndexContext, indexFiles, layout, collector, descriptor, indexSettings, configuration,
-                SIMPLE_NAME_LOOKUP );
+        descriptor = createDescriptor();
+        accessor = createAccessor();
     }
 
     @AfterEach
@@ -127,7 +116,7 @@ class GenericAccessorPointsTest
         double yWidthMultiplier = curve.getTileWidth( 1, curve.getMaxLevel() ) / 2;
 
         List<Value> pointValues = new ArrayList<>();
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+        List<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
         long nodeId = 1;
         for ( int i = 0; i < nbrOfValues / 4; i++ )
         {
@@ -148,48 +137,6 @@ class GenericAccessorPointsTest
 
         // then
         exactMatchOnAllValues( pointValues );
-    }
-
-    /**
-     * This test verify that we correctly handle unique point arrays where every point in every array belong to the same tile on the space filling curve.
-     * We verify this by asserting that we always get exactly one hit on an exact match and that the value is what we expect.
-     */
-    @Test
-    void mustHandlePointArraysWithinSameTile() throws IndexEntryConflictException, IndexNotApplicableKernelException
-    {
-        // given
-        // Many random points that all are close enough to each other to belong to the same tile on the space filling curve.
-        int nbrOfValues = 10000;
-        PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
-        Long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
-        double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint );
-        double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2;
-        double yWidthMultiplier = curve.getTileWidth( 1, curve.getMaxLevel() ) / 2;
-
-        List<Value> pointArrays = new ArrayList<>();
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
-        for ( int i = 0; i < nbrOfValues; i++ )
-        {
-            int arrayLength = random.nextInt( 5 ) + 1;
-            PointValue[] pointValues = new PointValue[arrayLength];
-            for ( int j = 0; j < arrayLength; j++ )
-            {
-                double x = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
-                double y = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
-                PointValue value = Values.pointValue( WGS84, centerPoint[0] + x, centerPoint[1] + y );
-
-                assertDerivedValue( derivedValueForCenterPoint, value );
-                pointValues[j] = value;
-            }
-            PointArray array = Values.pointArray( pointValues );
-            pointArrays.add( array );
-            updates.add( IndexEntryUpdate.add( i, descriptor, array ) );
-        }
-
-        processAll( updates );
-
-        // then
-        exactMatchOnAllValues( pointArrays );
     }
 
     /**
@@ -242,7 +189,7 @@ class GenericAccessorPointsTest
         int nbrOfValues = 10_000;
 
         List<PointValue> pointsInside = new ArrayList<>();
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+        List<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
 
         for ( int i = 0; i < nbrOfValues; i++ )
         {
@@ -280,7 +227,7 @@ class GenericAccessorPointsTest
         }
     }
 
-    private long addPointsToLists( List<Value> pointValues, List<IndexEntryUpdate<?>> updates, long nodeId, PointValue... values )
+    private long addPointsToLists( List<Value> pointValues, List<IndexEntryUpdate<IndexDescriptor>> updates, long nodeId, PointValue... values )
     {
         for ( PointValue value : values )
         {
@@ -290,7 +237,7 @@ class GenericAccessorPointsTest
         return nodeId;
     }
 
-    private static void assertDerivedValue( Long targetDerivedValue, PointValue... values )
+    static void assertDerivedValue( Long targetDerivedValue, PointValue... values )
     {
         for ( PointValue value : values )
         {
@@ -299,19 +246,18 @@ class GenericAccessorPointsTest
         }
     }
 
-    private void processAll( List<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
+    void processAll( List<IndexEntryUpdate<IndexDescriptor>> updates ) throws IndexEntryConflictException
     {
-        try ( NativeIndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( NativeIndexUpdater<KEY> updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
-            for ( IndexEntryUpdate<?> update : updates )
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {
-                //noinspection unchecked
                 updater.process( update );
             }
         }
     }
 
-    private void exactMatchOnAllValues( List<Value> values ) throws IndexNotApplicableKernelException
+    void exactMatchOnAllValues( List<Value> values ) throws IndexNotApplicableKernelException
     {
         try ( var indexReader = accessor.newValueReader() )
         {
