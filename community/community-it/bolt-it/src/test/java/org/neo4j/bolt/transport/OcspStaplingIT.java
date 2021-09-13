@@ -57,6 +57,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.CertConfiguredSecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.ssl.PkiUtils;
@@ -97,7 +98,7 @@ class OcspStaplingIT
                                  settings.put( policy.private_key, endUserKeyFile.toAbsolutePath() );
                                  settings.put( BoltConnector.enabled, true );
                                  settings.put( BoltConnector.encryption_level, OPTIONAL );
-                                 settings.put( BoltConnector.ocsp_enabled, true );
+                                 settings.put( CommonConnectorConfig.ocsp_stapling_enabled, true );
                                  settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
                              } );
 

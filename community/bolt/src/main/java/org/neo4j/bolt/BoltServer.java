@@ -65,6 +65,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -169,7 +170,7 @@ public class BoltServer extends LifecycleAdapter
         BoltProtocolFactory loopbackBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, loopbackBoltStateMachineFactory, throttleGroup,
                                                                                      clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
 
-        if ( config.get( BoltConnector.ocsp_enabled ) )
+        if ( config.get( CommonConnectorConfig.ocsp_stapling_enabled ) )
         {
             enableOcspStapling();
         }
