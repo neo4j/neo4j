@@ -54,6 +54,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -92,6 +93,7 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
 
     private int jettyMaxThreads = 1;
     private SslPolicy sslPolicy;
+    private final boolean ocspStaplingEnabled;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
     private final Log log;
@@ -99,6 +101,7 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
     public Jetty9WebServer( LogProvider logProvider, Config config, NetworkConnectionTracker connectionTracker, ByteBufferPool byteBufferPool )
     {
         this.log = logProvider.getLog( getClass() );
+        this.ocspStaplingEnabled = config.get( CommonConnectorConfig.ocsp_stapling_enabled );
         sslSocketFactory = new SslSocketConnectorFactory( connectionTracker, config, byteBufferPool );
         connectorFactory = new HttpConnectorFactory( connectionTracker, config, byteBufferPool );
     }
@@ -124,6 +127,12 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
                 if ( sslPolicy == null )
                 {
                     throw new RuntimeException( "HTTPS set to enabled, but no SSL policy provided" );
+                }
+
+                if ( ocspStaplingEnabled )
+                {
+                    // currently the only way to enable OCSP server stapling for JDK is through this property
+                    System.setProperty( "jdk.tls.server.enableStatusRequestExtension", "true" );
                 }
                 httpsConnector = sslSocketFactory.createConnector( jetty, sslPolicy, httpsAddress, jettyThreadCalculator );
                 jetty.addConnector( httpsConnector );

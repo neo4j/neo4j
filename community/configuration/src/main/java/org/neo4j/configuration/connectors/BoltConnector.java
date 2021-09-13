@@ -70,11 +70,6 @@ public final class BoltConnector implements SettingsDeclaration
                     .setDependency( default_advertised_address )
                     .build();
 
-    @Description( "Enable server OCSP stapling for bolt connector." )
-    @DocumentedDefaultValue( "false" )
-    public static final Setting<Boolean> ocsp_enabled =
-            newBuilder( "dbms.connector.bolt.ocsp_stapling_enabled", BOOL, false ).build();
-
     @Description( "The number of threads to keep in the thread pool bound to this connector, even if they are idle." )
     public static final Setting<Integer> thread_pool_min_size = newBuilder( "dbms.connector.bolt.thread_pool_min_size", INT, 5 ).build();
 
