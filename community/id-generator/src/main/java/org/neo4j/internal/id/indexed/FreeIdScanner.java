@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -83,6 +84,7 @@ class FreeIdScanner implements Closeable
      * {@link #findSomeIdsToCache(PendingIdQueue, MutableInt, CursorContext)}  both to know where to initiate a scan from and to
      * set it, if the cache got full before scan completed, or set it to null of the scan ended. The actual {@link Seeker} itself is local to the scan method.
      */
+    private final AtomicLong numBufferedIds = new AtomicLong();
     private volatile Long ongoingScanRangeIndex;
 
     FreeIdScanner( int idsPerEntry, GBPTree<IdRangeKey,IdRange> tree, IdRangeLayout layout, IdCache cache, AtomicBoolean atLeastOneIdOnFreelist,
@@ -99,28 +101,29 @@ class FreeIdScanner implements Closeable
         this.monitor = monitor;
     }
 
-    boolean tryLoadFreeIdsIntoCache( boolean awaitOngoing, CursorContext cursorContext )
+    boolean tryLoadFreeIdsIntoCache( boolean maintenance, CursorContext cursorContext )
     {
-        return tryLoadFreeIdsIntoCache( awaitOngoing, false, cursorContext );
+        return tryLoadFreeIdsIntoCache( maintenance, false, cursorContext );
     }
 
     /**
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
      */
-    boolean tryLoadFreeIdsIntoCache( boolean awaitOngoing, boolean forceScan, CursorContext cursorContext )
+    boolean tryLoadFreeIdsIntoCache( boolean maintenance, boolean forceScan, CursorContext cursorContext )
     {
-        if ( !forceScan && !hasMoreFreeIds() )
+        if ( !forceScan && !hasMoreFreeIds( maintenance ) )
         {
             // If no scan is in progress and if we have no reason to expect finding any free id from a scan then don't do it.
             return false;
         }
 
-        if ( scanLock( awaitOngoing ) )
+        if ( scanLock( maintenance ) )
         {
             try
             {
                 markQueuedSkippedHighIdsAsFree( cursorContext );
+                markWastedIdsAsUnreserved( cursorContext );
 
                 if ( atLeastOneIdOnFreelist.get() )
                 {
@@ -146,10 +149,6 @@ class FreeIdScanner implements Closeable
                             return true;
                         }
                     }
-                }
-                else if ( !queuedWastedCachedIds.isEmpty() )
-                {
-                    markWastedIdsAsUnreserved( cursorContext );
                 }
             }
             catch ( IOException e )
@@ -187,12 +186,15 @@ class FreeIdScanner implements Closeable
             try ( InternalMarker marker = markerProvider.getMarker( cursorContext ) )
             {
                 Long idAndSize;
+                int numConsumedIds = 0;
                 while ( (idAndSize = queue.poll()) != null )
                 {
                     long id = idFromCombinedId( idAndSize );
                     int size = numberOfIdsFromCombinedId( idAndSize );
                     consumer.accept( marker, id, size );
+                    numConsumedIds++;
                 }
+                numBufferedIds.addAndGet( -numConsumedIds );
             }
         }
     }
@@ -207,9 +209,12 @@ class FreeIdScanner implements Closeable
         consumeQueuedIds( queuedWastedCachedIds, IndexedIdGenerator.InternalMarker::markUnreserved, cursorContext );
     }
 
-    boolean hasMoreFreeIds()
+    boolean hasMoreFreeIds( boolean maintenance )
     {
-        return ongoingScanRangeIndex != null || atLeastOneIdOnFreelist.get() || !queuedSkippedHighIds.isEmpty() || !queuedWastedCachedIds.isEmpty();
+        // For the case when this is a tx allocating IDs we don't want to force a scan for every little added ID,
+        // so add a little lee-way so that there has to be a at least a bunch of these "skipped" IDs to make it worth wile.
+        int numBufferedIdsThreshold = maintenance ? 1 : 1_000;
+        return ongoingScanRangeIndex != null || atLeastOneIdOnFreelist.get() || numBufferedIds.get() >= numBufferedIdsThreshold;
     }
 
     private boolean scanLock( boolean awaitOngoing )
@@ -246,11 +251,13 @@ class FreeIdScanner implements Closeable
     void queueSkippedHighId( long id, int numberOfIds )
     {
         queuedSkippedHighIds.offer( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
+        numBufferedIds.incrementAndGet();
     }
 
     void queueWastedCachedId( long id, int numberOfIds )
     {
         queuedWastedCachedIds.offer( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
+        numBufferedIds.incrementAndGet();
     }
 
     private void markIdsAsReserved( PendingIdQueue pendingIdQueue, CursorContext cursorContext )

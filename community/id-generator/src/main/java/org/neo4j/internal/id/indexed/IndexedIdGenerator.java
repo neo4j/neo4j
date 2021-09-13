@@ -409,7 +409,7 @@ public class IndexedIdGenerator implements IdGenerator
                 return id;
             }
         }
-        while ( scanner.hasMoreFreeIds() );
+        while ( scanner.hasMoreFreeIds( false ) );
 
         // There was no ID in the cache. This could be that either there are no free IDs in here (the typical case), or a benign
         // race where the cache ran out of IDs and it's very soon filled with more IDs from an ongoing scan. We have made the decision
