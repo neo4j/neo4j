@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -34,7 +35,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreResource;
 import org.neo4j.storageengine.api.StoreSnapshot;
 
-public final class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
+public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
 {
     private final Database database;
     private final FileSystemAbstraction fs;
@@ -59,8 +60,8 @@ public final class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
         var recoverableFiles = recoverableFiles( database );
 
         var checkPointer = database.getDependencyResolver().resolveDependency( CheckPointer.class );
-        var lastCommittedTransactionId = checkPointer.lastCheckPointedTransactionId();
         var checkpointMutex = tryCheckpointAndAcquireMutex( checkPointer );
+        var lastCommittedTransactionId = checkPointer.lastCheckPointedTransactionId();
         var snapshot = new StoreSnapshot( unrecoverableFiles, recoverableFiles, lastCommittedTransactionId, database.getStoreId(), checkpointMutex );
         return Optional.of( snapshot );
     }

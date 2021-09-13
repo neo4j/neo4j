@@ -26,9 +26,14 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.logging.internal.DatabaseLogProvider;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreResource;
 import org.neo4j.test.extension.Inject;
@@ -55,14 +60,24 @@ class DefaultStoreSnapshotFactoryTest
     @BeforeEach
     void setUp()
     {
-        var dataSource = mock( Database.class );
+        var database = mock( Database.class );
         fileListingBuilder = mock( StoreFileListing.Builder.class, CALLS_REAL_METHODS );
         databaseLayout = DatabaseLayout.ofFlat( testDirectory.directory( "neo4j", "data", "databases" ) );
-        when( dataSource.getDatabaseLayout() ).thenReturn( databaseLayout );
+        when( database.getDatabaseLayout() ).thenReturn( databaseLayout );
+        var availabilityGuard = mock( DatabaseAvailabilityGuard.class );
+        when( availabilityGuard.isAvailable() ).thenReturn( true );
         var storeFileListing = mock( StoreFileListing.class );
         when( storeFileListing.builder() ).thenReturn( fileListingBuilder );
-        when( dataSource.getStoreFileListing() ).thenReturn( storeFileListing );
-        defaultStoreSnapshotFactory = new DefaultStoreSnapshotFactory( dataSource, testDirectory.getFileSystem() );
+        when( database.getStoreFileListing() ).thenReturn( storeFileListing );
+        when( database.getInternalLogProvider() ).thenReturn( DatabaseLogProvider.nullDatabaseLogProvider() );
+        var checkPointer = mock( CheckPointer.class );
+        var dependencies = new Dependencies();
+        dependencies.satisfyDependency( checkPointer );
+        when( database.getDependencyResolver() ).thenReturn( dependencies );
+        when( database.getDatabaseAvailabilityGuard() ).thenReturn( availabilityGuard );
+        var storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
+        when( database.getStoreCopyCheckPointMutex() ).thenReturn( storeCopyCheckPointMutex );
+        defaultStoreSnapshotFactory = new DefaultStoreSnapshotFactory( database, testDirectory.getFileSystem() );
     }
 
     @Test
