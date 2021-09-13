@@ -57,9 +57,9 @@ import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
@@ -613,7 +613,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.cursorContext() );
             ktx.dataRead().allRelationshipsScan( cursor );
             return new CursorIterator<>( cursor, RelationshipScanCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference(),
-                    c.sourceNodeReference(), c.type(), c.targetNodeReference() ), coreApiResourceTracker );
+                    c.sourceNodeReference(), c.type(), c.targetNodeReference(), cursor ), coreApiResourceTracker );
         };
     }
 
@@ -788,7 +788,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     }
 
     @Override
-    public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipTraversalCursor cursor )
+    public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor )
     {
         return new RelationshipEntity( this, id, startNodeId, typeId, endNodeId, cursor );
     }

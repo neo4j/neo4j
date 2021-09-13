@@ -39,7 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -380,7 +380,7 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
-        public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipTraversalCursor cursor )
+        public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor )
         {
             return transaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId, cursor );
         }

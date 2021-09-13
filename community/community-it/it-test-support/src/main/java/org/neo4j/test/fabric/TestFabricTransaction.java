@@ -42,7 +42,7 @@ import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -448,7 +448,7 @@ public class TestFabricTransaction implements InternalTransaction
     }
 
     @Override
-    public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipTraversalCursor cursor )
+    public Relationship newRelationshipEntity( long id, long startNodeId, int typeId, long endNodeId, RelationshipDataAccessor cursor )
     {
         return kernelInternalTransaction.newRelationshipEntity( id, startNodeId, typeId, endNodeId, cursor );
     }
