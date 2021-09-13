@@ -22,6 +22,8 @@ package org.neo4j.kernel.recovery;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
@@ -38,6 +40,7 @@ import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -52,6 +55,7 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.recordstorage.RecordIdType;
@@ -101,6 +105,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -310,56 +315,109 @@ class RecoveryIT
         }
     }
 
-    @Test
-    void recoverDatabaseWithIndex() throws Throwable
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = {"BTREE", "RANGE"} )
+    void recoverDatabaseWithConstraint( IndexType indexType ) throws Exception
     {
         GraphDatabaseService database = createDatabase();
 
-        int numberOfRelationships = 10;
-        int numberOfNodes = numberOfRelationships * 2;
-        String startProperty = "start";
-        String stopProperty = "stop";
-        Label startMarker = Label.label( "start" );
-        Label stopMarker = Label.label( "stop" );
+        int numberOfNodes = 10;
+        String property = "prop";
+        Label label = Label.label( "myLabel" );
 
-        try ( Transaction transaction = database.beginTx() )
+        try ( Transaction tx = database.beginTx() )
         {
-            transaction.schema().indexFor( startMarker ).on( startProperty ).create();
-            transaction.schema().constraintFor( stopMarker ).assertPropertyIsUnique( stopProperty ).create();
-            transaction.commit();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).withIndexType( indexType ).create();
+            tx.commit();
         }
         awaitIndexesOnline( database );
 
-        for ( int i = 0; i < numberOfRelationships; i++ )
+        for ( int i = 0; i < numberOfNodes; i++ )
         {
-            try ( Transaction transaction = database.beginTx() )
+            try ( Transaction tx = database.beginTx() )
             {
-                Node start = transaction.createNode( startMarker );
-                Node stop = transaction.createNode( stopMarker );
+                Node node = tx.createNode( label );
 
-                start.setProperty( startProperty, i );
-                stop.setProperty( stopProperty, i );
-                start.createRelationshipTo( stop, withName( valueOf( i ) ) );
-                transaction.commit();
+                node.setProperty( property, i );
+                tx.commit();
             }
-        }
-        long numberOfPropertyKeys;
-        try ( Transaction transaction = database.beginTx() )
-        {
-            numberOfPropertyKeys = count( transaction.getAllPropertyKeys() );
         }
         managementService.shutdown();
         RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         recoverDatabase();
 
-        GraphDatabaseService recoveredDatabase = createDatabase();
-        try ( Transaction transaction = recoveredDatabase.beginTx() )
+        GraphDatabaseAPI recoveredDatabase = createDatabase();
+        try
         {
-            assertEquals( numberOfNodes, count( transaction.getAllNodes() ) );
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationships() ) );
-            assertEquals( numberOfRelationships, count( transaction.getAllRelationshipTypesInUse() ) );
-            assertEquals( numberOfPropertyKeys, count( transaction.getAllPropertyKeys() ) );
+            awaitIndexesOnline( recoveredDatabase );
+
+            // let's verify that the constraint has recovered with all values
+            // by trying to create duplicates of all nodes under the constraint
+            for ( int i = 0; i < numberOfNodes; i++ )
+            {
+                int finalInt = i;
+                assertThrows( ConstraintViolationException.class, () ->
+                {
+                    try ( Transaction tx = recoveredDatabase.beginTx() )
+                    {
+                        Node node = tx.createNode( label );
+
+                        node.setProperty( property, finalInt );
+                        tx.commit();
+                    }
+                } );
+            }
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void recoverDatabaseWithNodeIndexes() throws Throwable
+    {
+        GraphDatabaseService database = createDatabase();
+        int numberOfNodes = 10;
+        Label label = Label.label( "myLabel" );
+        String property = "prop";
+        String btreeIndex = "b-tree index";
+        String rangeIndex = "range index";
+        String fullTextIndex = "full text index";
+
+        try ( Transaction transaction = database.beginTx() )
+        {
+            transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.BTREE ).withName( btreeIndex ).create();
+            transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.RANGE ).withName( rangeIndex ).create();
+            transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( fullTextIndex ).create();
+            transaction.commit();
+        }
+        awaitIndexesOnline( database );
+
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            try ( Transaction tx = database.beginTx() )
+            {
+                Node node = tx.createNode( label );
+
+                node.setProperty( property, "value" + i );
+                tx.commit();
+            }
+        }
+        managementService.shutdown();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+
+        recoverDatabase();
+
+        GraphDatabaseAPI recoveredDatabase = createDatabase();
+        awaitIndexesOnline( recoveredDatabase );
+        try ( InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx() )
+        {
+            var propertyId = transaction.kernelTransaction().tokenRead().propertyKey( property );
+            verifyNodeIndexEntries( numberOfNodes, btreeIndex, transaction, exists( propertyId ) );
+            verifyNodeIndexEntries( numberOfNodes, rangeIndex, transaction, exists( propertyId ) );
+            verifyNodeIndexEntries( numberOfNodes, fullTextIndex, transaction, fulltextSearch( "*" ) );
         }
         finally
         {
@@ -374,12 +432,14 @@ class RecoveryIT
         int numberOfRelationships = 10;
         RelationshipType type = RelationshipType.withName( "TYPE" );
         String property = "prop";
-        String propertyIndex = "property index";
+        String btreeIndex = "b-tree index";
+        String rangeIndex = "range index";
         String fullTextIndex = "full text index";
 
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.BTREE ).withName( propertyIndex ).create();
+            transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.BTREE ).withName( btreeIndex ).create();
+            transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.RANGE ).withName( rangeIndex ).create();
             transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( fullTextIndex ).create();
             transaction.commit();
         }
@@ -406,8 +466,9 @@ class RecoveryIT
         try ( InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx() )
         {
             var propertyId = transaction.kernelTransaction().tokenRead().propertyKey( property );
-            verifyIndexEntries( numberOfRelationships, propertyIndex, transaction, exists( propertyId ));
-            verifyIndexEntries( numberOfRelationships, fullTextIndex, transaction, fulltextSearch( "*" ) );
+            verifyRelationshipIndexEntries( numberOfRelationships, btreeIndex, transaction, exists( propertyId ) );
+            verifyRelationshipIndexEntries( numberOfRelationships, rangeIndex, transaction, exists( propertyId ) );
+            verifyRelationshipIndexEntries( numberOfRelationships, fullTextIndex, transaction, fulltextSearch( "*" ) );
         }
         finally
         {
@@ -415,7 +476,7 @@ class RecoveryIT
         }
     }
 
-    private void verifyIndexEntries(
+    private void verifyRelationshipIndexEntries(
             int numberOfRelationships, String indexName, InternalTransaction transaction, PropertyIndexQuery query ) throws KernelException
     {
         KernelTransaction ktx = transaction.kernelTransaction();
@@ -431,6 +492,24 @@ class RecoveryIT
             }
         }
         assertEquals( numberOfRelationships, relationshipsInIndex );
+    }
+
+    private void verifyNodeIndexEntries(
+            int numberOfNodes, String indexName, InternalTransaction transaction, PropertyIndexQuery query ) throws KernelException
+    {
+        KernelTransaction ktx = transaction.kernelTransaction();
+        IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
+        IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
+        int nodesInIndex = 0;
+        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
+        {
+            ktx.dataRead().nodeIndexSeek( ktx.queryContext(), indexReadSession, cursor, unconstrained(), query );
+            while ( cursor.next() )
+            {
+                nodesInIndex++;
+            }
+        }
+        assertEquals( numberOfNodes, nodesInIndex );
     }
 
     @Test
@@ -1091,6 +1170,7 @@ class RecoveryIT
         if ( builder == null )
         {
             builder = new TestDatabaseManagementServiceBuilder( neo4jLayout )
+                    .setConfig( range_indexes_enabled, true )
                     .setConfig( preallocate_logical_logs, false )
                     .setConfig( logical_log_rotation_threshold, logThreshold );
             builder = additionalConfiguration( builder );
