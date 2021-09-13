@@ -29,8 +29,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Variant;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -45,6 +48,7 @@ import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
@@ -241,7 +245,9 @@ public class DiscoveryServiceTest
         DiscoveryService ds = new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ) ),
                 communityDiscoverableURIs( config, null ), mock( ServerVersionAndEdition.class ) );
 
-        Response response = ds.redirectToBrowser();
+        var request = mock( Request.class );
+        when( request.selectVariant( anyList() ) ).thenReturn( Variant.mediaTypes( MediaType.TEXT_HTML_TYPE ).build().get( 0 ) );
+        Response response = ds.get( request, uriInfo( this.baseUri ) );
 
         assertThat( response.getMetadata().getFirst( "Location" ) ).isEqualTo( new URI( "http://www.example.com:5435/browser/" ) );
     }
