@@ -42,6 +42,11 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHOW_SCHE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION
 import org.neo4j.graphdb.impl.notification.NotificationCode.LENGTH_ON_NON_PATH
 import org.neo4j.graphdb.impl.notification.NotificationDetail
+import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
+import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_MAX
+import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30
 import org.scalatest.BeforeAndAfterAll
 
 abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeAndAfterAll with DeprecationTestSupport {
@@ -129,6 +134,41 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("deprecated create uniqueness constraint syntax") {
     assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS UNIQUE",
       DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
+  }
+
+  test("deprecated create constraint backed by btree index syntax") {
+    // OPTIONS was introduced in 4.2
+    // FOR ... REQUIRE was introduced in 4.4 and can therefore not be used in this test (since it tests 4.3)
+    assertNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+         |ASSERT (n.prop) IS NODE KEY
+         |OPTIONS {IndexProvider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
+    assertNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+         |ASSERT (n.prop) IS UNIQUE
+         |OPTIONS {indexprovider: '${NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()}'}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
+    assertNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+         |ASSERT (n.prop) IS NODE KEY
+         |OPTIONS {IndexConfig: {`${SPATIAL_CARTESIAN_MAX.getSettingName}`: [40, 60]}}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
+    assertNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+         |ASSERT (n.prop) IS UNIQUE
+         |OPTIONS {indexconfig: {`${SPATIAL_WGS84_MIN.getSettingName}`: [-40, -60]}}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
+    assertNoNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+         |ASSERT (n.prop) IS UNIQUE
+         |OPTIONS {indexconfig: {`${FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName}`: false}}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
   }
 
   test("deprecated show index syntax") {

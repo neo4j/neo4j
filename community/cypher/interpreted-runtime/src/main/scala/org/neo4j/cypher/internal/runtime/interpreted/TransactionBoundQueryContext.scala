@@ -79,6 +79,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaReadCore
+import org.neo4j.internal.kernel.api.SchemaWrite
 import org.neo4j.internal.kernel.api.TokenPredicate
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenReadSession
@@ -1047,9 +1048,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                        provider: Option[String],
                                        indexConfig: IndexConfig): Unit = {
     val schemaWrite = transactionalContext.kernelTransaction.schemaWrite()
-    val indexPrototype = if (provider.isEmpty) IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*))
-                         else IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), schemaWrite.indexProviderByName(provider.get))
-    schemaWrite.nodeKeyConstraintCreate(indexPrototype.withName(name.orNull).withIndexConfig(indexConfig))
+    val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider, indexConfig, schemaWrite)
+    schemaWrite.nodeKeyConstraintCreate(indexPrototype)
   }
 
   override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
@@ -1062,9 +1062,23 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                       provider: Option[String],
                                       indexConfig: IndexConfig): Unit = {
     val schemaWrite = transactionalContext.kernelTransaction.schemaWrite()
-    val indexPrototype = if (provider.isEmpty) IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*))
-                         else IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), schemaWrite.indexProviderByName(provider.get))
-    schemaWrite.uniquePropertyConstraintCreate(indexPrototype.withName(name.orNull).withIndexConfig(indexConfig))
+    val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider, indexConfig, schemaWrite)
+    schemaWrite.uniquePropertyConstraintCreate(indexPrototype)
+  }
+
+  private def getUniqueIndexPrototype(labelId: Int,
+                                      propertyKeyIds: Seq[Int],
+                                      name: Option[String],
+                                      provider: Option[String],
+                                      indexConfig: IndexConfig,
+                                      schemaWrite: SchemaWrite) = {
+    val descriptor = SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*)
+    val providerAndType = provider.map(p => (schemaWrite.indexProviderByName(p), schemaWrite.indexTypeByProviderName(p)))
+
+    val indexPrototype = providerAndType.map { case (provider, indexType) => IndexPrototype.uniqueForSchema(descriptor, provider).withIndexType(indexType) }
+      .getOrElse(IndexPrototype.uniqueForSchema(descriptor))
+
+    indexPrototype.withName(name.orNull).withIndexConfig(indexConfig)
   }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =

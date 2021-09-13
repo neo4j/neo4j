@@ -94,9 +94,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
     case CreateNodeKeyConstraint(source, _, label, props, name, options) => context =>
       SchemaExecutionPlan("CreateNodeKeyConstraint", (ctx, params) => {
-        val (indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("node key constraint").convert(options, params) match {
+        val (indexProvider, indexConfig) = IndexBackedConstraintsOptionsConverter("node key constraint").convert(options, params) match {
           case None => (None, IndexConfig.empty())
-          case Some(CreateBtreeIndexOptions(provider, config)) => (provider, config)
+          case Some(CreateIndexWithStringProviderOptions(provider, config)) => (provider, config)
         }
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
@@ -117,9 +117,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
     case CreateUniquePropertyConstraint(source, _, label, props, name, options) => context =>
       SchemaExecutionPlan("CreateUniqueConstraint", (ctx, params) => {
-        val (indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("uniqueness constraint").convert(options, params) match {
+        val (indexProvider, indexConfig) = IndexBackedConstraintsOptionsConverter("uniqueness constraint").convert(options, params) match {
           case None => (None, IndexConfig.empty())
-          case Some(CreateBtreeIndexOptions(provider, config)) => (provider, config)
+          case Some(CreateIndexWithStringProviderOptions(provider, config)) => (provider, config)
         }
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
@@ -188,7 +188,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
         val (indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter(schemaType).convert(options, params) match {
           case None => (None, IndexConfig.empty())
-          case Some(CreateBtreeIndexOptions(provider, config)) => (provider, config)
+          case Some(CreateIndexWithStringProviderOptions(provider, config)) => (provider, config)
         }
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
         ctx.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, indexProvider, indexConfig)
@@ -225,7 +225,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       SchemaExecutionPlan("CreateIndex", (ctx, params) => {
         val (indexProvider, indexConfig) = CreateFulltextIndexOptionsConverter.convert(options, params) match {
           case None => (None, IndexConfig.empty())
-          case Some(CreateFulltextIndexOptions(provider, config)) => (provider, config)
+          case Some(CreateIndexWithProviderDescriptorOptions(provider, config)) => (provider, config)
         }
         val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)

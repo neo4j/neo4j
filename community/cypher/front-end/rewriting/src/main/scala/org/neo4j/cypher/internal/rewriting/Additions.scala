@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
@@ -46,6 +48,7 @@ import org.neo4j.cypher.internal.ast.UniquePropertyConstraintCommand
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 
 object Additions {
@@ -145,7 +148,6 @@ object Additions {
       case c@CreateRelationshipPropertyExistenceConstraint(_, _, _, _, _, options, _, _, _) if options != NoOptions =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint with options is not supported in this Cypher version.", c.position)
 
-
       // DROP CONSTRAINT name
       case d: DropConstraintOnName =>
         throw cypherExceptionFactory.syntaxException("Dropping constraint by name is not supported in this Cypher version.", d.position)
@@ -202,6 +204,12 @@ object Additions {
       case s: ShowIndexesClause if s.indexType == TextIndexes =>
         throw cypherExceptionFactory.syntaxException("Filtering on text indexes in SHOW INDEXES is not supported in this Cypher version.", s.position)
 
+      // CREATE CONSTRAINT ... OPTIONS {indexProvider:  'range-1.0'}
+      case c: CreateNodeKeyConstraint if hasRangeOptions(c.options) =>
+        throw cypherExceptionFactory.syntaxException("Creating node key constraint backed by range index is not supported in this Cypher version.", c.position)
+      case c: CreateUniquePropertyConstraint if hasRangeOptions(c.options) =>
+        throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint backed by range index is not supported in this Cypher version.", c.position)
+
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS NOT NULL
       case c: CreateNodePropertyExistenceConstraint if c.constraintVersion == ConstraintVersion2 =>
         throw cypherExceptionFactory.syntaxException("Creating node existence constraint using `FOR ... REQUIRE` is not supported in this Cypher version.", c.position)
@@ -218,6 +226,17 @@ object Additions {
       case c: CreateUniquePropertyConstraint if c.constraintVersion == ConstraintVersion2 =>
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint using `FOR ... REQUIRE` is not supported in this Cypher version.", c.position)
 
+    }
+
+    private def hasRangeOptions(options: Options): Boolean = options match {
+      case OptionsMap(opt) => opt.exists {
+        case (key, value: StringLiteral) if key.equalsIgnoreCase("indexProvider") =>
+          // Can't reach the org.neo4j.kernel.impl.index.schema.RangeIndexProvider
+          // so have to hardcode the range provider instead
+          value.value.equalsIgnoreCase("range-1.0")
+        case _ => false
+      }
+      case _ => false
     }
   }
 

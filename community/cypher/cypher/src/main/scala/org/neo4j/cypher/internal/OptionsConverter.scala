@@ -221,6 +221,37 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
         throw new InvalidArgumentsException(s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map.")
     }
   }
+
+  protected def assertValidAndTransformBtreeConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] = {
+    // for indexProvider BTREE:
+    //    current keys: spatial.* (cartesian.|cartesian-3d.|wgs-84.|wgs-84-3d.) + (min|max)
+    //    current values: Double[]
+
+    def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
+      val pp = new PrettyPrinter()
+      suppliedValue.writeTo(pp)
+      new InvalidArgumentsException(s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map from String to Double[].")
+    }
+
+    config match {
+      case itemsMap: MapValue =>
+        checkForFulltextConfigValues(new PrettyPrinter(), itemsMap, schemaType)
+
+        val hm = new java.util.HashMap[String, Array[Double]]()
+        itemsMap.foreach {
+          case (p: String, e: ListValue) =>
+            val configValue: Array[Double] = e.iterator().asScala.map {
+              case d: DoubleValue => d.doubleValue()
+              case _ => throw exceptionWrongType(itemsMap)
+            }.toArray
+            hm.put(p, configValue)
+          case _ => throw exceptionWrongType(itemsMap)
+        }
+        hm.asInstanceOf[java.util.Map[String, Object]]
+      case unknown =>
+        throw exceptionWrongType(unknown)
+    }
+  }
 }
 
 case class PropertyExistenceConstraintOptionsConverter(entity: String) extends IndexOptionsConverter[CreateWithNoOptions] {
@@ -238,12 +269,53 @@ case class PropertyExistenceConstraintOptionsConverter(entity: String) extends I
   override def operation: String = s"create $entity property existence constraint"
 }
 
-case class CreateBtreeIndexOptionsConverter(schemaType: String) extends IndexOptionsConverter[CreateBtreeIndexOptions] {
+case class IndexBackedConstraintsOptionsConverter(schemaType: String) extends IndexOptionsConverter[CreateIndexWithStringProviderOptions] {
 
-  override def convert(options: MapValue): CreateBtreeIndexOptions = {
+  override def convert(options: MapValue): CreateIndexWithStringProviderOptions = {
     val (maybeIndexProvider, indexConfig) = getOptionsParts(options, schemaType)
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
-    CreateBtreeIndexOptions(indexProvider, indexConfig)
+    assertOnlyOneIndexTypeOptions(indexProvider, indexConfig)
+    CreateIndexWithStringProviderOptions(indexProvider, indexConfig)
+  }
+
+  private def assertValidIndexProvider(indexProvider: AnyValue): String = indexProvider match {
+    case indexProviderValue: TextValue =>
+      val indexProviderString = indexProviderValue.stringValue()
+      checkForFulltextProvider(indexProviderString, schemaType)
+      checkForTokenLookupProvider(indexProviderString, schemaType)
+      checkForTextProvider(indexProviderString, schemaType)
+
+      if (!indexProviderString.equalsIgnoreCase(GenericNativeIndexProvider.DESCRIPTOR.name()) &&
+        !indexProviderString.equalsIgnoreCase(NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()) &&
+        !indexProviderString.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name()))
+        throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderString'.")
+
+      indexProviderString
+
+    case _ =>
+      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value.")
+  }
+
+  private def assertOnlyOneIndexTypeOptions(indexProvider: Option[String], indexConfig: IndexConfig): Unit = indexProvider match {
+    // indexProvider RANGE has no available config settings (called after assertValidAndTransformConfig)
+    case Some(provider) if provider.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name()) && !indexConfig.asMap().isEmpty =>
+      throw new InvalidArgumentsException(s"Could not create $schemaType with specified options: range indexes have no available configuration settings.")
+    case _ =>
+  }
+
+  // indexProvider RANGE has no available config settings, check conforms to BTREE config
+  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] =
+    assertValidAndTransformBtreeConfig(config, schemaType)
+
+  override def operation: String = s"create $schemaType"
+}
+
+case class CreateBtreeIndexOptionsConverter(schemaType: String) extends IndexOptionsConverter[CreateIndexWithStringProviderOptions] {
+
+  override def convert(options: MapValue): CreateIndexWithStringProviderOptions = {
+    val (maybeIndexProvider, indexConfig) = getOptionsParts(options, schemaType)
+    val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
+    CreateIndexWithStringProviderOptions(indexProvider, indexConfig)
   }
 
   private def assertValidIndexProvider(indexProvider: AnyValue): String = indexProvider match {
@@ -264,46 +336,18 @@ case class CreateBtreeIndexOptionsConverter(schemaType: String) extends IndexOpt
       throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value.")
   }
 
-  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] = {
-
-    def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
-      val pp = new PrettyPrinter()
-      suppliedValue.writeTo(pp)
-      new InvalidArgumentsException(s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map from String to Double[].")
-    }
-
-    // for indexProvider BTREE:
-    //    current keys: spatial.* (cartesian.|cartesian-3d.|wgs-84.|wgs-84-3d.) + (min|max)
-    //    current values: Double[]
-    config match {
-      case itemsMap: MapValue =>
-        checkForFulltextConfigValues(new PrettyPrinter(), itemsMap, schemaType)
-
-        val hm = new java.util.HashMap[String, Array[Double]]()
-        itemsMap.foreach {
-          case (p: String, e: ListValue) =>
-            val configValue: Array[Double] = e.iterator().asScala.map {
-              case d: DoubleValue => d.doubleValue()
-              case _ => throw exceptionWrongType(itemsMap)
-            }.toArray
-            hm.put(p, configValue)
-          case _ => throw exceptionWrongType(itemsMap)
-        }
-        hm.asInstanceOf[java.util.Map[String, Object]]
-      case unknown =>
-        throw exceptionWrongType(unknown)
-    }
-  }
+  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] =
+    assertValidAndTransformBtreeConfig(config, schemaType)
 
   override def operation: String = s"create $schemaType"
 }
 
-case class CreateRangeIndexOptionsConverter(schemaType: String) extends IndexOptionsConverter[CreateProviderOnlyIndexOptions] {
+case class CreateRangeIndexOptionsConverter(schemaType: String) extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
 
-  override def convert(options: MapValue): CreateProviderOnlyIndexOptions = {
+  override def convert(options: MapValue): CreateIndexProviderOnlyOptions = {
     val (maybeIndexProvider, _) = getOptionsParts(options, schemaType)
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
-    CreateProviderOnlyIndexOptions(indexProvider)
+    CreateIndexProviderOnlyOptions(indexProvider)
   }
 
   private def assertValidIndexProvider(indexProvider: AnyValue): IndexProviderDescriptor  = indexProvider match {
@@ -330,12 +374,12 @@ case class CreateRangeIndexOptionsConverter(schemaType: String) extends IndexOpt
   override def operation: String = s"create $schemaType"
 }
 
-case object CreateLookupIndexOptionsConverter extends IndexOptionsConverter[CreateProviderOnlyIndexOptions] {
+case object CreateLookupIndexOptionsConverter extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
 
-  override def convert(options: MapValue): CreateProviderOnlyIndexOptions =  {
+  override def convert(options: MapValue): CreateIndexProviderOnlyOptions =  {
     val (maybeIndexProvider, _) = getOptionsParts(options, "token lookup index")
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
-    CreateProviderOnlyIndexOptions(indexProvider)
+    CreateIndexProviderOnlyOptions(indexProvider)
   }
 
   private def assertValidIndexProvider(indexProvider: AnyValue): IndexProviderDescriptor = indexProvider match {
@@ -362,12 +406,12 @@ case object CreateLookupIndexOptionsConverter extends IndexOptionsConverter[Crea
   override def operation: String = "create token lookup index"
 }
 
-case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[CreateFulltextIndexOptions] {
+case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[CreateIndexWithProviderDescriptorOptions] {
 
-  override def convert(options: MapValue): CreateFulltextIndexOptions =  {
+  override def convert(options: MapValue): CreateIndexWithProviderDescriptorOptions =  {
     val (maybeIndexProvider, indexConfig) = getOptionsParts(options, "fulltext index")
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
-    CreateFulltextIndexOptions(indexProvider, indexConfig)
+    CreateIndexWithProviderDescriptorOptions(indexProvider, indexConfig)
   }
 
   private def assertValidIndexProvider(indexProvider: AnyValue): IndexProviderDescriptor = indexProvider match {
@@ -419,12 +463,12 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
   override def operation: String = "create fulltext index"
 }
 
-case object CreateTextIndexOptionsConverter extends IndexOptionsConverter[CreateProviderOnlyIndexOptions] {
+case object CreateTextIndexOptionsConverter extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
 
-  override def convert(options: MapValue): CreateProviderOnlyIndexOptions =  {
+  override def convert(options: MapValue): CreateIndexProviderOnlyOptions =  {
     val (maybeIndexProvider, _) = getOptionsParts(options, "text index")
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
-    CreateProviderOnlyIndexOptions(indexProvider)
+    CreateIndexProviderOnlyOptions(indexProvider)
   }
 
   private def assertValidIndexProvider(indexProvider: AnyValue): IndexProviderDescriptor = indexProvider match {
@@ -452,9 +496,9 @@ case object CreateTextIndexOptionsConverter extends IndexOptionsConverter[Create
 }
 
 case class CreateWithNoOptions()
-case class CreateBtreeIndexOptions(provider: Option[String], config: IndexConfig)
-case class CreateProviderOnlyIndexOptions(provider: Option[IndexProviderDescriptor])
-case class CreateFulltextIndexOptions(provider: Option[IndexProviderDescriptor], config: IndexConfig)
+case class CreateIndexProviderOnlyOptions(provider: Option[IndexProviderDescriptor])
+case class CreateIndexWithStringProviderOptions(provider: Option[String], config: IndexConfig)
+case class CreateIndexWithProviderDescriptorOptions(provider: Option[IndexProviderDescriptor], config: IndexConfig)
 case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String])
 
 object MapValueOps {

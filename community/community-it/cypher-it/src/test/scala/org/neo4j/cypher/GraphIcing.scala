@@ -133,6 +133,14 @@ trait GraphIcing {
       })
     }
 
+    def createConstraintWithProvider(label: String, property: String, constraintPredicate: String, provider: String, name: Option[String] = None): Result = {
+      // Create a constraint with given provider, only node key and uniqueness constraints allow providers hence no support for relationship patterns
+      val nameString = name.map(n => s"`$n`").getOrElse("")
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT $nameString FOR (n:$label) REQUIRE (n.$property) $constraintPredicate OPTIONS {indexProvider: '$provider'}")
+      })
+    }
+
     def createNodeIndex(label: String, properties: String*): IndexDefinition = {
       createNodeIndex(None, label, properties)
     }
