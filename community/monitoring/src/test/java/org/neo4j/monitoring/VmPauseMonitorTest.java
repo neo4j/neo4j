@@ -40,7 +40,7 @@ import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 class VmPauseMonitorTest
 {
     private final VmPauseMonitor.Monitor monitor = Mockito.mock( VmPauseMonitor.Monitor.class );
-    private final JobHandle jobHandle = Mockito.mock( JobHandle.class );
+    private final JobHandle<?> jobHandle = Mockito.mock( JobHandle.class );
     private final JobScheduler jobScheduler = Mockito.mock( JobScheduler.class );
     private final VmPauseMonitor vmPauseMonitor = Mockito.spy( new VmPauseMonitor( ofMillis( 1 ), ofMillis( 0 ), monitor, jobScheduler ) );
 

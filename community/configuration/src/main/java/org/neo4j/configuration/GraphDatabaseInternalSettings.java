@@ -424,12 +424,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "VM pause monitor measurement duration" )
     public static final Setting<Duration> vm_pause_monitor_measurement_duration =
-            newBuilder( "unsupported.vm_pause_monitor.measurement_duration", DURATION, ofMillis( 100 ) ).build();
+            newBuilder( "unsupported.vm_pause_monitor.measurement_duration", DURATION, ofMillis( 200 ) ).build();
 
     @Internal
     @Description( "Alert threshold for total pause time during one VM pause monitor measurement" )
     public static final Setting<Duration> vm_pause_monitor_stall_alert_threshold =
-            newBuilder( "unsupported.vm_pause_monitor.stall_alert_threshold", DURATION, ofMillis( 100 ) ).build();
+            newBuilder( "unsupported.vm_pause_monitor.stall_alert_threshold", DURATION, ofMillis( 200 ) ).build();
 
     @Internal
     @Description( "Create a heap dump just before the end of each query execution. " +

@@ -43,7 +43,7 @@ public class VmPauseMonitor
     private final Monitor monitor;
     private final JobScheduler jobScheduler;
     private volatile boolean stopped;
-    private JobHandle job;
+    private JobHandle<?> job;
 
     public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Monitor monitor, JobScheduler jobScheduler )
     {
