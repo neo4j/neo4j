@@ -754,6 +754,20 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> point_indexes_enabled = newBuilder( "unsupported.dbms.point_indexes_enabled", BOOL, false ).build();
 
     @Internal
+    @Description( "Feature flag to enable/disable planning use of text indexes." )
+    public static final Setting<Boolean> planning_text_indexes_enabled = newBuilder( "unsupported.cypher.planning_text_indexes_enabled", BOOL, false ).build();
+
+    @Internal
+    @Description( "Feature flag to enable/disable planning use of range indexes." )
+    public static final Setting<Boolean> planning_range_indexes_enabled =
+            newBuilder( "unsupported.cypher.planning_range_indexes_enabled", BOOL, false ).build();
+
+    @Internal
+    @Description( "Feature flag to enable/disable planning use of point indexes." )
+    public static final Setting<Boolean> planning_point_indexes_enabled =
+            newBuilder( "unsupported.cypher.planning_point_indexes_enabled", BOOL, false ).build();
+
+    @Internal
     @Description( "Limits the maximum amount of off-heap memory the consistency checker will allocate. The value is given as a factor between 0.1 .. 1 " +
             "and will be multiplied with actual available memory to get the effectively available amount of memory taken into consideration" )
     public static final Setting<Double> consistency_check_memory_limit_factor =
