@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.schema.IndexType
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -835,6 +836,21 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .|.expandAll("(a)-[r]->(b)")
       .|.nodeIndexOperator("a:Label(prop)")
       .argument()
+      .build()
+  }
+
+  test("should not plan text index usage with IS NOT NULL predicate") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 50)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .build()
+
+    val plan = planner.plan("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN a, a.prop").stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .filter("cacheNFromStore[a.prop] IS NOT NULL")
+      .nodeByLabelScan("a", "A")
       .build()
   }
 }

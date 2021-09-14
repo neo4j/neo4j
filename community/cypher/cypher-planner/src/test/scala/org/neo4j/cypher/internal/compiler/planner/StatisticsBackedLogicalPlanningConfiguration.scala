@@ -70,9 +70,11 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexType.BTREE
 import org.neo4j.internal.schema.IndexType.LOOKUP
+import org.neo4j.internal.schema.IndexType.TEXT
 
 trait StatisticsBackedLogicalPlanningSupport {
 
@@ -145,6 +147,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   }
 
   case class IndexDefinition(entityType: IndexDefinition.EntityType,
+                             indexType: schema.IndexType,
                              propertyKeys: Seq[String],
                              uniqueValueSelectivity: Double,
                              propExistsSelectivity: Double,
@@ -251,9 +254,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                    uniqueSelectivity: Double,
                    isUnique: Boolean = false,
                    withValues: Boolean = false,
-                   providesOrder: IndexOrderCapability = IndexOrderCapability.NONE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+                   providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
+                   indexType: schema.IndexType = BTREE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(IndexDefinition.EntityType.Node(label),
+      indexType = indexType,
       propertyKeys = properties,
       propExistsSelectivity = existsSelectivity,
       uniqueValueSelectivity = uniqueSelectivity,
@@ -270,9 +275,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                            uniqueSelectivity: Double,
                            isUnique: Boolean = false,
                            withValues: Boolean = false,
-                           providesOrder: IndexOrderCapability = IndexOrderCapability.NONE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+                           providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
+                           indexType: schema.IndexType = BTREE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(IndexDefinition.EntityType.Relationship(relType),
+      indexType = indexType,
       propertyKeys = properties,
       propExistsSelectivity = existsSelectivity,
       uniqueValueSelectivity = uniqueSelectivity,
@@ -510,23 +517,30 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
-        indexesGetForEntityType(entityType)
+        indexesGetForEntityType(entityType, BTREE)
       }
 
       override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
-        indexesGetForEntityType(entityType)
+        indexesGetForEntityType(entityType, BTREE)
       }
 
-      override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
-        Iterator.empty
+      override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
+        indexesGetForEntityType(entityType, TEXT)
+      }
 
-      override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
-        Iterator.empty
+      override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
+        indexesGetForEntityType(entityType, TEXT)
+      }
 
-      private def indexesGetForEntityType(entityType: IndexDefinition.EntityType): Iterator[IndexDescriptor] = {
+      private def indexesGetForEntityType(entityType: IndexDefinition.EntityType, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
         indexes.propertyIndexes.collect {
-          case indexDef if entityType == indexDef.entityType =>
+          case indexDef
+            if entityType == indexDef.entityType
+              && indexType == indexDef.indexType
+          =>
             newIndexDescriptor(indexDef)
         }
       }.iterator
