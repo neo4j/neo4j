@@ -66,8 +66,19 @@ object LogicalPlanToPlanBuilderString {
   def apply(logicalPlan: LogicalPlan): String = render(logicalPlan, None, None)
 
   def apply(logicalPlan: LogicalPlan,
+            extra: LogicalPlan => String): String = render(logicalPlan, Some(extra), None)
+
+  def apply(logicalPlan: LogicalPlan,
             extra: LogicalPlan => String,
             planPrefixDot: LogicalPlan => String): String = render(logicalPlan, Some(extra), Some(planPrefixDot))
+
+  /**
+   * To be used as parameter `extra` on {LogicalPlanToPlanBuilderString#apply} to print the ids of the plan operators.
+   *
+   * E.g. `LogicalPlanToPlanBuilderString(logicalPlan, formatId)`
+   */
+  def formatId(plan: LogicalPlan): String =
+    s" // id ${plan.id.x}"
 
   def expressionStringifierExtension(expression: Expression): String = {
     expression match {
@@ -94,7 +105,6 @@ object LogicalPlanToPlanBuilderString {
       sb += '('
       sb ++= par(plan)
       sb += ')'
-      sb ++= meta(plan)
       extra.foreach(e => sb ++= e.apply(plan))
 
       plan.lhs.foreach(lhs => childrenStack ::= LevelPlanItem(level, lhs))
@@ -109,13 +119,6 @@ object LogicalPlanToPlanBuilderString {
     }
 
     sb.toString()
-  }
-
-  /**
-   * Formats meta information about the plan as a comment to be placed after the method.
-   */
-  def meta(plan: LogicalPlan): String = {
-    s" // id: ${plan.id.x}"
   }
 
   /**
