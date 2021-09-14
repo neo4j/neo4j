@@ -36,8 +36,14 @@ case class DirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ
     else {
       PrimitiveLongHelper.map(query.getRelationshipsByType(state.relTypeTokenReadSession.get, typeId, indexOrder), relationshipId => {
         val relationship = state.query.relationshipById(relationshipId)
-        rowFactory.copyWith(ctx, ident, relationship, fromNode, relationship.startNode(), toNode, relationship.endNode())
-      })
+        val startNode = relationship.startNode()
+        val endNode = relationship.endNode()
+        if (startNode.id() != -1 && endNode.id() != -1L) {
+          rowFactory.copyWith(ctx, ident, relationship, fromNode, startNode, toNode, endNode)
+        } else {
+          null
+        }
+      }).filter( row => row != null)
     }
   }
 }
