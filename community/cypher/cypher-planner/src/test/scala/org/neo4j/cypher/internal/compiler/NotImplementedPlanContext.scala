@@ -28,21 +28,21 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
 class NotImplementedPlanContext extends PlanContext {
-  override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
+  override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
 
-  override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = ???
+  override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = ???
 
-  override def indexExistsForLabel(labelId: Int): Boolean = ???
+  override def btreeIndexExistsForLabel(labelId: Int): Boolean = ???
 
-  override def indexExistsForRelType(relTypeId: Int): Boolean = ???
+  override def btreeIndexExistsForRelType(relTypeId: Int): Boolean = ???
 
-  override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+  override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
 
-  override def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+  override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
 
-  override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = ???
+  override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = ???
 
-  override def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = ???
+  override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = ???
 
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
 

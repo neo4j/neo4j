@@ -223,7 +223,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.graphStatistics,
         new MutableGraphStatisticsSnapshot())
 
-      override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+      override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         config.labelsById.get(labelId).toIterator.flatMap(label =>
           config.indexes.collect {
             case (indexDef@IndexDef(IndexDefinition.EntityType.Node(labelOrRelType), _), _) if labelOrRelType == label =>
@@ -231,7 +231,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           })
       }
 
-      override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+      override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         config.relTypesById.get(relTypeId).toIterator.flatMap(relType =>
           config.indexes.collect {
             case (indexDef@IndexDef(IndexDefinition.EntityType.Relationship(labelOrRelType), _), _) if labelOrRelType == relType =>
@@ -287,7 +287,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.procedureSignatures.find(_.name == name).get
       }
 
-      override def indexExistsForLabel(labelId: Int): Boolean = {
+      override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
         val labelName = config.labelsById(labelId)
         config.indexes.keys.exists {
           case IndexDef(IndexDefinition.EntityType.Node(`labelName`), _) => true
@@ -295,7 +295,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         }
       }
 
-      override def indexExistsForRelType(relTypeId: Int): Boolean = {
+      override def btreeIndexExistsForRelType(relTypeId: Int): Boolean = {
         val relationshipTypeName = config.relTypesById(relTypeId)
         config.indexes.keys.exists {
           case IndexDef(IndexDefinition.EntityType.Relationship(`relationshipTypeName`), _) => true
@@ -303,20 +303,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         }
       }
 
-      override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
+      override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
         config.indexes.contains(IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKey))
 
 
-      override def indexExistsForRelTypeAndProperties(relTypeName: String,
-                                                      propertyKey: Seq[String]): Boolean =
+      override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String,
+                                                           propertyKey: Seq[String]): Boolean =
         config.indexes.contains(IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKey))
 
-      override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val indexDef = IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKeys)
         config.indexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
       }
 
-      override def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val indexDef = IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKeys)
         config.indexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
       }

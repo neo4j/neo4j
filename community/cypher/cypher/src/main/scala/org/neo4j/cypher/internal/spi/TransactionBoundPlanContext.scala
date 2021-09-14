@@ -117,11 +117,11 @@ object TransactionBoundPlanContext {
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: InstrumentedGraphStatistics)
   extends TransactionBoundTokenContext(tc.kernelTransaction) with PlanContext with IndexDescriptorCompatibility {
 
-  override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+  override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala.flatMap(getOnlineIndex)
   }
 
-  override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+  override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
     tc.schemaRead.getRelTypeIndexesNonLocking(relTypeId).asScala.flatMap(getOnlineIndex)
   }
 
@@ -131,20 +131,20 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       .flatMap(getOnlineIndex)
   }
 
-  override def indexExistsForLabel(labelId: Int): Boolean = {
-    indexesGetForLabel(labelId).nonEmpty
+  override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
+    btreeIndexesGetForLabel(labelId).nonEmpty
   }
 
-  override def indexExistsForRelType(relTypeId: Int): Boolean = {
-    indexesGetForRelType(relTypeId).nonEmpty
+  override def btreeIndexExistsForRelType(relTypeId: Int): Boolean = {
+    btreeIndexesGetForRelType(relTypeId).nonEmpty
   }
 
-  override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
     descriptor.flatMap(indexGetForSchemaDescriptor)
   }
 
-  override def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+  override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     val descriptor = toRelTypeSchemaDescriptor(this, relTypeName, propertyKeys)
     descriptor.flatMap(indexGetForSchemaDescriptor)
   }
@@ -154,12 +154,12 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     if (itr.hasNext) Some(itr.next) else None
   }
 
-  override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
-    indexGetForLabelAndProperties(labelName, propertyKey).isDefined
+  override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
+    btreeIndexGetForLabelAndProperties(labelName, propertyKey).isDefined
   }
 
-  override def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
-    indexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
+  override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
+    btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
   }
 
   private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] = {

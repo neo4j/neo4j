@@ -38,12 +38,12 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   /**
    * Return all indexes (general and unique) for a given label, without taking any schema locks.
    */
-  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
+  def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
 
   /**
    * Return all indexes for a given relationship type, without taking any schema locks.
    */
-  def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
+  def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
 
   /**
    * Return all unique indexes for a given label, without taking any schema locks.
@@ -53,32 +53,32 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   /**
    * Checks if an index exists (general or unique) for a given label, without taking any schema locks.
    */
-  def indexExistsForLabel(labelId: Int): Boolean
+  def btreeIndexExistsForLabel(labelId: Int): Boolean
 
   /**
    * Checks if an index exists for a given relationship type, without taking any schema locks.
    */
-  def indexExistsForRelType(relTypeId: Int): Boolean
+  def btreeIndexExistsForRelType(relTypeId: Int): Boolean
 
   /**
    * Gets an index if it exists (general or unique) for a given label and properties, without taking any schema locks.
    */
-  def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
+  def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
    * Gets an index if it exists for a given relationship type and properties, without taking any schema locks.
    */
-  def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
+  def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
    * Checks if an index exists (general or unique) for a given label and properties, without taking any schema locks.
    */
-  def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean
+  def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean
 
   /**
    * Checks if an index exists for a given relationship type and properties, without taking any schema locks.
    */
-  def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean
+  def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean
 
   /**
    * Checks if it is possible to lookup nodes by their labels (either through the scan store or a lookup index). Does not take any schema locks.

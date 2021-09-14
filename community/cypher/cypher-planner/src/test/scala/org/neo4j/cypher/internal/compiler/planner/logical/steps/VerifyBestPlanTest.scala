@@ -73,7 +73,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   private def getPlanContext(hasIndex: Boolean): PlanContext = {
     val planContext = newMockedPlanContext()
-    when(planContext.indexExistsForLabelAndProperties(anyString(), any())).thenReturn(hasIndex)
+    when(planContext.btreeIndexExistsForLabelAndProperties(anyString(), any())).thenReturn(hasIndex)
     planContext
   }
 

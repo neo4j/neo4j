@@ -129,7 +129,7 @@ object VerifyBestPlan {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
       case UsingIndexHint(_, LabelOrRelTypeName(label), properties, _)
-        if planContext.indexExistsForLabelAndProperties(label, properties.map(_.name)) => None
+        if planContext.btreeIndexExistsForLabelAndProperties(label, properties.map(_.name)) => None
       // no such index exists
       case hint: UsingIndexHint =>
         // Let's assume node type by default, in case we have no type information.

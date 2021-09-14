@@ -42,6 +42,6 @@ object DynamicPropertyNotifier {
 
   private def withIndex(labelName: LabelName, context: LogicalPlanningContext) = {
     val maybeLabelId = context.semanticTable.id(labelName)
-    maybeLabelId.fold(false)(context.planContext.indexExistsForLabel(_))
+    maybeLabelId.fold(false)(context.planContext.btreeIndexExistsForLabel(_))
   }
 }

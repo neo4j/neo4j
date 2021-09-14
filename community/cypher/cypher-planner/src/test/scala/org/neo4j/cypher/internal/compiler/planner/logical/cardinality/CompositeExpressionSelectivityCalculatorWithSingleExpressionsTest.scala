@@ -58,9 +58,9 @@ class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends 
     }
     override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
 
-    override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = indexMap.get(labelId).iterator
+    override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = indexMap.get(labelId).iterator
 
-    override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = indexMap.get(relTypeId).iterator
+    override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = indexMap.get(relTypeId).iterator
 
     override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
 

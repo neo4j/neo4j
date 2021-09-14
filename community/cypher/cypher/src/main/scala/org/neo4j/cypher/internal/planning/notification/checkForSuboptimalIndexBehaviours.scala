@@ -53,6 +53,6 @@ case class checkForSuboptimalIndexBehaviours(planContext: PlanContext) extends N
   }
 
   private def getBehaviours(label: LabelToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
-    planContext.indexGetForLabelAndProperties(label.name, Seq(property.name)).fold(Set.empty[IndexBehaviour])(_.behaviours)
+    planContext.btreeIndexGetForLabelAndProperties(label.name, Seq(property.name)).fold(Set.empty[IndexBehaviour])(_.behaviours)
   }
 }

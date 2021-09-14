@@ -93,14 +93,14 @@ class CypherQueryObfuscatorFactory {
 
     // unused
 
-    override def indexesGetForLabel(labelId: Int): Nothing = fail()
-    override def indexesGetForRelType(relTypeId: Int): Nothing = fail()
-    override def indexExistsForLabel(labelId: Int): Nothing = fail()
-    override def indexExistsForRelType(relTypeId: Int): Nothing = fail()
-    override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
-    override def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
-    override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Nothing = fail()
-    override def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Nothing = fail()
+    override def btreeIndexesGetForLabel(labelId: Int): Nothing = fail()
+    override def btreeIndexesGetForRelType(relTypeId: Int): Nothing = fail()
+    override def btreeIndexExistsForLabel(labelId: Int): Nothing = fail()
+    override def btreeIndexExistsForRelType(relTypeId: Int): Nothing = fail()
+    override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
+    override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
+    override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Nothing = fail()
+    override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Nothing = fail()
     override def canLookupNodesByLabel: Nothing = fail()
     override def canLookupRelationshipsByType: Nothing = fail()
     override def uniqueIndexesGetForLabel(labelId: Int): Nothing = fail()

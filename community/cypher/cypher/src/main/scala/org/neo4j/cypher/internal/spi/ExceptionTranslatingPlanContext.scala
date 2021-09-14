@@ -31,23 +31,23 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
-  override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
-    translateException(tokenNameLookup, inner.indexesGetForLabel(labelId))
+  override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.btreeIndexesGetForLabel(labelId))
 
-  override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
-    translateException(tokenNameLookup, inner.indexesGetForRelType(relTypeId))
+  override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.btreeIndexesGetForRelType(relTypeId))
 
-  override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-    translateException(tokenNameLookup, inner.indexGetForLabelAndProperties(labelName, propertyKeys))
+  override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.btreeIndexGetForLabelAndProperties(labelName, propertyKeys))
 
-  override def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-    translateException(tokenNameLookup, inner.indexGetForRelTypeAndProperties(relTypeName, propertyKeys))
+  override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys))
 
-  override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
-    translateException(tokenNameLookup, inner.indexExistsForLabelAndProperties(labelName, propertyKey))
+  override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
+    translateException(tokenNameLookup, inner.btreeIndexExistsForLabelAndProperties(labelName, propertyKey))
 
-  override def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean =
-    translateException(tokenNameLookup, inner.indexExistsForRelTypeAndProperties(relTypeName, propertyKey))
+  override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean =
+    translateException(tokenNameLookup, inner.btreeIndexExistsForRelTypeAndProperties(relTypeName, propertyKey))
 
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
     translateException(tokenNameLookup, inner.uniqueIndexesGetForLabel(labelId))
@@ -66,11 +66,11 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
     translateException(tokenNameLookup, inner.functionSignature(name))
 
-  override def indexExistsForLabel(labelId: Int): Boolean =
-    translateException(tokenNameLookup, inner.indexExistsForLabel(labelId))
+  override def btreeIndexExistsForLabel(labelId: Int): Boolean =
+    translateException(tokenNameLookup, inner.btreeIndexExistsForLabel(labelId))
 
-  override def indexExistsForRelType(relTypeId: Int): Boolean =
-    translateException(tokenNameLookup, inner.indexExistsForRelType(relTypeId))
+  override def btreeIndexExistsForRelType(relTypeId: Int): Boolean =
+    translateException(tokenNameLookup, inner.btreeIndexExistsForRelType(relTypeId))
 
   override def canLookupNodesByLabel: Boolean =
     translateException(tokenNameLookup, inner.canLookupNodesByLabel)

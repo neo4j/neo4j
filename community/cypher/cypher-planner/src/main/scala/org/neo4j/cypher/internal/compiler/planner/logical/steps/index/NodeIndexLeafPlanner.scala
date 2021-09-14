@@ -194,7 +194,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     labelPredicate <- labelPredicates
     labelName <- labelPredicate.labels
     labelId: LabelId <- semanticTable.id(labelName).toSet
-    indexDescriptor: IndexDescriptor <- planContext.indexesGetForLabel(labelId)
+    indexDescriptor: IndexDescriptor <- planContext.btreeIndexesGetForLabel(labelId)
     predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrderConfig, semanticTable, providedOrderFactory)
     indexMatch = NodeIndexMatch(
       variableName,

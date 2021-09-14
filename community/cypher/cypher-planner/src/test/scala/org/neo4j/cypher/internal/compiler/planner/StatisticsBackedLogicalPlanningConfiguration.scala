@@ -508,12 +508,12 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def statistics: InstrumentedGraphStatistics =
         InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())
 
-      override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+      override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
         indexesGetForEntityType(entityType)
       }
 
-      override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+      override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
         indexesGetForEntityType(entityType)
       }
@@ -573,28 +573,28 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         procedures.find(_.name == name).getOrElse(fail(s"No procedure signature for $name"))
       }
 
-      override def indexExistsForLabel(labelId: Int): Boolean = {
-        indexesGetForLabel(labelId).nonEmpty
+      override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
+        btreeIndexesGetForLabel(labelId).nonEmpty
       }
 
-      override def indexExistsForRelType(relTypeId: Int): Boolean = {
-        indexesGetForRelType(relTypeId).nonEmpty
+      override def btreeIndexExistsForRelType(relTypeId: Int): Boolean = {
+        btreeIndexesGetForRelType(relTypeId).nonEmpty
       }
 
-      override def indexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
-        indexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
+      override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
+        btreeIndexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
       }
 
-      override def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
-        indexGetForRelTypeAndProperties(relTypeName, propertyKey).nonEmpty
+      override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
+        btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKey).nonEmpty
       }
 
-      override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(labelName)
         indexGetForEntityTypeAndProperties(entityType, propertyKeys)
       }
 
-      override def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+      override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
         indexGetForEntityTypeAndProperties(entityType, propertyKeys)
       }

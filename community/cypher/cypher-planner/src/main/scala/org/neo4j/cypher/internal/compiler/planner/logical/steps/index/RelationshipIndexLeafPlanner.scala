@@ -190,7 +190,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     val relTypeName = patternRelationship.types.head
     val indexMatches = for {
       relTypeId <- semanticTable.id(relTypeName).toSet[RelTypeId]
-      indexDescriptor <- planContext.indexesGetForRelType(relTypeId)
+      indexDescriptor <- planContext.btreeIndexesGetForRelType(relTypeId)
       predicatesForIndex <- predicatesForIndex(indexDescriptor, propertyPredicates, interestingOrderConfig, semanticTable, providedOrderFactory)
     } yield RelationshipIndexMatch(
       variableName,
