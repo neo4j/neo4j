@@ -272,14 +272,8 @@ abstract class Read implements TxStateHolder,
     private void scanIndex( DefaultIndexReadSession indexSession, EntityIndexSeekClient indexSeekClient, IndexQueryConstraints constraints )
             throws KernelException
     {
-        if ( indexSession.reference().getIndexType() == IndexType.TEXT )
-        {
-            throw new UnsupportedOperationException( format( "Index scan not supported for %s index.", IndexType.TEXT ) );
-        }
-        // for a scan, we simply query for existence of the first property, which covers all entries in an index
-        int firstProperty = indexSession.reference.schema().getPropertyIds()[0];
         indexSeekClient.setRead( this );
-        indexSession.reader.query( indexSeekClient, this, ktx.securityContext().mode(), constraints, PropertyIndexQuery.exists( firstProperty ) );
+        indexSession.reader.query( indexSeekClient, this, ktx.securityContext().mode(), constraints, PropertyIndexQuery.allEntries() );
     }
 
     @Override
@@ -461,10 +455,7 @@ abstract class Read implements TxStateHolder,
             throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
-        return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext,
-                                  Arrays.stream( index.reference().schema().getPropertyIds() )
-                                        .mapToObj( PropertyIndexQuery::exists )
-                                        .toArray( PropertyIndexQuery[]::new ) );
+        return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext, PropertyIndexQuery.allEntries() );
     }
 
     private <C extends Cursor> PartitionedScan<C> propertyIndexSeek( IndexReadSession index, int desiredNumberOfPartitions,

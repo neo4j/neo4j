@@ -204,18 +204,6 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
                                        getIndex( REL_INDEX_NAME ).getIndexProvider().getKey(), since );
     }
 
-    @Test
-    void shouldRejectIndexScans()
-    {
-        assertThatThrownBy( this::scanNodes )
-                .isInstanceOf( UnsupportedOperationException.class )
-                .hasMessageContaining( "Index scan not supported for %s index", IndexType.TEXT );
-
-        assertThatThrownBy( this::scanRelationships )
-                .isInstanceOf( UnsupportedOperationException.class )
-                .hasMessageContaining( "Index scan not supported for %s index", IndexType.TEXT );
-    }
-
     private long scanNodes() throws Exception
     {
         MONITOR.reset();
