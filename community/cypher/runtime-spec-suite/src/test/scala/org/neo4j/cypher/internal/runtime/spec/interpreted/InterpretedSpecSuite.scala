@@ -149,6 +149,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.UnwindTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UserDefinedAggregationSupport
 import org.neo4j.cypher.internal.runtime.spec.tests.ValueHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.VarLengthExpandTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipTypeScanConcurrencyStressTestBase
 
 object InterpretedSpecSuite {
   val SIZE_HINT = 200
@@ -282,3 +283,6 @@ class InterpretedDeleteDetachPathTest extends DeleteDetachPathTestBase(COMMUNITY
 class InterpretedDeleteExpressionTest extends DeleteExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDeleteDetachExpressionTest extends DeleteDetachExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRemoveLabelsTest extends RemoveLabelsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+// CONCURRENT UPDATE STRESS TESTS
+class InterpretedRelationshipTypeScanConcurrencyStressTest extends RelationshipTypeScanConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

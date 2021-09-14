@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.util.Objects
-
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValues
 import org.neo4j.values.SequenceValue
@@ -44,6 +42,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.matchers.Matcher
 
+import java.util.Objects
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -207,6 +206,33 @@ case class RowCount(expected: Int) extends RowsMatcher {
     rows.size == expected
 
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
+}
+
+case class DisallowValues(columnValuePredicates: Seq[(String, AnyValue => Boolean)]) extends RowsMatcher {
+  override def toString: String = s"Expected no rows to contain disallowed value"
+
+  override def matchesRaw(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean = {
+    val columnOffsets = columnValuePredicates.map { case (c, _) => columns.indexOf(c) }
+    val columnPredicates = columnValuePredicates.map { case (_, p) => p }
+
+    var i = 0
+    while (i < rows.size) {
+      val row = rows(i)
+      var c = 0
+      while (c < columnOffsets.size) {
+        val value = row(columnOffsets(c))
+        val columnPredicate = columnPredicates(c)
+        if (!columnPredicate(value)) {
+          return false
+        }
+        c += 1
+      }
+      i += 1
+    }
+    true
+  }
+
+  protected override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
 }
 
 case class CustomRowsMatcher(inner: Matcher[Seq[Array[AnyValue]]]) extends RowsMatcher {
