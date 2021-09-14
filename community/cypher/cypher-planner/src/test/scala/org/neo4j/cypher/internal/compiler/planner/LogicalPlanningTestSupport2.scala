@@ -239,6 +239,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           })
       }
 
+      override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
+        Iterator.empty
+
+      override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
+        Iterator.empty
+
       override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val label = config.labelsById(labelId)
         config.indexes.collect {

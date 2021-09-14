@@ -518,6 +518,12 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         indexesGetForEntityType(entityType)
       }
 
+      override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
+        Iterator.empty
+
+      override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
+        Iterator.empty
+
       private def indexesGetForEntityType(entityType: IndexDefinition.EntityType): Iterator[IndexDescriptor] = {
         indexes.propertyIndexes.collect {
           case indexDef if entityType == indexDef.entityType =>

@@ -37,6 +37,12 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
     translateException(tokenNameLookup, inner.btreeIndexesGetForRelType(relTypeId))
 
+  override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.textIndexesGetForLabel(labelId))
+
+  override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.textIndexesGetForRelType(relTypeId))
+
   override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.btreeIndexGetForLabelAndProperties(labelName, propertyKeys))
 

@@ -46,6 +46,16 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
 
   /**
+   * Return all text indexes for a given label, without taking any schema locks.
+   */
+  def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
+
+  /**
+   * Return all text indexes for a given relationship type, without taking any schema locks.
+   */
+  def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
+
+  /**
    * Return all unique indexes for a given label, without taking any schema locks.
    */
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]

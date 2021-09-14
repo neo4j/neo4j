@@ -60,7 +60,6 @@ import org.neo4j.internal.schema.IndexOrderCapability.BOTH_PARTIALLY_SORTED
 import org.neo4j.internal.schema.IndexOrderCapability.DESC_FULLY_SORTED
 import org.neo4j.internal.schema.IndexOrderCapability.DESC_PARTIALLY_SORTED
 import org.neo4j.internal.schema.IndexOrderCapability.NONE
-import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.IndexValueCapability
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
@@ -118,17 +117,33 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   extends TransactionBoundTokenContext(tc.kernelTransaction) with PlanContext with IndexDescriptorCompatibility {
 
   override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala.flatMap(getOnlineIndex)
+    indexesGetForLabel(labelId, schema.IndexType.BTREE)
   }
 
   override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
-    tc.schemaRead.getRelTypeIndexesNonLocking(relTypeId).asScala.flatMap(getOnlineIndex)
+    indexesGetForRelType(relTypeId, schema.IndexType.BTREE)
+  }
+
+  override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+    indexesGetForLabel(labelId, schema.IndexType.TEXT)
+  }
+
+  override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+    indexesGetForRelType(relTypeId, schema.IndexType.TEXT)
+  }
+
+  private def indexesGetForLabel(labelId: Int, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
+    tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala.flatMap(getOnlineIndex(indexType))
+  }
+
+  private def indexesGetForRelType(relTypeId: Int, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
+    tc.schemaRead.getRelTypeIndexesNonLocking(relTypeId).asScala.flatMap(getOnlineIndex(indexType))
   }
 
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala
       .filter(_.isUnique)
-      .flatMap(getOnlineIndex)
+      .flatMap(getOnlineIndex(schema.IndexType.BTREE))
   }
 
   override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
@@ -141,16 +156,16 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    descriptor.flatMap(indexGetForSchemaDescriptor)
+    descriptor.flatMap(indexGetForSchemaDescriptor(schema.IndexType.BTREE))
   }
 
   override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     val descriptor = toRelTypeSchemaDescriptor(this, relTypeName, propertyKeys)
-    descriptor.flatMap(indexGetForSchemaDescriptor)
+    descriptor.flatMap(indexGetForSchemaDescriptor(schema.IndexType.BTREE))
   }
 
-  private def indexGetForSchemaDescriptor(descriptor: SchemaDescriptor): Option[IndexDescriptor] = {
-    val itr = tc.schemaRead.indexForSchemaNonLocking(descriptor).asScala.flatMap(getOnlineIndex)
+  private def indexGetForSchemaDescriptor(indexType: schema.IndexType)(descriptor: SchemaDescriptor): Option[IndexDescriptor] = {
+    val itr = tc.schemaRead.indexForSchemaNonLocking(descriptor).asScala.flatMap(getOnlineIndex(indexType))
     if (itr.hasNext) Some(itr.next) else None
   }
 
@@ -162,7 +177,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
   }
 
-  private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] = {
+  private def getOnlineIndex(indexType: schema.IndexType)(reference: schema.IndexDescriptor): Option[IndexDescriptor] = {
     try {
       tc.schemaRead.indexGetStateNonLocking(reference) match {
         case InternalIndexState.ONLINE =>
@@ -199,9 +214,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
               case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
             }
           }
-          if (reference.getIndexType != IndexType.BTREE || behaviours.contains(EventuallyConsistent)) {
-            // Ignore IndexType.FULLTEXT indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
-            // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
+          if (reference.getIndexType != indexType || behaviours.contains(EventuallyConsistent)) {
+            // Ignore eventually consistent indexes. Those are for explicit querying via procedures.
             None
           } else {
             Some(IndexDescriptor(entityType, properties, behaviours, orderCapability, valueCapability, isUnique))
