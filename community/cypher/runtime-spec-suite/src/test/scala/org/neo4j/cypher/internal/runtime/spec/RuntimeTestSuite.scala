@@ -533,6 +533,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     RowCount(value)
   }
 
+  def disallowValues(columnValuePredicates: Seq[(String, AnyValue => Boolean)]): RowsMatcher = {
+    DisallowValues(columnValuePredicates)
+  }
+
   def matching(func: PartialFunction[Any, _]): RowsMatcher = {
     CustomRowsMatcher(matchPattern(func))
   }
