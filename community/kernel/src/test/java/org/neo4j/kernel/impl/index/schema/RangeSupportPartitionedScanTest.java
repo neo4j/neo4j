@@ -24,6 +24,8 @@ public class RangeSupportPartitionedScanTest extends SupportPartitionedScanTestS
     public RangeSupportPartitionedScanTest()
     {
         super( RangeIndexProvider.CAPABILITY, supports(
+                Query.ALL_ENTRIES,
+
                 Query.EXISTS,
 
                 Query.EXACT_NUMBER,

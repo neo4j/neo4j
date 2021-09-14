@@ -47,6 +47,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -460,20 +461,19 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
     protected int calculateMaxNumberOfPartitions( Iterable<QUERY> queries )
     {
-        var maxNumberOfPartitions = 0;
         try ( var tx = beginTx() )
         {
+            var maxNumberOfPartitions = 0;
             for ( final var query : queries )
             {
                 maxNumberOfPartitions = Math.max( maxNumberOfPartitions, factory.partitionedScan( tx, query, Integer.MAX_VALUE ).getNumberOfPartitions() );
             }
+            return maxNumberOfPartitions;
         }
         catch ( Exception e )
         {
             throw new AssertionError( "failed to calculated max number of partitions", e );
         }
-
-        return maxNumberOfPartitions;
     }
 
     private static void createState( KernelTransaction tx ) throws InvalidTransactionTypeKernelException

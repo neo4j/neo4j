@@ -24,6 +24,8 @@ public class BTreeSupportPartitionedScanTest extends SupportPartitionedScanTestS
     public BTreeSupportPartitionedScanTest()
     {
         super( GenericNativeIndexProvider.CAPABILITY, supports(
+                Query.ALL_ENTRIES,
+
                 Query.EXISTS,
 
                 Query.EXACT_NUMBER,

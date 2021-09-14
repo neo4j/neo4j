@@ -115,6 +115,7 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
         }
 
         final var general = Stream.of(
+                PropertyIndexQuery.allEntries(),
                 PropertyIndexQuery.exists( prop.id ),
                 PropertyIndexQuery.exact( prop.id, prop.value ),
                 PropertyIndexQuery.range( prop.id, prop.type.toValue( RANGE.first() ), true, prop.type.toValue( RANGE.other() ), false ) );

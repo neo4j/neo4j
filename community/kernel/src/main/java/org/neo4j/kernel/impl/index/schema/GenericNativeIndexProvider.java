@@ -284,7 +284,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
                     || query instanceof PropertyIndexQuery.GeometryRangePredicate
                     || query instanceof PropertyIndexQuery.RangePredicate && ((PropertyIndexQuery) query).valueGroup() == ValueGroup.GEOMETRY_ARRAY )
                  || queries.length > 1 && Arrays.stream( queries ).anyMatch( query ->
-                    query instanceof PropertyIndexQuery.StringSuffixPredicate
+                    query instanceof PropertyIndexQuery.TruePredicate
+                    || query instanceof PropertyIndexQuery.StringSuffixPredicate
                     || query instanceof PropertyIndexQuery.StringContainsPredicate ) )
             {
                 return false;

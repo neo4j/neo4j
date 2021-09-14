@@ -54,12 +54,17 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
     @Override
     boolean initializeRangeForQuery( RangeKey treeKeyFrom, RangeKey treeKeyTo, PropertyIndexQuery[] predicates )
     {
+        if ( isAllQuery( predicates ) )
+        {
+            initializeAllSlotsForFullRange( treeKeyFrom, treeKeyTo );
+            return false;
+        }
+
         for ( int i = 0; i < predicates.length; i++ )
         {
             PropertyIndexQuery predicate = predicates[i];
             switch ( predicate.type() )
             {
-            case ALL_ENTRIES:
             case EXISTS:
                 treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
                 treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
@@ -86,6 +91,22 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
             }
         }
         return false;
+    }
+
+    // all slots are required to be initialized such that the keys can be copied when scanning in parallel
+    private static boolean isAllQuery( PropertyIndexQuery[] predicates )
+    {
+        return predicates.length == 1 && predicates[0].type() == IndexQueryType.ALL_ENTRIES;
+    }
+
+    private static void initializeAllSlotsForFullRange( RangeKey treeKeyFrom, RangeKey treeKeyTo )
+    {
+        assert treeKeyFrom.numberOfStateSlots() == treeKeyTo.numberOfStateSlots();
+        for ( int i = 0; i < treeKeyFrom.numberOfStateSlots(); i++ )
+        {
+            treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
+            treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
+        }
     }
 
     private static void initFromForRange( int stateSlot, PropertyIndexQuery.RangePredicate<?> rangePredicate, RangeKey treeKeyFrom )

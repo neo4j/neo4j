@@ -102,6 +102,7 @@ public class FusionIndexCapability implements IndexCapability
         Preconditions.requireNoNullElements( queries );
         if ( Arrays.stream( queries ).anyMatch( query ->
                 query instanceof TokenPredicate
+                || query instanceof PropertyIndexQuery.TruePredicate
                 || query instanceof PropertyIndexQuery.ExistsPredicate ) )
         {
             return false;

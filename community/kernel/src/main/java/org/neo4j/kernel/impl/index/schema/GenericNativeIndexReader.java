@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
@@ -126,16 +127,21 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
      * in the query.
      * @return {@code true} if filtering is needed for the results from the reader, otherwise {@code false}.
      */
-    private static boolean initializeRangeForGeometrySubQuery( BtreeKey treeKeyFrom, BtreeKey treeKeyTo,
-            PropertyIndexQuery[] query, CoordinateReferenceSystem crs, SpaceFillingCurve.LongRange range )
+    private static boolean initializeRangeForGeometrySubQuery( BtreeKey treeKeyFrom, BtreeKey treeKeyTo, PropertyIndexQuery[] query,
+                                                               CoordinateReferenceSystem crs, SpaceFillingCurve.LongRange range )
     {
+        if ( isAllQuery( query ) )
+        {
+            initializeAllSlotsForFullRange( treeKeyFrom, treeKeyTo );
+            return false;
+        }
+
         boolean needsFiltering = false;
         for ( int i = 0; i < query.length; i++ )
         {
             PropertyIndexQuery predicate = query[i];
             switch ( predicate.type() )
             {
-            case ALL_ENTRIES:
             case EXISTS:
                 treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
                 treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
@@ -185,6 +191,22 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
             }
         }
         return needsFiltering;
+    }
+
+    // all slots are required to be initialized such that the keys can be copied when scanning in parallel
+    private static boolean isAllQuery( PropertyIndexQuery[] predicates )
+    {
+        return predicates.length == 1 && predicates[0].type() == IndexQueryType.ALL_ENTRIES;
+    }
+
+    private static void initializeAllSlotsForFullRange( BtreeKey treeKeyFrom, BtreeKey treeKeyTo )
+    {
+        assert treeKeyFrom.numberOfStateSlots() == treeKeyTo.numberOfStateSlots();
+        for ( int i = 0; i < treeKeyFrom.numberOfStateSlots(); i++ )
+        {
+            treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
+            treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
+        }
     }
 
     @Override
