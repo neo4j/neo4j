@@ -263,6 +263,15 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def getImportURL(url: URL): Either[String, URL] =
     translateException(tokenNameLookup, inner.getImportURL(url))
 
+<<<<<<< HEAD
+=======
+  override def createRelationshipId(start: Long, end: Long, relType: Int): Long =
+    translateException(tokenNameLookup, inner.createRelationshipId(start, end, relType))
+
+  override def getOrCreateRelTypeId(relTypeName: String): Int =
+    translateException(tokenNameLookup, inner.getOrCreateRelTypeId(relTypeName))
+
+>>>>>>> c80ee59ff4e... Remove create relationship method that creates relationship proxies
   override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] =
     translateException(tokenNameLookup, inner.getRelationshipsForIds(node, dir, types))
 

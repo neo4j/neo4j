@@ -156,10 +156,7 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
 
   override def createNodeId(labels: Array[Int]): Long = writes().nodeCreateWithLabels(labels)
 
-  override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = {
-    val relId = transactionalContext.dataWrite.relationshipCreate(start, relType, end)
-    fromRelationshipEntity(entityAccessor.newRelationshipEntity(relId, start, relType, end))
-  }
+  override def createRelationshipId(start: Long, end: Long, relType: Int): Long = writes().relationshipCreate(start, relType, end)
 
   override def getOrCreateRelTypeId(relTypeName: String): Int =
     transactionalContext.tokenWrite.relationshipTypeGetOrCreateForName(relTypeName)

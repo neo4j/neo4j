@@ -180,7 +180,7 @@ object StaticEvaluation {
 
     override def createNodeId(labels: Array[Int]): Long = notAvailable()
 
-    override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = notAvailable()
+    override def createRelationshipId(start: Long, end: Long, relType: Int): Long = notAvailable()
 
     override def getOrCreateRelTypeId(relTypeName: String): Int = notAvailable()
 

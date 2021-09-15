@@ -335,7 +335,7 @@ trait WriteQueryContext {
 
   def createNodeId(labels: Array[Int]): Long
 
-  def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue
+  def createRelationshipId(start: Long, end: Long, relType: Int): Long
 
   def getOrCreateRelTypeId(relTypeName: String): Int
 

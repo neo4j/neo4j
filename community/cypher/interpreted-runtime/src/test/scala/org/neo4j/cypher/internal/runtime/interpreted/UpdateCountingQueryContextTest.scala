@@ -101,7 +101,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("create_relationship") {
-    context.createRelationship(nodeA.getId, nodeB.getId, 13)
+    context.createRelationshipId(nodeA.getId, nodeB.getId, 13)
 
     context.getStatistics should equal(QueryStatistics(relationshipsCreated = 1))
   }

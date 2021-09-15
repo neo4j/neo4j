@@ -91,12 +91,12 @@ case class CreateRelationship(command: CreateRelationshipCommand, allowNullOrNaN
     val start = getNode(row, command.idName, command.startNode, state.lenientCreateRelationship)
     val end = getNode(row, command.idName, command.endNode, state.lenientCreateRelationship)
 
-    val relationship = if (start == null || end == null) {
-      Values.NO_VALUE
+    if (start == null || end == null) {
+      row.set(command.idName, Values.NO_VALUE)
     } // lenient create relationship NOOPs on missing node
     else {
       val typeId = state.query.getOrCreateRelTypeId(command.relType.name)
-      val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
+      val relationship = state.query.createRelationshipId(start.id(), end.id(), typeId)
       command.properties.foreach(p => p.apply(row, state) match {
         case IsMap(map) =>
           map(state).foreach {
@@ -110,17 +110,16 @@ case class CreateRelationship(command: CreateRelationshipCommand, allowNullOrNaN
               }
             case (k, v) =>
               val propId = state.query.getOrCreatePropertyKeyId(k)
-              state.query.relationshipWriteOps.setProperty(relationship.id(), propId, makeValueNeoSafe(v))
+              state.query.relationshipWriteOps.setProperty(relationship, propId, makeValueNeoSafe(v))
           }
 
         case value =>
           throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
 
       })
-      relationship
+      row.set(command.idName, VirtualValues.relationship(relationship))
     }
 
-    row.set(command.idName, relationship)
   }
 
   private def getNode(row: CypherRow, relName: String, name: String, lenient: Boolean): NodeValue =
