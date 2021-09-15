@@ -174,7 +174,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
     expectError(
       "CREATE CONSTRAINT FOR (person:Person) REQUIRE person.name IS UNIQUE",
-      String.format("Unable to create Constraint( name='constraint_e26b1a8b', type='UNIQUENESS', schema=(:Person {name}) ):%n" +
+      String.format("Unable to create Constraint( name='constraint_550b2518', type='UNIQUENESS', schema=(:Person {name}) ):%n" +
         "Both Node(" + node1 + ") and Node(" + node2 + ") have the label `Person` and property `name` = 'A'")
     )
   }

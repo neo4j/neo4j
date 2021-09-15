@@ -108,17 +108,19 @@ class SchemaRuleTest
     private final IndexDescriptor indexBelongingToConstraint =
             labelUniquePrototypeNamed.withName( "indexBelongingToConstraint" ).materialise( 17 ).withOwningConstraintId( 1 );
     private final ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema );
+    private final ConstraintDescriptor uniqueLabelConstraintWithOtherType = ConstraintDescriptorFactory.uniqueForSchema( labelSchema, RANGE );
     private final ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema( labelSchema );
     private final ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema );
+    private final ConstraintDescriptor nodeKeyConstraintWithOtherType = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema, RANGE );
     private final ConstraintDescriptor existsRelTypeConstraint = ConstraintDescriptorFactory.existsForSchema( relTypeSchema );
     private final ConstraintDescriptor uniqueLabelConstraint2 = ConstraintDescriptorFactory.uniqueForSchema( labelSchema2 );
     private final ConstraintDescriptor uniqueLabelConstraintNamed =
             uniqueLabelConstraint.withName( "uniqueLabelConstraintNamed" ).withId( 1 ).withOwnedIndexId( 1 );
     private final ConstraintDescriptor existsLabelConstraintNamed =
-            existsLabelConstraint.withName( "existsLabelConstraintNamed" ).withId( 2 ).withOwnedIndexId( 2 );
+            existsLabelConstraint.withName( "existsLabelConstraintNamed" ).withId( 2 );
     private final ConstraintDescriptor nodeKeyConstraintNamed = nodeKeyConstraint.withName( "nodeKeyConstraintNamed" ).withId( 3 ).withOwnedIndexId( 3 );
     private final ConstraintDescriptor existsRelTypeConstraintNamed =
-            existsRelTypeConstraint.withName( "existsRelTypeConstraintNamed" ).withId( 4 ).withOwnedIndexId( 4 );
+            existsRelTypeConstraint.withName( "existsRelTypeConstraintNamed" ).withId( 4 );
     private final ConstraintDescriptor uniqueLabelConstraint2Named =
             uniqueLabelConstraint2.withName( "uniqueLabelConstraint2Named" ).withId( 5 ).withOwnedIndexId( 5 );
     private final InMemoryTokens lookup = new InMemoryTokens()
@@ -143,9 +145,11 @@ class SchemaRuleTest
         assertName( rangeRelTypeUniquePrototype, "index_9b4ce430" );
         assertName( nodeFtsPrototype, "index_99c88876" );
         assertName( relFtsPrototype, "index_9c14864e" );
-        assertName( uniqueLabelConstraint, "constraint_9d5cc155" );
+        assertName( uniqueLabelConstraint, "constraint_3b45827" );
+        assertName( uniqueLabelConstraintWithOtherType, "constraint_dbf17751" );
         assertName( existsLabelConstraint, "constraint_b23c1483" );
-        assertName( nodeKeyConstraint, "constraint_7b8dd387" );
+        assertName( nodeKeyConstraint, "constraint_9a153fa3" );
+        assertName( nodeKeyConstraintWithOtherType, "constraint_75ad9cd9" );
         assertName( existsRelTypeConstraint, "constraint_ef4bbcac" );
         assertName( allLabelsPrototype, "index_f56fb29d" );
         assertName( allRelTypesPrototype, "index_9625776f" );
@@ -267,13 +271,12 @@ class SchemaRuleTest
         assertUserDescription( "Constraint( id=1, name='uniqueLabelConstraintNamed', type='UNIQUENESS', schema=(:Label1 {prop2, prop3}), ownedIndex=1 )",
                 uniqueLabelConstraintNamed );
         assertUserDescription(
-                "Constraint( id=2, name='existsLabelConstraintNamed', type='NODE PROPERTY EXISTENCE', schema=(:Label1 {prop2, prop3}), ownedIndex=2 )",
+                "Constraint( id=2, name='existsLabelConstraintNamed', type='NODE PROPERTY EXISTENCE', schema=(:Label1 {prop2, prop3}) )",
                 existsLabelConstraintNamed );
         assertUserDescription( "Constraint( id=3, name='nodeKeyConstraintNamed', type='NODE KEY', schema=(:Label1 {prop2, prop3}), ownedIndex=3 )",
                 nodeKeyConstraintNamed );
         assertUserDescription(
-                "Constraint( id=4, name='existsRelTypeConstraintNamed', type='RELATIONSHIP PROPERTY EXISTENCE', schema=-[:Type1 {prop2, prop3}]-, " +
-                        "ownedIndex=4 )",
+                "Constraint( id=4, name='existsRelTypeConstraintNamed', type='RELATIONSHIP PROPERTY EXISTENCE', schema=-[:Type1 {prop2, prop3}]- )",
                 existsRelTypeConstraintNamed );
         assertUserDescription(
                 "Constraint( id=5, name='uniqueLabelConstraint2Named', type='UNIQUENESS', schema=(:`La:bel` {`prop:erty`, prop1}), ownedIndex=5 )",

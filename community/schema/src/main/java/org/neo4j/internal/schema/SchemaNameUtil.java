@@ -98,6 +98,10 @@ public class SchemaNameUtil
         {
             ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
             key = hf.update( key, constraint.type().ordinal() );
+            if ( constraint.isIndexBackedConstraint() )
+            {
+                key = hf.update( key, constraint.asIndexBackedConstraint().indexType().ordinal() );
+            }
             return String.format( "constraint_%x", hf.toInt( hf.finalise( key ) ) );
         }
         throw new IllegalArgumentException( "Don't know how to generate a name for this SchemaDescriptorSupplier implementation: " + rule + "." );

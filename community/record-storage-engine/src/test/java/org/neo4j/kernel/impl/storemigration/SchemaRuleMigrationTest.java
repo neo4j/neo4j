@@ -108,7 +108,7 @@ class SchemaRuleMigrationTest
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, StoreCursors.NULL );
 
         assertEquals( 1, writtenRules.size() );
-        assertEquals( "constraint_952591e6", writtenRules.get( 0 ).getName() );
+        assertEquals( "constraint_3eeb6229", writtenRules.get( 0 ).getName() );
     }
 
     @Test
@@ -136,7 +136,7 @@ class SchemaRuleMigrationTest
         RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, StoreCursors.NULL );
 
         assertEquals( 1, writtenRules.size() );
-        assertEquals( "constraint_952591e6", writtenRules.get( 0 ).getName() );
+        assertEquals( "constraint_3eeb6229", writtenRules.get( 0 ).getName() );
     }
 
     @Test
@@ -154,6 +154,6 @@ class SchemaRuleMigrationTest
         Set<String> names = writtenRules.stream().map( SchemaRule::getName ).collect( Collectors.toSet() );
 
         // Collisions in generated names (however fantastically unlikely) must be resolved by appending a count.
-        assertEquals( Set.of( "constraint_952591e6", "constraint_952591e6_1" ), names );
+        assertEquals( Set.of( "constraint_3eeb6229", "constraint_3eeb6229_1" ), names );
     }
 }

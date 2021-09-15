@@ -681,7 +681,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
             assertEquals( label.name(), constraint.getLabel().name() );
             assertEquals( asSet( propertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
-            assertEquals( "constraint_c8a3b28f", constraint.getName() );
+            assertEquals( "constraint_99f3e727", constraint.getName() );
             tx.commit();
         }
     }
@@ -717,7 +717,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
             assertEquals( label.name(), constraint.getLabel().name() );
             assertEquals( asSet( propertyKey, secondPropertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
-            assertEquals( "constraint_5c46ce3d", constraint.getName() );
+            assertEquals( "constraint_d9a841bd", constraint.getName() );
             tx.commit();
         }
     }
@@ -828,7 +828,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         // WHEN
         ConstraintViolationException e = assertThrows( ConstraintViolationException.class, () -> createUniquenessConstraint( label, propertyKey ) );
         assertThat( e ).hasMessageContaining(
-                "Unable to create Constraint( name='constraint_c8a3b28f', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}) )" );
+                "Unable to create Constraint( name='constraint_99f3e727', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}) )" );
     }
 
     @Test
@@ -1020,7 +1020,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         try ( Transaction tx = db.beginTx() )
         {
             ConstraintDefinition constraint = tx.schema().constraintFor( otherLabel ).assertPropertyIsUnique( secondPropertyKey )
-                    .withName( "constraint_c8a3b28f" ).create();
+                    .withName( "constraint_99f3e727" ).create();
             ConstraintCreator creator = tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey );
             ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, creator::create );
             assertThat( exception ).hasMessageContaining( thereAlreadyExistsConstraintMessage( constraint.getName() ) );
