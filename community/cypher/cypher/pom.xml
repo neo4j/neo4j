@@ -52,6 +52,13 @@
                 <groupId>com.helger.maven</groupId>
                 <artifactId>ph-javacc-maven-plugin</artifactId>
                 <version>4.1.3</version>
+                <configuration>
+                    <jdkVersion>1.8</jdkVersion>
+                    <javadocFriendlyComments>true</javadocFriendlyComments>
+                    <packageName>org.neo4j.cypher.internal.preparser.javacc</packageName>
+                    <sourceDirectory>src/main/java/org/neo4j/cypher/internal/preparser/javacc</sourceDirectory>
+                    <outputDirectory>${project.build.directory}/generated-sources/preparser/javacc</outputDirectory>
+                </configuration>
                 <executions>
                     <execution>
                         <id>jjc1</id>
@@ -59,13 +66,6 @@
                         <goals>
                             <goal>javacc</goal>
                         </goals>
-                        <configuration>
-                            <jdkVersion>1.8</jdkVersion>
-                            <javadocFriendlyComments>true</javadocFriendlyComments>
-                            <packageName>org.neo4j.cypher.internal.preparser.javacc</packageName>
-                            <sourceDirectory>src/main/java/org/neo4j/cypher/internal/preparser/javacc</sourceDirectory>
-                            <outputDirectory>${project.build.directory}/generated-sources/preparser/javacc</outputDirectory>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
