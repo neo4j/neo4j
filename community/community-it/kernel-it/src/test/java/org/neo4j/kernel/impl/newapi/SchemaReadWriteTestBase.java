@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -725,6 +726,34 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertFalse( schemaRead.constraintExists( constraint ) );
+        }
+    }
+
+    @Test
+    void shouldOnlyDropBtreeConstraintBySchema() throws Exception
+    {
+        ConstraintDescriptor constraint;
+        ConstraintDescriptor constraint2;
+        final LabelSchemaDescriptor schema = forLabel( label, prop1 );
+        IndexPrototype prototype = uniqueForSchema( schema );
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            constraint = transaction.schemaWrite().nodeKeyConstraintCreate( prototype );
+            constraint2 = transaction.schemaWrite().nodeKeyConstraintCreate( prototype.withIndexType( IndexType.RANGE ) );
+            transaction.commit();
+        }
+
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().constraintDrop( schema, ConstraintType.UNIQUE_EXISTS );
+            transaction.commit();
+        }
+
+        try ( KernelTransaction transaction = beginTransaction() )
+        {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertFalse( schemaRead.constraintExists( constraint ) );
+            assertTrue( schemaRead.constraintExists( constraint2 ) );
         }
     }
 

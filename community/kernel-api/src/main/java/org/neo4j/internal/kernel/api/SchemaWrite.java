@@ -128,7 +128,9 @@ public interface SchemaWrite
      * Drop a constraint with the given schema.
      *
      * @param schema The schema of the constraint to be dropped.
+     * @deprecated this method only exists to support deprecated cypher syntax. to be removed in 5.0.
      */
+    @Deprecated
     void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException;
 
     /**

@@ -116,6 +116,7 @@ public class RestrictedSchemaWrite implements SchemaWrite
         return inner.relationshipPropertyExistenceConstraintCreate( schema, name );
     }
 
+    @Deprecated
     @Override
     public void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException
     {

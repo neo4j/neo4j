@@ -1149,7 +1149,7 @@ public class Operations implements Write, SchemaWrite
     public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
     {
         exclusiveSchemaLock( schema );
-        // deprecated method to drop index by scham drops only deprecated BTREE index
+        // deprecated method to drop index by schema drops only deprecated BTREE index
         var existingIndex = allStoreHolder.index( schema, IndexType.BTREE );
 
         if ( existingIndex == IndexDescriptor.NO_INDEX )
@@ -1524,12 +1524,17 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
+    @Deprecated
     @Override
     public void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException
     {
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetForSchema( schema );
-        constraints = Iterators.filter( constraint -> constraint.type() == type, constraints );
+        // Deprecated method to drop constraint by schema drops only deprecated BTREE constraints
+        constraints = Iterators.filter(
+                constraint -> constraint.type() == type &&
+                              (!constraint.isIndexBackedConstraint() || constraint.asIndexBackedConstraint().indexType() == IndexType.BTREE ),
+                constraints );
         if ( constraints.hasNext() )
         {
             ConstraintDescriptor constraint = constraints.next();
