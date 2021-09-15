@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ResourceManagedCursorPool
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
@@ -51,22 +50,24 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
     }
   }
 
-  private def onNext() {
+  private def onNext(): Unit = {
     updateCounter.resetIfPastLimit(batchRowCount)(commitAndRestartTx())
     updateCounter += 1
   }
 
-  private def commitAndRestartTx() {
+  private def commitAndRestartTx(): Unit = {
     //This is horrible, we need to close things such as expression cursors but we don't want to close
     //the URL that we are reading the CSV from until we are all done
     val trackedResources = new ArrayBuffer[AutoCloseablePlus]()
+    val cursorPools = new ArrayBuffer[ResourceManagedCursorPool]()
     queryContext.resources.allResources.foreach {
       // Cursors are tied to transaction and needs to be closed here.
       // We call closeInternal instead of close, so that the resources are not removed from the ResourceManager.
       // We want that, because they are still traced by the RuntimeResult and will be closed from there as well.
       case c: Cursor => c.closeInternal()
-      case ec: ExpressionCursors => ec.closeInternal()
-      case cp: ResourceManagedCursorPool => cp.closeCursors()
+      case cp: ResourceManagedCursorPool =>
+        cursorPools += cp
+        cp.closeCursors()
       case e =>
         //save so that we can remove and re-add them
         trackedResources += e
@@ -75,6 +76,8 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
     trackedResources.foreach(queryContext.resources.untrace)
     // Restart TX
     queryContext.transactionalContext.commitAndRestartTx()
+    // Set new cursors and context from the new transaction
+    cursorPools.foreach(_.setCursorFactoryAndContext(queryContext.transactionalContext.cursors, queryContext.transactionalContext.cursorContext))
     // Add back
     trackedResources.foreach(queryContext.resources.trace)
     outerLoadCSVIterator.foreach(_.notifyCommit())

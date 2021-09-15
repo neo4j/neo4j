@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.net.URL
+
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -60,6 +62,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -75,7 +78,6 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
-import java.net.URL
 import scala.collection.Iterator
 
 abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
@@ -483,6 +485,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def internalTransaction: InternalTransaction = inner.internalTransaction
 
   override def cursors: CursorFactory = inner.cursors
+
+  override def cursorContext: CursorContext = inner.cursorContext
 
   override def dataRead: Read = inner.dataRead
 

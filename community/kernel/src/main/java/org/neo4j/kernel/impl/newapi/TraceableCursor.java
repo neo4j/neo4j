@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.util.VisibleForTesting;
 
-abstract class TraceableCursor<CURSOR> extends DefaultCloseListenable implements Cursor
+@VisibleForTesting
+public abstract class TraceableCursor<CURSOR> extends DefaultCloseListenable implements Cursor
 {
     private final CursorPool<CURSOR> pool;
     protected KernelReadTracer tracer;
@@ -63,5 +65,11 @@ abstract class TraceableCursor<CURSOR> extends DefaultCloseListenable implements
             pool.accept( (CURSOR) this );
             returnedToPool = true;
         }
+    }
+
+    @VisibleForTesting
+    public boolean returnedToPool()
+    {
+        return returnedToPool;
     }
 }

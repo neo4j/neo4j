@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import java.net.URL
+import java.util.Optional
+
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -48,6 +51,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
@@ -63,8 +67,6 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
-import java.net.URL
-import java.util.Optional
 import scala.collection.Iterator
 
 /*
@@ -390,7 +392,7 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
 
   def createExpressionCursors(): ExpressionCursors = {
     val transactionMemoryTracker = transactionalContext.transaction.memoryTracker()
-    val cursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.cursorContext(), transactionMemoryTracker)
+    val cursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.cursorContext, transactionMemoryTracker)
     resources.trace(cursors)
     cursors
   }
@@ -459,6 +461,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def internalTransaction: InternalTransaction
 
   def cursors: CursorFactory
+
+  def cursorContext: CursorContext
 
   def dataRead: Read
 
