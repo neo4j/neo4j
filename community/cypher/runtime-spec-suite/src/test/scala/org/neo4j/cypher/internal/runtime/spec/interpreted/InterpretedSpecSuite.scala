@@ -154,6 +154,10 @@ import org.neo4j.cypher.internal.runtime.spec.tests.UnwindTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UserDefinedAggregationSupport
 import org.neo4j.cypher.internal.runtime.spec.tests.ValueHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.VarLengthExpandTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexContainsScanConcurrencyStressTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexEndsWithScanConcurrencyStressTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexScanConcurrencyStressTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexSeekConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipTypeScanConcurrencyStressTestBase
 
 object InterpretedSpecSuite {
@@ -295,4 +299,8 @@ class InterpretedDeleteDetachExpressionTest extends DeleteDetachExpressionTestBa
 class InterpretedRemoveLabelsTest extends RemoveLabelsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 // CONCURRENT UPDATE STRESS TESTS
-class InterpretedRelationshipTypeScanConcurrencyStressTest extends RelationshipTypeScanConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedRelationshipTypeScanConcurrencyStressTest extends RelationshipTypeScanConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+class InterpretedRelationshipIndexScanConcurrencyStressTest extends RelationshipIndexScanConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+class InterpretedRelationshipIndexContainsScanConcurrencyStressTest extends RelationshipIndexContainsScanConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+class InterpretedRelationshipIndexEndsWithScanConcurrencyStressTest extends RelationshipIndexEndsWithScanConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+class InterpretedRelationshipIndexSeekConcurrencyStressTest extends RelationshipIndexSeekConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
