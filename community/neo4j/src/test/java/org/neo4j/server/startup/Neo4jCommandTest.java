@@ -205,7 +205,7 @@ class Neo4jCommandTest
         }
 
         @Test
-        @DisabledForJreRange( min = JRE.JAVA_15 )
+        @DisabledForJreRange( min = JRE.JAVA_17 )
         void shouldNotValidateSettingsNotUsedByBootloaderOnStopAndStatus()
         {
             assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
@@ -218,7 +218,7 @@ class Neo4jCommandTest
         }
 
         @Test
-        @DisabledForJreRange( min = JRE.JAVA_15 )
+        @DisabledForJreRange( min = JRE.JAVA_17 )
         void shouldValidateSettingsUsedByBootloaderOnStopAndStatus()
         {
             assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );

@@ -79,7 +79,7 @@ import static org.neo4j.test.proc.ProcessUtil.start;
 
 @TestDirectoryExtension
 @ExtendWith( BootloaderCommandTestBase.FailureOutputProvider.class )
-@DisabledForJreRange( min = JRE.JAVA_15 )
+@DisabledForJreRange( min = JRE.JAVA_17 )
 abstract class BootloaderCommandTestBase
 {
     @Inject
