@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.util.concurrent.TimeUnit.SECONDS
-
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
@@ -45,6 +43,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
+
+import java.util.concurrent.TimeUnit.SECONDS
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
@@ -237,7 +237,37 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
-  def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit) = {
+  test("hasPropertyExistenceConstraint should return true with existence constraint") {
+    inTx((_, tx) => {
+      tx.schema().constraintFor(Label.label("L")).assertPropertyExists("prop").create()
+    })
+
+    inTx((planContext, _) => {
+      planContext.hasPropertyExistenceConstraint("L", "prop") shouldBe true
+    })
+  }
+
+  test("hasPropertyExistenceConstraint should return true with node key constraint") {
+    inTx((_, tx) => {
+      tx.schema().constraintFor(Label.label("L")).assertPropertyIsNodeKey("prop").create()
+    })
+
+    inTx((planContext, _) => {
+      planContext.hasPropertyExistenceConstraint("L", "prop") shouldBe true
+    })
+  }
+
+  test("hasPropertyExistenceConstraint should return false with uniqueness constraint") {
+    inTx((_, tx) => {
+      tx.schema().constraintFor(Label.label("L")).assertPropertyIsUnique("prop").create()
+    })
+
+    inTx((planContext, _) => {
+      planContext.hasPropertyExistenceConstraint("L", "prop") shouldBe false
+    })
+  }
+
+  private def inTx(f: (TransactionBoundPlanContext, InternalTransaction) => Unit): Unit = {
     val tx = graph.beginTransaction(EXPLICIT, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger, null)

@@ -214,7 +214,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.schemaRead.constraintsGetForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyId)).hasNext
+      tc.schemaRead.constraintsGetForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyId)).asScala
+        .filter(c => c.enforcesPropertyExistence())
+        .hasNext
     } catch {
       case _: KernelException => false
     }
