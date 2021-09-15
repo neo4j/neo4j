@@ -101,12 +101,11 @@ public enum SystemDiagnostics implements DiagnosticsProvider
         public void dump( DiagnosticsLogger logger )
         {
             OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-            RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             logger.log( format( "Operating System: %s; version: %s; arch: %s; cpus: %s", os.getName(),
                     os.getVersion(), os.getArch(), os.getAvailableProcessors() ) );
             logLong( logger, "Max number of file descriptors: ", OsBeanUtil.getMaxFileDescriptors() );
             logLong( logger, "Number of open file descriptors: ", OsBeanUtil.getOpenFileDescriptors() );
-            logger.log( "Process id: " + runtime.getName() );
+            logger.log( "Process id: " + ProcessHandle.current().pid() );
             logger.log( "Byte order: " + ByteOrder.nativeOrder() );
             logger.log( "Local timezone: " + getLocalTimeZone() );
         }

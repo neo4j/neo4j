@@ -142,18 +142,6 @@ class DiagnosticsReportCommandIT
 
     private static long getPID()
     {
-        String processName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
-        if ( processName != null && !processName.isEmpty() )
-        {
-            try
-            {
-                return Long.parseLong( processName.split( "@" )[0] );
-            }
-            catch ( Exception ignored )
-            {
-            }
-        }
-
-        return 0;
+        return ProcessHandle.current().pid();
     }
 }

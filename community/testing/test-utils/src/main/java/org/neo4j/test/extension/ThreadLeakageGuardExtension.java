@@ -216,7 +216,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         String basicInfo = format( "%s %s (PID:%s, TID:%d, Groups:%s)",
                 thread.getName(),
                 thread.getState(),
-                getRuntimeMXBean().getName(),
+                ProcessHandle.current().pid(),
                 thread.getId(),
                 describeThreadGroupChain( thread ) );
 
