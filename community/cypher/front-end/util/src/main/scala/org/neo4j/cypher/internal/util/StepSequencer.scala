@@ -40,16 +40,18 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
    * and that all post-conditions of any steps are given at the end of the step sequence.
    * This means that some steps can appear more than once in the step sequence.
    *
-   * @param steps the steps to order.
+   * @param steps             the steps to order.
    * @param initialConditions conditions that hold before any of the steps.
    *                          These can be invalidated by steps and can appear as pre-conditions.
    *                          They cannot appear as post-conditions (yet).
    *                          If there are steps that invalidate initial conditions, they will not be part of the post-conditions
    *                          of the returned sequence.
+   * @param fixedSeed         optionally a fixed seed for the random ordering
    */
   def orderSteps(steps: Set[S],
                  initialConditions: Set[Condition] = Set.empty,
-                 printGraph: Boolean = false): AccumulatedSteps[ACC] = {
+                 printGraph: Boolean = false,
+                 fixedSeed: Option[Long] = None): AccumulatedSteps[ACC] = {
     // Abort if there is a negated initial condition
     initialConditions.foreach {
       case n: NegatedCondition => throw new IllegalArgumentException(s"Initial conditions cannot be negated: $n.")
@@ -138,7 +140,7 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     }
 
     // Sort steps topologically
-    val AccumulatedSteps(sortedSteps, postConditions) = StepSequencer.sort(graph, introducingStepsNotByInitial, steps.toSeq, initialConditions)
+    val AccumulatedSteps(sortedSteps, postConditions) = StepSequencer.sort(graph, introducingStepsNotByInitial, steps.toSeq, initialConditions, fixedSeed)
 
     // Put steps together
     AccumulatedSteps(sortedSteps.foldLeft(stepAccumulator.empty)(stepAccumulator.addNext), postConditions)
@@ -263,18 +265,25 @@ object StepSequencer {
    * The heuristic is to order steps that invalidate many conditions first and
    * steps that have their conditions invalidated often last.
    * These two criteria are weighted equally.
+   *
+   * @param fixedSeed optionally a fixed seed for the random ordering
    */
-  private def heuristicStepOrdering[S <: Step](numberOfTimesEachStepIsInvalidated: Map[S, Int], allSteps: Seq[S]): Ordering[S] = {
-    val fixedProductionSeed = 42L
-    // In production, let's use the same seed to generate the same sequences reproducibly
-    val random = new Random(fixedProductionSeed)
-    if (AssertionRunner.isAssertionsEnabled) {
-      val seed = new Random().nextLong()
-      // If tests start failing because of a wrong order, print the seed here and use to reproduce the same order.
-      random.setSeed(seed)
-      // Putting the steps in a random order in test setup will help us discover dependencies we didn't know about.
-      // If a query is suddenly failing because the order of steps changed, it is likely that there is a dependency we didn't capture.
+  private def heuristicStepOrdering[S <: Step](numberOfTimesEachStepIsInvalidated: Map[S, Int],
+                                               allSteps: Seq[S],
+                                               fixedSeed: Option[Long]): Ordering[S] = {
+    val seed = fixedSeed getOrElse  {
+      if (AssertionRunner.isAssertionsEnabled) {
+        // If tests start failing because of a wrong order, print the seed here and use to reproduce the same order.
+        // Putting the steps in a random order in test setup will help us discover dependencies we didn't know about.
+        // If a query is suddenly failing because the order of steps changed, it is likely that there is a dependency we didn't capture.
+        new Random().nextLong()
+      } else {
+        // In production, let's use the same seed to generate the same sequences reproducibly
+        42L
+      }
     }
+
+    val random = new Random(seed)
 
     val allStepsInRandomOrder = random.shuffle(allSteps)
     (x, y) => {
@@ -301,11 +310,13 @@ object StepSequencer {
    * @param introducingSteps  Map from condition to the step that introduces it.
    * @param allSteps          all steps
    * @param initialConditions all initially holding conditions
+   * @param fixedSeed         optionally a fixed seed for the random ordering
    */
   private def sort[S <: Step](graph: MutableDirectedGraph[S],
                               introducingSteps: Map[Condition, S],
                               allSteps: Seq[S],
-                              initialConditions: Set[Condition]): AccumulatedSteps[Seq[S]] = {
+                              initialConditions: Set[Condition],
+                              fixedSeed: Option[Long]): AccumulatedSteps[Seq[S]] = {
     val allPostConditions: Set[Condition] = allSteps.flatMap(_.postConditions)(collection.breakOut)
 
     val numberOfTimesEachStepIsInvalidated = allSteps
@@ -313,7 +324,7 @@ object StepSequencer {
       .groupBy(identity)
       .mapValues(_.size)
       .withDefaultValue(0)
-    val order = heuristicStepOrdering(numberOfTimesEachStepIsInvalidated, allSteps)
+    val order = heuristicStepOrdering(numberOfTimesEachStepIsInvalidated, allSteps, fixedSeed)
 
     // We need to be able to look at the original state, so we make a copy in the beginning
     val workingGraph = MutableDirectedGraph.copyOf(graph)
