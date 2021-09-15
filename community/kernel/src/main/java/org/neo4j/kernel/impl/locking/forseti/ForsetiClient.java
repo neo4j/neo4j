@@ -58,6 +58,8 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
@@ -632,12 +634,28 @@ public class ForsetiClient implements Locks.Client
     @Override
     public void stop()
     {
-        // marking client as closed
-        if ( stateHolder.stopClient() )
+        stateHolder.incrementActiveClients( this );
+        try
         {
-            // waiting for all operations to be completed
-            waitForAllClientsToLeave();
-            releaseAllLocks();
+            // marking client as closed
+            if ( stateHolder.stopClient() )
+            {
+                // waiting for all operations to be completed
+                waitForStopBeOnlyClient();
+                releaseAllLocks();
+            }
+        }
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
+    }
+
+    private void waitForStopBeOnlyClient()
+    {
+        while ( !stateHolder.isSingleClient() )
+        {
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
         }
     }
 
@@ -645,14 +663,7 @@ public class ForsetiClient implements Locks.Client
     {
         while ( stateHolder.hasActiveClients() )
         {
-            try
-            {
-                Thread.sleep( 10 );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-            }
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
         }
     }
 
@@ -955,7 +966,7 @@ public class ForsetiClient implements Locks.Client
         {
             if ( iteration < MULTIPLY_UNTIL_ITERATION )
             {
-                LockSupport.parkNanos( 500 );
+                parkNanos( 500 );
             }
             else
             {
@@ -1013,7 +1024,7 @@ public class ForsetiClient implements Locks.Client
     {
         if ( isDeadlockRealInternal( lock ) )
         {
-            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
             return isDeadlockRealInternal( lock );
         }
         return false;

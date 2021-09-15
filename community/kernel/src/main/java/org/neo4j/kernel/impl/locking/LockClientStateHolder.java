@@ -55,6 +55,16 @@ public final class LockClientStateHolder
     }
 
     /**
+     * Check if we still have one active client
+     *
+     * @return true if have one open client, false otherwise.
+     */
+    public boolean isSingleClient()
+    {
+        return getActiveClients( clientState.get() ) == 1;
+    }
+
+    /**
      * Move the client to the PREPARE state, unless it is already STOPPED.
      */
     public void prepare( Locks.Client client )
@@ -74,7 +84,7 @@ public final class LockClientStateHolder
     }
 
     /**
-     * Move the client to STOPPED, unless it is already in PREPARE.
+     * Move the client to STOPPED, unless it is already in PREPARE or stopped
      */
     public boolean stopClient()
     {
@@ -86,6 +96,10 @@ public final class LockClientStateHolder
             if ( isPrepare( currentValue ) )
             {
                 return false; // Can't stop clients that are in PREPARE
+            }
+            if ( isStopped( currentValue ) )
+            {
+                return false;
             }
             newValue = stateWithNewStatus( currentValue, STOPPED );
         }

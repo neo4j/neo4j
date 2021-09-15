@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -36,11 +37,15 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.test.Race;
 import org.neo4j.test.extension.actors.Actor;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 
 abstract class StopCompatibility extends LockCompatibilityTestSupport
 {
@@ -77,6 +83,40 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
     void tearDown()
     {
         client.close();
+    }
+
+    @RepeatedTest( 100 )
+    void concurrentLockClientStopAndClose() throws Throwable
+    {
+        Locks.Client client = locks.newClient();
+        BinaryLatch l1 = new BinaryLatch();
+        Race race = new Race();
+        race.addContestant( () ->
+        {
+            client.initialize( LeaseService.NoLeaseClient.INSTANCE, 0, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+            for ( int i = 0; i < 100; i++ )
+            {
+                client.acquireExclusive( LockTracer.NONE, RELATIONSHIP, i );
+                client.acquireShared( LockTracer.NONE, ResourceTypes.NODE, i );
+            }
+            l1.release();
+            client.close();
+        } );
+
+        race.addContestant( () ->
+        {
+            l1.await();
+            try
+            {
+                client.stop();
+            }
+            catch ( LockClientStoppedException e )
+            {
+                // ignore
+            }
+        } );
+
+        race.go( 3, TimeUnit.MINUTES );
     }
 
     @Test
