@@ -250,7 +250,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptors.forLabel(labelId, propertyKeyId)).hasNext
+      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptors.forLabel(labelId, propertyKeyId)).asScala
+        .filter(c => c.enforcesPropertyExistence())
+        .hasNext
     } catch {
       case _: KernelException => false
     }
@@ -283,7 +285,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val relTypeId = getRelTypeId(relTypeName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptors.forRelType(relTypeId, propertyKeyId)).hasNext
+      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptors.forRelType(relTypeId, propertyKeyId)).asScala
+        .filter(c => c.enforcesPropertyExistence())
+        .hasNext
     } catch {
       case _: KernelException => false
     }
