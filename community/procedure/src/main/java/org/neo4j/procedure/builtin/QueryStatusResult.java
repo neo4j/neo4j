@@ -125,7 +125,9 @@ public class QueryStatusResult
         this.pageHits = query.pageHits();
         this.pageFaults = query.pageFaults();
         this.connectionId = clientConnection.connectionId();
-        this.transactionId = new TransactionId( database, query.transactionId() ).toString();
+        // queries run over bolt may not have a transaction bound to it until the query router (fabric) has routed the query
+        // see FabricKernelTransaction.makeChildTransactionalContext
+        this.transactionId = query.transactionId() >= 0 ? new TransactionId( database, query.transactionId() ).toString() : null;
     }
 
     private static Long asMillis( Long micros )
