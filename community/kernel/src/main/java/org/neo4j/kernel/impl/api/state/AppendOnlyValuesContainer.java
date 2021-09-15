@@ -143,7 +143,6 @@ public class AppendOnlyValuesContainer implements ValuesContainer
         this.allocator = allocator;
         this.memoryTracker = memoryTracker;
         this.writer = new Writer();
-        this.currentChunk = addNewChunk( chunkSize );
     }
 
     @Override
@@ -152,7 +151,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
         assertNotClosed();
         requireNonNull( value, "value cannot be null" );
         final ByteBuffer buf = writer.write( value );
-        if ( buf.remaining() > currentChunk.remaining() )
+        if ( currentChunk == null || buf.remaining() > currentChunk.remaining() )
         {
             currentChunk = addNewChunk( max( chunkSize, buf.remaining() ) );
         }
