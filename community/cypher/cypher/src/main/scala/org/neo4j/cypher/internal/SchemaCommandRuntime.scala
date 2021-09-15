@@ -68,6 +68,7 @@ import org.neo4j.graphdb.schema.IndexType.TEXT
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 
 import scala.language.implicitConversions
 import scala.util.Try
@@ -324,11 +325,27 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
       }, None)
 
-    case DoNothingIfExistsForConstraint(_, entityName, props, assertion, name) => _ =>
-      SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
+    case DoNothingIfExistsForConstraint(_, entityName, props, assertion, name, options) => _ =>
+      SchemaExecutionPlan("DoNothingIfExist", (ctx, params) => {
+        def assertIndexBackedOptionsAndCheckIfRangeBacked(constraintType: String) =
+          IndexBackedConstraintsOptionsConverter(constraintType).convert(options, params) match {
+            case Some(CreateIndexWithStringProviderOptions(Some(provider), _)) => provider.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name())
+            case _ => false
+          }
+
+        val isRangeBacked = assertion match {
+          case NodeKey    => assertIndexBackedOptionsAndCheckIfRangeBacked("node key constraint")
+          case Uniqueness => assertIndexBackedOptionsAndCheckIfRangeBacked("uniqueness constraint")
+          case NodePropertyExistence =>
+            PropertyExistenceConstraintOptionsConverter("node").convert(options, params) // Assert empty options
+            false
+          case RelationshipPropertyExistence =>
+            PropertyExistenceConstraintOptionsConverter("relationship").convert(options, params) // Assert empty options
+            false
+        }
         val (entityId, _) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-        if (ctx.constraintExists(convertConstraintTypeToConstraintMatcher(assertion), entityId, propertyKeyIds: _*)) {
+        if (ctx.constraintExists(convertConstraintTypeToConstraintMatcher(assertion, isRangeBacked), entityId, propertyKeyIds: _*)) {
           IgnoredResult
         } else if (name.exists(ctx.constraintExists)) {
           IgnoredResult
@@ -352,12 +369,14 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   def isApplicable(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
 
-  def convertConstraintTypeToConstraintMatcher(assertion: ConstraintType): ConstraintDescriptor => Boolean =
+  def convertConstraintTypeToConstraintMatcher(assertion: ConstraintType, isRangeBacked: Boolean): ConstraintDescriptor => Boolean =
     assertion match {
       case NodePropertyExistence         => c => c.isNodePropertyExistenceConstraint
       case RelationshipPropertyExistence => c => c.isRelationshipPropertyExistenceConstraint
-      case Uniqueness                    => c => c.isUniquenessConstraint
-      case NodeKey                       => c => c.isNodeKeyConstraint
+      case Uniqueness if isRangeBacked   => c => c.isUniquenessConstraint && c.asIndexBackedConstraint().indexType() == IndexType.RANGE
+      case Uniqueness                    => c => c.isUniquenessConstraint && c.asIndexBackedConstraint().indexType() == IndexType.BTREE
+      case NodeKey if isRangeBacked      => c => c.isNodeKeyConstraint && c.asIndexBackedConstraint().indexType() == IndexType.RANGE
+      case NodeKey                       => c => c.isNodeKeyConstraint && c.asIndexBackedConstraint().indexType() == IndexType.BTREE
     }
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =

@@ -429,7 +429,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
         val colsDescription = if (verbose) pretty"allColumns" else pretty"defaultColumns"
         PlanDescriptionImpl(id, "ShowIndexes", NoChildren, Seq(Details(pretty"$typeDescription, $colsDescription")), variables, withRawCardinalities)
 
-      case DoNothingIfExistsForConstraint(entity, entityName, props, assertion, name) =>
+      case DoNothingIfExistsForConstraint(entity, entityName, props, assertion, name, _) =>
         val a = assertion match {
           case NodeKey    => scala.util.Right("IS NODE KEY")
           case Uniqueness => scala.util.Right("IS UNIQUE")
