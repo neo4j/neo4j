@@ -337,6 +337,46 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
+  test("hasNodePropertyExistenceConstraint should return true with existence constraint") {
+    inTx((_, tx) => {
+      tx.schema().constraintFor(Label.label("L")).assertPropertyExists("prop").create()
+    })
+
+    inTx((planContext, _) => {
+      planContext.hasNodePropertyExistenceConstraint("L", "prop") shouldBe true
+    })
+  }
+
+  test("hasNodePropertyExistenceConstraint should return true with node key constraint") {
+    inTx((_, tx) => {
+      tx.schema().constraintFor(Label.label("L")).assertPropertyIsNodeKey("prop").create()
+    })
+
+    inTx((planContext, _) => {
+      planContext.hasNodePropertyExistenceConstraint("L", "prop") shouldBe true
+    })
+  }
+
+  test("hasNodePropertyExistenceConstraint should return false with uniqueness constraint") {
+    inTx((_, tx) => {
+      tx.schema().constraintFor(Label.label("L")).assertPropertyIsUnique("prop").create()
+    })
+
+    inTx((planContext, _) => {
+      planContext.hasNodePropertyExistenceConstraint("L", "prop") shouldBe false
+    })
+  }
+
+  test("hasRelationshipPropertyExistenceConstraint should return true with existence constraint") {
+    inTx((_, tx) => {
+      tx.schema().constraintFor(RelationshipType.withName("L")).assertPropertyExists("prop").create()
+    })
+
+    inTx((planContext, _) => {
+      planContext.hasRelationshipPropertyExistenceConstraint("L", "prop") shouldBe true
+    })
+  }
+
   private def inTx(f: (TransactionBoundPlanContext, InternalTransaction) => Unit): Unit = {
     val tx = graph.beginTransaction(EXPLICIT, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)
