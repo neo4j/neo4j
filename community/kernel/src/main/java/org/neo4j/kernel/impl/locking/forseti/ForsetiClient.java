@@ -637,7 +637,7 @@ public class ForsetiClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            // marking client as closed
+            // marking client as stopped
             if ( stateHolder.stopClient() )
             {
                 // waiting for all operations to be completed

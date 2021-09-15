@@ -84,7 +84,7 @@ public final class LockClientStateHolder
     }
 
     /**
-     * Move the client to STOPPED, unless it is already in PREPARE or stopped
+     * Move the client to STOPPED, unless it is already in PREPARE or STOPPED
      */
     public boolean stopClient()
     {
