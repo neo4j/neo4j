@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizePatternComprehensi
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
+import org.neo4j.cypher.internal.rewriting.rewriters.rewriteOrderById
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -71,6 +72,7 @@ object ASTRewriter {
     inlineNamedPathsInPatternComprehensions,
     parameterValueTypeReplacement,
     projectNamedPaths,
+    rewriteOrderById,
   ), initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo))
 
   def rewrite(statement: Statement,

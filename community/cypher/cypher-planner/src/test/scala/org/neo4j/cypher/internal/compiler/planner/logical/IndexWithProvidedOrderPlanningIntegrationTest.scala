@@ -134,6 +134,59 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by variable from relationship type scan should plan with provided order") {
+      val query = s"MATCH (n)-[r:REL]->(m) RETURN r ORDER BY r $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 100)
+        .build()
+
+      val plan = planner.plan(query)
+
+      plan should equal(planner.subPlanBuilder()
+        .produceResults("r")
+        .relationshipTypeScan("(n)-[r:REL]->(m)", plannedOrder)
+        .build()
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by id of variable from label scan should plan with provided order") {
+      val query = s"MATCH (n:L) RETURN n ORDER BY id(n) $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setLabelCardinality("L", 100)
+        .build()
+
+      val plan = planner.plan(query)
+
+      plan should equal(planner.subPlanBuilder()
+        .produceResults("n")
+        .nodeByLabelScan("n", "L", plannedOrder)
+        .build()
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by id of variable from relationship type scan should plan with provided order") {
+      val query = s"MATCH (n)-[r:REL]->(m) RETURN r ORDER BY id(r) $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 100)
+        .build()
+
+      val plan = planner.plan(query)
+
+      plan should equal(planner.subPlanBuilder()
+        .produceResults("r")
+        .relationshipTypeScan("(n)-[r:REL]->(m)", plannedOrder)
+        .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by variable from label and join in MATCH with multiple labels") {
       val plan = new given {
         indexOn("Foo", "prop")
