@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.repr;
 
 import java.net.URI;
+import java.util.Map;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -60,11 +61,18 @@ public class OutputFormat
 
     public final Response ok( Representation representation )
     {
+        return ok( representation, Map.of() );
+    }
+
+    public final Response ok( Representation representation, Map<String,Object> header )
+    {
         if ( representation.isEmpty() )
         {
-            return noContent();
+            return noContent( header );
         }
-        return response( Response.ok(), representation );
+        var responseBuilder = Response.ok();
+        addHeader( header, responseBuilder );
+        return response( responseBuilder, representation );
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response okIncludeLocation( REPR representation )
@@ -105,7 +113,22 @@ public class OutputFormat
 
     public Response seeOther( URI uri )
     {
-        return Response.seeOther( baseUri.resolve( uri ) ).build();
+        return seeOther( uri, Map.of() );
+    }
+
+    public Response seeOther( URI uri, Map<String,Object> header )
+    {
+        var responseBuilder = Response.seeOther( baseUri.resolve( uri ) );
+        addHeader( header, responseBuilder );
+        return responseBuilder.build();
+    }
+
+    private static void addHeader( Map<String,Object> header, ResponseBuilder responseBuilder )
+    {
+        if ( header != null )
+        {
+            header.forEach( responseBuilder::header );
+        }
     }
 
     public Response conflict( Throwable exception )
@@ -222,11 +245,17 @@ public class OutputFormat
 
     public Response noContent()
     {
+        return noContent( Map.of() );
+    }
+
+    public Response noContent( Map<String,Object> header )
+    {
         representationWriteHandler.onRepresentationStartWriting();
         representationWriteHandler.onRepresentationWritten();
         representationWriteHandler.onRepresentationFinal();
-        return Response.status( Status.NO_CONTENT )
-                .build();
+        var responseBuilder = Response.status( Status.NO_CONTENT );
+        addHeader( header, responseBuilder );
+        return responseBuilder.build();
     }
 
     public Response methodNotAllowed( UnsupportedOperationException e )
