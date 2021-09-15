@@ -82,8 +82,7 @@ public class Main
             System.exit( 1 );
         }
 
-        Main main = new Main();
-        main.startShell( cliArgs );
+        System.exit( new Main().startShell( cliArgs ) );
     }
 
     /**
@@ -94,7 +93,7 @@ public class Main
         return hasSpecialInteractiveOutputStream ? this.out : ShellRunner.getOutputStreamForInteractivePrompt();
     }
 
-    void startShell( CliArgs cliArgs )
+    int startShell( CliArgs cliArgs )
     {
         if ( cliArgs.getVersion() )
         {
@@ -106,27 +105,39 @@ public class Main
         }
         if ( cliArgs.getVersion() || cliArgs.getDriverVersion() )
         {
-            return;
+            return EXIT_SUCCESS;
         }
         Logger logger = new AnsiLogger( cliArgs.getDebugMode() );
         PrettyConfig prettyConfig = new PrettyConfig( cliArgs );
 
         CypherShell shell = new CypherShell( logger, prettyConfig, ShellRunner.shouldBeInteractive( cliArgs ),
                                              cliArgs.getParameters() );
-        int exitCode = runShell( cliArgs, shell, logger );
-        System.exit( exitCode );
+
+        if ( cliArgs.getChangePassword() )
+        {
+            return runSetNewPassword( cliArgs, shell, logger );
+        }
+
+        return runShell( cliArgs, shell, logger );
+    }
+
+    private int runSetNewPassword( CliArgs cliArgs, CypherShell shell, Logger logger )
+    {
+        try
+        {
+            shell.changePassword( promptForPasswordChange( cliArgs.connectionConfig(), isOutputInteractive(), null ) );
+        }
+        catch ( Exception e )
+        {
+            logger.printError( "Failed to change password: " + e.getMessage() );
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
     }
 
     int runShell( CliArgs cliArgs, CypherShell shell, Logger logger )
     {
-        ConnectionConfig connectionConfig = new ConnectionConfig(
-                cliArgs.getScheme(),
-                cliArgs.getHost(),
-                cliArgs.getPort(),
-                cliArgs.getUsername(),
-                cliArgs.getPassword(),
-                cliArgs.getEncryption(),
-                cliArgs.getDatabase() );
+        ConnectionConfig connectionConfig = cliArgs.connectionConfig();
         try
         {
             //If user is passing in a cypher statement just run that and be done with it
@@ -143,10 +154,7 @@ public class Main
             else
             {
                 // Can only prompt for password if input has not been redirected
-                var newConnectionConfig = connectMaybeInteractively( shell, connectionConfig,
-                                                                     !cliArgs.getNonInteractive() && isInputInteractive(),
-                                                                     !cliArgs.getNonInteractive() && isOutputInteractive(),
-                                                                     !cliArgs.getNonInteractive()/*Don't ask for password if using --non-interactive*/ );
+                var newConnectionConfig = connectMaybeInteractively( shell, cliArgs );
 
                 if ( !newConnectionConfig.driverUrl().equals( connectionConfig.driverUrl() ) )
                 {
@@ -178,6 +186,13 @@ public class Main
             throws Exception
     {
         return connectMaybeInteractively( shell, connectionConfig, inputInteractive, outputInteractive, shouldPromptForPassword, null );
+    }
+
+    private ConnectionConfig connectMaybeInteractively( CypherShell shell, CliArgs cliArgs ) throws Exception
+    {
+        var inputInteractive = !cliArgs.getNonInteractive() && isInputInteractive();
+        var outputInteractive = !cliArgs.getNonInteractive() && isOutputInteractive();
+        return connectMaybeInteractively( shell, cliArgs.connectionConfig(), inputInteractive, outputInteractive, !cliArgs.getNonInteractive() );
     }
 
     /**
@@ -228,7 +243,7 @@ public class Main
             {
                 if ( shouldPromptForPassword && isPasswordChangeRequiredException( e ) )
                 {
-                    promptForPasswordChange( connectionConfig, outputInteractive );
+                    promptForPasswordChange( connectionConfig, outputInteractive, "Password change required" );
                     shell.changePassword( connectionConfig );
                     didPrompt = true;
                 }
@@ -264,7 +279,7 @@ public class Main
         }
     }
 
-    private void promptForPasswordChange( ConnectionConfig connectionConfig, boolean outputInteractive ) throws Exception
+    private ConnectionConfig promptForPasswordChange( ConnectionConfig connectionConfig, boolean outputInteractive, String message ) throws Exception
     {
         OutputStream promptOutputStream = getOutputStreamForInteractivePrompt();
 
@@ -275,7 +290,10 @@ public class Main
             // Ensure Reader does not handle user input for ctrl+C behaviour
             consoleReader.setHandleUserInterrupt( false );
 
-            consoleReader.println( "Password change required" );
+            if ( message != null )
+            {
+                consoleReader.println( message );
+            }
             if ( connectionConfig.username().isEmpty() )
             {
                 String username = outputInteractive ?
@@ -292,6 +310,7 @@ public class Main
                     promptForText( "new password", consoleReader, '*' );
             connectionConfig.setNewPassword( newPassword );
         }
+        return connectionConfig;
     }
 
     /**

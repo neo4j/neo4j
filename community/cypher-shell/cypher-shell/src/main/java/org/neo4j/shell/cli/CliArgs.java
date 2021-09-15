@@ -21,6 +21,7 @@ package org.neo4j.shell.cli;
 
 import java.util.Optional;
 
+import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.ShellParameterMap;
 
@@ -52,6 +53,7 @@ public class CliArgs
     private boolean wrap = true;
     private String inputFilename;
     private ParameterMap parameters = new ShellParameterMap();
+    private boolean changePassword;
 
     /**
      * Set the scheme to the primary value, or if null, the fallback value.
@@ -273,5 +275,20 @@ public class CliArgs
     public ParameterMap getParameters()
     {
         return parameters;
+    }
+
+    public void setChangePassword( boolean changePassword )
+    {
+        this.changePassword = changePassword;
+    }
+
+    public boolean getChangePassword()
+    {
+        return changePassword;
+    }
+
+    public ConnectionConfig connectionConfig()
+    {
+        return new ConnectionConfig( getScheme(), getHost(), getPort(), getUsername(), getPassword(), getEncryption(), getDatabase() );
     }
 }

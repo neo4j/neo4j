@@ -20,6 +20,7 @@
 package org.neo4j.shell.cli;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.impl.action.StoreConstArgumentAction;
 import net.sourceforge.argparse4j.impl.action.StoreTrueArgumentAction;
 import net.sourceforge.argparse4j.impl.choice.CollectionArgumentChoice;
@@ -146,6 +147,8 @@ public class CliArgHelper
         cliArgs.setVersion( ns.getBoolean( "version" ) );
 
         cliArgs.setDriverVersion( ns.getBoolean( "driver-version" ) );
+
+        cliArgs.setChangePassword( ns.getBoolean( "change-password" ) );
 
         return cliArgs;
     }
@@ -296,6 +299,11 @@ public class CliArgHelper
               .help( "an optional string of cypher to execute and then exit" );
         parser.addArgument( "-f", "--file" )
               .help( "Pass a file with cypher statements to be executed. After the statements have been executed cypher-shell will be shutdown" );
+
+        parser.addArgument( "--change-password" )
+              .action( Arguments.storeTrue() )
+              .dest( "change-password" )
+              .help( "change neo4j user password and exit" );
 
         return parser;
     }
