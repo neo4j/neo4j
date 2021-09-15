@@ -47,15 +47,15 @@ import scala.runtime.ScalaRunTime
  * to consume by the planner. If you want to trace this back to the original query - one QueryGraph
  * represents all the MATCH, OPTIONAL MATCHes, and update clauses between two WITHs.
  */
-case class QueryGraph(// !!! If you change anything here, make sure to update the equals method at the bottom of this class !!!
-                      patternRelationships: Set[PatternRelationship] = Set.empty,
-                      patternNodes: Set[String] = Set.empty,
-                      argumentIds: Set[String] = Set.empty,
-                      selections: Selections = Selections(),
-                      optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
-                      hints: Set[Hint] = Set.empty,
-                      shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
-                      mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty)
+case class QueryGraph( // !!! If you change anything here, make sure to update the equals method at the bottom of this class !!!
+                       patternRelationships: Set[PatternRelationship] = Set.empty,
+                       patternNodes: Set[String] = Set.empty,
+                       argumentIds: Set[String] = Set.empty,
+                       selections: Selections = Selections(),
+                       optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
+                       hints: Set[Hint] = Set.empty,
+                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
+                       mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty)
   extends UpdateGraph {
 
   /**
@@ -476,23 +476,25 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
    * Given the way our planner works, it can unpredictably plan these optional matches in different orders, which leads to an exception being thrown when
    * checking that the correct query has been solved.
    */
-  override def equals(in: scala.Any): Boolean = in match {
-    case other: QueryGraph if other canEqual this =>
-
-      patternRelationships == other.patternRelationships &&
-        patternNodes == other.patternNodes &&
-        argumentIds == other.argumentIds &&
-        selections == other.selections &&
-        optionalMatches.toSet == other.optionalMatches.toSet &&
-        hints == other.hints &&
-        shortestPathPatterns == other.shortestPathPatterns &&
-        mutatingPatterns == other.mutatingPatterns
-
-    case _ =>
-      false
+  override def equals(in: Any): Boolean = {
+    in match {
+      case other: QueryGraph =>
+        if (this eq other) {
+          true
+        } else {
+          patternRelationships == other.patternRelationships &&
+            patternNodes == other.patternNodes &&
+            argumentIds == other.argumentIds &&
+            selections == other.selections &&
+            optionalMatches.toSet == other.optionalMatches.toSet &&
+            hints == other.hints &&
+            shortestPathPatterns == other.shortestPathPatterns &&
+            mutatingPatterns == other.mutatingPatterns
+        }
+      case _ =>
+        false
+    }
   }
-
-  override def canEqual(that: Any): Boolean = that.isInstanceOf[QueryGraph]
 
   override lazy val hashCode: Int = {
     ScalaRunTime._hashCode((patternRelationships, patternNodes, argumentIds, selections, optionalMatches.toSet, hints.groupBy(identity), shortestPathPatterns, mutatingPatterns))
