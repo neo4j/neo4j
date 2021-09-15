@@ -19,13 +19,17 @@
  */
 package org.neo4j.server.rest.discovery;
 
+import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Variant;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.server.NeoWebServer;
@@ -44,6 +48,7 @@ public class DiscoveryService
     private final OutputFormat outputFormat;
     private final DiscoverableURIs uris;
     private final ServerVersionAndEdition serverInfo;
+    private final Map<String,Object> varyHeader;
 
     // Your IDE might tell you to make this less visible than public. Don't. JAX-RS demands is to be public.
     public DiscoveryService( @Context Config config, @Context OutputFormat outputFormat, @Context DiscoverableURIs uris, @Context NeoWebServer neoWebServer )
@@ -58,19 +63,31 @@ public class DiscoveryService
         this.outputFormat = outputFormat;
         this.uris = uris;
         this.serverInfo = serverInfo;
+        this.varyHeader = Map.of( HttpHeaders.VARY, HttpHeaders.ACCEPT );
     }
 
-    @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    public Response getDiscoveryDocument( @Context UriInfo uriInfo )
+    Response getDiscoveryDocument( UriInfo uriInfo )
     {
-        return outputFormat.ok( new DiscoveryRepresentation( uris.update( uriInfo.getBaseUri() ), serverInfo ) );
+        return outputFormat.ok( new DiscoveryRepresentation( uris.update( uriInfo.getBaseUri() ), serverInfo ), varyHeader );
     }
 
     @GET
     @Produces( MediaType.WILDCARD )
-    public Response redirectToBrowser()
+    public Response get( @Context Request request, @Context UriInfo uriInfo )
     {
-        return outputFormat.seeOther( config.get( ServerSettings.browser_path ) );
+
+        Variant v = request.selectVariant( Variant.mediaTypes( MediaType.APPLICATION_JSON_TYPE, MediaType.TEXT_HTML_TYPE ).build() );
+        if ( v == null )
+        {
+            return Response.serverError().status( Response.Status.NOT_ACCEPTABLE ).build();
+        }
+        else if ( v.getMediaType() == MediaType.APPLICATION_JSON_TYPE )
+        {
+            return getDiscoveryDocument( uriInfo );
+        }
+        else
+        {
+            return outputFormat.seeOther( config.get( ServerSettings.browser_path ), varyHeader );
+        }
     }
 }

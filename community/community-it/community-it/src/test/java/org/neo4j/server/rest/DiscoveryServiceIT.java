@@ -25,8 +25,12 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpClient.newHttpClient;
@@ -71,6 +75,40 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     {
         var response = requestDiscovery();
 
+        assertJsonResponseBody( response );
+    }
+
+    @Test
+    public void shouldFigureOutMatchingFormatFromVariousAcceptHeaders() throws Exception
+    {
+
+        var request = HttpRequest.newBuilder( container().getBaseUri() )
+                                 .header( ACCEPT, "application/vnd.neo4j.jolt+json-seq; q=1.0" )
+                                 .header( ACCEPT, "application/json; q=0.9" )
+                                 .header( ACCEPT, "text/html; q=0.0" )
+                                 .GET().build();
+        var httpClient = HttpClient.newBuilder().followRedirects( NEVER ).build();
+        var response = httpClient.send( request, ofString() );
+
+        assertEquals( 200, response.statusCode() );
+        assertJsonResponseBody( response );
+        assertThat( response.headers().firstValue( HttpHeaders.VARY ).orElseThrow() ).isEqualTo( ACCEPT );
+    }
+
+    @Test
+    public void shouldNotAcceptUnacceptableThings() throws Exception
+    {
+
+        var request = HttpRequest.newBuilder( container().getBaseUri() )
+                                 .header( ACCEPT, MediaType.TEXT_PLAIN )
+                                 .GET().build();
+        var httpClient = HttpClient.newBuilder().followRedirects( NEVER ).build();
+        var response = httpClient.send( request, discarding() );
+        assertEquals( Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.statusCode() );
+    }
+
+    private void assertJsonResponseBody( HttpResponse<String> response ) throws JsonParseException
+    {
         var responseBodyMap = JsonHelper.jsonToMap( response.body() );
 
         var managementKey = "management";
@@ -105,6 +143,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
         var response = httpClient.send( request, discarding() );
 
         assertEquals( 303, response.statusCode() );
+        assertThat( response.headers().firstValue( HttpHeaders.VARY ).orElseThrow() ).isEqualTo( ACCEPT );
     }
 
     private static HttpResponse<String> requestDiscovery() throws IOException, InterruptedException
