@@ -168,6 +168,10 @@ object ShowIndexesCommand {
                                    maybeConstraint: Option[ConstraintDescriptor]): String = {
 
     val escapedName = s"`${escapeBackticks(name)}`"
+
+    def constraintCommand(labelsOrTypesWithColons: String, escapedNodeProperties: String, predicate: String, options: String): String =
+      s"CREATE CONSTRAINT $escapedName FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedNodeProperties) $predicate OPTIONS $options"
+
     indexType match {
       case IndexType.BTREE =>
         val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
@@ -178,9 +182,9 @@ object ShowIndexesCommand {
 
         maybeConstraint match {
           case Some(constraint) if constraint.isUniquenessConstraint =>
-            s"CREATE CONSTRAINT $escapedName FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedNodeProperties) IS UNIQUE OPTIONS $optionsString"
+            constraintCommand(labelsOrTypesWithColons, escapedNodeProperties, "IS UNIQUE", optionsString)
           case Some(constraint) if constraint.isNodeKeyConstraint =>
-            s"CREATE CONSTRAINT $escapedName FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedNodeProperties) IS NODE KEY OPTIONS $optionsString"
+            constraintCommand(labelsOrTypesWithColons, escapedNodeProperties, "IS NODE KEY", optionsString)
           case Some(_) =>
             throw new IllegalArgumentException("Expected an index or index backed constraint, found another constraint.")
           case None =>
@@ -196,14 +200,27 @@ object ShowIndexesCommand {
       case IndexType.RANGE =>
         val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
 
-        entityType match {
-          case EntityType.NODE =>
+        maybeConstraint match {
+          case Some(constraint) if constraint.isUniquenessConstraint =>
             val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
-            s"CREATE RANGE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties)"
-          case EntityType.RELATIONSHIP =>
-            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-            s"CREATE RANGE INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties)"
-          case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
+            val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
+            constraintCommand(labelsOrTypesWithColons, escapedNodeProperties, "IS UNIQUE", optionsString)
+          case Some(constraint) if constraint.isNodeKeyConstraint =>
+            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
+            val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
+            constraintCommand(labelsOrTypesWithColons, escapedNodeProperties, "IS NODE KEY", optionsString)
+          case Some(_) =>
+            throw new IllegalArgumentException("Expected an index or index backed constraint, found another constraint.")
+          case None =>
+            entityType match {
+              case EntityType.NODE =>
+                val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
+                s"CREATE RANGE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties)"
+              case EntityType.RELATIONSHIP =>
+                val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+                s"CREATE RANGE INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties)"
+              case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
+            }
         }
       case IndexType.FULLTEXT =>
         val labelsOrTypesWithBars = asEscapedString(labelsOrTypes, barStringJoiner)

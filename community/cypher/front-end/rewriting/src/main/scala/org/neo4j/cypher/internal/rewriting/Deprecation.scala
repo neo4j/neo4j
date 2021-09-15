@@ -126,13 +126,29 @@ object Deprecations {
           Some(DeprecatedCreateIndexSyntax(i.position))
         )
 
+        // CREATE BTREE INDEX ...
       case i: ast.CreateBtreeNodeIndex =>
         Deprecation(
           None,
           Some(DeprecatedBtreeIndexSyntax(i.position))
         )
 
+        // CREATE BTREE INDEX ...
       case i: ast.CreateBtreeRelationshipIndex =>
+        Deprecation(
+          None,
+          Some(DeprecatedBtreeIndexSyntax(i.position))
+        )
+
+      // CREATE INDEX ... OPTIONS {<btree options>}
+      case i: ast.CreateRangeNodeIndex if i.fromDefault && hasBtreeOptions(i.options) =>
+        Deprecation(
+          None,
+          Some(DeprecatedBtreeIndexSyntax(i.position))
+        )
+
+      // CREATE INDEX ... OPTIONS {<btree options>}
+      case i: ast.CreateRangeRelationshipIndex if i.fromDefault && hasBtreeOptions(i.options) =>
         Deprecation(
           None,
           Some(DeprecatedBtreeIndexSyntax(i.position))

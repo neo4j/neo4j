@@ -82,8 +82,37 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("deprecated create btree index syntax") {
     // Note: This index syntax was introduced in 4.X
+
+    // CREATE BTREE INDEX ...
     assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE BTREE INDEX FOR (n:Label) ON (n.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
     assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE BTREE INDEX name FOR ()-[r:TYPE]-() ON (r.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
+
+    // CREATE INDEX ... OPTIONS { <btree options> }
+    assertNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE INDEX FOR (n:Label) ON (n.prop)
+         |OPTIONS {IndexProvider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
+    assertNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE INDEX FOR ()-[r:TYPE]-() ON (r.prop)
+         |OPTIONS {indexprovider: '${NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()}'}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
+    assertNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE INDEX FOR (n:Label) ON (n.prop)
+         |OPTIONS {IndexConfig: {`${SPATIAL_CARTESIAN_MAX.getSettingName}`: [40, 60]}}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
+    assertNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE INDEX FOR ()-[r:TYPE]-() ON (r.prop)
+         |OPTIONS {indexconfig: {`${SPATIAL_WGS84_MIN.getSettingName}`: [-40, -60]}}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
+    assertNoNotificationInSupportedVersions_4_X(
+      s"""EXPLAIN CREATE INDEX FOR (n:Label) ON (n.prop)
+         |OPTIONS {indexconfig: {`${FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName}`: false}}""".stripMargin,
+      DEPRECATED_BTREE_INDEX_SYNTAX
+    )
   }
 
   test("deprecated drop index syntax") {
