@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOController;
@@ -57,6 +58,7 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -127,8 +129,8 @@ public class MuninnPageCache implements PageCache
     // Keep this many pages free and ready for use in faulting.
     // This will be truncated to be no more than half of the number of pages
     // in the cache.
-    private static final int pagesToKeepFree = getInteger(
-            MuninnPageCache.class, "pagesToKeepFree", 30 );
+    private static final int percentPagesToKeepFree = getInteger(
+            MuninnPageCache.class, "percentPagesToKeepFree", 5 );
 
     // This is how many times that, during cooperative eviction, we'll iterate through the entire set of pages looking
     // for a page to evict, before we give up and throw CacheLiveLockException. This MUST be greater than 1.
@@ -387,7 +389,7 @@ public class MuninnPageCache implements PageCache
         this.swapperFactory = swapperFactory;
         this.cachePageSize = configuration.pageSize;
         this.reservedPageBytes = configuration.reservedPageSize;
-        this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
+        this.keepFree = calculatePagesToKeepFree( maxPages );
         this.pageCacheTracer = configuration.pageCacheTracer;
         this.printExceptionsOnClose = true;
         this.bufferFactory = configuration.bufferFactory;
@@ -401,7 +403,14 @@ public class MuninnPageCache implements PageCache
         setFreelistHead( new AtomicInteger() );
 
         // Expose the total number of pages
-        configuration.pageCacheTracer.maxPages( maxPages, cachePageSize);
+        pageCacheTracer.maxPages( maxPages, cachePageSize);
+    }
+
+    private static int calculatePagesToKeepFree( int maxPages )
+    {
+        // we can have number of pages that we want to keep free max at 50% of total pages and as low as 30 (absolute number)
+        int freePages = (int) (maxPages * ((float) Math.min( percentPagesToKeepFree, 50 ) / 100));
+        return Math.max( 30, freePages );
     }
 
     private static void verifyHacks()
@@ -1198,5 +1207,11 @@ public class MuninnPageCache implements PageCache
         var fileName = pagedFile.swapper.path().getFileName();
         var monitoringParams = systemJob( pagedFile.databaseName, "Pre-fetching of file '" + fileName + "'" );
         cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, monitoringParams, preFetcher );
+    }
+
+    @VisibleForTesting
+    int getKeepFree()
+    {
+        return keepFree;
     }
 }

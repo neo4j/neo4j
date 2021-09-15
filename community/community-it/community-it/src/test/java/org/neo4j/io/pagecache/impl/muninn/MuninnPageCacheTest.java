@@ -131,6 +131,25 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    void evaluateNumberOfPagesToKeepFree()
+    {
+        try ( MuninnPageCache pageCache = createPageCache( fs, 50, new DefaultPageCacheTracer() ) )
+        {
+            assertEquals( 30, pageCache.getKeepFree() );
+        }
+
+        try ( MuninnPageCache pageCache = createPageCache( fs, 100, new DefaultPageCacheTracer() ) )
+        {
+            assertEquals( 30, pageCache.getKeepFree() );
+        }
+
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10_000, new DefaultPageCacheTracer() ) )
+        {
+            assertEquals( 500, pageCache.getKeepFree() );
+        }
+    }
+
+    @Test
     void countOpenedAndClosedCursors() throws IOException
     {
         DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
