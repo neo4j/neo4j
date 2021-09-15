@@ -31,8 +31,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Variant;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -52,6 +55,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
@@ -243,7 +247,9 @@ public class DiscoveryServiceTest
         DiscoveryService ds =
                 new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ), communityDiscoverableURIs( config, null ) );
 
-        Response response = ds.redirectToBrowser();
+        Request request = mock( Request.class );
+        when( request.selectVariant( anyList() ) ).thenReturn( Variant.mediaTypes( MediaType.TEXT_HTML_TYPE ).add().build().get( 0 ) );
+        Response response = ds.get( request, uriInfo( this.baseUri ) );
 
         assertThat( response.getMetadata().getFirst( "Location" ), is( new URI( "http://www.example" + ".com:5435/browser/" ) ) );
     }

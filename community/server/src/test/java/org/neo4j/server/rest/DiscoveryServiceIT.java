@@ -23,8 +23,12 @@ import com.sun.jersey.api.client.Client;
 import org.junit.Test;
 
 import java.util.Map;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_HTML_TYPE;
@@ -65,6 +69,35 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     {
         JaxRsResponse response = getDiscoveryDocument();
 
+        assertJsonResponseBody( response );
+    }
+
+    @Test
+    public void shouldFigureOutMatchingFormatFromVariousAcceptHeaders() throws Exception
+    {
+
+        JaxRsResponse response = new RestRequest( server().baseUri() )
+                                 .header( HttpHeaders.ACCEPT, "application/vnd.neo4j.jolt+json-seq; q=1.0" )
+                                 .header( HttpHeaders.ACCEPT, "application/json; q=0.9" )
+                                 .header( HttpHeaders.ACCEPT, "text/html; q=0.0" )
+                                 .get();
+
+        assertEquals( 200, response.getStatus() );
+        assertJsonResponseBody( response );
+        assertEquals( HttpHeaders.ACCEPT, response.getHeaders().getFirst( HttpHeaders.VARY ) );
+    }
+
+    @Test
+    public void shouldNotAcceptUnacceptableThings()
+    {
+        JaxRsResponse response = new RestRequest( server().baseUri() )
+                .accept( MediaType.TEXT_PLAIN_TYPE )
+                .get();
+        assertEquals( Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus() );
+    }
+
+    private void assertJsonResponseBody( JaxRsResponse response ) throws JsonParseException
+    {
         Map<String,Object> map = JsonHelper.jsonToMap( response.getEntity() );
 
         String managementKey = "management";
@@ -87,6 +120,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
                 new RestRequest( null, nonRedirectingClient ).get( server().baseUri().toString(), TEXT_HTML_TYPE );
 
         assertEquals( 303, clientResponse.getStatus() );
+        assertEquals( HttpHeaders.ACCEPT, clientResponse.getHeaders().getFirst( HttpHeaders.VARY ) );
     }
 
     private JaxRsResponse getDiscoveryDocument()
