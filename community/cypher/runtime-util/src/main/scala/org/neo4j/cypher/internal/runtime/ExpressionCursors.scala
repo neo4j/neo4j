@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
@@ -28,6 +29,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.io.IOUtils
 import org.neo4j.io.pagecache.context.CursorContext
+import org.neo4j.kernel.impl.newapi.TraceableCursor
 import org.neo4j.memory.MemoryTracker
 
 /**
@@ -36,18 +38,52 @@ import org.neo4j.memory.MemoryTracker
  *
  * @param cursorFactory cursor factor to allocate cursors with.
  */
-class ExpressionCursors(cursorFactory: CursorFactory, cursorContext: CursorContext, memoryTracker: MemoryTracker) extends DefaultCloseListenable with AutoCloseablePlus {
-  val nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
-  val relationshipScanCursor: RelationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext)
-  val propertyCursor: PropertyCursor = cursorFactory.allocatePropertyCursor(cursorContext, memoryTracker)
+class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
+                        private[this] var cursorContext: CursorContext,
+                        memoryTracker: MemoryTracker)
+  extends DefaultCloseListenable with ResourceManagedCursorPool with AutoCloseablePlus {
+
+  private[this] var _nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
+  private[this] var _relationshipScanCursor: RelationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext)
+  private[this] var _propertyCursor: PropertyCursor = cursorFactory.allocatePropertyCursor(cursorContext, memoryTracker)
+
+  def nodeCursor: NodeCursor = {
+    if (_nodeCursor == null) {
+      _nodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
+    }
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!_nodeCursor.asInstanceOf[TraceableCursor[_]].returnedToPool)
+    _nodeCursor
+  }
+
+  def relationshipScanCursor: RelationshipScanCursor = {
+    if (_relationshipScanCursor == null) {
+      _relationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext)
+    }
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!_relationshipScanCursor.asInstanceOf[TraceableCursor[_]].returnedToPool)
+    _relationshipScanCursor
+  }
+
+  def propertyCursor: PropertyCursor = {
+    if (_propertyCursor == null) {
+      _propertyCursor = cursorFactory.allocatePropertyCursor(cursorContext, memoryTracker)
+    }
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!_propertyCursor.asInstanceOf[TraceableCursor[_]].returnedToPool)
+    _propertyCursor
+  }
 
   override def isClosed: Boolean = {
-    nodeCursor.isClosed && relationshipScanCursor.isClosed && propertyCursor.isClosed
+    _nodeCursor == null && _relationshipScanCursor == null && _propertyCursor == null
   }
 
   override def closeInternal(): Unit = {
     if (!isClosed) {
-      IOUtils.closeAll(nodeCursor, relationshipScanCursor, propertyCursor)
+      val nodeCursorToClose = _nodeCursor
+      val relationshipScanCursorToClose = _relationshipScanCursor
+      val propertyCursorToClose = _propertyCursor
+      _nodeCursor = null
+      _relationshipScanCursor = null
+      _propertyCursor = null
+      IOUtils.closeAll(nodeCursorToClose, relationshipScanCursorToClose, propertyCursorToClose)
     }
   }
 
@@ -55,5 +91,12 @@ class ExpressionCursors(cursorFactory: CursorFactory, cursorContext: CursorConte
     nodeCursor.setTracer(tracer)
     relationshipScanCursor.setTracer(tracer)
     propertyCursor.setTracer(tracer)
+  }
+
+  override def closeCursors(): Unit = closeInternal()
+
+  override def setCursorFactoryAndContext(cursorFactory: CursorFactory, cursorContext: CursorContext): Unit = {
+    this.cursorFactory = cursorFactory
+    this.cursorContext = cursorContext
   }
 }

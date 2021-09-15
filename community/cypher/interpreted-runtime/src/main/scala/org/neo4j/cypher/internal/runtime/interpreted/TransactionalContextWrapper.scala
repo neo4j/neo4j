@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
+import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -45,6 +46,8 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
   override def transaction: KernelTransaction = tc.kernelTransaction
 
   override def cursors: CursorFactory = if (threadSafeCursors == null) tc.kernelTransaction.cursors() else threadSafeCursors
+
+  override def cursorContext: CursorContext = tc.kernelTransaction.cursorContext
 
   override def dataRead: Read = tc.kernelTransaction().dataRead()
 

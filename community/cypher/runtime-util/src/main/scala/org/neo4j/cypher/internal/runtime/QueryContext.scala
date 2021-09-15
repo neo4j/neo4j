@@ -50,6 +50,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
+import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
@@ -347,6 +348,13 @@ trait QueryContext extends TokenContext with DbAccess {
       case Some(bool) => Optional.of(bool)
     }
   }
+
+  def createExpressionCursors(): ExpressionCursors = {
+    val transactionMemoryTracker = transactionalContext.transaction.memoryTracker()
+    val cursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.cursorContext, transactionMemoryTracker)
+    resources.trace(cursors)
+    cursors
+  }
 }
 
 trait Operations[T, CURSOR] {
@@ -410,6 +418,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def transaction : KernelTransaction
 
   def cursors : CursorFactory
+
+  def cursorContext: CursorContext
 
   def dataRead: Read
 
