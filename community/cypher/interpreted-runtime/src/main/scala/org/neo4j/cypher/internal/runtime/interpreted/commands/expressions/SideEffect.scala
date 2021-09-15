@@ -40,6 +40,7 @@ import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 trait SideEffect {
   def execute(row: CypherRow, state: QueryState): Unit
@@ -50,7 +51,7 @@ case class CreateNode(command: CreateNodeCommand, allowNullOrNaNProperty: Boolea
                        state: QueryState): Unit = {
     val query = state.query
     val labelIds = command.labels.map(_.getOrCreateId(query)).toArray
-    val node = query.createNode(labelIds)
+    val node = query.createNodeId(labelIds)
     command.properties.foreach(p => p.apply(row, state) match {
       case IsMap(map) =>
         map(state).foreach {
@@ -61,14 +62,14 @@ case class CreateNode(command: CreateNodeCommand, allowNullOrNaNProperty: Boolea
           case (k, v: FloatingPointValue) if !allowNullOrNaNProperty && v.isNaN => handleNaNValue(command.labels.map(_.name), k)
           case (k, v) =>
             val propId = query.getOrCreatePropertyKeyId(k)
-            query.nodeWriteOps.setProperty(node.id(), propId, makeValueNeoSafe(v))
+            query.nodeWriteOps.setProperty(node, propId, makeValueNeoSafe(v))
           }
 
       case value =>
         throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
 
     })
-    row.set(command.idName, node)
+    row.set(command.idName, VirtualValues.node(node))
   }
 }
 

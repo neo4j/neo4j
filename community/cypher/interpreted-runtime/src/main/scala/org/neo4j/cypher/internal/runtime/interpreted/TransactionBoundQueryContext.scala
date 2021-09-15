@@ -114,7 +114,6 @@ import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.impl.util.DefaultValueMapper
-import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntity
 import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntityLazyLoad
@@ -154,9 +153,6 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count
   }
-
-  override def createNode(labels: Array[Int]): NodeValue = ValueUtils
-    .fromNodeEntity(entityAccessor.newNodeEntity(writes().nodeCreateWithLabels(labels)))
 
   override def createNodeId(labels: Array[Int]): Long = writes().nodeCreateWithLabels(labels)
 

@@ -333,8 +333,6 @@ trait WriteQueryContext {
 
   def relationshipWriteOps: RelationshipOperations
 
-  def createNode(labels: Array[Int]): NodeValue
-
   def createNodeId(labels: Array[Int]): Long
 
   def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue

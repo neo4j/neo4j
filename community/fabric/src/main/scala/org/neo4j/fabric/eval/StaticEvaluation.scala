@@ -178,8 +178,6 @@ object StaticEvaluation {
 
     override def relationshipWriteOps: RelationshipOperations = notAvailable()
 
-    override def createNode(labels: Array[Int]): NodeValue = notAvailable()
-
     override def createNodeId(labels: Array[Int]): Long = notAvailable()
 
     override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = notAvailable()

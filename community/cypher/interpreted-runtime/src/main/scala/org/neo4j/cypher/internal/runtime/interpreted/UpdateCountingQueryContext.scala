@@ -99,11 +99,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     super.addStatistics(statistics)
   }
 
-  override def createNode(labels: Array[Int]): NodeValue = {
-    nodesCreated.increase()
-    labelsAdded.increase(labels.length)
-    inner.createNode(labels)
-  }
 
   override def createNodeId(labels: Array[Int]): Long = {
     nodesCreated.increase()

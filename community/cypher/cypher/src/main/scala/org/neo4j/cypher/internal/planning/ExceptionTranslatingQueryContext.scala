@@ -395,9 +395,6 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(tokenNameLookup, inner.setLabelsOnNode(node, labelIds))
 
-  override def createNode(labels: Array[Int]): NodeValue =
-    translateException(tokenNameLookup, inner.createNode(labels))
-
   override def createNodeId(labels: Array[Int]): Long =
     translateException(tokenNameLookup, inner.createNodeId(labels))
 

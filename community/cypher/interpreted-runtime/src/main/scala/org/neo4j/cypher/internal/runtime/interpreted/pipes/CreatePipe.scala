@@ -35,6 +35,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 /**
  * Extends PipeWithSource with methods for setting properties and labels on entities.
@@ -87,11 +89,11 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
    */
   protected def createNode(context: CypherRow,
                            state: QueryState,
-                           data: CreateNodeCommand): (String, NodeValue) = {
+                           data: CreateNodeCommand): (String, VirtualNodeValue) = {
     val labelIds = data.labels.map(_.getOrCreateId(state.query)).toArray
-    val node = state.query.createNode(labelIds)
-    data.properties.foreach(setProperties(context, state, node.id(), _, state.query.nodeWriteOps))
-    data.idName -> node
+    val node = state.query.createNodeId(labelIds)
+    data.properties.foreach(setProperties(context, state, node, _, state.query.nodeWriteOps))
+    data.idName -> VirtualValues.node(node)
   }
 
   /**
