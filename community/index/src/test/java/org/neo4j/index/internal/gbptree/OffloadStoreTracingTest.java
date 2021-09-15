@@ -102,7 +102,6 @@ class OffloadStoreTracingTest
 
         offloadStore.free( 1, 1, 1, cursorContext );
 
-        assertThat( cursorTracer.hits() ).isEqualTo( 0 );
         assertThat( cursorTracer.faults() ).isEqualTo( 1 );
         assertThat( cursorTracer.pins() ).isEqualTo( 1 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
@@ -147,7 +146,6 @@ class OffloadStoreTracingTest
     private void assertReadCursorEvents()
     {
         var cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
         assertThat( cursorTracer.faults() ).isEqualTo( 0 );
         assertThat( cursorTracer.pins() ).isEqualTo( 1 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
@@ -156,7 +154,6 @@ class OffloadStoreTracingTest
     private void assertWriteCursorEvents()
     {
         var cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
         assertThat( cursorTracer.faults() ).isEqualTo( 1 );
         assertThat( cursorTracer.pins() ).isEqualTo( 2 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
@@ -167,7 +164,6 @@ class OffloadStoreTracingTest
         var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();
-        assertThat( cursorTracer.hits() ).isZero();
         assertThat( cursorTracer.faults() ).isZero();
     }
 }

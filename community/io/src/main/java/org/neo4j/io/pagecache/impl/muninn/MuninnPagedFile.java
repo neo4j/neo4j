@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.buffer.NativeIOBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
+import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -272,6 +273,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         // But if we get here, to close the swapper, then we are definitely unmapping!
         closeStackTrace = new Exception( "tracing paged file closing" );
 
+        evictPages();
         if ( !deleteOnClose )
         {
             swapper.close();
@@ -280,21 +282,50 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         {
             swapper.closeAndDelete();
         }
-        if ( getSwappers().free( swapperId ) )
+        pageCache.sweep( getSwappers() );
+    }
+
+    private void evictPages() throws IOException
+    {
+        long totalPages = 0;
+        long evictedPages = 0;
+        PageList pages = pageCache.pages;
+        try ( EvictionRunEvent evictionEvent = pageCacheTracer.beginEviction() )
         {
-            // We need to do a vacuum of the cache, fully evicting all pages that have freed swapper ids.
-            // We cannot reuse those swapper ids until there are no more pages using them.
-            pageCache.vacuum( getSwappers() );
-        }
-        long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
-        int[][] tt = this.translationTable;
-        for ( int[] chunk : tt )
-        {
-            for ( int i = 0; i < chunk.length; i++ )
+            long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
+            int[][] tt = this.translationTable;
+            for ( int[] chunk : tt )
             {
-                filePageId++;
-                TRANSLATION_TABLE_ARRAY.setVolatile( chunk, computeChunkIndex( filePageId ), UNMAPPED_TTE );
+                for ( int i = 0; i < chunk.length; i++ )
+                {
+                    filePageId++;
+                    int chunkIndex = computeChunkIndex( filePageId );
+
+                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex );
+                    if ( pageId != UNMAPPED_TTE )
+                    {
+                        long pageRef = deref( pageId );
+                        // try to evict page, but we can fail if there is a race or if we still have cursor open for some page
+                        // in this case we will deal with this page later on postponed sweep or eviction will do its business
+                        if ( pages.tryEvict( pageRef, evictionEvent ) )
+                        {
+                            pageCache.addFreePageToFreelist( pageRef, evictionEvent );
+                            evictedPages++;
+                        }
+                        totalPages++;
+                        TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, UNMAPPED_TTE );
+                    }
+                }
             }
+        }
+        SwapperSet swappers = getSwappers();
+        if ( totalPages == evictedPages )
+        {
+            swappers.free( swapperId );
+        }
+        else
+        {
+            swappers.postponedFree( swapperId );
         }
     }
 

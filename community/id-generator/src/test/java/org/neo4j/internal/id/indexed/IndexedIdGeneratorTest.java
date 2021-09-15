@@ -282,7 +282,7 @@ class IndexedIdGeneratorTest
 
     @ParameterizedTest
     @ValueSource( ints = {1, 2, 4, 8, 16} )
-    void shouldStayConsistentAndNotLoseIdsInConcurrent_Allocate_Delete_Free_ClearCache( int maxSlotSize ) throws Throwable
+    void shouldStayConsistentAndNotLoseIdsInConcurrentAllocateDeleteFreeClearCache( int maxSlotSize ) throws Throwable
     {
         // given
         open( Config.defaults( strictly_prioritize_id_freelist, true ), NO_MONITOR, writable(),
@@ -788,13 +788,11 @@ class IndexedIdGeneratorTest
             try ( var marker = idGenerator.marker( cursorContext ) )
             {
                 assertThat( cursorTracer.pins() ).isOne();
-                assertThat( cursorTracer.hits() ).isOne();
 
                 marker.markDeleted( 1 );
 
                 assertThat( cursorTracer.pins() ).isGreaterThan( 1 );
                 assertThat( cursorTracer.unpins() ).isGreaterThan( 1 );
-                assertThat( cursorTracer.hits() ).isGreaterThan( 1 );
             }
         }
     }
@@ -886,7 +884,6 @@ class IndexedIdGeneratorTest
             // 2 state pages involved into checkpoint (twice) + one more pin/hit/unpin on maintenance + range marker writer
             assertThat( cursorTracer.pins() ).isEqualTo( 6 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 6 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 6 );
         }
     }
 

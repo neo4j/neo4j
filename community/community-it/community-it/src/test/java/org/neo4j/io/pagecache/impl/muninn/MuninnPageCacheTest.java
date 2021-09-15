@@ -20,6 +20,8 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -128,6 +130,50 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 return super.beginCacheFlush();
             }
         };
+    }
+
+    @Test
+    void reuseSwapperIdOnFileClose() throws IOException
+    {
+        try ( MuninnPageCache pageCache = createPageCache( fs, 50, new DefaultPageCacheTracer() ) )
+        {
+            int swapperId = pagedFileSwapperId( pageCache );
+            for ( int i = 0; i < 10; i++ )
+            {
+                assertEquals( swapperId, pagedFileSwapperId( pageCache ) );
+            }
+        }
+    }
+
+    @Test
+    void doNotReuseSwapperIdWhenThereAreOpenCursors() throws IOException
+    {
+        try ( MuninnPageCache pageCache = createPageCache( fs, 50, new DefaultPageCacheTracer() ) )
+        {
+            MutableIntSet swapperIds = IntSets.mutable.empty();
+            ArrayList<CursorSwapperId> cursorWithIds = new ArrayList<>();
+            SwapperSet swapperSet = extractSwapperSet( pageCache );
+
+            while ( !swapperSet.skipSweep() )
+            {
+                CursorSwapperId cursorSwapperId = pagedFileCursorSwapperId( pageCache );
+                assertTrue( swapperIds.add( cursorSwapperId.cursorId ), "swapper id with open cursors should not be reused" );
+
+                cursorWithIds.add( cursorSwapperId );
+            }
+
+            for ( CursorSwapperId cursorWithId : cursorWithIds )
+            {
+                cursorWithId.pageCursor.close();
+            }
+
+            var sweeppedIds = IntSets.mutable.empty();
+            swapperSet.sweep( sweeppedIds::addAll );
+            for ( CursorSwapperId cursorWithId : cursorWithIds )
+            {
+                assertTrue( swapperIds.contains( cursorWithId.cursorId ) );
+            }
+        }
     }
 
     @Test
@@ -1602,6 +1648,24 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
     }
 
+    private int pagedFileSwapperId( MuninnPageCache pageCache ) throws IOException
+    {
+        try ( MuninnPagedFile pagedFile = (MuninnPagedFile) map( pageCache, file( "a" ), 8 ) )
+        {
+            return pagedFile.swapperId;
+        }
+    }
+
+    private CursorSwapperId pagedFileCursorSwapperId( MuninnPageCache pageCache ) throws IOException
+    {
+        try ( MuninnPagedFile pagedFile = (MuninnPagedFile) map( pageCache, file( "a" ), 8 ) )
+        {
+            PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL );
+            pageCursor.next();
+            return new CursorSwapperId( pageCursor, pagedFile.swapperId );
+        }
+    }
+
     private ByteBuffer readIntoBuffer( String fileName ) throws IOException
     {
         ByteBuffer buffer = ByteBuffers.allocate( 16, INSTANCE );
@@ -1611,6 +1675,37 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
         buffer.flip();
         return buffer;
+    }
+
+    private SwapperSet extractSwapperSet( MuninnPageCache pageCache ) throws IOException
+    {
+        try ( var pagedFile = (MuninnPagedFile) map( pageCache, file( "a" ), 8 ) )
+        {
+            return pagedFile.getSwappers();
+        }
+    }
+
+    private static class CursorSwapperId implements AutoCloseable
+    {
+        private final PageCursor pageCursor;
+        private final int cursorId;
+
+        public CursorSwapperId( PageCursor pageCursor, int cursorId )
+        {
+            this.pageCursor = pageCursor;
+            this.cursorId = cursorId;
+        }
+
+        public int getCursorId()
+        {
+            return cursorId;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            pageCursor.close();
+        }
     }
 
     private static class TestVersionContext implements VersionContext

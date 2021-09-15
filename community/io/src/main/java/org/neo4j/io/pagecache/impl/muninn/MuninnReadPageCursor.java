@@ -100,6 +100,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             long pageRef = cursor.pinnedPageRef;
             if ( pageRef != 0 && !PageList.validateReadLock( pageRef, cursor.lockStamp ) )
             {
+                assertPagedFileStillMappedAndGetIdOfLastPage();
                 startRetryLinkedChain();
                 return true;
             }

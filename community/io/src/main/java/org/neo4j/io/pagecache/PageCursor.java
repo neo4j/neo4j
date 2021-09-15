@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 
 /**
  * A PageCursor is returned from {@link PagedFile#io(long, int, CursorContext)},
@@ -303,6 +304,7 @@ public abstract class PageCursor implements AutoCloseable
      * @throws IOException If the page was evicted while doing IO, the cursor will have
      * to do a page fault to get the page back.
      * This may throw an IOException.
+     * @throws FileIsNotMappedException if page file was unmapped while doing cursor operations.
      */
     public abstract boolean shouldRetry() throws IOException;
 

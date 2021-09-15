@@ -1171,13 +1171,9 @@ public class MuninnPageCache implements PageCache
                 pageCacheId, cachePageSize, pages.getPageCount(), availablePages != UNKNOWN_AVAILABLE_PAGES ? String.valueOf( availablePages ) : "N/A" );
     }
 
-    void vacuum( SwapperSet swappers )
+    void sweep( SwapperSet swappers )
     {
-        if ( getFreelistHead() instanceof AtomicInteger && swappers.countAvailableIds() > 200 )
-        {
-            return; // We probably still have plenty of free pages left. Don't bother vacuuming just yet.
-        }
-        swappers.vacuum( swapperIds ->
+        swappers.sweep( swapperIds ->
         {
             int pageCount = pages.getPageCount();
             try ( EvictionRunEvent evictionEvent = pageCacheTracer.beginEviction() )

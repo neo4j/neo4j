@@ -3294,7 +3294,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             pageCache = null;
 
             cursor.getByte();
-            cursor.shouldRetry();
+            assertThrows( FileIsNotMappedException.class, cursor::shouldRetry );
             assertThrows( FileIsNotMappedException.class, cursor::next );
         } );
     }
