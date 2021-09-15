@@ -19,825 +19,507 @@
  */
 package org.neo4j.shell;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.nio.ByteBuffer;
+import org.junit.jupiter.api.Timeout;
 
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.shell.cli.CliArgs;
+import org.neo4j.function.ThrowingAction;
+import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.function.ThrowingFunction;
+import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
-import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.ExitException;
-import org.neo4j.shell.log.AnsiLogger;
-import org.neo4j.shell.log.Logger;
-import org.neo4j.shell.prettyprint.LinePrinter;
 import org.neo4j.shell.prettyprint.PrettyConfig;
-import org.neo4j.shell.prettyprint.ToStringLinePrinter;
+import org.neo4j.shell.test.AssertableMain;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.hamcrest.CoreMatchers.anyOf;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.CoreMatchers.endsWith;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
-import static org.neo4j.shell.Main.EXIT_FAILURE;
-import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.cli.CliArgHelper.parseAndThrow;
 import static org.neo4j.shell.util.Versions.majorVersion;
 
+@Timeout( value = 5, unit = MINUTES )
 class MainIntegrationTest
 {
     private static final String USER = "neo4j";
     private static final String PASSWORD = "neo";
-    private final String inputString = format( "%s%n%s%n", USER, PASSWORD );
-    private ByteArrayOutputStream baos;
-    private ConnectionConfig connectionConfig;
-    private CliArgs cliArgs;
-    private CypherShell shell;
-    private Main main;
-    private PrintStream printStream;
-    private InputStream inputStream;
-    private ByteBuffer inputBuffer;
 
-    @BeforeEach
-    void setup()
+    private final String newLine = System.lineSeparator();
+    private final int majorServerVersion = majorVersion( runInSystemDbAndReturn( CypherShell::getServerVersion ) );
+
+    private final Matcher<String> endsWithInteractiveExit = endsWith( format( "> :exit%n%nBye!%n" ) );
+    private Matcher<String> returned42AndExited()
     {
-        // given
-        inputBuffer = ByteBuffer.allocate( 256 );
-        inputBuffer.put( inputString.getBytes() );
-        inputStream = new ByteArrayInputStream( inputBuffer.array() );
-
-        baos = new ByteArrayOutputStream();
-        printStream = new PrintStream( baos );
-
-        main = new Main( inputStream, printStream );
-
-        cliArgs = new CliArgs();
-        cliArgs.setUsername( "", "" );
-        cliArgs.setPassword( "", "" );
-
-        ShellAndConnection sac = getShell( cliArgs );
-        shell = sac.shell;
-        connectionConfig = sac.connectionConfig;
-    }
-
-    @AfterEach
-    void cleanUp() throws IOException
-    {
-        shell.disconnect();
-        printStream.close();
-        inputStream.close();
-    }
-
-    private void ensureUser( boolean requirePasswordChange ) throws Exception
-    {
-        if ( majorVersion( shell.getServerVersion() ) >= 4 )
-        {
-            var changeString = requirePasswordChange ? "" : " CHANGE NOT REQUIRED";
-            shell.execute( ":use " + SYSTEM_DB_NAME );
-            shell.execute( "CREATE OR REPLACE USER foo SET PASSWORD 'pass'" + changeString + ";" );
-            shell.execute( "GRANT ROLE reader TO foo;" );
-            shell.execute( ":use" );
-        }
-        else
-        {
-            try
-            {
-                shell.execute( "CALL dbms.security.createUser('foo', 'pass', " + requirePasswordChange + ")" );
-            }
-            catch ( ClientException e )
-            {
-                if ( e.code().equalsIgnoreCase( "Neo.ClientError.General.InvalidArguments" ) && e.getMessage().contains( "already exists" ) )
-                {
-                    shell.execute( "CALL dbms.security.deleteUser('foo')" );
-                    shell.execute( "CALL dbms.security.createUser('foo', 'pass', " + requirePasswordChange + ")" );
-                }
-            }
-        }
-    }
-
-    private void ensureDefaultDatabaseStarted() throws Exception
-    {
-        CliArgs cliArgs = new CliArgs();
-        cliArgs.setUsername( "neo4j", "" );
-        cliArgs.setPassword( "neo", "" );
-        cliArgs.setDatabase( "system" );
-        ShellAndConnection sac = getShell( cliArgs );
-        try
-        {
-            main.connectMaybeInteractively( sac.shell, sac.connectionConfig, true, false, true );
-            sac.shell.execute( "START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME );
-        }
-        finally
-        {
-            sac.shell.disconnect();
-        }
+        return Matchers.allOf( containsString( return42Output() ), endsWithInteractiveExit );
     }
 
     @Test
     void promptsOnWrongAuthenticationIfInteractive() throws Exception
     {
-        // when
-        assertEquals( "", connectionConfig.username() );
-        assertEquals( "", connectionConfig.password() );
-
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
-        // then
-        // should be connected
-        assertTrue( shell.isConnected() );
-        // should have prompted and set the username and password
-        assertEquals( format( "username: neo4j%npassword: ***%n" ), baos.toString() );
-        assertEquals( "neo4j", connectionConfig.username() );
-        assertEquals( "neo", connectionConfig.password() );
+        testWithUser( "kate", "bush", false )
+            .args( "--format verbose" )
+            .interactive( true, true )
+            .userInputLines( "kate", "bush", "return 42 as x;", ":exit" )
+            .run()
+            .assertSuccess()
+            .assertThatOutput( startsWith( format( "username: kate%npassword: ****%n" ) ), returned42AndExited() );
     }
 
     @Test
-    void promptsOnPasswordChangeRequired() throws Exception
+    void promptsOnPasswordChangeRequiredSinceVersion4() throws Exception
     {
-        int majorVersion = getVersionAndCreateUser( true );
+        assumeTrue( majorServerVersion >= 4 );
 
-        connectionConfig = cliArgs.connectionConfig();
-        assertEquals( "", connectionConfig.username() );
-        assertEquals( "", connectionConfig.password() );
+        testWithUser( "bob", "expired", true )
+            .args( "--format verbose" )
+            .userInputLines( "bob", "expired", "newpass", "return 42 as x;", ":exit" )
+            .run()
+            .assertSuccess()
+            .assertThatOutput(
+                startsWith( format( "username: bob%npassword: *******%nPassword change required%nnew password: *******%n" ) ),
+                returned42AndExited()
+            );
+    }
 
-        // when
-        inputBuffer.put( format( "foo%npass%nnewpass%n" ).getBytes() );
-        baos.reset();
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
+    @Test
+    void promptsOnPasswordChangeRequiredBeforeVersion4() throws Exception
+    {
+        assumeTrue( majorServerVersion < 4 );
 
-        // then
-        assertTrue( shell.isConnected() );
-        if ( majorVersion >= 4 )
-        {
-            // should have prompted to change the password
-            String expectedChangePasswordOutput = format( "username: foo%npassword: ****%nPassword change required%nnew password: *******%n" );
-            assertEquals( expectedChangePasswordOutput, baos.toString() );
-            assertEquals( "foo", connectionConfig.username() );
-            assertEquals( "newpass", connectionConfig.password() );
-            assertNull( connectionConfig.newPassword() );
-
-            // Should be able to execute read query
-            shell.execute( "MATCH (n) RETURN count(n)" );
-        }
-        else
-        {
-            // in 3.x we do not get credentials expired exception on connection, but when we try to access data
-            String expectedChangePasswordOutput = format( "username: foo%npassword: ****%n" );
-            assertEquals( expectedChangePasswordOutput, baos.toString() );
-            assertEquals( "foo", connectionConfig.username() );
-            assertEquals( "pass", connectionConfig.password() );
-
-            // Should get exception with instructions on how to change password using procedure
-            var exception = assertThrows( ClientException.class, () -> shell.execute( "MATCH (n) RETURN count(n)" ) );
-            assertThat( exception.getMessage(), containsString( "CALL dbms.changePassword" ) );
-        }
+        testWithUser( "bob", "expired", true )
+            .args( "--format verbose" )
+            .userInputLines( "bob", "expired", "match (n) return count(n);", ":exit" )
+            .run()
+            .assertSuccess( false )
+            .assertThatErrorOutput( containsString( "CALL dbms.changePassword" ) )
+            .assertThatOutput( endsWithInteractiveExit );
     }
 
     @Test
     void allowUserToUpdateExpiredPasswordInteractivelyWithoutBeingPrompted() throws Exception
     {
-        //given a user that require a password change
-        int majorVersion = getVersionAndCreateUser( true );
+        assumeTrue( majorServerVersion >= 4 );
 
-        //when the user attempts a non-interactive password update
-        assumeTrue( majorVersion >= 4 );
-        baos.reset();
-        assertEquals( EXIT_SUCCESS, main.runShell( args( SYSTEM_DB_NAME, "foo", "pass",
-                                                         "ALTER CURRENT USER SET PASSWORD from \"pass\" to \"pass2\";" ), shell, mock( Logger.class ) ) );
-        //we shouldn't ask for a new password
-        assertEquals( "", baos.toString() );
+        testWithUser( "bob", "expired", true )
+            .args( "-u bob -p expired -d system --format verbose" )
+            .addArgs( "ALTER CURRENT USER SET PASSWORD FROM \"expired\" TO \"shinynew\";" )
+            .interactive( true, true )
+            .run()
+            .assertSuccess()
+            .assertThatOutput( containsString( "0 rows" ) );
 
-        //then the new user should be able to successfully connect, and run a command
-        assertEquals( format( "n%n42%n" ),
-                      executeNonInteractively( args( DEFAULT_DEFAULT_DB_NAME,
-                                                     "foo", "pass2", "RETURN 42 AS n" ) ) );
+        assertUserCanConnectAndRunQuery( "bob", "shinynew" );
     }
 
     @Test
     void shouldFailIfNonInteractivelySettingPasswordOnNonSystemDb() throws Exception
     {
-        //given a user that require a password change
-        int majorVersion = getVersionAndCreateUser( true );
+        assumeTrue( majorServerVersion >= 4 );
 
-        //when
-        assumeTrue( majorVersion >= 4 );
-
-        //then
-        assertEquals( EXIT_FAILURE, main.runShell( args( DEFAULT_DEFAULT_DB_NAME, "foo", "pass",
-                                                         "ALTER CURRENT USER SET PASSWORD from \"pass\" to \"pass2\";" ), shell, mock( Logger.class ) ) );
+        testWithUser( "kjell", "expired", true )
+            .args( "-u kjell -p expired -d neo4j --non-interactive")
+            .addArgs( "ALTER CURRENT USER SET PASSWORD FROM \"expired\" TO \"höglund\";" )
+            .run()
+            .assertFailure()
+            .assertThatErrorOutput( containsString( "The credentials you provided were valid, but must be changed" ) );
     }
 
     @Test
     void shouldBePromptedIfRunningNonInteractiveCypherThatDoesntUpdatePassword() throws Exception
     {
-        //given a user that require a password change
-        int majorVersion = getVersionAndCreateUser( true );
+        assumeTrue( majorServerVersion >= 4 );
 
-        //when
-        assumeTrue( majorVersion >= 4 );
+        testWithUser( "bruce", "expired", true )
+            .args( "-u bruce -p expired -d neo4j" ).addArgs( "match (n) return n;" )
+            .userInputLines( "newpass" )
+            .run()
+            .assertSuccess();
 
-        //when interactively asked for a password use this
-        inputBuffer.put( format( "pass2%n" ).getBytes() );
-        baos.reset();
-        assertEquals( EXIT_SUCCESS, main.runShell( args( DEFAULT_DEFAULT_DB_NAME, "foo", "pass",
-                                                         "MATCH (n) RETURN n" ), shell, mock( Logger.class ) ) );
-
-        //then should ask for a new password
-        assertEquals( format( "Password change required%nnew password: *****%n" ), baos.toString() );
-
-        //then the new user should be able to successfully connect, and run a command
-        assertEquals( format( "n%n42%n" ),
-                      executeNonInteractively( args( DEFAULT_DEFAULT_DB_NAME,
-                                                     "foo", "pass2", "RETURN 42 AS n" ) ) );
+        assertUserCanConnectAndRunQuery( "bruce", "newpass" );
     }
 
     @Test
     void shouldNotBePromptedIfRunningWithExplicitNonInteractiveCypherThatDoesntUpdatePassword() throws Exception
     {
-        //given a user that require a password change
-        int majorVersion = getVersionAndCreateUser( true );
+        assumeTrue( majorServerVersion >= 4 );
 
-        //when
-        assumeTrue( majorVersion >= 4 );
-
-        //when interactively asked for a password use this
-        inputBuffer.put( format( "pass2%n" ).getBytes() );
-        baos.reset();
-        CliArgs args = args( DEFAULT_DEFAULT_DB_NAME, "foo", "pass",
-                             "MATCH (n) RETURN n" );
-        args.setNonInteractive( true );
-        assertEquals( EXIT_FAILURE, main.runShell( args, shell, mock( Logger.class ) ) );
+        testWithUser( "nick", "expired", true )
+            .args( "-u nick -p expired -d neo4j --non-interactive" ).addArgs( "match (n) return n;" )
+            .run()
+            .assertFailure()
+            .assertThatErrorOutput( containsString( "The credentials you provided were valid, but must be changed" ) )
+            .assertThatOutput( emptyString() );
     }
 
     @Test
-    void doesNotPromptToStdOutOnWrongAuthenticationIfOutputRedirected() throws Exception
+    void doesPromptOnNonInteractiveOuput() throws Exception
     {
-        // when
-        assertEquals( "", connectionConfig.username() );
-        assertEquals( "", connectionConfig.password() );
-
-        // Redirect System.in and System.out
-        InputStream stdIn = System.in;
-        PrintStream stdOut = System.out;
-        System.setIn( inputStream );
-        System.setOut( printStream );
-
-        // Create a Main with the standard in and out
-        try
-        {
-            Main realMain = new Main();
-            realMain.connectMaybeInteractively( shell, connectionConfig, true, false, true );
-
-            // then
-            // should be connected
-            assertTrue( shell.isConnected() );
-            // should have prompted silently and set the username and password
-            assertEquals( "neo4j", connectionConfig.username() );
-            assertEquals( "neo", connectionConfig.password() );
-
-            String out = baos.toString();
-            assertEquals( "", out );
-        }
-        finally
-        {
-            // Restore in and out
-            System.setIn( stdIn );
-            System.setOut( stdOut );
-        }
+        testWithUser( "holy", "ghost", false )
+            .addArgs( "return 42 as x;" )
+            .interactive( true, false )
+            .userInputLines( "holy", "ghost" )
+            .run()
+            .assertSuccessAndConnected()
+            .assertOutputLines( "username: holy", "password: *****", "x", "42" );
     }
 
     @Test
-    void wrongPortWithBolt()
+    void wrongPortWithBolt() throws ArgumentParserException
     {
-        // given
-        CliArgs cliArgs = new CliArgs();
-        cliArgs.setScheme( "bolt", "" );
-        cliArgs.setPort( 1234 );
-
-        ShellAndConnection sac = getShell( cliArgs );
-        CypherShell shell = sac.shell;
-        ConnectionConfig connectionConfig = sac.connectionConfig;
-
-        var exception = assertThrows( ServiceUnavailableException.class, () -> main.connectMaybeInteractively( shell, connectionConfig, true, true, true ) );
-        var expectedMesssage = "Unable to connect to localhost:1234, ensure the database is running and that there is a working network connection to it";
-        assertThat( exception.getMessage(), containsString( expectedMesssage ) );
+        testWithUser( "leonard", "coen", false )
+            .args( "-u leonard -p coen -a bolt://localhost:1234" )
+            .run()
+            .assertFailure( "Unable to connect to localhost:1234, ensure the database is running and that there is a working network connection to it." );
     }
 
     @Test
-    void wrongPortWithNeo4j()
+    void wrongPortWithNeo4j() throws ArgumentParserException
     {
-        // given
-        CliArgs cliArgs = new CliArgs();
-        cliArgs.setScheme( "neo4j", "" );
-        cliArgs.setPort( 1234 );
-
-        ShellAndConnection sac = getShell( cliArgs );
-        CypherShell shell = sac.shell;
-        ConnectionConfig connectionConfig = sac.connectionConfig;
-
-        // The error message here may be subject to change and is not stable across versions so let us not assert on it
-        assertThrows( ServiceUnavailableException.class, () -> main.connectMaybeInteractively( shell, connectionConfig, true, true, true ) );
+        testWithUser( "jackie", "leven", false )
+            .args( "-u jackie -p leven -a neo4j://localhost:1234" )
+            .run()
+            .assertFailure( "Connection refused" );
     }
 
     @Test
     void shouldAskForCredentialsWhenConnectingWithAFile() throws Exception
     {
-        //given
-
-        assertEquals( "", connectionConfig.username() );
-        assertEquals( "", connectionConfig.password() );
-
-        //when
-        CliArgs cliArgs = new CliArgs();
-        cliArgs.setInputFilename( fileFromResource( "single.cypher" ) );
-        ShellAndConnection sac = getShell( cliArgs );
-        CypherShell shell = sac.shell;
-        ConnectionConfig connectionConfig = sac.connectionConfig;
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
-        // then we should have prompted and set the username and password
-        assertEquals( format( "username: neo4j%npassword: ***%n" ), baos.toString() );
-        assertEquals( "neo4j", connectionConfig.username() );
-        assertEquals( "neo", connectionConfig.password() );
+        testWithUser( "jacob", "collier", false )
+            .addArgs( "--file", fileFromResource( "single.cypher" ) )
+            .userInputLines( "jacob", "collier" )
+            .run()
+            .assertSuccessAndConnected()
+            .assertOutputLines( "username: jacob", "password: *******", "result", "42" );
     }
 
     @Test
-    void shouldReadSingleCypherStatementsFromFile()
+    void shouldSupportVerboseFormatWhenReadingFile() throws Exception
     {
-        assertEquals( format( "result%n42%n" ), executeFileNonInteractively( fileFromResource( "single.cypher" ) ) );
+        var expectedQueryResult = format(
+            "+--------+%n" +
+            "| result |%n" +
+            "+--------+%n" +
+            "| 42     |%n" +
+            "+--------+");
+
+        testWithUser( "philip", "glass", false )
+            .args( "-u philip -p glass --format verbose").addArgs( "--file", fileFromResource( "single.cypher" ) )
+            .run()
+            .assertSuccessAndConnected()
+            .assertThatOutput( containsString( expectedQueryResult ) );
     }
 
     @Test
-    void shouldReadEmptyCypherStatementsFile()
+    void shouldReadEmptyCypherStatementsFile() throws ArgumentParserException
     {
-        assertEquals( "", executeFileNonInteractively( fileFromResource( "empty.cypher" ) ) );
+        buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "empty.cypher" ) ).run()
+            .assertSuccessAndConnected()
+            .assertThatOutput( emptyString() );
     }
 
     @Test
-    void shouldReadMultipleCypherStatementsFromFile()
+    void shouldReadMultipleCypherStatementsFromFile() throws ArgumentParserException
     {
-        assertEquals( format( "result%n42%n" +
-                              "result%n1337%n" +
-                              "result%n\"done\"%n" ), executeFileNonInteractively( fileFromResource( "multiple.cypher" ) ) );
+        buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "multiple.cypher" ) ).run()
+            .assertSuccessAndConnected()
+            .assertOutputLines( "result", "42", "result", "1337", "result", "\"done\"" );
     }
 
     @Test
-    void shouldFailIfInputFileDoesntExist()
+    void shouldFailIfInputFileDoesntExist() throws ArgumentParserException
     {
-        //given
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        Logger logger = new AnsiLogger( false, Format.VERBOSE, new PrintStream( out ), new PrintStream( out ) );
-
-        //when
-        executeFileNonInteractively( "what.cypher", logger );
-
-        //then
-        assertThat( out.toString(), containsString( format( "what.cypher (No such file or directory)%n" ) ) );
+        buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", "missing-file" ).run()
+            .assertFailure( "missing-file (No such file or directory)" );
     }
 
     @Test
-    void shouldHandleInvalidCypherFromFile()
+    void shouldHandleInvalidCypherFromFile() throws ArgumentParserException
     {
-        //given
-        Logger logger = mock( Logger.class );
-
-        // when
-        String actual = executeFileNonInteractively( fileFromResource( "invalid.cypher" ), logger );
-
-        //then we print the first valid row
-        assertEquals( format( "result%n42%n" ), actual );
-        //and print errors to the error log
-        verify( logger ).printError( any( ClientException.class ) );
+        buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "invalid.cypher" ) ).run()
+            .assertFailure()
+            .assertThatErrorOutput( containsString( "Invalid input" ) )
+            .assertOutputLines( "result", "42" );
     }
 
     @Test
     void shouldReadSingleCypherStatementsFromFileInteractively() throws Exception
     {
-        // given
-        ToStringLinePrinter linePrinter = new ToStringLinePrinter();
-        CypherShell shell = interactiveShell( linePrinter );
-
-        try
-        {
-            // when
-            shell.execute(":source " + fileFromResource("single.cypher"));
-            exit(shell);
-
-            // then
-            assertEquals(format("result%n42%n"), linePrinter.result());
-        }
-        finally
-        {
-            shell.disconnect();
-        }
-
+        var file = fileFromResource( "single.cypher" );
+        buildTest()
+            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+            .userInputLines( ":source " + file, ":exit" )
+            .run()
+            .assertSuccessAndConnected()
+            .assertThatOutput( containsString( "> :source " + file + format( "%nresult%n42" ) ), endsWithInteractiveExit );
     }
 
     @Test
     void shouldReadMultipleCypherStatementsFromFileInteractively() throws Exception
     {
-        // given
-        ToStringLinePrinter linePrinter = new ToStringLinePrinter();
-        CypherShell shell = interactiveShell( linePrinter );
-
-        try
-        {
-            // when
-            shell.execute(":source " + fileFromResource("multiple.cypher"));
-            exit(shell);
-
-            // then
-            assertEquals(format("result%n42%n" +
-                    "result%n1337%n" +
-                    "result%n\"done\"%n"), linePrinter.result());
-        }
-        finally
-        {
-            shell.disconnect();
-        }
+        var file = fileFromResource( "multiple.cypher" );
+        buildTest()
+            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+            .userInputLines( ":source " + file, ":exit" )
+            .run()
+            .assertSuccessAndConnected()
+            .assertThatOutput(
+                containsString( "> :source " + file + format( "%nresult%n42%nresult%n1337%nresult%n\"done\"" ) ),
+                endsWithInteractiveExit
+            );
     }
 
     @Test
     void shouldReadEmptyCypherStatementsFromFileInteractively() throws Exception
     {
-        // given
-        ToStringLinePrinter linePrinter = new ToStringLinePrinter();
-        CypherShell shell = interactiveShell( linePrinter );
-
-        try
-        {
-            // when
-            shell.execute(":source " + fileFromResource("empty.cypher"));
-            exit(shell);
-
-            // then
-            assertEquals("", linePrinter.result());
-        }
-        finally
-        {
-            shell.disconnect();
-        }
+        var file = fileFromResource( "empty.cypher" );
+        buildTest()
+            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+            .userInputLines( ":source " + file, ":exit" )
+            .run()
+            .assertSuccessAndConnected()
+            .assertThatOutput( containsString( "> :source " + file + newLine + USER + "@" ), endsWithInteractiveExit );
     }
 
     @Test
     void shouldHandleInvalidCypherStatementsFromFileInteractively() throws Exception
     {
-        // given
-        ToStringLinePrinter linePrinter = new ToStringLinePrinter();
-        CypherShell shell = interactiveShell( linePrinter );
-
-        try
-        {
-            // then
-            var exception = assertThrows(ClientException.class, () -> shell.execute(":source " + fileFromResource("invalid.cypher")));
-            assertThat(exception.getMessage(), containsString("Invalid input 'T"));
-        }
-        finally
-        {
-            shell.disconnect();
-        }
+        var file = fileFromResource( "invalid.cypher" );
+        buildTest()
+            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+            .userInputLines( ":source " + file, ":exit" )
+            .run()
+            .assertSuccessAndConnected( false )
+            .assertThatErrorOutput( containsString( "Invalid input" ) )
+            .assertThatOutput( containsString( "> :source " + file + format( "%nresult%n42%n" ) + USER + "@" ), endsWithInteractiveExit );
     }
 
     @Test
     void shouldFailIfInputFileDoesntExistInteractively() throws Exception
     {
-        // given
-        ToStringLinePrinter linePrinter = new ToStringLinePrinter();
-        CypherShell shell = interactiveShell( linePrinter );
-
-        try
-        {
-            // expect
-            var exception = assertThrows( CommandException.class, () -> shell.execute( ":source what.cypher" ) );
-            assertThat( exception.getMessage(), containsString( "Cannot find file: 'what.cypher'" ) );
-            assertThat( exception.getCause(), instanceOf( FileNotFoundException.class ) );
-        }
-        finally
-        {
-            shell.disconnect();
-        }
+        var file = "this-is-not-a-file";
+        buildTest()
+            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+            .userInputLines( ":source " + file, ":exit" )
+            .run()
+            .assertSuccessAndConnected( false )
+            .assertThatErrorOutput( is( "Cannot find file: '" + file + "'" + newLine ) )
+            .assertThatOutput( containsString( "> :source " + file + newLine + USER + "@" ), endsWithInteractiveExit );
     }
 
     @Test
-    void doesNotStartWhenDefaultDatabaseUnavailableIfInteractive() throws Exception
+    void doesNotStartWhenDefaultDatabaseUnavailableIfInteractive()
     {
-        shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
-        inputBuffer.put( format( "neo4j%nneo%n" ).getBytes() );
-
-        assertEquals( "", connectionConfig.username() );
-        assertEquals( "", connectionConfig.password() );
-
-        // when
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
         // Multiple databases are only available from 4.0
-        assumeTrue( majorVersion( shell.getServerVersion() ) >= 4 );
+        assumeTrue( majorServerVersion >= 4 );
 
-        // then
-        // should be connected
-        assertTrue( shell.isConnected() );
-        // should have prompted and set the username and password
-        String expectedLoginOutput = format( "username: neo4j%npassword: ***%n" );
-        assertEquals( expectedLoginOutput, baos.toString() );
-        assertEquals( "neo4j", connectionConfig.username() );
-        assertEquals( "neo", connectionConfig.password() );
-
-        // Stop the default database
-        shell.execute( ":use " + SYSTEM_DB_NAME );
-        shell.execute( "STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME );
-
-        try
-        {
-            shell.disconnect();
-
-            // Should get exception that database is unavailable when trying to connect
-            main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-            fail( "No exception thrown" );
-        }
-        catch ( TransientException | ServiceUnavailableException e )
-        {
-            expectDatabaseUnavailable( e, "neo4j" );
-        }
-        finally
-        {
-            // Start the default database again
-            ensureDefaultDatabaseStarted();
-        }
+        withDefaultDatabaseStopped( () ->
+            buildTest().addArgs( "-u", USER, "-p", PASSWORD ).run()
+                .assertFailure()
+                .assertThatErrorOutput( containsString( "database is unavailable" ) )
+                .assertOutputLines()
+        );
     }
 
     @Test
-    void startsAgainstSystemDatabaseWhenDefaultDatabaseUnavailableIfInteractive() throws Exception
+    void startsAgainstSystemDatabaseWhenDefaultDatabaseUnavailableIfInteractive()
     {
-        shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
-
-        assertEquals( "", connectionConfig.username() );
-        assertEquals( "", connectionConfig.password() );
-
-        // when
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
         // Multiple databases are only available from 4.0
-        assumeTrue( majorVersion( shell.getServerVersion() ) >= 4 );
+        assumeTrue( majorServerVersion >= 4 );
 
-        // then
-        // should be connected
-        assertTrue( shell.isConnected() );
-        // should have prompted and set the username and password
-        String expectedLoginOutput = format( "username: neo4j%npassword: ***%n" );
-        assertEquals( expectedLoginOutput, baos.toString() );
-        assertEquals( "neo4j", connectionConfig.username() );
-        assertEquals( "neo", connectionConfig.password() );
-
-        // Stop the default database
-        shell.execute( ":use " + SYSTEM_DB_NAME );
-        shell.execute( "STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME );
-
-        try
-        {
-            shell.disconnect();
-
-            // Connect to system database
-            CliArgs cliArgs = new CliArgs();
-            cliArgs.setUsername( "neo4j", "" );
-            cliArgs.setPassword( "neo", "" );
-            cliArgs.setDatabase( "system" );
-            ShellAndConnection sac = getShell( cliArgs );
-            // Use the new shell and connection config from here on
-            shell = sac.shell;
-            connectionConfig = sac.connectionConfig;
-            main.connectMaybeInteractively( shell, connectionConfig, true, false, true );
-
-            // then
-            assertTrue( shell.isConnected() );
-        }
-        finally
-        {
-            // Start the default database again
-            ensureDefaultDatabaseStarted();
-        }
+        withDefaultDatabaseStopped( () ->
+            buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "-d", SYSTEM_DB_NAME )
+                .userInputLines( ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+        );
     }
 
     @Test
-    void switchingToUnavailableDatabaseIfInteractive() throws Exception
+    void switchingToUnavailableDatabaseIfInteractive()
     {
-        shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
-        inputBuffer.put( format( "neo4j%nneo%n" ).getBytes() );
-
-        assertEquals( "", connectionConfig.username() );
-        assertEquals( "", connectionConfig.password() );
-
-        // when
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
         // Multiple databases are only available from 4.0
-        assumeTrue( majorVersion( shell.getServerVersion() ) >= 4 );
+        assumeTrue( majorServerVersion >= 4 );
 
-        // then
-        // should be connected
-        assertTrue( shell.isConnected() );
-        // should have prompted and set the username and password
-        String expectedLoginOutput = format( "username: neo4j%npassword: ***%n" );
-        assertEquals( expectedLoginOutput, baos.toString() );
-        assertEquals( "neo4j", connectionConfig.username() );
-        assertEquals( "neo", connectionConfig.password() );
-
-        // Stop the default database
-        shell.execute( ":use " + SYSTEM_DB_NAME );
-        shell.execute( "STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME );
-
-        try
-        {
-            // Should get exception that database is unavailable when trying to connect
-            shell.execute( ":use " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME );
-            fail( "No exception thrown" );
-        }
-        catch ( TransientException | ServiceUnavailableException e )
-        {
-            expectDatabaseUnavailable( e, "neo4j" );
-        }
-        finally
-        {
-            // Start the default database again
-            ensureDefaultDatabaseStarted();
-        }
+        withDefaultDatabaseStopped( () ->
+            buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "-d", SYSTEM_DB_NAME )
+                .userInputLines( ":use " + DEFAULT_DEFAULT_DB_NAME, ":exit" )
+                .run()
+                .assertSuccessAndConnected( false )
+                .assertThatErrorOutput( containsString( "database is unavailable" ) )
+                .assertThatOutput( endsWithInteractiveExit )
+        );
     }
 
     @Test
-    void switchingToUnavailableDefaultDatabaseIfInteractive() throws Exception
+    void switchingToUnavailableDefaultDatabaseIfInteractive()
     {
-        shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
-        inputBuffer.put( format( "neo4j%nneo%n" ).getBytes() );
-
-        assertEquals( "", connectionConfig.username() );
-        assertEquals( "", connectionConfig.password() );
-
-        // when
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
         // Multiple databases are only available from 4.0
-        assumeTrue( majorVersion( shell.getServerVersion() ) >= 4 );
+        assumeTrue( majorServerVersion >= 4 );
 
-        // then
-        // should be connected
-        assertTrue( shell.isConnected() );
-        // should have prompted and set the username and password
-        String expectedLoginOutput = format( "username: neo4j%npassword: ***%n" );
-        assertEquals( expectedLoginOutput, baos.toString() );
-        assertEquals( "neo4j", connectionConfig.username() );
-        assertEquals( "neo", connectionConfig.password() );
-
-        // Stop the default database
-        shell.execute( ":use " + SYSTEM_DB_NAME );
-        shell.execute( "STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME );
-
-        try
-        {
-            // Should get exception that database is unavailable when trying to connect
-            shell.execute( ":use" );
-            fail( "No exception thrown" );
-        }
-        catch ( TransientException | ServiceUnavailableException e )
-        {
-            expectDatabaseUnavailable( e, "neo4j" );
-        }
-        finally
-        {
-            // Start the default database again
-            ensureDefaultDatabaseStarted();
-        }
+        withDefaultDatabaseStopped( () ->
+            buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "-d", SYSTEM_DB_NAME )
+                .userInputLines( ":use", ":exit" )
+                .run()
+                .assertSuccessAndConnected( false )
+                .assertThatErrorOutput( containsString( "database is unavailable" ) )
+                .assertThatOutput( endsWithInteractiveExit )
+        );
     }
 
     @Test
     void shouldChangePassword() throws Exception
     {
-        getVersionAndCreateUser( false );
+        testWithUser( "kate", "bush", false )
+            .args( "--change-password" )
+            .userInputLines( "kate", "bush", "betterpassword" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "username: kate", "password: ****", "new password: **************" );
 
-        // Verify newly created user
-        verifyUser( DEFAULT_DEFAULT_DB_NAME, "foo", "pass" );
+        assertUserCanConnectAndRunQuery( "kate", "betterpassword" );
+    }
 
-        // User input
-        inputBuffer.put( format( "foo%npass%nnewpass%n" ).getBytes() );
+    @Test
+    void shouldChangePasswordWhenRequired() throws Exception
+    {
+        testWithUser( "paul", "simon", true )
+            .args( "--change-password" )
+            .userInputLines( "paul", "simon", "newpassword" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "username: paul", "password: *****", "new password: ***********" );
 
-        // Run cypher shell
-        baos.reset();
-        var exitCode = main.startShell( parseAndThrow( "--change-password" ) );
-
-        // Then
-        assertEquals( 0, exitCode );
-        verifyUser( DEFAULT_DEFAULT_DB_NAME, "foo", "newpass" );
-        String expectedChangePasswordOutput = format( "username: foo%npassword: ****%nnew password: *******%n" );
-        assertEquals( expectedChangePasswordOutput, baos.toString() );
+        assertUserCanConnectAndRunQuery( "paul", "newpassword" );
     }
 
     @Test
     void shouldChangePasswordWithUser() throws Exception
     {
-        getVersionAndCreateUser( false );
+        testWithUser( "mike", "oldfield", false )
+            .args( "-u mike --change-password" )
+            .userInputLines( "oldfield", "newfield" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "password: ********", "new password: ********" );
 
-        // Verify newly created user
-        verifyUser( DEFAULT_DEFAULT_DB_NAME, "foo", "pass" );
-
-        // User input
-        inputBuffer.put( format( "pass%nnewpass%n" ).getBytes() );
-
-        // Run cypher shell
-        baos.reset();
-        var exitCode = main.startShell( parseAndThrow( "-u", "foo", "--change-password" ) );
-
-        // Then
-        assertEquals( EXIT_SUCCESS, exitCode );
-        verifyUser( DEFAULT_DEFAULT_DB_NAME, "foo", "newpass" );
-        String expectedChangePasswordOutput = format( "password: ****%nnew password: *******%n" );
-        assertEquals( expectedChangePasswordOutput, baos.toString() );
+        assertUserCanConnectAndRunQuery( "mike", "newfield" );
     }
 
     @Test
     void shouldFailToChangePassword() throws Exception
     {
-        getVersionAndCreateUser( false );
-
-        // Verify newly created user
-        verifyUser( DEFAULT_DEFAULT_DB_NAME, "foo", "pass" );
-
-        // User input (wrong password)
-        inputBuffer.put( format( "foo%nWRONGPASS%nnewpass%n" ).getBytes() );
-
-        // Run cypher shell
-        baos.reset();
-        var exitCode = main.startShell( parseAndThrow( "-u", "foo", "--change-password" ) );
-
-        // Then
-        assertEquals( EXIT_FAILURE, exitCode );
-        verifyUser( DEFAULT_DEFAULT_DB_NAME, "foo", "pass" );
+        testWithUser( "led", "zeppelin", false )
+            .args( "-u led --change-password" )
+            .userInputLines( "FORGOT MY PASSWORD", "robert" )
+            .run()
+            .assertFailure()
+            .assertThatErrorOutput( startsWith( "Failed to change password" ) )
+            .assertOutputLines( "password: ******************", "new password: ******" );
     }
 
-    private static void expectDatabaseUnavailable( Throwable e, String dbName )
+    private void assertUserCanConnectAndRunQuery( String user, String password ) throws ArgumentParserException
     {
-        String msg = new AnsiLogger( false ).getFormattedMessage( e );
-        assertThat( msg, anyOf(
-                containsString( "Database '" + dbName + "' is unavailable" ),
-                containsString( "Database '" + dbName + "' unavailable" ),
-                containsString( "Unable to get a routing table for database '" + dbName + "' because this database is unavailable" )
-        ) );
+        buildTest().addArgs( "-u", user, "-p", password, "--format", "plain", "return 42 as x;" ).run().assertSuccess();
     }
 
-    private String executeFileNonInteractively( String filename )
+    private AssertableMain.AssertableMainBuilder buildTest()
     {
-        return executeFileNonInteractively( filename, mock( Logger.class ) );
+        return new TestBuilder().interactive( true, true );
     }
 
-    private String executeFileNonInteractively( String filename, Logger logger )
+    private AssertableMain.AssertableMainBuilder testWithUser( String name, String password, boolean requirePasswordChange )
     {
-        CliArgs cliArgs = new CliArgs();
-        cliArgs.setUsername( USER, "" );
-        cliArgs.setPassword( PASSWORD, "" );
-        cliArgs.setInputFilename( filename );
-
-        return executeNonInteractively( cliArgs, logger );
+        runInSystemDb( shell -> createOrReplaceUser( shell, name, password, requirePasswordChange ) );
+        return buildTest();
     }
 
-    private String executeNonInteractively( CliArgs cliArgs )
+    private void runInSystemDb( ThrowingConsumer<CypherShell, Exception> systemDbConsumer )
     {
-        return executeNonInteractively( cliArgs, mock( Logger.class ) );
+        runInSystemDbAndReturn( shell -> {
+            systemDbConsumer.accept( shell );
+            return null;
+        } );
     }
 
-    private String executeNonInteractively( CliArgs cliArgs, Logger logger )
+    private <T> T runInSystemDbAndReturn( ThrowingFunction<CypherShell, T, Exception> systemDbConsumer )
     {
-        ToStringLinePrinter linePrinter = new ToStringLinePrinter();
-        ShellAndConnection sac = getShell( cliArgs, linePrinter );
-        CypherShell shell = sac.shell;
+        CypherShell shell = null;
         try
         {
-            main.runShell(cliArgs, shell, logger);
-            return linePrinter.result();
+            shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, false, 100 ), true, new ShellParameterMap() );
+            var systemDb = majorServerVersion >= 4 ? "system" : ""; // Before version 4 we don't support multi databases
+            shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, systemDb ) );
+            return systemDbConsumer.apply( shell );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Failed to execute statements during test setup: " + e.getMessage(), e );
         }
         finally
         {
-            shell.disconnect();
+            if ( shell != null )
+            {
+                shell.disconnect();
+            }
         }
+    }
+
+    private static void createOrReplaceUser( CypherShell shell, String name, String password, boolean requirePasswordChange ) throws CommandException
+    {
+        if ( majorVersion( shell.getServerVersion() ) >= 4 )
+        {
+            var changeString = requirePasswordChange ? "" : " CHANGE NOT REQUIRED";
+            shell.execute( "CREATE OR REPLACE USER " + name + " SET PASSWORD '" + password + "'" + changeString + ";" );
+            shell.execute( "GRANT ROLE reader TO " + name + ";" );
+        }
+        else
+        {
+            try
+            {
+                shell.execute( "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")" );
+            }
+            catch ( ClientException e )
+            {
+                if ( e.code().equalsIgnoreCase( "Neo.ClientError.General.InvalidArguments" ) && e.getMessage().contains( "already exists" ) )
+                {
+                    shell.execute( "CALL dbms.security.deleteUser('" + name + "')" );
+                    shell.execute( "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")" );
+                }
+            }
+        }
+    }
+
+    private String return42Output()
+    {
+        return format( "> return 42 as x;%n" + return42VerboseTable() );
+    }
+
+    private String return42VerboseTable()
+    {
+        return format(
+                "+----+%n" +
+                "| x  |%n" +
+                "+----+%n" +
+                "| 42 |%n" +
+                "+----+%n" +
+                "%n" +
+                "1 row"
+        );
     }
 
     private String fileFromResource( String filename )
@@ -845,88 +527,34 @@ class MainIntegrationTest
         return requireNonNull( getClass().getClassLoader().getResource( filename ) ).getFile();
     }
 
-    private CypherShell interactiveShell( LinePrinter linePrinter ) throws Exception
+    private void withDefaultDatabaseStopped( ThrowingAction<Exception> test )
     {
-        PrettyConfig prettyConfig = new PrettyConfig( new CliArgs() );
-        CypherShell shell = new CypherShell( linePrinter, prettyConfig, true, new ShellParameterMap() );
         try
         {
-            main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-            shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
-            return shell;
+            runInSystemDb( shell -> shell.execute( "STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) );
+            test.apply();
         }
         catch ( Exception e )
         {
-            shell.disconnect();
-            throw e;
+            throw new RuntimeException( e );
+        }
+        finally
+        {
+            runInSystemDb( shell -> shell.execute( "START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) );
         }
     }
 
-    private static ShellAndConnection getShell( CliArgs cliArgs )
+    private static class TestBuilder extends AssertableMain.AssertableMainBuilder
     {
-        Logger logger = new AnsiLogger( cliArgs.getDebugMode() );
-        return getShell( cliArgs, logger );
-    }
-
-    private static ShellAndConnection getShell( CliArgs cliArgs, LinePrinter linePrinter )
-    {
-        PrettyConfig prettyConfig = new PrettyConfig( cliArgs );
-        ConnectionConfig connectionConfig = cliArgs.connectionConfig();
-
-        return new ShellAndConnection( new CypherShell( linePrinter, prettyConfig, true, new ShellParameterMap() ), connectionConfig );
-    }
-
-    private static void exit( CypherShell shell ) throws CommandException
-    {
-        try
+        @Override
+        public AssertableMain run() throws ArgumentParserException
         {
-            shell.execute( ":exit" );
-            fail( "Should have exited" );
-        }
-        catch ( ExitException e )
-        {
-            //do nothing
-        }
-    }
-
-    private void verifyUser( String database, String user, String password )
-    {
-        var result = executeNonInteractively( args( database, user, password, "RETURN 42 AS n" ) );
-        assertEquals( format( "n%n42%n" ), result);
-    }
-
-    private static CliArgs args( String db, String user, String pass, String cypher )
-    {
-        CliArgs cliArgs = new CliArgs();
-        cliArgs.setUsername( user, "" );
-        cliArgs.setPassword( pass, "" );
-        cliArgs.setDatabase( db );
-        cliArgs.setCypher( cypher );
-        return cliArgs;
-    }
-
-    private int getVersionAndCreateUser( boolean requirePasswordChange ) throws Exception
-    {
-        shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
-
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-        String expectedLoginOutput = format( "username: neo4j%npassword: ***%n" );
-        assertEquals( expectedLoginOutput, baos.toString() );
-        ensureUser( requirePasswordChange );
-        int majorVersion = majorVersion( shell.getServerVersion() );
-        shell.disconnect();
-        return majorVersion;
-    }
-
-    private static class ShellAndConnection
-    {
-        CypherShell shell;
-        ConnectionConfig connectionConfig;
-
-        ShellAndConnection( CypherShell shell, ConnectionConfig connectionConfig )
-        {
-            this.shell = shell;
-            this.connectionConfig = connectionConfig;
+            assertNull( runnerFactory );
+            assertNull( shell );
+            var parsedArgs = parseAndThrow( args.toArray( String[]::new ) );
+            var main = new Main( parsedArgs, in, out, err, isInputInteractive, isOutputInteractive );
+            var exitCode = main.startShell();
+            return new AssertableMain( exitCode, out, err, main.getCypherShell() );
         }
     }
 }

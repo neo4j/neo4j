@@ -33,7 +33,6 @@ public class ConnectionConfig
     private final Encryption encryption;
     private String username;
     private String password;
-    private String newPassword;
     private String database;
 
     public ConnectionConfig( String scheme,
@@ -91,11 +90,6 @@ public class ConnectionConfig
         return password;
     }
 
-    public String newPassword()
-    {
-        return newPassword;
-    }
-
     public String driverUrl()
     {
         return String.format( "%s://%s:%d", scheme(), host(), port() );
@@ -119,15 +113,5 @@ public class ConnectionConfig
     public void setPassword( String password )
     {
         this.password = password;
-    }
-
-    public void setNewPassword( String password )
-    {
-        this.newPassword = password;
-    }
-
-    public boolean passwordChangeRequired()
-    {
-        return this.newPassword != null;
     }
 }

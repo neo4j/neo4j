@@ -27,7 +27,6 @@ import org.neo4j.shell.log.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.shell.ShellRunner.getShellRunner;
 
 class ShellRunnerTest
 {
@@ -38,7 +37,7 @@ class ShellRunnerTest
     {
         CliArgs args = new CliArgs();
         args.setNonInteractive( true );
-        ShellRunner runner = getShellRunner( args, mock( CypherShell.class ), mock( Logger.class ), connectionConfig );
+        ShellRunner runner = new ShellRunner.Factory().create( args, mock( CypherShell.class ), mock( Logger.class ), connectionConfig, null, true );
         assertTrue( runner instanceof NonInteractiveShellRunner, "Should be non-interactive shell runner when forced" );
     }
 }

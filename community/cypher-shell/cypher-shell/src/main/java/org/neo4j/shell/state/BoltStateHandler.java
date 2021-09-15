@@ -468,13 +468,8 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         actualDatabaseNameAsReportedByServer = getActualDbName( resultSummary );
     }
 
-    public void changePassword( ConnectionConfig connectionConfig )
+    public void changePassword( ConnectionConfig connectionConfig, String newPassword )
     {
-        if ( !connectionConfig.passwordChangeRequired() )
-        {
-            return;
-        }
-
         if ( isConnected() )
         {
             silentDisconnect();
@@ -495,7 +490,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             try
             {
                 String command = "ALTER CURRENT USER SET PASSWORD FROM $o TO $n";
-                Value parameters = Values.parameters("o", connectionConfig.password(), "n", connectionConfig.newPassword());
+                Value parameters = Values.parameters("o", connectionConfig.password(), "n", newPassword);
                 Result run = session.run(command, parameters);
                 run.consume();
             }
@@ -505,7 +500,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 {
                     // In < 4.0 versions use legacy method.
                     String oldCommand = "CALL dbms.security.changePassword($n)";
-                    Value oldParameters = Values.parameters("n", connectionConfig.newPassword());
+                    Value oldParameters = Values.parameters("n", newPassword);
                     Result run = session.run(oldCommand, oldParameters);
                     run.consume();
                 }
@@ -514,10 +509,6 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                     throw e;
                 }
             }
-
-            // If successful, use the new password when reconnecting
-            connectionConfig.setPassword( connectionConfig.newPassword() );
-            connectionConfig.setNewPassword( null );
 
             silentDisconnect();
         }

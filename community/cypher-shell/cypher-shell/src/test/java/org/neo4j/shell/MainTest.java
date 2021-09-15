@@ -19,501 +19,270 @@
  */
 package org.neo4j.shell;
 
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.SecurityException;
-import org.neo4j.shell.cli.CliArgs;
-import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.system.Utils;
+import org.neo4j.shell.test.AssertableMain;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.shell.Main.EXIT_SUCCESS;
 
 class MainTest
 {
-    private CypherShell shell;
-    private ConnectionConfig connectionConfig;
-    private PrintStream out;
-    private AuthenticationException authException;
-    private Neo4jException passwordChangeRequiredException;
+    private CypherShell mockShell;
+    private ShellRunner.Factory mockRunnerFactory;
+
+    private AuthenticationException authException = new AuthenticationException( Main.NEO_CLIENT_ERROR_SECURITY_UNAUTHORIZED, "BOOM" );
+    private Neo4jException passwordChangeRequiredException = new SecurityException( "Neo.ClientError.Security.CredentialsExpired", "BLAM" );
 
     @BeforeEach
-    void setup()
+    void setup() throws IOException
     {
-        out = mock( PrintStream.class );
-        shell = mock( CypherShell.class );
-        connectionConfig = mock( ConnectionConfig.class );
-
-        doReturn( "" ).when( connectionConfig ).username();
-        doReturn( "" ).when( connectionConfig ).password();
-
-        // Don't mock because of gradle bug: https://github.com/gradle/gradle/issues/1618
-        authException = new AuthenticationException( Main.NEO_CLIENT_ERROR_SECURITY_UNAUTHORIZED, "BOOM" );
-        passwordChangeRequiredException = new SecurityException( "Neo.ClientError.Security.CredentialsExpired", "BLAM" );
+        mockShell = mock( CypherShell.class );
+        mockRunnerFactory = mock( ShellRunner.Factory.class );
+        var runnerMock = mock( ShellRunner.class );
+        when( runnerMock.runUntilEnd() ).thenReturn( EXIT_SUCCESS );
+        when( mockRunnerFactory.create( any(), any(), any(), any(), any(), anyBoolean() ) ).thenReturn( runnerMock );
     }
 
     @Test
     void nonEndedStringFails() throws Exception
     {
-        String inputString = "no newline";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        doThrow( authException ).when( shell ).connect( connectionConfig, null );
-
-        Main main = new Main( inputStream, out );
-        var exception = assertThrows( CommandException.class, () -> main.connectMaybeInteractively( shell, connectionConfig, true, true, true ) );
-        assertEquals( "No text could be read, exiting...", exception.getMessage() );
-        verify( shell, times( 1 ) ).connect( connectionConfig, null );
+        testWithMockUser( "random", "bla" )
+            .userInput( "no newline" )
+            .run()
+            .assertFailure( "No text could be read, exiting..." )
+            .assertThatOutput( equalTo( "username: no newline" ) );
     }
 
     @Test
     void unrelatedErrorDoesNotPrompt() throws Exception
     {
-        doThrow( new RuntimeException( "bla" ) ).when( shell ).connect( connectionConfig, null );
+        doThrow( new RuntimeException( "bla" ) ).when( mockShell ).connect( any(), any() );
 
-        Main main = new Main( mock( InputStream.class ), out );
-        var exception = assertThrows( RuntimeException.class, () -> main.connectMaybeInteractively( shell, connectionConfig, true, true, true ) );
-        assertEquals( "bla", exception.getMessage() );
-        verify( shell, times( 1 ) ).connect( connectionConfig, null );
+        testWithMocks().run().assertFailure( "bla" ).assertThatOutput( equalTo( "" ) );
+
+        verify( mockShell, times( 1 ) ).connect( any(), any() );
     }
 
     @Test
     void promptsForUsernameAndPasswordIfNoneGivenIfInteractive() throws Exception
     {
-        when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
-
-        String inputString = "bob\nsecret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        Main main = new Main( inputStream, ps );
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
-        String out = baos.toString( StandardCharsets.UTF_8 );
-
-        assertEquals( String.format( "username: bob%npassword: ******%n" ), out );
-        verify( connectionConfig ).setUsername( "bob" );
-        verify( connectionConfig ).setPassword( "secret" );
-        verify( shell, times( 2 ) ).connect( connectionConfig, null );
+        testWithMockUser( "bob", "secret" )
+            .interactive( true, true )
+            .userInputLines( "bob", "secret" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "username: bob", "password: ******" );
     }
 
     @Test
     void promptsSilentlyForUsernameAndPasswordIfNoneGivenIfOutputRedirected() throws Exception
     {
-        if ( Utils.isWindows() )
-        {
-            // Disable this test on Windows due to problem with redirection
-            return;
-        }
-
-        when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
-        when( connectionConfig.password() ).thenReturn( "" ).thenReturn( "secret" );
-
-        String inputString = "bob\nsecret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        // Redirect stdin and stdout
-        InputStream stdIn = System.in;
-        PrintStream stdOut = System.out;
-        System.setIn( inputStream );
-        System.setOut( ps );
-
-        try
-        {
-            Main main = new Main();
-            main.connectMaybeInteractively( shell, connectionConfig, true, false, true );
-
-            String out = baos.toString( StandardCharsets.UTF_8 );
-
-            assertEquals( "", out );
-            verify( connectionConfig ).setUsername( "bob" );
-            verify( connectionConfig ).setPassword( "secret" );
-            verify( shell, times( 2 ) ).connect( connectionConfig, null );
-        }
-        finally
-        {
-            System.setIn( stdIn );
-            System.setOut( stdOut );
-        }
+        testWithMockUser( "bob", "secret" )
+            .interactive( true, false )
+            .userInputLines( "bob", "secret" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "username: bob", "password: ******" );
     }
 
     @Test
     void doesNotPromptIfInputRedirected() throws Exception
     {
-        when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
-
-        String inputString = "bob\nsecret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        Main main = new Main( inputStream, ps );
-
-        try
-        {
-            main.connectMaybeInteractively( shell, connectionConfig, false, true, true );
-            fail( "Expected auth exception" );
-        }
-        catch ( AuthenticationException e )
-        {
-            verify( shell, times( 1 ) ).connect( connectionConfig, null );
-        }
+        testWithMockUser( "bob", "secret" )
+            .interactive( false, true )
+            .userInputLines( "bob", "secret" )
+            .run()
+            .assertFailure( authException.getMessage() )
+            .assertOutputLines();
     }
 
     @Test
     void promptsForUserIfPassExistsIfInteractive() throws Exception
     {
-        when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
-        when( connectionConfig.password() ).thenReturn( "secret" );
+        testWithMockUser( "bob", "secret" )
+            .args( "-p secret" )
+            .interactive( true, true )
+            .userInputLines( "bob", "secret" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "username: bob" );
 
-        String inputString = "bob\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        Main main = new Main( inputStream, ps );
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
-        String out = baos.toString( StandardCharsets.UTF_8 );
-
-        assertEquals( out, String.format( "username: bob%n" ) );
-        verify( connectionConfig ).setUsername( "bob" );
-        verify( shell, times( 2 ) ).connect( connectionConfig, null );
+        verify( mockShell, times( 2 ) ).connect( any(), any() );
     }
 
     @Test
     void promptsSilentlyForUserIfPassExistsIfOutputRedirected() throws Exception
     {
-        if ( Utils.isWindows() )
-        {
-            // Disable this test on Windows due to problem with redirection
-            return;
-        }
+        testWithMockUser( "bob", "secret" )
+            .args( "-p secret" )
+            .interactive( true, false )
+            .userInputLines( "bob" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "username: bob" );
 
-        when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
-        when( connectionConfig.password() ).thenReturn( "secret" );
-
-        String inputString = "bob\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        // Redirect stdin and stdout
-        InputStream stdIn = System.in;
-        PrintStream stdOut = System.out;
-        System.setIn( inputStream );
-        System.setOut( ps );
-
-        try
-        {
-            Main main = new Main();
-            main.connectMaybeInteractively( shell, connectionConfig, true, false, true );
-
-            String out = baos.toString( StandardCharsets.UTF_8 );
-
-            assertEquals( "", out );
-            verify( connectionConfig ).setUsername( "bob" );
-            verify( shell, times( 2 ) ).connect( connectionConfig, null );
-        }
-        finally
-        {
-            System.setIn( stdIn );
-            System.setOut( stdOut );
-        }
+        verify( mockShell, times( 2 ) ).connect( any(), any() );
     }
 
     @Test
     void promptsForPassBeforeConnectIfUserExistsIfInteractive() throws Exception
     {
-        doReturn( "bob" ).when( connectionConfig ).username();
+        testWithMockUser( "bob", "secret" )
+            .args( "-u bob" )
+            .interactive( true, true )
+            .userInputLines( "secret" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "password: ******" );
 
-        String inputString = "secret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        Main main = new Main( inputStream, ps );
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
-        String out = baos.toString( StandardCharsets.UTF_8 );
-
-        assertEquals( out, String.format( "password: ******%n" ) );
-        verify( connectionConfig ).setPassword( "secret" );
-        verify( shell, times( 1 ) ).connect( connectionConfig, null );
+        verify( mockShell, times( 1 ) ).connect( any(), any() );
     }
 
     @Test
     void promptsSilentlyForPassIfUserExistsIfOutputRedirected() throws Exception
     {
-        if ( Utils.isWindows() )
-        {
-            // Disable this test on Windows due to problem with redirection
-            return;
-        }
+        testWithMockUser( "bob", "secret" )
+            .args( "-u bob" )
+            .interactive( true, false )
+            .userInputLines( "secret" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "password: ******" );
 
-        doReturn( "bob" ).when( connectionConfig ).username();
-        doReturn( "" ).doReturn( "" ).doReturn( "secret" ).when( connectionConfig ).password();
-
-        String inputString = "secret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        // Redirect stdin and stdout
-        InputStream stdIn = System.in;
-        PrintStream stdOut = System.out;
-        System.setIn( inputStream );
-        System.setOut( ps );
-
-        try
-        {
-            Main main = new Main();
-            main.connectMaybeInteractively( shell, connectionConfig, true, false, true );
-
-            String out = baos.toString( StandardCharsets.UTF_8 );
-
-            assertEquals( "",  out );
-            verify( connectionConfig ).setPassword( "secret" );
-            verify( shell, times( 1 ) ).connect( connectionConfig, null );
-        }
-        finally
-        {
-            System.setIn( stdIn );
-            System.setOut( stdOut );
-        }
-    }
-
-    @Test
-    void promptsForNewPasswordIfPasswordChangeRequired() throws Exception
-    {
-        // Use a real ConnectionConfig instead of the mock in this test
-        ConnectionConfig connectionConfig = new ConnectionConfig( "", "", 0, "", "", Encryption.DEFAULT, "" );
-        when( shell.connect( connectionConfig, null ) )
-                .thenThrow( authException )
-                .thenThrow( passwordChangeRequiredException )
-                .thenReturn( connectionConfig );
-
-        String inputString = "bob\nsecret\nnewsecret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        Main main = new Main( inputStream, ps );
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
-        String out = baos.toString( StandardCharsets.UTF_8 );
-
-        assertEquals( String.format( "username: bob%npassword: ******%nPassword change required%nnew password: *********%n" ), out );
-        assertEquals( "bob", connectionConfig.username() );
-        assertEquals( "secret", connectionConfig.password() );
-        assertEquals( "newsecret", connectionConfig.newPassword() );
-        verify( shell, times( 3 ) ).connect( connectionConfig, null );
-        verify( shell ).changePassword( connectionConfig );
+        verify( mockShell, times( 1 ) ).connect( any(), any() );
     }
 
     @Test
     void promptsForNewPasswordIfPasswordChangeRequiredCannotBeEmpty() throws Exception
     {
-        // Use a real ConnectionConfig instead of the mock in this test
-        ConnectionConfig connectionConfig = new ConnectionConfig( "", "", 0, "", "", Encryption.DEFAULT, "" );
-        when( shell.connect( connectionConfig, null ) )
-                .thenThrow( authException )
-                .thenThrow( passwordChangeRequiredException )
-                .thenReturn( connectionConfig );
+        testWithMockUser( "expired_bob", "newpassword", "oldpassword" )
+            .interactive( true, true )
+            .userInputLines( "expired_bob", "oldpassword", "", "newpassword" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines(
+                "username: expired_bob", "password: ***********", "Password change required", "new password: ",
+                "new password cannot be empty", "", "new password: ***********"
+            );
 
-        String inputString = "bob\nsecret\n\nnewsecret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        Main main = new Main( inputStream, ps );
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
-        String out = baos.toString( StandardCharsets.UTF_8 );
-
-        assertEquals( String.format(
-                "username: bob%npassword: ******%nPassword change required%nnew password: %nnew password cannot be empty%n%nnew password: *********%n" ), out );
-        assertEquals( "bob", connectionConfig.username() );
-        assertEquals( "secret", connectionConfig.password() );
-        assertEquals( "newsecret", connectionConfig.newPassword() );
-        verify( shell, times( 3 ) ).connect( connectionConfig, null );
-        verify( shell ).changePassword( connectionConfig );
+        verify( mockShell, times( 3 ) ).connect( any(), any() );
     }
 
     @Test
     void promptsHandlesBang() throws Exception
     {
-        when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
+        testWithMockUser( "bo!b", "sec!ret" )
+            .interactive( true, true )
+            .userInputLines( "bo!b", "sec!ret" )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "username: bo!b", "password: *******" );
 
-        String inputString = "bo!b\nsec!ret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        Main main = new Main( inputStream, ps );
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
-        String out = baos.toString( StandardCharsets.UTF_8 );
-
-        assertEquals( String.format( "username: bo!b%npassword: *******%n" ), out );
-        verify( connectionConfig ).setUsername( "bo!b" );
-        verify( connectionConfig ).setPassword( "sec!ret" );
-        verify( shell, times( 2 ) ).connect( connectionConfig, null );
+        verify( mockShell, times( 2 ) ).connect( any(), any() );
     }
 
     @Test
     void triesOnlyOnceIfUserPassExists() throws Exception
     {
-        doThrow( authException ).doThrow( new RuntimeException( "second try" ) ).when( shell ).connect( connectionConfig, null );
-        doReturn( "bob" ).when( connectionConfig ).username();
-        doReturn( "secret" ).when( connectionConfig ).password();
+        testWithMockUser( "bob", "secret" )
+            .args( "-u bob -p wrongpass" )
+            .interactive( true, true )
+            .run()
+            .assertFailure( authException.getMessage() )
+            .assertOutputLines();
 
-        InputStream inputStream = new ByteArrayInputStream( "".getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        Main main = new Main( inputStream, ps );
-
-        try
-        {
-            main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-            fail( "Expected an exception" );
-        }
-        catch ( Neo4jException e )
-        {
-            assertEquals( authException.code(), e.code() );
-            verify( shell, times( 1 ) ).connect( connectionConfig, null );
-        }
+        verify( mockShell, times( 1 ) ).connect( any(), any() );
     }
 
     @Test
     void repromptsIfUserIsNotProvidedIfInteractive() throws Exception
     {
-        when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
+        testWithMockUser( "bob", "secret" )
+            .userInputLines( "", "bob", "secret" )
+            .interactive( true, true )
+            .run()
+            .assertSuccess()
+            .assertOutputLines( "username: ", "username cannot be empty", "", "username: bob", "password: ******" );
 
-        String inputString = "\nbob\nsecret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        Main main = new Main( inputStream, ps );
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
-
-        String out = baos.toString( StandardCharsets.UTF_8 );
-
-        assertEquals( String.format( "username: %nusername cannot be empty%n%nusername: bob%npassword: ******%n" ), out );
-        verify( connectionConfig ).setUsername( "bob" );
-        verify( connectionConfig ).setPassword( "secret" );
-        verify( shell, times( 2 ) ).connect( connectionConfig, null );
+        verify( mockShell, times( 2 ) ).connect( any(), any() );
     }
 
     @Test
     void doesNotRepromptIfUserIsNotProvidedIfOutputRedirected() throws Exception
     {
-        if ( Utils.isWindows() )
-        {
-            // Disable this test on Windows due to problem with redirection
-            return;
-        }
+        testWithMockUser( "bob", "secret" )
+            .userInputLines( "", "secret" )
+            .interactive( true, false )
+            .run()
+            .assertFailure( authException.getMessage() )
+            .assertOutputLines( "username: ", "password: ******" );
 
-        when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
-
-        String inputString = "\nsecret\n";
-        InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream( baos );
-
-        // Redirect stdin and stdout
-        InputStream stdIn = System.in;
-        PrintStream stdOut = System.out;
-        System.setIn( inputStream );
-        System.setOut( ps );
-
-        try
-        {
-            Main main = new Main();
-            main.connectMaybeInteractively( shell, connectionConfig, true, false, true );
-
-            String out = baos.toString( StandardCharsets.UTF_8 );
-
-            assertEquals( "", out );
-            verify( connectionConfig ).setUsername( "" );
-            verify( connectionConfig ).setPassword( "secret" );
-            verify( shell, times( 2 ) ).connect( connectionConfig, null );
-        }
-        finally
-        {
-            System.setIn( stdIn );
-            System.setOut( stdOut );
-        }
+        verify( mockShell, times( 2 ) ).connect( any(), any() );
     }
 
     @Test
-    void printsVersionAndExits()
+    void printsVersionAndExits() throws ArgumentParserException
     {
-        CliArgs args = new CliArgs();
-        args.setVersion( true );
+        var result = testWithMocks().args( "--version" ).run();
 
-        PrintStream printStream = mock( PrintStream.class );
-
-        Main main = new Main( System.in, printStream );
-        main.startShell( args );
-
-        ArgumentCaptor<String> argument = ArgumentCaptor.forClass( String.class );
-
-        verify( printStream ).println( argument.capture() );
-        assertTrue( argument.getValue().matches( "Cypher-Shell \\d+\\.\\d+\\.\\d+.*" ) );
+        result.assertSuccess();
+        assertTrue( result.getOutput().toString( UTF_8 ).matches( "Cypher-Shell \\d+\\.\\d+\\.\\d+.*\\R" ) );
     }
 
     @Test
-    void printsDriverVersionAndExits()
+    void printsDriverVersionAndExits() throws ArgumentParserException
     {
-        CliArgs args = new CliArgs();
-        args.setDriverVersion( true );
+        var result = testWithMocks().args( "--driver-version" ).run();
 
-        PrintStream printStream = mock( PrintStream.class );
+        result.assertSuccess();
+        assertTrue( result.getOutput().toString( UTF_8 ).matches( "Neo4j Driver \\d+\\.\\d+\\.\\d+.*\\R" ) );
+    }
 
-        Main main = new Main( System.in, printStream );
-        main.startShell( args );
+    private AssertableMain.AssertableMainBuilder testWithMocks()
+    {
+        return new AssertableMain.AssertableMainBuilder().interactive( true, false ).shell( mockShell ).runnerFactory( mockRunnerFactory );
+    }
 
-        ArgumentCaptor<String> argument = ArgumentCaptor.forClass( String.class );
+    private AssertableMain.AssertableMainBuilder testWithMockUser( String name, String password ) throws CommandException
+    {
+        return testWithMockUser( name, password, null );
+    }
 
-        verify( printStream ).println( argument.capture() );
-        assertTrue( argument.getValue().matches( "Neo4j Driver \\d+\\.\\d+\\.\\d+.*" ) );
+    private AssertableMain.AssertableMainBuilder testWithMockUser( String name, String password, String expiredPassword ) throws CommandException
+    {
+        when( mockShell.connect( any(), any() )).thenAnswer( invocation -> {
+            var in = (ConnectionConfig) invocation.getArgument( 0 );
+            if ( name.equals( in.username() ) && password.equals( in.password() ) )
+            {
+                return in;
+            }
+            else if ( expiredPassword != null && name.equals( in.username() ) && expiredPassword.equals( in.password() ) )
+            {
+                throw passwordChangeRequiredException;
+            }
+            else
+            {
+                throw authException;
+            }
+        } );
+        return testWithMocks();
     }
 }

@@ -46,49 +46,13 @@ import static org.neo4j.shell.system.Utils.isWindows;
 
 public interface ShellRunner
 {
-
-    /**
-     * Get an appropriate shellrunner depending on the given arguments and if we are running in a TTY.
-     *
-     * @param cliArgs
-     * @param cypherShell
-     * @param logger
-     * @param connectionConfig
-     * @return a ShellRunner
-     * @throws IOException
-     */
-    static ShellRunner getShellRunner( CliArgs cliArgs,
-                                       CypherShell cypherShell,
-                                       Logger logger,
-                                       ConnectionConfig connectionConfig ) throws IOException
-    {
-        if ( shouldBeInteractive( cliArgs ) )
-        {
-            UserMessagesHandler userMessagesHandler =
-                    new UserMessagesHandler( connectionConfig, cypherShell.getProtocolVersion() );
-            return new InteractiveShellRunner( cypherShell, cypherShell, cypherShell, logger, new ShellStatementParser(),
-                                               System.in, FileHistorian.getDefaultHistoryFile(), userMessagesHandler, connectionConfig );
-        }
-        else
-        {
-
-            return new NonInteractiveShellRunner( cliArgs.getFailBehavior(), cypherShell, logger,
-                                                  new ShellStatementParser(), getInputStream( cliArgs ) );
-        }
-    }
-
     /**
      * @param cliArgs
      * @return true if an interactive shellrunner should be used, false otherwise
      */
-    static boolean shouldBeInteractive( CliArgs cliArgs )
+    static boolean shouldBeInteractive( CliArgs cliArgs, boolean isInputInteractive )
     {
-        if ( cliArgs.getNonInteractive() || cliArgs.getInputFilename() != null )
-        {
-            return false;
-        }
-
-        return isInputInteractive();
+        return !cliArgs.getNonInteractive() && cliArgs.getInputFilename() == null && isInputInteractive;
     }
 
     /**
@@ -208,4 +172,22 @@ public interface ShellRunner
      * @return an object which can provide the history of commands executed
      */
     Historian getHistorian();
+
+    class Factory
+    {
+        public ShellRunner create( CliArgs cliArgs, CypherShell cypherShell, Logger logger, ConnectionConfig connectionConfig, InputStream in,
+                                   boolean inputInteractive ) throws IOException
+        {
+            if ( shouldBeInteractive( cliArgs, inputInteractive ) )
+            {
+                var userMessagesHandler = new UserMessagesHandler( connectionConfig, cypherShell.getProtocolVersion() );
+                return new InteractiveShellRunner( cypherShell, cypherShell, cypherShell, logger, new ShellStatementParser(),
+                                                   in, FileHistorian.getDefaultHistoryFile(), userMessagesHandler, connectionConfig );
+            }
+            else
+            {
+                return new NonInteractiveShellRunner( cliArgs.getFailBehavior(), cypherShell, logger, new ShellStatementParser(), getInputStream( cliArgs ) );
+            }
+        }
+    }
 }

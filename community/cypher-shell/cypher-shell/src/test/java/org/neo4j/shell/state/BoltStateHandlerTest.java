@@ -493,22 +493,20 @@ class BoltStateHandlerTest
     {
         // Given
         ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
-        config.setNewPassword( "newPW" );
         Bookmark bookmark = InternalBookmark.parse( "myBookmark" );
+        var newPassword = "newPW";
 
         Session sessionMock = mock( Session.class );
         Result resultMock = mock( Result.class );
         Driver driverMock = stubResultSummaryInAnOpenSession( resultMock, sessionMock, "Neo4j/9.4.1-ALPHA", "my_default_db" );
-        when( sessionMock.run( "CALL dbms.security.changePassword($n)", Values.parameters( "n", config.newPassword() ) ) ).thenReturn( resultMock );
+        when( sessionMock.run( "CALL dbms.security.changePassword($n)", Values.parameters( "n", newPassword ) ) ).thenReturn( resultMock );
         when( sessionMock.lastBookmark() ).thenReturn( bookmark );
         BoltStateHandler handler = new OfflineBoltStateHandler( driverMock );
 
         // When
-        handler.changePassword( config );
+        handler.changePassword( config, newPassword );
 
         // Then
-        assertEquals( "newPW", config.password() );
-        assertNull( config.newPassword() );
         assertNull( handler.session );
 
         // When connecting to system db again
