@@ -97,7 +97,9 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      txSupplier().schemaRead.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
+      txSupplier().schemaRead.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).asScala
+        .filter(c => c.enforcesPropertyExistence())
+        .hasNext
     } catch {
       case _: KernelException => false
     }

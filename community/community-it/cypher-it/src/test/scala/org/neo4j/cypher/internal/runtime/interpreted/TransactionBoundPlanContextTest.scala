@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.util.concurrent.TimeUnit.SECONDS
-
+import org.neo4j.cypher.internal.helpers.NodeKeyConstraintCreator.RichGraphDatabaseQueryService
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, IndexLimitation, SlowContains}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.devNullLogger
+import org.neo4j.cypher.internal.v3_5.util._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
 import org.neo4j.internal.kernel.api.Transaction.Type._
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
@@ -31,9 +33,8 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.cypher.internal.v3_5.frontend.phases.devNullLogger
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.util._
+
+import java.util.concurrent.TimeUnit.SECONDS
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
@@ -221,7 +222,37 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
-  def inTx(f: TransactionBoundPlanContext => Unit): Unit = {
+  test("hasPropertyExistenceConstraint should return true with existence constraint") {
+    inTx(_ => {
+      graph.execute("CREATE CONSTRAINT ON (l:L) ASSERT exists(l.prop)")
+    })
+
+    inTx(planContext => {
+      planContext.hasPropertyExistenceConstraint("L", "prop") shouldBe true
+    })
+  }
+
+  test("hasPropertyExistenceConstraint should return true with node key constraint") {
+    inTx(_ => {
+      graph.execute("CREATE CONSTRAINT ON (l:L) ASSERT (l.prop) IS NODE KEY")
+    })
+
+    inTx(planContext => {
+      planContext.hasPropertyExistenceConstraint("L", "prop") shouldBe true
+    })
+  }
+
+  test("hasPropertyExistenceConstraint should return false with uniqueness constraint") {
+    inTx(_ => {
+      graph.execute("CREATE CONSTRAINT ON (l:L) ASSERT (l.prop) IS UNIQUE")
+    })
+
+    inTx(planContext => {
+      planContext.hasPropertyExistenceConstraint("L", "prop") shouldBe false
+    })
+  }
+
+  private def inTx(f: TransactionBoundPlanContext => Unit): Unit = {
     val tx = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
