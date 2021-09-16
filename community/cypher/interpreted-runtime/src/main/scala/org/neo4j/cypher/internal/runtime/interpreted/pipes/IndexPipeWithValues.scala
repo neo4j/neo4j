@@ -54,7 +54,9 @@ trait IndexPipeWithValues extends Pipe {
           i += 1
         }
         newContext
-      } else null
+      } else {
+        null
+      }
     }
   }
 
@@ -65,29 +67,37 @@ trait IndexPipeWithValues extends Pipe {
                          cursor: RelationshipValueIndexCursor
                         ) extends IndexIteratorBase[CypherRow](cursor) {
 
-    override protected def fetchNext(): CypherRow = {
-      if (cursor.next()) {
+    private val queryContext = state.query
 
-        val relationship = state.query.relationshipById(cursor.relationshipReference())
-        val newContext = rowFactory.copyWith(baseContext, ident, relationship, startNode, relationship.startNode(), endNode, relationship.endNode())
-        var i = 0
-        while (i < indexPropertyIndices.length) {
-          newContext.setCachedProperty(indexCachedProperties(i).runtimeKey, cursor.propertyValue(indexPropertyIndices(i)))
-          i += 1
+    override protected def fetchNext(): CypherRow = {
+      while (cursor.next()) {
+
+        val relationship = queryContext.relationshipById(cursor.relationshipReference())
+        val relScanCursor = state.cursors.relationshipScanCursor
+        state.query.singleRelationship(relationship.id(), relScanCursor)
+        if (relScanCursor.next()) {
+          val source = queryContext.nodeById(relScanCursor.sourceNodeReference())
+          val target = queryContext.nodeById(relScanCursor.targetNodeReference())
+          val newContext = rowFactory.copyWith(baseContext, ident, relationship, startNode, source, endNode, target)
+          var i = 0
+          while (i < indexPropertyIndices.length) {
+            newContext.setCachedProperty(indexCachedProperties(i).runtimeKey, cursor.propertyValue(indexPropertyIndices(i)))
+            i += 1
+          }
+          return newContext
         }
-        newContext
-      } else {
-        null
       }
+      null
     }
   }
 
   class UndirectedRelIndexIterator(startNode: String,
                                    endNode: String,
-                                   queryContext: QueryContext,
+                                   state: QueryState,
                                    baseContext: CypherRow,
                                    cursor: RelationshipValueIndexCursor) extends IndexIteratorBase[CypherRow](cursor) {
 
+    private val queryContext = state.query
     private var emitSibling: Boolean = false
     private var lastRelationship: RelationshipValue = _
     private var lastStart: NodeValue = _
@@ -97,14 +107,20 @@ trait IndexPipeWithValues extends Pipe {
       val newContext = if (emitSibling) {
         emitSibling = false
         rowFactory.copyWith(baseContext, ident, lastRelationship, startNode, lastEnd, endNode, lastStart)
-      } else if (cursor.next()) {
-        emitSibling = true
-        lastRelationship = queryContext.relationshipById(cursor.relationshipReference())
-        lastStart = lastRelationship.startNode()
-        lastEnd = lastRelationship.endNode()
-        rowFactory.copyWith(baseContext, ident, lastRelationship, startNode, lastStart, endNode, lastEnd)
       } else {
-        null
+        var ctx: CypherRow = null
+        while (ctx == null && cursor.next()) {
+          lastRelationship = queryContext.relationshipById(cursor.relationshipReference())
+          val relScanCursor = state.cursors.relationshipScanCursor
+          queryContext.singleRelationship(lastRelationship.id(), relScanCursor)
+          if (relScanCursor.next()) {
+            lastStart = queryContext.nodeById(relScanCursor.sourceNodeReference())
+            lastEnd = queryContext.nodeById(relScanCursor.targetNodeReference())
+            emitSibling = true
+            ctx = rowFactory.copyWith(baseContext, ident, lastRelationship, startNode, lastStart, endNode, lastEnd)
+          }
+        }
+        ctx
       }
 
       if (newContext != null) {

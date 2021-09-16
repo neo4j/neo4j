@@ -281,8 +281,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def getRelationshipsByType(session: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator with RelationshipIterator = {
     val read = reads()
-    val typeCursor: RelationshipTypeIndexCursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.cursorContext)
+    val typeCursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.cursorContext)
     val relCursor = transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.cursorContext)
+    read.relationshipTypeScan(session, typeCursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(relType))
     resources.trace(typeCursor)
     resources.trace(relCursor)
     new RelationshipTypeCursorIterator(read, typeCursor, relCursor)
@@ -1347,13 +1348,17 @@ object TransactionBoundQueryContext {
       scanCursor.next()
     }
 
-    override protected def fetchNext(): Long =
-      if (typeIndexCursor.next() && nextFromRelStore()) scanCursor.relationshipReference()
-      else {
-        typeIndexCursor.close()
-        scanCursor.close()
-        -1L
+    override protected def fetchNext(): Long = {
+      while (typeIndexCursor.next()) {
+        // check that relationship was successfully retrieved from store (protect against concurrent deletes)
+        if (nextFromRelStore()) {
+          return scanCursor.relationshipReference()
+        }
       }
+      typeIndexCursor.close()
+      scanCursor.close()
+      -1L
+    }
 
     override protected def storeState(): Unit = {
       relTypeId = scanCursor.`type`()
