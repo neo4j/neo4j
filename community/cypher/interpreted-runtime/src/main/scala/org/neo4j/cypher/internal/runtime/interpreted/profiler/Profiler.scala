@@ -209,6 +209,28 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
     override def typeId(): Int = inner.typeId()
   }
 
+  override protected def manyDbHitsCliRi(inner: ClosingLongIterator with RelationshipIterator): ClosingLongIterator with RelationshipIterator =
+    new ClosingLongIterator with RelationshipIterator {
+      increment()
+      override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
+        inner.relationshipVisit(relationshipId, visitor)
+
+      override def next(): Long = {
+        increment()
+        inner.next()
+      }
+
+      override def startNodeId(): Long = inner.startNodeId()
+
+      override def endNodeId(): Long = inner.endNodeId()
+
+      override def typeId(): Int = inner.typeId()
+
+      override def close(): Unit = inner.close()
+
+      override protected[this] def innerHasNext: Boolean = inner.hasNext
+    }
+
   override protected def manyDbHits(nodeCursor: NodeCursor): NodeCursor = {
 
     val tracer = new PipeTracer
