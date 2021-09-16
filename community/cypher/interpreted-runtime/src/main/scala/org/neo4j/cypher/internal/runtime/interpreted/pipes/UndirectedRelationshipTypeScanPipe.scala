@@ -33,7 +33,7 @@ case class UndirectedRelationshipTypeScanPipe(ident: String, fromNode: String, t
     val typeId = typ.getId(state.query)
     if (typeId == LazyType.UNKNOWN) ClosingIterator.empty
     else {
-      new UndirectedIterator(ident, typeId, fromNode, toNode, rowFactory, state, indexOrder).filter(row => row != null)
+      new UndirectedIterator(ident, typeId, fromNode, toNode, rowFactory, state, indexOrder)
     }
   }
 }
@@ -64,11 +64,7 @@ private class UndirectedIterator(relName: String,
       lastRelationship = query.relationshipById(relIterator.next())
       lastStart = lastRelationship.startNode()
       lastEnd = lastRelationship.endNode()
-      if (lastStart.id() != -1L && lastEnd.id() != -1L) {
-        rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastStart, toNode, lastEnd)
-      } else {
-        null
-      }
+      rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastStart, toNode, lastEnd)
     }
   }
 
