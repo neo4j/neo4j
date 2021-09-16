@@ -452,7 +452,7 @@ class DelegatingReadOperations[T, CURSOR](protected val inner: ReadOperations[T,
 
   override def isDeletedInThisTx(id: Long): Boolean = inner.isDeletedInThisTx(id)
 
-  override def getByIdIfExists(id: Long): Option[T] = singleDbHit(inner.getByIdIfExists(id))
+  override def entityExists(id: Long): Boolean= singleDbHit(inner.entityExists(id))
 
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 
@@ -468,6 +468,7 @@ class DelegatingOperations[T, CURSOR](override protected val inner: Operations[T
 
   override def removeProperty(obj: Long, propertyKeyId: Int): Boolean = singleDbHit(inner.removeProperty(obj, propertyKeyId))
 
+  override def entityExists(id: Long): Boolean = singleDbHit(inner.entityExists(id))
 }
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {

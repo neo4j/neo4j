@@ -895,11 +895,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
     override def releaseExclusiveLock(obj: Long): Unit =
       transactionalContext.locks.releaseExclusiveNodeLock(obj)
 
-    override def getByIdIfExists(id: Long): Option[NodeValue] =
-      if (id >= 0 && reads().nodeExists(id))
-        Some(fromNodeEntity(entityAccessor.newNodeEntity(id)))
-      else
-        None
+    override def entityExists(id: Long): Boolean = id >= 0 && reads().nodeExists(id)
   }
 
   class RelationshipReadOperations extends org.neo4j.cypher.internal.runtime.RelationshipReadOperations {
@@ -935,26 +931,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
 
-    override def getByIdIfExists(id: Long): Option[RelationshipValue] = {
-      if (id < 0)
-        None
-      else {
-        val cursor = allocateRelationshipScanCursor()
-        try {
-          reads().singleRelationship(id, cursor)
-          if (cursor.next()) {
-            val src = cursor.sourceNodeReference()
-            val dst = cursor.targetNodeReference()
-            val relProxy = entityAccessor.newRelationshipEntity(id, src, cursor.`type`(), dst)
-            Some(fromRelationshipEntity(relProxy))
-          }
-          else
-            None
-        } finally {
-          cursor.close()
-        }
-      }
-    }
+    override def entityExists(id: Long): Boolean = id >= 0 && reads().relationshipExists(id)
 
     override def all: ClosingLongIterator = {
       val relCursor = allocateAndTraceRelationshipScanCursor()

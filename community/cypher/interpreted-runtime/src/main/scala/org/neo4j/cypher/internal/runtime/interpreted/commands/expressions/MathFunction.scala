@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.NumberType
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.FloatingPointValue
@@ -70,7 +71,7 @@ object NumericHelper {
   def asLongEntityIdPrimitive(a: AnyValue): Long = a match {
     case d:IntegralValue => d.longValue()
     case f: FloatingPointValue if NumberValues.numbersEqual(f.doubleValue(), f.longValue()) => f.longValue()
-    case _ => -1L
+    case _ => StatementConstants.NO_SUCH_ENTITY
   }
 
   def asDouble(a: AnyValue): DoubleValue = Values.doubleValue(asNumber(a).doubleValue())

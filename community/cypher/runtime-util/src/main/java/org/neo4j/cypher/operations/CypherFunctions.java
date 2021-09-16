@@ -56,7 +56,6 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
-import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -473,7 +472,7 @@ public final class CypherFunctions
         }
     }
 
-    public static NodeValue startNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
+    public static VirtualNodeValue startNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( anyValue instanceof VirtualRelationshipValue )
@@ -486,7 +485,7 @@ public final class CypherFunctions
         }
     }
 
-    public static NodeValue startNode( VirtualRelationshipValue relationship, DbAccess access,
+    public static VirtualNodeValue startNode( VirtualRelationshipValue relationship, DbAccess access,
                                        RelationshipScanCursor cursor )
     {
 
@@ -496,7 +495,7 @@ public final class CypherFunctions
         return access.nodeById( cursor.sourceNodeReference() );
     }
 
-    public static NodeValue endNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
+    public static VirtualNodeValue endNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( anyValue instanceof VirtualRelationshipValue )
@@ -509,7 +508,7 @@ public final class CypherFunctions
         }
     }
 
-    public static NodeValue endNode( VirtualRelationshipValue relationship, DbAccess access,
+    public static VirtualNodeValue endNode( VirtualRelationshipValue relationship, DbAccess access,
                                      RelationshipScanCursor cursor )
     {
         access.singleRelationship( relationship.id(), cursor );
@@ -519,7 +518,7 @@ public final class CypherFunctions
     }
 
     @CalledFromGeneratedCode
-    public static NodeValue otherNode( AnyValue anyValue, DbAccess access, VirtualNodeValue node, RelationshipScanCursor cursor )
+    public static VirtualNodeValue otherNode( AnyValue anyValue, DbAccess access, VirtualNodeValue node, RelationshipScanCursor cursor )
     {
         // This is not a function exposed to the user
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -533,7 +532,7 @@ public final class CypherFunctions
         }
     }
 
-    public static NodeValue otherNode( VirtualRelationshipValue relationship, DbAccess access, VirtualNodeValue node,
+    public static VirtualNodeValue otherNode( VirtualRelationshipValue relationship, DbAccess access, VirtualNodeValue node,
                                        RelationshipScanCursor cursor )
     {
 

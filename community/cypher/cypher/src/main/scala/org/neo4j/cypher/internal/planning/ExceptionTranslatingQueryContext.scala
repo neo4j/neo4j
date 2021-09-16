@@ -362,8 +362,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     override def isDeletedInThisTx(id: Long): Boolean =
       translateException(tokenNameLookup, inner.isDeletedInThisTx(id))
 
-    override def getByIdIfExists(id: Long): Option[T] =
-      translateException(tokenNameLookup, inner.getByIdIfExists(id))
+    override def entityExists(id: Long): Boolean =
+      translateException(tokenNameLookup, inner.entityExists(id))
 
     override def getTxStateProperty(obj: Long, propertyKeyId: Int): Value =
       translateException(tokenNameLookup, inner.getTxStateProperty(obj, propertyKeyId))

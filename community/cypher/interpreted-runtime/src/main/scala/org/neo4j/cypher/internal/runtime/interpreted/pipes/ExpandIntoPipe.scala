@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
+import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.ResourceManager
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.relationshipSelectionCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.traceRelationshipSelectionCursor
@@ -37,7 +39,8 @@ import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.Iterator
 
@@ -75,7 +78,7 @@ case class ExpandIntoPipe(source: Pipe,
       row =>
         val fromNode = getRowNode(row, fromName)
         fromNode match {
-          case fromNode: NodeValue =>
+          case fromNode: VirtualNodeValue =>
             val toNode = getRowNode(row, toName)
             toNode match {
               case IsNoValue() => Iterator.empty
@@ -89,9 +92,9 @@ case class ExpandIntoPipe(source: Pipe,
                                                                            lazyTypes.types(query),
                                                                            n.id())
                   traceRelationshipSelectionCursor(query.resources, selectionCursor, traversalCursor)
-                  val relationships = relationshipSelectionCursorIterator(selectionCursor, traversalCursor, query)
-                  if (relationships.isEmpty) Iterator.empty
-                  else relationships.map(r => rowFactory.copyWith(row, relName, r))
+                  val relationships = relationshipSelectionCursorIterator(selectionCursor, traversalCursor)
+                  if (!relationships.hasNext) Iterator.empty
+                  else PrimitiveLongHelper.map(relationships, r => rowFactory.copyWith(row, relName, VirtualValues.relationship(r)))
                 } finally {
                   nodeCursor.close()
                 }
@@ -116,28 +119,9 @@ object ExpandIntoPipe {
     }
   }
 
-  def relationshipSelectionCursorIterator(cursor: RelationshipTraversalCursor,
-                                          traversalCursor: RelationshipTraversalCursor,
-                                          query: QueryContext): ClosingIterator[RelationshipValue] = {
-    new CursorIterator[RelationshipValue] {
 
-      override protected def fetchNext(): RelationshipValue = {
-        if (cursor.next()) {
-          query.relationshipById(cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.targetNodeReference(),
-                           cursor.`type`())
-        } else {
-          null
-        }
-      }
-
-      override protected def closeMore(): Unit = {
-        if (!(traversalCursor eq cursor)) {
-          traversalCursor.close()
-        }
-        cursor.close()
-      }
-    }
-  }
+  def relationshipSelectionCursorIterator(cursor: RelationshipTraversalCursor, traversalCursor: RelationshipTraversalCursor): ClosingLongIterator with RelationshipIterator =
+    new RelationshipCursorIterator(cursor, traversalCursor)
 
   @inline
   def getRowNode(row: CypherRow, col: String): AnyValue = {

@@ -32,6 +32,8 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable.ListBuffer
 
@@ -65,7 +67,7 @@ case class OptionalExpandIntoPipe(source: Pipe,
               case IsNoValue() =>
                 row.set(relName, Values.NO_VALUE)
                 ClosingIterator.single(row)
-              case n: NodeValue =>
+              case n: VirtualNodeValue =>
                 val traversalCursor = query.traversalCursor()
                 val nodeCursor = query.nodeCursor()
                 try {
@@ -75,12 +77,13 @@ case class OptionalExpandIntoPipe(source: Pipe,
                                                                            types.types(query),
                                                                            n.id())
                   traceRelationshipSelectionCursor(query.resources, selectionCursor, traversalCursor)
+                  query.resources.trace(selectionCursor)
                   val relationships = relationshipSelectionCursorIterator(selectionCursor, traversalCursor, query)
                   val filteredRows = ListBuffer.empty[CypherRow]
                   // This is exhausting relationships directly, thus we do not need to return
                   // a ClosingIterator in this flatMap.
                   while (relationships.hasNext) {
-                    val candidateRow = rowFactory.copyWith(row, relName, relationships.next())
+                    val candidateRow = rowFactory.copyWith(row, relName, VirtualValues.relationship(relationships.next()))
                     if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)) {
                       filteredRows.append(candidateRow)
                     }

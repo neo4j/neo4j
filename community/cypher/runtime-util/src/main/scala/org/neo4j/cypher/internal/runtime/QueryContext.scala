@@ -444,7 +444,7 @@ trait ReadOperations[T, CURSOR] {
 
   def releaseExclusiveLock(obj: Long): Unit
 
-  def getByIdIfExists(id: Long): Option[T]
+  def entityExists(id: Long): Boolean
 }
 
 trait WriteOperations[T, CURSOR] {

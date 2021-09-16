@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.util.attribution.Id
-
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import org.neo4j.values.virtual.VirtualValues
 
 case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
                                            (val id: Id = Id.INVALID_ID) extends Pipe {
@@ -31,15 +31,12 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val ctx = state.newRowWithArgument(rowFactory)
     val relIds = relIdExpr.expressions(ctx, state)
-    new DirectedRelationshipIdSeekIterator(
-      ident,
-      fromNode,
-      toNode,
-      ctx,
-      rowFactory,
-      state.query.relationshipReadOps,
-      relIds.iterator().asScala
-    )
+    val relationships = new DirectedRelationshipIdSeekIterator(relIds.iterator(), state)
+    PrimitiveLongHelper.map(relationships, r => {
+      rowFactory.copyWith(ctx,
+        ident, VirtualValues.relationship(r),
+        fromNode, VirtualValues.node(relationships.startNodeId()),
+        toNode, VirtualValues.node(relationships.endNodeId()))
+    })
   }
-
  }

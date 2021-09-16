@@ -48,6 +48,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeReference
 import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
@@ -77,7 +78,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
     }
   }
 
-  private def getMatches(ctx: ReadableRow, start: NodeValue, end: NodeValue, state: QueryState, memoryTracker: MemoryTracker): AnyValue = {
+  private def getMatches(ctx: ReadableRow, start: VirtualNodeValue, end: VirtualNodeValue, state: QueryState, memoryTracker: MemoryTracker): AnyValue = {
     val (expander, nodePredicates) = addPredicates(ctx, makeRelationshipTypeExpander(), state)
     val maybePredicate = if (predicates.isEmpty) None else Some(Ands(NonEmptyList.from(predicates)))
     /* This test is made after a full shortest path candidate has been produced,
@@ -120,7 +121,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
       } && (!withFallBack || ShortestPathExpression.noDuplicates(path.relationships.asScala))
     }
 
-  private def getEndPoint(ctx: ReadableRow, state: QueryState, start: SingleNode): NodeValue = {
+  private def getEndPoint(ctx: ReadableRow, state: QueryState, start: SingleNode): VirtualNodeValue = {
     try {
       ctx.getByName(start.name) match {
         case node: NodeValue => node
