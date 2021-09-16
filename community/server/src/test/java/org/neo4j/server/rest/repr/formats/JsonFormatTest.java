@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,7 +34,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
 import org.neo4j.server.rest.repr.MappingSerializer;
-import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ServerListRepresentation;
@@ -45,82 +46,82 @@ import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 class JsonFormatTest
 {
-    private OutputFormat json;
+    private JsonFormat json;
 
     @BeforeEach
-    void createOutputFormat() throws Exception
+    void createOutputFormat()
     {
-        json = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
+        json = new JsonFormat();
     }
 
     @Test
-    void canFormatString()
+    void canFormatString() throws URISyntaxException
     {
-        String entity = json.assemble( ValueRepresentation.string( "expected value" ) );
+        String entity = RepresentationBasedMessageBodyWriter.serialize( ValueRepresentation.string( "expected value" ), json, new URI( "http://localhost/" ) );
         assertEquals( "\"expected value\"", entity );
     }
 
     @Test
-    void canFormatListOfStrings()
+    void canFormatListOfStrings() throws URISyntaxException
     {
-        String entity = json.assemble( ListRepresentation.strings( "hello", "world" ) );
+        String entity = RepresentationBasedMessageBodyWriter.serialize( ListRepresentation.strings( "hello", "world" ), json, new URI( "http://localhost/" ) );
         String expectedString = createJsonFrom( Arrays.asList( "hello", "world" ) );
         assertEquals( expectedString, entity );
     }
 
     @Test
-    void canFormatInteger()
+    void canFormatInteger() throws URISyntaxException
     {
-        String entity = json.assemble( ValueRepresentation.number( 10 ) );
+        String entity = RepresentationBasedMessageBodyWriter.serialize( ValueRepresentation.number( 10 ), json, new URI( "http://localhost/" ) );
         assertEquals( "10", entity );
     }
 
     @Test
-    void canFormatEmptyObject()
+    void canFormatEmptyObject() throws URISyntaxException
     {
-        String entity = json.assemble( new MappingRepresentation( "empty" )
+        String entity = RepresentationBasedMessageBodyWriter.serialize( new MappingRepresentation( "empty" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
             {
             }
-        } );
+        }, json, new URI( "http://localhost/" ) );
         assertEquals( createJsonFrom( Collections.emptyMap() ), entity );
     }
 
     @Test
-    void canFormatObjectWithStringField()
+    void canFormatObjectWithStringField() throws URISyntaxException
     {
-        String entity = json.assemble( new MappingRepresentation( "string" )
+        String entity = RepresentationBasedMessageBodyWriter.serialize( new MappingRepresentation( "string" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
             {
                 serializer.putString( "key", "expected string" );
             }
-        } );
+        }, json, new URI( "http://localhost/" ) );
         assertEquals( createJsonFrom( singletonMap( "key", "expected string" ) ), entity );
     }
 
     @Test
-    void canFormatObjectWithUriField()
+    void canFormatObjectWithUriField() throws URISyntaxException
     {
-        String entity = json.assemble( new MappingRepresentation( "uri" )
+        String entity = RepresentationBasedMessageBodyWriter.serialize( new MappingRepresentation( "uri" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
             {
                 serializer.putRelativeUri( "URL", "subpath" );
             }
-        } );
+        }, json, new URI( "http://localhost/" ) );
 
         assertEquals( createJsonFrom( singletonMap( "URL", "http://localhost/subpath" ) ), entity );
     }
 
     @Test
-    void canFormatObjectWithNestedObject()
+    void canFormatObjectWithNestedObject() throws URISyntaxException
     {
-        String entity = json.assemble( new MappingRepresentation( "nesting" )
+        String entity = RepresentationBasedMessageBodyWriter.serialize( new MappingRepresentation( "nesting" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
@@ -134,7 +135,7 @@ class JsonFormatTest
                     }
                 } );
             }
-        } );
+        }, json, new URI( "http://localhost/" ) );
         assertEquals(
                 createJsonFrom( singletonMap( "nested",
                         singletonMap( "data", "expected data" ) ) ), entity );
@@ -143,7 +144,7 @@ class JsonFormatTest
     @Test
     void canFormatNestedMapsAndLists() throws Exception
     {
-        String entity = json.assemble( new MappingRepresentation( "test" )
+        String entity = RepresentationBasedMessageBodyWriter.serialize( new MappingRepresentation( "test" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
@@ -161,7 +162,7 @@ class JsonFormatTest
                 } );
                 serializer.putList( "foo", new ServerListRepresentation( RepresentationType.MAP, maps ) );
             }
-        } );
+        }, json, new URI( "http://localhost/" ) );
 
         assertEquals( "bar", ((Map) ((List) JsonHelper.jsonToMap( entity ).get( "foo" )).get( 0 )).get( "foo" ) );
     }

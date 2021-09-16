@@ -19,26 +19,15 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.DefaultFormat;
 import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.RepresentationFormat;
-
-import static org.neo4j.server.rest.domain.JsonHelper.assertSupportedPropertyValue;
-import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 @ServiceProvider
 public class JsonFormat extends RepresentationFormat
@@ -76,80 +65,5 @@ public class JsonFormat extends RepresentationFormat
     protected String serializeValue( String type, Object value )
     {
         return JsonHelper.createJsonFrom( value );
-    }
-
-    private static boolean empty( String input )
-    {
-        return input == null || "".equals( input.trim() );
-    }
-
-    @Override
-    public Map<String, Object> readMap( String input, String... requiredKeys ) throws BadInputException
-    {
-        if ( empty( input ) )
-        {
-            return DefaultFormat.validateKeys( Collections.emptyMap(), requiredKeys );
-        }
-        try
-        {
-            return DefaultFormat.validateKeys( JsonHelper.jsonToMap( stripByteOrderMark( input ) ), requiredKeys );
-        }
-        catch ( Exception ex )
-        {
-            throw new BadInputException( ex );
-        }
-    }
-
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public List<Object> readList( String input ) throws BadInputException
-    {
-        try
-        {
-            return (List<Object>) JsonHelper.readJson( input );
-        }
-        catch ( ClassCastException | JsonParseException ex )
-        {
-            throw new BadInputException( ex );
-        }
-    }
-
-    @Override
-    public Object readValue( String input ) throws BadInputException
-    {
-        if ( empty( input ) )
-        {
-            return Collections.emptyMap();
-        }
-        try
-        {
-            return assertSupportedPropertyValue( readJson( stripByteOrderMark( input ) ) );
-        }
-        catch ( JsonParseException ex )
-        {
-            throw new BadInputException( ex );
-        }
-    }
-
-    @Override
-    public URI readUri( String input ) throws BadInputException
-    {
-        try
-        {
-            return new URI( readValue( input ).toString() );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new BadInputException( e );
-        }
-    }
-
-    private static String stripByteOrderMark( String string )
-    {
-        if ( string != null && !string.isEmpty() && string.charAt( 0 ) == 0xfeff )
-        {
-            return string.substring( 1 );
-        }
-        return string;
     }
 }

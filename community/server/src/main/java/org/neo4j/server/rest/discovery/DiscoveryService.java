@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
@@ -35,40 +33,29 @@ import org.neo4j.configuration.Config;
 import org.neo4j.server.NeoWebServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
-import org.neo4j.server.rest.repr.OutputFormat;
 
 /**
- * Used to discover the rest of the server URIs through a HTTP GET request to
- * the server root (/).
+ * Used to discover the rest of the server URIs through a HTTP GET request to the server root (/).
  */
 @Path( "/" )
 public class DiscoveryService
 {
     private final Config config;
-    private final OutputFormat outputFormat;
     private final DiscoverableURIs uris;
     private final ServerVersionAndEdition serverInfo;
-    private final Map<String,Object> varyHeader;
 
     // Your IDE might tell you to make this less visible than public. Don't. JAX-RS demands is to be public.
-    public DiscoveryService( @Context Config config, @Context OutputFormat outputFormat, @Context DiscoverableURIs uris, @Context NeoWebServer neoWebServer )
+    public DiscoveryService( @Context Config config, @Context DiscoverableURIs uris, @Context NeoWebServer neoWebServer )
     {
-        this( config, outputFormat, uris, new ServerVersionAndEdition( neoWebServer ) );
+        this( config, uris, new ServerVersionAndEdition( neoWebServer ) );
     }
 
     // Used in internal unit test to avoid providing a neo server
-    DiscoveryService( Config config, OutputFormat outputFormat, DiscoverableURIs uris, ServerVersionAndEdition serverInfo )
+    DiscoveryService( Config config, DiscoverableURIs uris, ServerVersionAndEdition serverInfo )
     {
         this.config = config;
-        this.outputFormat = outputFormat;
         this.uris = uris;
         this.serverInfo = serverInfo;
-        this.varyHeader = Map.of( HttpHeaders.VARY, HttpHeaders.ACCEPT );
-    }
-
-    Response getDiscoveryDocument( UriInfo uriInfo )
-    {
-        return outputFormat.ok( new DiscoveryRepresentation( uris.update( uriInfo.getBaseUri() ), serverInfo ), varyHeader );
     }
 
     @GET
@@ -77,17 +64,23 @@ public class DiscoveryService
     {
 
         Variant v = request.selectVariant( Variant.mediaTypes( MediaType.APPLICATION_JSON_TYPE, MediaType.TEXT_HTML_TYPE ).build() );
+        Response.ResponseBuilder responseBuilder;
         if ( v == null )
         {
-            return Response.serverError().status( Response.Status.NOT_ACCEPTABLE ).build();
+            responseBuilder = Response.serverError().status( Response.Status.NOT_ACCEPTABLE );
         }
         else if ( v.getMediaType() == MediaType.APPLICATION_JSON_TYPE )
         {
-            return getDiscoveryDocument( uriInfo );
+            responseBuilder = Response.ok()
+                                      .entity( new DiscoveryRepresentation( uris.update( uriInfo.getBaseUri() ), serverInfo ) )
+                                      .variant( v );
         }
         else
         {
-            return outputFormat.seeOther( config.get( ServerSettings.browser_path ), varyHeader );
+            responseBuilder = Response.seeOther( uriInfo.getBaseUri().resolve( config.get( ServerSettings.browser_path ) ) )
+                                      .variant( v );
         }
+
+        return responseBuilder.build();
     }
 }

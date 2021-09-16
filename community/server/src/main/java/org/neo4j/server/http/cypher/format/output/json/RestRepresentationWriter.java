@@ -19,23 +19,29 @@
  */
 package org.neo4j.server.http.cypher.format.output.json;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
+import org.neo4j.server.rest.repr.ListWriter;
+import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.NodeRepresentation;
-import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
 import org.neo4j.server.rest.repr.PathRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationFormat;
+import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 class RestRepresentationWriter implements ResultDataContentWriter
 {
@@ -50,7 +56,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
     public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker )
             throws IOException
     {
-        RepresentationFormat format = new StreamingJsonFormat.StreamingRepresentationFormat( out, null );
+        WriteThroughJsonFormat format = new WriteThroughJsonFormat( out );
         out.writeArrayFieldStart( "rest" );
         try
         {
@@ -65,15 +71,25 @@ class RestRepresentationWriter implements ResultDataContentWriter
         }
     }
 
-    private void write( JsonGenerator out, RepresentationFormat format, Object value, TransactionStateChecker checker )
+    /**
+     * Recursively walks through the {@literal value}. We can't use {@literal ObjectToRepresentationConverter} for converting everything into a {@link
+     * Representation} as we need to set the {@link TransactionStateChecker} on nodes and relationships.
+     *
+     * @param out
+     * @param format
+     * @param value
+     * @param checker
+     * @throws IOException
+     */
+    private void write( JsonGenerator out, WriteThroughJsonFormat format, Object value, TransactionStateChecker checker )
             throws IOException
     {
-        if ( value instanceof Map<?, ?> )
+        if ( value instanceof Map<?,?> )
         {
             out.writeStartObject();
             try
             {
-                for ( Map.Entry<String, ?> entry : ((Map<String, ?>) value).entrySet() )
+                for ( Map.Entry<String,?> entry : ((Map<String,?>) value).entrySet() )
                 {
                     out.writeFieldName( entry.getKey() );
                     write( out, format, entry.getValue(), checker );
@@ -86,7 +102,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
         }
         else if ( value instanceof Path )
         {
-            write( format, new PathRepresentation<>( (Path) value ) );
+            RepresentationBasedMessageBodyWriter.serialize( new PathRepresentation<>( (Path) value ), format, baseUri );
         }
         else if ( value instanceof Iterable<?> )
         {
@@ -107,22 +123,228 @@ class RestRepresentationWriter implements ResultDataContentWriter
         {
             NodeRepresentation representation = new NodeRepresentation( (Node) value );
             representation.setTransactionStateChecker( checker );
-            write( format, representation );
+            RepresentationBasedMessageBodyWriter.serialize( representation, format, baseUri );
         }
         else if ( value instanceof Relationship )
         {
             RelationshipRepresentation representation = new RelationshipRepresentation( (Relationship) value );
             representation.setTransactionStateChecker( checker );
-            write( format, representation );
+            RepresentationBasedMessageBodyWriter.serialize( representation, format, baseUri );
         }
         else
         {
-            out.writeObject( value );
+            format.serializeValue( null, value );
         }
     }
 
-    private void write( RepresentationFormat format, Representation representation )
+    /**
+     * In contrast to {@link JsonFormat}, this {@link RepresentationFormat} does write directly to a {@link JsonFactory} respectively {@link JsonGenerator}. It
+     * does not create new factory nor codes on each write value (in contrast to {@literal JsonFormat} and it's usage of {@literal JsonHelper}.
+     */
+    private static class WriteThroughJsonFormat extends RepresentationFormat
     {
-        OutputFormat.write( representation, format, baseUri );
+        private final JsonGenerator jsonGenerator;
+
+        WriteThroughJsonFormat( JsonGenerator g )
+        {
+            super( MediaType.APPLICATION_JSON_TYPE );
+            this.jsonGenerator = g;
+        }
+
+        @Override
+        protected String serializeValue( String type, Object value )
+        {
+            try
+            {
+                jsonGenerator.writeObject( value );
+                return null;
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+
+        @Override
+        protected ListWriter serializeList( String type )
+        {
+            return new WriteThroughListWriterImpl( jsonGenerator );
+        }
+
+        @Override
+        public MappingWriter serializeMapping( String type )
+        {
+            return new WriteThroughMappingWriterImpl( jsonGenerator );
+        }
+
+        @Override
+        protected String complete( ListWriter serializer )
+        {
+            flush();
+            return null;
+        }
+
+        @Override
+        protected String complete( MappingWriter serializer )
+        {
+            flush();
+            return null;
+        }
+
+        private void flush()
+        {
+            try
+            {
+                jsonGenerator.flush();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+
+        @Override
+        public void complete()
+        {
+            flush();
+        }
+    }
+
+    private static class WriteThroughMappingWriterImpl extends MappingWriter
+    {
+        private final JsonGenerator jsonGenerator;
+
+        WriteThroughMappingWriterImpl( JsonGenerator jsonGenerator )
+        {
+            this.jsonGenerator = jsonGenerator;
+            try
+            {
+                jsonGenerator.writeStartObject();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+
+        WriteThroughMappingWriterImpl( JsonGenerator g, String key )
+        {
+            this.jsonGenerator = g;
+            try
+            {
+                g.writeObjectFieldStart( key );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+
+        @Override
+        public MappingWriter newMapping( String type, String key )
+        {
+            return new WriteThroughMappingWriterImpl( jsonGenerator, key );
+        }
+
+        @Override
+        public ListWriter newList( String type, String key )
+        {
+            return new WriteThroughListWriterImpl( jsonGenerator, key );
+        }
+
+        @Override
+        public void writeValue( String type, String key, Object value )
+        {
+            try
+            {
+                jsonGenerator.writeObjectField( key, value );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+
+        @Override
+        public void done()
+        {
+            try
+            {
+                jsonGenerator.writeEndObject();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+    }
+
+    private static class WriteThroughListWriterImpl extends ListWriter
+    {
+        private final JsonGenerator jsonGenerator;
+
+        WriteThroughListWriterImpl( JsonGenerator jsonGenerator )
+        {
+            this.jsonGenerator = jsonGenerator;
+            try
+            {
+                jsonGenerator.writeStartArray();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+
+        WriteThroughListWriterImpl( JsonGenerator g, String key )
+        {
+            this.jsonGenerator = g;
+            try
+            {
+                g.writeArrayFieldStart( key );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+
+        @Override
+        public MappingWriter newMapping( String type )
+        {
+            return new WriteThroughMappingWriterImpl( jsonGenerator );
+        }
+
+        @Override
+        public ListWriter newList( String type )
+        {
+            return new WriteThroughListWriterImpl( jsonGenerator );
+        }
+
+        @Override
+        public void writeValue( String type, Object value )
+        {
+            try
+            {
+                jsonGenerator.writeObject( value );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+
+        @Override
+        public void done()
+        {
+            try
+            {
+                jsonGenerator.writeEndArray();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
     }
 }

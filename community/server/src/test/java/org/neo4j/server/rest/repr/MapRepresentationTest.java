@@ -44,9 +44,8 @@ class MapRepresentationTest
     {
         MapRepresentation rep = new MapRepresentation( map( "nulls", null, "strings", "a string", "numbers", 42,
                 "booleans", true ) );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
-        String serializedMap = format.assemble( rep );
+        String serializedMap = RepresentationBasedMessageBodyWriter.serialize( rep, new JsonFormat(), new URI( "http://localhost/" ) );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
         assertThat( map.get( "nulls" ) ).isNull();
@@ -65,9 +64,8 @@ class MapRepresentationTest
                 "booleans", new boolean[]{true, false},
                 "Booleans", new Boolean[]{TRUE, FALSE}
         ) );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
-        String serializedMap = format.assemble( rep );
+        String serializedMap = RepresentationBasedMessageBodyWriter.serialize( rep, new JsonFormat(), new URI( "http://localhost/" ) );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
         assertThat( map.get( "strings" ) ).isEqualTo( asList( "a string", "another string" ) );
@@ -83,9 +81,8 @@ class MapRepresentationTest
         MapRepresentation rep = new MapRepresentation( map( "lists of nulls", asList( null, null ),
                 "lists of strings", asList( "a string", "another string" ), "lists of numbers", asList( 23, 87, 42 ),
                 "lists of booleans", asList( true, false, true ) ) );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
-        String serializedMap = format.assemble( rep );
+        String serializedMap = RepresentationBasedMessageBodyWriter.serialize( rep, new JsonFormat(), new URI( "http://localhost/" ) );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
         assertThat( map.get( "lists of nulls" ) ).isEqualTo( asList( null, null ) );
@@ -101,9 +98,8 @@ class MapRepresentationTest
                 "maps with strings", map( "strings", "a string" ),
                 "maps with numbers", map( "numbers", 42 ),
                 "maps with booleans", map( "booleans", true ) ) );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
-        String serializedMap = format.assemble( rep );
+        String serializedMap = RepresentationBasedMessageBodyWriter.serialize( rep, new JsonFormat(), new URI( "http://localhost/" ) );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
         assertThat( ((Map) map.get( "maps with nulls" )).get( "nulls" ) ).isNull();
@@ -122,9 +118,8 @@ class MapRepresentationTest
                         "a list with a map in it", asList( map( "foo", "bar", "baz", false ) )
                 )
         );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
-        String serializedMap = format.assemble( rep );
+        String serializedMap = RepresentationBasedMessageBodyWriter.serialize( rep, new JsonFormat(), new URI( "http://localhost/" ) );
 
         Map<String, Object> map = JsonHelper.jsonToMap( serializedMap );
         assertThat( ((Map) map.get( "a map with a list in it" )).get( "a list" ) ).isEqualTo( List.of( 42, 87 ) );
@@ -150,9 +145,8 @@ class MapRepresentationTest
         for ( Object value : values )
         {
             MapRepresentation rep = new MapRepresentation( map( (Object) null, value ) );
-            OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
-            String serializedMap = format.assemble( rep );
+            String serializedMap = RepresentationBasedMessageBodyWriter.serialize( rep, new JsonFormat(), new URI( "http://localhost/" ) );
 
             Map<String,Object> map = JsonHelper.jsonToMap( serializedMap );
 

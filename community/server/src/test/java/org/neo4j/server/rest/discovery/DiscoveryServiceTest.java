@@ -23,8 +23,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -43,8 +46,8 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.test.server.EntityOutputFormat;
+import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
+import org.neo4j.server.rest.repr.Representation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -126,6 +129,7 @@ public class DiscoveryServiceTest
 
     private String expectedDatabaseUri;
     private String expectedBoltUri;
+    private RepresentationBasedMessageBodyWriter outputFormat;
 
     public void init( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider,
             Consumer<Config.Builder> configOverrider, String expectedBoltUri ) throws URISyntaxException
@@ -149,6 +153,8 @@ public class DiscoveryServiceTest
 
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
         when( dependencyResolver.resolveDependency( ConnectorPortRegister.class ) ).thenReturn( portRegistry );
+
+        this.outputFormat = new RepresentationBasedMessageBodyWriter( uriInfo( this.baseUri ) );
     }
 
     private Config mockConfig()
@@ -169,8 +175,7 @@ public class DiscoveryServiceTest
     private DiscoveryService testDiscoveryService()
     {
         Config config = mockConfig();
-        return new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), baseUri ),
-                communityDiscoverableURIs( config, portRegistry ), mock( ServerVersionAndEdition.class ) );
+        return new DiscoveryService( config, communityDiscoverableURIs( config, portRegistry ), mock( ServerVersionAndEdition.class ) );
     }
 
     @ParameterizedTest( name = "{0}" )
@@ -180,8 +185,10 @@ public class DiscoveryServiceTest
     {
         init( description, baseUri, portRegistryOverrider, configOverrider, expectedBoltUri );
 
-        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( this.baseUri ) );
-        String json = new String( (byte[]) response.getEntity() );
+        var request = mock( Request.class );
+        when( request.selectVariant( anyList() ) ).thenReturn( Variant.mediaTypes( MediaType.APPLICATION_JSON_TYPE ).build().get( 0 ) );
+        Response response = testDiscoveryService().get( request, uriInfo( this.baseUri ) );
+        String json = getJsonString( response );
 
         assertNotNull( json );
         assertThat( json.length() ).isGreaterThan( 0 );
@@ -203,8 +210,10 @@ public class DiscoveryServiceTest
     {
         init( description, baseUri, portRegistryOverrider, configOverrider, expectedBoltUri );
 
-        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( this.baseUri ) );
-        String json = new String( (byte[]) response.getEntity() );
+        var request = mock( Request.class );
+        when( request.selectVariant( anyList() ) ).thenReturn( Variant.mediaTypes( MediaType.APPLICATION_JSON_TYPE ).build().get( 0 ) );
+        Response response = testDiscoveryService().get( request, uriInfo( this.baseUri ) );
+        String json = getJsonString( response );
         assertThat( json ).contains( "\"bolt_direct\" : \"" + expectedBoltUri );
     }
 
@@ -215,8 +224,10 @@ public class DiscoveryServiceTest
     {
         init( description, baseUri, portRegistryOverrider, configOverrider, expectedBoltUri );
 
-        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( this.baseUri ) );
-        String json = new String( (byte[]) response.getEntity() );
+        var request = mock( Request.class );
+        when( request.selectVariant( anyList() ) ).thenReturn( Variant.mediaTypes( MediaType.APPLICATION_JSON_TYPE ).build().get( 0 ) );
+        Response response = testDiscoveryService().get( request, uriInfo( this.baseUri ) );
+        String json = getJsonString( response );
         assertThat( json ).contains( "\"transaction\" : \"" + expectedDatabaseUri + "/" );
     }
 
@@ -227,8 +238,10 @@ public class DiscoveryServiceTest
     {
         init( description, baseUri, portRegistryOverrider, configOverrider, expectedBoltUri );
 
-        Response response = testDiscoveryService().getDiscoveryDocument( uriInfo( this.baseUri ) );
-        String json = new String( (byte[]) response.getEntity() );
+        var request = mock( Request.class );
+        when( request.selectVariant( anyList() ) ).thenReturn( Variant.mediaTypes( MediaType.APPLICATION_JSON_TYPE ).build().get( 0 ) );
+        Response response = testDiscoveryService().get( request, uriInfo( this.baseUri ) );
+        String json = getJsonString( response );
         assertThat( json ).doesNotContain( "\"management\"" );
     }
 
@@ -242,14 +255,20 @@ public class DiscoveryServiceTest
         Config config = Config.defaults( ServerSettings.browser_path, URI.create( "/browser/" ) );
 
         baseUri = "http://www.example.com:5435";
-        DiscoveryService ds = new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ) ),
-                communityDiscoverableURIs( config, null ), mock( ServerVersionAndEdition.class ) );
+        DiscoveryService ds = new DiscoveryService( config, communityDiscoverableURIs( config, null ), mock( ServerVersionAndEdition.class ) );
 
         var request = mock( Request.class );
         when( request.selectVariant( anyList() ) ).thenReturn( Variant.mediaTypes( MediaType.TEXT_HTML_TYPE ).build().get( 0 ) );
-        Response response = ds.get( request, uriInfo( this.baseUri ) );
+        Response response = ds.get( request, uriInfo( new URI( baseUri ) ) );
 
         assertThat( response.getMetadata().getFirst( "Location" ) ).isEqualTo( new URI( "http://www.example.com:5435/browser/" ) );
+    }
+
+    private String getJsonString( Response response ) throws IOException
+    {
+        var out = new ByteArrayOutputStream();
+        outputFormat.writeTo( (Representation) response.getEntity(), Representation.class, null, null, MediaType.APPLICATION_JSON_TYPE, null, out );
+        return out.toString( StandardCharsets.UTF_8 );
     }
 
     private static Consumer<ConnectorPortRegister> register( String connector, String host, int port )

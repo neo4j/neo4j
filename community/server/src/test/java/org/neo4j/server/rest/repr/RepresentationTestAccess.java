@@ -137,29 +137,5 @@ public class RepresentationTestAccess
         {
             throw new UnsupportedOperationException( "StringFormat.serializeMapping()" );
         }
-
-        @Override
-        public List<Object> readList( String input )
-        {
-            throw new UnsupportedOperationException( "StringFormat.readList()" );
-        }
-
-        @Override
-        public Map<String, Object> readMap( String input, String... requiredKeys )
-        {
-            throw new UnsupportedOperationException( "StringFormat.readMap()" );
-        }
-
-        @Override
-        public Object readValue( String input )
-        {
-            throw new UnsupportedOperationException( "StringFormat.readValue()" );
-        }
-
-        @Override
-        public URI readUri( String input )
-        {
-            throw new UnsupportedOperationException( "StringFormat.readUri()" );
-        }
     }
 }

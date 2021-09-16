@@ -28,7 +28,7 @@ import org.neo4j.annotations.service.Service;
  * class must have a public no arguments constructor.
  */
 @Service
-public abstract class RepresentationFormat implements InputFormat
+public abstract class RepresentationFormat
 {
     final MediaType mediaType;
 
