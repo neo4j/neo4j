@@ -349,11 +349,15 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     override def propertyKeyIds(id: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
       translateException(tokenNameLookup, inner.propertyKeyIds(id, cursor, propertyCursor))
 
+<<<<<<< HEAD
     override def all: ClosingIterator[T] =
-      translateException(tokenNameLookup, inner.all)
+=======
+    override def removeProperty(id: Long, propertyKeyId: Int): Boolean =
+      translateException(tokenNameLookup, inner.removeProperty(id, propertyKeyId))
 
-    override def allPrimitive: ClosingLongIterator =
-      translateException(tokenNameLookup, inner.allPrimitive)
+    override def all: ClosingLongIterator =
+>>>>>>> ef0d9c2ac2b... Remove non-primive iterators over all nodes or relationships
+      translateException(tokenNameLookup, inner.all)
 
     override def isDeletedInThisTx(id: Long): Boolean =
       translateException(tokenNameLookup, inner.isDeletedInThisTx(id))

@@ -49,7 +49,6 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.ValuedNodeIndexCursor
 import org.neo4j.cypher.internal.runtime.ValuedRelationshipIndexCursor
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipTypeCursorIterator
@@ -878,20 +877,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
 
-    override def all: ClosingIterator[NodeValue] = {
-      val nodeCursor = allocateAndTraceNodeCursor()
-      reads().allNodesScan(nodeCursor)
-      new CursorIterator[NodeValue] {
-        override protected def fetchNext(): NodeValue = {
-          if (nodeCursor.next()) fromNodeEntity(entityAccessor.newNodeEntity(nodeCursor.nodeReference()))
-          else null
-        }
-
-        override protected def closeMore(): Unit = nodeCursor.close()
-      }
-    }
-
-    override def allPrimitive: ClosingLongIterator = {
+    override def all: ClosingLongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
       new PrimitiveCursorIterator {
@@ -970,24 +956,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
       }
     }
 
-    override def all: ClosingIterator[RelationshipValue] = {
-      val relCursor = allocateAndTraceRelationshipScanCursor()
-      reads().allRelationshipsScan(relCursor)
-      new CursorIterator[RelationshipValue] {
-        override protected def fetchNext(): RelationshipValue = {
-          if (relCursor.next())
-            fromRelationshipEntity(entityAccessor.newRelationshipEntity(relCursor.relationshipReference(),
-              relCursor.sourceNodeReference(),
-              relCursor.`type`(),
-              relCursor.targetNodeReference()))
-          else null
-        }
-
-        override protected def closeMore(): Unit = relCursor.close()
-      }
-    }
-
-    override def allPrimitive: ClosingLongIterator = {
+    override def all: ClosingLongIterator = {
       val relCursor = allocateAndTraceRelationshipScanCursor()
       reads().allRelationshipsScan(relCursor)
       new PrimitiveCursorIterator {

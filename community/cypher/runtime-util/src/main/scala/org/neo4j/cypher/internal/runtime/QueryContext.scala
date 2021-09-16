@@ -438,9 +438,7 @@ trait ReadOperations[T, CURSOR] {
 
   def isDeletedInThisTx(id: Long): Boolean
 
-  def all: ClosingIterator[T]
-
-  def allPrimitive: ClosingLongIterator
+  def all: ClosingLongIterator
 
   def acquireExclusiveLock(obj: Long): Unit
 

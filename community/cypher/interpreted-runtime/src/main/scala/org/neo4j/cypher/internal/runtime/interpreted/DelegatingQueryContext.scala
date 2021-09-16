@@ -448,9 +448,7 @@ class DelegatingReadOperations[T, CURSOR](protected val inner: ReadOperations[T,
   override def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
     singleDbHit(inner.propertyKeyIds(obj, cursor, propertyCursor))
 
-  override def all: ClosingIterator[T] = manyDbHits(inner.all)
-
-  override def allPrimitive: ClosingLongIterator = manyDbHits(inner.allPrimitive)
+  override def all: ClosingLongIterator = manyDbHits(inner.all)
 
   override def isDeletedInThisTx(id: Long): Boolean = inner.isDeletedInThisTx(id)
 

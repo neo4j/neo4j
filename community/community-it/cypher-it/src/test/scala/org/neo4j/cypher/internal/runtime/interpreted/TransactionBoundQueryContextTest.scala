@@ -272,24 +272,6 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     monitor.closedResources.collect { case r: NodeCursor => r } should have size(1)
   }
 
-  test("nodeOps.allPrimitive closes underlying cursor") {
-    // GIVEN
-    createLabeledNodesAndRels()
-
-    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
-    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val monitor = QueryStateHelper.trackClosedMonitor
-    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.nodeReadOps.allPrimitive
-
-    // WHEN
-    iteratorA.next()
-    iteratorA.close()
-
-    // THEN
-    monitor.closedResources.collect { case r: NodeCursor => r } should have size(1)
-  }
-
   test("relationshipOps.all closes underlying cursor") {
     // GIVEN
     createLabeledNodesAndRels()
@@ -299,24 +281,6 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val monitor = QueryStateHelper.trackClosedMonitor
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
     val iteratorA = context.relationshipReadOps.all
-
-    // WHEN
-    iteratorA.next()
-    iteratorA.close()
-
-    // THEN
-    monitor.closedResources.collect { case r: RelationshipScanCursor => r } should have size(1)
-  }
-
-  test("relationshipOps.allPrimitive closes underlying cursor") {
-    // GIVEN
-    createLabeledNodesAndRels()
-
-    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
-    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val monitor = QueryStateHelper.trackClosedMonitor
-    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.relationshipReadOps.allPrimitive
 
     // WHEN
     iteratorA.next()
@@ -412,22 +376,6 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     // WHEN
     context.nodeReadOps.all
-
-    // THEN
-    context.resources.allResources should have size initSize + 1
-    context.resources.close()
-    tx.close()
-  }
-
-  test("should add cursor as resource when calling allPrimitive") {
-    // GIVEN
-    val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
-    val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
-    val initSize = context.resources.allResources.size
-
-    // WHEN
-    context.nodeReadOps.allPrimitive
 
     // THEN
     context.resources.allResources should have size initSize + 1

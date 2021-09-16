@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.values.virtual.VirtualValues
 
 case class AllNodesScanPipe(ident: String)(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val baseContext = state.newRowWithArgument(rowFactory)
-    state.query.nodeReadOps.all.map(n => rowFactory.copyWith(baseContext, ident, n))
+    PrimitiveLongHelper.map(state.query.nodeReadOps.all, n => rowFactory.copyWith(baseContext, ident, VirtualValues.node(n)))
   }
-
 }
