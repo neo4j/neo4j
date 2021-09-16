@@ -67,7 +67,7 @@ public class DatabaseLayout
         return Neo4jLayout.of( config ).databaseLayout( config.get( GraphDatabaseSettings.default_database ) );
     }
 
-    static DatabaseLayout of( Neo4jLayout neo4jLayout, String databaseName )
+    public static DatabaseLayout of( Neo4jLayout neo4jLayout, String databaseName )
     {
         return new DatabaseLayout( neo4jLayout, databaseName );
     }

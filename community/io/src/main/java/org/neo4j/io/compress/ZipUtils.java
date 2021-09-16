@@ -42,15 +42,26 @@ import static java.util.stream.Collectors.toList;
 public class ZipUtils
 {
     /**
+     * Like {@link #zip(FileSystemAbstraction, Path, Path, boolean)}, with includeSourceFolder=false.
+     */
+    public static void zip( FileSystemAbstraction fileSystem, Path sourceToCompress, Path destinationZip ) throws IOException
+    {
+        zip( fileSystem, sourceToCompress, destinationZip, false );
+    }
+
+    /**
      * Create zip archive for requested <code>sourceToCompress</code>.
      * If <code>sourceToCompress</code> is a directory then content of that directory and all its sub-directories will be added to the archive.
      * If <code>sourceToCompress</code> does not exist or is an empty directory then archive will not be created.
      * @param fileSystem source file system
      * @param sourceToCompress source file to compress
      * @param destinationZip zip file compress source to
+     * @param includeSourceDirectoryInRelativePath true if relative path of content should include sourceToCompress, otherwise false.
+     *                                             This is only meaningful sourceToCompress is a directory.
      * @throws IOException when underlying file system access produce IOException
      */
-    public static void zip( FileSystemAbstraction fileSystem, Path sourceToCompress, Path destinationZip ) throws IOException
+    public static void zip( FileSystemAbstraction fileSystem, Path sourceToCompress, Path destinationZip, boolean includeSourceDirectoryInRelativePath )
+            throws IOException
     {
         if ( !fileSystem.fileExists( sourceToCompress ) )
         {
@@ -63,13 +74,19 @@ public class ZipUtils
         Map<String,String> env = Map.of( "create", "true" );
         URI archiveAbsoluteURI = URI.create( "jar:file:" + destinationZip.toUri().getRawPath() );
 
+        Path baseForRelativePath = sourceToCompress;
+        if ( includeSourceDirectoryInRelativePath )
+        {
+            baseForRelativePath = sourceToCompress.getParent();
+        }
+
         try ( FileSystem zipFs = FileSystems.newFileSystem( archiveAbsoluteURI, env ) )
         {
             List<FileHandle> fileHandles = fileSystem.streamFilesRecursive( sourceToCompress ).collect( toList() );
             for ( FileHandle fileHandle : fileHandles )
             {
                 Path sourcePath = fileHandle.getPath();
-                Path zipFsPath = fileSystem.isDirectory( sourceToCompress ) ? zipFs.getPath( sourceToCompress.relativize( sourcePath ).toString() )
+                Path zipFsPath = fileSystem.isDirectory( sourceToCompress ) ? zipFs.getPath( baseForRelativePath.relativize( sourcePath ).toString() )
                                                                             : zipFs.getPath( sourcePath.getFileName().toString() );
                 if ( zipFsPath.getParent() != null )
                 {
