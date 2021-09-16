@@ -34,10 +34,12 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.SchemaRuleKey;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -101,7 +103,7 @@ class SchemaChecker
         try ( RecordReader<SchemaRecord> schemaReader = new RecordReader<>( schemaStore, true, cursorContext ) )
         {
             Map<Long,SchemaRecord> indexObligations = new HashMap<>();
-            Map<Long,SchemaRecord> constraintObligations = new HashMap<>();
+            Map<Long,Pair<SchemaRecord,IndexType>> constraintObligations = new HashMap<>();
             Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords = new HashMap<>();
 
             // KernelVersion only controls if there will be an injected NLI on non-upgraded stores. That index is not in the store and will
@@ -119,7 +121,7 @@ class SchemaChecker
     }
 
     private void buildObligationsMap( long highId, RecordReader<SchemaRecord> reader, SchemaStorage schemaStorage, Map<Long,SchemaRecord> indexObligations,
-            Map<Long,SchemaRecord> constraintObligations, Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords, StoreCursors storeCursors )
+            Map<Long,Pair<SchemaRecord,IndexType>> constraintObligations, Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords, StoreCursors storeCursors )
     {
         for ( long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++ )
         {
@@ -143,10 +145,11 @@ class SchemaChecker
                     IndexDescriptor rule = (IndexDescriptor) schemaRule;
                     if ( rule.isUnique() && rule.getOwningConstraintId().isPresent() )
                     {
-                        SchemaRecord previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(), record.copy() );
+                        Pair<SchemaRecord,IndexType> previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(),
+                                Pair.of( record.copy(), rule.getIndexType() ) );
                         if ( previousObligation != null )
                         {
-                            reporter.forSchema( record ).duplicateObligation( previousObligation );
+                            reporter.forSchema( record ).duplicateObligation( previousObligation.first() );
                         }
                     }
                 }
@@ -171,7 +174,8 @@ class SchemaChecker
     }
 
     private void performSchemaCheck( long highId, RecordReader<SchemaRecord> reader, Map<Long,SchemaRecord> indexObligations,
-            Map<Long,SchemaRecord> constraintObligations, SchemaStorage schemaStorage, MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
+            Map<Long,Pair<SchemaRecord,IndexType>> constraintObligations, SchemaStorage schemaStorage,
+            MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties, StoreCursors storeCursors )
     {
         SchemaRecord record = reader.record();
@@ -223,16 +227,20 @@ class SchemaChecker
                         ConstraintDescriptor rule = (ConstraintDescriptor) schemaRule;
                         if ( rule.enforcesUniqueness() )
                         {
-                            SchemaRecord obligation = constraintObligations.get( rule.getId() );
+                            Pair<SchemaRecord,IndexType> obligation = constraintObligations.get( rule.getId() );
                             if ( obligation == null )
                             {
                                 reporter.forSchema( record ).missingObligation( SchemaRuleKind.CONSTRAINT_INDEX_RULE.name() );
                             }
                             else
                             {
-                                if ( obligation.getId() != rule.asIndexBackedConstraint().ownedIndexId() )
+                                if ( obligation.first().getId() != rule.asIndexBackedConstraint().ownedIndexId() )
                                 {
-                                    reporter.forSchema( record ).uniquenessConstraintNotReferencingBack( obligation );
+                                    reporter.forSchema( record ).uniquenessConstraintNotReferencingBack( obligation.first() );
+                                }
+                                else if ( obligation.other() != rule.asIndexBackedConstraint().indexType() )
+                                {
+                                    reporter.forSchema( record ).uniquenessConstraintReferencingIndexOfWrongType( obligation.first() );
                                 }
                             }
                         }

@@ -23,6 +23,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
@@ -33,9 +34,9 @@ public class SchemaRuleUtil
     {
     }
 
-    public static ConstraintDescriptor uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId )
+    public static ConstraintDescriptor uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId, IndexType indexType )
     {
-        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyId )
+        return ConstraintDescriptorFactory.uniqueForLabel( indexType, labelId, propertyId )
                 .withId( ruleId ).withName( "constraint_" + ruleId ).withOwnedIndexId( indexId );
     }
 
@@ -57,9 +58,9 @@ public class SchemaRuleUtil
     }
 
     public static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
-                                                            IndexProviderDescriptor descriptor, long constraintId )
+            IndexProviderDescriptor descriptor, long constraintId, IndexType indexType )
     {
-        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor )
+        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor ).withIndexType( indexType )
                 .withName( "constraint_" + constraintId ).materialise( ruleId ).withOwningConstraintId( constraintId );
     }
 

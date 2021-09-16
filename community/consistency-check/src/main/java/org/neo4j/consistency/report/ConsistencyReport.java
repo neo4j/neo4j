@@ -128,6 +128,9 @@ public interface ConsistencyReport
         @Documented( "The uniqueness constraint does not reference back to the given record" )
         void uniquenessConstraintNotReferencingBack( SchemaRecord ruleRecord );
 
+        @Documented( "The uniqueness constraint reference an index of a different index type" )
+        void uniquenessConstraintReferencingIndexOfWrongType( SchemaRecord ruleRecord );
+
         @Documented( "The constraint index does not reference back to the given record" )
         void constraintIndexRuleNotReferencingBack( SchemaRecord ruleRecord );
 

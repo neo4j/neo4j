@@ -31,11 +31,14 @@ public abstract class SchemaRuleKey
 {
     private final boolean isUnique;
     private final SchemaDescriptor schema;
+    private final IndexType indexType;
 
-    protected SchemaRuleKey( SchemaDescriptor schema, boolean isUnique )
+    protected SchemaRuleKey( SchemaDescriptor schema, boolean isUnique, IndexType indexType )
     {
         this.isUnique = isUnique;
         this.schema = schema;
+        // For non-index-backed constraints indexType will be null.
+        this.indexType = indexType;
     }
 
     public static SchemaRuleKey from( SchemaRule rule )
@@ -45,24 +48,9 @@ public abstract class SchemaRuleKey
 
     static class IndexKey extends SchemaRuleKey
     {
-        private final IndexType type;
-
         IndexKey( IndexDescriptor index )
         {
-            super( index.schema(), index.isUnique() );
-            this.type = index.getIndexType();
-        }
-
-        @Override
-        public boolean equals( Object others )
-        {
-            return super.equals( others ) && type == ((IndexKey) others).type;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( type, super.hashCode() );
+            super( index.schema(), index.isUnique(), index.getIndexType() );
         }
     }
 
@@ -70,7 +58,9 @@ public abstract class SchemaRuleKey
     {
         ConstraintKey( ConstraintDescriptor constraint )
         {
-            super( constraint.schema(), constraint.enforcesUniqueness() );
+            super( constraint.schema(), constraint.enforcesUniqueness(),
+                    constraint.isIndexBackedConstraint() ? constraint.asIndexBackedConstraint().indexType() : null );
+
         }
     }
 
@@ -86,12 +76,12 @@ public abstract class SchemaRuleKey
             return false;
         }
         SchemaRuleKey that = (SchemaRuleKey) o;
-        return isUnique == that.isUnique && schema.equals( that.schema );
+        return isUnique == that.isUnique && schema.equals( that.schema ) && indexType == that.indexType;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( isUnique ? 1 : 0, schema.hashCode() );
+        return Objects.hash( indexType, isUnique ? 1 : 0, schema.hashCode() );
     }
 }

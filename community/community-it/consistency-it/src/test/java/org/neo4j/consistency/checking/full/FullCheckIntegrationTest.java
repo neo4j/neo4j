@@ -666,8 +666,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in unique index
-                   .verify( RecordType.INDEX, 5 ) // the index entries pointing to node that should not be in index (3 BTREE and 2 RANGE indexes)
+        on( stats ).verify( RecordType.NODE, 2 ) // the duplicate in the 2 unique indexes
+                   .verify( RecordType.INDEX, 6 ) // the index entries pointing to node that should not be in index (3 BTREE and 3 RANGE indexes)
                    .andThatsAllFolks();
     }
 
@@ -1105,9 +1105,9 @@ public class FullCheckIntegrationTest
                 SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
-                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1, IndexType.BTREE );
                 rule1 = tx.completeConfiguration( rule1 );
-                IndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                IndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1, IndexType.BTREE );
                 rule2 = tx.completeConfiguration( rule2 );
 
                 serializeRule( rule1, after1, tx, next );
@@ -1157,9 +1157,9 @@ public class FullCheckIntegrationTest
                 SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
-                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
+                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2, IndexType.BTREE );
                 rule1 = tx.completeConfiguration( rule1 );
-                ConstraintDescriptor rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
+                ConstraintDescriptor rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2, IndexType.BTREE );
 
                 serializeRule( rule1, after1, tx, next );
                 serializeRule( rule2, after2, tx, next );
@@ -1180,6 +1180,52 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.SCHEMA, 2 ).andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportConstraintReferencingIndexOfWrongType() throws Exception
+    {
+        // given
+        AtomicReference<IndexDescriptor> descriptor = new AtomicReference<>();
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next ) throws KernelException
+            {
+                int ruleId1 = (int) next.schema();
+                int ruleId2 = (int) next.schema();
+                int labelId = next.label();
+                int propertyKeyId = next.propertyKey();
+
+                SchemaRecord before1 = new SchemaRecord( ruleId1 );
+                SchemaRecord before2 = new SchemaRecord( ruleId2 );
+                SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
+                SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
+
+                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2, IndexType.RANGE );
+                rule1 = tx.completeConfiguration( rule1 );
+                ConstraintDescriptor rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId1, IndexType.BTREE );
+
+                serializeRule( rule1, after1, tx, next );
+                serializeRule( rule2, after2, tx, next );
+
+                tx.nodeLabel( labelId, "label", false );
+                tx.propertyKey( propertyKeyId, "property", false );
+
+                tx.createSchema( before1, after1, rule1 );
+                tx.createSchema( before2, after2, rule2 );
+
+                descriptor.set( rule1 );
+            }
+        } );
+        fixture.indexingService().activateIndex( descriptor.get() );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
     }
 
     @Test
@@ -1886,7 +1932,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // Then
-        on( stats ).andThatsAllFolks();
+        assertTrue( stats.isConsistent() );
     }
 
     @ParameterizedTest
@@ -1926,6 +1972,22 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    void shouldNotReportDuplicatedUniquenessConstraintRulesIfDifferentIndexTypes() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+        createUniquenessConstraintRule( IndexType.BTREE, labelId, propertyKeyId );
+        createUniquenessConstraintRule( IndexType.RANGE, labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        assertTrue( stats.isConsistent() );
+    }
+
+    @Test
     void shouldReportDuplicatedCompositeUniquenessConstraintRules() throws Exception
     {
         // Given
@@ -1959,6 +2021,58 @@ public class FullCheckIntegrationTest
         // Then
         on( stats ).verify( RecordType.SCHEMA, 2 ) // pair of duplicated indexes & pair of duplicated constraints
                 .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldNotReportDuplicatedNodeKeyConstraintRulesIfDifferentIndexTypes() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId1 = createPropertyKey( "p1" );
+        int propertyKeyId2 = createPropertyKey( "p2" );
+        createNodeKeyConstraintRule( IndexType.RANGE, labelId, propertyKeyId1, propertyKeyId2 );
+        createNodeKeyConstraintRule( IndexType.BTREE, labelId, propertyKeyId1, propertyKeyId2 );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        assertTrue( stats.isConsistent() );
+    }
+
+    @Test
+    void shouldReportNodeKeyAndUniquenessConstraintOnSameLabelAndProperty() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+
+        createNodeKeyConstraintRule( labelId, propertyKeyId );
+        createUniquenessConstraintRule( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // pair of duplicated indexes & pair of duplicated constraints
+                .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldNotReportNodeKeyAndUniquenessConstraintOnSameLabelAndPropertyIfDifferentIndexTypes() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+
+        createNodeKeyConstraintRule( IndexType.BTREE, labelId, propertyKeyId );
+        createUniquenessConstraintRule( IndexType.RANGE, labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        assertTrue( stats.isConsistent() );
     }
 
     @Test
@@ -2596,6 +2710,7 @@ public class FullCheckIntegrationTest
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).withIndexType( RANGE ).create();
 
                     tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
+                    tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).withIndexType( RANGE ).create();
 
                     tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).create();
                     tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).withIndexType( RANGE ).create();
@@ -2900,22 +3015,10 @@ public class FullCheckIntegrationTest
 
     private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds ) throws KernelException
     {
-        SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-
-        long ruleId1 = schemaStore.nextId( NULL );
-        long ruleId2 = schemaStore.nextId( NULL );
-
-        String name = "constraint_" + ruleId2;
-        IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
-                .withName( name ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
-        ConstraintDescriptor uniqueRule = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds )
-                .withId( ruleId2 ).withName( name ).withOwnedIndexId( ruleId1 );
-
-        writeToSchemaStore( schemaStore, indexRule );
-        writeToSchemaStore( schemaStore, uniqueRule );
+        createUniquenessConstraintRule( IndexType.BTREE, labelId, propertyKeyIds );
     }
 
-    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds ) throws KernelException
+    private void createUniquenessConstraintRule( IndexType indexType, final int labelId, final int... propertyKeyIds ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
@@ -2924,8 +3027,30 @@ public class FullCheckIntegrationTest
 
         String name = "constraint_" + ruleId2;
         IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
-                .withName( name ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
-        ConstraintDescriptor nodeKeyRule = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds )
+                .withIndexType( indexType ).withName( name ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
+        ConstraintDescriptor uniqueRule = ConstraintDescriptorFactory.uniqueForLabel( indexType, labelId, propertyKeyIds )
+                .withId( ruleId2 ).withName( name ).withOwnedIndexId( ruleId1 );
+
+        writeToSchemaStore( schemaStore, indexRule );
+        writeToSchemaStore( schemaStore, uniqueRule );
+    }
+
+    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds ) throws KernelException
+    {
+        createUniquenessConstraintRule( IndexType.BTREE, labelId, propertyKeyIds );
+    }
+
+    private void createNodeKeyConstraintRule( IndexType indexType, final int labelId, final int... propertyKeyIds ) throws KernelException
+    {
+        SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
+
+        long ruleId1 = schemaStore.nextId( NULL );
+        long ruleId2 = schemaStore.nextId( NULL );
+
+        String name = "constraint_" + ruleId2;
+        IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
+                .withIndexType( indexType ).withName( name ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
+        ConstraintDescriptor nodeKeyRule = ConstraintDescriptorFactory.nodeKeyForLabel( indexType, labelId, propertyKeyIds )
                 .withId( ruleId2 ).withName( name ).withOwnedIndexId( ruleId1 );
 
         writeToSchemaStore( schemaStore, indexRule );

@@ -61,6 +61,11 @@ public class ConstraintDescriptorFactory
         return nodeKeyForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ) );
     }
 
+    public static NodeKeyConstraintDescriptor nodeKeyForLabel( IndexType indexType, int labelId, int... propertyIds )
+    {
+        return nodeKeyForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ), indexType );
+    }
+
     public static ConstraintDescriptor existsForSchema( SchemaDescriptor schema )
     {
         ConstraintDescriptorImplementation constraint = new ConstraintDescriptorImplementation( EXISTS, schema );

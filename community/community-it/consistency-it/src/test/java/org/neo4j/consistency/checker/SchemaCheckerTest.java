@@ -351,6 +351,34 @@ class SchemaCheckerTest extends CheckerTestBase
     }
 
     @Test
+    void shouldReportUniquenessConstraintReferencingIndexOfWrongType() throws Exception
+    {
+        // given
+        try ( AutoCloseable ignored = tx() )
+        {
+            var cursorContext = CursorContext.NULL;
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
+                    .withIndexType( IndexType.BTREE )
+                    .withName( NAME )
+                    .withIndexProvider( DESCRIPTOR )
+                    .materialise( schemaStore.nextId( cursorContext ) );
+            UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel( IndexType.RANGE, label1, propertyKey1 )
+                    .withId( schemaStore.nextId( cursorContext ) )
+                    .withName( NAME )
+                    .withOwnedIndexId( index.getId() );
+            index = index.withOwningConstraintId( uniquenessConstraint.getId() );
+            schemaStorage.writeSchemaRule( index, cursorContext, INSTANCE, storeCursors );
+            schemaStorage.writeSchemaRule( uniquenessConstraint, cursorContext, INSTANCE, storeCursors );
+        }
+
+        // when
+        check();
+
+        // then
+        expect( SchemaConsistencyReport.class, report -> report.uniquenessConstraintReferencingIndexOfWrongType( any() ) );
+    }
+
+    @Test
     void shouldReportDuplicateObligationForIndex() throws Exception
     {
         // given
