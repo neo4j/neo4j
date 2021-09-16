@@ -149,7 +149,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 
         return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors,
                                                    editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ),
-                                                   databaseConfig, LeaseService.NO_LEASES );
+                                                   databaseConfig, LeaseService.NO_LEASES, editionDatabaseComponents.getExternalIdReuseConditionProvider() );
     }
 
     private void forEachDatabase( BiConsumer<NamedDatabaseId,DB> consumer, boolean systemDatabaseLast, String operationName )

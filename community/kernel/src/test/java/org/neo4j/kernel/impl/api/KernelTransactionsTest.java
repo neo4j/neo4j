@@ -707,7 +707,7 @@ class KernelTransactionsTest
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                 mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES,
                 new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),
-                TransactionExecutionMonitor.NO_OP
+                TransactionExecutionMonitor.NO_OP, ExternalIdReuseConditionProvider.NONE
         );
     }
 
@@ -777,7 +777,7 @@ class KernelTransactionsTest
                    DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,
                    new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),
-                   TransactionExecutionMonitor.NO_OP );
+                   TransactionExecutionMonitor.NO_OP, ExternalIdReuseConditionProvider.NONE );
         }
 
         @Override

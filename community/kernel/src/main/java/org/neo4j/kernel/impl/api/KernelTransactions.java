@@ -108,6 +108,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final TokenHolders tokenHolders;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
+    private final ExternalIdReuseConditionProvider externalIdReuseConditionProvider;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
@@ -158,7 +159,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                                IndexingService indexingService,
                                IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
                                GlobalMemoryGroupTracker transactionsMemoryPool, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
-                               TransactionExecutionMonitor transactionExecutionMonitor )
+                               TransactionExecutionMonitor transactionExecutionMonitor, ExternalIdReuseConditionProvider externalIdReuseConditionProvider )
     {
         this.config = config;
         this.locks = locks;
@@ -177,6 +178,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.tokenHolders = tokenHolders;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
+        this.externalIdReuseConditionProvider = externalIdReuseConditionProvider;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders, globalProcedures );
         this.namedDatabaseId = namedDatabaseId;
         this.indexingService = indexingService;
@@ -327,7 +329,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     @Override
     public IdController.ConditionSnapshot get()
     {
-        return new KernelTransactionsSnapshot( activeTransactionsStamps() );
+        return externalIdReuseConditionProvider.get( new KernelTransactionsSnapshot( activeTransactionsStamps() ), transactionIdStore, clock );
     }
 
     /**
