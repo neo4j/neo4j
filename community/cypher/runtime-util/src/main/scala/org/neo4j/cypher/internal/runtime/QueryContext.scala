@@ -105,7 +105,7 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator
 
-  def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator
+  def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator with RelationshipIterator
 
   def nodeCursor(): NodeCursor
 
