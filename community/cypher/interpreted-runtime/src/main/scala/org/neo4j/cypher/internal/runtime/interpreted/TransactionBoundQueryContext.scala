@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.runtime.ValuedRelationshipIndexCursor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipTypeCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.OnlyDirectionExpander
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TypeAndDirectionExpander
@@ -77,6 +78,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaReadCore
 import org.neo4j.internal.kernel.api.TokenPredicate
@@ -277,15 +279,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def getRelationshipsByType(session: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator = {
-    val cursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.cursorContext)
-    resources.trace(cursor)
+  override def getRelationshipsByType(session: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator with RelationshipIterator = {
     val read = reads()
-    read.relationshipTypeScan(session, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(relType))
-    new PrimitiveCursorIterator {
-      override protected def fetchNext(): Long = if (cursor.next()) cursor.relationshipReference() else -1L
-      override def close(): Unit = cursor.close()
-    }
+    val typeCursor: RelationshipTypeIndexCursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.cursorContext)
+    val relCursor = transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.cursorContext)
+    resources.trace(typeCursor)
+    resources.trace(relCursor)
+    new RelationshipTypeCursorIterator(read, typeCursor, relCursor)
   }
 
   override def nodeCursor(): NodeCursor =
@@ -1261,28 +1261,23 @@ object TransactionBoundQueryContext {
     }
   }
 
-  class RelationshipCursorIterator(selectionCursor: RelationshipTraversalCursor) extends ClosingLongIterator with RelationshipIterator {
+  abstract class BaseRelationshipCursorIterator extends ClosingLongIterator with RelationshipIterator {
 
-    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NOT_INITIALIZED
-    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator.NO_ID
+    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.BaseRelationshipCursorIterator.NOT_INITIALIZED
+    import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.BaseRelationshipCursorIterator.NO_ID
 
     private var _next = NOT_INITIALIZED
-    private var typeId: Int = NO_ID
-    private var source: Long = NO_ID
-    private var target: Long = NO_ID
+    protected var relTypeId: Int = NO_ID
+    protected var source: Long = NO_ID
+    protected var target: Long = NO_ID
 
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
                                                            visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
-      visitor.visit(relationshipId, typeId, source, target)
+      visitor.visit(relationshipId, relTypeId, source, target)
       true
     }
 
-    private def fetchNext(): Long =
-      if (selectionCursor.next()) selectionCursor.relationshipReference()
-      else {
-        selectionCursor.close()
-        -1L
-      }
+    protected def fetchNext(): Long
 
     override def innerHasNext: Boolean = {
       if (_next == NOT_INITIALIZED) {
@@ -1292,33 +1287,87 @@ object TransactionBoundQueryContext {
       _next >= 0
     }
 
-    //We store the current state in case the underlying cursor is
-    //closed when calling next.
-    private def storeState(): Unit = {
-      typeId = selectionCursor.`type`()
-      source = selectionCursor.sourceNodeReference()
-      target = selectionCursor.targetNodeReference()
-    }
+    override def startNodeId(): Long = source
+
+    override def endNodeId(): Long = target
+
+    override def typeId(): Int = relTypeId
+
+    /**
+     * Store the current state in case the underlying cursor is closed when calling next.
+     */
+    protected def storeState(): Unit
 
     override def next(): Long = {
       if (!hasNext) {
-        selectionCursor.close()
+        close()
         Iterator.empty.next()
       }
 
       val current = _next
       storeState()
-      //Note that if no more elements are found the selection cursor
-      //will be closed so no need to do an extra check after fetching.
+      // Note that if no more elements are found cursors
+      // will be closed so no need to do an extra check after fetching
       _next = fetchNext()
 
       current
     }
 
+    override def close(): Unit
+  }
+
+  class RelationshipCursorIterator(selectionCursor: RelationshipTraversalCursor) extends BaseRelationshipCursorIterator {
+
+    override protected def fetchNext(): Long =
+      if (selectionCursor.next()) selectionCursor.relationshipReference()
+      else {
+        selectionCursor.close()
+        -1L
+      }
+
+    override protected def storeState(): Unit = {
+      relTypeId = selectionCursor.`type`()
+      source = selectionCursor.sourceNodeReference()
+      target = selectionCursor.targetNodeReference()
+    }
+
     override def close(): Unit = selectionCursor.close()
   }
 
-  object RelationshipCursorIterator {
+  class RelationshipTypeCursorIterator(read: Read, typeIndexCursor: RelationshipTypeIndexCursor, scanCursor: RelationshipScanCursor) extends BaseRelationshipCursorIterator {
+
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
+                                                           visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
+      visitor.visit(relationshipId, relTypeId, source, target)
+      true
+    }
+
+    private def nextFromRelStore(): Boolean = {
+      read.singleRelationship(typeIndexCursor.relationshipReference(), scanCursor)
+      scanCursor.next()
+    }
+
+    override protected def fetchNext(): Long =
+      if (typeIndexCursor.next() && nextFromRelStore()) scanCursor.relationshipReference()
+      else {
+        typeIndexCursor.close()
+        scanCursor.close()
+        -1L
+      }
+
+    override protected def storeState(): Unit = {
+      relTypeId = scanCursor.`type`()
+      source = scanCursor.sourceNodeReference()
+      target = scanCursor.targetNodeReference()
+    }
+
+    override def close(): Unit = {
+      typeIndexCursor.close()
+      scanCursor.close()
+    }
+  }
+
+  object BaseRelationshipCursorIterator {
     private val NOT_INITIALIZED = -2L
     private val NO_ID = -1
   }

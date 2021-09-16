@@ -33,6 +33,12 @@ public interface RelationshipIterator extends RelationshipVisitor.Home, LongIter
     <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
             RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
 
+    long startNodeId();
+
+    long endNodeId();
+
+    int typeId();
+
     class Empty extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator implements RelationshipIterator
     {
         @Override
@@ -46,6 +52,24 @@ public interface RelationshipIterator extends RelationshipVisitor.Home, LongIter
         protected boolean fetchNext()
         {
             return false;
+        }
+
+        @Override
+        public long startNodeId()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long endNodeId()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int typeId()
+        {
+            throw new UnsupportedOperationException();
         }
     }
 

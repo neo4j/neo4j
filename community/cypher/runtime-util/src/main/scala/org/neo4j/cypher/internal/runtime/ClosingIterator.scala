@@ -267,5 +267,11 @@ object ClosingLongIterator {
                                                            visitor: RelationshipVisitor[EXCEPTION]): Boolean = false
 
     override def next(): Long = ClosingIterator.empty.next()
+
+    override def startNodeId(): Long = ???
+
+    override def endNodeId(): Long = ???
+
+    override def typeId(): Int = ???
   }
 }
