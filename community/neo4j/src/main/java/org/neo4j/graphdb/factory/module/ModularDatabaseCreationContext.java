@@ -45,6 +45,7 @@ import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
+import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
@@ -78,6 +79,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Config globalConfig;
     private final DatabaseConfig databaseConfig;
     private final QueryEngineProvider queryEngineProvider;
+    private final ExternalIdReuseConditionProvider externalIdReuseConditionProvider;
     private final IdGeneratorFactory idGeneratorFactory;
     private final DatabaseLogService databaseLogService;
     private final JobScheduler scheduler;
@@ -117,13 +119,15 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
 
     public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
-                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, LeaseService leaseService )
+                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, LeaseService leaseService,
+                                           ExternalIdReuseConditionProvider externalIdReuseConditionProvider )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = databaseConfig;
         this.versionContextSupplier = versionContextSupplier;
         this.queryEngineProvider = editionComponents.getQueryEngineProvider();
+        this.externalIdReuseConditionProvider = externalIdReuseConditionProvider;
         DatabaseIdContext idContext = editionComponents.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
@@ -403,6 +407,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public DbmsReadOnlyChecker getDbmsReadOnlyChecker()
     {
         return dbmsReadOnlyChecker;
+    }
+
+    @Override
+    public ExternalIdReuseConditionProvider externalIdReuseConditionProvider()
+    {
+        return externalIdReuseConditionProvider;
     }
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, long databaseTimeoutMillis )

@@ -85,6 +85,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
+import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.LeaseService;
@@ -219,6 +220,7 @@ public class Database extends LifecycleAdapter
     private final DatabaseTracers tracers;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final LeaseService leaseService;
+    private final ExternalIdReuseConditionProvider externalIdReuseConditionProvider;
 
     private Dependencies databaseDependencies;
     private LifeSupport life;
@@ -308,6 +310,7 @@ public class Database extends LifecycleAdapter
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
         this.readOnlyDatabaseChecker = context.getDbmsReadOnlyChecker().forDatabase( databaseConfig, namedDatabaseId.name() );
+        this.externalIdReuseConditionProvider = context.externalIdReuseConditionProvider();
     }
 
     /**
@@ -431,8 +434,7 @@ public class Database extends LifecycleAdapter
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
 
-            Supplier<IdController.IdFreeCondition> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
-            idController.initialize( transactionsSnapshotSupplier, otherDatabaseMemoryTracker );
+            idController.initialize( () -> kernelModule.kernelTransactions().get(), otherDatabaseMemoryTracker );
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider, userLogProvider,
@@ -805,7 +807,8 @@ public class Database extends LifecycleAdapter
                                         accessCapabilityFactory, versionContextSupplier, collectionsFactorySupplier,
                                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService,
                                         indexStatisticsStore, databaseDependencies,
-                                        tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor ) );
+                                        tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
+                                        externalIdReuseConditionProvider ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 

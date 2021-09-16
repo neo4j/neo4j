@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
+import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
@@ -144,6 +145,8 @@ public interface DatabaseCreationContext
     GlobalMemoryGroupTracker getOtherMemoryPool();
 
     DbmsReadOnlyChecker getDbmsReadOnlyChecker();
+
+    ExternalIdReuseConditionProvider externalIdReuseConditionProvider();
 
     static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, Neo4jLayout neo4jLayout, PageCache pageCache, Configuration config,
             NamedDatabaseId namedDatabaseId )

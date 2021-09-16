@@ -26,6 +26,7 @@ import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
+import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -54,4 +55,6 @@ public interface EditionDatabaseComponents
     AccessCapabilityFactory getAccessCapabilityFactory();
 
     DatabaseStartupController getStartupController();
+
+    ExternalIdReuseConditionProvider getExternalIdReuseConditionProvider();
 }
