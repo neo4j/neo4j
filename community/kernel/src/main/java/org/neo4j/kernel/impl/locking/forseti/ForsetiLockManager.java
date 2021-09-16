@@ -194,7 +194,7 @@ public class ForsetiLockManager implements Locks
             throw new IllegalStateException( this + " already closed" );
         }
 
-        return new ForsetiClient( lockMaps, clock, verboseDeadlocks, clientIds::incrementAndGet );
+        return new ForsetiClient( lockMaps, clock, verboseDeadlocks, clientIds.incrementAndGet() );
     }
 
     @Override

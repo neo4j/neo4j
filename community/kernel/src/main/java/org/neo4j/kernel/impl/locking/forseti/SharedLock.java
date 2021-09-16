@@ -186,19 +186,18 @@ class SharedLock implements ForsetiLockManager.Lock
     @Override
     public String toString()
     {
+        StringBuilder owners = new StringBuilder();
+        for ( ForsetiClient forsetiClient : clientsHoldingThisLock )
+        {
+            owners.append( "client: " ).append( forsetiClient ).append( ", " );
+        }
         if ( isUpdateLock() )
         {
-            return "UpdateLock{" +
-                   "objectId=" + System.identityHashCode( this ) +
-                   ", refCount=" + numberOfHolders() +
-                   '}';
+            return "UpdateLock{" + "owners=" + owners + ", refCount=" + numberOfHolders() + '}';
         }
         else
         {
-            return "SharedLock{" +
-                   "objectId=" + System.identityHashCode( this ) +
-                   ", refCount=" + refCount +
-                   '}';
+            return "SharedLock{" + "owners=" + owners + ", refCount=" + refCount + '}';
         }
     }
 

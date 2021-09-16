@@ -25,7 +25,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +52,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( RandomExtension.class )
@@ -99,6 +102,30 @@ class ForsetiLockManagerTest
         } ) );
 
         race.go( 3, TimeUnit.MINUTES ); //Should not timeout (livelock)
+    }
+
+    @Test
+    void lockClientsShouldNotHaveMutatingEqualsAndHashCode()
+    {
+        int uniqueClients = 10_000;
+        var allClientsSet = new HashSet<Locks.Client>( uniqueClients );
+        var allClientsList = new ArrayList<Locks.Client>( uniqueClients );
+
+        for ( int i = 0; i < uniqueClients; i++ )
+        {
+            Locks.Client client = manager.newClient();
+            allClientsSet.add( client );
+            allClientsList.add( client );
+            client.initialize( LeaseService.NoLeaseClient.INSTANCE, i, EmptyMemoryTracker.INSTANCE, config );
+        }
+
+        for ( int i = 0; i < 100; i++ )
+        {
+            allClientsSet.forEach( client -> client.initialize( LeaseService.NoLeaseClient.INSTANCE, random.nextLong(), EmptyMemoryTracker.INSTANCE, config ) );
+        }
+
+        allClientsList.forEach( o -> assertTrue( allClientsSet.remove( o ) ) );
+        assertThat( allClientsSet ).isEmpty();
     }
 
     @Test
