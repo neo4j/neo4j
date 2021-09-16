@@ -1287,12 +1287,12 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
-        <version>4.1.66.Final</version>
+        <version>4.1.68.Final</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-tcnative-boringssl-static</artifactId>
-        <version>2.0.40.Final</version>
+        <version>2.0.42.Final</version>
         <scope>test</scope>
       </dependency>
 
