@@ -706,7 +706,7 @@ public class IndexedIdGenerator implements IdGenerator
                         @Override
                         public void value( IdRange value )
                         {
-                            for ( int i = 0; i < 128; i++ )
+                            for ( int i = 0; i < header.idsPerEntry; i++ )
                             {
                                 IdRange.IdState state = value.getState( i );
                                 if ( state == IdRange.IdState.FREE )
