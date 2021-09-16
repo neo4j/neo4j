@@ -138,11 +138,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getOrCreateTypeId(relTypeName: String): Int = singleDbHit(inner.getOrCreateTypeId(relTypeName))
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] =
-  manyDbHits(inner.getRelationshipsForIds(node, dir, types))
-
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
-    manyDbHitsCliRi(inner.getRelationshipsForIdsPrimitive(node, dir, types))
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
+    manyDbHitsCliRi(inner.getRelationshipsForIds(node, dir, types))
 
   override def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator with RelationshipIterator =
     manyDbHitsCliRi(inner.getRelationshipsByType(tokenReadSession, relType, indexOrder))

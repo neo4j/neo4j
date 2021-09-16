@@ -443,44 +443,8 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
     CursorUtils.relationshipHasType(reads(), relationshipCursor, id, typ)
   }
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] = {
-
-    val cursor = allocateNodeCursor()
-    val cursors = transactionalContext.cursors
-    val cursorContext = transactionalContext.cursorContext
-
-    try {
-      val read = reads()
-      read.singleNode(node, cursor)
-      if (!cursor.next()) ClosingIterator.empty
-      else {
-        val selectionCursor = dir match {
-          case OUTGOING => outgoingCursor(cursors, cursor, types, cursorContext)
-          case INCOMING => incomingCursor(cursors, cursor, types, cursorContext)
-          case BOTH => allCursor(cursors, cursor, types, cursorContext)
-        }
-        resources.trace(selectionCursor)
-        new CursorIterator[RelationshipValue] {
-          override protected def closeMore(): Unit = {
-            selectionCursor.close()
-          }
-
-          override protected def fetchNext(): RelationshipValue =
-            if (selectionCursor.next())
-              fromRelationshipEntity(entityAccessor.newRelationshipEntity(selectionCursor.relationshipReference(),
-                selectionCursor.sourceNodeReference(),
-                selectionCursor.`type`(),
-                selectionCursor.targetNodeReference()))
-            else null
-        }
-      }
-    } finally {
-      cursor.close()
-    }
-  }
-
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection,
-                                               types: Array[Int]): ClosingLongIterator with RelationshipIterator = {
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection,
+                                      types: Array[Int]): ClosingLongIterator with RelationshipIterator = {
     val cursor = allocateNodeCursor()
     try {
       val read = reads()

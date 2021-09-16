@@ -287,8 +287,8 @@ import org.neo4j.cypher.internal.util.Eagerly
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
@@ -806,8 +806,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     val (relCommand, maybeRelCommandPred) = asCommand(relationshipPredicate)
 
     new VarLengthPredicate {
-      override def filterNode(row: CypherRow, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)
-      override def filterRelationship(row: CypherRow, state: QueryState)(rel: RelationshipValue): Boolean = relCommand(row, state, rel)
+      override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean = nodeCommand(row, state, node)
+      override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean = relCommand(row, state, rel)
 
       override def predicateExpressions: Seq[Predicate] = maybeNodeCommandPred.toSeq ++ maybeRelCommandPred
     }

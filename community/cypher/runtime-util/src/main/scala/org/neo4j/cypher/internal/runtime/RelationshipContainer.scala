@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.values.virtual.ListValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
 
 /**
  * Utility class that has constant time `append`, `contains`, and `size` methods
  */
 case class RelationshipContainer(asList: ListValue, size: Int, set: Set[Long]) {
-  def append(rel: RelationshipValue): RelationshipContainer = {
+  def append(rel: VirtualRelationshipValue): RelationshipContainer = {
     RelationshipContainer(asList.append(rel), size + 1, set + rel.id())
   }
-  def contains(rel: RelationshipValue): Boolean = set.contains(rel.id())
+  def contains(rel: VirtualRelationshipValue): Boolean = set.contains(rel.id())
 
   def reverse: RelationshipContainer = copy(asList = asList.reverse())
 }

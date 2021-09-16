@@ -37,6 +37,11 @@ public interface RelationshipIterator extends RelationshipVisitor.Home, LongIter
 
     long endNodeId();
 
+    default long otherNodeId( long node )
+    {
+        return node == startNodeId() ? endNodeId() : startNodeId();
+    }
+
     int typeId();
 
     class Empty extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator implements RelationshipIterator

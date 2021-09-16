@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.storageengine.api.RelationshipVisitor
+
 object PrimitiveLongHelper {
   def map[T](in: ClosingLongIterator, f: Long => T): ClosingIterator[T] = new ClosingIterator[T] {
     override def innerHasNext: Boolean = in.hasNext
@@ -34,5 +36,45 @@ object PrimitiveLongHelper {
     override def next(): Long = f(in.next())
 
     override def close(): Unit = in.close()
+  }
+
+  def iteratorFrom(values: Long*): ClosingLongIterator = new ClosingLongIterator {
+    private var position = 0
+    override def close(): Unit = {}
+    override protected[this] def innerHasNext: Boolean = position < values.length
+    override def next(): Long = {
+      if (!hasNext) {
+        throw new NoSuchElementException("next on exhausted iterator")
+      }
+      val current = values(position)
+      position += 1
+      current
+    }
+  }
+
+  def relationshipIteratorFrom(values: (Long, Int, Long, Long)*): ClosingLongIterator with RelationshipIterator = new ClosingLongIterator with RelationshipIterator {
+    private var position = 0
+    override def close(): Unit = {}
+    override protected[this] def innerHasNext: Boolean = position < values.length
+    override def next(): Long = {
+      if (!hasNext) {
+        throw new NoSuchElementException("next on exhausted iterator")
+      }
+      val (current, _, _, _) = values(position)
+      position += 1
+      current
+    }
+
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
+                                                           visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
+      visitor.visit(relationshipId, typeId(), startNodeId(), endNodeId())
+      true
+    }
+
+    override def startNodeId(): Long = values(position - 1)._3
+
+    override def endNodeId(): Long = values(position - 1)._4
+
+    override def typeId(): Int = values(position - 1)._2
   }
 }

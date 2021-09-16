@@ -23,9 +23,11 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class ExpandAllPipe(source: Pipe,
                          fromName: String,
@@ -39,12 +41,13 @@ case class ExpandAllPipe(source: Pipe,
     input.flatMap {
       row =>
         row.getByName(fromName) match {
-          case n: NodeValue =>
+          case n: VirtualNodeValue =>
             val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
-            relationships.map { r =>
-                val other = r.otherNode(n)
-                rowFactory.copyWith(row, relName, r, toName, other)
-            }
+            PrimitiveLongHelper.map(relationships, relId => {
+              val other = relationships.otherNodeId(n.id())
+              rowFactory.copyWith(row, relName, VirtualValues.relationship(relId), toName, VirtualValues.node(other))
+
+            })
           case IsNoValue() => ClosingIterator.empty
 
           case value => throw new ParameterWrongTypeException(s"Expected to find a node at '$fromName' but found $value instead")

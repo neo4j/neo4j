@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.FakePipe.CountingIterator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.FakePipe.CountingRelationshipIterator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 class OptionalExpandAllPipeTest extends CypherFunSuite {
@@ -36,9 +36,7 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
     val nodeValue = VirtualValues.nodeValue(0, Values.stringArray(), VirtualValues.map(Array(), Array()))
-    val relIter = new CountingIterator[RelationshipValue](Iterator(
-      VirtualValues.relationshipValue(0, nodeValue, nodeValue, Values.stringValue("REL"), VirtualValues.map(Array(), Array()))
-    ))
+    val relIter = new CountingRelationshipIterator(PrimitiveLongHelper.relationshipIteratorFrom((0, 0, 0, 0)))
     Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(relIter)
 
     val input = FakePipe(Seq(Map("a"->nodeValue)))
@@ -54,11 +52,9 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
     val nodeValue = VirtualValues.nodeValue(0, Values.stringArray(), VirtualValues.map(Array(), Array()))
-    val relIter = new CountingIterator[RelationshipValue](Iterator(
-      VirtualValues.relationshipValue(0, nodeValue, nodeValue, Values.stringValue("REL"), VirtualValues.map(Array(), Array()))
-    ))
-    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(relIter)
 
+    val relIter = new CountingRelationshipIterator(PrimitiveLongHelper.relationshipIteratorFrom((0, 0, 0, 0)))
+    Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(relIter)
     val input = FakePipe(Seq(Map("a"->nodeValue)))
     val pipe = OptionalExpandAllPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, new EagerTypes(Array(0)), None)()
     val result = pipe.createResults(state)

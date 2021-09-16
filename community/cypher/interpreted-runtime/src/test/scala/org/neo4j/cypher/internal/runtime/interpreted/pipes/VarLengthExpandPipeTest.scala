@@ -24,12 +24,15 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingLongIterator
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
+import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -39,18 +42,27 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     def wasClosed: Boolean
   }
 
-  private def relationshipIterator: ClosingIterator[RelationshipValue] with WasClosed =
-    new ClosingIterator[RelationshipValue] with WasClosed {
-      private val inner = Iterator(1, 2, 3).map(newMockedRelationshipValue)
+  private def relationshipIterator: ClosingLongIterator with RelationshipIterator with WasClosed =
+    new ClosingLongIterator with RelationshipIterator with WasClosed {
+      private val inner = PrimitiveLongHelper.relationshipIteratorFrom((1,1,1,1), (2,2,2,2), (3,3,3,3))
       private var _wasClosed = false
 
-      override def closeMore(): Unit = _wasClosed = true
+      override def close(): Unit = _wasClosed = true
 
       override def wasClosed: Boolean = _wasClosed
 
       override protected[this] def innerHasNext: Boolean = inner.hasNext
 
-      override def next(): RelationshipValue = inner.next()
+      override def next(): Long = inner.next()
+
+      override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
+                                                             visitor: RelationshipVisitor[EXCEPTION]): Boolean = inner.relationshipVisit(relationshipId, visitor)
+
+      override def startNodeId(): Long = inner.startNodeId()
+
+      override def endNodeId(): Long = inner.endNodeId()
+
+      override def typeId(): Int = inner.typeId()
     }
 
   private def relationshipValue(id: Long): RelationshipValue = {

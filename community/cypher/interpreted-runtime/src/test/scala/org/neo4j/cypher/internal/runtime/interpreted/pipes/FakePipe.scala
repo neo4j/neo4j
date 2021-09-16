@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.FakePipe.CountingIterator
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.storageengine.api.RelationshipVisitor
 
 import scala.collection.Map
 
@@ -68,5 +71,58 @@ object FakePipe {
     def wasClosed: Boolean = _closed
 
     def resetClosed(): Unit = _closed = false
+  }
+
+  class CountingLongIterator(inner: ClosingLongIterator) extends ClosingLongIterator {
+    private var _count = 0
+    private var _closed = false
+
+    override def close(): Unit = _closed = true
+
+    override protected[this] def innerHasNext: Boolean = inner.hasNext
+
+    override def next(): Long = {
+      _count += 1
+      inner.next()
+    }
+
+    def count: Int = _count
+
+    def wasClosed: Boolean = _closed
+
+    def resetClosed(): Unit = _closed = false
+
+  }
+
+  class CountingRelationshipIterator(inner: ClosingLongIterator with RelationshipIterator) extends ClosingLongIterator with RelationshipIterator {
+    private var _count = 0
+    private var _closed = false
+
+    override def close(): Unit = _closed = true
+
+    override protected[this] def innerHasNext: Boolean = inner.hasNext
+
+    override def next(): Long = {
+      _count += 1
+      inner.next()
+    }
+
+    def count: Int = _count
+
+    def wasClosed: Boolean = _closed
+
+    def resetClosed(): Unit = _closed = false
+
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
+                                                           visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
+      visitor.visit(relationshipId, typeId(), startNodeId(), endNodeId())
+      true
+    }
+
+    override def startNodeId(): Long = inner.startNodeId()
+
+    override def endNodeId(): Long = inner.endNodeId()
+
+    override def typeId(): Int = inner.typeId()
   }
 }

@@ -31,19 +31,20 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.virtual.NodeReference
 import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
+import org.neo4j.values.virtual.VirtualValues
 
 trait VarLengthPredicate {
-  def filterNode(row: CypherRow, state:QueryState)(node: NodeValue): Boolean
-  def filterRelationship(row: CypherRow, state:QueryState)(rel: RelationshipValue): Boolean
+  def filterNode(row: CypherRow, state:QueryState)(node: VirtualNodeValue): Boolean
+  def filterRelationship(row: CypherRow, state:QueryState)(rel: VirtualRelationshipValue): Boolean
   def predicateExpressions: Seq[Predicate]
 }
 
 object VarLengthPredicate {
   val NONE: VarLengthPredicate = new VarLengthPredicate {
-    override def filterNode(row: CypherRow, state:QueryState)(node: NodeValue): Boolean = true
-    override def filterRelationship(row: CypherRow, state:QueryState)(rel: RelationshipValue): Boolean = true
+    override def filterNode(row: CypherRow, state:QueryState)(node: VirtualNodeValue): Boolean = true
+    override def filterRelationship(row: CypherRow, state:QueryState)(rel: VirtualRelationshipValue): Boolean = true
     override def predicateExpressions: Seq[Predicate] = Seq.empty
   }
 }
@@ -62,25 +63,27 @@ case class VarLengthExpandPipe(source: Pipe,
                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
-                              row: CypherRow): Iterator[(NodeValue, RelationshipContainer)] = {
-    val stack = HeapTrackingCollections.newStack[(NodeValue, RelationshipContainer)](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
+                              row: CypherRow): Iterator[(VirtualNodeValue, RelationshipContainer)] = {
+    val stack = HeapTrackingCollections.newStack[(VirtualNodeValue, RelationshipContainer)](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
     stack.push((node, RelationshipContainer.EMPTY))
 
-    new ClosingIterator[(NodeValue, RelationshipContainer)] {
-      def next(): (NodeValue, RelationshipContainer) = {
+    new ClosingIterator[(VirtualNodeValue, RelationshipContainer)] {
+      def next(): (VirtualNodeValue, RelationshipContainer) = {
         val (node, rels) = stack.pop()
         if (rels.size < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(node)) {
           val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
 
-          val relationshipValues = relationships.filter(filteringStep.filterRelationship(row, state))
+          //val relationshipValues = relationships.filter(filteringStep.filterRelationship(row, state))
           // relationships get immediately exhausted. Therefore we do not need a ClosingIterator here.
-          while (relationshipValues.hasNext) {
-            val rel = relationshipValues.next()
-            val otherNode = rel.otherNode(node)
+          while (relationships.hasNext) {
+            val rel = VirtualValues.relationship(relationships.next())
+            if (filteringStep.filterRelationship(row, state)(rel)) {
+            val otherNode = VirtualValues.node(relationships.otherNodeId(node.id()))
             if (!rels.contains(rel) && filteringStep.filterNode(row,state)(otherNode)) {
               stack.push((otherNode, rels.append(rel)))
             }
           }
+        }
         }
         val projectedRels =
           if (projectBackwards(dir, projectedDir)) {

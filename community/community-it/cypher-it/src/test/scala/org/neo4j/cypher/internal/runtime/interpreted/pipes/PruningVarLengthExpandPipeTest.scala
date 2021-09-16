@@ -32,8 +32,8 @@ import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.immutable.IndexedSeq
 import scala.collection.mutable
@@ -159,13 +159,13 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 object PruningVarLengthExpandPipeTest {
   def createVarLengthPredicate(nodePredicate: Predicate, relationshipPredicate: Predicate): VarLengthPredicate = {
     new VarLengthPredicate {
-      override def filterNode(row: CypherRow, state: QueryState)(node: NodeValue): Boolean = {
+      override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean = {
         val cp = row.copyWith("to", node)
         val result = nodePredicate.isTrue(cp, state)
         result
       }
 
-      override def filterRelationship(row: CypherRow, state: QueryState)(rel: RelationshipValue): Boolean = {
+      override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean = {
         val cp = row.copyWith("r", rel)
         val result = relationshipPredicate.isTrue(cp, state)
         result

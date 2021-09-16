@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -169,8 +170,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     // THEN
     iteratorA should not equal iteratorB
-    val listA = iteratorA.toList
-    val listB = iteratorB.toList
+    val listA = PrimitiveLongHelper.map(iteratorA, i => i).toList
+    val listB = PrimitiveLongHelper.map(iteratorB, i => i).toList
     listA should equal(listB)
     listA.size should equal(2)
 
@@ -206,7 +207,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.getRelationshipsForIdsPrimitive(node.getId, SemanticDirection.BOTH, null)
+    val iteratorA = context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, null)
 
     // WHEN
     iteratorA.next()

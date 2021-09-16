@@ -33,8 +33,9 @@ import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.virtual.NodeReference
 import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
@@ -110,10 +111,9 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         while (hasRelationship) {
           val currentRelIdx = nextRelationship()
           if (!haveFullyExploredTheRemainingStepsBefore(currentRelIdx)) {
-            val rel = nodeState.rels(currentRelIdx)
+            val (rel, nextNode) = nodeState.relAndNext(currentRelIdx)
             val relId = rel.id()
             if (!seenRelationshipInPath(relId)) {
-              val nextNode = rel.otherNode(node)
               path(pathLength) = relId
               val endNode = state.push( node = nextNode,
                                         pathLength = pathLength + 1,
@@ -140,7 +140,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       }
     }
 
-    private def hasRelationship: Boolean = relationshipCursor < nodeState.rels.length
+    private def hasRelationship: Boolean = relationshipCursor < nodeState.relAndNext.length
 
     private def nextRelationship(): Int = {
       val next = relationshipCursor
@@ -203,7 +203,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
     val NOOP: NodeState = {
       val noop = new NodeState(EmptyMemoryTracker.INSTANCE)
-      noop.rels = Array(null)
+      noop.relAndNext = Array(null)
       noop.depths = Array[Byte](0)
       noop
     }
@@ -214,8 +214,8 @@ case class PruningVarLengthExpandPipe(source: Pipe,
    */
   class NodeState(memoryTracker: MemoryTracker) {
 
-    // All relationships that connect to this node, filtered by the var-length predicates
-    var rels: Array[RelationshipValue] = _
+    // All relationships that connect to this node and the next node, filtered by the var-length predicates
+    var relAndNext: Array[(VirtualRelationshipValue, VirtualNodeValue)] = _
 
     // The fully expanded depth for each relationship in rels
     var depths:Array[Byte] = _
@@ -232,8 +232,9 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     def minOutgoingDepth(incomingRelId: Long): Int = {
       var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
       var i = 0
-      while (i < rels.length) {
-        if (rels(i).id() != incomingRelId) {
+      while (i < relAndNext.length) {
+        val (rels, _) = relAndNext(i)
+        if (rels.id() != incomingRelId) {
           min = math.min(depths(i), min)
         }
         i += 1
@@ -249,21 +250,22 @@ case class PruningVarLengthExpandPipe(source: Pipe,
      * If not already done, list all relationships of a node, given the predicates of this pipe.
      */
     def ensureExpanded(queryState: QueryState, row: CypherRow, node: VirtualNodeValue): Unit = {
-      if ( rels == null ) {
+      if ( relAndNext == null ) {
         val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query))
-        val builder = Array.newBuilder[RelationshipValue]
+        val builder = Array.newBuilder[(VirtualRelationshipValue, VirtualNodeValue)]
         // Immediately exhausting allRels. No ClosingIterator needed for connecting them to the outside.
         while (allRels.hasNext) {
-          val rel = allRels.next()
+          val rel = VirtualValues.relationship(allRels.next())
+          val otherNode = VirtualValues.node(allRels.otherNodeId(node.id()))
           if (filteringStep.filterRelationship(row, queryState)(rel) &&
-            filteringStep.filterNode(row, queryState)(rel.otherNode(node))) {
-            builder += rel
+            filteringStep.filterNode(row, queryState)(otherNode)) {
+            builder += ((rel, otherNode))
             memoryTracker.allocateHeap(rel.estimatedHeapUsage)
           }
         }
-        rels = builder.result()
-        depths = new Array[Byte](rels.length)
-        memoryTracker.allocateHeap(HeapEstimator.shallowSizeOfObjectArray(rels.length) + HeapEstimator.sizeOf(depths))
+        relAndNext = builder.result()
+        depths = new Array[Byte](relAndNext.length)
+        memoryTracker.allocateHeap(HeapEstimator.shallowSizeOfObjectArray(relAndNext.length) + HeapEstimator.sizeOf(depths))
       }
     }
   }

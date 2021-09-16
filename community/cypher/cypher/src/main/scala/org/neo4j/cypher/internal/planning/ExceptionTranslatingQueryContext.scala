@@ -263,20 +263,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def getImportURL(url: URL): Either[String, URL] =
     translateException(tokenNameLookup, inner.getImportURL(url))
 
-<<<<<<< HEAD
-=======
-  override def createRelationshipId(start: Long, end: Long, relType: Int): Long =
-    translateException(tokenNameLookup, inner.createRelationshipId(start, end, relType))
-
-  override def getOrCreateRelTypeId(relTypeName: String): Int =
-    translateException(tokenNameLookup, inner.getOrCreateRelTypeId(relTypeName))
-
->>>>>>> c80ee59ff4e... Remove create relationship method that creates relationship proxies
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
     translateException(tokenNameLookup, inner.getRelationshipsForIds(node, dir, types))
-
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
-    translateException(tokenNameLookup, inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def getRelationshipsByType(tokenReadSession: TokenReadSession,  relType: Int, indexOrder: IndexOrder): ClosingLongIterator with RelationshipIterator =
     translateException(tokenNameLookup, inner.getRelationshipsByType(tokenReadSession, relType, indexOrder))
@@ -479,8 +467,8 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends
   override def dropNamedConstraint(name: String): Unit =
     translateException(tokenNameLookup, inner.dropNamedConstraint(name))
 
-  override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue =
-    translateException(tokenNameLookup, inner.createRelationship(start, end, relType))
+  override def createRelationshipId(start: Long, end: Long, relType: Int): Long =
+    translateException(tokenNameLookup, inner.createRelationshipId(start, end, relType))
 
   override def getOrCreateRelTypeId(relTypeName: String): Int =
     translateException(tokenNameLookup, inner.getOrCreateRelTypeId(relTypeName))

@@ -23,13 +23,16 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeReference
 import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
+import org.neo4j.values.virtual.VirtualValues
 
 /**
  * This implementation of pruning-var-expand is no longer used in production, but is used to testing purposes.
@@ -87,7 +90,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
    * @param expandMap   maps NodeID -> FullExpandDepths
    */
   class PrePruningDFS(whenEmptied: State,
-                      node: NodeValue,
+                      node: VirtualNodeValue,
                       val path: Array[Long],
                       val pathLength: Int,
                       val state: QueryState,
@@ -95,7 +98,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
                       expandMap: LongObjectHashMap[FullExpandDepths]
                      ) extends State with Expandable with CheckPath {
 
-    private var rels: Iterator[RelationshipValue] = _
+    private var rels: Iterator[(VirtualRelationshipValue, VirtualNodeValue)] = _
 
     /*
     Loads the relationship iterator of the nodes before min length has been reached.
@@ -106,11 +109,11 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
         rels = expand(row, node)
 
       while (rels.hasNext) {
-        val r = rels.next()
+        val (r, otherNode) = rels.next()
         val relId = r.id
 
         if (!seenRelationshipInPath(relId)) {
-          val nextState: State = traverseRelationship(r, relId)
+          val nextState: State = traverseRelationship(r, relId, otherNode)
 
           return nextState.next()
         }
@@ -125,8 +128,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     /**
      * Creates the appropriate state for following a relationship to the next node.
      */
-    private def traverseRelationship(r: RelationshipValue, relId: Long): State = {
-      val nextNode = r.otherNode(node)
+    private def traverseRelationship(r: VirtualRelationshipValue, relId: Long, nextNode: VirtualNodeValue): State = {
       path(pathLength) = relId
       val nextPathLength = pathLength + 1
       if (nextPathLength >= self.min)
@@ -182,7 +184,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
    *                                 node.
    **/
   class PruningDFS(whenEmptied: State,
-                   node: NodeValue,
+                   node: VirtualNodeValue,
                    val path: Array[Long],
                    val pathLength: Int,
                    val state: QueryState,
@@ -204,10 +206,9 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
         while (hasRelationships) {
           val currentRelIdx = nextRelationship()
           if (!haveFullyExploredTheRemainingDepthBefore(currentRelIdx)) {
-            val rel = fullExpandDepths.rels(currentRelIdx)
+            val (rel, nextNode) = fullExpandDepths.relAndNext(currentRelIdx)
             val relId = rel.id
             if (!seenRelationshipInPath(relId)) {
-              val nextNode = rel.otherNode(node)
               path(pathLength) = relId
               val nextState = new PruningDFS(whenEmptied = this,
                 node = nextNode,
@@ -230,7 +231,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
       (whenEmptied, rowFactory.copyWith(row, self.toName, node))
     }
 
-    private def hasRelationships = idx < fullExpandDepths.rels.length
+    private def hasRelationships = idx < fullExpandDepths.relAndNext.length
 
     private def nextRelationship() = {
       val i = idx
@@ -316,25 +317,25 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     /**
      * List all relationships of a node, given the predicates of this pipe.
      */
-    def expand(row: CypherRow, node: NodeValue): Iterator[RelationshipValue] = {
+    def expand(row: CypherRow, node: VirtualNodeValue): Iterator[(VirtualRelationshipValue, VirtualNodeValue)] = {
       val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
-      relationships.filter(r => {
-        filteringStep.filterRelationship(row, state)(r) &&
-          filteringStep.filterNode(row, state)(r.otherNode(node))
-      })
+      PrimitiveLongHelper.map(relationships, r => (VirtualValues.relationship(r), VirtualValues.node(relationships.otherNodeId(node.id())))).filter{
+        case (rel, other) =>  filteringStep.filterRelationship(row, state)(rel) &&
+          filteringStep.filterNode(row, state)(other)
+      }
     }
   }
 
   object FullExpandDepths {
-    def apply(rels: Array[RelationshipValue]) = new FullExpandDepths(rels)
+    def apply(rels: Array[(VirtualRelationshipValue, VirtualNodeValue)]) = new FullExpandDepths(rels)
 
     val UNINITIALIZED: FullExpandDepths = null
   }
 
   class FullExpandDepths(// all relationships that connect to this node, filtered by the var-length predicates
-                         val rels: Array[RelationshipValue]) {
+                         val relAndNext: Array[(VirtualRelationshipValue, VirtualNodeValue)]) {
     // The fully expanded depth for each relationship in rels
-    val depths = new Array[Int](rels.length)
+    val depths = new Array[Int](relAndNext.length)
 
     /**
      * Computes the minimum outgoing full expanded depth.
@@ -345,8 +346,9 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     def minOutgoingDepth(incomingRelId: Long): Int = {
       var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
       var i = 0
-      while (i < rels.length) {
-        if (rels(i).id() != incomingRelId)
+      while (i < relAndNext.length) {
+        val (rel, _) = relAndNext(i)
+        if (rel.id() != incomingRelId)
           min = math.min(depths(i), min)
         i += 1
       }

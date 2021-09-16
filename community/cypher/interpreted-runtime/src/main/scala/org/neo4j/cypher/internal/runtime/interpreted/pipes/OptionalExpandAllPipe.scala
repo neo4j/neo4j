@@ -21,14 +21,17 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
+import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 abstract class OptionalExpandAllPipe(source: Pipe,
                                      fromName: String,
@@ -43,7 +46,7 @@ abstract class OptionalExpandAllPipe(source: Pipe,
       row =>
         val fromNode = getFromNode(row)
         fromNode match {
-          case n: NodeValue =>
+          case n: VirtualNodeValue =>
             val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             val matchIterator = findMatchIterator(row, state, relationships, n)
             if (matchIterator.isEmpty) {
@@ -63,8 +66,8 @@ abstract class OptionalExpandAllPipe(source: Pipe,
 
   def findMatchIterator(row: CypherRow,
                         state: QueryState,
-                        relationships: ClosingIterator[RelationshipValue],
-                        n: NodeValue): ClosingIterator[CypherRow]
+                        relationships: ClosingLongIterator with RelationshipIterator,
+                        n: VirtualNodeValue): ClosingIterator[CypherRow]
 
   private def withNulls(row: CypherRow) = {
     row.set(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
@@ -98,12 +101,12 @@ case class NonFilteringOptionalExpandAllPipe(source: Pipe,
 
   override def findMatchIterator(row: CypherRow,
                                  ignore: QueryState,
-                                 relationships: ClosingIterator[RelationshipValue],
-                                 n: NodeValue): ClosingIterator[CypherRow] = {
-    relationships.map { r =>
-      val other = r.otherNode(n)
-      rowFactory.copyWith(row, relName, r, toName, other)
-    }
+                                 relationships: ClosingLongIterator with RelationshipIterator,
+                                 n: VirtualNodeValue): ClosingIterator[CypherRow] = {
+    PrimitiveLongHelper.map(relationships, r => {
+      val other = relationships.otherNodeId(n.id())
+      rowFactory.copyWith(row, relName, VirtualValues.relationship(r), toName, VirtualValues.node(other))
+    })
   }
 }
 
@@ -119,11 +122,12 @@ case class FilteringOptionalExpandAllPipe(source: Pipe,
 
   override def findMatchIterator(row: CypherRow,
                                  state: QueryState,
-                                 relationships: ClosingIterator[RelationshipValue],
-                                 n: NodeValue): ClosingIterator[CypherRow] = {
-    relationships.map { r =>
-      val other = r.otherNode(n)
-      rowFactory.copyWith(row, relName, r, toName, other)
-    }.filter(ctx => predicate(ctx, state) eq Values.TRUE)
+                                 relationships: ClosingLongIterator with RelationshipIterator,
+                                 n: VirtualNodeValue): ClosingIterator[CypherRow] = {
+
+    PrimitiveLongHelper.map(relationships, r => {
+      val other = relationships.otherNodeId(n.id())
+      rowFactory.copyWith(row, relName, VirtualValues.relationship(r), toName, VirtualValues.node(other))
+    }).filter(ctx => predicate(ctx, state) eq Values.TRUE)
   }
 }

@@ -184,13 +184,11 @@ object StaticEvaluation {
 
     override def getOrCreateRelTypeId(relTypeName: String): Int = notAvailable()
 
-    override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] = notAvailable()
-
     override def nodeCursor(): NodeCursor = notAvailable()
 
     override def traversalCursor(): RelationshipTraversalCursor = notAvailable()
 
-    override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator = notAvailable()
+    override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator = notAvailable()
 
     override def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator with RelationshipIterator = notAvailable()
 
