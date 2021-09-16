@@ -166,9 +166,7 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
                             needsValues: Boolean,
                             indexOrder: IndexOrder): RelationshipValueIndexCursor
 
-  def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue]
-
-  def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator
+  def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator
 
   def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo]
 

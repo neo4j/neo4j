@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel.UNKNOWN
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.values.virtual.VirtualValues
 
 case class NodeByLabelScanPipe(ident: String, label: LazyLabel, indexOrder: IndexOrder)
                               (val id: Id = Id.INVALID_ID) extends Pipe {
@@ -34,7 +36,7 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel, indexOrder: Inde
     if (id != UNKNOWN) {
       val nodes = state.query.getNodesByLabel(state.nodeLabelTokenReadSession.get, id, indexOrder)
       val baseContext = state.newRowWithArgument(rowFactory)
-      nodes.map(n => rowFactory.copyWith(baseContext, ident, n))
+      PrimitiveLongHelper.map(nodes, n => rowFactory.copyWith(baseContext, ident, VirtualValues.node(n)))
     } else {
       ClosingIterator.empty
     }

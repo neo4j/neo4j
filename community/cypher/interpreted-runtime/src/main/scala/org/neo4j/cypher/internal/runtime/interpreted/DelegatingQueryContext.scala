@@ -86,7 +86,6 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
 import scala.collection.Iterator
@@ -261,13 +260,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                      indexOrder: IndexOrder): RelationshipValueIndexCursor =
     manyDbHits(inner.relationshipIndexScan(index, needsValues, indexOrder))
 
-  override def getNodesByLabel(tokenReadSession: TokenReadSession,
-                               id: Int,
-                               indexOrder: IndexOrder): ClosingIterator[NodeValue] =
+  override def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator =
     manyDbHits(inner.getNodesByLabel(tokenReadSession, id, indexOrder))
-
-  override def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator =
-    manyDbHits(inner.getNodesByLabelPrimitive(tokenReadSession, id, indexOrder))
 
   override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
     val map = inner.nodeAsMap(id, nodeCursor, propertyCursor)

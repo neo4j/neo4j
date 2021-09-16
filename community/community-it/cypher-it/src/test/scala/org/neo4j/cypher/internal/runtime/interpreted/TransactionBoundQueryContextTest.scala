@@ -244,7 +244,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.getNodesByLabelPrimitive(tokenReadSession(tx), 0, IndexOrderNone)
+    val iteratorA = context.getNodesByLabel(tokenReadSession(tx), 0, IndexOrderNone)
 
     // WHEN
     iteratorA.next()

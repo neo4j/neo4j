@@ -165,13 +165,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
                                      indexOrder: IndexOrder): RelationshipValueIndexCursor =
     translateException(tokenNameLookup, inner.relationshipIndexScan(index, needsValues, indexOrder))
 
-  override def getNodesByLabel(tokenReadSession: TokenReadSession,
-                               id: Int,
-                               indexOrder: IndexOrder): ClosingIterator[NodeValue] =
+  override def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator =
     translateException(tokenNameLookup, inner.getNodesByLabel(tokenReadSession, id, indexOrder))
-
-  override def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator =
-    translateException(tokenNameLookup, inner.getNodesByLabelPrimitive(tokenReadSession, id, indexOrder))
 
   override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue =
     translateException(tokenNameLookup, inner.nodeAsMap(id, nodeCursor, propertyCursor))

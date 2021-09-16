@@ -673,22 +673,6 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
     }
   }
 
-  override def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] = {
-    val cursor = allocateAndTraceNodeLabelIndexCursor()
-    reads().nodeLabelScan(tokenReadSession, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(id),
-      transactionalContext.cursorContext)
-    new CursorIterator[NodeValue] {
-      override protected def fetchNext(): NodeValue = {
-        if (cursor.next()) fromNodeEntity(entityAccessor.newNodeEntity(cursor.nodeReference()))
-        else null
-      }
-
-      override protected def closeMore(): Unit = {
-        cursor.close()
-      }
-    }
-  }
-
   override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
     reads().singleNode(id, nodeCursor)
     if (!nodeCursor.next()) VirtualValues.EMPTY_MAP
@@ -718,7 +702,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
     }
   }
 
-  override def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator = {
+  override def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
     reads().nodeLabelScan(tokenReadSession, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(id),
       transactionalContext.cursorContext)

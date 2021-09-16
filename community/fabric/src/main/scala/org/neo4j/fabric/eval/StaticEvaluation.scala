@@ -265,11 +265,7 @@ object StaticEvaluation {
                                        needsValues: Boolean,
                                        indexOrder: IndexOrder): RelationshipValueIndexCursor = notAvailable()
 
-    override def getNodesByLabel(tokenReadSession: TokenReadSession,
-                                 id: Int,
-                                 indexOrder: IndexOrder): ClosingIterator[NodeValue] = notAvailable()
-
-    override def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator = notAvailable()
+    override def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator = notAvailable()
 
     override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit = notAvailable()
 
