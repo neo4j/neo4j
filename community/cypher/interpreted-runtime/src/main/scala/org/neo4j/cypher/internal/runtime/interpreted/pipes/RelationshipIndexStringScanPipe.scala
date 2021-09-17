@@ -87,7 +87,7 @@ trait Undirected {
                                   endNode: String,
                                   baseContext: CypherRow,
                                   cursor: RelationshipValueIndexCursor): IndexIteratorBase[CypherRow] =
-    new UndirectedRelIndexIterator(startNode, endNode, state.query, baseContext, cursor)
+    new UndirectedRelIndexIterator(startNode, endNode, state, baseContext, cursor)
 }
 
 case class DirectedRelationshipIndexContainsScanPipe(ident: String,

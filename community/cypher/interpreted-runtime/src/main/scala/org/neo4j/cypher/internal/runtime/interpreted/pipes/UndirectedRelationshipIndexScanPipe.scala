@@ -45,6 +45,6 @@ case class UndirectedRelationshipIndexScanPipe(ident: String,
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val baseContext = state.newRowWithArgument(rowFactory)
     val cursor = state.query.relationshipIndexScan(state.queryIndexes(queryIndexId), needsValues, indexOrder)
-    new UndirectedRelIndexIterator(startNode, endNode, state.query, baseContext, cursor)
+    new UndirectedRelIndexIterator(startNode, endNode, state, baseContext, cursor)
   }
 }
