@@ -61,3 +61,7 @@ abstract class ConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
     }))
   }
 }
+
+object ConcurrencyStressTestBase {
+  val SIZE_HINT = 10000
+}
