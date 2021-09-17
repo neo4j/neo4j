@@ -42,12 +42,12 @@ rpm: $(RPM) ## Build RPM package of cypher-shell
 .PHONY: rpm
 
 $(DEB): $(ZIPFILE) $(COMMON_FILES) $(DEBIAN_FILES)
-	rm -rf out/debian
-	bin/build-debian-package out/debian $< $(DISTRIBUTION)
+	mkdir -p $(OUT)/debian
+	bin/build-debian-package $(OUT)/debian $< $(DISTRIBUTION)
 
 $(RPM): $(ZIPFILE) $(COMMON_FILES) $(RPM_FILES)
-	rm -rf out/rpm
-	bin/build-rpm-package out/rpm $< $(DISTRIBUTION)
+	mkdir -p $(OUT)/rpm
+	bin/build-rpm-package $(OUT)/rpm $< $(DISTRIBUTION)
 
 $(ZIPFILE):
 	cd ../../.. && mvn package --projects org.neo4j:cypher-shell --also-make -DskipTests
