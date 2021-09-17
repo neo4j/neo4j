@@ -96,6 +96,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
     protected final CountsLayout layout = new CountsLayout();
     private final Rebuilder rebuilder;
+    private final boolean needsRebuild;
     private final DatabaseReadOnlyChecker readOnlyChecker;
     private final String name;
     private final Monitor monitor;
@@ -116,6 +117,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         this.databaseName = databaseName;
         this.maxCacheSize = maxCacheSize;
         this.highMarkCacheSize = (int) (maxCacheSize * 0.8);
+        this.rebuilder = rebuilder;
 
         // First just read the header so that we can avoid creating it if this store is read-only
         CountsHeader header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
@@ -141,7 +143,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
             this.txIdInformation.strayTxIds.forEach( txId -> idSequence.offer( txId, EMPTY_LONG_ARRAY ) );
             // Only care about initial counts rebuilding if the tree was created right now when opening this tree
             // The actual rebuilding will happen in start()
-            this.rebuilder = header.wasRead() && header.highestGapFreeTxId() != NEEDS_REBUILDING_HIGH_ID ? null : rebuilder;
+            this.needsRebuild = !header.wasRead() || header.highestGapFreeTxId() == NEEDS_REBUILDING_HIGH_ID;
             successful = true;
         }
         finally
@@ -174,7 +176,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     public void start( CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException
     {
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
-        if ( rebuilder != null )
+        if ( needsRebuild || rebuilder.lastCommittedTxId() != idSequence.getHighestGapFreeNumber() )
         {
             checkState( !readOnlyChecker.isReadOnly(), "Counts store needs rebuilding, most likely this database needs to be recovered." );
             try ( CountUpdater updater = directUpdater( false, cursorContext ) )
@@ -223,7 +225,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         // The deletion of N on the empty counts store would have resulted in a count of -1, which is not OK to write to the tree,
         // since there can never be a negative amount of, say nodes. The counts store will be rebuilt after recovery anyway,
         // so ignore these transactions.
-        boolean inRecoveryOnEmptyCountsStore = rebuilder != null && !started;
+        boolean inRecoveryOnEmptyCountsStore = needsRebuild && !started;
         if ( alreadyApplied || inRecoveryOnEmptyCountsStore )
         {
             lock.unlock();
