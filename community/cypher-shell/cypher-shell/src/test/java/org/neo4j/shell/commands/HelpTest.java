@@ -125,31 +125,31 @@ class HelpTest
             this.name = name;
         }
 
-            @Override
+        @Override
         public String getName()
         {
             return name;
         }
 
-            @Override
+        @Override
         public String getDescription()
         {
             return "description for " + name;
         }
 
-            @Override
+        @Override
         public String getUsage()
         {
             return "usage for " + name;
         }
 
-            @Override
+        @Override
         public String getHelp()
         {
             return "help for " + name;
         }
 
-            @Override
+        @Override
         public List<String> getAliases()
         {
             return Collections.emptyList();

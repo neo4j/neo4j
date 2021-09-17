@@ -30,7 +30,7 @@ public interface Historian
 {
     Historian empty = new Historian()
     {
-            @Override
+        @Override
         public List<String> getHistory()
         {
             return new ArrayList<>();
