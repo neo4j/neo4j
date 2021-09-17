@@ -75,6 +75,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   executionModel: ExecutionModel,
                                   debugOptions: CypherDebugOptions,
                                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+                                  planningTextIndexesEnabled: Boolean = false,
                                  ) {
 
   def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =

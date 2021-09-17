@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.graphcounts.Constraint
 import org.neo4j.cypher.graphcounts.GraphCountData
 import org.neo4j.cypher.graphcounts.Index
@@ -95,6 +96,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       useMinimumGraphStatistics: Boolean = false,
                       txStateHasChanges: Boolean = false,
                       semanticFeatures: Seq[SemanticFeature] = Seq.empty,
+                      planningTextIndexesEnabled: Boolean = false,
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
@@ -448,6 +450,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(options = options.copy(semanticFeatures = options.semanticFeatures :+ sf))
   }
 
+  def enablePlanningTextIndexes(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(planningTextIndexesEnabled = enabled))
+  }
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -680,7 +686,9 @@ class StatisticsBackedLogicalPlanningConfiguration(
   }
 
   def planState(queryString: String): LogicalPlanState = {
-    val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
+    val plannerConfiguration = CypherPlannerConfiguration.withSettings(
+      Map(GraphDatabaseInternalSettings.planning_text_indexes_enabled -> Boolean.box(options.planningTextIndexesEnabled))
+    )
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
     val metrics = SimpleMetricsFactory.newMetrics(planContext, simpleExpressionEvaluator, options.executionModel)

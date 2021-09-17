@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherVersion
 
-import scala.collection.JavaConverters.asScalaSetConverter
 import java.io.File
+import scala.collection.JavaConverters.asScalaSetConverter
 
 /**
  * Holds all configuration options for the Neo4j Cypher execution engine, compilers and runtimes.
@@ -85,6 +85,7 @@ class CypherConfiguration private (val config: Config) {
   val useJavaCCParser: Boolean = config.get(GraphDatabaseInternalSettings.cypher_parser) != GraphDatabaseInternalSettings.CypherParser.PARBOILED
   val disallowSplittingTop: Boolean = config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
   val enableExtraSemanticFeatures: Set[String] = config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
+  val planningTextIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_text_indexes_enabled)
 
   //dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)

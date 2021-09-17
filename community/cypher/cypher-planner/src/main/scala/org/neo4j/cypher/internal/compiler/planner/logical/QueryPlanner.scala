@@ -98,6 +98,7 @@ case object QueryPlanner
       executionModel = context.executionModel,
       debugOptions = context.debugOptions,
       anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
+      planningTextIndexesEnabled = context.config.planningTextIndexesEnabled
     )
   }
 
