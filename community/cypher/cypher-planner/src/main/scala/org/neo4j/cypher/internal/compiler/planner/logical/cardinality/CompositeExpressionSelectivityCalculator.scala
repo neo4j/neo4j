@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
@@ -106,12 +107,29 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
                       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                     ): Selectivity = {
 
+    // Used when we can conclude that no composite index influences the result
+    def fallback: Selectivity = {
+      val simpleSelectivities = selections.flatPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
+      combiner.andTogetherSelectivities(simpleSelectivities).getOrElse(Selectivity.ONE)
+    }
+
     // Shortcutting a possibly expensive calculation: If there is nothing to select, we have no change in selectivity.
-    if (selections.isEmpty) return Selectivity.ONE
+    if (selections.isEmpty) {
+      return Selectivity.ONE
+    }
 
     if (!hasCompositeIndexes) {
-      val simpleSelectivities = selections.flatPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
-      return combiner.andTogetherSelectivities(simpleSelectivities).getOrElse(Selectivity.ONE)
+      // If there is no composite index we can use the singleExpressionSelectivityCalculator
+      return fallback
+    }
+
+    val hasPropertyPredicate = selections.treeExists {
+      case _:Property => true
+    }
+    if (!hasPropertyPredicate) {
+      // If there are no property predicates, we might still get index matches because of EXISTENCE / NODE KEY constraints.
+      // But since we would only use them to solve label/rel type predicates, there is no need to use composite index selectivity.
+      return fallback
     }
 
     // The selections we get for cardinality estimation might contain partial predicates.
@@ -123,6 +141,11 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     // we search for index matches for each variable individually to increase the chance of cache hits
     val indexMatches = queryGraphs.relQgs.flatMap(relationshipIndexMatchCache(_, semanticTable, indexPredicateProviderContext)) ++
       queryGraphs.nodeQgs.flatMap(nodeIndexMatchCache(_, semanticTable, indexPredicateProviderContext))
+
+    if (indexMatches.forall(_.propertyPredicates.size <= 1)) {
+      // If we match with no composite index we can use the singleExpressionSelectivityCalculator
+      return fallback
+    }
 
     val selectivitiesForPredicates = indexMatches
       .groupBy(_.indexDescriptor)
