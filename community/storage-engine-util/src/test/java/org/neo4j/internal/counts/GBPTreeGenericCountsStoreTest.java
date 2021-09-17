@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.counts;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -675,6 +676,86 @@ class GBPTreeGenericCountsStoreTest
         InvalidCountException e2 = assertThrows( InvalidCountException.class, () -> countsStore.read( nodeKey( LABEL_ID_1 ), NULL ) );
         assertThat( e2 ).hasMessageContaining( "The count value for key 'CountsKey[type:1, first:1, second:0]' is invalid." );
         assertEquals( 15, countsStore.read( nodeKey( LABEL_ID_2 ), NULL ) );
+    }
+
+    @Test
+    void shouldRebuildOnMismatchingLastCommittedTxId() throws IOException
+    {
+        // given some pre-state
+        long countsStoreTxId = BASE_TX_ID + 1;
+        try ( CountUpdater updater = countsStore.updater( countsStoreTxId, NULL ) )
+        {
+            updater.increment( nodeKey( 1 ), 1 );
+        }
+
+        // when
+        countsStore.checkpoint( NULL );
+        closeCountsStore();
+        MutableBoolean rebuildTriggered = new MutableBoolean();
+        openCountsStore( new Rebuilder()
+        {
+            @Override
+            public long lastCommittedTxId()
+            {
+                return countsStoreTxId + 1;
+            }
+
+            @Override
+            public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
+            {
+                rebuildTriggered.setTrue();
+            }
+        } );
+
+        // then
+        assertThat( rebuildTriggered.booleanValue() ).isTrue();
+    }
+
+    @Test
+    void shouldNotRebuildOnMismatchingLastCommittedTxIdButMatchingAfterRecovery() throws IOException
+    {
+        // given some pre-state
+        long countsStoreTxId = BASE_TX_ID + 1;
+        CountsKey key = nodeKey( 1 );
+        try ( CountUpdater updater = countsStore.updater( countsStoreTxId, NULL ) )
+        {
+            updater.increment( key, 1 );
+        }
+        // leaving a gap intentionally
+        try ( CountUpdater updater = countsStore.updater( countsStoreTxId + 2, NULL ) )
+        {
+            updater.increment( key, 3 );
+        }
+        countsStore.checkpoint( NULL );
+
+        // when
+        closeCountsStore();
+        MutableBoolean rebuildTriggered = new MutableBoolean();
+        instantiateCountsStore( new Rebuilder()
+        {
+            @Override
+            public long lastCommittedTxId()
+            {
+                return countsStoreTxId + 2;
+            }
+
+            @Override
+            public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
+            {
+                rebuildTriggered.setTrue();
+            }
+        }, writable(), NO_MONITOR );
+        // and do recovery
+        try ( CountUpdater updater = countsStore.updater( countsStoreTxId + 1, NULL ) )
+        {
+            updater.increment( key, 7 );
+        }
+        assertThat( countsStore.updater( countsStoreTxId + 2, NULL ) ).isNull(); // already applied
+        countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
+
+        // then
+        assertThat( rebuildTriggered.booleanValue() ).isFalse();
+        assertThat( countsStore.read( key, NULL ) ).isEqualTo( 11 );
     }
 
     private CountsKey randomKey()

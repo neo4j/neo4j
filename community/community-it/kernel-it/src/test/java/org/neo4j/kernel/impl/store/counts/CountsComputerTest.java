@@ -34,6 +34,7 @@ import java.util.stream.IntStream;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
@@ -66,6 +67,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -149,7 +151,7 @@ class CountsComputerTest
         InvocationTrackingProgressReporter progressReporter = new InvocationTrackingProgressReporter();
         rebuildCounts( lastCommittedTransactionId, progressReporter );
 
-        try ( GBPTreeCountsStore store = createCountsStore() )
+        try ( GBPTreeCountsStore store = createCountsStore( matchingBuilder( lastCommittedTransactionId ) ) )
         {
             store.start( NULL, StoreCursors.NULL, INSTANCE );
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
@@ -170,7 +172,7 @@ class CountsComputerTest
 
         rebuildCounts( lastCommittedTransactionId );
 
-        try ( GBPTreeCountsStore store = createCountsStore() )
+        try ( GBPTreeCountsStore store = createCountsStore( matchingBuilder( lastCommittedTransactionId ) ) )
         {
             store.start( NULL, StoreCursors.NULL, INSTANCE );
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
@@ -521,6 +523,24 @@ class CountsComputerTest
                 throw new RuntimeException( e );
             }
         }
+    }
+
+    private CountsBuilder matchingBuilder( long lastCommittedTransactionId )
+    {
+        return new CountsBuilder()
+        {
+            @Override
+            public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
+            {
+                throw new UnsupportedOperationException( "Expected a matching transaction ID " + lastCommittedTransactionId );
+            }
+
+            @Override
+            public long lastCommittedTxId()
+            {
+                return lastCommittedTransactionId;
+            }
+        };
     }
 
     private static class InvocationTrackingProgressReporter implements ProgressReporter

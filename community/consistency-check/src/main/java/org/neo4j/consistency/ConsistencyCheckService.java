@@ -226,7 +226,7 @@ public class ConsistencyCheckService
     {
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.convert( layout ); //Right now we only support consistency checker on record storage engine
         assertRecovered( databaseLayout, config, fileSystem, memoryTracker );
-        Log log = logProvider.getLog( getClass() );
+        Log outLog = logProvider.getLog( getClass() );
         config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
 
         LifeSupport life = new LifeSupport();
@@ -234,12 +234,6 @@ public class ConsistencyCheckService
         DatabaseReadOnlyChecker readOnlyChecker = readOnly();
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, pageCacheTracer, readOnlyChecker );
-        // Don't start the counts stores here as part of life, instead only shut down. This is because it's better to let FullCheck
-        // start it and add its missing/broken detection where it can report to user.
-        CountsStoreManager countsStoreManager = life.add( new CountsStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker,
-                logProvider ) );
-        RelationshipGroupDegreesStoreManager groupDegreesStoreManager =
-                life.add( new RelationshipGroupDegreesStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker, logProvider ) );
 
         ConsistencySummaryStatistics summary;
         final Path reportFile = chooseReportPath( reportDir );
@@ -247,6 +241,7 @@ public class ConsistencyCheckService
         Log4jLogProvider reportLogProvider = new Log4jLogProvider(
                 LogConfig.createBuilder( fileSystem, reportFile, Level.INFO ).createOnDemand().withCategory( false ).build() );
         Log reportLog = reportLogProvider.getLog( getClass() );
+        Log log = new DuplicatingLog( outLog, reportLog );
 
         // Bootstrap kernel extensions
         Monitors monitors = new Monitors();
@@ -266,6 +261,14 @@ public class ConsistencyCheckService
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
+            long lastCommittedTransactionId = neoStores.getMetaDataStore().getLastCommittedTransactionId();
+            // Don't start the counts stores here as part of life, instead only shut down. This is because it's better to let FullCheck
+            // start it and add its missing/broken detection where it can report to user.
+            CountsStoreManager countsStoreManager = life.add( new CountsStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker,
+                    logProvider, lastCommittedTransactionId ) );
+            RelationshipGroupDegreesStoreManager groupDegreesStoreManager = life.add(
+                    new RelationshipGroupDegreesStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker,
+                            logProvider, lastCommittedTransactionId ) );
             // Load tokens before starting extensions, etc.
             try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_READER_TAG ) );
                   var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
@@ -283,8 +286,7 @@ public class ConsistencyCheckService
             double memoryLimitLeewayFactor = config.get( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor );
             FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, debugContext,
                     NodeBasedMemoryLimiter.defaultWithLeeway( memoryLimitLeewayFactor ) );
-            summary = check.execute( pageCache, stores, countsStoreManager, groupDegreesStoreManager, null, pageCacheTracer, memoryTracker,
-                    new DuplicatingLog( log, reportLog ) );
+            summary = check.execute( pageCache, stores, countsStoreManager, groupDegreesStoreManager, null, pageCacheTracer, memoryTracker, log );
         }
         finally
         {
@@ -379,6 +381,13 @@ public class ConsistencyCheckService
 
     private static class RebuildPreventingCountsInitializer implements CountsBuilder
     {
+        private final long lastCommittedTxId;
+
+        RebuildPreventingCountsInitializer( long lastCommittedTxId )
+        {
+            this.lastCommittedTxId = lastCommittedTxId;
+        }
+
         @Override
         public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
@@ -388,12 +397,19 @@ public class ConsistencyCheckService
         @Override
         public long lastCommittedTxId()
         {
-            return 0;
+            return lastCommittedTxId;
         }
     }
 
     private static class RebuildPreventingDegreesInitializer implements GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder
     {
+        private final long lastCommittedTxId;
+
+        RebuildPreventingDegreesInitializer( long lastCommittedTxId )
+        {
+            this.lastCommittedTxId = lastCommittedTxId;
+        }
+
         @Override
         public void rebuild( RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
@@ -404,7 +420,7 @@ public class ConsistencyCheckService
         @Override
         public long lastCommittedTxId()
         {
-            return 0;
+            return lastCommittedTxId;
         }
     }
 
@@ -420,16 +436,18 @@ public class ConsistencyCheckService
         protected final RecordDatabaseLayout databaseLayout;
         protected final PageCacheTracer pageCacheTracer;
         protected final MemoryTracker memoryTracker;
+        protected final long lastCommittedTxId;
         private T store;
 
         CountsStorageManager( PageCache pageCache, FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
-                MemoryTracker memoryTracker )
+                MemoryTracker memoryTracker, long lastCommittedTxId )
         {
             this.pageCache = pageCache;
             this.fileSystem = fileSystem;
             this.databaseLayout = databaseLayout;
             this.pageCacheTracer = pageCacheTracer;
             this.memoryTracker = memoryTracker;
+            this.lastCommittedTxId = lastCommittedTxId;
         }
 
         @Override
@@ -457,9 +475,9 @@ public class ConsistencyCheckService
         private final LogProvider logProvider;
 
         CountsStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
-                MemoryTracker memoryTracker, LogProvider logProvider )
+                MemoryTracker memoryTracker, LogProvider logProvider, long lastCommittedTxId )
         {
-            super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );
+            super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker, lastCommittedTxId );
             this.logProvider = logProvider;
         }
 
@@ -467,8 +485,8 @@ public class ConsistencyCheckService
         protected CountsStore open() throws IOException
         {
             return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
-                    new RebuildPreventingCountsInitializer(), readOnly(), pageCacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(),
-                    100, logProvider );
+                    new RebuildPreventingCountsInitializer( lastCommittedTxId ), readOnly(), pageCacheTracer, GBPTreeCountsStore.NO_MONITOR,
+                    databaseLayout.getDatabaseName(), 100, logProvider );
         }
     }
 
@@ -477,9 +495,9 @@ public class ConsistencyCheckService
         private final LogProvider logProvider;
 
         RelationshipGroupDegreesStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout,
-                PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, LogProvider logProvider )
+                PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, LogProvider logProvider, long lastCommittedTxId )
         {
-            super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );
+            super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker, lastCommittedTxId );
             this.logProvider = logProvider;
         }
 
@@ -487,7 +505,7 @@ public class ConsistencyCheckService
         protected RelationshipGroupDegreesStore open() throws IOException
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
-                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer(), readOnly(), pageCacheTracer,
+                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer( lastCommittedTxId ), readOnly(), pageCacheTracer,
                     GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, logProvider );
         }
     }
