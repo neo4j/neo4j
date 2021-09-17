@@ -144,6 +144,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ThreadUnsafeExpressionTests
 import org.neo4j.cypher.internal.runtime.spec.tests.Top1WithTiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TopTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachDbHitsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachMemoryManagementTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TriadicSelectionTestBase
@@ -234,6 +235,7 @@ class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, 
                                   with TransactionForeachProfileRowsTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementTest extends MemoryManagementTestBase(COMMUNITY.EDITION, InterpretedRuntime)
                                       with FullSupportMemoryManagementTestBase[CommunityRuntimeContext]
+                                      with TransactionForeachMemoryManagementTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementDisabledTest extends MemoryManagementDisabledTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedMemoryDeallocationTest extends MemoryDeallocationTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedProfileMemoryTest extends ProfileMemoryTestBase(COMMUNITY.EDITION, InterpretedRuntime)

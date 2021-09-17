@@ -21,8 +21,11 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.InterpretedRuntime
+import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.SlottedRuntimeName
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.InputDataStream
@@ -32,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
 import org.neo4j.internal.helpers.ArrayUtil
 import org.neo4j.io.ByteUnit
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.memory.MemoryLimitExceededException
 import org.neo4j.values.virtual.VirtualValues
@@ -635,7 +639,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     consume(result)
   }
 
-  //we decided not to use `infiniteNodeInput` with an estimated here size since it is tricky to
+  //we decided not to use `infiniteNodeInput` with an estimated size here since it is tricky to
   //get it to work with the internal cache in expand(into). DO NOT copy-paste this test when
   //adding support to the memory manager, prefer tests that use `infiniteNodeInput` instead.
   test("should kill pruning-var-expand before it runs out of memory") {
@@ -911,5 +915,96 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
     a[MemoryLimitExceededException] should be thrownBy {
       consume(execute(logicalQuery, runtime))
     }
+  }
+}
+
+/**
+ * Tests for runtimes with support for TransactionForeach
+ */
+trait TransactionForeachMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
+  self: MemoryManagementTestBase[CONTEXT] =>
+
+  test("should kill transactional subquery before it runs out of memory") {
+    runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.sort(Seq(Ascending("y")))
+      .|.unwind("range(1, 100000000) as y")
+      .|.argument()
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    a[MemoryLimitExceededException] should be thrownBy {
+      consume(execute(logicalQuery, runtime))
+    }
+  }
+
+  test("should not kill transactional subquery if both inner and outer together exceed the limit") {
+    // Determined empirically
+    val rowCount = runtime.name.toUpperCase() match {
+      case InterpretedRuntimeName.name => 12000
+      case SlottedRuntimeName.name => 22000
+    }
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach()
+      .|.emptyResult()
+      .|.sort(Seq(Ascending("y")))
+      .|.unwind(s"range(1, $rowCount) as y")
+      .|.argument()
+      .limit(1)
+      .sort(Seq(Ascending("x")))
+      .unwind(s"range(1, $rowCount) as x")
+      .argument()
+      .build(readOnly = false)
+
+    // Used to check that we choose the right amount of rows:
+    {
+      val checkQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .sort(Seq(Ascending("x")))
+        .unwind(s"range(1, ${2 * rowCount}) as x") // When doubling the rows we should consume too much
+        .argument()
+        .build()
+
+      a[MemoryLimitExceededException] should be thrownBy {
+        consume(execute(checkQuery, runtime))
+      }
+      // Restart tx here to reset memory usage
+      runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+    }
+
+    // Used to check that the same query without IN TRANSACTIONS runs out of memory:
+    {
+      val checkQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .subqueryForeach()
+        .|.emptyResult()
+        .|.sort(Seq(Ascending("y")))
+        .|.unwind(s"range(1, $rowCount) as y")
+        .|.argument()
+        .limit(1)
+        .sort(Seq(Ascending("x")))
+        .unwind(s"range(1, $rowCount) as x")
+        .argument()
+        .build(readOnly = false)
+
+      a[MemoryLimitExceededException] should be thrownBy {
+        consume(execute(checkQuery, runtime))
+      }
+      // Restart tx here to reset memory usage
+      runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+    }
+
+    // then
+    noException should be thrownBy consume(execute(logicalQuery, runtime))
   }
 }
