@@ -517,30 +517,27 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
-        indexesGetForEntityType(entityType, BTREE)
+        indexesGetForEntityAndIndexType(entityType, BTREE)
       }
 
       override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
-        indexesGetForEntityType(entityType, BTREE)
+        indexesGetForEntityAndIndexType(entityType, BTREE)
       }
 
       override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
-        indexesGetForEntityType(entityType, TEXT)
+        indexesGetForEntityAndIndexType(entityType, TEXT)
       }
 
       override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
-        indexesGetForEntityType(entityType, TEXT)
+        indexesGetForEntityAndIndexType(entityType, TEXT)
       }
 
-      private def indexesGetForEntityType(entityType: IndexDefinition.EntityType, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
+      private def indexesGetForEntityAndIndexType(entityType: IndexDefinition.EntityType, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
         indexes.propertyIndexes.collect {
-          case indexDef
-            if entityType == indexDef.entityType
-              && indexType == indexDef.indexType
-          =>
+          case indexDef@IndexDefinition(`entityType`, `indexType`, _, _, _, _, _, _) =>
             newIndexDescriptor(indexDef)
         }
       }.iterator
