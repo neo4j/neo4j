@@ -62,6 +62,8 @@ class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends 
 
     override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = indexMap.get(relTypeId).iterator
 
+    override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = indexMap.valuesIterator
+
     override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
 
     override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(stats, new MutableGraphStatisticsSnapshot())

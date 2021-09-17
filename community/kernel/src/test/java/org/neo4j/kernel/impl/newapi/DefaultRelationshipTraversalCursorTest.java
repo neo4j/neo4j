@@ -641,6 +641,12 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
+        public Iterator<IndexDescriptor> indexesGetAllNonLocking()
+        {
+            return null;
+        }
+
+        @Override
         public double indexUniqueValuesSelectivity( IndexDescriptor index )
         {
             return 0;

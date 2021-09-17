@@ -96,6 +96,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     (a, b, c) => findRelationshipIndexMatches(a, b, c)
   }
 
+  private val hasCompositeIndexes = planContext.propertyIndexesGetAll().exists(_.properties.size > 1)
+
   override def apply(
                       selections: Selections,
                       labelInfo: LabelInfo,
@@ -106,6 +108,11 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
 
     // Shortcutting a possibly expensive calculation: If there is nothing to select, we have no change in selectivity.
     if (selections.isEmpty) return Selectivity.ONE
+
+    if (!hasCompositeIndexes) {
+      val simpleSelectivities = selections.flatPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(semanticTable))
+      return combiner.andTogetherSelectivities(simpleSelectivities).getOrElse(Selectivity.ONE)
+    }
 
     // The selections we get for cardinality estimation might contain partial predicates.
     // These are not recognized by the Leaf planners, so let's unwrap them.

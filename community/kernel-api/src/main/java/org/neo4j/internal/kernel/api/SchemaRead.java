@@ -61,9 +61,15 @@ public interface SchemaRead extends SchemaReadCore
      * Acquire a reference to the index matching the given {@code relTypeId}, without taking any schema locks.
      *
      * @param relTypeId relationship type to list indexes for.
+     *                  TODO: is this really just one index?
      * @return An index matching the {@code relTypeId}, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong
      */
     Iterator<IndexDescriptor> getRelTypeIndexesNonLocking( int relTypeId );
+
+    /**
+     * Acquire a reference to all indexes, without taking any schema locks.
+     */
+    Iterator<IndexDescriptor> indexesGetAllNonLocking();
 
     /**
      * Computes the selectivity of the unique values.

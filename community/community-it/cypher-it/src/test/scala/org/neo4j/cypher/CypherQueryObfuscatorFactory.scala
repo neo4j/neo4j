@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -103,6 +104,7 @@ class CypherQueryObfuscatorFactory {
     override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Nothing = fail()
     override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Nothing = fail()
+    override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = fail()
     override def canLookupNodesByLabel: Nothing = fail()
     override def canLookupRelationshipsByType: Nothing = fail()
     override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Nothing = fail()

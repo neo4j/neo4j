@@ -133,12 +133,18 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   private def indexesGetForLabel(labelId: Int, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
-    tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala.flatMap(getOnlineIndex(indexType))
+    tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala
+      .filter(_.getIndexType == indexType)
+      .flatMap(getOnlineIndex)
   }
 
   private def indexesGetForRelType(relTypeId: Int, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
-    tc.schemaRead.getRelTypeIndexesNonLocking(relTypeId).asScala.flatMap(getOnlineIndex(indexType))
+    tc.schemaRead.getRelTypeIndexesNonLocking(relTypeId).asScala
+      .filter(_.getIndexType == indexType)
+      .flatMap(getOnlineIndex)
   }
+
+  override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = tc.schemaRead.indexesGetAllNonLocking.asScala.flatMap(getOnlineIndex)
 
   override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
     btreeIndexesGetForLabel(labelId).nonEmpty
@@ -159,7 +165,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   private def indexGetForSchemaDescriptor(indexType: schema.IndexType)(descriptor: SchemaDescriptor): Option[IndexDescriptor] = {
-    val itr = tc.schemaRead.indexForSchemaNonLocking(descriptor).asScala.flatMap(getOnlineIndex(indexType))
+    val itr = tc.schemaRead.indexForSchemaNonLocking(descriptor).asScala
+      .filter(_.getIndexType == indexType)
+      .flatMap(getOnlineIndex)
     if (itr.hasNext) Some(itr.next) else None
   }
 
@@ -171,10 +179,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
   }
 
-  private def getOnlineIndex(indexType: schema.IndexType)(reference: schema.IndexDescriptor): Option[IndexDescriptor] = {
+  private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] = {
     try {
       tc.schemaRead.indexGetStateNonLocking(reference) match {
-        case InternalIndexState.ONLINE =>
+        case InternalIndexState.ONLINE if reference.schema.getPropertyIds.nonEmpty =>
           val entityType = {
             val tokenId = reference.schema().getEntityTokenIds()(0)
             reference.schema().entityType() match {
@@ -208,7 +216,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
               case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
             }
           }
-          if (reference.getIndexType != indexType || behaviours.contains(EventuallyConsistent)) {
+          if (behaviours.contains(EventuallyConsistent)) {
             // Ignore eventually consistent indexes. Those are for explicit querying via procedures.
             None
           } else {

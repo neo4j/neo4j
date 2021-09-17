@@ -469,6 +469,12 @@ public class AllStoreHolder extends Read
         return indexesGetForRelationshipType( storageReader, relTypeId );
     }
 
+    @Override
+    public Iterator<IndexDescriptor> indexesGetAllNonLocking()
+    {
+        return indexesGetAll( storageReader );
+    }
+
     /**
      * Lock the given index if it is valid and exists.
      *

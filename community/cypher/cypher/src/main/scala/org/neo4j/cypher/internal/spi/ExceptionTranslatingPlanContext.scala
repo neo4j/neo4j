@@ -40,6 +40,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
     translateException(tokenNameLookup, inner.textIndexesGetForLabel(labelId))
 
+  override def propertyIndexesGetAll(): Iterator[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.propertyIndexesGetAll())
+
   override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
     translateException(tokenNameLookup, inner.textIndexesGetForRelType(relTypeId))
 

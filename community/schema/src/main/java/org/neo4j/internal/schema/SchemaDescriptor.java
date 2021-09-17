@@ -35,7 +35,7 @@ import org.neo4j.lock.ResourceType;
  * Currently there are 4 schema archetypes:
  * 1. Label Schema - schema that describes exactly one label, and one or more properties.
  *      This schema matches nodes that are labeled with specified label, and have all specified properties.
- * 2. RelationshipType Schema - schema that describes exaclty one type, and one or more properties.
+ * 2. RelationshipType Schema - schema that describes exactly one type, and one or more properties.
  *      This schema matches relationship of specified type that have all specified properties.
  * 3. MultiToken Schema - schema that describes at least one label or type, and one or more properties.
  *      This schema matches node/relationship if at least one of it's label/type is specified by the schema,

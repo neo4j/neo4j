@@ -548,6 +548,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         }
       }.iterator
 
+      override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = {
+        indexes.propertyIndexes.toIterator.map(newIndexDescriptor)
+      }
+
       override def canLookupNodesByLabel: Boolean = indexes.nodeLookupIndex
 
       override def canLookupRelationshipsByType: Boolean = indexes.relationshipLookupIndex

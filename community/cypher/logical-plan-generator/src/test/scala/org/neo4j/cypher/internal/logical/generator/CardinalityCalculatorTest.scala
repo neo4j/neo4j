@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -85,6 +86,8 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
       override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(
         stats,
         new MutableGraphStatisticsSnapshot())
+
+      override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
     }
   }
 

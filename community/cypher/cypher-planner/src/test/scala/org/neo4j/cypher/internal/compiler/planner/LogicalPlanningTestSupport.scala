@@ -92,6 +92,7 @@ import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -160,6 +161,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
 
       override def getRelationshipPropertiesWithExistenceConstraint(relationshipTypeName: String): Set[String] = Set.empty
+
+      override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
 
       override def txStateHasChanges(): Boolean = false
     }

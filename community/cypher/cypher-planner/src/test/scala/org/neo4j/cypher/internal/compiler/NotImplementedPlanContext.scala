@@ -34,6 +34,8 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
 
+  override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = ???
+
   override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = ???
 
   override def btreeIndexExistsForLabel(labelId: Int): Boolean = ???

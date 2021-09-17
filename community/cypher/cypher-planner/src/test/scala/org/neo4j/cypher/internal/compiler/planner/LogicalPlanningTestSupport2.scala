@@ -239,6 +239,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           })
       }
 
+      override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = config.indexes.map {
+        case (indexDef: IndexDef, indexType : IndexType) => newIndexDescriptor(indexDef, indexType)
+      }.toIterator
+
       override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
         Iterator.empty
 

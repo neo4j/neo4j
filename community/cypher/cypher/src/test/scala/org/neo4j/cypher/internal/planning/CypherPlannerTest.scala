@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.JoinDisconnectedQueryGraphComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.Monitors
@@ -133,6 +134,7 @@ class CypherPlannerTest extends CypherFunSuite {
       override def getPropertiesWithExistenceConstraint: Set[String] = Set.empty
       override def canLookupNodesByLabel: Boolean = true
       override def lastCommittedTxIdProvider: () => Long = getTx
+      override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
     }
 
     CypherPlanner.customPlanContextCreator = Some((_, _, _) => planContext)
