@@ -444,7 +444,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void reportFreeListSizeToTracers() throws IOException
     {
         var pageCacheTracer = new InfoTracer();
-        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+        int maxPages = 40;
+        try ( MuninnPageCache pageCache = createPageCache( fs, maxPages, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( int pageId = 0; pageId < 5; pageId++ )
@@ -455,7 +456,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                     assertTrue( cursor.next() );
                     cursor.putLong( 1 );
                 }
-                assertEquals( 10 - (pageId + 1), pageCacheTracer.getFreeListSize() );
+                assertEquals( maxPages - (pageId + 1), pageCacheTracer.getFreeListSize() );
             }
             pagedFile.flushAndForce();
         }
@@ -466,7 +467,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
-        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 40, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( int pageId = 0; pageId < 4; pageId++ )
@@ -509,12 +510,13 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
-        int maxPages = 4096 /* chunk size */ + 10;
+        int maxPages = 4096 /* chunk size */ + 250;
+        int dirtyPages = 4096 + 10;
         PageSwapperFactory swapperFactory = new MultiChunkSwapperFilePageSwapperFactory( pageCacheTracer );
         try ( MuninnPageCache pageCache = createPageCache( swapperFactory, maxPages, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
-            for ( int pageId = 0; pageId < maxPages; pageId++ )
+            for ( int pageId = 0; pageId < dirtyPages; pageId++ )
             {
                 try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
@@ -527,9 +529,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             var observedChunks = pageCacheTracer.getObservedChunks();
             assertThat( observedChunks ).hasSize( 2 );
             var chunkInfo = observedChunks.get( 0 );
-            assertThat( chunkInfo.getFlushPerChunk() ).isGreaterThanOrEqualTo( 4096 / pagecache_flush_buffer_size_in_pages.defaultValue() );
+            assertThat( chunkInfo.getFlushPerChunk() ).isGreaterThanOrEqualTo( dirtyPages / pagecache_flush_buffer_size_in_pages.defaultValue() );
             var chunkInfo2 = observedChunks.get( 1 );
-            assertThat( chunkInfo2.getFlushPerChunk() ).isEqualTo( 1 );
+            assertThat( chunkInfo2.getFlushPerChunk() ).isGreaterThanOrEqualTo( 1 );
             observedChunks.clear();
         }
     }
@@ -539,7 +541,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
-        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 40, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( int pageId = 0; pageId < 4; pageId++ )
@@ -583,7 +585,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
-        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 40, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( int pageId = 0; pageId < 4; pageId++ )
@@ -646,7 +648,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
-        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 40, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( int pageId = 0; pageId < 4; pageId++ )
@@ -709,7 +711,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
-        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 40, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( int pageId = 0; pageId < 4; pageId++ )
@@ -772,7 +774,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
-        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 40, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( int pageId = 0; pageId < 4; pageId++ )
@@ -835,7 +837,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
-        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 40, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( int pageId = 0; pageId < 4; pageId++ )
@@ -898,7 +900,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
         var pageCacheTracer = new InfoTracer();
-        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 40, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( int pageId = 0; pageId < 4; pageId++ )
@@ -1513,7 +1515,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     void transientCursorShouldNotUpdateUsageCounter() throws IOException
     {
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 40, PageCacheTracer.NULL );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
             PageList pages = pageCache.pages;
