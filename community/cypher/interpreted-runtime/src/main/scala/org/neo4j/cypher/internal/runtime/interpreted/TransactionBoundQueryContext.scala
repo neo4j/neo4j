@@ -287,7 +287,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val read = reads()
     val typeCursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.cursorContext)
     val relCursor = transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.cursorContext)
-    read.relationshipTypeScan(session, typeCursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(relType))
+    read.relationshipTypeScan(session, typeCursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(relType), transactionalContext.kernelTransaction.cursorContext())
     resources.trace(typeCursor)
     resources.trace(relCursor)
     new RelationshipTypeCursorIterator(read, typeCursor, relCursor)

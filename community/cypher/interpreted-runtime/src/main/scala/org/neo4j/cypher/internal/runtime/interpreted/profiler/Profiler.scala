@@ -230,12 +230,12 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
 
   override protected def manyDbHitsCliRi(inner: ClosingLongIterator with RelationshipIterator): ClosingLongIterator with RelationshipIterator =
     new ClosingLongIterator with RelationshipIterator {
-      increment()
+      counter.increment()
       override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
         inner.relationshipVisit(relationshipId, visitor)
 
       override def next(): Long = {
-        increment()
+        counter.increment()
         inner.next()
       }
 
