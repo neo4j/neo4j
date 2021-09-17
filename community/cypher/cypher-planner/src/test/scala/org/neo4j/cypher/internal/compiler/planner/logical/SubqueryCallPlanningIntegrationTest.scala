@@ -1065,4 +1065,37 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
+  test("Should not push down property reads past transactionForeach") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 10000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .build()
+
+    val query =
+      """
+        |MATCH (a)
+        |WITH a
+        |MATCH (a)-->(b)
+        |CALL {
+        |  MATCH (n)
+        |  SET n.otherProp = 17
+        |} IN TRANSACTIONS
+        |MATCH (b)-->(c)
+        |RETURN a.prop as otherProp
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[a.prop] AS otherProp")
+      .expandAll("(b)-[anon_1]->(c)")
+      .cacheProperties("cacheNFromStore[a.prop]")
+      .transactionForeach()
+      .|.setNodeProperty("n", "otherProp", "17")
+      .|.allNodeScan("n")
+      .expandAll("(a)-[anon_0]->(b)")
+      .allNodeScan("a")
+      .build()
+  }
 }

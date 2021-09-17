@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
@@ -640,6 +639,32 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown read past transactionForeach into LHS") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .transactionForeach().withEffectiveCardinality(100)
+      .|.nodeByLabelScan("n", "A", IndexOrderNone).withEffectiveCardinality(90)
+      .nodeByLabelScan("n", "B", IndexOrderNone).withEffectiveCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown read past transactionForeach into RHS") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .transactionForeach().withEffectiveCardinality(100)
+      .|.nodeByLabelScan("n", "A", IndexOrderNone).withEffectiveCardinality(10)
+      .nodeByLabelScan("n", "B", IndexOrderNone).withEffectiveCardinality(90)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 

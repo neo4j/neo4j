@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.EffectiveCardinality
@@ -228,7 +229,10 @@ case object PushdownPropertyReads {
     def foldTwoChildPlan(lhsAcc: Acc, rhsAcc: Acc, plan: LogicalPlan): Acc = {
       plan match {
         case _: Union
-           | _: OrderedUnion =>
+           | _: OrderedUnion
+          // TransactionForeach will clear caches, so it's useless to push down reads
+           | _: TransactionForeach =>
+          // Do _not_ pushdown past these plans
           val newVariables = plan.availableSymbols
           val outgoingCardinality = effectiveCardinalities(plan.id)
           val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
@@ -247,8 +251,6 @@ case object PushdownPropertyReads {
           // If you need a real argumentAcc, this is where you have to fix it.
           val argumentAcc = null
           foldSingleChildPlan(rhsAcc, argumentAcc, plan)
-
-          // TODO: disallow caching across a transactionForeach
 
         case _ =>
           val mergedVariableOptima =
@@ -277,10 +279,10 @@ case object PushdownPropertyReads {
         foldTwoChildPlan
       )
 
-    val propertyMap = new mutable.HashMap[Id, Set[Property]]
+    val propertyMap = new mutable.HashMap[Id, Set[Property]].withDefaultValue(Set.empty)
     propertyReadOptima foreach {
       case (CardinalityOptimum(_, id, variableNameAtOptimum), property) =>
-        propertyMap(id) = propertyMap.getOrElse(id, Set.empty) + propertyWithName(variableNameAtOptimum, property)
+        propertyMap(id) += propertyWithName(variableNameAtOptimum, property)
     }
 
     val propertyReadInsertRewriter = bottomUp(Rewriter.lift {
