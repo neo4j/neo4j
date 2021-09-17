@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeReference
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
@@ -265,7 +263,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
   class LoadNext(private val input: Iterator[CypherRow], val state: QueryState) extends State with Expandable {
 
     override def next(): (State, CypherRow) = {
-      def nextState(row: CypherRow, node: NodeValue) = {
+      def nextState(row: CypherRow, node: VirtualNodeValue) = {
         val nextState = new PrePruningDFS(whenEmptied = this,
           node = node,
           path = new Array[Long](max),
@@ -281,10 +279,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
       } else {
         val row = input.next()
         row.getByName(fromName) match {
-          case node: NodeValue =>
-            nextState(row, node)
-          case nodeRef: NodeReference =>
-            val node = state.query.nodeReadOps.getById(nodeRef.id())
+          case node: VirtualNodeValue =>
             nextState(row, node)
           case x: Value if x == Values.NO_VALUE =>
             (Empty, null)

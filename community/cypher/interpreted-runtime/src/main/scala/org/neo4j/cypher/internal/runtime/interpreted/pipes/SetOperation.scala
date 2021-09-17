@@ -43,8 +43,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
@@ -138,7 +136,7 @@ case class SetNodePropertyOperation(nodeName: String,
                                     propertyKey: LazyPropertyKey,
                                     expression: Expression,
                                     needsExclusiveLock: Boolean = true)
-  extends SetEntityPropertyOperation[NodeValue](nodeName, propertyKey, expression) {
+  extends SetEntityPropertyOperation[VirtualNodeValue](nodeName, propertyKey, expression) {
 
   override def name = "SetNodeProperty"
 
@@ -154,7 +152,7 @@ case class SetRelationshipPropertyOperation(relName: String,
                                             propertyKey: LazyPropertyKey,
                                             expression: Expression,
                                             needsExclusiveLock: Boolean = true)
-  extends SetEntityPropertyOperation[RelationshipValue](relName, propertyKey, expression) {
+  extends SetEntityPropertyOperation[VirtualRelationshipValue](relName, propertyKey, expression) {
 
   override def name = "SetRelationshipProperty"
 
@@ -285,7 +283,7 @@ abstract class SetNodeOrRelPropertyFromMapOperation[T, CURSOR](itemName: String,
 
 case class SetNodePropertyFromMapOperation(nodeName: String, expression: Expression,
                                            removeOtherProps: Boolean, needsExclusiveLock: Boolean = true)
-  extends SetNodeOrRelPropertyFromMapOperation[NodeValue, NodeCursor](nodeName, expression, removeOtherProps) {
+  extends SetNodeOrRelPropertyFromMapOperation[VirtualNodeValue, NodeCursor](nodeName, expression, removeOtherProps) {
 
   override def name = "SetNodePropertyFromMap"
 
@@ -303,7 +301,7 @@ case class SetRelationshipPropertyFromMapOperation(relName: String,
                                                    expression: Expression,
                                                    removeOtherProps: Boolean,
                                                    needsExclusiveLock: Boolean = true)
-  extends SetNodeOrRelPropertyFromMapOperation[RelationshipValue, RelationshipScanCursor](relName, expression, removeOtherProps) {
+  extends SetNodeOrRelPropertyFromMapOperation[VirtualRelationshipValue, RelationshipScanCursor](relName, expression, removeOtherProps) {
 
   override def name = "SetRelationshipPropertyFromMap"
 

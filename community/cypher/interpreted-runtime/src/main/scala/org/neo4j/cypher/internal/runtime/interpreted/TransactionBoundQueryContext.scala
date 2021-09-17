@@ -113,7 +113,6 @@ import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.impl.util.DefaultValueMapper
-import org.neo4j.kernel.impl.util.ValueUtils.fromNodeEntity
 import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntity
 import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntityLazyLoad
 import org.neo4j.memory.MemoryTracker
@@ -127,8 +126,8 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.Iterator
@@ -484,7 +483,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
   override def relationshipById(relationshipId: Long,
                                 startNodeId: Long,
                                 endNodeId: Long,
-                                typeId: Int): RelationshipValue =
+                                typeId: Int): VirtualRelationshipValue =
     try {
       fromRelationshipEntity(entityAccessor.newRelationshipEntity(relationshipId, startNodeId, typeId, endNodeId))
     } catch {
@@ -871,11 +870,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
       }
     }
 
-    override def getById(id: Long): NodeValue = try {
-      fromNodeEntity(entityAccessor.newNodeEntity(id))
-    } catch {
-      case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
-    }
+    override def getById(id: Long): VirtualNodeValue = VirtualValues.node(id)
 
     override def all: ClosingLongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
@@ -925,7 +920,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
       CursorUtils.relationshipHasProperty(reads(), relationshipCursor, id, propertyCursor, propertyKey)
     }
 
-    override def getById(id: Long): RelationshipValue = try {
+    override def getById(id: Long): VirtualRelationshipValue = try {
       fromRelationshipEntityLazyLoad(entityAccessor.newRelationshipEntity(id))
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)

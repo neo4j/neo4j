@@ -31,8 +31,6 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapEstimator
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.MemoryTracker
-import org.neo4j.values.virtual.NodeReference
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
@@ -291,16 +289,9 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         if (depth == -1) {
           val fromValue = inputRow.getByName(fromName)
           fromValue match {
-            case node: NodeValue if filteringStep.filterNode(inputRow, queryState)(node) =>
+            case node: VirtualNodeValue if filteringStep.filterNode(inputRow, queryState)(node) =>
                 pushStartNode(node)
 
-            case nodeRef: NodeReference =>
-              val node = queryState.query.nodeReadOps.getById(nodeRef.id)
-              if (filteringStep.filterNode(inputRow, queryState)(node)) {
-                pushStartNode(node)
-              } else null
-
-            case _: VirtualNodeValue => null
             case IsNoValue() => null
 
             case _ =>
@@ -321,7 +312,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       else rowFactory.copyWith(inputRow, self.toName, endNode)
     }
 
-    def pushStartNode(node: NodeValue): VirtualNodeValue = {
+    def pushStartNode(node: VirtualNodeValue): VirtualNodeValue = {
       if(filteringStep.filterNode(inputRow, queryState)(node)) {
         push(node,
           pathLength = 0,

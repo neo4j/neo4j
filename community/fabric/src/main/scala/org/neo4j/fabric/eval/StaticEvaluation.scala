@@ -81,8 +81,8 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.Iterator
 
@@ -192,7 +192,7 @@ object StaticEvaluation {
 
     override def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator with RelationshipIterator = notAvailable()
 
-    override def relationshipById(id: Long, startNode: Long, endNode: Long, `type`: Int): RelationshipValue = notAvailable()
+    override def relationshipById(id: Long, startNode: Long, endNode: Long, `type`: Int): VirtualRelationshipValue = notAvailable()
 
     override def getOrCreateLabelId(labelName: String): Int = notAvailable()
 
@@ -343,9 +343,9 @@ object StaticEvaluation {
 
     override def getRelTypeId(relType: String): Int = notAvailable()
 
-    override def nodeById(id: Long): NodeValue = notAvailable()
+    override def nodeById(id: Long): VirtualNodeValue = notAvailable()
 
-    override def relationshipById(id: Long): RelationshipValue = notAvailable()
+    override def relationshipById(id: Long): VirtualRelationshipValue = notAvailable()
 
     override def nodePropertyIds(node: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Array[Int] = notAvailable()
 

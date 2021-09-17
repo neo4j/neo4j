@@ -35,6 +35,9 @@ import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
+
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.runtime.NodeOperations
@@ -107,10 +110,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   }
 
   override val nodeWriteOps: NodeOperations =
-    new CountingOps[NodeValue, NodeCursor](inner.nodeWriteOps, nodesDeleted) with NodeOperations
+    new CountingOps[VirtualNodeValue, NodeCursor](inner.nodeWriteOps, nodesDeleted) with NodeOperations
 
   override val relationshipWriteOps: RelationshipOperations =
-    new CountingOps[RelationshipValue, RelationshipScanCursor](inner.relationshipWriteOps, relationshipsDeleted) with RelationshipOperations
+    new CountingOps[VirtualRelationshipValue, RelationshipScanCursor](inner.relationshipWriteOps, relationshipsDeleted) with RelationshipOperations
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
     val added = inner.setLabelsOnNode(node, labelIds)

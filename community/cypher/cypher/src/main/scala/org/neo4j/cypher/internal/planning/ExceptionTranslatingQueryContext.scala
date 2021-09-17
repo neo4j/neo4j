@@ -71,8 +71,8 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.Iterator
 
@@ -101,10 +101,10 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     translateException(tokenNameLookup, inner.getLabelId(labelName))
 
   override val nodeReadOps: NodeReadOperations =
-    new ExceptionTranslatingReadOperations[NodeValue, NodeCursor](inner.nodeReadOps) with NodeReadOperations
+    new ExceptionTranslatingReadOperations[VirtualNodeValue, NodeCursor](inner.nodeReadOps) with NodeReadOperations
 
   override val relationshipReadOps: RelationshipReadOperations =
-    new ExceptionTranslatingReadOperations[RelationshipValue, RelationshipScanCursor](inner.relationshipReadOps) with RelationshipReadOperations
+    new ExceptionTranslatingReadOperations[VirtualRelationshipValue, RelationshipScanCursor](inner.relationshipReadOps) with RelationshipReadOperations
 
   override def getPropertyKeyName(propertyKeyId: Int): String =
     translateException(tokenNameLookup, inner.getPropertyKeyName(propertyKeyId))
@@ -268,7 +268,7 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def traversalCursor(): RelationshipTraversalCursor = translateException(tokenNameLookup, inner.traversalCursor())
 
-  override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): RelationshipValue =
+  override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): VirtualRelationshipValue =
     translateException(tokenNameLookup, inner.relationshipById(relationshipId, startNodeId, endNodeId, typeId))
 
   override def nodeIndexSeekByContains(index: IndexReadSession,
@@ -349,14 +349,7 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     override def propertyKeyIds(id: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
       translateException(tokenNameLookup, inner.propertyKeyIds(id, cursor, propertyCursor))
 
-<<<<<<< HEAD
-    override def all: ClosingIterator[T] =
-=======
-    override def removeProperty(id: Long, propertyKeyId: Int): Boolean =
-      translateException(tokenNameLookup, inner.removeProperty(id, propertyKeyId))
-
     override def all: ClosingLongIterator =
->>>>>>> ef0d9c2ac2b... Remove non-primive iterators over all nodes or relationships
       translateException(tokenNameLookup, inner.all)
 
     override def isDeletedInThisTx(id: Long): Boolean =

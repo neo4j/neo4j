@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 case class UndirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ: LazyType, toNode: String, indexOrder: IndexOrder)
                                              (val id: Id = Id.INVALID_ID) extends Pipe {
@@ -47,9 +49,9 @@ private class UndirectedIterator(relName: String,
                                  indexOrder: IndexOrder) extends ClosingIterator[CypherRow] {
 
   private var emitSibling = false
-  private var lastRelationship: RelationshipValue = _
-  private var lastStart: NodeValue = _
-  private var lastEnd: NodeValue = _
+  private var lastRelationship: VirtualRelationshipValue = _
+  private var lastStart: VirtualNodeValue = _
+  private var lastEnd: VirtualNodeValue = _
 
   private val baseContext = state.newRowWithArgument(rowFactory)
   private val query = state.query

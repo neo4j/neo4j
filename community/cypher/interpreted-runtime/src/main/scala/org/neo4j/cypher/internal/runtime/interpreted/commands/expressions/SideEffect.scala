@@ -38,7 +38,6 @@ import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -122,9 +121,9 @@ case class CreateRelationship(command: CreateRelationshipCommand, allowNullOrNaN
 
   }
 
-  private def getNode(row: CypherRow, relName: String, name: String, lenient: Boolean): NodeValue =
+  private def getNode(row: CypherRow, relName: String, name: String, lenient: Boolean): VirtualNodeValue =
     row.getByName(name) match {
-      case n: NodeValue => n
+      case n: VirtualNodeValue => n
       case IsNoValue() =>
         if (lenient) null
         else throw new InternalException(LenientCreateRelationship.errorMsg(relName, name))

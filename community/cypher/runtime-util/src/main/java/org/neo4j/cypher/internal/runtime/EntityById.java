@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 /**
  * Entity lookup operations.
  */
 public interface EntityById
 {
-    NodeValue nodeById( long id );
+    VirtualNodeValue nodeById( long id );
 
-    RelationshipValue relationshipById( long id );
+    VirtualRelationshipValue relationshipById( long id );
 
-    RelationshipValue relationshipById( long id, long startNode, long endNode, int type );
+    VirtualRelationshipValue relationshipById( long id, long startNode, long endNode, int type );
 }

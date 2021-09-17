@@ -38,7 +38,6 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -82,7 +81,7 @@ case class ExpandIntoPipe(source: Pipe,
             val toNode = getRowNode(row, toName)
             toNode match {
               case IsNoValue() => Iterator.empty
-              case n: NodeValue =>
+              case n: VirtualNodeValue =>
                 val traversalCursor = query.traversalCursor()
                 val nodeCursor = query.nodeCursor()
                 try {
@@ -126,7 +125,7 @@ object ExpandIntoPipe {
   @inline
   def getRowNode(row: CypherRow, col: String): AnyValue = {
     row.getByName(col) match {
-      case n: NodeValue => n
+      case n: VirtualNodeValue => n
       case IsNoValue() => NO_VALUE
       case value => throw new ParameterWrongTypeException(s"Expected to find a node at '$col' but found $value instead")
     }

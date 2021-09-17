@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -60,7 +59,7 @@ case class OptionalExpandIntoPipe(source: Pipe,
       row =>
         val fromNode = getRowNode(row, fromName)
         fromNode match {
-          case fromNode: NodeValue =>
+          case fromNode: VirtualNodeValue =>
             val toNode = getRowNode(row, toName)
 
             toNode match {

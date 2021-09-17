@@ -30,6 +30,8 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 public final class ValuePopulation
 {
@@ -75,7 +77,7 @@ public final class ValuePopulation
         return value;
     }
 
-    public static NodeValue populate( NodeValue value, NodeCursor nodeCursor, PropertyCursor propertyCursor )
+    public static VirtualNodeValue populate( VirtualNodeValue value, NodeCursor nodeCursor, PropertyCursor propertyCursor )
     {
         if ( value instanceof NodeEntityWrappingNodeValue )
         {
@@ -84,7 +86,7 @@ public final class ValuePopulation
         return value;
     }
 
-    public static RelationshipValue populate( RelationshipValue value, RelationshipScanCursor relCursor, PropertyCursor propertyCursor )
+    public static VirtualRelationshipValue populate( VirtualRelationshipValue value, RelationshipScanCursor relCursor, PropertyCursor propertyCursor )
     {
         if ( value instanceof RelationshipEntityWrappingValue )
         {

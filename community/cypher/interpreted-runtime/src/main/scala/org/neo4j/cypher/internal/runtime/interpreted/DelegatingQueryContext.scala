@@ -86,7 +86,7 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.Iterator
 
@@ -149,7 +149,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit =  singleDbHit(inner.singleRelationship(id, cursor))
 
-  override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): RelationshipValue =
+  override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): VirtualRelationshipValue =
     inner.relationshipById(relationshipId, startNodeId, endNodeId, typeId)
 
   override def nodeReadOps: NodeReadOperations = inner.nodeReadOps

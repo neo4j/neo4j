@@ -72,8 +72,8 @@ import org.neo4j.util.VisibleForTesting
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.Iterator
 
@@ -236,9 +236,9 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def providedLanguageFunctions(): Seq[FunctionInformation]
 
-  override def nodeById(id: Long): NodeValue = nodeReadOps.getById(id)
+  override def nodeById(id: Long): VirtualNodeValue = nodeReadOps.getById(id)
 
-  override def relationshipById(id: Long): RelationshipValue = relationshipReadOps.getById(id)
+  override def relationshipById(id: Long): VirtualRelationshipValue = relationshipReadOps.getById(id)
 
   override def propertyKey(name: String): Int = transactionalContext.tokenRead.propertyKey(name)
 
@@ -462,13 +462,14 @@ trait WriteOperations[T, CURSOR] {
 
 trait Operations[T, CURSOR] extends ReadOperations[T, CURSOR] with WriteOperations[T, CURSOR]
 
-trait NodeReadOperations extends ReadOperations[NodeValue, NodeCursor]
-trait NodeWriteOperations extends WriteOperations[NodeValue, NodeCursor]
-trait NodeOperations extends Operations[NodeValue, NodeCursor] with NodeReadOperations with NodeWriteOperations
+trait NodeReadOperations extends ReadOperations[VirtualNodeValue, NodeCursor]
+trait NodeWriteOperations extends WriteOperations[VirtualNodeValue, NodeCursor]
+trait NodeOperations extends Operations[VirtualNodeValue, NodeCursor] with NodeReadOperations with NodeWriteOperations
 
-trait RelationshipReadOperations extends ReadOperations[RelationshipValue, RelationshipScanCursor]
-trait RelationshipWriteOperations extends WriteOperations[RelationshipValue, RelationshipScanCursor]
-trait RelationshipOperations extends Operations[RelationshipValue, RelationshipScanCursor] with RelationshipReadOperations with RelationshipWriteOperations
+trait RelationshipReadOperations extends ReadOperations[VirtualRelationshipValue, RelationshipScanCursor]
+trait RelationshipWriteOperations extends WriteOperations[VirtualRelationshipValue, RelationshipScanCursor]
+trait RelationshipOperations extends Operations[VirtualRelationshipValue, RelationshipScanCursor] with RelationshipReadOperations with RelationshipWriteOperations
+
 
 trait QueryTransactionalContext extends CloseableResource {
 

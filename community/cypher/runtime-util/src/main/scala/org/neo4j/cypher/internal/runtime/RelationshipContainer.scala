@@ -31,6 +31,7 @@ case class RelationshipContainer(asList: ListValue, size: Int, set: Set[Long]) {
     RelationshipContainer(asList.append(rel), size + 1, set + rel.id())
   }
   def contains(rel: VirtualRelationshipValue): Boolean = set.contains(rel.id())
+  def contains(relId: Long): Boolean = set.contains(relId)
 
   def reverse: RelationshipContainer = copy(asList = asList.reverse())
 }

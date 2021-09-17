@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 /**
  * Provides a helper method for index pipes that get nodes together with actual property values.
@@ -66,6 +66,7 @@ trait IndexPipeWithValues extends Pipe {
                          baseContext: CypherRow,
                          cursor: RelationshipValueIndexCursor
                         ) extends IndexIteratorBase[CypherRow](cursor) {
+    private val queryContext = state.query
 
     private val queryContext = state.query
 
@@ -99,9 +100,9 @@ trait IndexPipeWithValues extends Pipe {
 
     private val queryContext = state.query
     private var emitSibling: Boolean = false
-    private var lastRelationship: RelationshipValue = _
-    private var lastStart: NodeValue = _
-    private var lastEnd: NodeValue = _
+    private var lastRelationship: VirtualRelationshipValue = _
+    private var lastStart: VirtualNodeValue = _
+    private var lastEnd: VirtualNodeValue = _
 
     override protected def fetchNext(): CypherRow = {
       val newContext = if (emitSibling) {

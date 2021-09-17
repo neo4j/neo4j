@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Propert
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.Entity
@@ -46,8 +47,6 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeReference
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -124,8 +123,8 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
   private def getEndPoint(ctx: ReadableRow, state: QueryState, start: SingleNode): VirtualNodeValue = {
     try {
       ctx.getByName(start.name) match {
-        case node: NodeValue => node
-        case node: NodeReference => state.query.nodeReadOps.getById(node.id())
+        case node: VirtualNodeValue => node
+        case _ => throw new CypherTypeException(s"${start.name} is not a node")
       }
     } catch {
       case _: NotFoundException =>

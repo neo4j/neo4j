@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.PathValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
                      (val id: Id = Id.INVALID_ID)
@@ -47,9 +47,9 @@ object DeletePipe {
 
   def delete(toDelete: AnyValue,state:  QueryState,  forced: Boolean): Unit = toDelete match {
     case IsNoValue() => // do nothing
-    case r: RelationshipValue =>
+    case r: VirtualRelationshipValue =>
       deleteRelationship(r, state)
-    case n: NodeValue =>
+    case n: VirtualNodeValue =>
       deleteNode(n, state, forced)
     case p: PathValue =>
       deletePath(p, state, forced)
@@ -57,21 +57,21 @@ object DeletePipe {
       throw new CypherTypeException(s"Expected a Node, Relationship or Path, but got a ${other.getClass.getSimpleName}")
   }
 
-  private def deleteNode(n: NodeValue, state: QueryState, forced: Boolean) = if (!state.query.nodeReadOps.isDeletedInThisTx(n.id())) {
+  private def deleteNode(n: VirtualNodeValue, state: QueryState, forced: Boolean) = if (!state.query.nodeReadOps.isDeletedInThisTx(n.id())) {
     if (forced) state.query.detachDeleteNode(n.id())
     else state.query.nodeWriteOps.delete(n.id())
   }
 
-  private def deleteRelationship(r: RelationshipValue, state: QueryState): Unit =
+  private def deleteRelationship(r: VirtualRelationshipValue, state: QueryState): Unit =
     if (!state.query.relationshipReadOps.isDeletedInThisTx(r.id())) state.query.relationshipWriteOps.delete(r.id())
 
   private def deletePath(p: PathValue, state: QueryState, forced: Boolean): Unit = {
     val entities = p.asList().iterator()
     while (entities.hasNext) {
       entities.next() match {
-        case n: NodeValue =>
+        case n: VirtualNodeValue =>
           deleteNode(n, state, forced)
-        case r: RelationshipValue =>
+        case r: VirtualRelationshipValue =>
           deleteRelationship(r, state)
         case other =>
           throw new CypherTypeException(s"Expected a Node or Relationship, but got a ${other.getClass.getSimpleName}")

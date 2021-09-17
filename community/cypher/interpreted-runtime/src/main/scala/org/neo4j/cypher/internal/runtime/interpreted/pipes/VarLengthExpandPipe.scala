@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe.projectBackwards
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
-import org.neo4j.values.virtual.NodeReference
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
@@ -62,7 +60,7 @@ case class VarLengthExpandPipe(source: Pipe,
                                filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
+  private def varLengthExpand(node: VirtualNodeValue, state: QueryState, maxDepth: Option[Int],
                               row: CypherRow): Iterator[(VirtualNodeValue, RelationshipContainer)] = {
     val stack = HeapTrackingCollections.newStack[(VirtualNodeValue, RelationshipContainer)](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
     stack.push((node, RelationshipContainer.EMPTY))
@@ -101,7 +99,7 @@ case class VarLengthExpandPipe(source: Pipe,
   }
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    def expand(row: CypherRow, n: NodeValue): Iterator[CypherRow] = {
+    def expand(row: CypherRow, n: VirtualNodeValue): Iterator[CypherRow] = {
       if (filteringStep.filterNode(row, state)(n)) {
         val paths = varLengthExpand(n, state, max, row)
         paths.collect {
@@ -116,11 +114,7 @@ case class VarLengthExpandPipe(source: Pipe,
     input.flatMap {
       row => {
         row.getByName(fromName) match {
-          case node: NodeValue =>
-            expand(row, node)
-
-          case nodeRef: NodeReference =>
-            val node = state.query.nodeReadOps.getById(nodeRef.id)
+          case node: VirtualNodeValue =>
             expand(row, node)
 
           case IsNoValue() => Iterator.empty
