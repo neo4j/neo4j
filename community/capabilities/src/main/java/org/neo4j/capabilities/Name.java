@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.contains;
@@ -42,7 +41,7 @@ public final class Name
 
     private final String fullName;
 
-    private Name( @Nonnull String fullName )
+    private Name( String fullName )
     {
         this.fullName = validateName( Objects.requireNonNull( fullName ) );
     }
@@ -52,7 +51,6 @@ public final class Name
      *
      * @return full name.
      */
-    @Nonnull
     public String fullName()
     {
         return fullName;
@@ -65,8 +63,7 @@ public final class Name
      * @return new name instance.
      * @throws IllegalArgumentException if name is empty or contains '.'.
      */
-    @Nonnull
-    public Name child( @Nonnull String name )
+    public Name child( String name )
     {
         if ( isBlank( name ) || contains( name, SEPARATOR ) )
         {
@@ -87,7 +84,7 @@ public final class Name
      * @param namespace namespace to check
      * @return true if this name lies in the given namespace, false otherwise.
      */
-    public boolean isIn( @Nonnull String namespace )
+    public boolean isIn( String namespace )
     {
         var validated = validateName( namespace );
 
@@ -105,12 +102,12 @@ public final class Name
      * @param name name to check
      * @return true if this name lies in the given name's scope, false otherwise.
      */
-    public boolean isIn( @Nonnull Name name )
+    public boolean isIn( Name name )
     {
         return isIn( name.fullName );
     }
 
-    public boolean matches( @Nonnull String pattern )
+    public boolean matches( String pattern )
     {
         var transformed = pattern
                 .replace( ".", "\\." ) // escape dots
@@ -120,7 +117,7 @@ public final class Name
         return Pattern.matches( transformed, fullName );
     }
 
-    public boolean matches( @Nonnull List<String> patterns )
+    public boolean matches( List<String> patterns )
     {
         return patterns.stream().anyMatch( this::matches );
     }
@@ -154,8 +151,7 @@ public final class Name
         return fullName;
     }
 
-    @Nonnull
-    private static String validateName( @Nonnull String fullName )
+    private static String validateName( String fullName )
     {
         if ( isEmpty( fullName ) )
         {
@@ -176,8 +172,7 @@ public final class Name
      * @param name name.
      * @return a new name instance.
      */
-    @Nonnull
-    public static Name of( @Nonnull String name )
+    public static Name of( String name )
     {
         return new Name( name );
     }

@@ -21,15 +21,13 @@ package org.neo4j.capabilities;
 
 import java.util.Objects;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 final class CapabilityInstance<T>
 {
     private final Capability<T> capability;
     private volatile Supplier<T> value;
 
-    CapabilityInstance( @Nonnull Capability<T> capability )
+    CapabilityInstance( Capability<T> capability )
     {
         this.capability = Objects.requireNonNull( capability );
         this.value = null;
@@ -40,7 +38,6 @@ final class CapabilityInstance<T>
         return capability;
     }
 
-    @Nullable
     T get()
     {
         var localValue = value;

@@ -20,8 +20,6 @@
 package org.neo4j.logging;
 
 import java.util.function.Consumer;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * A {@link Log} implementation that discards all messages
@@ -49,67 +47,67 @@ public final class NullLog extends AbstractLog
     }
 
     @Override
-    public void debug( @Nonnull String message )
+    public void debug( String message )
     {
     }
 
     @Override
-    public void debug( @Nonnull String message, @Nonnull Throwable throwable )
+    public void debug( String message, Throwable throwable )
     {
     }
 
     @Override
-    public void debug( @Nonnull String format, @Nullable Object... arguments )
+    public void debug( String format, Object... arguments )
     {
     }
 
     @Override
-    public void info( @Nonnull String message )
+    public void info( String message )
     {
     }
 
     @Override
-    public void info( @Nonnull String message, @Nonnull Throwable throwable )
+    public void info( String message, Throwable throwable )
     {
     }
 
     @Override
-    public void info( @Nonnull String format, @Nullable Object... arguments )
+    public void info( String format, Object... arguments )
     {
     }
 
     @Override
-    public void warn( @Nonnull String message )
+    public void warn( String message )
     {
     }
 
     @Override
-    public void warn( @Nonnull String message, @Nonnull Throwable throwable )
+    public void warn( String message, Throwable throwable )
     {
     }
 
     @Override
-    public void warn( @Nonnull String format, @Nullable Object... arguments )
+    public void warn( String format, Object... arguments )
     {
     }
 
     @Override
-    public void error( @Nonnull String message )
+    public void error( String message )
     {
     }
 
     @Override
-    public void error( @Nonnull String message, @Nonnull Throwable throwable )
+    public void error( String message, Throwable throwable )
     {
     }
 
     @Override
-    public void error( @Nonnull String format, @Nullable Object... arguments )
+    public void error( String format, Object... arguments )
     {
     }
 
     @Override
-    public void bulk( @Nonnull Consumer<Log> consumer )
+    public void bulk( Consumer<Log> consumer )
     {
         consumer.accept( this );
     }

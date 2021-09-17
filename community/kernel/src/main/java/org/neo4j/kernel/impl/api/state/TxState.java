@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import javax.annotation.Nullable;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.exceptions.KernelException;
@@ -790,7 +789,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    @Nullable
     public UnmodifiableMap<ValueTuple, ? extends LongDiffSets> getIndexUpdates( SchemaDescriptor schema )
     {
         if ( indexUpdates == null )
@@ -807,7 +805,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    @Nullable
     public NavigableMap<ValueTuple, ? extends LongDiffSets> getSortedIndexUpdates( SchemaDescriptor descriptor )
     {
         if ( indexUpdates == null )

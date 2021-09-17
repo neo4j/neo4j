@@ -21,7 +21,6 @@ package org.neo4j.capabilities;
 
 import java.util.Collection;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * Defines types a capability value can have.
@@ -34,26 +33,23 @@ public class Type<T>
     private final String description;
     private final Class<T> type;
 
-    private Type( @Nonnull String name, @Nonnull String description, @Nonnull Class<T> type )
+    private Type( String name, String description, Class<T> type )
     {
         this.name = Objects.requireNonNull( name );
         this.description = Objects.requireNonNull( description );
         this.type = Objects.requireNonNull( type );
     }
 
-    @Nonnull
     String name()
     {
         return name;
     }
 
-    @Nonnull
     String description()
     {
         return this.description;
     }
 
-    @Nonnull
     Class<T> type()
     {
         return type;

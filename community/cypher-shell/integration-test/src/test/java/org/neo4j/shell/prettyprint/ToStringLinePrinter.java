@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import javax.annotation.Nonnull;
 
 public class ToStringLinePrinter implements LinePrinter
 {
@@ -37,7 +36,6 @@ public class ToStringLinePrinter implements LinePrinter
         sb.append( OutputFormatter.NEWLINE );
     }
 
-    @Nonnull
     public String result()
     {
         return sb.toString();

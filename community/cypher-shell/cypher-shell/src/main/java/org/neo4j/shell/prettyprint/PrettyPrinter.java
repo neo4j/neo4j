@@ -20,7 +20,6 @@
 package org.neo4j.shell.prettyprint;
 
 import java.util.Set;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.state.BoltResult;
@@ -39,13 +38,13 @@ public class PrettyPrinter
     private final StatisticsCollector statisticsCollector;
     private final OutputFormatter outputFormatter;
 
-    public PrettyPrinter( @Nonnull PrettyConfig prettyConfig )
+    public PrettyPrinter( PrettyConfig prettyConfig )
     {
         this.statisticsCollector = new StatisticsCollector( prettyConfig.format );
         this.outputFormatter = selectFormatter( prettyConfig );
     }
 
-    public void format( @Nonnull final BoltResult result, LinePrinter linePrinter )
+    public void format( final BoltResult result, LinePrinter linePrinter )
     {
         Set<OutputFormatter.Capabilities> capabilities = outputFormatter.capabilities();
 
@@ -74,7 +73,7 @@ public class PrettyPrinter
     }
 
     // Helper for testing
-    String format( @Nonnull final BoltResult result )
+    String format( final BoltResult result )
     {
         StringBuilder sb = new StringBuilder();
         format( result, line ->

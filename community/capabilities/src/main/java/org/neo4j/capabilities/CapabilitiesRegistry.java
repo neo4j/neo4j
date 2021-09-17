@@ -20,7 +20,6 @@
 package org.neo4j.capabilities;
 
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
 
 /**
  * Provides extension developers to declare capabilities.
@@ -34,7 +33,7 @@ public interface CapabilitiesRegistry extends Capabilities
      * @param value      the value to set.
      * @param <T>        the type of the capability value.
      */
-    <T> void set( @Nonnull Capability<T> capability, @Nonnull T value );
+    <T> void set( Capability<T> capability, T value );
 
     /**
      * Sets a capability as a dynamic value that will be evaluated on each access.
@@ -43,5 +42,5 @@ public interface CapabilitiesRegistry extends Capabilities
      * @param dynamicValue the supplier function to be evaluated to retrieve the dynamic value.
      * @param <T>          the type of the capability value.
      */
-    <T> void supply( @Nonnull Capability<T> capability, @Nonnull Supplier<T> dynamicValue );
+    <T> void supply( Capability<T> capability, Supplier<T> dynamicValue );
 }

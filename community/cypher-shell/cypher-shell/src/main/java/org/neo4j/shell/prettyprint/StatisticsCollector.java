@@ -22,7 +22,6 @@ package org.neo4j.shell.prettyprint;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.SummaryCounters;
@@ -32,12 +31,12 @@ public class StatisticsCollector
 {
     private Format format;
 
-    public StatisticsCollector( @Nonnull Format format )
+    public StatisticsCollector( Format format )
     {
         this.format = format;
     }
 
-    public String collect( @Nonnull ResultSummary summary )
+    public String collect( ResultSummary summary )
     {
         if ( Format.VERBOSE == format )
         {
@@ -49,7 +48,7 @@ public class StatisticsCollector
         }
     }
 
-    private static String collectStatistics( @Nonnull ResultSummary summary )
+    private static String collectStatistics( ResultSummary summary )
     {
         List<String> statistics = new ArrayList<>();
         SummaryCounters counters = summary.counters();

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.database;
 
-import javax.annotation.Nullable;
-
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -35,7 +33,7 @@ public interface LogEntryWriterFactory
 {
     <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel );
 
-    default <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, @Nullable KernelVersion version )
+    default <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, KernelVersion version )
     {
         return version == null ? createEntryWriter( channel ) : new LogEntryWriter<>( channel, version );
     }

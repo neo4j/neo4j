@@ -21,7 +21,6 @@ package org.neo4j.shell.commands;
 
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.CommandException;
@@ -41,41 +40,36 @@ public class History implements Command
     private final Historian historian;
     private final List<String> aliases = Collections.emptyList();
 
-    public History( @Nonnull final Logger logger, @Nonnull final Historian historian )
+    public History( final Logger logger, final Historian historian )
     {
         this.logger = logger;
         this.historian = historian;
     }
 
-    @Nonnull
     @Override
     public String getName()
     {
         return COMMAND_NAME;
     }
 
-    @Nonnull
     @Override
     public String getDescription()
     {
         return "Print a list of the last commands executed";
     }
 
-    @Nonnull
     @Override
     public String getUsage()
     {
         return "";
     }
 
-    @Nonnull
     @Override
     public String getHelp()
     {
         return "Print a list of the last commands executed.";
     }
 
-    @Nonnull
     @Override
     public List<String> getAliases()
     {
@@ -83,7 +77,7 @@ public class History implements Command
     }
 
     @Override
-    public void execute( @Nonnull String argString ) throws ExitException, CommandException
+    public void execute( String argString ) throws ExitException, CommandException
     {
         simpleArgParse( argString, 0, COMMAND_NAME, getUsage() );
 
@@ -98,7 +92,7 @@ public class History implements Command
      *
      * @param lineCount number of entries to print
      */
-    private static String printHistory( @Nonnull final List<String> history, final int lineCount )
+    private static String printHistory( final List<String> history, final int lineCount )
     {
         // for alignment, check the string length of history size
         int colWidth = Integer.toString( history.size() ).length();

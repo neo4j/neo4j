@@ -20,8 +20,6 @@
 package org.neo4j.shell.cli;
 
 import java.util.Optional;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.ShellParameterMap;
@@ -58,7 +56,7 @@ public class CliArgs
     /**
      * Set the scheme to the primary value, or if null, the fallback value.
      */
-    public void setScheme( @Nullable String primary, @Nonnull String fallback )
+    public void setScheme( String primary, String fallback )
     {
         scheme = primary == null ? fallback : primary;
     }
@@ -66,7 +64,7 @@ public class CliArgs
     /**
      * Set the host to the primary value, or if null, the fallback value.
      */
-    void setHost( @Nullable String primary, @Nonnull String fallback )
+    void setHost( String primary, String fallback )
     {
         host = primary == null ? fallback : primary;
     }
@@ -74,7 +72,7 @@ public class CliArgs
     /**
      * Set the username to the primary value, or if null, the fallback value.
      */
-    public void setUsername( @Nullable String primary, @Nonnull String fallback )
+    public void setUsername( String primary, String fallback )
     {
         username = primary == null ? fallback : primary;
     }
@@ -82,18 +80,16 @@ public class CliArgs
     /**
      * Set the password to the primary value, or if null, the fallback value.
      */
-    public void setPassword( @Nullable String primary, @Nonnull String fallback )
+    public void setPassword( String primary, String fallback )
     {
         password = primary == null ? fallback : primary;
     }
 
-    @Nonnull
     public String getScheme()
     {
         return scheme;
     }
 
-    @Nonnull
     public String getHost()
     {
         return host;
@@ -112,19 +108,16 @@ public class CliArgs
         this.port = port;
     }
 
-    @Nonnull
     public String getUsername()
     {
         return username;
     }
 
-    @Nonnull
     public String getPassword()
     {
         return password;
     }
 
-    @Nonnull
     public String getDatabase()
     {
         return databaseName;
@@ -133,12 +126,11 @@ public class CliArgs
     /**
      * Set the database to connect to.
      */
-    public void setDatabase( @Nullable String databaseName )
+    public void setDatabase( String databaseName )
     {
         this.databaseName = databaseName;
     }
 
-    @Nonnull
     public FailBehavior getFailBehavior()
     {
         return failBehavior;
@@ -147,12 +139,11 @@ public class CliArgs
     /**
      * Set the desired fail behavior
      */
-    void setFailBehavior( @Nonnull FailBehavior failBehavior )
+    void setFailBehavior( FailBehavior failBehavior )
     {
         this.failBehavior = failBehavior;
     }
 
-    @Nonnull
     public Optional<String> getCypher()
     {
         return cypher;
@@ -161,12 +152,11 @@ public class CliArgs
     /**
      * Set the specified cypher string to execute
      */
-    public void setCypher( @Nullable String cypher )
+    public void setCypher( String cypher )
     {
         this.cypher = Optional.ofNullable( cypher );
     }
 
-    @Nonnull
     public Format getFormat()
     {
         return format;
@@ -175,7 +165,7 @@ public class CliArgs
     /**
      * Set the desired format
      */
-    public void setFormat( @Nonnull Format format )
+    public void setFormat( Format format )
     {
         this.format = format;
     }

@@ -28,14 +28,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import org.neo4j.annotations.Description;
 import org.neo4j.annotations.Public;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -51,10 +48,10 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
     private final DependencyResolver resolver;
     private final Configuration config;
 
-    CapabilitiesService( @Nonnull Collection<Class<? extends CapabilityDeclaration>> declarationClasses,
-                         @Nonnull Collection<CapabilityProvider> capabilityProviders,
-                         @Nonnull Configuration config,
-                         @Nonnull DependencyResolver resolver )
+    CapabilitiesService( Collection<Class<? extends CapabilityDeclaration>> declarationClasses,
+                         Collection<CapabilityProvider> capabilityProviders,
+                         Configuration config,
+                         DependencyResolver resolver )
     {
         this.capabilities =
                 getDeclaredCapabilities( Objects.requireNonNull( declarationClasses ) )
@@ -79,13 +76,13 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public <T> T get( @Nonnull Capability<T> capability )
+    public <T> T get( Capability<T> capability )
     {
         return (T) get( capability.name() );
     }
 
     @Override
-    public Object get( @Nonnull Name name )
+    public Object get( Name name )
     {
         // check if it's blocked
         if ( name.matches( config.get( CapabilitiesSettings.dbms_capabilities_blocked ) ) )
@@ -103,7 +100,7 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public <T> void set( @Nonnull Capability<T> capability, @Nonnull T value )
+    public <T> void set( Capability<T> capability, T value )
     {
         var instance = (CapabilityInstance<T>) capabilities.getOrDefault( capability.name(), null );
         if ( instance == null )
@@ -115,7 +112,7 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public <T> void supply( @Nonnull Capability<T> capability, @Nonnull Supplier<T> dynamicValue )
+    public <T> void supply( Capability<T> capability, Supplier<T> dynamicValue )
     {
         var instance = (CapabilityInstance<T>) capabilities.getOrDefault( capability.name(), null );
         if ( instance == null )
@@ -150,13 +147,13 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
     private class UnmodifiableCapabilities implements Capabilities
     {
         @Override
-        public <T> T get( @Nonnull Capability<T> capability )
+        public <T> T get( Capability<T> capability )
         {
             return CapabilitiesService.this.get( capability );
         }
 
         @Override
-        public Object get( @Nonnull Name name )
+        public Object get( Name name )
         {
             return CapabilitiesService.this.get( name );
         }
@@ -167,25 +164,25 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
     {
         private final String namespace;
 
-        private NamespaceAwareCapabilityRegistry( @Nonnull String namespace )
+        private NamespaceAwareCapabilityRegistry( String namespace )
         {
             this.namespace = Objects.requireNonNull( namespace );
         }
 
         @Override
-        public <T> T get( @Nonnull Capability<T> capability )
+        public <T> T get( Capability<T> capability )
         {
             return CapabilitiesService.this.get( capability );
         }
 
         @Override
-        public Object get( @Nonnull Name name )
+        public Object get( Name name )
         {
             return CapabilitiesService.this.get( name );
         }
 
         @Override
-        public <T> void set( @Nonnull Capability<T> capability, @Nonnull T value )
+        public <T> void set( Capability<T> capability, T value )
         {
             if ( !capability.name().isIn( namespace ) )
             {
@@ -197,7 +194,7 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
         }
 
         @Override
-        public <T> void supply( @Nonnull Capability<T> capability, @Nonnull Supplier<T> dynamicValue )
+        public <T> void supply( Capability<T> capability, Supplier<T> dynamicValue )
         {
             if ( !capability.name().isIn( namespace ) )
             {

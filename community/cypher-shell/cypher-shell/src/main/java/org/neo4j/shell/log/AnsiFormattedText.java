@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * A piece of text which can be rendered with Ansi format codes.
@@ -69,7 +67,7 @@ public class AnsiFormattedText
      * @param string to start with, may be null in which case it is ignored
      * @return a new instance containing the unformatted text in string, or empty if it was null
      */
-    public static AnsiFormattedText from( @Nullable String string )
+    public static AnsiFormattedText from( String string )
     {
         AnsiFormattedText st = new AnsiFormattedText();
         if ( string != null )
@@ -82,7 +80,6 @@ public class AnsiFormattedText
     /**
      * @return the text as a string including possible formatting, ready for ANSI formatting
      */
-    @Nonnull
     public String formattedString()
     {
         StringBuilder sb = new StringBuilder();
@@ -121,7 +118,6 @@ public class AnsiFormattedText
     /**
      * @return the text as a string rendered with ANSI escape codes
      */
-    @Nonnull
     public String renderedString()
     {
         return Ansi.ansi().render( formattedString() ).toString();
@@ -130,7 +126,6 @@ public class AnsiFormattedText
     /**
      * @return the text as a plain string without any formatting
      */
-    @Nonnull
     public String plainString()
     {
         StringBuilder sb = new StringBuilder();

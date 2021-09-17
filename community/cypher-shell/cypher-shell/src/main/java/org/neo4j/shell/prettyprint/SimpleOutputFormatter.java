@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -39,7 +38,7 @@ public class SimpleOutputFormatter implements OutputFormatter
 {
 
     @Override
-    public int formatAndCount( @Nonnull BoltResult result, @Nonnull LinePrinter output )
+    public int formatAndCount( BoltResult result, LinePrinter output )
     {
         Iterator<Record> records = result.iterate();
         int numberOfRows = 0;
@@ -58,15 +57,13 @@ public class SimpleOutputFormatter implements OutputFormatter
         return numberOfRows;
     }
 
-    @Nonnull
-    private String formatRecord( @Nonnull final Record record )
+    private String formatRecord( final Record record )
     {
         return record.values().stream().map( this::formatValue ).collect( Collectors.joining( COMMA_SEPARATOR ) );
     }
 
-    @Nonnull
     @Override
-    public String formatInfo( @Nonnull ResultSummary summary )
+    public String formatInfo( ResultSummary summary )
     {
         if ( !summary.hasPlan() )
         {

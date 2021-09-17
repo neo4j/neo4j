@@ -33,7 +33,6 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nonnull;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DiscoveryException;
@@ -687,14 +686,14 @@ class InteractiveShellRunnerTest
     {
         private final AtomicReference<Thread> executionThread = new AtomicReference<>();
 
-        FakeInterruptableShell( @Nonnull Logger logger,
-                                @Nonnull BoltStateHandler boltStateHandler )
+        FakeInterruptableShell( Logger logger,
+                                BoltStateHandler boltStateHandler )
         {
             super( logger, boltStateHandler, mock( PrettyPrinter.class ), new ShellParameterMap() );
         }
 
         @Override
-        public void execute( @Nonnull String statement ) throws ExitException, CommandException
+        public void execute( String statement ) throws ExitException, CommandException
         {
             try
             {

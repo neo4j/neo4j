@@ -22,8 +22,6 @@ package org.neo4j.logging.internal;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.logging.Log;
 
@@ -64,7 +62,7 @@ public class CappedLogger
         this.timeLimitMillis = unit.toMillis( requirePositive( time ) );
     }
 
-    public void debug( @Nonnull String msg )
+    public void debug( String msg )
     {
         if ( checkExpiredAndSetLastCheckTime() )
         {
@@ -72,7 +70,7 @@ public class CappedLogger
         }
     }
 
-    public void debug( @Nonnull String msg, @Nonnull Throwable cause )
+    public void debug( String msg, Throwable cause )
     {
         if ( checkExpiredAndSetLastCheckTime() )
         {
@@ -80,7 +78,7 @@ public class CappedLogger
         }
     }
 
-    public void info( @Nonnull String msg, @Nullable Object... arguments )
+    public void info( String msg, Object... arguments )
     {
         if ( checkExpiredAndSetLastCheckTime() )
         {
@@ -88,7 +86,7 @@ public class CappedLogger
         }
     }
 
-    public void info( @Nonnull String msg, @Nonnull Throwable cause )
+    public void info( String msg, Throwable cause )
     {
         if ( checkExpiredAndSetLastCheckTime() )
         {
@@ -96,7 +94,7 @@ public class CappedLogger
         }
     }
 
-    public void warn( @Nonnull String msg )
+    public void warn( String msg )
     {
         if ( checkExpiredAndSetLastCheckTime() )
         {
@@ -104,7 +102,7 @@ public class CappedLogger
         }
     }
 
-    public void warn( @Nonnull String msg, @Nonnull Throwable cause )
+    public void warn( String msg, Throwable cause )
     {
         if ( checkExpiredAndSetLastCheckTime() )
         {
@@ -112,7 +110,7 @@ public class CappedLogger
         }
     }
 
-    public void warn( @Nonnull String msg, @Nullable Object... arguments )
+    public void warn( String msg, Object... arguments )
     {
         if ( checkExpiredAndSetLastCheckTime() )
         {
@@ -120,7 +118,7 @@ public class CappedLogger
         }
     }
 
-    public void error( @Nonnull String msg )
+    public void error( String msg )
     {
         if ( checkExpiredAndSetLastCheckTime() )
         {
@@ -128,7 +126,7 @@ public class CappedLogger
         }
     }
 
-    public void error( @Nonnull String msg, @Nonnull Throwable cause )
+    public void error( String msg, Throwable cause )
     {
         if ( checkExpiredAndSetLastCheckTime() )
         {

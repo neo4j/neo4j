@@ -22,7 +22,6 @@ package org.neo4j.shell;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 /**
  * An object which keeps a record of past commands
@@ -31,8 +30,7 @@ public interface Historian
 {
     Historian empty = new Historian()
     {
-        @Nonnull
-        @Override
+            @Override
         public List<String> getHistory()
         {
             return new ArrayList<>();
@@ -47,7 +45,6 @@ public interface Historian
     /**
      * @return a list of all past commands in the history, in order of execution (first command sorted first).
      */
-    @Nonnull
     List<String> getHistory();
 
     /**

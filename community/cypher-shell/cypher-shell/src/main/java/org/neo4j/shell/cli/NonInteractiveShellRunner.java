@@ -23,7 +23,6 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.ShellRunner;
@@ -43,17 +42,16 @@ public class NonInteractiveShellRunner implements ShellRunner
 {
 
     private final FailBehavior failBehavior;
-    @Nonnull
     private final StatementExecuter executer;
     private final Logger logger;
     private final StatementParser statementParser;
     private final InputStream inputStream;
 
-    public NonInteractiveShellRunner( @Nonnull FailBehavior failBehavior,
-                                      @Nonnull StatementExecuter executer,
-                                      @Nonnull Logger logger,
-                                      @Nonnull StatementParser statementParser,
-                                      @Nonnull InputStream inputStream )
+    public NonInteractiveShellRunner( FailBehavior failBehavior,
+                                      StatementExecuter executer,
+                                      Logger logger,
+                                      StatementParser statementParser,
+                                      InputStream inputStream )
     {
         this.failBehavior = failBehavior;
         this.executer = executer;
@@ -108,7 +106,6 @@ public class NonInteractiveShellRunner implements ShellRunner
         return exitCode;
     }
 
-    @Nonnull
     @Override
     public Historian getHistorian()
     {

@@ -21,7 +21,6 @@ package org.neo4j.shell.commands;
 
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.AnsiFormattedText;
@@ -39,41 +38,36 @@ public class Help implements Command
     private final Logger logger;
     private final CommandHelper commandHelper;
 
-    public Help( @Nonnull final Logger shell, @Nonnull final CommandHelper commandHelper )
+    public Help( final Logger shell, final CommandHelper commandHelper )
     {
         this.logger = shell;
         this.commandHelper = commandHelper;
     }
 
-    @Nonnull
     @Override
     public String getName()
     {
         return COMMAND_NAME;
     }
 
-    @Nonnull
     @Override
     public String getDescription()
     {
         return "Show this help message";
     }
 
-    @Nonnull
     @Override
     public String getUsage()
     {
         return "[command]";
     }
 
-    @Nonnull
     @Override
     public String getHelp()
     {
         return "Show the list of available commands or help for a specific command.";
     }
 
-    @Nonnull
     @Override
     public List<String> getAliases()
     {
@@ -81,7 +75,7 @@ public class Help implements Command
     }
 
     @Override
-    public void execute( @Nonnull final String argString ) throws CommandException
+    public void execute( final String argString ) throws CommandException
     {
         String[] args = simpleArgParse( argString, 0, 1, COMMAND_NAME, getUsage() );
         if ( args.length == 0 )
@@ -94,7 +88,7 @@ public class Help implements Command
         }
     }
 
-    private void printHelpFor( @Nonnull final String name ) throws CommandException
+    private void printHelpFor( final String name ) throws CommandException
     {
         Command cmd = commandHelper.getCommand( name );
         if ( cmd == null && !name.startsWith( ":" ) )

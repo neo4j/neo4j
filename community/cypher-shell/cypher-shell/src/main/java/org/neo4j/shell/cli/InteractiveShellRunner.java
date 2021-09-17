@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.DatabaseManager;
@@ -65,36 +64,27 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
     // being called from different thread
     private final AtomicBoolean currentlyExecuting;
 
-    @Nonnull
     private final Logger logger;
-    @Nonnull
     private final ConsoleReader reader;
-    @Nonnull
     private final Historian historian;
-    @Nonnull
     private final StatementParser statementParser;
-    @Nonnull
     private final TransactionHandler txHandler;
-    @Nonnull
     private final DatabaseManager databaseManager;
-    @Nonnull
     private final StatementExecuter executer;
-    @Nonnull
     private final UserMessagesHandler userMessagesHandler;
-    @Nonnull
     private final ConnectionConfig connectionConfig;
 
     private AnsiFormattedText continuationPrompt;
 
-    public InteractiveShellRunner( @Nonnull StatementExecuter executer,
-                                   @Nonnull TransactionHandler txHandler,
-                                   @Nonnull DatabaseManager databaseManager,
-                                   @Nonnull Logger logger,
-                                   @Nonnull StatementParser statementParser,
-                                   @Nonnull InputStream inputStream,
-                                   @Nonnull File historyFile,
-                                   @Nonnull UserMessagesHandler userMessagesHandler,
-                                   @Nonnull ConnectionConfig connectionConfig ) throws IOException
+    public InteractiveShellRunner( StatementExecuter executer,
+                                   TransactionHandler txHandler,
+                                   DatabaseManager databaseManager,
+                                   Logger logger,
+                                   StatementParser statementParser,
+                                   InputStream inputStream,
+                                   File historyFile,
+                                   UserMessagesHandler userMessagesHandler,
+                                   ConnectionConfig connectionConfig ) throws IOException
     {
         this.userMessagesHandler = userMessagesHandler;
         this.currentlyExecuting = new AtomicBoolean( false );
@@ -111,8 +101,8 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
         Signal.handle( new Signal( INTERRUPT_SIGNAL ), this );
     }
 
-    private static ConsoleReader setupConsoleReader( @Nonnull Logger logger,
-            @Nonnull InputStream inputStream ) throws IOException
+    private static ConsoleReader setupConsoleReader( Logger logger,
+            InputStream inputStream ) throws IOException
     {
         ConsoleReader reader = new ConsoleReader( inputStream, logger.getOutputStream() );
         // Disable expansion of bangs: !
@@ -164,7 +154,6 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
         return exitCode;
     }
 
-    @Nonnull
     @Override
     public Historian getHistorian()
     {
@@ -178,7 +167,6 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
      * @throws IOException
      * @throws NoMoreInputException
      */
-    @Nonnull
     public List<String> readUntilStatement() throws IOException, NoMoreInputException
     {
         while ( true )

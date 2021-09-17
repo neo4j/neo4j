@@ -35,7 +35,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nonnull;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.CommandFailedException;
@@ -85,7 +84,6 @@ public class DiagnosticsReportCommandTest
         {
         }
 
-        @Nonnull
         @Override
         protected List<DiagnosticsReportSource> provideSources( Set<String> classifiers )
         {

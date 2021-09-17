@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -233,7 +231,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public ConnectionConfig connect( @Nonnull ConnectionConfig connectionConfig, ThrowingAction<CommandException> command ) throws CommandException
+    public ConnectionConfig connect( ConnectionConfig connectionConfig, ThrowingAction<CommandException> command ) throws CommandException
     {
         if ( isConnected() )
         {
@@ -400,7 +398,6 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         };
     }
 
-    @Nonnull
     @Override
     public String getServerVersion()
     {
@@ -420,7 +417,6 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         }
     }
 
-    @Nonnull
     @Override
     public String getProtocolVersion()
     {
@@ -437,9 +433,8 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         return "";
     }
 
-    @Nonnull
-    public Optional<BoltResult> runCypher( @Nonnull String cypher,
-                                           @Nonnull Map<String, Object> queryParams ) throws CommandException
+    public Optional<BoltResult> runCypher( String cypher,
+                                           Map<String, Object> queryParams ) throws CommandException
     {
         if ( !isConnected() )
         {
@@ -468,12 +463,12 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         }
     }
 
-    public void updateActualDbName( @Nonnull ResultSummary resultSummary )
+    public void updateActualDbName( ResultSummary resultSummary )
     {
         actualDatabaseNameAsReportedByServer = getActualDbName( resultSummary );
     }
 
-    public void changePassword( @Nonnull ConnectionConfig connectionConfig )
+    public void changePassword( ConnectionConfig connectionConfig )
     {
         if ( !connectionConfig.passwordChangeRequired() )
         {
@@ -549,8 +544,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     /**
      * @throws SessionExpiredException when server no longer serves writes anymore
      */
-    @Nonnull
-    private Optional<BoltResult> getBoltResult( @Nonnull String cypher, @Nonnull Map<String, Object> queryParams ) throws SessionExpiredException
+    private Optional<BoltResult> getBoltResult( String cypher, Map<String, Object> queryParams ) throws SessionExpiredException
     {
         Result statementResult;
 
@@ -571,7 +565,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         return Optional.of( new StatementBoltResult( statementResult ) );
     }
 
-    private static String getActualDbName( @Nonnull ResultSummary resultSummary )
+    private static String getActualDbName( ResultSummary resultSummary )
     {
         DatabaseInfo dbInfo = resultSummary.database();
         return dbInfo.name() == null ? ABSENT_DB_NAME : dbInfo.name();
@@ -633,7 +627,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         protocolVersion = null;
     }
 
-    private Driver getDriver( @Nonnull ConnectionConfig connectionConfig, @Nullable AuthToken authToken )
+    private Driver getDriver( ConnectionConfig connectionConfig, AuthToken authToken )
     {
         Config.ConfigBuilder configBuilder = Config.builder()
                                                    .withLogging( NullLogging.NULL_LOGGING )

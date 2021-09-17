@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
@@ -126,43 +125,38 @@ class HelpTest
             this.name = name;
         }
 
-        @Nonnull
-        @Override
+            @Override
         public String getName()
         {
             return name;
         }
 
-        @Nonnull
-        @Override
+            @Override
         public String getDescription()
         {
             return "description for " + name;
         }
 
-        @Nonnull
-        @Override
+            @Override
         public String getUsage()
         {
             return "usage for " + name;
         }
 
-        @Nonnull
-        @Override
+            @Override
         public String getHelp()
         {
             return "help for " + name;
         }
 
-        @Nonnull
-        @Override
+            @Override
         public List<String> getAliases()
         {
             return Collections.emptyList();
         }
 
         @Override
-        public void execute( @Nonnull String args ) throws ExitException, CommandException
+        public void execute( String args ) throws ExitException, CommandException
         {
 
         }

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -55,42 +54,36 @@ public interface OutputFormatter
     String NEWLINE = System.getProperty( "line.separator" );
     List<String> INFO_SUMMARY = asList( "Version", "Planner", "Runtime" );
 
-    @Nonnull
-    static String collectNodeLabels( @Nonnull Node node )
+    static String collectNodeLabels( Node node )
     {
         StringBuilder sb = new StringBuilder();
         node.labels().forEach( label -> sb.append( COLON ).append( escape( label ) ) );
         return sb.toString();
     }
 
-    @Nonnull
-    static String listAsString( @Nonnull List<String> list )
+    static String listAsString( List<String> list )
     {
         return list.stream().collect( Collectors.joining( COMMA_SEPARATOR, "[", "]" ) );
     }
 
-    @Nonnull
-    static String mapAsStringWithEmpty( @Nonnull Map<String, Object> map )
+    static String mapAsStringWithEmpty( Map<String, Object> map )
     {
         return map.isEmpty() ? "" : mapAsString( map );
     }
 
-    @Nonnull
-    static String mapAsString( @Nonnull Map<String, Object> map )
+    static String mapAsString( Map<String, Object> map )
     {
         return map.entrySet().stream()
                   .map( e -> escape( e.getKey() ) + COLON_SEPARATOR + e.getValue() )
                   .collect( Collectors.joining( COMMA_SEPARATOR, "{", "}" ) );
     }
 
-    @Nonnull
-    static String joinWithSpace( @Nonnull List<String> strings )
+    static String joinWithSpace( List<String> strings )
     {
         return strings.stream().filter( OutputFormatter::isNotBlank ).collect( Collectors.joining( SPACE ) );
     }
 
-    @Nonnull
-    static String joinNonBlanks( @Nonnull String delim, @Nonnull List<String> strings )
+    static String joinNonBlanks( String delim, List<String> strings )
     {
         return strings.stream().filter( OutputFormatter::isNotBlank ).collect( Collectors.joining( delim ) );
     }
@@ -100,7 +93,6 @@ public interface OutputFormatter
         return string != null && !string.trim().isEmpty();
     }
 
-    @Nonnull
     static String repeat( char c, int times )
     {
         char[] chars = new char[times];
@@ -108,8 +100,7 @@ public interface OutputFormatter
         return String.valueOf( chars );
     }
 
-    @Nonnull
-    static String repeat( @Nonnull String c, int times )
+    static String repeat( String c, int times )
     {
         StringBuilder sb = new StringBuilder( times * c.length() );
         for ( int i = 0; i < times; i++ )
@@ -119,14 +110,12 @@ public interface OutputFormatter
         return sb.toString();
     }
 
-    @Nonnull
-    static String rightPad( @Nonnull String str, int width )
+    static String rightPad( String str, int width )
     {
         return rightPad( str, width, ' ' );
     }
 
-    @Nonnull
-    static String rightPad( @Nonnull String str, int width, char c )
+    static String rightPad( String str, int width, char c )
     {
         int actualSize = str.length();
         if ( actualSize > width )
@@ -143,8 +132,7 @@ public interface OutputFormatter
         }
     }
 
-    @Nonnull
-    static Map<String, Value> info( @Nonnull ResultSummary summary )
+    static Map<String, Value> info( ResultSummary summary )
     {
         Map<String, Value> result = new LinkedHashMap<>();
         if ( !summary.hasPlan() )
@@ -180,16 +168,15 @@ public interface OutputFormatter
         return result;
     }
 
-    static long collectHits( @Nonnull ProfiledPlan operator )
+    static long collectHits( ProfiledPlan operator )
     {
         long hits = operator.dbHits();
         hits = operator.children().stream().map( OutputFormatter::collectHits ).reduce( hits, Long::sum );
         return hits;
     }
 
-    int formatAndCount( @Nonnull BoltResult result, @Nonnull LinePrinter linePrinter );
+    int formatAndCount( BoltResult result, LinePrinter linePrinter );
 
-    @Nonnull
     default String formatValue( final Value value )
     {
         if ( value == null )
@@ -231,7 +218,6 @@ public interface OutputFormatter
         }
     }
 
-    @Nonnull
     default String pointAsString( Point point )
     {
         StringBuilder stringBuilder = new StringBuilder( "point({" );
@@ -247,8 +233,7 @@ public interface OutputFormatter
         return stringBuilder.toString();
     }
 
-    @Nonnull
-    default String pathAsString( @Nonnull Path path )
+    default String pathAsString( Path path )
     {
         List<String> list = new ArrayList<>( path.length() );
         Node lastTraversed = path.start();
@@ -275,8 +260,7 @@ public interface OutputFormatter
         return String.join( "", list );
     }
 
-    @Nonnull
-    default String relationshipAsString( @Nonnull Relationship relationship )
+    default String relationshipAsString( Relationship relationship )
     {
         List<String> relationshipAsString = new ArrayList<>();
         relationshipAsString.add( COLON + escape( relationship.type() ) );
@@ -285,8 +269,7 @@ public interface OutputFormatter
         return "[" + joinWithSpace( relationshipAsString ) + "]";
     }
 
-    @Nonnull
-    default String nodeAsString( @Nonnull final Node node )
+    default String nodeAsString( final Node node )
     {
         List<String> nodeAsString = new ArrayList<>();
         nodeAsString.add( collectNodeLabels( node ) );
@@ -295,20 +278,17 @@ public interface OutputFormatter
         return "(" + joinWithSpace( nodeAsString ) + ")";
     }
 
-    @Nonnull
-    default String formatPlan( @Nonnull ResultSummary summary )
+    default String formatPlan( ResultSummary summary )
     {
         return "";
     }
 
-    @Nonnull
-    default String formatInfo( @Nonnull ResultSummary summary )
+    default String formatInfo( ResultSummary summary )
     {
         return "";
     }
 
-    @Nonnull
-    default String formatFooter( @Nonnull BoltResult result, int numberOfRows )
+    default String formatFooter( BoltResult result, int numberOfRows )
     {
         return "";
     }

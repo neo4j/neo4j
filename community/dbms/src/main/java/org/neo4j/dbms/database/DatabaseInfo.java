@@ -23,8 +23,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -78,7 +76,6 @@ public class DatabaseInfo
         return Optional.ofNullable( serverId );
     }
 
-    @Nullable
     public ServerId rawServerId()
     {
         return serverId;

@@ -19,15 +19,13 @@
  */
 package org.neo4j.shell.cli;
 
-import javax.annotation.Nonnull;
-
 public enum Encryption
 {
     TRUE,
     FALSE,
     DEFAULT;
 
-    public static Encryption parse( @Nonnull String format )
+    public static Encryption parse( String format )
     {
         if ( format.equalsIgnoreCase( TRUE.name() ) )
         {

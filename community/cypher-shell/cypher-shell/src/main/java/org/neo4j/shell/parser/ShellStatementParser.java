@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 
 /**
  * A cypher aware parser which can detect shell commands (:prefixed) or cypher.
@@ -60,7 +59,7 @@ public class ShellStatementParser implements StatementParser
      * @param line to parse (including ending newline)
      */
     @Override
-    public void parseMoreText( @Nonnull String line )
+    public void parseMoreText( String line )
     {
         // See if it could possibly be a shell command, only valid if not in a current statement
         if ( statementNotStarted() && SHELL_CMD_PATTERN.matcher( line ).find() )
@@ -230,7 +229,6 @@ public class ShellStatementParser implements StatementParser
      * @param last  character
      * @return the matching right delimiter or something empty if not the start of a quote/comment
      */
-    @Nonnull
     private static Optional<String> getRightDelimiter( char first, char last )
     {
         // double characters
@@ -270,7 +268,6 @@ public class ShellStatementParser implements StatementParser
         return !parsedStatements.isEmpty();
     }
 
-    @Nonnull
     @Override
     public List<String> consumeStatements()
     {
@@ -279,7 +276,6 @@ public class ShellStatementParser implements StatementParser
         return result;
     }
 
-    @Nonnull
     @Override
     public Optional<String> incompleteStatement()
     {

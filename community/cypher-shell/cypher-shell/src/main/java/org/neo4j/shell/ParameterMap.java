@@ -20,7 +20,6 @@
 package org.neo4j.shell;
 
 import java.util.Map;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.exception.ParameterException;
 import org.neo4j.shell.state.ParamValue;
@@ -35,17 +34,15 @@ public interface ParameterMap
      * @param valueString to interpret the value from
      * @return the evaluated value
      */
-    Object setParameter( @Nonnull String name, @Nonnull String valueString ) throws ParameterException;
+    Object setParameter( String name, String valueString ) throws ParameterException;
 
     /**
      * @return map of all currently set variables and their values
      */
-    @Nonnull
     Map<String, Object> allParameterValues();
 
     /**
      * @return map of all currently set variables and their values corresponding to the user valueString
      */
-    @Nonnull
     Map<String, ParamValue> getAllAsUserInput();
 }

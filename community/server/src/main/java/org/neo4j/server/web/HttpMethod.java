@@ -21,7 +21,6 @@ package org.neo4j.server.web;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 import static java.util.Collections.unmodifiableMap;
 
@@ -39,7 +38,6 @@ public enum HttpMethod
 
     private static final Map<String,HttpMethod> methodsByName = indexMethodsByName();
 
-    @Nullable
     public static HttpMethod valueOfOrNull( String name )
     {
         return methodsByName.get( name );

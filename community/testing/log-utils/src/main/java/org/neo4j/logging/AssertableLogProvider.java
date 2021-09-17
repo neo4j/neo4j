@@ -27,8 +27,6 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.logging.log4j.Neo4jLogMessage;
 
@@ -209,73 +207,73 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
 
         @Override
-        public void debug( @Nonnull String message )
+        public void debug( String message )
         {
             logCalls.add( new LogCall( context, Level.DEBUG, message, null, null ) );
         }
 
         @Override
-        public void debug( @Nonnull String message, @Nonnull Throwable throwable )
+        public void debug( String message, Throwable throwable )
         {
             logCalls.add( new LogCall( context, Level.DEBUG, message, null, throwable ) );
         }
 
         @Override
-        public void debug( @Nonnull String format, @Nullable Object... arguments )
+        public void debug( String format, Object... arguments )
         {
             logCalls.add( new LogCall( context, Level.DEBUG, format, arguments, null ) );
         }
 
         @Override
-        public void info( @Nonnull String message )
+        public void info( String message )
         {
             logCalls.add( new LogCall( context, Level.INFO, message, null, null ) );
         }
 
         @Override
-        public void info( @Nonnull String message, @Nonnull Throwable throwable )
+        public void info( String message, Throwable throwable )
         {
             logCalls.add( new LogCall( context, Level.INFO, message, null, throwable ) );
         }
 
         @Override
-        public void info( @Nonnull String format, @Nullable Object... arguments )
+        public void info( String format, Object... arguments )
         {
             logCalls.add( new LogCall( context, Level.INFO, format, arguments, null ) );
         }
 
         @Override
-        public void warn( @Nonnull String message )
+        public void warn( String message )
         {
             logCalls.add( new LogCall( context, Level.WARN, message, null, null ) );
         }
 
         @Override
-        public void warn( @Nonnull String message, @Nonnull Throwable throwable )
+        public void warn( String message, Throwable throwable )
         {
             logCalls.add( new LogCall( context, Level.WARN, message, null, throwable ) );
         }
 
         @Override
-        public void warn( @Nonnull String format, @Nullable Object... arguments )
+        public void warn( String format, Object... arguments )
         {
             logCalls.add( new LogCall( context, Level.WARN, format, arguments, null ) );
         }
 
         @Override
-        public void error( @Nonnull String message )
+        public void error( String message )
         {
             logCalls.add( new LogCall( context, Level.ERROR, message, null, null ) );
         }
 
         @Override
-        public void error( @Nonnull String message, @Nonnull Throwable throwable )
+        public void error( String message, Throwable throwable )
         {
             logCalls.add( new LogCall( context, Level.ERROR, message, null, throwable ) );
         }
 
         @Override
-        public void error( @Nonnull String format, @Nullable Object... arguments )
+        public void error( String format, Object... arguments )
         {
             logCalls.add( new LogCall( context, Level.ERROR, format, arguments, null ) );
         }
@@ -311,7 +309,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
 
         @Override
-        public void bulk( @Nonnull Consumer<Log> consumer )
+        public void bulk( Consumer<Log> consumer )
         {
             consumer.accept( this );
         }

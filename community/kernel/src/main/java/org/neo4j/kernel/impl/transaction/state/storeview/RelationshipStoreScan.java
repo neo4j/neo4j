@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.function.Function;
 import java.util.function.IntPredicate;
-import javax.annotation.Nullable;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -51,8 +50,8 @@ public class RelationshipStoreScan extends PropertyAwareEntityStoreScan<StorageR
     private static final String TRACER_TAG = "RelationshipStoreScan_getRelationshipCount";
 
     public RelationshipStoreScan( Config config, StorageReader storageReader, Function<CursorContext,StoreCursors> storeCursorsFactory, LockService locks,
-            @Nullable TokenScanConsumer relationshipTypeScanConsumer,
-            @Nullable PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer relationshipTypeScanConsumer,
+            PropertyScanConsumer propertyScanConsumer,
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
             JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {

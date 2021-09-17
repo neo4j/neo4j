@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell;
 
-import javax.annotation.Nonnull;
-
 import org.neo4j.shell.cli.Encryption;
 
 public class ConnectionConfig
@@ -38,13 +36,13 @@ public class ConnectionConfig
     private String newPassword;
     private String database;
 
-    public ConnectionConfig( @Nonnull String scheme,
-                             @Nonnull String host,
+    public ConnectionConfig( String scheme,
+                             String host,
                              int port,
-                             @Nonnull String username,
-                             @Nonnull String password,
+                             String username,
+                             String password,
                              Encryption encryption,
-                             @Nonnull String database )
+                             String database )
     {
         this.host = host;
         this.port = port;
@@ -58,8 +56,7 @@ public class ConnectionConfig
     /**
      * @return preferredValue if not empty, else the contents of the fallback environment variable
      */
-    @Nonnull
-    private static String fallbackToEnvVariable( @Nonnull String preferredValue, @Nonnull String fallbackEnvVar )
+    private static String fallbackToEnvVariable( String preferredValue, String fallbackEnvVar )
     {
         String result = System.getenv( fallbackEnvVar );
         if ( result == null || !preferredValue.isEmpty() )
@@ -69,13 +66,11 @@ public class ConnectionConfig
         return result;
     }
 
-    @Nonnull
     public String scheme()
     {
         return scheme;
     }
 
-    @Nonnull
     public String host()
     {
         return host;
@@ -86,13 +81,11 @@ public class ConnectionConfig
         return port;
     }
 
-    @Nonnull
     public String username()
     {
         return username;
     }
 
-    @Nonnull
     public String password()
     {
         return password;
@@ -103,30 +96,27 @@ public class ConnectionConfig
         return newPassword;
     }
 
-    @Nonnull
     public String driverUrl()
     {
         return String.format( "%s://%s:%d", scheme(), host(), port() );
     }
 
-    @Nonnull
     public Encryption encryption()
     {
         return encryption;
     }
 
-    @Nonnull
     public String database()
     {
         return database;
     }
 
-    public void setUsername( @Nonnull String username )
+    public void setUsername( String username )
     {
         this.username = username;
     }
 
-    public void setPassword( @Nonnull String password )
+    public void setPassword( String password )
     {
         this.password = password;
     }

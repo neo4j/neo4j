@@ -1041,7 +1041,7 @@ public class Config implements Configuration
             {
                 throw new IllegalArgumentException( "Could not create instance with id: " + id, e );
             }
-            String msg = format( "'%s' must have a ( @Nullable String ) constructor, be static & non-abstract", cls.getSimpleName() );
+            String msg = format( "'%s' must have a ( String ) constructor, be static & non-abstract", cls.getSimpleName() );
             throw new RuntimeException( msg, e );
         }
     }

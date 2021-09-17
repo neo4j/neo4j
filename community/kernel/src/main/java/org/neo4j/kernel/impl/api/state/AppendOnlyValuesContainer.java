@@ -33,7 +33,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.ArrayUtil;
@@ -147,7 +146,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
     }
 
     @Override
-    public long add( @Nonnull Value value )
+    public long add( Value value )
     {
         assertNotClosed();
         requireNonNull( value, "value cannot be null" );
@@ -162,7 +161,6 @@ public class AppendOnlyValuesContainer implements ValuesContainer
         return ref;
     }
 
-    @Nonnull
     @Override
     public Value get( long ref )
     {
@@ -182,7 +180,6 @@ public class AppendOnlyValuesContainer implements ValuesContainer
         return type.getReader().read( chunk, offset );
     }
 
-    @Nonnull
     @Override
     public Value remove( long ref )
     {

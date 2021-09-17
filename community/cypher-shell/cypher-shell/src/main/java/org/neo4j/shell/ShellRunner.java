@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.FileHistorian;
@@ -58,11 +57,10 @@ public interface ShellRunner
      * @return a ShellRunner
      * @throws IOException
      */
-    @Nonnull
-    static ShellRunner getShellRunner( @Nonnull CliArgs cliArgs,
-                                       @Nonnull CypherShell cypherShell,
-                                       @Nonnull Logger logger,
-                                       @Nonnull ConnectionConfig connectionConfig ) throws IOException
+    static ShellRunner getShellRunner( CliArgs cliArgs,
+                                       CypherShell cypherShell,
+                                       Logger logger,
+                                       ConnectionConfig connectionConfig ) throws IOException
     {
         if ( shouldBeInteractive( cliArgs ) )
         {
@@ -83,7 +81,7 @@ public interface ShellRunner
      * @param cliArgs
      * @return true if an interactive shellrunner should be used, false otherwise
      */
-    static boolean shouldBeInteractive( @Nonnull CliArgs cliArgs )
+    static boolean shouldBeInteractive( CliArgs cliArgs )
     {
         if ( cliArgs.getNonInteractive() || cliArgs.getInputFilename() != null )
         {
@@ -209,6 +207,5 @@ public interface ShellRunner
     /**
      * @return an object which can provide the history of commands executed
      */
-    @Nonnull
     Historian getHistorian();
 }

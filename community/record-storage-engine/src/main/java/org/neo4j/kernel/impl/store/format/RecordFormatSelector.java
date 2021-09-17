@@ -26,8 +26,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -87,7 +85,6 @@ public class RecordFormatSelector
      *
      * @return default record format.
      */
-    @Nonnull
     public static RecordFormats defaultFormat()
     {
         return DEFAULT_FORMAT;
@@ -100,7 +97,6 @@ public class RecordFormatSelector
      * @return record formats
      * @throws IllegalArgumentException if format for specified store version not found
      */
-    @Nonnull
     public static RecordFormats selectForVersion( String storeVersion )
     {
         for ( RecordFormats format : allFormats() )
@@ -124,7 +120,6 @@ public class RecordFormatSelector
      * @return selected record format
      * @throws IllegalArgumentException if requested format not found
      */
-    @Nonnull
     public static RecordFormats selectForConfig( Config config, LogProvider logProvider )
     {
         String recordFormat = configuredRecordFormat( config );
@@ -150,7 +145,6 @@ public class RecordFormatSelector
      * @return record format of the given store or <code>null</code> if {@link RecordDatabaseLayout#metadataStore()} file not
      * found or can't be read
      */
-    @Nullable
     public static RecordFormats selectForStore( RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider,
             PageCacheTracer pageCacheTracer )
     {
@@ -194,7 +188,6 @@ public class RecordFormatSelector
      * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
      * @throws IllegalArgumentException when configured format is different from the format present in the store
      */
-    @Nonnull
     public static RecordFormats selectForStoreOrConfig( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
@@ -273,7 +266,6 @@ public class RecordFormatSelector
      * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
      * @see RecordFormats#generation()
      */
-    @Nonnull
     public static RecordFormats selectNewestFormat( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             LogProvider logProvider, PageCacheTracer pageCacheTracer )
     {
@@ -313,8 +305,7 @@ public class RecordFormatSelector
      * @param format to find successor to.
      * @return the format with the lowest generation > format.generation, or None if no such format is known.
      */
-    @Nonnull
-    public static Optional<RecordFormats> findSuccessor( @Nonnull final RecordFormats format )
+    public static Optional<RecordFormats> findSuccessor( final RecordFormats format )
     {
         return StreamSupport.stream( RecordFormatSelector.allFormats().spliterator(), false )
                 .filter( candidate -> candidate.getFormatFamily() == format.getFormatFamily() )
@@ -333,7 +324,6 @@ public class RecordFormatSelector
         return concat( KNOWN_FORMATS, loadableFormats );
     }
 
-    @Nonnull
     private static RecordFormats selectSpecificFormat( String recordFormat )
     {
         RecordFormats formats = loadRecordFormat( recordFormat );
@@ -344,7 +334,6 @@ public class RecordFormatSelector
         return formats;
     }
 
-    @Nullable
     private static RecordFormats loadRecordFormat( String recordFormat )
     {
         if ( StringUtils.isEmpty( recordFormat ) )
@@ -372,7 +361,6 @@ public class RecordFormatSelector
         logProvider.getLog( RecordFormatSelector.class ).info( message );
     }
 
-    @Nonnull
     private static String configuredRecordFormat( Config config )
     {
         return config.get( GraphDatabaseSettings.record_format );

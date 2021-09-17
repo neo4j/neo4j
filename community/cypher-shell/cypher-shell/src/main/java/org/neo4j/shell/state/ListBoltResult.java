@@ -22,7 +22,6 @@ package org.neo4j.shell.state;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.summary.ResultSummary;
@@ -37,19 +36,18 @@ public class ListBoltResult implements BoltResult
     private final List<Record> records;
     private final ResultSummary summary;
 
-    public ListBoltResult( @Nonnull List<Record> records, @Nonnull ResultSummary summary )
+    public ListBoltResult( List<Record> records, ResultSummary summary )
     {
         this( records, summary, records.isEmpty() ? Collections.emptyList() : records.get( 0 ).keys() );
     }
 
-    public ListBoltResult( @Nonnull List<Record> records, @Nonnull ResultSummary summary, @Nonnull List<String> keys )
+    public ListBoltResult( List<Record> records, ResultSummary summary, List<String> keys )
     {
         this.keys = keys;
         this.records = records;
         this.summary = summary;
     }
 
-    @Nonnull
     @Override
     public List<String> getKeys()
     {
@@ -57,21 +55,18 @@ public class ListBoltResult implements BoltResult
     }
 
     @Override
-    @Nonnull
     public List<Record> getRecords()
     {
         return records;
     }
 
     @Override
-    @Nonnull
     public Iterator<Record> iterate()
     {
         return records.iterator();
     }
 
     @Override
-    @Nonnull
     public ResultSummary getSummary()
     {
         return summary;

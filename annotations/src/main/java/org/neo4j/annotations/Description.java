@@ -23,7 +23,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.annotation.Nonnull;
 
 /**
  * Used to attach a description to a field.
@@ -32,6 +31,5 @@ import javax.annotation.Nonnull;
 @Target( ElementType.FIELD )
 public @interface Description
 {
-    @Nonnull
     String value();
 }

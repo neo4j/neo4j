@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
@@ -237,7 +236,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * This transaction's inner transactions' ids.
      */
-    @Nullable
     private volatile InnerTransactionHandlerImpl innerTransactionHandler;
 
     public KernelTransactionImplementation( Config config,

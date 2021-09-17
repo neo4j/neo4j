@@ -24,7 +24,6 @@ import org.eclipse.collections.impl.UnmodifiableMap;
 
 import java.util.Iterator;
 import java.util.NavigableMap;
-import javax.annotation.Nullable;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -123,7 +122,6 @@ public interface ReadableTransactionState
      * A readonly view of all index updates for the provided schema. Returns {@code null}, if the index
      * updates for this schema have not been initialized.
      */
-    @Nullable
     UnmodifiableMap<ValueTuple,? extends LongDiffSets> getIndexUpdates( SchemaDescriptor schema );
 
     /**
@@ -133,7 +131,6 @@ public interface ReadableTransactionState
      * Ensure sorted index updates for a given index. This is needed for range query support and
      * ay involve converting the existing hash map first.
      */
-    @Nullable
     NavigableMap<ValueTuple,? extends LongDiffSets> getSortedIndexUpdates( SchemaDescriptor descriptor );
 
     // OTHER

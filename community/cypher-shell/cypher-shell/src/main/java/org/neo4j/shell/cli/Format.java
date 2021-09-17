@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.cli;
 
-import javax.annotation.Nonnull;
-
 import static org.neo4j.shell.ShellRunner.isInputInteractive;
 import static org.neo4j.shell.ShellRunner.isOutputInteractive;
 
@@ -34,7 +32,7 @@ public enum Format
     PLAIN;
     // TODO JSON, strictly intended for machine consumption with data formatted in JSON
 
-    public static Format parse( @Nonnull String format )
+    public static Format parse( String format )
     {
         if ( format.equalsIgnoreCase( PLAIN.name() ) )
         {

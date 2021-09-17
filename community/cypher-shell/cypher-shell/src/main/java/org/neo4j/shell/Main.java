@@ -24,8 +24,6 @@ import jline.console.ConsoleReader;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -96,7 +94,7 @@ public class Main
         return hasSpecialInteractiveOutputStream ? this.out : ShellRunner.getOutputStreamForInteractivePrompt();
     }
 
-    void startShell( @Nonnull CliArgs cliArgs )
+    void startShell( CliArgs cliArgs )
     {
         if ( cliArgs.getVersion() )
         {
@@ -119,7 +117,7 @@ public class Main
         System.exit( exitCode );
     }
 
-    int runShell( @Nonnull CliArgs cliArgs, @Nonnull CypherShell shell, Logger logger )
+    int runShell( CliArgs cliArgs, CypherShell shell, Logger logger )
     {
         ConnectionConfig connectionConfig = new ConnectionConfig(
                 cliArgs.getScheme(),
@@ -172,8 +170,8 @@ public class Main
         }
     }
 
-    ConnectionConfig connectMaybeInteractively( @Nonnull CypherShell shell,
-                                                @Nonnull ConnectionConfig connectionConfig,
+    ConnectionConfig connectMaybeInteractively( CypherShell shell,
+                                                ConnectionConfig connectionConfig,
                                                 boolean inputInteractive,
                                                 boolean outputInteractive,
                                                 boolean shouldPromptForPassword )
@@ -187,8 +185,8 @@ public class Main
      *
      * @return connection configuration used to connect (can be different from the supplied)
      */
-    private ConnectionConfig connectMaybeInteractively( @Nonnull CypherShell shell,
-                                                        @Nonnull ConnectionConfig connectionConfig,
+    private ConnectionConfig connectMaybeInteractively( CypherShell shell,
+                                                        ConnectionConfig connectionConfig,
                                                         boolean inputInteractive,
                                                         boolean outputInteractive,
                                                         boolean shouldPromptForPassword,
@@ -302,8 +300,7 @@ public class Main
      * @return the text which was entered
      * @throws Exception in case of errors
      */
-    @Nonnull
-    private static String promptForNonEmptyText( @Nonnull String prompt, @Nonnull ConsoleReader consoleReader, @Nullable Character mask ) throws Exception
+    private static String promptForNonEmptyText( String prompt, ConsoleReader consoleReader, Character mask ) throws Exception
     {
         String text = promptForText( prompt, consoleReader, mask );
         if ( !text.isEmpty() )
@@ -322,8 +319,7 @@ public class Main
      * @return the text which was entered
      * @throws Exception in case of errors
      */
-    @Nonnull
-    private static String promptForText( @Nonnull String prompt, @Nonnull ConsoleReader consoleReader, @Nullable Character mask ) throws Exception
+    private static String promptForText( String prompt, ConsoleReader consoleReader, Character mask ) throws Exception
     {
         String line = consoleReader.readLine( prompt + ": ", mask );
         if ( line == null )

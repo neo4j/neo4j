@@ -36,8 +36,6 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.ParameterMap;
@@ -57,8 +55,7 @@ public class CliArgHelper
      * @param args to parse
      * @return null in case of error, commandline arguments otherwise
      */
-    @Nullable
-    public static CliArgs parse( @Nonnull String... args )
+    public static CliArgs parse( String... args )
     {
         try
         {
@@ -71,7 +68,7 @@ public class CliArgHelper
         }
     }
 
-    private static void preValidateArguments( ArgumentParser parser, @Nonnull String... args ) throws ArgumentParserException
+    private static void preValidateArguments( ArgumentParser parser, String... args ) throws ArgumentParserException
     {
         if ( Arrays.asList( args ).contains( "-file" ) )
         {
@@ -84,7 +81,7 @@ public class CliArgHelper
      * @return commandline arguments
      * @throws ArgumentParserException if an argument can't be parsed.
      */
-    public static CliArgs parseAndThrow( @Nonnull String... args ) throws ArgumentParserException
+    public static CliArgs parseAndThrow( String... args ) throws ArgumentParserException
     {
         final CliArgs cliArgs = new CliArgs();
         final ArgumentParser parser = setupParser( cliArgs.getParameters() );
@@ -179,7 +176,6 @@ public class CliArgHelper
         cliArgs.setPassword( password, "" );
     }
 
-    @Nullable
     static URI parseURI( ArgumentParser parser, String address )
     {
         try

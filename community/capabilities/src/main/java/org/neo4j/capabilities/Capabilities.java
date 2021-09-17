@@ -19,8 +19,6 @@
  */
 package org.neo4j.capabilities;
 
-import javax.annotation.Nonnull;
-
 /**
  * Provides users access to declared capability values.
  */
@@ -33,7 +31,7 @@ public interface Capabilities
      * @param <T>        the type of the capability value.
      * @return the capability value set, or null if it is not in the set of declared capabilities.
      */
-    <T> T get( @Nonnull Capability<T> capability );
+    <T> T get( Capability<T> capability );
 
     /**
      * Gets a capability value identified by the provided capability declaration.
@@ -41,5 +39,5 @@ public interface Capabilities
      * @param name the name of the capability that is being queried.
      * @return the capability value set, or null if it is not in the set of declared capabilities.
      */
-    Object get( @Nonnull Name name );
+    Object get( Name name );
 }

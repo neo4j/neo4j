@@ -32,8 +32,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -70,18 +68,18 @@ public class TablePlanFormatter
             asList( "Rows", "DbHits", "EstimatedRows", "planner", "planner-impl", "planner-version", "version", "runtime", "runtime-impl", "runtime-version",
                     "Time", "time", "source-code", "PageCacheMisses", "PageCacheHits", "PageCacheHitRatio", "Order", "Memory", "GlobalMemory", "Details" ) );
 
-    private static void pad( int width, char chr, @Nonnull StringBuilder result )
+    private static void pad( int width, char chr, StringBuilder result )
     {
         result.append( OutputFormatter.repeat( chr, width ) );
     }
 
-    private static int width( @Nonnull String header, @Nonnull Map<String,Integer> columns )
+    private static int width( String header, Map<String,Integer> columns )
     {
         return 2 + Math.max( header.length(), columns.get( header ) );
     }
 
-    private static void divider( @Nonnull List<String> headers, @Nullable TableRow tableRow /*= null*/, @Nonnull StringBuilder result,
-            @Nonnull Map<String,Integer> columns )
+    private static void divider( List<String> headers, TableRow tableRow /*= null*/, StringBuilder result,
+            Map<String,Integer> columns )
     {
         for ( String header : headers )
         {
@@ -101,8 +99,7 @@ public class TablePlanFormatter
         result.append( "+" ).append( NEWLINE );
     }
 
-    @Nonnull
-    String formatPlan( @Nonnull Plan plan )
+    String formatPlan( Plan plan )
     {
         Map<String, Integer> columns = new HashMap<>();
         List<TableRow> tableRows = accumulate( plan, new Root(), columns );
@@ -147,8 +144,7 @@ public class TablePlanFormatter
         return result.toString();
     }
 
-    @Nonnull
-    private static String serialize( @Nonnull String key, @Nonnull Value v )
+    private static String serialize( String key, Value v )
     {
         switch ( key )
         {
@@ -208,8 +204,7 @@ public class TablePlanFormatter
         }
     }
 
-    @Nonnull
-    private Stream<List<TableRow>> children( @Nonnull Plan plan, Level level, @Nonnull Map<String, Integer> columns )
+    private Stream<List<TableRow>> children( Plan plan, Level level, Map<String, Integer> columns )
     {
         List<? extends Plan> c = plan.children();
         switch ( c.size() )
@@ -225,8 +220,7 @@ public class TablePlanFormatter
         }
     }
 
-    @Nonnull
-    private List<TableRow> accumulate( @Nonnull Plan plan, @Nonnull Level level, @Nonnull Map<String, Integer> columns )
+    private List<TableRow> accumulate( Plan plan, Level level, Map<String, Integer> columns )
     {
         String line = level.line() + plan.operatorType(); // wa plan.name
         mapping( OPERATOR, new LeftJustifiedCell( line ), columns );
@@ -237,8 +231,7 @@ public class TablePlanFormatter
                      .collect( Collectors.toList() );
     }
 
-    @Nonnull
-    private static Map<String, Cell> details( @Nonnull Plan plan, @Nonnull Map<String,Integer> columns )
+    private static Map<String, Cell> details( Plan plan, Map<String,Integer> columns )
     {
         Map<String, Value> args = plan.arguments();
 
@@ -292,15 +285,13 @@ public class TablePlanFormatter
                      .collect( toMap( o -> o.get()._1, o -> o.get()._2 ) );
     }
 
-    @Nonnull
-    private static Optional<Pair<String, Cell>> mapping( @Nonnull String key, @Nonnull Cell value, @Nonnull Map<String,Integer> columns )
+    private static Optional<Pair<String, Cell>> mapping( String key, Cell value, Map<String,Integer> columns )
     {
         update( columns, key, value.length );
         return Optional.of( Pair.of( key, value ) );
     }
 
-    @Nonnull
-    private static String replaceAllIn( @Nonnull Pattern pattern, @Nonnull String s, @Nonnull Function<Matcher,String> mapper )
+    private static String replaceAllIn( Pattern pattern, String s, Function<Matcher,String> mapper )
     {
         StringBuffer sb = new StringBuffer();
         Matcher matcher = pattern.matcher( s );
@@ -312,20 +303,18 @@ public class TablePlanFormatter
         return sb.toString();
     }
 
-    @Nonnull
-    private static String removeGeneratedNames( @Nonnull String s )
+    private static String removeGeneratedNames( String s )
     {
         String named = replaceAllIn( UNNAMED_PATTERN, s, m -> "anon[" + m.group( 2 ) + "]" );
         return replaceAllIn( DEDUP_PATTERN, named, m -> m.group( 1 ) );
     }
 
-    private static void update( @Nonnull Map<String,Integer> columns, @Nonnull String key, int length )
+    private static void update( Map<String,Integer> columns, String key, int length )
     {
         columns.put( key, Math.max( columns.getOrDefault( key, 0 ), length ) );
     }
 
-    @Nonnull
-    private static String identifiers( @Nonnull Plan description, @Nonnull Map<String,Integer> columns )
+    private static String identifiers( Plan description, Map<String,Integer> columns )
     {
         String result = description.identifiers().stream().map( TablePlanFormatter::removeGeneratedNames ).collect( joining( ", " ) );
         if ( !result.isEmpty() )
@@ -335,8 +324,7 @@ public class TablePlanFormatter
         return result;
     }
 
-    @Nonnull
-    private static String other( @Nonnull Plan description, @Nonnull Map<String,Integer> columns )
+    private static String other( Plan description, Map<String,Integer> columns )
     {
         String result = description.arguments().entrySet().stream().map( e ->
                                                                          {
@@ -355,8 +343,7 @@ public class TablePlanFormatter
         return result;
     }
 
-    @Nonnull
-    private static String format( @Nonnull Double v )
+    private static String format( Double v )
     {
         if ( v.isNaN() )
         {

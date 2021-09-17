@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell;
 
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
@@ -37,7 +36,7 @@ public interface StatementExecuter
      * @throws ExitException    if a command to exit was executed
      * @throws CommandException if something went wrong
      */
-    void execute( @Nonnull String statement ) throws ExitException, CommandException;
+    void execute( String statement ) throws ExitException, CommandException;
 
     /**
      * Stops any running statements

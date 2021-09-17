@@ -25,7 +25,6 @@ import org.fusesource.jansi.AnsiConsole;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import javax.annotation.Nonnull;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DiscoveryException;
@@ -52,8 +51,8 @@ public class AnsiLogger implements Logger
         this( debug, Format.VERBOSE, System.out, System.err );
     }
 
-    public AnsiLogger( final boolean debug, @Nonnull Format format,
-                       @Nonnull PrintStream out, @Nonnull PrintStream err )
+    public AnsiLogger( final boolean debug, Format format,
+                       PrintStream out, PrintStream err )
     {
         this.debug = debug;
         this.format = format;
@@ -79,8 +78,7 @@ public class AnsiLogger implements Logger
         }
     }
 
-    @Nonnull
-    private static Throwable getRootCause( @Nonnull final Throwable th )
+    private static Throwable getRootCause( final Throwable th )
     {
         Throwable cause = th;
         while ( cause.getCause() != null )
@@ -100,21 +98,18 @@ public class AnsiLogger implements Logger
         return 1 == isatty( STDOUT_FILENO ) && 1 == isatty( STDERR_FILENO );
     }
 
-    @Nonnull
     @Override
     public PrintStream getOutputStream()
     {
         return out;
     }
 
-    @Nonnull
     @Override
     public PrintStream getErrorStream()
     {
         return err;
     }
 
-    @Nonnull
     @Override
     public Format getFormat()
     {
@@ -122,7 +117,7 @@ public class AnsiLogger implements Logger
     }
 
     @Override
-    public void setFormat( @Nonnull Format format )
+    public void setFormat( Format format )
     {
         this.format = format;
     }
@@ -134,19 +129,19 @@ public class AnsiLogger implements Logger
     }
 
     @Override
-    public void printError( @Nonnull Throwable throwable )
+    public void printError( Throwable throwable )
     {
         printError( getFormattedMessage( throwable ) );
     }
 
     @Override
-    public void printError( @Nonnull String s )
+    public void printError( String s )
     {
         err.println( Ansi.ansi().render( s ).toString() );
     }
 
     @Override
-    public void printOut( @Nonnull final String msg )
+    public void printOut( final String msg )
     {
         out.println( Ansi.ansi().render( msg ).toString() );
     }
@@ -154,8 +149,7 @@ public class AnsiLogger implements Logger
     /**
      * Formatting for Bolt exceptions.
      */
-    @Nonnull
-    public String getFormattedMessage( @Nonnull final Throwable e )
+    public String getFormattedMessage( final Throwable e )
     {
         AnsiFormattedText msg = AnsiFormattedText.s().colorRed();
 

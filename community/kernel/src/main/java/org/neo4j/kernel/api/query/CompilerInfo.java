@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.query;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import javax.annotation.Nonnull;
 
 public class CompilerInfo
 {
@@ -32,11 +31,11 @@ public class CompilerInfo
     private final List<RelationshipTypeIndexUsage> relationshipTypeIndexes;
     private final List<LookupIndexUsage> lookupIndexes;
 
-    public CompilerInfo( @Nonnull String planner,
-                         @Nonnull String runtime,
-                         @Nonnull List<SchemaIndexUsage> indexes,
-                         @Nonnull List<RelationshipTypeIndexUsage> relationshipTypeIndexes,
-                         @Nonnull List<LookupIndexUsage> lookupIndexes )
+    public CompilerInfo( String planner,
+                         String runtime,
+                         List<SchemaIndexUsage> indexes,
+                         List<RelationshipTypeIndexUsage> relationshipTypeIndexes,
+                         List<LookupIndexUsage> lookupIndexes )
     {
         this.planner = planner;
         this.runtime = runtime;
@@ -45,7 +44,7 @@ public class CompilerInfo
         this.lookupIndexes = lookupIndexes;
     }
 
-    public CompilerInfo( @Nonnull String planner, @Nonnull String runtime, @Nonnull List<SchemaIndexUsage> indexes )
+    public CompilerInfo( String planner, String runtime, List<SchemaIndexUsage> indexes )
     {
         this( planner, runtime, indexes, Collections.emptyList(), Collections.emptyList() );
     }

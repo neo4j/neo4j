@@ -28,7 +28,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
@@ -66,7 +65,7 @@ class FakeResult implements Result
     /**
      * Supports fake parsing of very limited cypher statements, only for basic test purposes
      */
-    static FakeResult parseStatement( @Nonnull final String statement )
+    static FakeResult parseStatement( final String statement )
     {
 
         if ( isPing( statement ) )
@@ -102,7 +101,7 @@ class FakeResult implements Result
         throw new IllegalArgumentException( "No idea how to parse this statement: " + statement );
     }
 
-    static FakeResult fromQuery( @Nonnull final Query statement )
+    static FakeResult fromQuery( final Query statement )
     {
 
         if ( isServerVersion( statement.text() ) )
@@ -113,12 +112,12 @@ class FakeResult implements Result
         return new FakeResult();
     }
 
-    private static boolean isPing( @Nonnull String statement )
+    private static boolean isPing( String statement )
     {
         return statement.trim().equalsIgnoreCase( "CALL db.ping()" );
     }
 
-    private static boolean isServerVersion( @Nonnull String statement )
+    private static boolean isServerVersion( String statement )
     {
         return statement.trim().equalsIgnoreCase( "CALL dbms.components() YIELD versions" );
     }

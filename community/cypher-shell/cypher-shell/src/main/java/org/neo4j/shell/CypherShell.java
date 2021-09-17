@@ -22,7 +22,6 @@ package org.neo4j.shell;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -54,17 +53,17 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     private CommandHelper commandHelper;
     private String lastNeo4jErrorCode;
 
-    public CypherShell( @Nonnull LinePrinter linePrinter,
-                        @Nonnull PrettyConfig prettyConfig,
+    public CypherShell( LinePrinter linePrinter,
+                        PrettyConfig prettyConfig,
                         boolean isInteractive,
                         ParameterMap parameterMap )
     {
         this( linePrinter, new BoltStateHandler( isInteractive ), new PrettyPrinter( prettyConfig ), parameterMap );
     }
 
-    protected CypherShell( @Nonnull LinePrinter linePrinter,
-                           @Nonnull BoltStateHandler boltStateHandler,
-                           @Nonnull PrettyPrinter prettyPrinter,
+    protected CypherShell( LinePrinter linePrinter,
+                           BoltStateHandler boltStateHandler,
+                           PrettyPrinter prettyPrinter,
                            ParameterMap parameterMap )
     {
         this.linePrinter = linePrinter;
@@ -78,7 +77,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
      * @param text to trim
      * @return text without trailing semicolons
      */
-    protected static String stripTrailingSemicolons( @Nonnull String text )
+    protected static String stripTrailingSemicolons( String text )
     {
         int end = text.length();
         while ( end > 0 && text.substring( 0, end ).endsWith( ";" ) )
@@ -89,7 +88,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     }
 
     @Override
-    public void execute( @Nonnull final String cmdString ) throws ExitException, CommandException
+    public void execute( final String cmdString ) throws ExitException, CommandException
     {
         if ( isEmptyStatement( cmdString ) )
         {
@@ -129,7 +128,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
      *
      * @param cypher non-empty cypher text to executeLine
      */
-    private void executeCypher( @Nonnull final String cypher ) throws CommandException
+    private void executeCypher( final String cypher ) throws CommandException
     {
         try
         {
@@ -154,8 +153,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         return boltStateHandler.isConnected();
     }
 
-    @Nonnull
-    protected Optional<CommandExecutable> getCommandExecutable( @Nonnull final String line )
+    protected Optional<CommandExecutable> getCommandExecutable( final String line )
     {
         Matcher m = cmdNamePattern.matcher( line );
         if ( commandHelper == null || !m.matches() )
@@ -176,7 +174,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         return Optional.of( () -> cmd.execute( stripTrailingSemicolons( args ) ) );
     }
 
-    protected static void executeCmd( @Nonnull final CommandExecutable cmdExe ) throws ExitException, CommandException
+    protected static void executeCmd( final CommandExecutable cmdExe ) throws ExitException, CommandException
     {
         cmdExe.execute();
     }
@@ -189,20 +187,18 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
      * @return connection configuration used to connect (can be different from the supplied)
      */
     @Override
-    public ConnectionConfig connect( @Nonnull ConnectionConfig connectionConfig,
+    public ConnectionConfig connect( ConnectionConfig connectionConfig,
                                      ThrowingAction<CommandException> command ) throws CommandException
     {
         return boltStateHandler.connect( connectionConfig, command );
     }
 
-    @Nonnull
     @Override
     public String getServerVersion()
     {
         return boltStateHandler.getServerVersion();
     }
 
-    @Nonnull
     @Override
     public String getProtocolVersion()
     {
@@ -242,7 +238,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         return boltStateHandler.isTransactionOpen();
     }
 
-    public void setCommandHelper( @Nonnull CommandHelper commandHelper )
+    public void setCommandHelper( CommandHelper commandHelper )
     {
         this.commandHelper = commandHelper;
     }
@@ -293,7 +289,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         return parameterMap;
     }
 
-    public void changePassword( @Nonnull ConnectionConfig connectionConfig )
+    public void changePassword( ConnectionConfig connectionConfig )
     {
         boltStateHandler.changePassword( connectionConfig );
     }

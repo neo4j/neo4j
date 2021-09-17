@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -165,7 +164,7 @@ class KernelDiagnosticsIT
     {
         private String size;
 
-        public void log( @Nonnull String message )
+        public void log( String message )
         {
             if ( message.contains( "Total size of mapped files" ) )
             {

@@ -21,7 +21,6 @@ package org.neo4j.shell.parser;
 
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nonnull;
 
 /**
  * An object capable of parsing a piece of text and returning a List statements contained within.
@@ -34,7 +33,7 @@ public interface StatementParser
      *
      * @param line to parse
      */
-    void parseMoreText( @Nonnull String line );
+    void parseMoreText( String line );
 
     /**
      * @return true if any statements have been parsed yet, false otherwise
@@ -47,7 +46,6 @@ public interface StatementParser
      *
      * @return statements which have been parsed so far and remove them from internal state
      */
-    @Nonnull
     List<String> consumeStatements();
 
     /**
@@ -55,7 +53,6 @@ public interface StatementParser
      *
      * @return the statement that is currently being parsed but has not completed, if any
      */
-    @Nonnull
     Optional<String> incompleteStatement();
 
     /**

@@ -22,7 +22,6 @@ package org.neo4j.shell;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import org.neo4j.cypher.internal.evaluator.EvaluationException;
 import org.neo4j.cypher.internal.evaluator.Evaluator;
@@ -45,7 +44,7 @@ public class ShellParameterMap implements ParameterMap
     private ExpressionEvaluator evaluator = Evaluator.expressionEvaluator();
 
     @Override
-    public Object setParameter( @Nonnull String name, @Nonnull String valueString ) throws ParameterException
+    public Object setParameter( String name, String valueString ) throws ParameterException
     {
         String parameterName = CypherVariablesFormatter.unescapedCypherVariable( name );
         try
@@ -71,7 +70,6 @@ public class ShellParameterMap implements ParameterMap
         }
     }
 
-    @Nonnull
     @Override
     public Map<String, Object> allParameterValues()
     {
@@ -82,7 +80,6 @@ public class ShellParameterMap implements ParameterMap
                                   value -> value.getValue().getValue() ) );
     }
 
-    @Nonnull
     @Override
     public Map<String, ParamValue> getAllAsUserInput()
     {

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import javax.annotation.Nonnull;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.values.storable.Value;
 
@@ -35,7 +33,7 @@ public interface ValuesContainer extends Resource
      * @return a reference associated with the value, that can be passed to {@link #get(long)} and {@link #remove(long)}
      * @throws IllegalStateException if container is closed
      */
-    long add( @Nonnull Value value );
+    long add( Value value );
 
     /**
      * @param ref a reference obtained from {@link #add(Value)}
@@ -43,7 +41,6 @@ public interface ValuesContainer extends Resource
      * @throws IllegalStateException if container is closed
      * @throws IllegalArgumentException if reference is invalid or associated value was removed
      */
-    @Nonnull
     Value get( long ref );
 
     /**
@@ -52,6 +49,5 @@ public interface ValuesContainer extends Resource
      * @throws IllegalStateException if container is closed
      * @throws IllegalArgumentException if reference is invalid or associated value was removed
      */
-    @Nonnull
     Value remove( long ref );
 }

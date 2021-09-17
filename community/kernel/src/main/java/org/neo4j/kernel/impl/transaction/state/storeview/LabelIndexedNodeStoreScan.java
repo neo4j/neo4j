@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.function.Function;
 import java.util.function.IntPredicate;
-import javax.annotation.Nullable;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -43,8 +42,8 @@ public class LabelIndexedNodeStoreScan extends NodeStoreScan
                                       Function<CursorContext,StoreCursors> storeCursorsFactory,
                                       LockService locks,
                                       TokenIndexReader tokenIndexReader,
-                                      @Nullable TokenScanConsumer labelScanConsumer,
-                                      @Nullable PropertyScanConsumer propertyScanConsumer,
+                                      TokenScanConsumer labelScanConsumer,
+                                      PropertyScanConsumer propertyScanConsumer,
                                       int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
                                       JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {

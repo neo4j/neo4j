@@ -22,8 +22,6 @@ package org.neo4j.shell.commands;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
@@ -48,9 +46,8 @@ public class CommandHelper
     /**
      * Split an argument string on whitespace
      */
-    @Nonnull
-    public static String[] simpleArgParse( @Nonnull final String argString, int expectedCount,
-                                           @Nonnull final String commandName, @Nonnull final String usage )
+    public static String[] simpleArgParse( final String argString, int expectedCount,
+                                           final String commandName, final String usage )
             throws CommandException
     {
         return simpleArgParse( argString, expectedCount, expectedCount, commandName, usage );
@@ -59,9 +56,8 @@ public class CommandHelper
     /**
      * Split an argument string on whitespace
      */
-    @Nonnull
-    public static String[] simpleArgParse( @Nonnull final String argString, int minCount, int maxCount,
-                                           @Nonnull final String commandName, @Nonnull final String usage )
+    public static String[] simpleArgParse( final String argString, int minCount, int maxCount,
+                                           final String commandName, final String usage )
             throws CommandException
     {
         final String[] args;
@@ -99,7 +95,7 @@ public class CommandHelper
         registerCommand( new Source( cypherShell, new ShellStatementParser() ) );
     }
 
-    private void registerCommand( @Nonnull final Command command ) throws DuplicateCommandException
+    private void registerCommand( final Command command ) throws DuplicateCommandException
     {
         if ( commands.containsKey( command.getName() ) )
         {
@@ -121,8 +117,7 @@ public class CommandHelper
     /**
      * Get a command corresponding to the given name, or null if no such command has been registered.
      */
-    @Nullable
-    public Command getCommand( @Nonnull final String name )
+    public Command getCommand( final String name )
     {
         if ( commands.containsKey( name ) )
         {
@@ -134,7 +129,6 @@ public class CommandHelper
     /**
      * Get a list of all registered commands
      */
-    @Nonnull
     public List<Command> getAllCommands()
     {
         return commands.values().stream().distinct().collect( Collectors.toList() );

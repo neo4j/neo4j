@@ -21,7 +21,6 @@ package org.neo4j.shell.prettyprint;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 
 public final class CypherVariablesFormatter
 {
@@ -32,8 +31,7 @@ public final class CypherVariablesFormatter
     {
     }
 
-    @Nonnull
-    public static String escape( @Nonnull String string )
+    public static String escape( String string )
     {
         Matcher alphaNumericMatcher = ALPHA_NUMERIC.matcher( string );
         if ( !alphaNumericMatcher.matches() )
@@ -44,8 +42,7 @@ public final class CypherVariablesFormatter
         return string;
     }
 
-    @Nonnull
-    public static String unescapedCypherVariable( @Nonnull String string )
+    public static String unescapedCypherVariable( String string )
     {
         Matcher alphaNumericMatcher = ALPHA_NUMERIC.matcher( string );
         if ( !alphaNumericMatcher.matches() )

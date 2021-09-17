@@ -20,8 +20,6 @@
 package org.neo4j.logging.internal;
 
 import java.util.function.Consumer;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
@@ -48,80 +46,80 @@ public class PrefixedLog extends AbstractLog
     }
 
     @Override
-    public void debug( @Nonnull String message )
+    public void debug( String message )
     {
         delegate.debug( withPrefix( message ));
     }
 
     @Override
-    public void debug( @Nonnull String message, @Nonnull Throwable throwable )
+    public void debug( String message, Throwable throwable )
     {
         delegate.debug( withPrefix( message ), throwable );
     }
 
     @Override
-    public void debug( @Nonnull String format, @Nullable Object... arguments )
+    public void debug( String format, Object... arguments )
     {
         delegate.debug( withPrefix( format ), arguments );
     }
 
     @Override
-    public void info( @Nonnull String message )
+    public void info( String message )
     {
         delegate.info( withPrefix( message ) );
     }
 
     @Override
-    public void info( @Nonnull String message, @Nonnull Throwable throwable )
+    public void info( String message, Throwable throwable )
     {
         delegate.info( withPrefix( message ), throwable );
     }
 
     @Override
-    public void info( @Nonnull String format, @Nullable Object... arguments )
+    public void info( String format, Object... arguments )
     {
         delegate.info( withPrefix( format ), arguments );
     }
 
     @Override
-    public void warn( @Nonnull String message )
+    public void warn( String message )
     {
         delegate.warn( withPrefix( message ) );
     }
 
     @Override
-    public void warn( @Nonnull String message, @Nonnull Throwable throwable )
+    public void warn( String message, Throwable throwable )
     {
         delegate.warn( withPrefix( message ), throwable );
     }
 
     @Override
-    public void warn( @Nonnull String format, @Nullable Object... arguments )
+    public void warn( String format, Object... arguments )
     {
         delegate.warn( withPrefix( format ), arguments );
     }
 
     @Override
-    public void error( @Nonnull String message )
+    public void error( String message )
     {
         delegate.error( withPrefix( message ) );
     }
 
     @Override
-    public void error( @Nonnull String message, @Nonnull Throwable throwable )
+    public void error( String message, Throwable throwable )
     {
         delegate.error( withPrefix( message ), throwable );
     }
 
     @Override
-    public void error( @Nonnull String format, @Nullable Object... arguments )
+    public void error( String format, Object... arguments )
     {
         delegate.error( withPrefix( format ), arguments );
     }
 
     @Override
     @Deprecated
-    public void bulk( @Nonnull Consumer<Log> consumer )
+    public void bulk( Consumer<Log> consumer )
     {
         delegate.bulk( log -> consumer.accept( this ) );
     }

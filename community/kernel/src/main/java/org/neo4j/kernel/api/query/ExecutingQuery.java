@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -102,7 +101,6 @@ public class ExecutingQuery
     /**
      * Database id of the outer (first) transaction binding.
      */
-    @Nullable
     private NamedDatabaseId namedDatabaseId;
 
     /**

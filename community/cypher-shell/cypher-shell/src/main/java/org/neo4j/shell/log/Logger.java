@@ -20,7 +20,6 @@
 package org.neo4j.shell.log;
 
 import java.io.PrintStream;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.prettyprint.LinePrinter;
@@ -30,13 +29,11 @@ public interface Logger extends LinePrinter
     /**
      * @return the output stream
      */
-    @Nonnull
     PrintStream getOutputStream();
 
     /**
      * @return the error stream
      */
-    @Nonnull
     PrintStream getErrorStream();
 
     /**
@@ -44,19 +41,18 @@ public interface Logger extends LinePrinter
      *
      * @param throwable to print to the error stream
      */
-    void printError( @Nonnull Throwable throwable );
+    void printError( Throwable throwable );
 
     /**
      * Print the designated text to configured error stream.
      *
      * @param text to print to the error stream
      */
-    void printError( @Nonnull String text );
+    void printError( String text );
 
     /**
      * @return the current format of the logger
      */
-    @Nonnull
     Format getFormat();
 
     /**
@@ -64,7 +60,7 @@ public interface Logger extends LinePrinter
      *
      * @param format to set
      */
-    void setFormat( @Nonnull Format format );
+    void setFormat( Format format );
 
     /**
      * @return true if debug mode is enabled, false otherwise
@@ -76,7 +72,7 @@ public interface Logger extends LinePrinter
      *
      * @param text to print to the output stream
      */
-    default void printIfDebug( @Nonnull String text )
+    default void printIfDebug( String text )
     {
         if ( isDebugEnabled() )
         {
@@ -89,7 +85,7 @@ public interface Logger extends LinePrinter
      *
      * @param text to print to the output stream
      */
-    default void printIfVerbose( @Nonnull String text )
+    default void printIfVerbose( String text )
     {
         if ( Format.VERBOSE.equals( getFormat() ) )
         {
@@ -102,7 +98,7 @@ public interface Logger extends LinePrinter
      *
      * @param text to print to the output stream
      */
-    default void printIfPlain( @Nonnull String text )
+    default void printIfPlain( String text )
     {
         if ( Format.PLAIN.equals( getFormat() ) )
         {

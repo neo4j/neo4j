@@ -26,8 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -52,7 +50,7 @@ public class TableOutputFormatter implements OutputFormatter
     }
 
     @Override
-    public int formatAndCount( @Nonnull BoltResult result, @Nonnull LinePrinter output )
+    public int formatAndCount( BoltResult result, LinePrinter output )
     {
         String[] columns = result.getKeys().toArray( new String[0] );
         if ( columns.length == 0 )
@@ -120,7 +118,7 @@ public class TableOutputFormatter implements OutputFormatter
      * @param moreDataAfterSamples if there is more data that should be written into the table after `data`
      * @return the column sizes
      */
-    private int[] calculateColumnSizes( @Nonnull String[] columns, @Nonnull List<Record> data, boolean moreDataAfterSamples )
+    private int[] calculateColumnSizes( String[] columns, List<Record> data, boolean moreDataAfterSamples )
     {
         int[] columnSizes = new int[columns.length];
         for ( int i = 0; i < columns.length; i++ )
@@ -246,8 +244,7 @@ public class TableOutputFormatter implements OutputFormatter
     }
 
     @Override
-    @Nonnull
-    public String formatFooter( @Nonnull BoltResult result, int numberOfRows )
+    public String formatFooter( BoltResult result, int numberOfRows )
     {
         ResultSummary summary = result.getSummary();
         return String.format( "%d row%s" + OutputFormatter.NEWLINE +
@@ -258,8 +255,7 @@ public class TableOutputFormatter implements OutputFormatter
     }
 
     @Override
-    @Nonnull
-    public String formatInfo( @Nonnull ResultSummary summary )
+    public String formatInfo( ResultSummary summary )
     {
         Map<String, Value> info = OutputFormatter.info( summary );
         if ( info.isEmpty() )
@@ -274,8 +270,7 @@ public class TableOutputFormatter implements OutputFormatter
     }
 
     @Override
-    @Nonnull
-    public String formatPlan( @Nullable ResultSummary summary )
+    public String formatPlan( ResultSummary summary )
     {
         if ( summary == null || !summary.hasPlan() )
         {

@@ -30,7 +30,6 @@ import java.util.function.IntPredicate;
 import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
@@ -109,7 +108,7 @@ public final class Predicates
         };
     }
 
-    public static <T> Predicate<T> instanceOf( @Nonnull final Class<?> clazz )
+    public static <T> Predicate<T> instanceOf( final Class<?> clazz )
     {
         return clazz::isInstance;
     }

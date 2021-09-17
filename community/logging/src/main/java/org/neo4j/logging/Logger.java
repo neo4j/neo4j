@@ -20,8 +20,6 @@
 package org.neo4j.logging;
 
 import java.util.function.Consumer;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.annotations.api.PublicApi;
 
@@ -36,19 +34,19 @@ public interface Logger
     /**
      * @param message The message to be written
      */
-    void log( @Nonnull String message );
+    void log( String message );
 
     /**
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
-    void log( @Nonnull String message, @Nonnull Throwable throwable );
+    void log( String message, Throwable throwable );
 
     /**
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the {@code format}
      */
-    void log( @Nonnull String format, @Nullable Object... arguments );
+    void log( String format, Object... arguments );
 
     /**
      * Used to temporarily write several messages in bulk. The implementation may choose to
@@ -56,5 +54,5 @@ public interface Logger
      *
      * @param consumer A callback operation that accepts an equivalent {@link Logger}
      */
-    void bulk( @Nonnull Consumer<Logger> consumer );
+    void bulk( Consumer<Logger> consumer );
 }

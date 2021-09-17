@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -47,7 +46,7 @@ class FakeRecord implements Record
     {
     }
 
-    public static FakeRecord of( @Nonnull String key, @Nonnull String value )
+    public static FakeRecord of( String key, String value )
     {
         return of( key, new FakeValue()
         {
@@ -155,7 +154,7 @@ class FakeRecord implements Record
         } );
     }
 
-    public static FakeRecord of( @Nonnull String key, @Nonnull Value value )
+    public static FakeRecord of( String key, Value value )
     {
         FakeRecord record = new FakeRecord();
         record.valueMap.put( key, value );

@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
@@ -50,35 +49,30 @@ public class Source implements Command
         this.statementParser = statementParser;
     }
 
-    @Nonnull
     @Override
     public String getName()
     {
         return COMMAND_NAME;
     }
 
-    @Nonnull
     @Override
     public String getDescription()
     {
         return "Interactively executes cypher statements from a file";
     }
 
-    @Nonnull
     @Override
     public String getUsage()
     {
         return "[filename]";
     }
 
-    @Nonnull
     @Override
     public String getHelp()
     {
         return "Executes Cypher statements from a file";
     }
 
-    @Nonnull
     @Override
     public List<String> getAliases()
     {
@@ -86,7 +80,7 @@ public class Source implements Command
     }
 
     @Override
-    public void execute( @Nonnull final String argString ) throws ExitException, CommandException
+    public void execute( final String argString ) throws ExitException, CommandException
     {
         String filename = simpleArgParse( argString, 1, 1, COMMAND_NAME, getUsage() )[0];
 

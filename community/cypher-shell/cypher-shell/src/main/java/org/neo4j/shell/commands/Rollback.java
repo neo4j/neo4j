@@ -21,7 +21,6 @@ package org.neo4j.shell.commands;
 
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
@@ -37,40 +36,35 @@ public class Rollback implements Command
     public static final String COMMAND_NAME = ":rollback";
     private final TransactionHandler transactionHandler;
 
-    public Rollback( @Nonnull final TransactionHandler transactionHandler )
+    public Rollback( final TransactionHandler transactionHandler )
     {
         this.transactionHandler = transactionHandler;
     }
 
-    @Nonnull
     @Override
     public String getName()
     {
         return COMMAND_NAME;
     }
 
-    @Nonnull
     @Override
     public String getDescription()
     {
         return "Rollback the currently open transaction";
     }
 
-    @Nonnull
     @Override
     public String getUsage()
     {
         return "";
     }
 
-    @Nonnull
     @Override
     public String getHelp()
     {
         return "Roll back and closes the currently open transaction";
     }
 
-    @Nonnull
     @Override
     public List<String> getAliases()
     {
@@ -78,7 +72,7 @@ public class Rollback implements Command
     }
 
     @Override
-    public void execute( @Nonnull final String argString ) throws ExitException, CommandException
+    public void execute( final String argString ) throws ExitException, CommandException
     {
         simpleArgParse( argString, 0, COMMAND_NAME, getUsage() );
 

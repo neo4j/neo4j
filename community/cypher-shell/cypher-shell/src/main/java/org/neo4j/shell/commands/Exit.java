@@ -21,7 +21,6 @@ package org.neo4j.shell.commands;
 
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
@@ -39,33 +38,29 @@ public class Exit implements Command
     public static final String COMMAND_NAME = ":exit";
     private final Logger logger;
 
-    public Exit( @Nonnull final Logger logger )
+    public Exit( final Logger logger )
     {
         this.logger = logger;
     }
 
-    @Nonnull
     @Override
     public String getName()
     {
         return COMMAND_NAME;
     }
 
-    @Nonnull
     @Override
     public String getDescription()
     {
         return "Exit the logger";
     }
 
-    @Nonnull
     @Override
     public String getUsage()
     {
         return "";
     }
 
-    @Nonnull
     @Override
     public String getHelp()
     {
@@ -73,7 +68,6 @@ public class Exit implements Command
                                 .append( "." ).formattedString();
     }
 
-    @Nonnull
     @Override
     public List<String> getAliases()
     {
@@ -81,7 +75,7 @@ public class Exit implements Command
     }
 
     @Override
-    public void execute( @Nonnull final String argString ) throws ExitException, CommandException
+    public void execute( final String argString ) throws ExitException, CommandException
     {
         simpleArgParse( argString, 0, COMMAND_NAME, getUsage() );
 

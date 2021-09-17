@@ -22,7 +22,6 @@ package org.neo4j.shell.util;
 import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.exception.ParameterException;
@@ -52,7 +51,7 @@ public abstract class ParameterSetter<E extends Exception>
 
     protected abstract void onParameterException( ParameterException e ) throws E;
 
-    public void execute( @Nonnull final String argString ) throws E
+    public void execute( final String argString ) throws E
     {
         Matcher lambdaMapMatcher = lambdaMapPattern.matcher( argString );
         if ( lambdaMapMatcher.matches() )
@@ -72,7 +71,7 @@ public abstract class ParameterSetter<E extends Exception>
         }
     }
 
-    private boolean assignIfValidParameter( @Nonnull String argString ) throws ParameterException
+    private boolean assignIfValidParameter( String argString ) throws ParameterException
     {
         return setParameterIfItMatchesPattern( argString, lambdaPattern, assignIfValidParameter() )
                || setParameterIfItMatchesPattern( argString, argPattern, assignIfValidParameter() )
@@ -80,7 +79,7 @@ public abstract class ParameterSetter<E extends Exception>
                || setParameterIfItMatchesPattern( argString, backtickPattern, backTickMatchPattern() );
     }
 
-    private boolean setParameterIfItMatchesPattern( @Nonnull String argString, Pattern pattern,
+    private boolean setParameterIfItMatchesPattern( String argString, Pattern pattern,
                                                     BiPredicate<String, Matcher> matchingFunction ) throws ParameterException
     {
         Matcher matcher = pattern.matcher( argString );

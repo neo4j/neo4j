@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.log.Logger;
@@ -47,10 +46,9 @@ public class FileHistorian implements Historian
         this.history = history;
     }
 
-    @Nonnull
-    public static Historian setupHistory( @Nonnull final ConsoleReader reader,
-                                          @Nonnull final Logger logger,
-                                          @Nonnull final File historyFile ) throws IOException
+    public static Historian setupHistory( final ConsoleReader reader,
+                                          final Logger logger,
+                                          final File historyFile ) throws IOException
     {
         try
         {
@@ -77,7 +75,7 @@ public class FileHistorian implements Historian
         }
     }
 
-    private static void addShutdownHookToFlushHistory( @Nonnull final Logger logger, final FileHistory history )
+    private static void addShutdownHookToFlushHistory( final Logger logger, final FileHistory history )
     {
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
@@ -96,7 +94,6 @@ public class FileHistorian implements Historian
         } );
     }
 
-    @Nonnull
     public static File getDefaultHistoryFile()
     {
         // Storing in same directory as driver uses
@@ -104,7 +101,6 @@ public class FileHistorian implements Historian
         return new File( dir, ".neo4j_history" );
     }
 
-    @Nonnull
     @Override
     public List<String> getHistory()
     {

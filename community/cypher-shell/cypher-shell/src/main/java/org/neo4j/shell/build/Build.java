@@ -22,7 +22,6 @@ package org.neo4j.shell.build;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import javax.annotation.Nonnull;
 
 /**
  * This class provides access to build time variables
@@ -37,7 +36,6 @@ public class Build
      *
      * @return build properties
      */
-    @Nonnull
     private static Properties getProperties()
     {
         if ( props == null )
@@ -66,7 +64,6 @@ public class Build
     /**
      * @return the revision of the source code, or "dev" if no properties file could be read.
      */
-    @Nonnull
     public static String version()
     {
         return getProperties().getProperty( "version", "dev" );
@@ -75,7 +72,6 @@ public class Build
     /**
      * @return the revision of the Neo4j Driver, or "dev" if no properties file could be read.
      */
-    @Nonnull
     public static String driverVersion()
     {
         return getProperties().getProperty( "driverVersion", "dev" );

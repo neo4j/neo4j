@@ -19,8 +19,6 @@
  */
 package org.neo4j.csv.reader;
 
-import javax.annotation.Nonnull;
-
 /**
  * Super class for exceptions stemming from invalid format of a data source that is read.
  */
@@ -28,7 +26,7 @@ public abstract class FormatException extends IllegalStateException
 {
     private final SourceTraceability source;
 
-    protected FormatException( @Nonnull SourceTraceability source, @Nonnull String description )
+    protected FormatException( SourceTraceability source, String description )
     {
         super( "At " + source.sourceDescription() + " @ position " + source.position() + " - " + description );
         this.source = source;

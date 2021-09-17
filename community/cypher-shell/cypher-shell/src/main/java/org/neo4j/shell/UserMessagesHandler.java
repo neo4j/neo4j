@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell;
 
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.commands.Exit;
 import org.neo4j.shell.commands.Help;
@@ -32,13 +31,12 @@ public class UserMessagesHandler
     private ConnectionConfig connectionConfig;
     private String protocolVersion;
 
-    public UserMessagesHandler( @Nonnull ConnectionConfig connectionConfig, @Nonnull String protocolVersion )
+    public UserMessagesHandler( ConnectionConfig connectionConfig, String protocolVersion )
     {
         this.connectionConfig = connectionConfig;
         this.protocolVersion = protocolVersion;
     }
 
-    @Nonnull
     public String getWelcomeMessage()
     {
         String neo4j = "Neo4j";
@@ -69,7 +67,6 @@ public class UserMessagesHandler
                 .bold().append( "semicolon." ).boldOff().formattedString();
     }
 
-    @Nonnull
     public static String getExitMessage()
     {
         return AnsiFormattedText.s().append( "\nBye!" ).formattedString();

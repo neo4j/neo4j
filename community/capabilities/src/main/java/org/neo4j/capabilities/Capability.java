@@ -20,7 +20,6 @@
 package org.neo4j.capabilities;
 
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * This interface provides a declarative way to define capabilities supported.
@@ -34,12 +33,12 @@ public final class Capability<T>
     private boolean internal;
     private String description;
 
-    public Capability( @Nonnull Name name, @Nonnull Type<T> type )
+    public Capability( Name name, Type<T> type )
     {
         this( name, type, "", true );
     }
 
-    private Capability( @Nonnull Name name, @Nonnull Type<T> type, @Nonnull String description, boolean internal )
+    private Capability( Name name, Type<T> type, String description, boolean internal )
     {
         this.name = Objects.requireNonNull( name );
         this.type = Objects.requireNonNull( type );
@@ -52,7 +51,6 @@ public final class Capability<T>
      *
      * @return the name.
      */
-    @Nonnull
     public Name name()
     {
         return name;
@@ -63,7 +61,6 @@ public final class Capability<T>
      *
      * @return the description.
      */
-    @Nonnull
     public String description()
     {
         return description;
@@ -84,13 +81,12 @@ public final class Capability<T>
      *
      * @return the type.
      */
-    @Nonnull
     public Type<T> type()
     {
         return type;
     }
 
-    void setDescription( @Nonnull String description )
+    void setDescription( String description )
     {
         this.description = Objects.requireNonNull( description );
     }

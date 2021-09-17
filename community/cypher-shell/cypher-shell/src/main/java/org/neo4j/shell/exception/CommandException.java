@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.exception;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.neo4j.shell.log.AnsiFormattedText;
 
@@ -29,17 +27,17 @@ import org.neo4j.shell.log.AnsiFormattedText;
  */
 public class CommandException extends AnsiFormattedException
 {
-    public CommandException( @Nullable String msg )
+    public CommandException( String msg )
     {
         super( msg );
     }
 
-    public CommandException( @Nullable String msg, Throwable cause )
+    public CommandException( String msg, Throwable cause )
     {
         super( msg, cause );
     }
 
-    public CommandException( @Nonnull AnsiFormattedText append )
+    public CommandException( AnsiFormattedText append )
     {
         super( append );
     }

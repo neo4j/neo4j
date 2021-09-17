@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.exception.CommandException;
@@ -45,41 +44,36 @@ public class Params implements Command
     private final Logger logger;
     private final ParameterMap parameterMap;
 
-    public Params( @Nonnull Logger logger, @Nonnull ParameterMap parameterMap )
+    public Params( Logger logger, ParameterMap parameterMap )
     {
         this.logger = logger;
         this.parameterMap = parameterMap;
     }
 
-    @Nonnull
     @Override
     public String getName()
     {
         return COMMAND_NAME;
     }
 
-    @Nonnull
     @Override
     public String getDescription()
     {
         return "Print all currently set query parameters and their values";
     }
 
-    @Nonnull
     @Override
     public String getUsage()
     {
         return "[parameter]";
     }
 
-    @Nonnull
     @Override
     public String getHelp()
     {
         return "Print a table of all currently set query parameters or the value for the given parameter";
     }
 
-    @Nonnull
     @Override
     public List<String> getAliases()
     {
@@ -87,7 +81,7 @@ public class Params implements Command
     }
 
     @Override
-    public void execute( @Nonnull final String argString ) throws ExitException, CommandException
+    public void execute( final String argString ) throws ExitException, CommandException
     {
         String trim = argString.trim();
         Matcher matcher = backtickPattern.matcher( trim );
@@ -109,7 +103,7 @@ public class Params implements Command
         }
     }
 
-    private void listParam( @Nonnull String name ) throws CommandException
+    private void listParam( String name ) throws CommandException
     {
         String parameterName = CypherVariablesFormatter.unescapedCypherVariable( name );
         if ( !this.parameterMap.getAllAsUserInput().containsKey( parameterName ) )
@@ -119,7 +113,7 @@ public class Params implements Command
         listParam( name.length(), name, this.parameterMap.getAllAsUserInput().get( parameterName ).getValueAsString() );
     }
 
-    private void listParam( int leftColWidth, @Nonnull String key, @Nonnull Object value )
+    private void listParam( int leftColWidth, String key, Object value )
     {
         logger.printOut( String.format( ":param %-" + leftColWidth + "s => %s", key, value ) );
     }

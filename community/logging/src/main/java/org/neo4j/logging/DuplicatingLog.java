@@ -20,8 +20,6 @@
 package org.neo4j.logging;
 
 import java.util.function.Consumer;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * A {@link Log} implementation that duplicates all messages to other Log instances
@@ -44,91 +42,91 @@ public class DuplicatingLog extends AbstractLog
     }
 
     @Override
-    public void debug( @Nonnull String message )
+    public void debug( String message )
     {
         log1.debug( message );
         log2.debug( message );
     }
 
     @Override
-    public void debug( @Nonnull String message, @Nonnull Throwable throwable )
+    public void debug( String message, Throwable throwable )
     {
         log1.debug( message, throwable );
         log2.debug( message, throwable );
     }
 
     @Override
-    public void debug( @Nonnull String format, @Nullable Object... arguments )
+    public void debug( String format, Object... arguments )
     {
         log1.debug( format, arguments );
         log2.debug( format, arguments );
     }
 
     @Override
-    public void info( @Nonnull String message )
+    public void info( String message )
     {
         log1.info( message );
         log2.info( message );
     }
 
     @Override
-    public void info( @Nonnull String message, @Nonnull Throwable throwable )
+    public void info( String message, Throwable throwable )
     {
         log1.info( message, throwable );
         log2.info( message, throwable );
     }
 
     @Override
-    public void info( @Nonnull String format, @Nullable Object... arguments )
+    public void info( String format, Object... arguments )
     {
         log1.info( format, arguments );
         log2.info( format, arguments );
     }
 
     @Override
-    public void warn( @Nonnull String message )
+    public void warn( String message )
     {
         log1.warn( message );
         log2.warn( message );
     }
 
     @Override
-    public void warn( @Nonnull String message, @Nonnull Throwable throwable )
+    public void warn( String message, Throwable throwable )
     {
         log1.warn( message, throwable );
         log2.warn( message, throwable );
     }
 
     @Override
-    public void warn( @Nonnull String format, @Nullable Object... arguments )
+    public void warn( String format, Object... arguments )
     {
         log1.warn( format, arguments );
         log2.warn( format, arguments );
     }
 
     @Override
-    public void error( @Nonnull String message )
+    public void error( String message )
     {
         log1.error( message );
         log2.error( message );
     }
 
     @Override
-    public void error( @Nonnull String message, @Nonnull Throwable throwable )
+    public void error( String message, Throwable throwable )
     {
         log1.error( message, throwable );
         log2.error( message, throwable );
     }
 
     @Override
-    public void error( @Nonnull String format, @Nullable Object... arguments )
+    public void error( String format, Object... arguments )
     {
         log1.error( format, arguments );
         log2.error( format, arguments );
     }
 
     @Override
-    public void bulk( @Nonnull Consumer<Log> consumer )
+    public void bulk( Consumer<Log> consumer )
     {
         consumer.accept( this );
     }
