@@ -512,22 +512,32 @@ final case class ShowDatabase(scope: DatabaseScope, override val yieldOrWhere: Y
 
 object ShowDatabase {
   def apply(scope: DatabaseScope, yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowDatabase = {
-    val briefColumns = List(
-      ShowColumn("name")(position), ShowColumn("address")(position), ShowColumn("role")(position), ShowColumn("requestedStatus")(position),
-      ShowColumn("currentStatus")(position), ShowColumn("error")(position)) ++ (scope match {
+    val showColumns = List(
+      // (column, briefOnly)
+      (ShowColumn("name")(position), true),
+      (ShowColumn("databaseID")(position), false),
+      (ShowColumn("serverID")(position), false),
+      (ShowColumn("address")(position), true),
+      (ShowColumn("role")(position), true),
+      (ShowColumn("requestedStatus")(position), true),
+      (ShowColumn("currentStatus")(position), true),
+      (ShowColumn("error")(position), true)
+    ) ++ (scope match {
       case _: DefaultDatabaseScope => List.empty
       case _: HomeDatabaseScope => List.empty
-      case _ => List(ShowColumn("default", CTBoolean)(position), ShowColumn("home", CTBoolean)(position))
-    })
-    val verboseColumns = List(
-      ShowColumn("databaseID")(position), ShowColumn("serverID")(position),
-      ShowColumn("lastCommittedTxn", CTInteger)(position), ShowColumn("replicationLag", CTInteger)(position)
+      case _ => List((ShowColumn("default", CTBoolean)(position), true), (ShowColumn("home", CTBoolean)(position), true))
+    }) ++ List(
+      (ShowColumn("lastCommittedTxn", CTInteger)(position), false),
+      (ShowColumn("replicationLag", CTInteger)(position), false)
     )
+    val briefShowColumns = showColumns.filter(_._2).map(_._1)
+    val allShowColumns = showColumns.map(_._1)
+
     val allColumns = yieldOrWhere match {
       case Some(Left(_)) => true
       case _ => false
     }
-    val columns = DefaultOrAllShowColumns(allColumns, briefColumns, briefColumns ++ verboseColumns)
+    val columns = DefaultOrAllShowColumns(allColumns, briefShowColumns, allShowColumns)
     ShowDatabase(scope, yieldOrWhere, columns)(position)
   }
 }
