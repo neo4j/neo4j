@@ -55,9 +55,6 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean =
     translateException(tokenNameLookup, inner.btreeIndexExistsForRelTypeAndProperties(relTypeName, propertyKey))
 
-  override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
-    translateException(tokenNameLookup, inner.uniqueIndexesGetForLabel(labelId))
-
   override def statistics: InstrumentedGraphStatistics =
     translateException(tokenNameLookup, inner.statistics)
 

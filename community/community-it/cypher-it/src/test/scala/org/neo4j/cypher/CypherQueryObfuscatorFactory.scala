@@ -105,7 +105,6 @@ class CypherQueryObfuscatorFactory {
     override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Nothing = fail()
     override def canLookupNodesByLabel: Nothing = fail()
     override def canLookupRelationshipsByType: Nothing = fail()
-    override def uniqueIndexesGetForLabel(labelId: Int): Nothing = fail()
     override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Nothing = fail()
     override def getNodePropertiesWithExistenceConstraint(labelName: String): Nothing = fail()
     override def hasRelationshipPropertyExistenceConstraint(relationshipTypeName: String, propertyKey: String): Nothing = fail()

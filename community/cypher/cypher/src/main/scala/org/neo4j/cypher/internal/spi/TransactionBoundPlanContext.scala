@@ -140,12 +140,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     tc.schemaRead.getRelTypeIndexesNonLocking(relTypeId).asScala.flatMap(getOnlineIndex(indexType))
   }
 
-  override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala
-      .filter(_.isUnique)
-      .flatMap(getOnlineIndex(schema.IndexType.BTREE))
-  }
-
   override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
     btreeIndexesGetForLabel(labelId).nonEmpty
   }

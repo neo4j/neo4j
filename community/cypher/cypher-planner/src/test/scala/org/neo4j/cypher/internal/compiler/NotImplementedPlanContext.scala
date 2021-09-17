@@ -48,8 +48,6 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = ???
 
-  override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
-
   override def canLookupNodesByLabel: Boolean = ???
 
   override def canLookupRelationshipsByType: Boolean = ???

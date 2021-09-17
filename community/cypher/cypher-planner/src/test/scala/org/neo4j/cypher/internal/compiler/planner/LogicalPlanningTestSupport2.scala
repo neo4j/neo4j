@@ -245,14 +245,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
         Iterator.empty
 
-      override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-        val label = config.labelsById(labelId)
-        config.indexes.collect {
-          case (indexDef@IndexDef(IndexDefinition.EntityType.Node(labelOrRelType), _), indexType) if indexType.isUnique && labelOrRelType == label =>
-            newIndexDescriptor(indexDef, config.indexes(indexDef))
-        }.iterator
-      }
-
       private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType) = {
         // Our fake index either can always or never return property values
         val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
