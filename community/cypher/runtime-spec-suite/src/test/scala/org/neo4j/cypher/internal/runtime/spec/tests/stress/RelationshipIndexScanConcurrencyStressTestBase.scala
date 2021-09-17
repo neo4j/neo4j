@@ -9,6 +9,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.tests.stress.ConcurrencyStressTestBase.SIZE_HINT
 
 abstract class RelationshipIndexScanConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
                                                                                           edition: Edition[CONTEXT],
@@ -25,10 +26,9 @@ abstract class RelationshipIndexScanConcurrencyStressTestBase[CONTEXT <: Runtime
 
   private def executeWithConcurrentDeletes(directed: Boolean): Unit = {
     // given
-    val sizeHint = 10000
     val rels = given {
       relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(nNodes = sizeHint, relType = "R", outDegree = 1)
+      val (_, rels) = circleGraph(nNodes = SIZE_HINT, relType = "R", outDegree = 1)
       rels.foreach(r => r.setProperty("prop", r.getId))
       rels.map(_.getId)
     }
