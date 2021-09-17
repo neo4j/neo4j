@@ -87,6 +87,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
@@ -106,12 +107,10 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForRangeIndex
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForTextIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
 import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
@@ -392,20 +391,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
         val info = relationshipCountFromCountStoreInfo(ident, startLabel, typeNames, endLabel)
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
-      case DoNothingIfExistsForBtreeIndex(entityName, propertyKeyNames, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
-
-      case DoNothingIfExistsForRangeIndex(entityName, propertyKeyNames, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(rangeIndexInfo(nameOption, entityName, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
+      case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, nameOption) =>
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(indexType.name(), nameOption, entityName, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
 
       case DoNothingIfExistsForLookupIndex(entityType, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(lookupIndexInfo(nameOption, entityType, NoOptions))), variables, withRawCardinalities)
 
       case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
-
-      case DoNothingIfExistsForTextIndex(entityName, propertyKeyNames, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(textIndexInfo(nameOption, entityName, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
 
       case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
@@ -421,6 +414,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
       case CreateTextIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(textIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
+
+      case CreatePointIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(pointIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case DropIndex(labelName, propertyKeyNames) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(btreeIndexInfo(None, Left(labelName), propertyKeyNames, NoOptions))), variables, withRawCardinalities)
@@ -768,6 +764,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
       case CreateTextIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(textIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
+
+      case CreatePointIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(pointIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE"), options))
@@ -1265,6 +1264,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
   private def textIndexInfo(nameOption: Option[String], entityName: Either[LabelName, RelTypeName], properties: Seq[PropertyKeyName], options: Options): PrettyString =
     indexInfo("TEXT", nameOption, entityName, properties, options)
+
+  private def pointIndexInfo(nameOption: Option[String], entityName: Either[LabelName, RelTypeName], properties: Seq[PropertyKeyName], options: Options): PrettyString =
+    indexInfo("POINT", nameOption, entityName, properties, options)
 
   private def fulltextIndexInfo(nameOption: Option[String], entityNames: Either[List[LabelName], List[RelTypeName]], properties: Seq[PropertyKeyName], options: Options): PrettyString = {
     val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")

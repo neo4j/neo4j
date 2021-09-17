@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.LookupIndexes
+import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowIndexType
@@ -35,7 +36,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowI
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.createIndexStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.barStringJoiner
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.btreeConfigValueAsString
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.pointConfigValueAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.colonStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.configAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.escapeBackticks
@@ -58,7 +59,7 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.immutable.ListMap
 
-// SHOW [ALL|BTREE|FULLTEXT|LOOKUP] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
+// SHOW [ALL|BTREE|FULLTEXT|LOOKUP|POINT|RANGE|TEXT] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
 case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val ctx = state.query
@@ -81,6 +82,10 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
       case TextIndexes =>
         indexes.filter {
           case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.TEXT)
+        }
+      case PointIndexes =>
+        indexes.filter {
+          case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.POINT)
         }
       case LookupIndexes =>
         indexes.filter {
@@ -118,7 +123,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
           // Tells if the index is only meant to allow one value per key, either "UNIQUE" or "NONUNIQUE"
           "uniqueness" -> Values.stringValue(uniqueness),
-          // The IndexType of this index, either "FULLTEXT", "TEXT", "BTREE" or "LOOKUP"
+          // The IndexType of this index, either "FULLTEXT", "TEXT", "RANGE", "POINT", "BTREE" or "LOOKUP"
           "type" -> Values.stringValue(indexType.name),
           // Type of entities this index represents, either "NODE" or "RELATIONSHIP"
           "entityType" -> Values.stringValue(entityType.name),
@@ -126,7 +131,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           "labelsOrTypes" -> labelsOrTypesValue,
           // The properties of this constraint, for example ["propKey", "propKey2"], null for lookup indexes
           "properties" -> propertiesValue,
-          // The index provider for this index, one of "native-btree-1.0", "lucene+native-3.0", "fulltext-1.0", "token-lookup-1.0"
+          // The index provider for this index, one of "native-btree-1.0", "lucene+native-3.0", "fulltext-1.0", "token-lookup-1.0", "text-1.0", "range-1.0", "point-1.0"
           "indexProvider" -> Values.stringValue(providerName)
         )
         if (verbose) {
@@ -177,7 +182,7 @@ object ShowIndexesCommand {
         val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
         val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
 
-        val btreeConfig = configAsString(indexConfig, value => btreeConfigValueAsString(value))
+        val btreeConfig = configAsString(indexConfig, value => pointConfigValueAsString(value))
         val optionsString = optionsAsString(providerName, btreeConfig)
 
         maybeConstraint match {
@@ -246,6 +251,20 @@ object ShowIndexesCommand {
           case EntityType.RELATIONSHIP =>
             val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
             s"CREATE TEXT INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties)"
+          case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
+        }
+      case IndexType.POINT =>
+        val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+        val pointConfig = configAsString(indexConfig, value => pointConfigValueAsString(value))
+        val optionsString = optionsAsString(providerName, pointConfig)
+
+        entityType match {
+          case EntityType.NODE =>
+            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
+            s"CREATE POINT INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
+          case EntityType.RELATIONSHIP =>
+            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+            s"CREATE POINT INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.LOOKUP =>

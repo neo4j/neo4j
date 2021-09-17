@@ -46,6 +46,11 @@ case object TextIndexes extends ShowIndexType {
   override val description: String = "textIndexes"
 }
 
+case object PointIndexes extends ShowIndexType {
+  override val prettyPrint: String = "POINT"
+  override val description: String = "pointIndexes"
+}
+
 case object LookupIndexes extends ShowIndexType {
   override val prettyPrint: String = "LOOKUP"
   override val description: String = "lookupIndexes"

@@ -26,6 +26,7 @@ public enum CreateIndexTypes
     FULLTEXT( "FULLTEXT" ),
     LOOKUP( "LOOKUP" ),
     TEXT( "TEXT" ),
+    POINT( "POINT" ),
     DEFAULT( "DEFAULT" ),
     INVALID( "INVALID" );
 

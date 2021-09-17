@@ -70,6 +70,8 @@ import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
+import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
 import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
@@ -161,6 +163,7 @@ import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
+import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeCommand
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
@@ -1202,7 +1205,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _indexType: Gen[(ShowIndexType, Option[Boolean])] = for {
     verbose   <- frequency(8 -> const(None), 2 -> some(boolean)) // option(boolean) but None more often than Some
     // BRIEF/VERBOSE is only allowed with ALL and BTREE
-    indexType <- oneOf((AllIndexes, verbose), (BtreeIndexes, verbose), (RangeIndexes, None), (FulltextIndexes, None), (TextIndexes, None), (LookupIndexes, None))
+    indexType <- oneOf((AllIndexes, verbose), (BtreeIndexes, verbose), (RangeIndexes, None), (FulltextIndexes, None),
+                       (TextIndexes, None), (PointIndexes, None), (LookupIndexes, None))
   } yield indexType
 
   def _listOfLabels: Gen[List[LabelName]] = for {
@@ -1325,7 +1329,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     fulltextRelIndex  = CreateFulltextRelationshipIndex(variable, types, props, name, ifExistsDo, options, use)(pos)
     textNodeIndex     = CreateTextNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     textRelIndex      = CreateTextRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    command           <- oneOf(btreeNodeIndex, btreeRelIndex, rangeNodeIndex, rangeRelIndex, lookupNodeIndex, lookupRelIndex, fulltextNodeIndex, fulltextRelIndex, textNodeIndex, textRelIndex)
+    pointNodeIndex    = CreatePointNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    pointRelIndex     = CreatePointRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    command           <- oneOf(btreeNodeIndex, btreeRelIndex, rangeNodeIndex, rangeRelIndex, lookupNodeIndex, lookupRelIndex,
+                               fulltextNodeIndex, fulltextRelIndex, textNodeIndex, textRelIndex, pointNodeIndex, pointRelIndex)
   } yield command
 
   def _dropIndex: Gen[DropIndexOnName] = for {

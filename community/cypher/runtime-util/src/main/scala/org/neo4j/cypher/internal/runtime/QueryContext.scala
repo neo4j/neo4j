@@ -47,6 +47,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
+import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
@@ -146,21 +147,19 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
 
   def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
 
+  def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor
+
   def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   def dropIndexRule(name: String): Unit
 
   def getAllIndexes(): Map[IndexDescriptor, IndexInfo]
 
-  def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor
-
-  def rangeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor
+  def indexReference(indexType: IndexType, entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor
 
   def lookupIndexReference(entityType: EntityType): IndexDescriptor
 
   def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor
-
-  def textIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor
 
   def indexExists(name: String): Boolean
 

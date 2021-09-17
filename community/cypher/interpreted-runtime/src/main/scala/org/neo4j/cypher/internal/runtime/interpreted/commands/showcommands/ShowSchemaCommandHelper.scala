@@ -62,7 +62,7 @@ object ShowSchemaCommandHelper {
     configString.toString
   }
 
-  def btreeConfigValueAsString(configValue: Value): String = {
+  def pointConfigValueAsString(configValue: Value): String = {
     configValue match {
       case doubleArray: DoubleArray => java.util.Arrays.toString(doubleArray.asObjectCopy)
       case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")

@@ -128,6 +128,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PASSWORD;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PASSWORDS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PERIODIC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PLAINTEXT;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.POINT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.POPULATED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIVILEGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIVILEGES;
@@ -300,6 +301,7 @@ public class IdentifierTokens
             PASSWORDS,
             PERIODIC,
             PLAINTEXT,
+            POINT,
             POPULATED,
             PRIVILEGE,
             PRIVILEGES,

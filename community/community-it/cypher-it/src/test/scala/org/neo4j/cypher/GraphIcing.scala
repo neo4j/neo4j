@@ -26,7 +26,6 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
-import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.schema.ConstraintDefinition
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexDefinition
@@ -69,10 +68,11 @@ trait GraphIcing {
       } )
     }
 
-    def createUniqueConstraint(label: String, properties: String*): Result = {
+    def createUniqueConstraint(label: String, properties: String*): ConstraintDefinition = {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
       })
+      getNodeConstraint(label, properties)
     }
 
     def createUniqueConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
@@ -81,25 +81,28 @@ trait GraphIcing {
       } )
     }
 
-    def createUniqueConstraintWithName(name: String, label: String, properties: String*): Result = {
+    def createUniqueConstraintWithName(name: String, label: String, properties: String*): ConstraintDefinition = {
       withTx( tx =>  {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
       } )
+      getNodeConstraint(label, properties)
     }
 
-    def createNodeExistenceConstraint(label: String, property: String): Result = {
+    def createNodeExistenceConstraint(label: String, property: String): ConstraintDefinition = {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.$property) IS NOT NULL")
       })
+      getNodeConstraint(label, Seq(property))
     }
 
-    def createNodeExistenceConstraintWithName(name: String, label: String, property: String): Result = {
+    def createNodeExistenceConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.$property) IS NOT NULL")
       })
+      getNodeConstraint(label, Seq(property))
     }
 
-    def createRelationshipExistenceConstraint(relType: String, property: String, direction: Direction = Direction.BOTH): Result = {
+    def createRelationshipExistenceConstraint(relType: String, property: String, direction: Direction = Direction.BOTH): ConstraintDefinition = {
       val relSyntax = direction match {
         case Direction.OUTGOING => s"()-[r:$relType]->()"
         case Direction.INCOMING => s"()<-[r:$relType]-()"
@@ -108,9 +111,10 @@ trait GraphIcing {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT FOR $relSyntax REQUIRE (r.$property) IS NOT NULL")
       })
+      getRelationshipConstraint(relType, property)
     }
 
-    def createRelationshipExistenceConstraintWithName(name: String, relType: String, property: String, direction: Direction = Direction.BOTH): Result = {
+    def createRelationshipExistenceConstraintWithName(name: String, relType: String, property: String, direction: Direction = Direction.BOTH): ConstraintDefinition = {
       val relSyntax = direction match {
         case Direction.OUTGOING => s"()-[r:$relType]->()"
         case Direction.INCOMING => s"()<-[r:$relType]-()"
@@ -119,26 +123,30 @@ trait GraphIcing {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR $relSyntax REQUIRE (r.$property) IS NOT NULL")
       })
+      getRelationshipConstraint(relType, property)
     }
 
-    def createNodeKeyConstraint(label: String, properties: String*): Result = {
+    def createNodeKeyConstraint(label: String, properties: String*): ConstraintDefinition = {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
       })
+      getNodeConstraint(label, properties)
     }
 
-    def createNodeKeyConstraintWithName(name: String, label: String, properties: String*): Result = {
+    def createNodeKeyConstraintWithName(name: String, label: String, properties: String*): ConstraintDefinition = {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
       })
+      getNodeConstraint(label, properties)
     }
 
-    def createConstraintWithProvider(label: String, property: String, constraintPredicate: String, provider: String, name: Option[String] = None): Result = {
+    def createConstraintWithProvider(label: String, property: String, constraintPredicate: String, provider: String, name: Option[String] = None): ConstraintDefinition = {
       // Create a constraint with given provider, only node key and uniqueness constraints allow providers hence no support for relationship patterns
       val nameString = name.map(n => s"`$n`").getOrElse("")
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT $nameString FOR (n:$label) REQUIRE (n.$property) $constraintPredicate OPTIONS {indexProvider: '$provider'}")
       })
+      getNodeConstraint(label, Seq(property))
     }
 
     def createNodeIndex(label: String, properties: String*): IndexDefinition = {
@@ -181,20 +189,36 @@ trait GraphIcing {
       createRelationshipIndex(Some(name), relType, properties, IndexType.RANGE)
     }
 
-    def createTextNodeIndex(label: String, properties: String*): IndexDefinition = {
-      createNodeIndex(None, label, properties, IndexType.TEXT)
+    def createTextNodeIndex(label: String, property: String): IndexDefinition = {
+      createNodeIndex(None, label, Seq(property), IndexType.TEXT)
     }
 
     def createTextNodeIndexWithName(name: String, label: String, property: String): IndexDefinition = {
       createNodeIndex(Some(name), label, Seq(property), IndexType.TEXT)
     }
 
-    def createTextRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(None, relType, properties, IndexType.TEXT)
+    def createTextRelationshipIndex(relType: String, property: String): IndexDefinition = {
+      createRelationshipIndex(None, relType, Seq(property), IndexType.TEXT)
     }
 
     def createTextRelationshipIndexWithName(name: String, relType: String, property: String): IndexDefinition = {
       createRelationshipIndex(Some(name), relType, Seq(property), IndexType.TEXT)
+    }
+
+    def createPointNodeIndex(label: String, property: String): IndexDefinition = {
+      createNodeIndex(None, label, Seq(property), IndexType.POINT)
+    }
+
+    def createPointNodeIndexWithName(name: String, label: String, property: String): IndexDefinition = {
+      createNodeIndex(Some(name), label, Seq(property), IndexType.POINT)
+    }
+
+    def createPointRelationshipIndex(relType: String, property: String): IndexDefinition = {
+      createRelationshipIndex(None, relType, Seq(property), IndexType.POINT)
+    }
+
+    def createPointRelationshipIndexWithName(name: String, relType: String, property: String): IndexDefinition = {
+      createRelationshipIndex(Some(name), relType, Seq(property), IndexType.POINT)
     }
 
     private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE, options: Map[String, String] = Map.empty): IndexDefinition = {

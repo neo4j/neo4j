@@ -59,6 +59,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
+import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -184,6 +185,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
     singleDbHit(inner.addTextIndexRule(entityId, entityType, propertyKeyIds, name, provider))
 
+  override def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
+    singleDbHit(inner.addPointIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
+
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = singleDbHit(inner.dropIndexRule(labelId, propertyKeyIds))
 
   override def dropIndexRule(name: String): Unit = singleDbHit(inner.dropIndexRule(name))
@@ -197,15 +201,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
     singleDbHit(inner.constraintExists(matchFn, entityId, properties: _*))
 
-  override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.btreeIndexReference(entityId, entityType, properties:_*))
-
-  override def rangeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.rangeIndexReference(entityId, entityType, properties:_*))
+  override def indexReference(indexType: IndexType, entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.indexReference(indexType, entityId, entityType, properties:_*))
 
   override def lookupIndexReference(entityType: EntityType): IndexDescriptor = singleDbHit(inner.lookupIndexReference(entityType))
 
   override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.fulltextIndexReference(entityIds, entityType, properties:_*))
-
-  override def textIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.textIndexReference(entityId, entityType, properties:_*))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

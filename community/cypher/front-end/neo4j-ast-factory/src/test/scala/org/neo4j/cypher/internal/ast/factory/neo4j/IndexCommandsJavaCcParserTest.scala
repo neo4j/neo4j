@@ -694,6 +694,119 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
       }
   }
 
+  // point loop
+  Seq(
+    ("(n1:Person)", pointNodeIndex: CreateIndexFunction),
+    ("()-[n1:R]-()", pointRelIndex: CreateIndexFunction),
+    ("()-[n1:R]->()", pointRelIndex: CreateIndexFunction),
+    ("()<-[n1:R]-()", pointRelIndex: CreateIndexFunction)
+  ).foreach {
+    case (pattern, createIndex: CreateIndexFunction) =>
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"USE neo4j CREATE POINT INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX `$$my_index` FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE POINT INDEX FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE POINT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE POINT INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE OR REPLACE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'point-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'point-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'point-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX $$my_index FOR $pattern ON (n2.name)") {
+        assertJavaCCExceptionStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE POINT INDEX my_index FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE OR REPLACE POINT INDEX IF NOT EXISTS FOR $pattern ON n2.name") {
+        assertJavaCCAST(testName, createIndex(List(prop("n2", "name")), None, ast.IfExistsInvalidSyntax, NoOptions))
+      }
+
+      test(s"CREATE POINT INDEX my_index FOR $pattern ON n2.name, n3.age") {
+        assertJavaCCExceptionStart(testName, """Invalid input ',': expected "OPTIONS" or <EOF>""")
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) {indexProvider : 'point-1.0'}") {
+        assertSameAST(testName)
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS") {
+        assertSameAST(testName)
+      }
+  }
+
   test("CREATE LOOKUP INDEX FOR (x1) ON EACH labels(x2)") {
     assertSameAST(testName)
   }
@@ -769,6 +882,27 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
   }
 
   test("CREATE TEXT INDEX FOR [r1:R] ON (r2.name)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE POINT INDEX FOR n1:Person ON (n2.name)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE POINT INDEX FOR -[r1:R]-() ON (r2.name)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE POINT INDEX FOR ()-[r1:R]- ON (r2.name)") {
+    //parboiled expects a space here, whereas java cc is whitespace ignorant
+    assertJavaCCException(testName, "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 35 (offset: 34))")
+  }
+
+  test("CREATE POINT INDEX FOR -[r1:R]- ON (r2.name)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE POINT INDEX FOR [r1:R] ON (r2.name)") {
     assertSameAST(testName)
   }
 
@@ -990,4 +1124,16 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
                             ifExistsDo: ast.IfExistsDo,
                             options: Options): InputPosition => ast.CreateIndex =
     ast.CreateTextRelationshipIndex(varFor("n1"), relTypeName("R"), props, name, ifExistsDo, options)
+
+  private def pointNodeIndex(props: List[expressions.Property],
+                             name: Option[String],
+                             ifExistsDo: ast.IfExistsDo,
+                             options: Options): InputPosition => ast.CreateIndex =
+    ast.CreatePointNodeIndex(varFor("n1"), labelName("Person"), props, name, ifExistsDo, options)
+
+  private def pointRelIndex(props: List[expressions.Property],
+                            name: Option[String],
+                            ifExistsDo: ast.IfExistsDo,
+                            options: Options): InputPosition => ast.CreateIndex =
+    ast.CreatePointRelationshipIndex(varFor("n1"), relTypeName("R"), props, name, ifExistsDo, options)
 }

@@ -43,6 +43,8 @@ import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
+import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
@@ -289,6 +291,14 @@ case class Prettifier(
 
       case CreateTextRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "TEXT INDEX")
+        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
+
+      case CreatePointNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "POINT INDEX")
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
+
+      case CreatePointRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, _) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "POINT INDEX")
         s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
 
       case DropIndex(LabelName(label), properties, _) =>

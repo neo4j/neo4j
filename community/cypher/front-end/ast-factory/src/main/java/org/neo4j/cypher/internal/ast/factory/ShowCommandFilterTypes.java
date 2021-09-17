@@ -26,6 +26,7 @@ public enum ShowCommandFilterTypes
     RANGE( "RANGE" ),
     FULLTEXT( "FULLTEXT" ),
     TEXT( "TEXT" ),
+    POINT( "POINT" ),
     LOOKUP( "LOOKUP" ),
     // constraint specific
     UNIQUE( "UNIQUE" ),

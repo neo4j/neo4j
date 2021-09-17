@@ -70,6 +70,8 @@ import org.neo4j.cypher.internal.ast.CreateIndexAction
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
+import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
+import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
 import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
@@ -156,6 +158,7 @@ import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
+import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeType
 import org.neo4j.cypher.internal.ast.ProcedureResult
@@ -1082,6 +1085,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
       case ShowCommandFilterTypes.RANGE => RangeIndexes
       case ShowCommandFilterTypes.FULLTEXT => FulltextIndexes
       case ShowCommandFilterTypes.TEXT => TextIndexes
+      case ShowCommandFilterTypes.POINT => PointIndexes
       case ShowCommandFilterTypes.LOOKUP => LookupIndexes
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("indexes", t))
     }
@@ -1255,6 +1259,10 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
         CreateTextNodeIndex(variable, LabelName(label.string)(label.pos), properties, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
       case (CreateIndexTypes.TEXT, false)    =>
         CreateTextRelationshipIndex(variable, RelTypeName(label.string)(label.pos), properties, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
+      case (CreateIndexTypes.POINT, true)     =>
+        CreatePointNodeIndex(variable, LabelName(label.string)(label.pos), properties, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
+      case (CreateIndexTypes.POINT, false)    =>
+        CreatePointRelationshipIndex(variable, RelTypeName(label.string)(label.pos), properties, Option(indexName), ifExistsDo(replace, ifNotExists), asOptionsAst(options))(p)
       case (t, _) =>
         throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidCreateIndexType(t))
     }

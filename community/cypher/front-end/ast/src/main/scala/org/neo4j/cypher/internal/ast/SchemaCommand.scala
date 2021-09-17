@@ -46,16 +46,20 @@ sealed trait SchemaCommand extends StatementWithGraph with SemanticAnalysisTooli
   override def containsUpdates: Boolean = true
 
   // The validation of the values (provider, config keys and config values) are done at runtime.
-  def checkOptionsMap(schemaString: String, options: Options): SemanticCheck = options match {
+  protected def checkOptionsMap(schemaString: String, options: Options): SemanticCheck = options match {
     case OptionsMap(ops) if ops.filterKeys(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")).nonEmpty =>
       error(s"Failed to create $schemaString: Invalid option provided, valid options are `indexProvider` and `indexConfig`.", position)
     case _ => SemanticCheckResult.success
   }
 
+  protected def checkSingleProperty(schemaString: String, properties: List[Property]): SemanticCheck = when(properties.size > 1) {
+    error(s"Only single property $schemaString are supported", properties(1).position)
+  }
+
   // Error messages for mixing old and new constraint syntax
-  val errorMessageOnRequire: String = "Invalid constraint syntax, ON should not be used in combination with REQUIRE. Replace ON with FOR."
-  val errorMessageForAssert: String = "Invalid constraint syntax, FOR should not be used in combination with ASSERT. Replace ASSERT with REQUIRE."
-  val errorMessageForAssertExists: String = "Invalid constraint syntax, FOR should not be used in combination with ASSERT EXISTS. Replace ASSERT EXISTS with REQUIRE ... IS NOT NULL."
+  protected val errorMessageOnRequire: String = "Invalid constraint syntax, ON should not be used in combination with REQUIRE. Replace ON with FOR."
+  protected val errorMessageForAssert: String = "Invalid constraint syntax, FOR should not be used in combination with ASSERT. Replace ASSERT with REQUIRE."
+  protected val errorMessageForAssertExists: String = "Invalid constraint syntax, FOR should not be used in combination with ASSERT EXISTS. Replace ASSERT EXISTS with REQUIRE ... IS NOT NULL."
 }
 
 case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[UseGraph] = None)(val position: InputPosition) extends SchemaCommand {
@@ -146,9 +150,7 @@ case class CreateTextNodeIndex(variable: Variable, label: LabelName, properties:
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("text node index", options) chain
       super.semanticCheck chain
-      when(properties.size > 1) {
-        error("Only single property text indexes are supported", properties(1).position)
-      }
+      checkSingleProperty("text indexes", properties)
 }
 
 case class CreateTextRelationshipIndex(variable: Variable, relType: RelTypeName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, useGraph: Option[GraphSelection] = None)(override val position: InputPosition)
@@ -158,9 +160,27 @@ case class CreateTextRelationshipIndex(variable: Variable, relType: RelTypeName,
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("text relationship index", options) chain
       super.semanticCheck chain
-      when(properties.size > 1) {
-        error("Only single property text indexes are supported", properties(1).position)
-      }
+      checkSingleProperty("text indexes", properties)
+}
+
+case class CreatePointNodeIndex(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, useGraph: Option[GraphSelection] = None)(override val position: InputPosition)
+  extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+
+  override def semanticCheck: SemanticCheck =
+    checkOptionsMap("point node index", options) chain
+      super.semanticCheck chain
+      checkSingleProperty("point indexes", properties)
+}
+
+case class CreatePointRelationshipIndex(variable: Variable, relType: RelTypeName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, useGraph: Option[GraphSelection] = None)(override val position: InputPosition)
+  extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+
+  override def semanticCheck: SemanticCheck =
+    checkOptionsMap("point relationship index", options) chain
+      super.semanticCheck chain
+      checkSingleProperty("point indexes", properties)
 }
 
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {

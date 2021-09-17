@@ -58,6 +58,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
+import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.procedure.Context
@@ -215,6 +216,8 @@ object StaticEvaluation {
 
     override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = notAvailable()
 
+    override def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
+
     override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = notAvailable()
 
     override def dropIndexRule(name: String): Unit = notAvailable()
@@ -227,15 +230,11 @@ object StaticEvaluation {
 
     override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean = notAvailable()
 
-    override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
-
-    override def rangeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
+    override def indexReference(indexType: IndexType, entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
 
     override def lookupIndexReference(entityType: EntityType): IndexDescriptor = notAvailable()
 
     override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
-
-    override def textIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
 
     override def nodeIndexSeek(index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor = notAvailable()
 

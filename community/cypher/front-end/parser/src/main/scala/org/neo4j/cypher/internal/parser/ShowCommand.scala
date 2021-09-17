@@ -69,6 +69,7 @@ trait ShowCommand extends Parser
     keyword("RANGE") ~~~> (_ => ast.RangeIndexes) |
     keyword("FULLTEXT") ~~~> (_ => ast.FulltextIndexes) |
     keyword("TEXT") ~~~> (_ => ast.TextIndexes) |
+    keyword("POINT") ~~~> (_ => ast.PointIndexes) |
     keyword("LOOKUP") ~~~> (_ => ast.LookupIndexes) |
     optional(keyword("ALL")) ~~~> (_ => ast.AllIndexes)
   }

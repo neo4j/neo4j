@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
+import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
@@ -37,6 +39,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
@@ -155,7 +158,7 @@ object Additions {
       case e: ExistsSubClause =>
         throw cypherExceptionFactory.syntaxException("Existential subquery is not supported in this Cypher version.", e.position)
 
-      // SHOW [ALL|BTREE|FULLTEXT|LOOKUP] INDEX[ES] [WHERE clause|YIELD clause]
+      // SHOW [ALL|BTREE|FULLTEXT|LOOKUP|POINT|RANGE|TEXT] INDEX[ES] [WHERE clause|YIELD clause]
       case s: ShowIndexesClause =>
         throw cypherExceptionFactory.syntaxException("SHOW INDEXES is not supported in this Cypher version.", s.position)
 
@@ -203,6 +206,16 @@ object Additions {
       // SHOW TEXT INDEXES
       case s: ShowIndexesClause if s.indexType == TextIndexes =>
         throw cypherExceptionFactory.syntaxException("Filtering on text indexes in SHOW INDEXES is not supported in this Cypher version.", s.position)
+
+      // CREATE POINT INDEX ...
+      case c: CreatePointNodeIndex =>
+        throw cypherExceptionFactory.syntaxException("Point indexes are not supported in this Cypher version.", c.position)
+      case c: CreatePointRelationshipIndex =>
+        throw cypherExceptionFactory.syntaxException("Point indexes are not supported in this Cypher version.", c.position)
+
+      // SHOW POINT INDEXES
+      case s: ShowIndexesClause if s.indexType == PointIndexes =>
+        throw cypherExceptionFactory.syntaxException("Filtering on point indexes in SHOW INDEXES is not supported in this Cypher version.", s.position)
 
       // CREATE CONSTRAINT ... OPTIONS {indexProvider:  'range-1.0'}
       case c: CreateNodeKeyConstraint if hasRangeOptions(c.options) =>

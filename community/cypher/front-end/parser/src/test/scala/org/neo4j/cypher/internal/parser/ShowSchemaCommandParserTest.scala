@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.OldValidSyntax
+import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
@@ -65,6 +66,10 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
 
     test(s"SHOW TEXT $indexKeyword") {
       yields(_ => query(ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
+    }
+
+    test(s"SHOW POINT $indexKeyword") {
+      yields(_ => query(ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW LOOKUP $indexKeyword") {
@@ -120,6 +125,10 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
 
   test("SHOW INDEXES YIELD populationPercent") {
     yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("populationPercent")))))
+  }
+
+  test("SHOW POINT INDEXES YIELD populationPercent") {
+    yields(_ => query(ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("populationPercent")))))
   }
 
   test("SHOW BTREE INDEXES YIELD *") {
@@ -321,6 +330,14 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("SHOW TEXT INDEXES VERBOSE") {
+    failsToParse
+  }
+
+  test("SHOW POINT INDEXES BRIEF") {
+    failsToParse
+  }
+
+  test("SHOW POINT INDEXES VERBOSE") {
     failsToParse
   }
 

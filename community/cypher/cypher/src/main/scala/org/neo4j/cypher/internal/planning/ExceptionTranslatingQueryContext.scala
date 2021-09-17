@@ -55,6 +55,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
+import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.memory.MemoryTracker
@@ -147,6 +148,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
     translateException(tokenNameLookup, inner.addTextIndexRule(entityId, entityType, propertyKeyIds, name, provider))
 
+  override def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addPointIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
+
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(tokenNameLookup, inner.dropIndexRule(labelId, propertyKeyIds))
 
@@ -165,20 +169,14 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
     translateException(tokenNameLookup, inner.constraintExists(matchFn, entityId, properties: _*))
 
-  override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
-    translateException(tokenNameLookup, inner.btreeIndexReference(entityId, entityType, properties:_*))
-
-  override def rangeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
-    translateException(tokenNameLookup, inner.rangeIndexReference(entityId, entityType, properties:_*))
+  override def indexReference(indexType: IndexType, entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
+    translateException(tokenNameLookup, inner.indexReference(indexType, entityId, entityType, properties:_*))
 
   override def lookupIndexReference(entityType: EntityType): IndexDescriptor =
     translateException(tokenNameLookup, inner.lookupIndexReference(entityType))
 
   override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor =
     translateException(tokenNameLookup, inner.fulltextIndexReference(entityIds, entityType, properties:_*))
-
-  override def textIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
-    translateException(tokenNameLookup, inner.textIndexReference(entityId, entityType, properties:_*))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

@@ -437,6 +437,7 @@ TOKEN [IGNORE_CASE] :
     | < PERIODIC: "PERIODIC" >
     | < PLAINTEXT: "PLAINTEXT" >
     | < PLUS: "+" >
+    | < POINT: "POINT">
     | < POPULATED: "POPULATED">
     | < POW: "^" >
     | < PRIVILEGE: "PRIVILEGE" >
@@ -2883,6 +2884,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | showCommandType=<RANGE> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.RANGE )
         | showCommandType=<FULLTEXT> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.FULLTEXT )
         | showCommandType=<TEXT> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.TEXT )
+        | showCommandType=<POINT> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.POINT )
         | showCommandType=<LOOKUP> statement = ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.LOOKUP )
         | showCommandType=<UNIQUE> statement = ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.UNIQUE )
         | showCommandType=<NODE> statement = ShowNodeCommand( start, useClause )
@@ -3459,6 +3461,7 @@ SCHEMA_COMMAND CreateIndex( Token start, boolean replace ) throws Exception:
         | <RANGE> <INDEX> command=createIndex( start, replace, CreateIndexTypes.RANGE )
         | <FULLTEXT> <INDEX> command=createFulltextIndex( start, replace )
         | <TEXT> <INDEX> command=createIndex( start, replace, CreateIndexTypes.TEXT )
+        | <POINT> <INDEX> command=createIndex( start, replace, CreateIndexTypes.POINT )
         | <LOOKUP> <INDEX> command=createLookupIndex( start, replace )
         | <INDEX> (
             <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
@@ -3498,7 +3501,7 @@ SCHEMA_COMMAND createIndex( Token start, boolean replace, CreateIndexTypes index
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
-    //CREATE [RANGE | BTREE | TEXT] INDEX FOR (n:label) ON (n.prop)
+    //CREATE [RANGE | BTREE | TEXT | POINT] INDEX FOR (n:label) ON (n.prop)
     (
         //lookaheads for potential symbolicNames "for", "if"
         LOOKAHEAD(<FOR> <LPAREN>) <FOR> <LPAREN>
@@ -4824,6 +4827,7 @@ Token SymbolicNameString() :
         | t=<PASSWORDS>
         | t=<PERIODIC>
         | t=<PLAINTEXT>
+        | t=<POINT>
         | t=<POPULATED>
         | t=<PRIVILEGE>
         | t=<PRIVILEGES>

@@ -89,7 +89,7 @@ trait SchemaCommand extends Parser
   }
 
   private def CreateIndex: Rule1[ast.CreateIndex] = rule {
-    CreateDefaultIndex | CreateLookupIndex | CreateFulltextIndex | CreateTextIndex | CreateRangeIndex | CreateBtreeIndex
+    CreateDefaultIndex | CreateLookupIndex | CreateFulltextIndex | CreatePointIndex | CreateTextIndex | CreateRangeIndex | CreateBtreeIndex
   }
 
   // Default
@@ -282,6 +282,29 @@ trait SchemaCommand extends Parser
     group(keyword("CREATE OR REPLACE TEXT INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsReplace) |
     group(keyword("CREATE TEXT INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsDoNothing) |
     group(keyword("CREATE TEXT INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsThrowError)
+  }
+
+  // POINT
+
+  private def CreatePointIndex: Rule1[ast.CreateIndex] = rule {
+    val pointIndexStart = CreatePointIndexStart
+    group(pointIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
+      ((name, ifExistsDo, variable, relType, properties, options) => ast.CreatePointRelationshipIndex(variable, relType, properties.toList, name, ifExistsDo, options)) |
+    group(pointIndexStart ~~ NodeIndexPatternSyntax) ~~>>
+      ((name, ifExistsDo, variable, label, properties, options) => ast.CreatePointNodeIndex(variable, label, properties.toList, name, ifExistsDo, options))
+  }
+
+  private def CreatePointIndexStart: Rule2[Option[String], ast.IfExistsDo] = rule {
+    // without name
+    keyword("CREATE OR REPLACE POINT INDEX IF NOT EXISTS FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsInvalidSyntax) |
+    keyword("CREATE OR REPLACE POINT INDEX FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsReplace) |
+    keyword("CREATE POINT INDEX IF NOT EXISTS FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsDoNothing) |
+    keyword("CREATE POINT INDEX FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsThrowError) |
+    // with name
+    group(keyword("CREATE OR REPLACE POINT INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsInvalidSyntax) |
+    group(keyword("CREATE OR REPLACE POINT INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsReplace) |
+    group(keyword("CREATE POINT INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsDoNothing) |
+    group(keyword("CREATE POINT INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsThrowError)
   }
 
   // DROP

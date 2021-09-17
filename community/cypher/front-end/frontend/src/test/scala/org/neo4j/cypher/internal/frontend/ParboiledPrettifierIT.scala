@@ -642,6 +642,92 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "create TEXT INDEX foo IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
       "CREATE TEXT INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
 
+    // point
+
+    "create POINT INDEX FOR (n:A) ON (n.p)" ->
+      "CREATE POINT INDEX FOR (n:A) ON (n.p)",
+
+    "create POINT INDEX FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
+      "CREATE POINT INDEX FOR (n:A) ON (n.p1, n.p2, n.p3)",
+
+    "create POINT INDEX foo FOR (n:A) ON (n.p)" ->
+      "CREATE POINT INDEX foo FOR (n:A) ON (n.p)",
+
+    "create POINT INDEX `foo` FOR (n:A) ON (n.p)" ->
+      "CREATE POINT INDEX foo FOR (n:A) ON (n.p)",
+
+    "create POINT INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
+      "CREATE POINT INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
+
+    "CREATE POINT index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'point-1.0'}" ->
+      """CREATE POINT INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "point-1.0"}""",
+
+    "create point INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'point-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+      """CREATE POINT INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "point-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+
+    "create POINT INDEX myIndex for (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+      """CREATE POINT INDEX myIndex FOR (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+
+    "CREATE POINT index FOR (n:Person) on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE POINT INDEX FOR (n:Person) ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+    "CREATE POINT index FOR (n:Person) on (n.name) OPtiONS {}" ->
+      """CREATE POINT INDEX FOR (n:Person) ON (n.name) OPTIONS {}""",
+
+    "create or REPLACE POINT INDEX FOR (n:A) ON (n.p)" ->
+      "CREATE OR REPLACE POINT INDEX FOR (n:A) ON (n.p)",
+
+    "create or REPLACE POINT INDEX foo FOR (n:A) ON (n.p)" ->
+      "CREATE OR REPLACE POINT INDEX foo FOR (n:A) ON (n.p)",
+
+    "create POINT INDEX IF not EXISTS FOR (n:A) ON (n.p)" ->
+      "CREATE POINT INDEX IF NOT EXISTS FOR (n:A) ON (n.p)",
+
+    "create POINT INDEX foo IF not EXISTS FOR (n:A) ON (n.p)" ->
+      "CREATE POINT INDEX foo IF NOT EXISTS FOR (n:A) ON (n.p)",
+
+    "create POINT INDEX FOR ()-[n:R]->() ON (n.p)" ->
+      "CREATE POINT INDEX FOR ()-[n:R]-() ON (n.p)",
+
+    "create POINT INDEX FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
+      "CREATE POINT INDEX FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
+
+    "create POINT INDEX foo FOR ()<-[n:R]-() ON (n.p)" ->
+      "CREATE POINT INDEX foo FOR ()-[n:R]-() ON (n.p)",
+
+    "create POINT INDEX `foo` FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE POINT INDEX foo FOR ()-[n:R]-() ON (n.p)",
+
+    "create POINT INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
+      "CREATE POINT INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
+
+    "CREATE POINT index FOR ()-[n:R]->() on (n.name) OPtiONS {indexProvider: 'point-1.0'}" ->
+      """CREATE POINT INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "point-1.0"}""",
+
+    "create POINT INDEX for ()-[n:R]-() ON (n.name) OPTIONS {`indexProvider`: 'point-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+      """CREATE POINT INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "point-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+
+    "create POINT INDEX myIndex for ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+      """CREATE POINT INDEX myIndex FOR ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+
+    "CREATE POINT index FOR ()-[n:R]-() on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE POINT INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+    "CREATE POINT index FOR ()<-[n:R]-() on (n.name) OPtiONS {}" ->
+      """CREATE POINT INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {}""",
+
+    "create or REPLACE POINT INDEX FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE OR REPLACE POINT INDEX FOR ()-[n:R]-() ON (n.p)",
+
+    "create or REPLACE POINT INDEX foo FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE OR REPLACE POINT INDEX foo FOR ()-[n:R]-() ON (n.p)",
+
+    "create POINT INDEX IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE POINT INDEX IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
+
+    "create POINT INDEX foo IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE POINT INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
+
     // drop
 
     "drop INDEX ON :A(p)" ->
@@ -872,6 +958,9 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show tEXT index" ->
       "SHOW TEXT INDEXES",
 
+    "show pOInt index" ->
+      "SHOW POINT INDEXES",
+
     "show loOKup index" ->
       "SHOW LOOKUP INDEXES",
 
@@ -892,6 +981,11 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
     "show index  YIELD * Return DISTINCT type" ->
       """SHOW ALL INDEXES
+        |YIELD *
+        |RETURN DISTINCT type""".stripMargin,
+
+    "show poInt index  YIELD * Return DISTINCT type" ->
+      """SHOW POINT INDEXES
         |YIELD *
         |RETURN DISTINCT type""".stripMargin,
 

@@ -745,6 +745,133 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
       }
   }
 
+  // point loop
+  Seq(
+    ("(n:Person)", pointNodeIndex: CreateIndexFunction),
+    ("()-[n:R]-()", pointRelIndex: CreateIndexFunction),
+    ("()-[n:R]->()", pointRelIndex: CreateIndexFunction),
+    ("()<-[n:R]-()", pointRelIndex: CreateIndexFunction)
+  ).foreach {
+    case (pattern, createIndex: CreateIndexFunction) =>
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"USE neo4j CREATE POINT INDEX FOR $pattern ON (n.name)") {
+        yields(_ => createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions).withGraph(Some(use(varFor("neo4j")))))
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE POINT INDEX my_index FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE POINT INDEX my_index FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE POINT INDEX `$$my_index` FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("$my_index"), ast.IfExistsThrowError, NoOptions))
+      }
+
+      test(s"CREATE OR REPLACE POINT INDEX FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsReplace, NoOptions))
+      }
+
+      test(s"CREATE OR REPLACE POINT INDEX my_index FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsReplace, NoOptions))
+      }
+
+      test(s"CREATE OR REPLACE POINT INDEX IF NOT EXISTS FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsInvalidSyntax, NoOptions))
+      }
+
+      test(s"CREATE OR REPLACE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsInvalidSyntax, NoOptions))
+      }
+
+      test(s"CREATE POINT INDEX IF NOT EXISTS FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsDoNothing, NoOptions))
+      }
+
+      test(s"CREATE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsDoNothing, NoOptions))
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS {indexProvider : 'point-1.0'}") {
+        yields(createIndex(List(prop("n", "name")),
+          None, ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("point-1.0")))))
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS {indexProvider : 'point-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          OptionsMap(Map("indexProvider" -> literalString("point-1.0"),
+            "indexConfig"   -> mapOf(
+              "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+              "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+            )
+          ))
+        ))
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'point-1.0'}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          OptionsMap(Map("indexProvider" -> literalString("point-1.0"),
+            "indexConfig"   -> mapOf(
+              "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+              "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+            )
+          ))
+        ))
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          OptionsMap(Map("indexConfig" -> mapOf(
+            "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+            "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+          )))
+        ))
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS $$options") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          OptionsParam(parameter("options", CTMap))
+        ))
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS {nonValidOption : 42}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, OptionsMap(Map("nonValidOption" -> literalInt(42)))))
+      }
+
+      test(s"CREATE POINT INDEX my_index FOR $pattern ON (n.name) OPTIONS {}") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, OptionsMap(Map.empty)))
+      }
+
+      test(s"CREATE POINT INDEX $$my_index FOR $pattern ON (n.name)") {
+        failsToParse
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON n.name") {
+        failsToParse
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON n.name, n.age") {
+        failsToParse
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name) {indexProvider : 'point-1.0'}") {
+        failsToParse
+      }
+
+      test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS") {
+        failsToParse
+      }
+  }
+
   test("CREATE LOOKUP INDEX FOR (x) ON EACH labels(x)") {
     yields(ast.CreateLookupIndex(varFor("x"), isNodeIndex = true, function(Labels.name, varFor("x")), None, ast.IfExistsThrowError, NoOptions))
   }
@@ -818,6 +945,26 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("CREATE TEXT INDEX FOR [r:R] ON (r.name)") {
+    failsToParse
+  }
+
+  test("CREATE POINT INDEX FOR n:Person ON (n.name)") {
+    failsToParse
+  }
+
+  test("CREATE POINT INDEX FOR -[r:R]-() ON (r.name)") {
+    failsToParse
+  }
+
+  test("CREATE POINT INDEX FOR ()-[r:R]- ON (r.name)") {
+    failsToParse
+  }
+
+  test("CREATE POINT INDEX FOR -[r:R]- ON (r.name)") {
+    failsToParse
+  }
+
+  test("CREATE POINT INDEX FOR [r:R] ON (r.name)") {
     failsToParse
   }
 
@@ -1050,4 +1197,16 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
                            ifExistsDo: ast.IfExistsDo,
                            options: Options): InputPosition => ast.CreateIndex =
     ast.CreateTextRelationshipIndex(varFor("n"), relTypeName("R"), props, name, ifExistsDo, options)
+
+  private def pointNodeIndex(props: List[expressions.Property],
+                            name: Option[String],
+                            ifExistsDo: ast.IfExistsDo,
+                            options: Options): InputPosition => ast.CreateIndex =
+    ast.CreatePointNodeIndex(varFor("n"), labelName("Person"), props, name, ifExistsDo, options)
+
+  private def pointRelIndex(props: List[expressions.Property],
+                           name: Option[String],
+                           ifExistsDo: ast.IfExistsDo,
+                           options: Options): InputPosition => ast.CreateIndex =
+    ast.CreatePointRelationshipIndex(varFor("n"), relTypeName("R"), props, name, ifExistsDo, options)
 }

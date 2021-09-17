@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand.createConstraintStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand.getConstraintType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.btreeConfigValueAsString
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.pointConfigValueAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.colonStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.configAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.escapeBackticks
@@ -158,7 +158,7 @@ object ShowConstraintsCommand {
   private def extractOptionsString(maybeProviderName: Option[String], maybeIndexConfig: Option[IndexConfig], constraintType: String): String = {
     val providerName = maybeProviderName.getOrElse(throw new IllegalArgumentException(s"Expected a provider name for $constraintType constraint."))
     val indexConfig = maybeIndexConfig.getOrElse(throw new IllegalArgumentException(s"Expected an index configuration for $constraintType constraint."))
-    val btreeConfig = configAsString(indexConfig, value => btreeConfigValueAsString(value))
+    val btreeConfig = configAsString(indexConfig, value => pointConfigValueAsString(value))
     optionsAsString(providerName, btreeConfig)
   }
 
