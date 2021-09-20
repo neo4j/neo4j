@@ -74,6 +74,7 @@ import static org.neo4j.configuration.SettingValueParsers.DURATION_RANGE;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.HOSTNAME_PORT;
 import static org.neo4j.configuration.SettingValueParsers.INT;
+import static org.neo4j.configuration.SettingValueParsers.JVM_ADDITIONAL;
 import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
@@ -389,6 +390,45 @@ class SettingTest
         assertEquals( Path.of( "/base/path" ).toAbsolutePath(), setting.solveDependency( setting.parse( "path" ), setting.parse( "/base" ).toAbsolutePath() ) );
         assertEquals( Path.of( "/base" ).toAbsolutePath(), setting.solveDependency( null, setting.parse( "/base" ).toAbsolutePath() ) );
         assertThrows( IllegalArgumentException.class, () -> setting.solveDependency( setting.parse( "path" ), setting.parse( "base" ) ) );
+    }
+
+    @Test
+    void testJvmAdditional()
+    {
+        var setting = (SettingImpl<String>) setting( "setting", JVM_ADDITIONAL );
+        var inputs = new String[]
+            {
+                "value1",                   // value1
+                "value2 value3",            // value2 value3
+                "\"value 4\" \"value 5\"",  // "value 4" "value 5"
+                "\"value 6\"",              // "value 6"
+                "value\"quoted\"",          // value"quoted"
+                "\"value \"\"\"",           // "value """
+                "\"\"quote",                // ""quote          Escaped start quote
+            };
+        var outputs = new String[]
+            {
+                "value1",                   // value1
+                "value2",                   // value2
+                "value3",                   // value3
+                "value 4",                  // value 4
+                "value 5",                  // value 5
+                "value 6",                  // value 6
+                "value\"quoted\"",          // value"quoted"
+                "value \"",                 // value "
+                "\"quote",                  // "quote
+            };
+        var actualSettings = setting.parse( String.join( System.lineSeparator(), inputs ) );
+        var expectedSettings = String.join( System.lineSeparator(), outputs );
+        assertEquals( expectedSettings, actualSettings );
+    }
+
+    @Test
+    void testJvmAdditionalBadQuoting()
+    {
+        // A JVM setting starting with a quote should have an end quote
+        var setting = (SettingImpl<String>) setting( "setting", JVM_ADDITIONAL );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "\"missing_end_quote" ) );
     }
 
     @Test

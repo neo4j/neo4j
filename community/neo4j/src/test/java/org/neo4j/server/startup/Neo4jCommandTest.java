@@ -324,24 +324,18 @@ class Neo4jCommandTest
         @Test
         void shouldQuoteArgsCorrectlyOnDryRun()
         {
-            addConf( BootloaderSettings.additional_jvm, "-Dfoo=/path/with spaces/" );
-            addConf( BootloaderSettings.additional_jvm, "'-Dbar=/path/with spaces/and single qoutes'" );
             addConf( BootloaderSettings.additional_jvm, "\"-Dbaz=/path/with spaces/and double qoutes\"" );
-            addConf( BootloaderSettings.additional_jvm, "-Dqux=/path/with spaces/and unmatched \" qoute" );
+            addConf( BootloaderSettings.additional_jvm, "\"-Dqux=/path/with spaces/and unmatched \"\" qoute\"" );
             addConf( BootloaderSettings.additional_jvm, "-Dcorge=/path/with/no/spaces" );
             addConf( BootloaderSettings.additional_jvm, "-Dgrault=/path/with/part/'quoted'" );
             addConf( BootloaderSettings.additional_jvm, "-Dgarply=\"/path/with/part/quoted\"" );
-            addConf( BootloaderSettings.additional_jvm, "\"\"-Dwaldo=redundant quoting removed\"\"" );
             assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( 0 );
             assertThat( out.toString() ).contains(
-                    "\"-Dfoo=/path/with spaces/\"",
-                    "\"-Dbar=/path/with spaces/and single qoutes\"",
                     "\"-Dbaz=/path/with spaces/and double qoutes\"",
                     "'-Dqux=/path/with spaces/and unmatched \" qoute'",
                     "-Dcorge=/path/with/no/spaces",
                     "-Dgrault=/path/with/part/'quoted'",
-                    "'-Dgarply=\"/path/with/part/quoted\"'",
-                    "\"-Dwaldo=redundant quoting removed\""
+                    "'-Dgarply=\"/path/with/part/quoted\"'"
             );
 
             assertThat( out.toString() ).doesNotContain( "\"-Dcorge=/path/with/no/spaces\"" );
