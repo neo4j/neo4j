@@ -114,7 +114,7 @@ object TransactionBoundPlanContext {
 }
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: InstrumentedGraphStatistics)
-  extends TransactionBoundTokenContext(tc.kernelTransaction) with PlanContext with IndexDescriptorCompatibility {
+  extends TransactionBoundTokenContext(tc) with PlanContext with IndexDescriptorCompatibility {
 
   override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     indexesGetForLabel(labelId, schema.IndexType.BTREE)
@@ -337,11 +337,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override val lastCommittedTxIdProvider: LastCommittedTxIdProvider = LastCommittedTxIdProvider(tc.graph)
 
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name)
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = TransactionBoundPlanContext.procedureSignature(tc.transaction, name)
 
-  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.transaction, name)
 
   override def notificationLogger(): InternalNotificationLogger = logger
 
-  override def txStateHasChanges(): Boolean = tc.kernelTransaction.dataRead().transactionStateHasChanges()
+  override def txStateHasChanges(): Boolean = tc.transaction.dataRead().transactionStateHasChanges()
 }

@@ -36,7 +36,7 @@ class SystemUpdateCountingQueryContext(override val inner: QueryContext, val con
 
   val kernelTransactionalContext: TransactionalContext = inner match {
     case ctx: ExceptionTranslatingQueryContext => ctx.inner match {
-      case tqc: TransactionBoundQueryContext => tqc.transactionalContext.tc
+      case tqc: TransactionBoundQueryContext => tqc.transactionalContext.kernelTransactionalContext
       case _ => throw new IllegalStateException("System updating query context can only contain a transaction bound query context")
     }
     case _ => throw new IllegalStateException("System updating query context can only contain an exception translating query context")

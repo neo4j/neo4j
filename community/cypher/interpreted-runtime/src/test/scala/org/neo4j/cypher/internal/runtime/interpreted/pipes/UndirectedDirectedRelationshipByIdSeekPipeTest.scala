@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper.RichExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
@@ -38,13 +38,13 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
   test("should seek relationship by id") {
     // given
     val (startNode, rel, endNode) = getRelWithNodes
-    val relOps= mock[RelationshipOperations]
+    val relOps= mock[RelationshipReadOperations]
     when(relOps.getByIdIfExists(17)).thenReturn(Some(rel))
 
     val to = "to"
     val from = "from"
     val queryContext = mock[QueryContext]
-    when(queryContext.relationshipOps).thenReturn(relOps)
+    when(queryContext.relationshipReadOps).thenReturn(relOps)
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
@@ -62,14 +62,14 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val (s1, r1, e1) = getRelWithNodes
     val (s2, r2, e2) = getRelWithNodes
-    val relationshipOps = mock[RelationshipOperations]
+    val relationshipOps = mock[RelationshipReadOperations]
     val to = "to"
     val from = "from"
 
     when(relationshipOps.getByIdIfExists(42)).thenReturn(Some(r1))
     when(relationshipOps.getByIdIfExists(21)).thenReturn(Some(r2))
     val queryContext = mock[QueryContext]
-    when(queryContext.relationshipOps).thenReturn(relationshipOps)
+    when(queryContext.relationshipReadOps).thenReturn(relationshipOps)
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     val relName = "a"
@@ -91,9 +91,9 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val to = "to"
     val from = "from"
-    val relationshipOps = mock[RelationshipOperations]
+    val relationshipOps = mock[RelationshipReadOperations]
     val queryContext = mock[QueryContext]
-    when(queryContext.relationshipOps).thenReturn(relationshipOps)
+    when(queryContext.relationshipReadOps).thenReturn(relationshipOps)
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when

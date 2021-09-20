@@ -107,7 +107,7 @@ object QueryStateHelper extends MockitoSugar {
     emptyWith(db = db,
       query = queryContext,
       params = params,
-      expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.cursorContext(), transactionalContext.transaction.memoryTracker()),
+      expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.cursorContext, transactionalContext.memoryTracker),
       subscriber = subscriber)
   }
 

@@ -23,9 +23,9 @@ import java.util
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -38,13 +38,13 @@ import org.neo4j.values.virtual.VirtualValues.map
 
 class PropertiesFunctionTest extends CypherFunSuite {
 
-  val query = mock[QueryContext]
-  val nodeOps = mock[NodeOperations]
-  val relOps = mock[RelationshipOperations]
-  val state = QueryStateHelper.empty.withQueryContext(query)
+  private val query = mock[QueryContext]
+  private val nodeReadOps = mock[NodeReadOperations]
+  private val relReadOps = mock[RelationshipReadOperations]
+  private val state = QueryStateHelper.empty.withQueryContext(query)
 
-  when(query.nodeOps).thenReturn(nodeOps)
-  when(query.relationshipOps).thenReturn(relOps)
+  when(query.nodeReadOps).thenReturn(nodeReadOps)
+  when(query.relationshipReadOps).thenReturn(relReadOps)
 
   test("should return null if argument is null") {
     properties(null.asInstanceOf[AnyRef]) should be(NO_VALUE)

@@ -169,12 +169,12 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
     case pc: VirtualNodeValue =>
       Some(propertyKey.getOptId(state.query).exists(
         (propertyKeyId: Int) =>
-          state.query.nodeOps.hasProperty(pc.id, propertyKeyId, state.cursors.nodeCursor, state.cursors.propertyCursor)))
+          state.query.nodeReadOps.hasProperty(pc.id, propertyKeyId, state.cursors.nodeCursor, state.cursors.propertyCursor)))
 
     case pc: VirtualRelationshipValue =>
       Some(propertyKey.getOptId(state.query).exists(
         (propertyKeyId: Int) =>
-          state.query.relationshipOps.hasProperty(pc.id, propertyKeyId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)))
+          state.query.relationshipReadOps.hasProperty(pc.id, propertyKeyId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)))
 
     case IsMap(map) =>
       Some(map(state).get(propertyKey.name) != Values.NO_VALUE)
@@ -213,12 +213,12 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
             case StatementConstants.NO_SUCH_PROPERTY_KEY =>
               Some(false)
             case propId =>
-              state.query.nodeOps.hasTxStatePropertyForCachedProperty(nodeId, propId) match {
+              state.query.nodeReadOps.hasTxStatePropertyForCachedProperty(nodeId, propId) match {
                 case None => // no change in TX state
                   cp.getCachedProperty(ctx) match {
                     case null =>
                       // the cached node property has been invalidated
-                      val property = state.query.nodeOps.getProperty(nodeId, propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = false)
+                      val property = state.query.nodeReadOps.getProperty(nodeId, propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = false)
                       // Re-cache the value
                       cp.setCachedProperty(ctx, property)
                       Some(!(property eq Values.NO_VALUE))
@@ -259,12 +259,12 @@ case class CachedRelationshipPropertyExists(cachedRelProperty: Expression) exten
             case StatementConstants.NO_SUCH_PROPERTY_KEY =>
               Some(false)
             case propId =>
-              state.query.relationshipOps.hasTxStatePropertyForCachedProperty(relId, propId) match {
+              state.query.relationshipReadOps.hasTxStatePropertyForCachedProperty(relId, propId) match {
                 case None => // no change in TX state
                   cp.getCachedProperty(ctx) match {
                     case null =>
                       // the cached rel property has been invalidated
-                      val property = state.query.relationshipOps.getProperty(relId, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, throwOnDeleted = false)
+                      val property = state.query.relationshipReadOps.getProperty(relId, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, throwOnDeleted = false)
                       // Re-cache the value
                       cp.setCachedProperty(ctx, property)
                       Some(!(property eq Values.NO_VALUE))

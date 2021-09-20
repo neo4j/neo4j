@@ -38,14 +38,17 @@ import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -63,12 +66,12 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.memory.MemoryTracker
@@ -167,9 +170,13 @@ object StaticEvaluation {
 
     override def resources: ResourceManager = notAvailable()
 
-    override def nodeOps: NodeOperations = notAvailable()
+    override def nodeReadOps: NodeReadOperations = notAvailable()
 
-    override def relationshipOps: RelationshipOperations = notAvailable()
+    override def relationshipReadOps: RelationshipReadOperations = notAvailable()
+
+    override def nodeWriteOps: NodeOperations = notAvailable()
+
+    override def relationshipWriteOps: RelationshipOperations = notAvailable()
 
     override def createNode(labels: Array[Int]): NodeValue = notAvailable()
 
@@ -408,11 +415,13 @@ object StaticEvaluation {
 
     override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value = notAvailable()
 
-    override def graph(): GraphDatabaseQueryService = notAvailable()
-
     override def contextWithNewTransaction(): QueryContext = notAvailable()
 
     override def close(): Unit = notAvailable()
+
+    override def systemGraph: GraphDatabaseService = notAvailable()
+
+    override def providedLanguageFunctions(): Seq[FunctionInformation] = notAvailable()
   }
 
 }

@@ -157,7 +157,7 @@ class QueryState(val query: QueryContext,
 
   def rowFactory: CypherRowFactory = _rowFactory
 
-  def kernelQueryContext: kernel.api.QueryContext = query.transactionalContext.transaction.queryContext()
+  def kernelQueryContext: kernel.api.QueryContext = query.transactionalContext.kernelQueryContext
 
   override def close(): Unit = {
     cursors.close()
@@ -230,7 +230,7 @@ object QueryState {
             lenientCreateRelationship: Boolean,
             prePopulateResults: Boolean,
             input: InputDataStream): QueryState = {
-    val memoryTrackerForOperatorProvider = queryHeapHighWatermarkTracker.newMemoryTrackerForOperatorProvider(query.transactionalContext.transaction.memoryTracker())
+    val memoryTrackerForOperatorProvider = queryHeapHighWatermarkTracker.newMemoryTrackerForOperatorProvider(query.transactionalContext.memoryTracker)
     new QueryState(
       query,
       resources,

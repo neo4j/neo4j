@@ -33,15 +33,20 @@ import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.runtime.ReadOperations
+import org.neo4j.cypher.internal.runtime.ReadQueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -58,8 +63,8 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
+import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
@@ -71,7 +76,7 @@ import org.neo4j.values.virtual.RelationshipValue
 
 import scala.collection.Iterator
 
-class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
+class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends ReadQueryContext with ExceptionTranslationSupport {
 
   override def entityAccessor: TransactionalEntityFactory = inner.entityAccessor
 
@@ -79,15 +84,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def transactionalContext =
     new ExceptionTranslatingTransactionalContext(inner.transactionalContext)
-
-  override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
-    translateException(tokenNameLookup, inner.setLabelsOnNode(node, labelIds))
-
-  override def createNode(labels: Array[Int]): NodeValue =
-    translateException(tokenNameLookup, inner.createNode(labels))
-
-  override def createNodeId(labels: Array[Int]): Long =
-    translateException(tokenNameLookup, inner.createNodeId(labels))
 
   override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue =
     translateException(tokenNameLookup, inner.getLabelsForNode(node, nodeCursor))
@@ -104,20 +100,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getLabelId(labelName: String): Int =
     translateException(tokenNameLookup, inner.getLabelId(labelName))
 
-  override def getOrCreateLabelId(labelName: String): Int =
-    translateException(tokenNameLookup, inner.getOrCreateLabelId(labelName))
+  override val nodeReadOps: NodeReadOperations =
+    new ExceptionTranslatingReadOperations[NodeValue, NodeCursor](inner.nodeReadOps) with NodeReadOperations
 
-  override def getOrCreateTypeId(relTypeName: String): Int =
-    translateException(tokenNameLookup, inner.getOrCreateTypeId(relTypeName))
-
-  override val nodeOps: NodeOperations =
-    new ExceptionTranslatingOperations[NodeValue, NodeCursor](inner.nodeOps) with NodeOperations
-
-  override val relationshipOps: RelationshipOperations =
-    new ExceptionTranslatingOperations[RelationshipValue, RelationshipScanCursor](inner.relationshipOps) with RelationshipOperations
-
-  override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
-    translateException(tokenNameLookup, inner.removeLabelsFromNode(node, labelIds))
+  override val relationshipReadOps: RelationshipReadOperations =
+    new ExceptionTranslatingReadOperations[RelationshipValue, RelationshipScanCursor](inner.relationshipReadOps) with RelationshipReadOperations
 
   override def getPropertyKeyName(propertyKeyId: Int): String =
     translateException(tokenNameLookup, inner.getPropertyKeyName(propertyKeyId))
@@ -127,36 +114,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def getPropertyKeyId(propertyKey: String): Int =
     translateException(tokenNameLookup, inner.getPropertyKeyId(propertyKey))
-
-  override def getOrCreatePropertyKeyId(propertyKey: String): Int =
-    translateException(tokenNameLookup, inner.getOrCreatePropertyKeyId(propertyKey))
-
-  override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
-    translateException(tokenNameLookup, inner.getOrCreatePropertyKeyIds(propertyKeys))
-
-  override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
-
-  override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addRangeIndexRule(entityId, entityType, propertyKeyIds, name, provider))
-
-  override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addLookupIndexRule(entityType, name, provider))
-
-  override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, provider, indexConfig))
-
-  override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addTextIndexRule(entityId, entityType, propertyKeyIds, name, provider))
-
-  override def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addPointIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
-
-  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    translateException(tokenNameLookup, inner.dropIndexRule(labelId, propertyKeyIds))
-
-  override def dropIndexRule(name: String): Unit =
-    translateException(tokenNameLookup, inner.dropIndexRule(name))
 
   override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] =
     translateException(tokenNameLookup, inner.getAllIndexes())
@@ -260,33 +217,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(tokenNameLookup, inner.nodeGetTotalDegree(node, relationship, nodeCursor))
 
-  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
-    translateException(tokenNameLookup, inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
-
-  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    translateException(tokenNameLookup, inner.dropNodeKeyConstraint(labelId, propertyKeyIds))
-
-  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
-    translateException(tokenNameLookup, inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
-
-  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    translateException(tokenNameLookup, inner.dropUniqueConstraint(labelId, propertyKeyIds))
-
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
-    translateException(tokenNameLookup, inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId, name))
-
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
-    translateException(tokenNameLookup, inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
-
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit =
-    translateException(tokenNameLookup, inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name))
-
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
-    translateException(tokenNameLookup, inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
-
-  override def dropNamedConstraint(name: String): Unit =
-    translateException(tokenNameLookup, inner.dropNamedConstraint(name))
-
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] =
     translateException(tokenNameLookup, inner.getAllConstraints())
 
@@ -332,12 +262,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def getImportURL(url: URL): Either[String, URL] =
     translateException(tokenNameLookup, inner.getImportURL(url))
-
-  override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue =
-    translateException(tokenNameLookup, inner.createRelationship(start, end, relType))
-
-  override def getOrCreateRelTypeId(relTypeName: String): Int =
-    translateException(tokenNameLookup, inner.getOrCreateRelTypeId(relTypeName))
 
   override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] =
     translateException(tokenNameLookup, inner.getRelationshipsForIds(node, dir, types))
@@ -406,28 +330,20 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOptRelTypeId(relType: String): Option[Int] =
     translateException(tokenNameLookup, inner.getOptRelTypeId(relType))
 
-  override def detachDeleteNode(node: Long): Int =
-    translateException(tokenNameLookup, inner.detachDeleteNode(node))
-
-  override def assertSchemaWritesAllowed(): Unit = translateException(tokenNameLookup, inner.assertSchemaWritesAllowed())
-
   override def assertShowIndexAllowed(): Unit = translateException(tokenNameLookup, inner.assertShowIndexAllowed())
 
   override def assertShowConstraintAllowed(): Unit = translateException(tokenNameLookup, inner.assertShowConstraintAllowed())
 
-  override def graph(): GraphDatabaseQueryService = inner.graph()
-
   override def contextWithNewTransaction(): QueryContext = new ExceptionTranslatingQueryContext(inner.contextWithNewTransaction())
+
+  override def systemGraph: GraphDatabaseService = translateException(tokenNameLookup, inner.systemGraph)
+
+  override def providedLanguageFunctions(): Seq[FunctionInformation] = translateException(tokenNameLookup, inner.providedLanguageFunctions)
 
   override def close(): Unit = inner.close()
 
-  class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
-    extends Operations[T, CURSOR] {
-    override def delete(id: Long): Boolean =
-      translateException(tokenNameLookup, inner.delete(id))
-
-    override def setProperty(id: Long, propertyKey: Int, value: Value): Unit =
-      translateException(tokenNameLookup, inner.setProperty(id, propertyKey, value))
+  class ExceptionTranslatingReadOperations[T, CURSOR](inner: ReadOperations[T, CURSOR])
+    extends ReadOperations[T, CURSOR] {
 
     override def getById(id: Long): T =
       translateException(tokenNameLookup, inner.getById(id))
@@ -440,9 +356,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
     override def propertyKeyIds(id: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
       translateException(tokenNameLookup, inner.propertyKeyIds(id, cursor, propertyCursor))
-
-    override def removeProperty(id: Long, propertyKeyId: Int): Boolean =
-      translateException(tokenNameLookup, inner.removeProperty(id, propertyKeyId))
 
     override def all: ClosingIterator[T] =
       translateException(tokenNameLookup, inner.all)
@@ -474,5 +387,113 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
     override def rollback(): Unit = translateException(tokenNameLookup, super.rollback())
   }
+}
 
+class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends ExceptionTranslatingReadQueryContext(inner)
+  with QueryContext with ExceptionTranslationSupport {
+
+  override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
+    translateException(tokenNameLookup, inner.setLabelsOnNode(node, labelIds))
+
+  override def createNode(labels: Array[Int]): NodeValue =
+    translateException(tokenNameLookup, inner.createNode(labels))
+
+  override def createNodeId(labels: Array[Int]): Long =
+    translateException(tokenNameLookup, inner.createNodeId(labels))
+
+  override val nodeWriteOps: NodeOperations =
+    new ExceptionTranslatingOperations[NodeValue, NodeCursor](inner.nodeWriteOps) with NodeOperations
+
+  override val relationshipWriteOps: RelationshipOperations =
+    new ExceptionTranslatingOperations[RelationshipValue, RelationshipScanCursor](inner.relationshipWriteOps) with RelationshipOperations
+
+  override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
+    translateException(tokenNameLookup, inner.removeLabelsFromNode(node, labelIds))
+
+  override def getOrCreateLabelId(labelName: String): Int =
+    translateException(tokenNameLookup, inner.getOrCreateLabelId(labelName))
+
+  override def getOrCreateTypeId(relTypeName: String): Int =
+    translateException(tokenNameLookup, inner.getOrCreateTypeId(relTypeName))
+
+  override def getOrCreatePropertyKeyId(propertyKey: String): Int =
+    translateException(tokenNameLookup, inner.getOrCreatePropertyKeyId(propertyKey))
+
+  override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
+    translateException(tokenNameLookup, inner.getOrCreatePropertyKeyIds(propertyKeys))
+
+  override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
+
+  override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addRangeIndexRule(entityId, entityType, propertyKeyIds, name, provider))
+
+  override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addLookupIndexRule(entityType, name, provider))
+
+  override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, provider, indexConfig))
+
+  override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addTextIndexRule(entityId, entityType, propertyKeyIds, name, provider))
+
+  override def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addPointIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
+
+  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+    translateException(tokenNameLookup, inner.dropIndexRule(labelId, propertyKeyIds))
+
+  override def dropIndexRule(name: String): Unit =
+    translateException(tokenNameLookup, inner.dropIndexRule(name))
+
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
+    translateException(tokenNameLookup, inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
+
+  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+    translateException(tokenNameLookup, inner.dropNodeKeyConstraint(labelId, propertyKeyIds))
+
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
+    translateException(tokenNameLookup, inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
+
+  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+    translateException(tokenNameLookup, inner.dropUniqueConstraint(labelId, propertyKeyIds))
+
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
+    translateException(tokenNameLookup, inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId, name))
+
+  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
+    translateException(tokenNameLookup, inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
+
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit =
+    translateException(tokenNameLookup, inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name))
+
+  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
+    translateException(tokenNameLookup, inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
+
+  override def dropNamedConstraint(name: String): Unit =
+    translateException(tokenNameLookup, inner.dropNamedConstraint(name))
+
+  override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue =
+    translateException(tokenNameLookup, inner.createRelationship(start, end, relType))
+
+  override def getOrCreateRelTypeId(relTypeName: String): Int =
+    translateException(tokenNameLookup, inner.getOrCreateRelTypeId(relTypeName))
+
+  override def detachDeleteNode(node: Long): Int =
+    translateException(tokenNameLookup, inner.detachDeleteNode(node))
+
+  override def assertSchemaWritesAllowed(): Unit = translateException(tokenNameLookup, inner.assertSchemaWritesAllowed())
+
+  class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
+    extends ExceptionTranslatingReadOperations[T, CURSOR](inner) with Operations[T, CURSOR] {
+
+    override def delete(id: Long): Boolean =
+      translateException(tokenNameLookup, inner.delete(id))
+
+    override def setProperty(id: Long, propertyKey: Int, value: Value): Unit =
+      translateException(tokenNameLookup, inner.setProperty(id, propertyKey, value))
+
+    override def removeProperty(id: Long, propertyKeyId: Int): Boolean =
+      translateException(tokenNameLookup, inner.removeProperty(id, propertyKeyId))
+  }
 }

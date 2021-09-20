@@ -24,9 +24,13 @@ import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.NodeWriteOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ReadOperations
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.RelationshipWriteOperations
+import org.neo4j.cypher.internal.runtime.WriteOperations
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
@@ -73,7 +77,7 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
 
   protected def setProperty[T](context: CypherRow,
                                state: QueryState,
-                               ops: Operations[T, _],
+                               ops: WriteOperations[T, _],
                                itemId: Long,
                                propertyKey: LazyPropertyKey,
                                expression: Expression): Boolean = {
@@ -140,7 +144,7 @@ case class SetNodePropertyOperation(nodeName: String,
 
   override protected def id(item: Any): Long = CastSupport.castOrFail[VirtualNodeValue](item).id()
 
-  override protected def operations(qtx: QueryContext): NodeOperations = qtx.nodeOps
+  override protected def operations(qtx: QueryContext): NodeOperations = qtx.nodeWriteOps
 
   override protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit =
     executionContext.invalidateCachedNodeProperties(id)
@@ -156,7 +160,7 @@ case class SetRelationshipPropertyOperation(relName: String,
 
   override protected def id(item: Any): Long = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
 
-  override protected def operations(qtx: QueryContext): RelationshipOperations = qtx.relationshipOps
+  override protected def operations(qtx: QueryContext): RelationshipOperations = qtx.relationshipWriteOps
 
   override protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit =
     executionContext.invalidateCachedRelationshipProperties(id)
@@ -182,8 +186,8 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
       }
 
       val wasSet = resolvedEntity match {
-        case node: VirtualNodeValue => setIt(node.id(), state.query.nodeOps, (id:Long) => executionContext.invalidateCachedNodeProperties(id))
-        case rel: VirtualRelationshipValue => setIt(rel.id(), state.query.relationshipOps,
+        case node: VirtualNodeValue => setIt(node.id(), state.query.nodeWriteOps, (id:Long) => executionContext.invalidateCachedNodeProperties(id))
+        case rel: VirtualRelationshipValue => setIt(rel.id(), state.query.relationshipWriteOps,
           (id: Long) => executionContext.invalidateCachedRelationshipProperties(id))
         case _ => throw new InvalidArgumentException(
           s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity")
@@ -287,7 +291,7 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
 
   override protected def id(item: Any): Long = CastSupport.castOrFail[VirtualNodeValue](item).id()
 
-  override protected def operations(qtx: QueryContext): NodeOperations = qtx.nodeOps
+  override protected def operations(qtx: QueryContext): NodeOperations = qtx.nodeWriteOps
 
   override protected def entityCursor(cursors: ExpressionCursors): NodeCursor = cursors.nodeCursor
 
@@ -305,7 +309,7 @@ case class SetRelationshipPropertyFromMapOperation(relName: String,
 
   override protected def id(item: Any): Long = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
 
-  override protected def operations(qtx: QueryContext): RelationshipOperations = qtx.relationshipOps
+  override protected def operations(qtx: QueryContext): RelationshipOperations = qtx.relationshipWriteOps
 
   override protected def entityCursor(cursors: ExpressionCursors): RelationshipScanCursor = cursors.relationshipScanCursor
 
@@ -336,9 +340,9 @@ case class SetPropertyFromMapOperation(entityExpr: Expression,
       }
 
       resolvedEntity match {
-        case node: VirtualNodeValue => setIt(node.id(), state.query.nodeOps, state.cursors.nodeCursor,
+        case node: VirtualNodeValue => setIt(node.id(), state.query.nodeWriteOps, state.cursors.nodeCursor,
           (id: Long) => executionContext.invalidateCachedNodeProperties(id))
-        case rel: VirtualRelationshipValue => setIt(rel.id(), state.query.relationshipOps, state.cursors.relationshipScanCursor,
+        case rel: VirtualRelationshipValue => setIt(rel.id(), state.query.relationshipWriteOps, state.cursors.relationshipScanCursor,
           (id: Long) => executionContext.invalidateCachedRelationshipProperties(id))
         case _ => throw new InvalidArgumentException(
           s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity")

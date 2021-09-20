@@ -109,7 +109,7 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
 case class QueryIndexes(private val indexes: Array[IndexDescriptor],
                         private val labelTokenIndex: Option[IndexDescriptor],
                         private val typeTokenIndex: Option[IndexDescriptor]) {
-  def initiateLabelAndSchemaIndexes(queryContext: QueryContext): Array[IndexReadSession] = {
+  def initiateLabelAndSchemaIndexes(queryContext: ReadQueryContext): Array[IndexReadSession] = {
     val indexReadSessions = new Array[IndexReadSession](indexes.length)
     var i = 0
     while (i < indexReadSessions.length) {
@@ -119,11 +119,11 @@ case class QueryIndexes(private val indexes: Array[IndexDescriptor],
     indexReadSessions
   }
 
-  def initiateNodeTokenIndex(queryContext: QueryContext): Option[TokenReadSession] = {
+  def initiateNodeTokenIndex(queryContext: ReadQueryContext): Option[TokenReadSession] = {
     labelTokenIndex.map(queryContext.transactionalContext.dataRead.tokenReadSession)
   }
 
-  def initiateRelationshipTokenIndex(queryContext: QueryContext): Option[TokenReadSession] = {
+  def initiateRelationshipTokenIndex(queryContext: ReadQueryContext): Option[TokenReadSession] = {
       typeTokenIndex.map(queryContext.transactionalContext.dataRead.tokenReadSession)
   }
 }

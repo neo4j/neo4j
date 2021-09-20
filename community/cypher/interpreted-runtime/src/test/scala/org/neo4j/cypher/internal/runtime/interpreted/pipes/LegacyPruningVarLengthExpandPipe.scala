@@ -283,7 +283,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
           case node: NodeValue =>
             nextState(row, node)
           case nodeRef: NodeReference =>
-            val node = state.query.nodeOps.getById(nodeRef.id())
+            val node = state.query.nodeReadOps.getById(nodeRef.id())
             nextState(row, node)
           case x: Value if x == Values.NO_VALUE =>
             (Empty, null)

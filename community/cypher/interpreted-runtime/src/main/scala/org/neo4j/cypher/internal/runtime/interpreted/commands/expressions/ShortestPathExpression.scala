@@ -124,7 +124,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
     try {
       ctx.getByName(start.name) match {
         case node: NodeValue => node
-        case node: NodeReference => state.query.nodeOps.getById(node.id())
+        case node: NodeReference => state.query.nodeReadOps.getById(node.id())
       }
     } catch {
       case _: NotFoundException =>

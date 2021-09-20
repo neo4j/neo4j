@@ -261,7 +261,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.nodeOps.all
+    val iteratorA = context.nodeReadOps.all
 
     // WHEN
     iteratorA.next()
@@ -279,7 +279,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.nodeOps.allPrimitive
+    val iteratorA = context.nodeReadOps.allPrimitive
 
     // WHEN
     iteratorA.next()
@@ -297,7 +297,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.relationshipOps.all
+    val iteratorA = context.relationshipReadOps.all
 
     // WHEN
     iteratorA.next()
@@ -315,7 +315,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.relationshipOps.allPrimitive
+    val iteratorA = context.relationshipReadOps.allPrimitive
 
     // WHEN
     iteratorA.next()
@@ -410,7 +410,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val initSize = context.resources.allResources.size
 
     // WHEN
-    context.nodeOps.all
+    context.nodeReadOps.all
 
     // THEN
     context.resources.allResources should have size initSize + 1
@@ -426,7 +426,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val initSize = context.resources.allResources.size
 
     // WHEN
-    context.nodeOps.allPrimitive
+    context.nodeReadOps.allPrimitive
 
     // THEN
     context.resources.allResources should have size initSize + 1
@@ -442,7 +442,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val initSize = context.resources.allResources.size
 
     // WHEN
-    context.nodeOps.all
+    context.nodeReadOps.all
     context.resources.allResources should have size initSize + 1
     context.resources.close()
 

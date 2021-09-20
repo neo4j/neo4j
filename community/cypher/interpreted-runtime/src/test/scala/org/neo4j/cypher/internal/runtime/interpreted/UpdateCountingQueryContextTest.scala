@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexPrototype
-import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.values.storable.Values
 
@@ -49,11 +48,11 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   private val rel = mock[Relationship]
   private val relId = 42
 
-  private val nodeOps = mock[NodeOperations]
-  private val relOps = mock[RelationshipOperations]
+  private val nodeWriteOps = mock[NodeOperations]
+  private val relWriteOps = mock[RelationshipOperations]
 
-  when(inner.nodeOps).thenReturn(nodeOps)
-  when(inner.relationshipOps).thenReturn(relOps)
+  when(inner.nodeWriteOps).thenReturn(nodeWriteOps)
+  when(inner.relationshipWriteOps).thenReturn(relWriteOps)
 
   // We need to have the inner mock return the right counts for added/removed labels.
   when( inner.setLabelsOnNode(anyLong(), any()) ).thenAnswer( new Answer[Int]() {
@@ -88,15 +87,15 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("delete_node") {
-    when(nodeOps.delete(any())).thenReturn(true)
-    context.nodeOps.delete(nodeA.getId)
+    when(nodeWriteOps.delete(any())).thenReturn(true)
+    context.nodeWriteOps.delete(nodeA.getId)
 
     context.getStatistics should equal(QueryStatistics(nodesDeleted = 1))
   }
 
   test("delete_node without delete") {
-    when(nodeOps.delete(any())).thenReturn(false)
-    context.nodeOps.delete(nodeA.getId)
+    when(nodeWriteOps.delete(any())).thenReturn(false)
+    context.nodeWriteOps.delete(nodeA.getId)
 
     context.getStatistics should equal(QueryStatistics())
   }
@@ -108,22 +107,22 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("delete_relationship") {
-    when(relOps.delete(any())).thenReturn(true)
-    context.relationshipOps.delete(rel.getId)
+    when(relWriteOps.delete(any())).thenReturn(true)
+    context.relationshipWriteOps.delete(rel.getId)
 
     context.getStatistics should equal(QueryStatistics(relationshipsDeleted = 1))
   }
 
   test("delete_relationship without delete") {
-    when(relOps.delete(any())).thenReturn(false)
-    context.relationshipOps.delete(rel.getId)
+    when(relWriteOps.delete(any())).thenReturn(false)
+    context.relationshipWriteOps.delete(rel.getId)
 
     context.getStatistics should equal(QueryStatistics())
   }
 
 
   test("set_property") {
-    context.nodeOps.setProperty(nodeAId, 1, Values.stringValue("value"))
+    context.nodeWriteOps.setProperty(nodeAId, 1, Values.stringValue("value"))
 
     context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
   }
@@ -131,10 +130,10 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   test("remove_property") {
     // given
     val propertyKey = context.getPropertyKeyId("key")
-    when(nodeOps.removeProperty(nodeAId, propertyKey)).thenReturn(true)
+    when(nodeWriteOps.removeProperty(nodeAId, propertyKey)).thenReturn(true)
 
     // when
-    context.nodeOps.removeProperty(nodeAId, propertyKey)
+    context.nodeWriteOps.removeProperty(nodeAId, propertyKey)
 
     // then
     context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
@@ -143,17 +142,17 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   test("remove_property does nothing") {
     // given
     val propertyKey = context.getPropertyKeyId("key")
-    when(nodeOps.removeProperty(nodeAId, propertyKey)).thenReturn(false)
+    when(nodeWriteOps.removeProperty(nodeAId, propertyKey)).thenReturn(false)
 
     // when
-    context.nodeOps.removeProperty(nodeAId, propertyKey)
+    context.nodeWriteOps.removeProperty(nodeAId, propertyKey)
 
     // then
     context.getStatistics should equal(QueryStatistics())
   }
 
   test("set_property_relationship") {
-    context.relationshipOps.setProperty(relId, 1, Values.stringValue("value"))
+    context.relationshipWriteOps.setProperty(relId, 1, Values.stringValue("value"))
 
     context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
   }
@@ -161,10 +160,10 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   test("remove_property_relationship") {
     // given
     val propertyKey = context.getPropertyKeyId("key")
-    when(relOps.removeProperty(relId, propertyKey)).thenReturn(true)
+    when(relWriteOps.removeProperty(relId, propertyKey)).thenReturn(true)
 
     // when
-    context.relationshipOps.removeProperty(relId, propertyKey)
+    context.relationshipWriteOps.removeProperty(relId, propertyKey)
 
     // then
     context.getStatistics should equal(QueryStatistics(propertiesSet = 1))
@@ -173,10 +172,10 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   test("remove_property_relationship does nothing") {
     // given
     val propertyKey = context.getPropertyKeyId("key")
-    when(relOps.removeProperty(relId, propertyKey)).thenReturn(false)
+    when(relWriteOps.removeProperty(relId, propertyKey)).thenReturn(false)
 
     // when
-    context.relationshipOps.removeProperty(relId, propertyKey)
+    context.relationshipWriteOps.removeProperty(relId, propertyKey)
 
     // then
     context.getStatistics should equal(QueryStatistics())

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.Operations
+import org.neo4j.cypher.internal.runtime.ReadOperations
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
@@ -35,7 +35,7 @@ abstract class IdSeekIterator[T, CURSOR]
 
   private var cachedEntity: T = computeNextEntity()
 
-  protected def operations: Operations[T, CURSOR]
+  protected def operations: ReadOperations[T, CURSOR]
   protected def entityIds: Iterator[AnyValue]
 
   protected def hasNextEntity: Boolean = cachedEntity != null
@@ -73,7 +73,7 @@ abstract class IdSeekIterator[T, CURSOR]
 final class NodeIdSeekIterator(ident: String,
                                baseContext: CypherRow,
                                rowFactory: CypherRowFactory,
-                               protected val operations: Operations[NodeValue, NodeCursor],
+                               protected val operations: ReadOperations[NodeValue, NodeCursor],
                                protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[NodeValue, NodeCursor] {
 
@@ -86,7 +86,7 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
                                                toNode: String,
                                                baseContext: CypherRow,
                                                rowFactory: CypherRowFactory,
-                                               protected val operations: Operations[RelationshipValue, RelationshipScanCursor],
+                                               protected val operations: ReadOperations[RelationshipValue, RelationshipScanCursor],
                                                protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[RelationshipValue, RelationshipScanCursor] {
 
@@ -101,7 +101,7 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
                                                  toNode: String,
                                                  baseContext: CypherRow,
                                                  rowFactory: CypherRowFactory,
-                                                 protected val operations: Operations[RelationshipValue, RelationshipScanCursor],
+                                                 protected val operations: ReadOperations[RelationshipValue, RelationshipScanCursor],
                                                  protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[RelationshipValue, RelationshipScanCursor] {
 

@@ -24,11 +24,8 @@ import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
-import org.neo4j.cypher.internal.runtime.NodeOperations
-import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
-import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -38,8 +35,11 @@ import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
-
 import java.util.concurrent.atomic.AtomicInteger
+
+import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.Operations
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) with CountingQueryContext {
 
@@ -111,11 +111,11 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.createNodeId(labels)
   }
 
-  override val nodeOps: NodeOperations =
-    new CountingOps[NodeValue, NodeCursor](inner.nodeOps, nodesDeleted) with NodeOperations
+  override val nodeWriteOps: NodeOperations =
+    new CountingOps[NodeValue, NodeCursor](inner.nodeWriteOps, nodesDeleted) with NodeOperations
 
-  override val relationshipOps: RelationshipOperations =
-    new CountingOps[RelationshipValue, RelationshipScanCursor](inner.relationshipOps, relationshipsDeleted) with RelationshipOperations
+  override val relationshipWriteOps: RelationshipOperations =
+    new CountingOps[RelationshipValue, RelationshipScanCursor](inner.relationshipWriteOps, relationshipsDeleted) with RelationshipOperations
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
     val added = inner.setLabelsOnNode(node, labelIds)

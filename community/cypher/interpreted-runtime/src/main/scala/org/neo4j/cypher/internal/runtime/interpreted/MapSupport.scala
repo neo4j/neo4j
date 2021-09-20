@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util
 
-import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ReadOperations
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.InternalException
 import org.neo4j.function.ThrowingBiConsumer
@@ -51,12 +51,12 @@ trait MapSupport {
 
   def castToMap: PartialFunction[AnyValue, QueryState => MapValue] = {
     case x: MapValue => _ => x
-    case x: VirtualNodeValue => state => new LazyMap(state.query, state.query.nodeOps, state.cursors.nodeCursor, state.cursors.propertyCursor, x.id())
-    case x: VirtualRelationshipValue => state => new LazyMap(state.query, state.query.relationshipOps, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, x.id())
+    case x: VirtualNodeValue => state => new LazyMap(state.query, state.query.nodeReadOps, state.cursors.nodeCursor, state.cursors.propertyCursor, x.id())
+    case x: VirtualRelationshipValue => state => new LazyMap(state.query, state.query.relationshipReadOps, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, x.id())
   }
 }
 
-class LazyMap[T, CURSOR](ctx: QueryContext, ops: Operations[T, CURSOR], cursor: CURSOR, propertyCursor: PropertyCursor, id: Long)
+class LazyMap[T, CURSOR](ctx: QueryContext, ops: ReadOperations[T, CURSOR], cursor: CURSOR, propertyCursor: PropertyCursor, id: Long)
   extends MapValue {
 
   private lazy val allProps: util.Map[String, AnyValue] = ops.propertyKeyIds(id, cursor, propertyCursor)

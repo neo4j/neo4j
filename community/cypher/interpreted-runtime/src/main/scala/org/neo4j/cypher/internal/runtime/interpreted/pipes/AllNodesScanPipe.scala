@@ -27,7 +27,7 @@ case class AllNodesScanPipe(ident: String)(val id: Id = Id.INVALID_ID) extends P
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val baseContext = state.newRowWithArgument(rowFactory)
-    state.query.nodeOps.all.map(n => rowFactory.copyWith(baseContext, ident, n))
+    state.query.nodeReadOps.all.map(n => rowFactory.copyWith(baseContext, ident, n))
   }
 
 }

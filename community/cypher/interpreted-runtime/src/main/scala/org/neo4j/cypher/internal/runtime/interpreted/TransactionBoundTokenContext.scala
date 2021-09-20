@@ -20,55 +20,55 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
-import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException
 import org.neo4j.kernel.api.exceptions.RelationshipTypeNotFoundException
 
-abstract class TransactionBoundTokenContext(transaction: => KernelTransaction) extends TokenContext {
+abstract class TransactionBoundTokenContext(transactionalContext: QueryTransactionalContext) extends TokenContext {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
-    val propertyId: Int = transaction.tokenRead().propertyKey(propertyKeyName)
+    val propertyId: Int = transactionalContext.tokenRead.propertyKey(propertyKeyName)
     if (propertyId == TokenRead.NO_TOKEN) None
     else Some(propertyId)
   }
 
   def getPropertyKeyId(propertyKeyName: String): Int = {
-    val propertyId: Int = transaction.tokenRead().propertyKey(propertyKeyName)
+    val propertyId: Int = transactionalContext.tokenRead.propertyKey(propertyKeyName)
     if (propertyId ==TokenRead.NO_TOKEN)
       throw new PropertyKeyNotFoundException("No such property.", null)
     propertyId
   }
 
-  def getPropertyKeyName(propertyKeyId: Int): String = transaction.tokenRead().propertyKeyName(propertyKeyId)
+  def getPropertyKeyName(propertyKeyId: Int): String = transactionalContext.tokenRead.propertyKeyName(propertyKeyId)
 
   def getLabelId(labelName: String): Int = {
-    val labelId: Int = transaction.tokenRead().nodeLabel(labelName)
+    val labelId: Int = transactionalContext.tokenRead.nodeLabel(labelName)
     if (labelId == TokenRead.NO_TOKEN)
       throw new LabelNotFoundKernelException(labelId, null)
     labelId
   }
 
   def getOptLabelId(labelName: String): Option[Int] = {
-    val labelId: Int = transaction.tokenRead().nodeLabel(labelName)
+    val labelId: Int = transactionalContext.tokenRead.nodeLabel(labelName)
     if (labelId == TokenRead.NO_TOKEN) None
     else Some(labelId)
   }
 
-  def getLabelName(labelId: Int): String = transaction.tokenRead().nodeLabelName(labelId)
+  def getLabelName(labelId: Int): String = transactionalContext.tokenRead.nodeLabelName(labelId)
 
   def getOptRelTypeId(relType: String): Option[Int] = {
-    val relTypeId: Int = transaction.tokenRead().relationshipType(relType)
+    val relTypeId: Int = transactionalContext.tokenRead.relationshipType(relType)
     if (relTypeId == TokenRead.NO_TOKEN) None
     else Some(relTypeId)
   }
 
   def getRelTypeId(relType: String): Int = {
-    val relTypeId: Int = transaction.tokenRead().relationshipType(relType)
+    val relTypeId: Int = transactionalContext.tokenRead.relationshipType(relType)
     if (relTypeId == TokenRead.NO_TOKEN)
       throw new RelationshipTypeNotFoundException("No such relationship.", null)
     relTypeId
   }
 
-  def getRelTypeName(id: Int): String = transaction.tokenRead().relationshipTypeName(id)
+  def getRelTypeName(id: Int): String = transactionalContext.tokenRead.relationshipTypeName(id)
 }

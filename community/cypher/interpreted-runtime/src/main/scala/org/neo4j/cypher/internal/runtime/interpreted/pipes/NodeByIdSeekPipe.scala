@@ -65,7 +65,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
       ident,
       ctx,
       rowFactory,
-      state.query.nodeOps,
+      state.query.nodeReadOps,
       nodeIds.iterator().asScala
     )
   }

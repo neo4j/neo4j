@@ -81,7 +81,7 @@ abstract class AbstractCachedProperty extends Expression {
 }
 
 abstract class AbstractCachedNodeProperty extends AbstractCachedProperty {
-  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value = state.query.nodeOps.getTxStateProperty(id, propId)
+  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value = state.query.nodeReadOps.getTxStateProperty(id, propId)
 
   override def property(state: QueryState,
                         id: Long,
@@ -89,7 +89,7 @@ abstract class AbstractCachedNodeProperty extends AbstractCachedProperty {
 }
 
 abstract class AbstractCachedRelationshipProperty extends AbstractCachedProperty {
-  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value = state.query.relationshipOps.getTxStateProperty(id, propId)
+  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value = state.query.relationshipReadOps.getTxStateProperty(id, propId)
 
   override def property(state: QueryState,
                         id: Long,

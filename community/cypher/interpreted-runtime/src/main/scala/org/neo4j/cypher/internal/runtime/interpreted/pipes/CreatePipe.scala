@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
-import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.WriteOperations
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
@@ -48,7 +48,7 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
                               state: QueryState,
                               entityId: Long,
                               properties: Expression,
-                              ops: Operations[_, _]): Unit = {
+                              ops: WriteOperations[_, _]): Unit = {
     val value = properties(context, state)
     value match {
       case _: NodeValue | _: RelationshipValue =>
@@ -68,7 +68,7 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
                             key: String,
                             value: AnyValue,
                             qtx: QueryContext,
-                            ops: Operations[_, _]): Unit = {
+                            ops: WriteOperations[_, _]): Unit = {
     //do not set properties for null values
     if (!(value eq Values.NO_VALUE)) {
       val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
@@ -90,7 +90,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
                            data: CreateNodeCommand): (String, NodeValue) = {
     val labelIds = data.labels.map(_.getOrCreateId(state.query)).toArray
     val node = state.query.createNode(labelIds)
-    data.properties.foreach(setProperties(context, state, node.id(), _, state.query.nodeOps))
+    data.properties.foreach(setProperties(context, state, node.id(), _, state.query.nodeWriteOps))
     data.idName -> node
   }
 
@@ -109,7 +109,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
       else {
         val typeId = data.relType.getOrCreateType(state.query)
         val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
-        data.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipOps))
+        data.properties.foreach(setProperties(context, state, relationship.id(), _, state.query.relationshipWriteOps))
         relationship
       }
     data.idName -> relationship

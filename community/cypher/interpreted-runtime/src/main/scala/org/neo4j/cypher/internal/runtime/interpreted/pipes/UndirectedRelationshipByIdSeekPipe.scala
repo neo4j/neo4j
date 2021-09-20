@@ -37,7 +37,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
       toNode,
       ctx,
       rowFactory,
-      state.query.relationshipOps,
+      state.query.relationshipReadOps,
       relIds.iterator.asScala
     )
   }

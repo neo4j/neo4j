@@ -86,7 +86,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                           ): Option[StartAndEnd] = {
       val relValue = context.getByName(relName) match {
         case relValue: RelationshipValue => relValue
-        case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
+        case relRef: RelationshipReference => qtx.relationshipReadOps.getById(relRef.id())
         case _ =>  return None
       }
       if (!isAllowedType(qtx.relationshipType(relValue.`type`().stringValue()), qtx )) {
@@ -103,11 +103,11 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     if (rels.nonEmpty && allHasAllowedType(rels, qtx)) {
       val firstRel = rels.head match {
         case relValue: RelationshipValue => relValue
-        case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
+        case relRef: RelationshipReference => qtx.relationshipReadOps.getById(relRef.id())
       }
       val lastRel = rels.last match {
         case relValue: RelationshipValue => relValue
-        case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
+        case relRef: RelationshipReference => qtx.relationshipReadOps.getById(relRef.id())
       }
       pickStartAndEnd(firstRel, lastRel, context, qtx).map(startAndEnd => (startAndEnd, rels))
     } else {
@@ -120,7 +120,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     while(iterator.hasNext) {
       val next = iterator.next() match {
         case relValue: RelationshipValue => relValue
-        case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
+        case relRef: RelationshipReference => qtx.relationshipReadOps.getById(relRef.id())
         case _ =>  return false
       }
       if (!isAllowedType(qtx.relationshipType(next.`type`().stringValue()), qtx)) return false

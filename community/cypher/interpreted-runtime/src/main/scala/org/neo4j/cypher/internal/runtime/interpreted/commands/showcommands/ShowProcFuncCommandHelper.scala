@@ -52,7 +52,7 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
 object ShowProcFuncCommandHelper {
 
   private[showcommands] def systemGraph(queryState: QueryState): GraphDatabaseService =
-    queryState.query.graph().getDependencyResolver.resolveDependency(classOf[DatabaseManagementService]).database(SYSTEM_DATABASE_NAME)
+    queryState.query.systemGraph
 
   def getRolesForExecutableByUser(securityContext: SecurityContext, securityHandler: SecurityAuthorizationHandler, systemGraph: => GraphDatabaseService, executableBy: Option[ExecutableBy], command: String): (Set[String], Boolean) = executableBy match {
     case Some(CurrentUser) if securityContext.subject().equals(AuthSubject.AUTH_DISABLED) => (Set.empty[String], true)

@@ -24,7 +24,7 @@ import org.mockito.Mockito.doReturn
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toLongValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toRelationshipValue
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
@@ -35,8 +35,8 @@ import org.neo4j.values.storable.Values.stringValue
 class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSupport {
 
   private val mockedContext = mock[QueryContext]
-  private val operations = mock[RelationshipOperations]
-  result(operations).when(mockedContext).relationshipOps
+  private val operations = mock[RelationshipReadOperations]
+  result(operations).when(mockedContext).relationshipReadOps
 
   private val state = QueryStateHelper.emptyWith(query = mockedContext)
   private val function = RelationshipTypeFunction(Variable("r"))

@@ -60,7 +60,7 @@ case class TransactionForeachPipe(source: Pipe, inner: Pipe)
 
       // commitTx()
       innerTxContext.close()
-      innerTxContext.internalTransaction.commit()
+      innerTxContext.commitTransaction()
     } catch {
       case NonFatal(e) =>
         try {

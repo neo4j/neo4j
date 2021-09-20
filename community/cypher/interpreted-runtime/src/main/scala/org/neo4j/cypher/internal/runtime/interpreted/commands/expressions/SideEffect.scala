@@ -61,7 +61,7 @@ case class CreateNode(command: CreateNodeCommand, allowNullOrNaNProperty: Boolea
           case (k, v: FloatingPointValue) if !allowNullOrNaNProperty && v.isNaN => handleNaNValue(command.labels.map(_.name), k)
           case (k, v) =>
             val propId = query.getOrCreatePropertyKeyId(k)
-            query.nodeOps.setProperty(node.id(), propId, makeValueNeoSafe(v))
+            query.nodeWriteOps.setProperty(node.id(), propId, makeValueNeoSafe(v))
           }
 
       case value =>
@@ -109,7 +109,7 @@ case class CreateRelationship(command: CreateRelationshipCommand, allowNullOrNaN
               }
             case (k, v) =>
               val propId = state.query.getOrCreatePropertyKeyId(k)
-              state.query.relationshipOps.setProperty(relationship.id(), propId, makeValueNeoSafe(v))
+              state.query.relationshipWriteOps.setProperty(relationship.id(), propId, makeValueNeoSafe(v))
           }
 
         case value =>

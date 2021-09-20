@@ -57,13 +57,13 @@ object DeletePipe {
       throw new CypherTypeException(s"Expected a Node, Relationship or Path, but got a ${other.getClass.getSimpleName}")
   }
 
-  private def deleteNode(n: NodeValue, state: QueryState, forced: Boolean) = if (!state.query.nodeOps.isDeletedInThisTx(n.id())) {
+  private def deleteNode(n: NodeValue, state: QueryState, forced: Boolean) = if (!state.query.nodeReadOps.isDeletedInThisTx(n.id())) {
     if (forced) state.query.detachDeleteNode(n.id())
-    else state.query.nodeOps.delete(n.id())
+    else state.query.nodeWriteOps.delete(n.id())
   }
 
   private def deleteRelationship(r: RelationshipValue, state: QueryState): Unit =
-    if (!state.query.relationshipOps.isDeletedInThisTx(r.id())) state.query.relationshipOps.delete(r.id())
+    if (!state.query.relationshipReadOps.isDeletedInThisTx(r.id())) state.query.relationshipWriteOps.delete(r.id())
 
   private def deletePath(p: PathValue, state: QueryState, forced: Boolean): Unit = {
     val entities = p.asList().iterator()

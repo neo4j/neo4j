@@ -336,7 +336,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
       cypherConfiguration)
 
     runtimeContextManager.create(queryContext,
-                                 queryContext.transactionalContext.transaction.schemaRead(),
+                                 queryContext.transactionalContext.schemaRead,
                                  MasterCompiler.CLOCK,
                                  debugOptions,
                                  compileExpressions = queryOptions.useCompiledExpressions,

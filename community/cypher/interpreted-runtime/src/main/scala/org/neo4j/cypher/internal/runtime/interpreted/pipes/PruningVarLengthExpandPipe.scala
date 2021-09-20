@@ -293,7 +293,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                 pushStartNode(node)
 
             case nodeRef: NodeReference =>
-              val node = queryState.query.nodeOps.getById(nodeRef.id)
+              val node = queryState.query.nodeReadOps.getById(nodeRef.id)
               if (filteringStep.filterNode(inputRow, queryState)(node)) {
                 pushStartNode(node)
               } else null

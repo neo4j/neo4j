@@ -53,11 +53,11 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
       if (!isCommunity && (verbose || executableBy.isDefined)) ShowProcFuncCommandHelper.getPrivileges(systemGraph, "FUNCTION")
       else ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty)
 
-    val tx = state.query.transactionalContext.transaction
-    val securityContext = tx.securityContext()
+    val txContext = state.query.transactionalContext
+    val securityContext = txContext.securityContext
     val (userRoles, allRoles, alwaysExecutable) =
       if (!isCommunity) {
-        val (userRoles, alwaysExecutable) = ShowProcFuncCommandHelper.getRolesForExecutableByUser(securityContext, tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW FUNCTIONS")
+        val (userRoles, alwaysExecutable) = ShowProcFuncCommandHelper.getRolesForExecutableByUser(securityContext, txContext.securityAuthorizationHandler, systemGraph, executableBy, "SHOW FUNCTIONS")
         val allRoles =
           if (functionType != UserDefinedFunctions && (verbose || executableBy.isDefined)) getAllRoles(systemGraph) // We will need roles column for built-in functions
           else Set.empty[String]
@@ -74,14 +74,14 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
     // gets you all functions provided by the query language
     val languageFunctions = functionType match {
       case UserDefinedFunctions => List.empty // Will anyway filter out all built-in functions and all of these are built-in
-      case _ => state.query.graph().getDependencyResolver.resolveDependency(classOf[QueryExecutionEngine]).getProvidedLanguageFunctions.asScala.map(f => FunctionInfo(f)).toList
+      case _ => state.query.providedLanguageFunctions.map(f => FunctionInfo(f)).toList
     }
 
     // gets you all non-aggregating functions that are registered in the db (incl. those from libs like apoc)
-    val loadedFunctions = tx.procedures().functionGetAll().iterator.asScala.map(f => FunctionInfo(f, aggregating = false)).toList
+    val loadedFunctions = txContext.procedures.functionGetAll().iterator.asScala.map(f => FunctionInfo(f, aggregating = false)).toList
 
     // gets you all aggregation functions that are registered in the db (incl. those from libs like apoc)
-    val loadedAggregationFunctions = tx.procedures().aggregationFunctionGetAll().iterator.asScala.map(f => FunctionInfo(f, aggregating = true)).toList
+    val loadedAggregationFunctions = txContext.procedures.aggregationFunctionGetAll().iterator.asScala.map(f => FunctionInfo(f, aggregating = true)).toList
 
     val allFunctions = languageFunctions ++ loadedFunctions ++ loadedAggregationFunctions
     val filteredFunctions = functionType match {

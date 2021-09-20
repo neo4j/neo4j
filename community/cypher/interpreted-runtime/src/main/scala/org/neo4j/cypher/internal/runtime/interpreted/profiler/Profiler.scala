@@ -27,13 +27,17 @@ import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ReadOperations
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingOperations
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.DelegatingReadOperations
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -352,15 +356,22 @@ final class ProfilingPipeQueryContext(inner: QueryContext, counter: Counter)
     }
   }
 
-  class ProfilerOperations[T, CURSOR](inner: Operations[T, CURSOR]) extends DelegatingOperations[T, CURSOR](inner) {
+  class ProfilerReadOperations[T, CURSOR](inner: ReadOperations[T, CURSOR]) extends DelegatingReadOperations[T, CURSOR](inner) {
     override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
     override protected def manyDbHits[A](value: ClosingIterator[A]): ClosingIterator[A] = self.manyDbHits(value)
-
     override protected def manyDbHits[A](value: ClosingLongIterator): ClosingLongIterator = self.manyDbHits(value)
   }
 
-  override val nodeOps: NodeOperations = new ProfilerOperations(inner.nodeOps) with NodeOperations
-  override val relationshipOps: RelationshipOperations = new ProfilerOperations(inner.relationshipOps) with RelationshipOperations
+  class ProfilerOperations[T, CURSOR](inner: Operations[T, CURSOR]) extends DelegatingOperations[T, CURSOR](inner) {
+    override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
+    override protected def manyDbHits[A](value: ClosingIterator[A]): ClosingIterator[A] = self.manyDbHits(value)
+    override protected def manyDbHits[A](value: ClosingLongIterator): ClosingLongIterator = self.manyDbHits(value)
+  }
+
+  override val nodeReadOps: NodeReadOperations = new ProfilerReadOperations(inner.nodeReadOps) with NodeReadOperations
+  override val relationshipReadOps: RelationshipReadOperations = new ProfilerReadOperations(inner.relationshipReadOps) with RelationshipReadOperations
+  override val nodeWriteOps: NodeOperations = new ProfilerOperations(inner.nodeWriteOps) with NodeOperations
+  override val relationshipWriteOps: RelationshipOperations = new ProfilerOperations(inner.relationshipWriteOps) with RelationshipOperations
 }
 
 class ProfilingIterator(inner: ClosingIterator[CypherRow],

@@ -194,7 +194,7 @@ public class ShortestPath implements PathFinder<Path>
         return path;
     }
 
-    private void resolveMonitor( Node node )
+    private void resolveMonitor()
     {
         if ( dataMonitor == null )
         {
@@ -225,7 +225,7 @@ public class ShortestPath implements PathFinder<Path>
                 goOneStep( endData, startData, hits, startData, stopAsap );
             }
             Collection<Hit> least = hits.least();
-            return least != null ? filterPaths( hitsToPaths( context, least, start, end, stopAsap, maxResultCount, memoryTracker ) ) : Collections.emptyList();
+            return least != null ? filterPaths( hitsToPaths( least, start, end, stopAsap, maxResultCount, memoryTracker ) ) : Collections.emptyList();
         }
     }
 
@@ -312,7 +312,7 @@ public class ShortestPath implements PathFinder<Path>
                 // NOTE: Applying the filter-condition could give the wrong results with allShortestPaths,
                 // so only use it for singleShortestPath
                 // TODO: We don't need to create an intermediate array list just to check if list is empty after filtering
-                if ( !stopAsap || !filterPaths( hitToPaths( context, hit, start, end, stopAsap ) ).isEmpty() )
+                if ( !stopAsap || !filterPaths( hitToPaths( hit, start, end, stopAsap ) ).isEmpty() )
                 {
                     if ( hits.add( hit, depth ) >= maxResultCount )
                     {
@@ -343,7 +343,7 @@ public class ShortestPath implements PathFinder<Path>
 
     private void monitorData( DirectionData directionData, DirectionData otherSide, Node connectingNode )
     {
-        resolveMonitor( directionData.startNode );
+        resolveMonitor();
         if ( dataMonitor != null )
         {
             dataMonitor.monitorData( directionData.visitedNodes, directionData.nextNodes, otherSide.visitedNodes,
@@ -685,13 +685,13 @@ public class ShortestPath implements PathFinder<Path>
         }
     }
 
-    private static Collection<Path> hitsToPaths( EvaluationContext context, Collection<Hit> depthHits, Node start, Node end, boolean stopAsap,
-                                                 int maxResultCount, MemoryTracker memoryTracker )
+    private static Collection<Path> hitsToPaths( Collection<Hit> depthHits, Node start, Node end, boolean stopAsap, int maxResultCount,
+            MemoryTracker memoryTracker )
     {
         Set<Path> paths = HeapTrackingCollections.newSet( memoryTracker );
         for ( Hit hit : depthHits )
         {
-            for ( PathImpl path : hitToPaths( context, hit, start, end, stopAsap ) )
+            for ( PathImpl path : hitToPaths( hit, start, end, stopAsap ) )
             {
                 memoryTracker.allocateHeap( path.estimatedHeapUsage() );
                 paths.add( path );
@@ -704,11 +704,11 @@ public class ShortestPath implements PathFinder<Path>
         return paths;
     }
 
-    private static Collection<PathImpl> hitToPaths( EvaluationContext context, Hit hit, Node start, Node end, boolean stopAsap )
+    private static Collection<PathImpl> hitToPaths( Hit hit, Node start, Node end, boolean stopAsap )
     {
         Collection<PathImpl> paths = new ArrayList<>();
-        Iterable<List<Relationship>> startPaths = getPaths( context, hit.connectingNode, hit.start, stopAsap );
-        Iterable<List<Relationship>> endPaths = getPaths( context, hit.connectingNode, hit.end, stopAsap );
+        Iterable<List<Relationship>> startPaths = getPaths( hit.connectingNode, hit.start, stopAsap );
+        Iterable<List<Relationship>> endPaths = getPaths( hit.connectingNode, hit.end, stopAsap );
         for ( List<Relationship> startPath : startPaths )
         {
             PathImpl.Builder startBuilder = toBuilder( start, startPath );
@@ -722,8 +722,7 @@ public class ShortestPath implements PathFinder<Path>
         return paths;
     }
 
-    private static Iterable<List<Relationship>> getPaths( EvaluationContext context, Node connectingNode, DirectionData data,
-            boolean stopAsap )
+    private static Iterable<List<Relationship>> getPaths( Node connectingNode, DirectionData data, boolean stopAsap )
     {
         LevelData levelData = data.visitedNodes.get( connectingNode );
         if ( levelData.depth == 0 )
@@ -733,7 +732,6 @@ public class ShortestPath implements PathFinder<Path>
             return result;
         }
         Collection<PathData> set = new ArrayList<>();
-        var transaction = context.transaction();
         for ( Relationship rel : levelData.relsToHere )
         {
             set.add( new PathData( connectingNode, new LinkedList<>( Arrays.asList( rel ) ) ) );

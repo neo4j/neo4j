@@ -28,13 +28,16 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.KernelReadTracer
+import org.neo4j.internal.kernel.api.Locks
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.Read
@@ -42,25 +45,30 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.internal.kernel.api.SchemaWrite
+import org.neo4j.internal.kernel.api.Token
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenReadSession
+import org.neo4j.internal.kernel.api.TokenWrite
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.io.pagecache.context.CursorContext
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.DbmsInfo
+import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.util.VisibleForTesting
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -81,7 +89,8 @@ import scala.collection.Iterator
  * The driver for this was clarifying who is responsible for ensuring query isolation. By exposing a query concept in
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
-trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
+trait QueryContext extends ReadQueryContext with WriteQueryContext
+trait ReadQueryContext extends TokenContext with DbAccess with AutoCloseable {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
 
@@ -91,17 +100,9 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
 
   def resources: ResourceManager
 
-  def nodeOps: NodeOperations
+  def nodeReadOps: NodeReadOperations
 
-  def relationshipOps: RelationshipOperations
-
-  def createNode(labels: Array[Int]): NodeValue
-
-  def createNodeId(labels: Array[Int]): Long
-
-  def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue
-
-  def getOrCreateRelTypeId(relTypeName: String): Int
+  def relationshipReadOps: RelationshipReadOperations
 
   def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue]
 
@@ -112,44 +113,6 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
   def nodeCursor(): NodeCursor
 
   def traversalCursor(): RelationshipTraversalCursor
-
-  def getOrCreateLabelId(labelName: String): Int
-
-  def getOrCreateTypeId(relTypeName: String): Int
-
-  def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int
-
-  def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int
-
-  def getOrCreatePropertyKeyId(propertyKey: String): Int
-
-  def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
-
-  def addBtreeIndexRule(entityId: Int,
-                        entityType: EntityType,
-                        propertyKeyIds: Seq[Int],
-                        name: Option[String],
-                        provider: Option[String],
-                        indexConfig: IndexConfig): IndexDescriptor
-
-  def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
-
-  def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
-
-  def addFulltextIndexRule(entityIds: List[Int],
-                           entityType: EntityType,
-                           propertyKeyIds: Seq[Int],
-                           name: Option[String],
-                           provider: Option[IndexProviderDescriptor],
-                           indexConfig: IndexConfig): IndexDescriptor
-
-  def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
-
-  def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor
-
-  def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
-
-  def dropIndexRule(name: String): Unit
 
   def getAllIndexes(): Map[IndexDescriptor, IndexInfo]
 
@@ -209,28 +172,6 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
 
   def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator
 
-  /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
-
-  def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
-
-  /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
-
-  def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
-
-  /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit
-
-  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit
-
-  /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit
-
-  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit
-
-  def dropNamedConstraint(name: String): Unit
-
   def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo]
 
   def getOptStatistics: Option[QueryStatistics] = None
@@ -279,8 +220,10 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
 
   def callReadOnlyProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
 
+  // Even though the procedure itself could perform writes the call is in the kernel Read API
   def callReadWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
 
+  // Even though the procedure itself could perform writes the call is in the kernel Read API
   def callSchemaWriteProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
 
   def callDbmsProcedure(id: Int, args: Array[AnyValue], context: ProcedureCallContext): Iterator[Array[AnyValue]]
@@ -289,26 +232,17 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
 
   def builtInAggregateFunction(id: Int): UserDefinedAggregator
 
-  def graph(): GraphDatabaseQueryService
-
-  /**
-   * Delete the node with the specified id and all of its relationships and return the number of deleted relationships.
-   *
-   * Note, caller needs to make sure the node is not already deleted or else the count will be incorrect.
-   *
-   * @return number of deleted relationships
-   */
-  def detachDeleteNode(id: Long): Int
-
-  def assertSchemaWritesAllowed(): Unit
-
   def assertShowIndexAllowed(): Unit
 
   def assertShowConstraintAllowed(): Unit
 
-  override def nodeById(id: Long): NodeValue = nodeOps.getById(id)
+  def systemGraph: GraphDatabaseService
 
-  override def relationshipById(id: Long): RelationshipValue = relationshipOps.getById(id)
+  def providedLanguageFunctions(): Seq[FunctionInformation]
+
+  override def nodeById(id: Long): NodeValue = nodeReadOps.getById(id)
+
+  override def relationshipById(id: Long): RelationshipValue = relationshipReadOps.getById(id)
 
   override def propertyKey(name: String): Int = transactionalContext.tokenRead.propertyKey(name)
 
@@ -323,46 +257,46 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
                             nodeCursor: NodeCursor,
                             propertyCursor: PropertyCursor,
                             throwOnDeleted: Boolean): Value =
-    nodeOps.getProperty(node, property, nodeCursor, propertyCursor, throwOnDeleted)
+    nodeReadOps.getProperty(node, property, nodeCursor, propertyCursor, throwOnDeleted)
 
   override def nodePropertyIds(node: Long,
                                nodeCursor: NodeCursor,
                                propertyCursor: PropertyCursor): Array[Int] =
-    nodeOps.propertyKeyIds(node, nodeCursor, propertyCursor)
+    nodeReadOps.propertyKeyIds(node, nodeCursor, propertyCursor)
 
   override def nodeHasProperty(node: Long,
                                property: Int,
                                nodeCursor: NodeCursor,
                                propertyCursor: PropertyCursor): Boolean =
-    nodeOps.hasProperty(node, property, nodeCursor, propertyCursor)
+    nodeReadOps.hasProperty(node, property, nodeCursor, propertyCursor)
 
   override def relationshipProperty(relationship: Long,
                                     property: Int,
                                     relationshipScanCursor: RelationshipScanCursor,
                                     propertyCursor: PropertyCursor,
                                     throwOnDeleted: Boolean): Value =
-    relationshipOps.getProperty(relationship, property, relationshipScanCursor, propertyCursor, throwOnDeleted)
+    relationshipReadOps.getProperty(relationship, property, relationshipScanCursor, propertyCursor, throwOnDeleted)
 
   override def relationshipPropertyIds(relationship: Long,
                                        relationshipScanCursor: RelationshipScanCursor,
                                        propertyCursor: PropertyCursor): Array[Int] =
-    relationshipOps.propertyKeyIds(relationship, relationshipScanCursor, propertyCursor)
+    relationshipReadOps.propertyKeyIds(relationship, relationshipScanCursor, propertyCursor)
 
   override def relationshipHasProperty(relationship: Long,
                                        property: Int,
                                        relationshipScanCursor: RelationshipScanCursor,
                                        propertyCursor: PropertyCursor): Boolean =
-    relationshipOps.hasProperty(relationship, property, relationshipScanCursor, propertyCursor)
+    relationshipReadOps.hasProperty(relationship, property, relationshipScanCursor, propertyCursor)
 
   override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Optional[java.lang.Boolean] = {
-    nodeOps.hasTxStatePropertyForCachedProperty(nodeId, propertyKeyId) match {
+    nodeReadOps.hasTxStatePropertyForCachedProperty(nodeId, propertyKeyId) match {
       case None => Optional.empty()
       case Some(bool) => Optional.of(bool)
     }
   }
 
   override def hasTxStatePropertyForCachedRelationshipProperty(relId: Long, propertyKeyId: Int): Optional[java.lang.Boolean] = {
-    relationshipOps.hasTxStatePropertyForCachedProperty(relId, propertyKeyId) match {
+    relationshipReadOps.hasTxStatePropertyForCachedProperty(relId, propertyKeyId) match {
       case None => Optional.empty()
       case Some(bool) => Optional.of(bool)
     }
@@ -387,24 +321,99 @@ trait QueryContext extends TokenContext with DbAccess with AutoCloseable {
   def close(): Unit
 
   def createExpressionCursors(): ExpressionCursors = {
-    val transactionMemoryTracker = transactionalContext.transaction.memoryTracker()
+    val transactionMemoryTracker = transactionalContext.memoryTracker
     val cursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.cursorContext, transactionMemoryTracker)
     resources.trace(cursors)
     cursors
   }
 }
 
-trait Operations[T, CURSOR] {
+trait WriteQueryContext {
+  def nodeWriteOps: NodeOperations
+
+  def relationshipWriteOps: RelationshipOperations
+
+  def createNode(labels: Array[Int]): NodeValue
+
+  def createNodeId(labels: Array[Int]): Long
+
+  def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue
+
+  def getOrCreateRelTypeId(relTypeName: String): Int
+
+  def getOrCreateLabelId(labelName: String): Int
+
+  def getOrCreateTypeId(relTypeName: String): Int
+
+  def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int
+
+  def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int
+
+  def getOrCreatePropertyKeyId(propertyKey: String): Int
+
+  def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
+
+  def addBtreeIndexRule(entityId: Int,
+                        entityType: EntityType,
+                        propertyKeyIds: Seq[Int],
+                        name: Option[String],
+                        provider: Option[String],
+                        indexConfig: IndexConfig): IndexDescriptor
+
+  def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
+
+  def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
+
+  def addFulltextIndexRule(entityIds: List[Int],
+                           entityType: EntityType,
+                           propertyKeyIds: Seq[Int],
+                           name: Option[String],
+                           provider: Option[IndexProviderDescriptor],
+                           indexConfig: IndexConfig): IndexDescriptor
+
+  def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor
+
+  def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor
+
+  def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
+
+  def dropIndexRule(name: String): Unit
+
+  /* return true if the constraint was created, false if preexisting, throws if failed */
+  def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
+
+  def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
+
+  /* return true if the constraint was created, false if preexisting, throws if failed */
+  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
+
+  def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
+
+  /* return true if the constraint was created, false if preexisting, throws if failed */
+  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit
+
+  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit
+
+  /* return true if the constraint was created, false if preexisting, throws if failed */
+  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit
+
+  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit
+
+  def dropNamedConstraint(name: String): Unit
+
   /**
-   * Delete entity
+   * Delete the node with the specified id and all of its relationships and return the number of deleted relationships.
    *
-   * @return true if something was deleted, false if no entity was found for this id
+   * Note, caller needs to make sure the node is not already deleted or else the count will be incorrect.
+   *
+   * @return number of deleted relationships
    */
-  def delete(id: Long): Boolean
+  def detachDeleteNode(id: Long): Int
 
-  def setProperty(obj: Long, propertyKeyId: Int, value: Value): Unit
+  def assertSchemaWritesAllowed(): Unit
+}
 
-  def removeProperty(obj: Long, propertyKeyId: Int): Boolean
+trait ReadOperations[T, CURSOR] {
 
   /**
    * @param throwOnDeleted if this is `true` an Exception will be thrown when the entity with id `obj` has been deleted in this transaction.
@@ -446,27 +455,64 @@ trait Operations[T, CURSOR] {
   def getByIdIfExists(id: Long): Option[T]
 }
 
-trait NodeOperations extends Operations[NodeValue, NodeCursor]
+trait WriteOperations[T, CURSOR] {
+  /**
+   * Delete entity
+   *
+   * @return true if something was deleted, false if no entity was found for this id
+   */
+  def delete(id: Long): Boolean
 
-trait RelationshipOperations extends Operations[RelationshipValue, RelationshipScanCursor]
+  def setProperty(obj: Long, propertyKeyId: Int, value: Value): Unit
+
+  def removeProperty(obj: Long, propertyKeyId: Int): Boolean
+}
+
+trait Operations[T, CURSOR] extends ReadOperations[T, CURSOR] with WriteOperations[T, CURSOR]
+
+trait NodeReadOperations extends ReadOperations[NodeValue, NodeCursor]
+trait NodeWriteOperations extends WriteOperations[NodeValue, NodeCursor]
+trait NodeOperations extends Operations[NodeValue, NodeCursor] with NodeReadOperations with NodeWriteOperations
+
+trait RelationshipReadOperations extends ReadOperations[RelationshipValue, RelationshipScanCursor]
+trait RelationshipWriteOperations extends WriteOperations[RelationshipValue, RelationshipScanCursor]
+trait RelationshipOperations extends Operations[RelationshipValue, RelationshipScanCursor] with RelationshipReadOperations with RelationshipWriteOperations
 
 trait QueryTransactionalContext extends CloseableResource {
 
   def transaction: KernelTransaction
 
-  def internalTransaction: InternalTransaction
+  def commitTransaction(): Unit
 
-  def cursors: CursorFactory
+  def kernelQueryContext: org.neo4j.internal.kernel.api.QueryContext
+
+  def cursors : CursorFactory
 
   def cursorContext: CursorContext
 
+  def memoryTracker: MemoryTracker
+
+  def locks: Locks
+
   def dataRead: Read
+
+  def dataWrite: Write
 
   def tokenRead: TokenRead
 
+  def tokenWrite: TokenWrite
+
+  def token: Token
+
   def schemaRead: SchemaRead
 
-  def dataWrite: Write
+  def schemaWrite: SchemaWrite
+
+  def procedures: Procedures
+
+  def securityContext: SecurityContext
+
+  def securityAuthorizationHandler: SecurityAuthorizationHandler
 
   def isTopLevelTx: Boolean
 
@@ -481,6 +527,13 @@ trait QueryTransactionalContext extends CloseableResource {
   def dbmsInfo: DbmsInfo
 
   def databaseId: NamedDatabaseId
+
+  def freezeLocks(): Unit
+
+  def thawLocks(): Unit
+
+  @VisibleForTesting
+  def validateSameDB[E <: Entity](entity: E): E
 }
 
 trait KernelPredicate[T] {

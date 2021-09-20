@@ -40,7 +40,7 @@ case class LoggingSystemCommandExecutionPlan(source: ExecutionPlan, commandStrin
                    ignore: InputDataStream,
                    subscriber: QuerySubscriber): RuntimeResult = {
 
-    val securityContext = ctx.transactionalContext.transaction.securityContext()
+    val securityContext = ctx.transactionalContext.securityContext
     val sourceResult = source.run(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
     sourceResult match {
       case IgnoredRuntimeResult =>

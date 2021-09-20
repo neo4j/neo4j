@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.NodeReadOperations
+import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
@@ -40,13 +41,13 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     // given
     val id = 17
     val node = nodeMock(17)
-    val nodeOps = mock[NodeOperations]
+    val nodeOps = mock[NodeReadOperations]
     when(nodeOps.getByIdIfExists(17)).thenAnswer(new Answer[Option[NodeValue]] {
       override def answer(invocation: InvocationOnMock): Option[NodeValue] = Some(fromNodeEntity(node))
     })
 
     val queryContext = mock[QueryContext]
-    when(queryContext.nodeOps).thenReturn(nodeOps)
+    when(queryContext.nodeReadOps).thenReturn(nodeOps)
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
@@ -61,7 +62,7 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val node1 = nodeMock(42)
     val node2 = nodeMock(21)
     val node3 = nodeMock(11)
-    val nodeOps = mock[NodeOperations]
+    val nodeOps = mock[NodeReadOperations]
 
     when(nodeOps.getByIdIfExists(ArgumentMatchers.anyLong())).thenAnswer(new Answer[Option[NodeValue]] {
       override def answer(invocation: InvocationOnMock): Option[NodeValue] = invocation.getArgument[Long](0) match {
@@ -74,7 +75,7 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
 
 
     val queryContext = mock[QueryContext]
-    when(queryContext.nodeOps).thenReturn(nodeOps)
+    when(queryContext.nodeReadOps).thenReturn(nodeOps)
     val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // whens

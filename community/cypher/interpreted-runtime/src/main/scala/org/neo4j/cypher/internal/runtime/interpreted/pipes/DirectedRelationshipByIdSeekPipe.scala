@@ -37,7 +37,7 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
       toNode,
       ctx,
       rowFactory,
-      state.query.relationshipOps,
+      state.query.relationshipReadOps,
       relIds.iterator().asScala
     )
   }

@@ -49,11 +49,11 @@ case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Bo
       if (!isCommunity && (verbose || executableBy.isDefined)) ShowProcFuncCommandHelper.getPrivileges(systemGraph, "PROCEDURE")
       else ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty)
 
-    val tx = state.query.transactionalContext.transaction
-    val securityContext = tx.securityContext()
+    val txContext = state.query.transactionalContext
+    val securityContext = txContext.securityContext
     val (userRoles, alwaysExecutable) =
       if (!isCommunity) {
-        ShowProcFuncCommandHelper.getRolesForExecutableByUser(securityContext, tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW PROCEDURES")
+        ShowProcFuncCommandHelper.getRolesForExecutableByUser(securityContext, txContext.securityAuthorizationHandler, systemGraph, executableBy, "SHOW PROCEDURES")
       } else {
         (Set.empty[String], true)
       }
@@ -62,7 +62,7 @@ case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Bo
     else
       false
 
-    val allProcedures = tx.procedures().proceduresGetAll().asScala.filter(proc => !proc.internal).toList
+    val allProcedures = txContext.procedures.proceduresGetAll().asScala.filter(proc => !proc.internal).toList
     val sortedProcedures = allProcedures.sortBy(a => a.name.toString)
 
     val rows = sortedProcedures.map { proc =>

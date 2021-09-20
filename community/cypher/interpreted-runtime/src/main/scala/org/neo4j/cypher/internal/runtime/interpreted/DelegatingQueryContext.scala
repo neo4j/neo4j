@@ -32,20 +32,27 @@ import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.runtime.ReadOperations
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.graphdb.Entity
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
+import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.Locks
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.Read
@@ -53,22 +60,26 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.internal.kernel.api.SchemaWrite
+import org.neo4j.internal.kernel.api.Token
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenReadSession
+import org.neo4j.internal.kernel.api.TokenWrite
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.io.pagecache.context.CursorContext
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.DbmsInfo
+import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
@@ -147,9 +158,13 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): RelationshipValue =
     inner.relationshipById(relationshipId, startNodeId, endNodeId, typeId)
 
-  override def nodeOps: NodeOperations = inner.nodeOps
+  override def nodeReadOps: NodeReadOperations = inner.nodeReadOps
 
-  override def relationshipOps: RelationshipOperations = inner.relationshipOps
+  override def relationshipReadOps: RelationshipReadOperations = inner.relationshipReadOps
+
+  override def nodeWriteOps: NodeOperations = inner.nodeWriteOps
+
+  override def relationshipWriteOps: RelationshipOperations = inner.relationshipWriteOps
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.removeLabelsFromNode(node, labelIds))
@@ -410,26 +425,23 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
     inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey)
 
-  override def graph(): GraphDatabaseQueryService = inner.graph()
-
   override def contextWithNewTransaction(): QueryContext = inner.contextWithNewTransaction()
 
   override def close(): Unit = inner.close()
 
   override def addStatistics(statistics: QueryStatistics): Unit = inner.addStatistics(statistics)
+
+  override def systemGraph: GraphDatabaseService = inner.systemGraph
+
+  override def providedLanguageFunctions(): Seq[FunctionInformation] = inner.providedLanguageFunctions
 }
 
-class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]) extends Operations[T, CURSOR] {
+class DelegatingReadOperations[T, CURSOR](protected val inner: ReadOperations[T, CURSOR]) extends ReadOperations[T, CURSOR] {
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: ClosingIterator[A]): ClosingIterator[A] = value
 
   protected def manyDbHits[A](value: ClosingLongIterator): ClosingLongIterator = value
-
-  override def delete(id: Long): Boolean = singleDbHit(inner.delete(id))
-
-  override def setProperty(obj: Long, propertyKey: Int, value: Value): Unit =
-    singleDbHit(inner.setProperty(obj, propertyKey, value))
 
   override def getById(id: Long): T = inner.getById(id)
 
@@ -447,19 +459,28 @@ class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]
   override def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
     singleDbHit(inner.propertyKeyIds(obj, cursor, propertyCursor))
 
-  override def removeProperty(obj: Long, propertyKeyId: Int): Boolean = singleDbHit(inner.removeProperty(obj, propertyKeyId))
-
   override def all: ClosingIterator[T] = manyDbHits(inner.all)
 
   override def allPrimitive: ClosingLongIterator = manyDbHits(inner.allPrimitive)
 
   override def isDeletedInThisTx(id: Long): Boolean = inner.isDeletedInThisTx(id)
 
+  override def getByIdIfExists(id: Long): Option[T] = singleDbHit(inner.getByIdIfExists(id))
+
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
+}
 
-  override def getByIdIfExists(id: Long): Option[T] = singleDbHit(inner.getByIdIfExists(id))
+class DelegatingOperations[T, CURSOR](override protected val inner: Operations[T, CURSOR]) extends DelegatingReadOperations(inner) with Operations[T, CURSOR] {
+
+  override def delete(id: Long): Boolean = singleDbHit(inner.delete(id))
+
+  override def setProperty(obj: Long, propertyKey: Int, value: Value): Unit =
+    singleDbHit(inner.setProperty(obj, propertyKey, value))
+
+  override def removeProperty(obj: Long, propertyKeyId: Int): Boolean = singleDbHit(inner.removeProperty(obj, propertyKeyId))
+
 }
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
@@ -478,19 +499,43 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def transaction: KernelTransaction = inner.transaction
 
-  override def internalTransaction: InternalTransaction = inner.internalTransaction
+  override def commitTransaction(): Unit = inner.commitTransaction()
 
   override def cursors: CursorFactory = inner.cursors
 
   override def cursorContext: CursorContext = inner.cursorContext
 
+  override def locks: Locks = inner.locks
+
   override def dataRead: Read = inner.dataRead
-
-  override def tokenRead: TokenRead = inner.tokenRead
-
-  override def schemaRead: SchemaRead = inner.schemaRead
 
   override def dataWrite: Write = inner.dataWrite
 
+  override def tokenRead: TokenRead = inner.tokenRead
+
+  override def tokenWrite: TokenWrite = inner.tokenWrite
+
+  override def token: Token = inner.token
+
+  override def schemaRead: SchemaRead = inner.schemaRead
+
+  override def schemaWrite: SchemaWrite = inner.schemaWrite
+
   override def rollback(): Unit = inner.rollback()
+
+  override def kernelQueryContext: api.QueryContext = inner.kernelQueryContext
+
+  override def procedures: Procedures = inner.procedures
+
+  override def securityContext: SecurityContext = inner.securityContext
+
+  override def securityAuthorizationHandler: SecurityAuthorizationHandler = inner.securityAuthorizationHandler
+
+  override def memoryTracker: MemoryTracker = inner.memoryTracker
+
+  override def freezeLocks(): Unit = inner.freezeLocks()
+
+  override def thawLocks(): Unit = inner.thawLocks()
+
+  override def validateSameDB[E <: Entity](entity: E): E = inner.validateSameDB(entity)
 }

@@ -238,7 +238,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
 
       override protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {
         runtimeContextManager.create(queryContext,
-          queryContext.transactionalContext.transaction.schemaRead(),
+          queryContext.transactionalContext.schemaRead,
           MasterCompiler.CLOCK,
           CypherDebugOptions.default,
           compileExpressions = false,
