@@ -22,11 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe.evaluateStaticSkipOrLimitNumberOrThrow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InvalidArgumentException
-import org.neo4j.values.storable.FloatingPointValue
 
 case class SkipPipe(source: Pipe, exp: Expression)
                    (val id: Id = Id.INVALID_ID)
@@ -50,12 +48,7 @@ object SkipPipe {
   }
 
   def evaluateStaticSkipOrLimitNumberOrThrow(skipExp: Expression, state: QueryState, prefix: String): Long = {
-    val number = NumericHelper.evaluateStaticallyKnownNumber(skipExp, state)
-    if (number.isInstanceOf[FloatingPointValue]) {
-      val n = number.doubleValue()
-      throw new InvalidArgumentException(s"$prefix: Invalid input. '$n' is not a valid value. Must be a non-negative integer.")
-    }
-    val n = number.longValue()
+    val n = PipeHelper.evaluateStaticLongOrThrow(skipExp, state, prefix, " Must be a non-negative integer.")
 
     if (n < 0) {
       throw new InvalidArgumentException(s"$prefix: Invalid input. '$n' is not a valid value. Must be a non-negative integer.")

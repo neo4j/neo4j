@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
@@ -56,6 +57,60 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions) {
       override def getTransactionType: Type = Type.IMPLICIT
     }
+  }
+
+  test("batchSize 0") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach(0)
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val exception = intercept[InvalidArgumentException] {
+      consume(execute(query, runtime))
+    }
+    exception.getMessage should include("Must be a positive integer")
+  }
+
+  test("batchSize -1") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach(-1)
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val exception = intercept[InvalidArgumentException] {
+      consume(execute(query, runtime))
+    }
+    exception.getMessage should include("Must be a positive integer")
+  }
+
+  test("batchSize -1 on an empty input") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach(-1)
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .unwind("[] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val exception = intercept[InvalidArgumentException] {
+      consume(execute(query, runtime))
+    }
+    exception.getMessage should include("Must be a positive integer")
   }
 
   test("should create data from subqueries") {

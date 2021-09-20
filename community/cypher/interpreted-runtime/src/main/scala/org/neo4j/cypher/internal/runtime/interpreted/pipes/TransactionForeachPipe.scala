@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe.evaluateBatchSize
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
@@ -49,6 +51,8 @@ case class TransactionForeachPipe(source: Pipe,
                                  )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
+    val batchSizeLong = evaluateBatchSize(batchSize, state)
+
     input.map { outerRow =>
 
       // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).
@@ -147,5 +151,16 @@ case class TransactionForeachPipe(source: Pipe,
       innerTxContext.close()
       stateWithNewTransaction.close()
     }
+  }
+}
+
+object TransactionForeachPipe {
+  def evaluateBatchSize(batchSize: Expression, state: QueryState): Long = {
+    val n = PipeHelper.evaluateStaticLongOrThrow(batchSize, state, "OF ... ROWS", " Must be a positive integer.")
+
+    if (n <= 0) {
+      throw new InvalidArgumentException(s"OF ... ROWS: Invalid input. '$n' is not a valid value. Must be a positive integer.")
+    }
+    n
   }
 }
