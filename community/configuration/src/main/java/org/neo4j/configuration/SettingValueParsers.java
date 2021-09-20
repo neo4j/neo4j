@@ -226,6 +226,137 @@ public final class SettingValueParsers
         }
     };
 
+    public static final SettingValueParser<String> JVM_ADDITIONAL = new SettingValueParser<>()
+    {
+        private String parseLine( String line )
+        {
+            var builder = new StringBuilder();
+
+            var quoting = false;
+            var pendingQuote = false;
+            var atBoundary = true;
+            for ( int i = 0; i < line.length(); i++ )
+            {
+                char c = line.charAt( i );
+                switch ( c )
+                {
+                    case '"':
+                        if ( atBoundary )
+                        {
+                            pendingQuote = true;
+                            atBoundary = false;
+                        }
+                        else
+                        {
+                            if ( quoting )
+                            {
+                                if ( pendingQuote )
+                                {
+                                    builder.append( '"' );
+                                    pendingQuote = false;
+                                }
+                                else
+                                {
+                                    pendingQuote = true;
+                                }
+                            }
+                            else
+                            {
+                                pendingQuote = false;
+                                builder.append( '"' );
+                            }
+                        }
+                        break;
+                    case ' ':
+                        if ( pendingQuote )
+                        {
+                            quoting = false;
+                            pendingQuote = false;
+                        }
+                        if ( quoting )
+                        {
+                            builder.append( ' ' );
+                        }
+                        else
+                        {
+                            // Start interpreting the rest as a new setting
+                            builder.append( System.lineSeparator() );
+                            atBoundary = true;
+                        }
+                        break;
+                    default:
+                        if ( pendingQuote )
+                        {
+                            quoting = true;
+                            pendingQuote = false;
+                        }
+                        atBoundary = false;
+                        builder.append( c );
+                        break;
+                }
+            }
+            if ( pendingQuote )
+            {
+                quoting = false;
+                pendingQuote = false;
+            }
+            if ( quoting )
+            {
+                throw new IllegalArgumentException( "Missing end quote" );
+            }
+            return builder.toString();
+        }
+
+        @Override
+        public String parse( String joinedSettings )
+        {
+            // The input string already contains newline separated JVM settings. But when
+            // Neo4j is running containerized all JVM settings are passed as a single environment
+            // variable and in that case the JVM settings are split by space so do additional
+            // parsing+splitting per line.
+            //
+            // Example:
+            //
+            // -XX:+AlwaysPreTouch
+            // -DsomeValue -DsomeOther
+            // "-DsomethingWithSpace=""a value"""
+            // "-DquotedJustInCase" -DNotQuoted
+            //
+            // Should result in
+            //
+            // -XX:+AlwaysPreTouch
+            // -DsomeValue
+            // -DsomeOther
+            // -DsomethingWithSpace="a value"
+            // -DquotedJustInCase
+            // -DNotQuoted
+            //
+            String[] settings = joinedSettings.split( System.lineSeparator() );
+            var builder = new StringBuilder();
+            for ( int i = 0; i < settings.length; i++ )
+            {
+                if ( i > 0 )
+                {
+                    builder.append( System.lineSeparator() );
+                }
+                builder.append( parseLine( settings[i] ) );
+            }
+            return builder.toString();
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return "one or more jvm arguments";
+        }
+
+        @Override
+        public Class<String> getType()
+        {
+            return String.class;
+        }
+    };
+
     public static <T> SettingValueParser<List<T>> listOf( SettingValueParser<T> parser )
     {
         return new CollectionValueParser( List.class, Collectors.toList(), parser );

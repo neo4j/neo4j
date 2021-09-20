@@ -32,6 +32,7 @@ import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
+import static org.neo4j.configuration.SettingValueParsers.JVM_ADDITIONAL;
 
 @ServiceProvider
 public class BootloaderSettings implements SettingsDeclaration
@@ -48,7 +49,7 @@ public class BootloaderSettings implements SettingsDeclaration
     @Description( "Additional JVM arguments. Argument order can be significant. To use a Java commercial feature, the argument to unlock " +
             "commercial features must precede the argument to enable the specific feature in the config value string. For example, " +
             "to use Flight Recorder, `-XX:+UnlockCommercialFeatures` must come before `-XX:+FlightRecorder`." )
-    public static final Setting<String> additional_jvm = newBuilder( "dbms.jvm.additional", STRING, null ).build();
+    public static final Setting<String> additional_jvm = newBuilder( "dbms.jvm.additional", JVM_ADDITIONAL, null ).build();
 
     @Description( "Initial heap size. By default it is calculated based on available system resources." )
     public static final Setting<Long> initial_heap_size = newBuilder( "dbms.memory.heap.initial_size", BYTES , null ).build();
