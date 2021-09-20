@@ -1151,6 +1151,16 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .allNodeScan("x")
       .build())
 
+  testPlan("transactionForeach with batchSize",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .transactionForeach(10)
+      .|.emptyResult()
+      .|.create(createNode("y"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build())
+
   testPlan("transactionApply",
     new TestPlanBuilder()
       .produceResults("x", "y")

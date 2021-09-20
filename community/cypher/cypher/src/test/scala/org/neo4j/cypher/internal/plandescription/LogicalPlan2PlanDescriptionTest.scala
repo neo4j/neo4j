@@ -1761,8 +1761,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("TransactionForeach") {
-    assertGood(attach(TransactionForeach(lhsLP, rhsLP), 2345.0),
-      planDescription(id, "TransactionForeach", TwoChildren(lhsPD, rhsPD), Seq.empty, Set("a")))
+    assertGood(attach(TransactionForeach(lhsLP, rhsLP, number("100")), 2345.0),
+      planDescription(id, "TransactionForeach", TwoChildren(lhsPD, rhsPD), Seq(details("IN TRANSACTIONS OF 100 ROWS")), Set("a")))
   }
 
   test("TriadicBuild") {

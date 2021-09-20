@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Node
@@ -42,8 +43,10 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.control.NonFatal
 
-case class TransactionForeachPipe(source: Pipe, inner: Pipe)
-                                 (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+case class TransactionForeachPipe(source: Pipe,
+                                  inner: Pipe,
+                                  batchSize: Expression
+                                 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.map { outerRow =>

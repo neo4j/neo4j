@@ -1105,8 +1105,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     aggregation(Seq(), Seq(s"collect($variable) AS $collection"))
   }
 
-  def transactionForeach(): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionForeach(lhs, rhs)(_)))
+  def transactionForeach(batchSize: Long = TransactionForeach.defaultBatchSize): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionForeach(lhs, rhs, literalInt(batchSize))(_)))
 
   def transactionApply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionApply(lhs, rhs)(_)))

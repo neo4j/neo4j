@@ -876,8 +876,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       case _: SemiApply =>
         PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables, withRawCardinalities)
 
-      case _: TransactionForeach =>
-        PlanDescriptionImpl(id, "TransactionForeach", children, Seq.empty, variables, withRawCardinalities)
+      case TransactionForeach(_, _, batchSize) =>
+        val details = Details(pretty"IN TRANSACTIONS OF ${asPrettyString(batchSize)} ROWS")
+        PlanDescriptionImpl(id, "TransactionForeach", children, Seq(details), variables, withRawCardinalities)
 
       case TriadicSelection(_, _, positivePredicate, source, seen, target) =>
         val positivePredicateString = if (positivePredicate) pretty"" else pretty"NOT "

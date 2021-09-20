@@ -513,7 +513,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         }
       } else {
         if (inTransactionsParameters.isDefined) {
-          TransactionForeach(left, right)
+          TransactionForeach(left, right, SignedDecimalIntegerLiteral(TransactionForeach.defaultBatchSize.toString)(InputPosition.NONE))
         } else {
           SubqueryForeach(left, right)
         }

@@ -885,8 +885,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case SubqueryForeach(_, _) =>
         SubqueryForeachPipe(lhs, rhs)(id = id)
 
-      case TransactionForeach(_, _) =>
-        TransactionForeachPipe(lhs, rhs)(id = id)
+      case TransactionForeach(_, _, batchSize) =>
+        TransactionForeachPipe(lhs, rhs, buildExpression(batchSize))(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")
