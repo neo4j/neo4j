@@ -145,7 +145,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -155,6 +155,66 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
       (tx, offset) => tx.getAllNodes.stream().count() shouldEqual offset
+    )
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+
+    consume(runtimeResult)
+
+    val nodes = tx.getAllNodes.asScala.toList
+    nodes.size shouldBe numberOfIterations
+  }
+
+  test("should create data in different transactions in batches when using transactionForeach") {
+    val numberOfIterations = 30
+    val batchSize = 7
+    val inputRows = (0 until numberOfIterations).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults()
+      .transactionForeach(batchSize)
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val stream = inputStreamWithSideEffectInNewTxn(
+      inputValues(inputRows: _*).stream(),
+      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual (offset / batchSize * batchSize)
+    )
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+
+    consume(runtimeResult)
+
+    val nodes = tx.getAllNodes.asScala.toList
+    nodes.size shouldBe numberOfIterations
+  }
+
+  test("should create data in different transactions in one batch when using transactionForeach") {
+    val numberOfIterations = 30
+    val batchSize = 70
+    val inputRows = (0 until numberOfIterations).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults()
+      .transactionForeach(batchSize)
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val stream = inputStreamWithSideEffectInNewTxn(
+      inputValues(inputRows: _*).stream(),
+      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual 0
     )
 
     // then
@@ -207,7 +267,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
@@ -217,6 +277,40 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
       (tx, offset) => tx.getAllNodes.stream().count() shouldEqual Math.pow(2, offset)
+    )
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+
+    consume(runtimeResult)
+
+    val nodes = tx.getAllNodes.asScala.toList
+    nodes.size shouldBe Math.pow(2, numberOfIterations)
+  }
+
+  test("should create data in different transactions in batches when using transactionForeach and see previous changes") {
+    val numberOfIterations = 8
+    val batchSize = 3
+    val inputRows = (0 until numberOfIterations).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    given {
+      nodeGraph(1, "N")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults()
+      .transactionForeach(batchSize)
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.nodeByLabelScan("y", "N")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val stream = inputStreamWithSideEffectInNewTxn(
+      inputValues(inputRows: _*).stream(),
+      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual Math.pow(2, offset / batchSize * batchSize)
     )
 
     // then
@@ -242,7 +336,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.create(createNodeWithProperties("b", Seq("Label"), "{prop: 2}"))
       .|.nodeIndexOperator("a:Label(prop=2)")
@@ -275,11 +369,11 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
@@ -303,11 +397,11 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   test("statistics should report data creation from subqueries") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
-      .unwind("[1, 2] AS x")
+      .unwind("range(1, 10) AS x")
       .argument()
       .build(readOnly = false)
 
@@ -315,8 +409,27 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("x")
-      .withRows(singleColumn(Seq(1, 2)))
-      .withStatistics(nodesCreated = 2, labelsAdded = 2)
+      .withRows(singleColumn(1 to 10))
+      .withStatistics(nodesCreated = 10, labelsAdded = 10)
+  }
+
+  test("statistics should report data creation from subqueries in batches") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach(3)
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.argument()
+      .unwind("range(1, 10) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("x")
+      .withRows(singleColumn(1 to 10))
+      .withStatistics(nodesCreated = 10, labelsAdded = 10)
   }
 
   test("statistics should report data creation from subqueries while profiling") {
@@ -569,7 +682,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.allNodeScan("m")
       .eager()
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
       .|.argument("n")
@@ -618,7 +731,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.relationshipTypeScan("(a)-[s:R]->(b)")
       .eager()
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("r", "prop", "2")
       .|.argument("r")
@@ -667,7 +780,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.allNodeScan("m")
       .eager()
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
       .|.unwind("nodes(p) AS n")
@@ -715,7 +828,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.allNodeScan("m")
       .eager()
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
       .|.unwind("l AS n")
@@ -763,7 +876,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.allNodeScan("o")
       .eager()
-      .transactionForeach()
+      .transactionForeach(1)
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
       .|.projection("m.n AS n")

@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe.EntityTransformer
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe.evaluateBatchSize
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe.inNewTransaction
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidArgumentException
@@ -53,29 +55,34 @@ case class TransactionForeachPipe(source: Pipe,
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val batchSizeLong = evaluateBatchSize(batchSize, state)
 
-    input.map { outerRow =>
-
-      // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).
-      // Since we do not share the transaction state we must clear the cached properties.
-      outerRow.invalidateCachedProperties()
-
+    input.grouped(batchSizeLong).flatMap { batch =>
       inNewTransaction(state) { stateWithNewTransaction =>
-        val entityTransformer = new EntityTransformer(stateWithNewTransaction.query.entityAccessor)
-        val reboundRow = entityTransformer.copyWithEntityWrappingValuesRebound(outerRow)
-        val innerState = stateWithNewTransaction.withInitialContext(reboundRow)
-        val ignoredResult = inner.createResults(innerState)
-        while (ignoredResult.hasNext) {
-          ignoredResult.next()
+
+        batch.foreach { outerRow =>
+          // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).
+          // Since we do not share the transaction state we must clear the cached properties.
+          outerRow.invalidateCachedProperties()
+
+          val entityTransformer = new EntityTransformer(stateWithNewTransaction.query.entityAccessor)
+          val reboundRow = entityTransformer.copyWithEntityWrappingValuesRebound(outerRow)
+          val innerState = stateWithNewTransaction.withInitialContext(reboundRow)
+          val ignoredResult = inner.createResults(innerState)
+          while (ignoredResult.hasNext) {
+            ignoredResult.next()
+          }
+
+          outerRow
         }
-        val subqueryStatistics = innerState.getStatistics
+
+        val subqueryStatistics = stateWithNewTransaction.getStatistics
         state.query.addStatistics(subqueryStatistics)
       }
-
-
-      outerRow
+      batch
     }
   }
+}
 
+object TransactionForeachPipe {
   /**
    * Recursively finds entity wrappers and rebinds the entities to the current transaction
    */
@@ -152,9 +159,7 @@ case class TransactionForeachPipe(source: Pipe,
       stateWithNewTransaction.close()
     }
   }
-}
 
-object TransactionForeachPipe {
   def evaluateBatchSize(batchSize: Expression, state: QueryState): Long = {
     val n = PipeHelper.evaluateStaticLongOrThrow(batchSize, state, "OF ... ROWS", " Must be a positive integer.")
 
