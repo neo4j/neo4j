@@ -539,14 +539,21 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
 
     private void singleRelationship( KernelTransaction transaction, RelationshipScanCursor relationships )
     {
-        transaction.dataRead().singleRelationship( id, relationships );
+        if ( startNode != NO_ID )
+        {
+            transaction.dataRead().singleRelationship( id, startNode, type, endNode, relationships );
+        }
+        else
+        {
+            transaction.dataRead().singleRelationship( id, relationships );
+        }
         if ( !relationships.next() )
         {
             throw new NotFoundException( new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
         }
     }
 
-     public InternalTransaction getTransaction()
+    public InternalTransaction getTransaction()
     {
         return internalTransaction;
     }
