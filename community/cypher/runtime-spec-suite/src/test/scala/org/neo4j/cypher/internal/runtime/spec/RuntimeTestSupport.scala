@@ -352,9 +352,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
       case None => (null, new ResourceManager(ResourceMonitor.NOOP))
     }
 
-    val txBoundQueryContext = new TransactionBoundQueryContext(TransactionalContextWrapper(txContext, threadSafeCursorFactory), resourceManager)(monitors.newMonitor(classOf[IndexSearchMonitor]))
-    if (readOnly) txBoundQueryContext
-    else new UpdateCountingQueryContext(txBoundQueryContext)
+    new TransactionBoundQueryContext(TransactionalContextWrapper(txContext, threadSafeCursorFactory), resourceManager)(monitors.newMonitor(classOf[IndexSearchMonitor]))
   }
 
   def waitForWorkersToIdle(timeoutMs: Int): Unit = {

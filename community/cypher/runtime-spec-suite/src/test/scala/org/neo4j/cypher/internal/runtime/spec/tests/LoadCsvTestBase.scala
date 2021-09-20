@@ -495,7 +495,7 @@ trait LoadCsvWithMergeTestBase[CONTEXT <: RuntimeContext] {
       .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
       .loadCSV(url, "row", HasHeaders, None)
       .argument()
-      .build()
+      .build(readOnly = false)
 
     val setupResult = given {
       val setupPlan = buildPlan(setupQuery, runtime)
@@ -523,7 +523,7 @@ trait LoadCsvWithMergeTestBase[CONTEXT <: RuntimeContext] {
       .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
       .loadCSV(url, "row", HasHeaders)
       .argument()
-      .build()
+      .build(readOnly = false)
 
     val executablePlan = buildPlan(logicalQuery, runtime)
 
