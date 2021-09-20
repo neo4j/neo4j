@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -31,10 +33,13 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Label.label
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.LogProvider
 
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
@@ -313,5 +318,183 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val exception = the[Exception] thrownBy consume(runtimeResult)
     exception.getMessage should include("Expected transaction state to be empty when calling transactional subquery.")
+  }
+
+  test("Index seeks should see data created from previous transactions") {
+    given {
+      nodeIndex("N", "prop")
+      nodePropertyGraph(10, { case i => Map("prop" -> i) }, "N")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults()
+      .emptyResult()
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
+      .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.nodeIndexOperator("n:N(prop)")
+      .unwind("[1, 2, 3] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns().withNoRows
+    val nNodes = tx.findNodes(label("N")).asScala.toList
+    nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (0 until (10 + 3))
+  }
+
+  test("Index seeks should see data created in same transaction") {
+    given {
+      nodeIndex("N", "prop")
+      nodePropertyGraph(10, { case i => Map("prop" -> i) }, "N")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults()
+      .emptyResult()
+      .transactionForeach()
+      .|.union()
+      .|.|.emptyResult()
+      .|.|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
+      .|.|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.|.nodeIndexOperator("n:N(prop)")
+      .|.create(createNodeWithProperties("newN", Seq("N"), "{prop: x}"))
+      .|.argument("x")
+      .unwind("[100, 101, 102] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns().withNoRows
+    val nNodes = tx.findNodes(label("N")).asScala.toList
+    nNodes.map(_.getProperty("prop")) should contain theSameElementsAs(
+      (0 until 10) ++ // nodes from given
+        (100 to 102) ++ // nodes from LHS of Union
+        (11 to 15 by 2) // nodes from RHS of Union
+    )
+  }
+
+  test("Label scans should see data created from previous transactions") {
+    given {
+      nodePropertyGraph(10, { case i => Map("prop" -> i) }, "N")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults()
+      .emptyResult()
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
+      .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.nodeByLabelScan("n", "N")
+      .unwind("[1, 2, 3] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns().withNoRows
+    val nNodes = tx.findNodes(label("N")).asScala.toList
+    nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (0 until (10 + 3))
+  }
+
+  test("Label scans should see data created in same transaction") {
+    given {
+      nodePropertyGraph(10, { case i => Map("prop" -> i) }, "N")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults()
+      .emptyResult()
+      .transactionForeach()
+      .|.union()
+      .|.|.emptyResult()
+      .|.|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
+      .|.|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.|.nodeByLabelScan("n", "N")
+      .|.create(createNodeWithProperties("newN", Seq("N"), "{prop: x}"))
+      .|.argument("x")
+      .unwind("[100, 101, 102] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns().withNoRows
+    val nNodes = tx.findNodes(label("N")).asScala.toList
+    nNodes.map(_.getProperty("prop")) should contain theSameElementsAs(
+      (0 until 10) ++ // nodes from given
+        (100 to 102) ++ // nodes from LHS of Union
+        (11 to 15 by 2) // nodes from RHS of Union
+      )
+  }
+
+  test("Relationship type scans should see data created from previous transactions") {
+    given {
+      val nodes = nodeGraph(10)
+      connectWithProperties(nodes, nodes.indices.map(i => (i, i, "R", Map("prop" -> i))))
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults()
+      .emptyResult()
+      .transactionForeach()
+      .|.emptyResult()
+      .|.create(nodes = Seq(createNode("n"), createNode("m")),
+                relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}"))))
+      .|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.relationshipTypeScan("(a)-[r:R]->(b)")
+      .unwind("[1, 2, 3] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns().withNoRows
+    val nRels = tx.findRelationships(RelationshipType.withName("R")).asScala.toList
+    nRels.map(_.getProperty("prop")) should contain theSameElementsAs (0 until (10 + 3))
+  }
+
+  test("Relationship type scans should see data created in same transaction") {
+    given {
+      val nodes = nodeGraph(10)
+      connectWithProperties(nodes, nodes.indices.map(i => (i, i, "R", Map("prop" -> i))))
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults()
+      .emptyResult()
+      .transactionForeach()
+      .|.union()
+      .|.|.emptyResult()
+      .|.|.create(nodes = Seq(createNode("n"), createNode("m")),
+                  relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}"))))
+      .|.|.aggregation(Seq.empty, Seq("count(*) AS c"))
+      .|.|.relationshipTypeScan("(a)-[r:R]->(b)")
+      .|.create(nodes = Seq(createNode("n"), createNode("m")),
+      relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: x}"))))
+      .|.argument("x")
+      .unwind("[100, 101, 102] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns().withNoRows
+    val nRels = tx.findRelationships(RelationshipType.withName("R")).asScala.toList
+    nRels.map(_.getProperty("prop")) should contain theSameElementsAs(
+      (0 until 10) ++ // rels from given
+        (100 to 102) ++ // rels from LHS of Union
+        (11 to 15 by 2) // rels from RHS of Union
+      )
   }
 }

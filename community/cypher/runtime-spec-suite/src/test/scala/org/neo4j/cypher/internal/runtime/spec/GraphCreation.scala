@@ -462,6 +462,14 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     }
   }
 
+  /**
+   * Connect the given nodes.
+   *
+   * @param nodes the nodes to connect
+   * @param rels tuples that each describe a relationship to connect:
+   *             (from index in `nodes`, to index in `nodes`, relationship type)
+   * @return the created relationships
+   */
   def connect(nodes: Seq[Node], rels: Seq[(Int, Int, String)]): Seq[Relationship] = {
     rels.map {
       case (from, to, typ) =>
@@ -469,7 +477,15 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     }
   }
 
-  def connectWithProperties(nodes: Seq[Node], rels: Seq[(Int, Int, String,Map[String, Any])]): Seq[Relationship] = {
+  /**
+   * Connect the given nodes.
+   *
+   * @param nodes the nodes to connect
+   * @param rels tuples that each describe a relationship to connect:
+   *             (from index in `nodes`, to index in `nodes`, relationship type, properties)
+   * @return the created relationships
+   */
+  def connectWithProperties(nodes: Seq[Node], rels: Seq[(Int, Int, String, Map[String, Any])]): Seq[Relationship] = {
     rels.map {
       case (from, to, typ, props) =>
         val r = nodes(from).createRelationshipTo(nodes(to), RelationshipType.withName(typ))
