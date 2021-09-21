@@ -92,9 +92,9 @@ object Neo4jExceptionToExecutionFailed {
   private def runtimeDetail(msg: String): String = {
     if (msg == null)
       ""
-    else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input. ('-.+' is not a valid value|Got a negative integer)\\. Must be a non-negative integer\\.[\\s.\\S]*"))
+    else if (msg.matches("((SKIP: )|(LIMIT: )|(OF \\.\\.\\. ROWS: ))?Invalid input. ('-.+' is not a valid value|Got a negative integer)\\. Must be a ((non-negative)|(positive)) integer\\.[\\s.\\S]*"))
       NEGATIVE_INTEGER_ARGUMENT
-    else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input. ('.+' is not a valid value|Got a floating-point number)\\. Must be a non-negative integer\\.[\\s.\\S]*"))
+    else if (msg.matches("((SKIP: )|(LIMIT: )|(OF \\.\\.\\. ROWS: ))?Invalid input. ('.+' is not a valid value|Got a floating-point number)\\. Must be a ((non-negative)|(positive)) integer\\.[\\s.\\S]*"))
       INVALID_ARGUMENT_TYPE
     else if (msg.matches("Type mismatch: expected a map but was .+"))
       PROPERTY_ACCESS_ON_NON_MAP
@@ -139,9 +139,9 @@ object Neo4jExceptionToExecutionFailed {
   private def compileTimeDetail(msg: String): String = {
     if (msg == null)
       ""
-    else if (msg.matches("Invalid input. '-.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
+    else if (msg.matches("Invalid input. '-.+' is not a valid value. Must be a ((non-negative)|(positive)) integer\\.[\\s.\\S]*"))
       NEGATIVE_INTEGER_ARGUMENT
-    else if (msg.matches("Invalid input. '.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
+    else if (msg.matches("Invalid input. '.+' is not a valid value. Must be a ((non-negative)|(positive)) integer\\.[\\s.\\S]*"))
       INVALID_ARGUMENT_TYPE
     else if (msg.matches(semanticError("Can't use aggregate functions inside of aggregate functions\\.")))
       NESTED_AGGREGATION
@@ -195,9 +195,9 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_AGGREGATION
     else if (msg.matches(semanticError("Can't use aggregating expressions inside of expressions executing over collections")))
       INVALID_AGGREGATION
-    else if (msg.matches(semanticError("It is not allowed to refer to variables in ((SKIP)|(LIMIT))")))
+    else if (msg.matches(semanticError("It is not allowed to refer to variables in ((SKIP)|(LIMIT)|(OF \\.\\.\\. ROWS))")))
       NON_CONSTANT_EXPRESSION
-    else if (msg.matches(semanticError("It is not allowed to refer to identifiers in ((SKIP)|(LIMIT))")))
+    else if (msg.matches(semanticError("It is not allowed to refer to identifiers in ((SKIP)|(LIMIT)|(OF \\.\\.\\. ROWS))")))
       NON_CONSTANT_EXPRESSION
     else if (msg.matches("Can't use non-deterministic \\(random\\) functions inside of aggregate functions\\."))
       NON_CONSTANT_EXPRESSION

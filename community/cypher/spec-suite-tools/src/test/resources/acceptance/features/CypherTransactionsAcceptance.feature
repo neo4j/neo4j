@@ -30,7 +30,7 @@ Feature: CypherTransactionsAcceptance
       """
       CALL {
         CREATE (:A)
-      } IN TRANSACTIONS
+      } IN TRANSACTIONS OF 1 ROW
       """
     Then the result should be empty
     And the side effects should be:
@@ -39,23 +39,131 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Uncorrelated transactional unit subquery
 
-    Subquery is executed once per incoming row.
+  Subquery is executed once per incoming row.
 
     When executing query:
       """
       UNWIND [1, 2, 3] AS i
       CALL {
         CREATE (:A)
-      } IN TRANSACTIONS
+      } IN TRANSACTIONS OF 1 ROW
       """
     Then the result should be empty
     And the side effects should be:
       | +nodes  | 3 |
       | +labels | 1 |
 
+  Scenario: Uncorrelated transactional unit subquery in batches, batchSize aligned
+
+  Subquery is executed once per incoming row.
+  Transaction is opened for each batch.
+
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF 2 ROWS
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 10 |
+      | +labels | 1  |
+
+  Scenario: Uncorrelated transactional unit subquery in batches, batchSize unaligned
+
+  Subquery is executed once per incoming row.
+  Transaction is opened for each batch.
+
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF 3 ROWS
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 10 |
+      | +labels | 1  |
+
+  Scenario: Uncorrelated transactional unit subquery in batches, batchSize == input size
+
+  Subquery is executed once per incoming row.
+  Transaction is opened for each batch.
+
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF 10 ROWS
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 10 |
+      | +labels | 1  |
+
+  Scenario: Uncorrelated transactional unit subquery in batches, batchSize > input size
+
+  Subquery is executed once per incoming row.
+  Transaction is opened for each batch.
+
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF 100 ROWS
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 10 |
+      | +labels | 1  |
+
+  Scenario: Uncorrelated transactional unit subquery followed by LIMIT should execute all side effects
+
+  Subquery is executed once per incoming row.
+  Transaction is opened for each batch.
+
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF 1 ROW
+      RETURN i LIMIT 1
+      """
+    Then the result should be, in order:
+      | i |
+      | 1 |
+    And the side effects should be:
+      | +nodes  | 10 |
+      | +labels | 1  |
+
+  Scenario: Uncorrelated transactional unit subquery in batches followed by LIMIT should execute all side effects
+
+  Subquery is executed once per incoming row.
+  Transaction is opened for each batch.
+
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF 5 ROWS
+      RETURN i LIMIT 1
+      """
+    Then the result should be, in order:
+      | i |
+      | 1 |
+    And the side effects should be:
+      | +nodes  | 10 |
+      | +labels | 1  |
+
   Scenario: Correlated transactional unit subquery
 
-    Subquery is executed once per incoming row.
+  Subquery is executed once per incoming row.
 
     When executing query:
       """
@@ -63,7 +171,7 @@ Feature: CypherTransactionsAcceptance
       CALL {
         WITH i
         CREATE (:A {i: i})
-      } IN TRANSACTIONS
+      } IN TRANSACTIONS OF 1 ROW
       """
     Then the result should be empty
     And the side effects should be:
@@ -71,10 +179,28 @@ Feature: CypherTransactionsAcceptance
       | +properties | 3 |
       | +labels     | 1 |
 
+  Scenario: Correlated transactional unit subquery in batches
+
+  Subquery is executed once per incoming row.
+
+    When executing query:
+      """
+      UNWIND range(1, 10) AS i
+      CALL {
+        WITH i
+        CREATE (:A {i: i})
+      } IN TRANSACTIONS OF 5 ROW
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes      | 10 |
+      | +properties | 10 |
+      | +labels     | 1  |
+
   Scenario: Correlated transactional unit subquery with multiple writes
 
-    Each subquery execution is correlated with one incoming row.
-    Primitive values can be passed into subquery transactions.
+  Each subquery execution is correlated with one incoming row.
+  Primitive values can be passed into subquery transactions.
 
     When executing query:
       """
@@ -93,7 +219,7 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Uncorrelated transactional unit subquery preceded by match
 
-    Reads appearing before the subquery clause should not observe any writes from subquery executions.
+  Reads appearing before the subquery clause should not observe any writes from subquery executions.
 
     And having executed:
       """
@@ -112,8 +238,8 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Correlated transactional unit subquery using entity values
 
-    Each subquery execution is correlated with one incoming row.
-    Entity values can be passed into subquery transactions.
+  Each subquery execution is correlated with one incoming row.
+  Entity values can be passed into subquery transactions.
 
     And having executed:
       """
@@ -133,7 +259,7 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Correlated transactional unit subquery followed by property reads
 
-    Reads appearing after the clause should observe writes from all subquery executions.
+  Reads appearing after the clause should observe writes from all subquery executions.
 
     And having executed:
       """
@@ -158,8 +284,8 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Correlated transactional unit subquery preceded and followed by property reads
 
-    Reads appearing before the clause should not observe any writes from subquery executions.
-    Reads appearing after the clause should observe writes from all subquery executions.
+  Reads appearing before the clause should not observe any writes from subquery executions.
+  Reads appearing after the clause should observe writes from all subquery executions.
 
     And having executed:
       """
@@ -186,7 +312,7 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Uncorrelated transactional unit subquery followed by match
 
-    Reads appearing after the subquery clause should observe writes from all subquery executions.
+  Reads appearing after the subquery clause should observe writes from all subquery executions.
 
     When executing query:
       """
@@ -206,7 +332,7 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Uncorrelated transactional unit subquery containing match and create
 
-    Subquery executions should observe writes done in previous executions.
+  Subquery executions should observe writes done in previous executions.
 
     And having executed:
       """
@@ -227,8 +353,8 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Uncorrelated transactional unit subquery containing match and create followed by match
 
-    Subquery executions should observe writes done in previous executions.
-    Reads appearing after the clause should observe writes from all subquery executions.
+  Subquery executions should observe writes done in previous executions.
+  Reads appearing after the clause should observe writes from all subquery executions.
 
     And having executed:
       """
@@ -255,8 +381,8 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Uncorrelated transactional unit subquery updating the same property value
 
-    Subquery executions should observe writes done in previous executions.
-    Reads appearing after the clause should observe writes from all subquery executions.
+  Subquery executions should observe writes done in previous executions.
+  Reads appearing after the clause should observe writes from all subquery executions.
 
     And having executed:
       """
@@ -269,7 +395,7 @@ Feature: CypherTransactionsAcceptance
       CALL {
         MATCH (m)
         SET m.i = m.i * 10
-      } IN TRANSACTIONS
+      } IN TRANSACTIONS OF 1 ROW
       RETURN i, n.i
       """
     Then the result should be, in any order:
@@ -283,7 +409,7 @@ Feature: CypherTransactionsAcceptance
 
   Scenario: Correlated transactional unit subquery updating the same property list value in sequence
 
-    Correlated subquery executions happen in the order of input rows.
+  Correlated subquery executions happen in the order of input rows.
 
     And having executed:
       """
@@ -297,7 +423,7 @@ Feature: CypherTransactionsAcceptance
       CALL {
         WITH n, i
         SET n.is = n.is + [i]
-      } IN TRANSACTIONS
+      } IN TRANSACTIONS OF 1 ROW
       RETURN n.is
       """
     Then the result should be, in any order:
@@ -507,12 +633,12 @@ Feature: CypherTransactionsAcceptance
         CALL {
           MATCH (m)
           SET m.prop = 42
-        } IN TRANSACTIONS
+        } IN TRANSACTIONS OF 1 ROW
         RETURN n.prop
       """
     Then the result should be, in any order:
       | n.prop |
-      |   42   |
+      | 42     |
 
   Scenario: Observe changes between uncorrelated transactional unit subqueries and not use stale property caches
     Given having executed:
@@ -527,12 +653,12 @@ Feature: CypherTransactionsAcceptance
         CALL {
           MATCH (m)
           SET m.prop = m.prop + 1
-        } IN TRANSACTIONS
+        } IN TRANSACTIONS OF 1 ROW
         RETURN n.prop LIMIT 1
       """
     Then the result should be, in any order:
       | n.prop |
-      |   42   |
+      | 42     |
 
   Scenario: Observe changes between correlated transactional unit subqueries and not use stale property caches
     Given having executed:
@@ -548,12 +674,12 @@ Feature: CypherTransactionsAcceptance
           WITH n, m
           SET n.prop = m.prop
           SET m.prop = n.prop + 1
-        } IN TRANSACTIONS
+        } IN TRANSACTIONS OF 1 ROW
         RETURN n.prop LIMIT 1
       """
     Then the result should be, in any order:
       | n.prop |
-      |   42   |
+      | 42     |
 
   Scenario: Observe changes from within correlated transactional unit subqueries and not use stale property caches
 
@@ -575,7 +701,7 @@ Feature: CypherTransactionsAcceptance
           WITH a, b, i
           FOREACH (ignored in CASE i WHEN 1 THEN [1] ELSE [] END | SET a.prop = 'new' )
           SET b.prop = a.prop
-        } IN TRANSACTIONS
+        } IN TRANSACTIONS OF 1 ROW
         RETURN i, prop1, b.prop, a.prop
       """
     Then the result should be, in any order:
@@ -602,7 +728,7 @@ Feature: CypherTransactionsAcceptance
           WITH n, i
           FOREACH (ignored in CASE i WHEN 1 THEN [1] ELSE [] END | SET n.prop = 'new' )
           RETURN n.prop as prop2
-        } IN TRANSACTIONS
+        } IN TRANSACTIONS OF 1 ROW
         RETURN i, prop, prop2, n.prop
       """
     Then the result should be, in any order:
@@ -610,3 +736,125 @@ Feature: CypherTransactionsAcceptance
       | 0 | 'old' | 'old' | 'new'  |
       | 1 | 'old' | 'new' | 'new'  |
       | 2 | 'old' | 'new' | 'new'  |
+
+  Scenario: Non-positive parameter for batchSize and an empty graph should fail
+    And parameters are:
+      | batchSize | 0 |
+    When executing query:
+      """
+      UNWIND range(0, 100) AS x
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF $batchSize ROWS
+      """
+    Then a SyntaxError should be raised at runtime: InvalidArgumentType
+
+  Scenario: Negative parameter for batchSize and an empty graph should fail
+    And parameters are:
+      | batchSize | -1 |
+    When executing query:
+      """
+      UNWIND range(0, 100) AS x
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF $batchSize ROWS
+      """
+    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+
+  Scenario: Floating point parameter for batchSize and an empty graph should fail
+    And parameters are:
+      | batchSize | 1.0 |
+    When executing query:
+      """
+      UNWIND range(0, 100) AS x
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF $batchSize ROWS
+      """
+    Then a SyntaxError should be raised at compile time: InvalidArgumentType
+
+  Scenario: Graph touching batchSize should fail with a syntax exception
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      UNWIND range(0, 100) AS x
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x) ROWS
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+  Scenario: Graph touching batchSize should fail with a syntax exception 2
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      UNWIND range(0, 100) AS x
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF size([(a)-->(b) | b.age]) ROWS
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+  Scenario: Graph touching batchSize should fail with a syntax exception 3
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      UNWIND range(0, 100) AS x
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF size(()-->()) ROWS
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+  Scenario: Graph touching batchSize should fail with a syntax exception 4
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      UNWIND range(0, 100) AS x
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF reduce(sum=0, x IN [p.age] | sum + x) ROWS
+      """
+    Then a SyntaxError should be raised at compile time: NonConstantExpression
+
+  Scenario: Reduce batchSize should be allowed
+    When executing query:
+      """
+      UNWIND range(1, 10) AS x
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF reduce(sum=0, x IN [0, 2] | sum + x) ROWS
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 10 |
+      | +labels | 1  |
+
+  Scenario: BatchSize of more than Integer.Max rows should be allowed
+    When executing query:
+      """
+      UNWIND range(1, 10) AS x
+      CALL {
+        CREATE (:A)
+      } IN TRANSACTIONS OF 9223372036854775807 ROWS // Long.Max
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 10 |
+      | +labels | 1  |
