@@ -70,7 +70,8 @@ public enum Group
     FILE_IO_HELPER( "FileIOHelper" ),
     LOG_WRITER( "LOG_WRITER" ),
     NATIVE_SECURITY( "NativeSecurity" ),
-    METRICS_EVENT( "MetricsEvent" ),
+    METRICS_CSV_WRITE( "MetricsCsvWrite" ),
+    METRICS_GRAPHITE_WRITE( "MetricsGraphiteWrite" ),
     /** Threads that perform database manager operations necessary to bring databases to their desired states. */
     DATABASE_RECONCILER( "DatabaseReconciler" ),
     /** Ensures DatabaseId lookup is not run from an outer transaction that will be tied to a database */
