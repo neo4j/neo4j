@@ -64,7 +64,8 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
       // Cursors are tied to transaction and needs to be closed here.
       // We call closeInternal instead of close, so that the resources are not removed from the ResourceManager.
       // We want that, because they are still traced by the RuntimeResult and will be closed from there as well.
-      case c: Cursor => c.closeInternal()
+      case c: Cursor =>
+        c.closeInternal()
       case cp: ResourceManagedCursorPool =>
         cursorPools += cp
         cp.closeCursors()
@@ -72,7 +73,8 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
         //save so that we can remove and re-add them
         trackedResources += e
     }
-    // Remove before we restart the tx
+    // Remove resources before we restart the tx (so that they do not get closed by the ResourceManager)
+    trackedResources ++= cursorPools // Also reuse the cursor pools now that we have closed their cursors
     trackedResources.foreach(queryContext.resources.untrace)
     // Restart TX
     queryContext.transactionalContext.commitAndRestartTx()
