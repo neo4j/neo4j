@@ -26,6 +26,7 @@ import org.neo4j.storageengine.api.RelationshipVisitor
 import scala.collection.GenTraversableOnce
 import scala.collection.Iterator
 import scala.collection.Iterator.empty
+import scala.collection.mutable
 
 /**
  * Adds the method [[close]] over the normal [[Iterator]] interface.
@@ -153,6 +154,28 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
     def next(): B = f(self.next())
 
     override protected[this] def closeMore(): Unit = self.close()
+  }
+
+  // We can't override Iterator.grouped since that is only accepting Int and not Long.
+  // This is our own implementation, [[Iterator.grouped]] supports more use cases that we don't need.
+  def grouped(batchSize: Long): ClosingIterator[Seq[T]] = {
+    if (batchSize < 1) throw new IllegalArgumentException("Group size should be 1 or larger")
+
+    new ClosingIterator[Seq[T]] {
+      override protected[this] def innerHasNext: Boolean = self.hasNext
+
+      def next(): Seq[T] = {
+        var counter = 0
+        val buffer = mutable.ArrayBuffer[T]()
+        while (counter < batchSize && self.hasNext) {
+          buffer += self.next()
+          counter += 1
+        }
+        buffer
+      }
+
+      override protected[this] def closeMore(): Unit = self.close()
+    }
   }
 
   // this is our own implementation, [[Iterator.++]] is overly complex, we probably don't need to be so specialized.

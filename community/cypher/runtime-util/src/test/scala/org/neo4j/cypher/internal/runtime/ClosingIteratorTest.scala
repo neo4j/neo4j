@@ -333,6 +333,77 @@ class ClosingIteratorTest extends CypherFunSuite {
     single.next() shouldBe 1
     single.hasNext shouldBe false
   }
+
+  test("grouped size -1 should fail") {
+    val single = ClosingIterator.single(1)
+    an[IllegalArgumentException] should be thrownBy single.grouped(-1L)
+  }
+
+  test("grouped size 0 should fail") {
+    val single = ClosingIterator.single(1)
+    an[IllegalArgumentException] should be thrownBy single.grouped(0L)
+  }
+
+  test("grouped size 1 should return sequences of 1 element") {
+    // given
+    val input = values(1, 2, 3)
+    // when
+    val grouped = input.grouped(1L)
+    // then
+    grouped.hasNext shouldBe true
+    input.closed shouldBe false
+    grouped.next() shouldBe Seq(1)
+    grouped.hasNext shouldBe true
+    input.closed shouldBe false
+    grouped.next() shouldBe Seq(2)
+    grouped.hasNext shouldBe true
+    input.closed shouldBe false
+    grouped.next() shouldBe Seq(3)
+    grouped.hasNext shouldBe false
+    input.closed shouldBe true
+  }
+
+  test("grouped when Iterator has a multiple size of argument size") {
+    // given
+    val input = values(1, 2, 3, 4, 5, 6, 7, 8, 9)
+    // when
+    val grouped = input.grouped(3L)
+    // then
+    grouped.toSeq should equal(Seq(Seq(1, 2, 3), Seq(4, 5, 6), Seq(7, 8, 9)))
+    input.closed shouldBe true
+  }
+
+  test("grouped when Iterator does not have a multiple size of argument size") {
+    // given
+    val input = values(1, 2, 3, 4, 5, 6, 7, 8)
+    // when
+    val grouped = input.grouped(3L)
+    // then
+    grouped.toSeq should equal(Seq(Seq(1, 2, 3), Seq(4, 5, 6), Seq(7, 8)))
+    input.closed shouldBe true
+  }
+
+  test("grouped with just one batch") {
+    // given
+    val input = values(1, 2, 3, 4, 5, 6, 7, 8)
+    // when
+    val grouped = input.grouped(30L)
+    // then
+    grouped.toSeq should equal(Seq(Seq(1, 2, 3, 4, 5, 6, 7, 8)))
+    input.closed shouldBe true
+  }
+
+  test("grouped closes on explicit close") {
+    // given
+    val input = values(1, 2, 3, 4, 5, 6, 7, 8)
+    val grouped = input.grouped(3L)
+    grouped.next()
+    input.closed shouldBe false
+    // when
+    grouped.close()
+    // then
+    input.closed shouldBe true
+  }
 }
 
 object ClosingIteratorTest {
