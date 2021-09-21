@@ -37,6 +37,7 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
+import static org.neo4j.internal.schema.IndexType.POINT;
 import static org.neo4j.internal.schema.IndexType.RANGE;
 import static org.neo4j.internal.schema.IndexType.TEXT;
 
@@ -68,6 +69,8 @@ class SchemaRuleTest
     private final IndexPrototype allRelTypesPrototype = IndexPrototype.forSchema( allRelTypesSchema ).withIndexType( LOOKUP );
     private final IndexPrototype textLabelPrototype = IndexPrototype.forSchema( labelSinglePropSchema ).withIndexType( TEXT );
     private final IndexPrototype textRelTypePrototype = IndexPrototype.forSchema( relTypeSinglePropSchema ).withIndexType( TEXT );
+    private final IndexPrototype pointLabelPrototype = IndexPrototype.forSchema( labelSinglePropSchema ).withIndexType( POINT );
+    private final IndexPrototype pointRelTypePrototype = IndexPrototype.forSchema( relTypeSinglePropSchema ).withIndexType( POINT );
     private final IndexPrototype labelPrototypeNamed = IndexPrototype.forSchema( labelSchema ).withName( "labelPrototypeNamed" );
     private final IndexPrototype labelPrototype2Named = IndexPrototype.forSchema( labelSchema2 ).withName( "labelPrototype2Named" );
     private final IndexPrototype labelUniquePrototypeNamed = IndexPrototype.uniqueForSchema( labelSchema ).withName( "labelUniquePrototypeNamed" );
@@ -89,6 +92,8 @@ class SchemaRuleTest
             IndexPrototype.forSchema( allRelTypesSchema ).withIndexType( LOOKUP ).withName( "allRelTypesPrototypeNamed" );
     private final IndexPrototype textLabelPrototypeNamed = textLabelPrototype.withName( "textLabelPrototypeNamed" );
     private final IndexPrototype textRelTypePrototypeNamed = textRelTypePrototype.withName( "textRelTypePrototypeNamed" );
+    private final IndexPrototype pointLabelPrototypeNamed = pointLabelPrototype.withName( "pointLabelPrototypeNamed" );
+    private final IndexPrototype pointRelTypePrototypeNamed = pointRelTypePrototype.withName( "pointRelTypePrototypeNamed" );
     private final IndexDescriptor labelIndexNamed = labelPrototypeNamed.withName( "labelIndexNamed" ).materialise( 1 );
     private final IndexDescriptor labelIndex2Named = labelPrototype2Named.withName( "labelIndex2Named" ).materialise(  2 );
     private final IndexDescriptor labelUniqueIndexNamed = labelUniquePrototypeNamed.withName( "labelUniqueIndexNamed" ).materialise( 3 );
@@ -105,8 +110,10 @@ class SchemaRuleTest
     private final IndexDescriptor allRelTypesIndexNamed = allRelTypesPrototypeNamed.withName( "allRelTypesIndexNamed" ).materialise( 14 );
     private final IndexDescriptor textLabelIndexNamed = textLabelPrototypeNamed.withName( "textLabelIndexNamed" ).materialise( 15 );
     private final IndexDescriptor textRelTypeIndexNamed = textRelTypePrototypeNamed.withName( "textRelTypeIndexNamed" ).materialise( 16 );
+    private final IndexDescriptor pointLabelIndexNamed = pointLabelPrototypeNamed.withName( "pointLabelIndexNamed" ).materialise( 17 );
+    private final IndexDescriptor pointRelTypeIndexNamed = pointRelTypePrototypeNamed.withName( "pointRelTypeIndexNamed" ).materialise( 18 );
     private final IndexDescriptor indexBelongingToConstraint =
-            labelUniquePrototypeNamed.withName( "indexBelongingToConstraint" ).materialise( 17 ).withOwningConstraintId( 1 );
+            labelUniquePrototypeNamed.withName( "indexBelongingToConstraint" ).materialise( 19 ).withOwningConstraintId( 1 );
     private final ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema );
     private final ConstraintDescriptor uniqueLabelConstraintWithOtherType = ConstraintDescriptorFactory.uniqueForSchema( labelSchema, RANGE );
     private final ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema( labelSchema );
@@ -155,6 +162,8 @@ class SchemaRuleTest
         assertName( allRelTypesPrototype, "index_9625776f" );
         assertName( textLabelPrototype, "index_e76ccd25" );
         assertName( textRelTypePrototype, "index_52ad048c" );
+        assertName( pointLabelPrototype, "index_abc433e9" );
+        assertName( pointRelTypePrototype, "index_97015bc0" );
     }
 
     @Test
@@ -175,6 +184,8 @@ class SchemaRuleTest
         assertUserDescription( "Index( type='TOKEN LOOKUP', schema=-[:<any-types>]-, indexProvider='Undecided-0' )", allRelTypesPrototype );
         assertUserDescription( "Index( type='GENERAL TEXT', schema=(:Label1 {prop2}), indexProvider='Undecided-0' )", textLabelPrototype );
         assertUserDescription( "Index( type='GENERAL TEXT', schema=-[:Type1 {prop2}]-, indexProvider='Undecided-0' )", textRelTypePrototype );
+        assertUserDescription( "Index( type='GENERAL POINT', schema=(:Label1 {prop2}), indexProvider='Undecided-0' )", pointLabelPrototype );
+        assertUserDescription( "Index( type='GENERAL POINT', schema=-[:Type1 {prop2}]-, indexProvider='Undecided-0' )", pointRelTypePrototype );
         assertUserDescription( "Constraint( type='UNIQUENESS', schema=(:Label1 {prop2, prop3}) )", uniqueLabelConstraint );
         assertUserDescription( "Constraint( type='NODE PROPERTY EXISTENCE', schema=(:Label1 {prop2, prop3}) )", existsLabelConstraint );
         assertUserDescription( "Constraint( type='NODE KEY', schema=(:Label1 {prop2, prop3}) )", nodeKeyConstraint );
@@ -223,6 +234,10 @@ class SchemaRuleTest
                 textLabelPrototypeNamed );
         assertUserDescription( "Index( name='textRelTypePrototypeNamed', type='GENERAL TEXT', schema=-[:Type1 {prop2}]-, indexProvider='Undecided-0' )",
                 textRelTypePrototypeNamed );
+        assertUserDescription( "Index( name='pointLabelPrototypeNamed', type='GENERAL POINT', schema=(:Label1 {prop2}), indexProvider='Undecided-0' )",
+                pointLabelPrototypeNamed );
+        assertUserDescription( "Index( name='pointRelTypePrototypeNamed', type='GENERAL POINT', schema=-[:Type1 {prop2}]-, indexProvider='Undecided-0' )",
+                pointRelTypePrototypeNamed );
 
         assertUserDescription( "Index( id=1, name='labelIndexNamed', type='GENERAL BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 labelIndexNamed );
@@ -264,8 +279,12 @@ class SchemaRuleTest
                 textLabelIndexNamed );
         assertUserDescription( "Index( id=16, name='textRelTypeIndexNamed', type='GENERAL TEXT', schema=-[:Type1 {prop2}]-, indexProvider='Undecided-0' )",
                 textRelTypeIndexNamed );
+        assertUserDescription( "Index( id=17, name='pointLabelIndexNamed', type='GENERAL POINT', schema=(:Label1 {prop2}), indexProvider='Undecided-0' )",
+                pointLabelIndexNamed );
+        assertUserDescription( "Index( id=18, name='pointRelTypeIndexNamed', type='GENERAL POINT', schema=-[:Type1 {prop2}]-, indexProvider='Undecided-0' )",
+                pointRelTypeIndexNamed );
         assertUserDescription(
-                "Index( id=17, name='indexBelongingToConstraint', type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), " +
+                "Index( id=19, name='indexBelongingToConstraint', type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), " +
                 "indexProvider='Undecided-0', owningConstraint=1 )", indexBelongingToConstraint );
 
         assertUserDescription( "Constraint( id=1, name='uniqueLabelConstraintNamed', type='UNIQUENESS', schema=(:Label1 {prop2, prop3}), ownedIndex=1 )",

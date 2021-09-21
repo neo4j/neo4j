@@ -33,9 +33,11 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.point_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+import static org.neo4j.graphdb.schema.IndexType.POINT;
 import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.graphdb.schema.IndexType.TEXT;
 
@@ -49,7 +51,8 @@ class IndexDefinitionToStringTest
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( range_indexes_enabled, true )
-                .setConfig( text_indexes_enabled, true );
+                .setConfig( text_indexes_enabled, true )
+                .setConfig( point_indexes_enabled, true );
     }
 
     @BeforeEach
@@ -82,6 +85,8 @@ class IndexDefinitionToStringTest
                     .withName( "fulltextLabelPropertiesIndex" ).create();
             var textLabelProperty = tx.schema().indexFor( Label.label( "Label" ) ).on( "prop" ).withIndexType( TEXT )
                     .withName( "textLabelPropertyIndex" ).create();
+            var pointLabelProperty = tx.schema().indexFor( Label.label( "Label" ) ).on( "prop" ).withIndexType( POINT )
+                    .withName( "pointLabelPropertyIndex" ).create();
 
             var relTypeTokenIndex = tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "relTypeTokenIndex" ).create();
             var relTypeProperty = tx.schema().indexFor( RelationshipType.withName( "someRelationship" ) )
@@ -98,6 +103,8 @@ class IndexDefinitionToStringTest
                             .withIndexType( FULLTEXT ).withName( "fulltextRelTypesPropertiesIndex" ).create();
             var textRelTypeProperty = tx.schema().indexFor( RelationshipType.withName( "TYPE" ) ).on( "prop" ).withIndexType( TEXT )
                     .withName( "textRelTypePropertyIndex" ).create();
+            var pointRelTypeProperty = tx.schema().indexFor( RelationshipType.withName( "TYPE" ) ).on( "prop" ).withIndexType( POINT )
+                    .withName( "pointRelTypePropertyIndex" ).create();
 
             assertIndexString( labelTokenIndex,
                                "IndexDefinition[label:<any-labels>] " +
@@ -124,6 +131,9 @@ class IndexDefinitionToStringTest
             assertIndexString( textLabelProperty, "IndexDefinition[label:Label on:prop] " +
                                "(Index( id=%d, name='textLabelPropertyIndex', type='GENERAL TEXT', " +
                                "schema=(:Label {prop}), indexProvider='text-1.0' ))" );
+            assertIndexString( pointLabelProperty, "IndexDefinition[label:Label on:prop] " +
+                               "(Index( id=%d, name='pointLabelPropertyIndex', type='GENERAL POINT', " +
+                               "schema=(:Label {prop}), indexProvider='point-1.0' ))" );
 
             assertIndexString( relTypeTokenIndex,
                                "IndexDefinition[relationship type:<any-types>] " +
@@ -150,6 +160,9 @@ class IndexDefinitionToStringTest
             assertIndexString( textRelTypeProperty, "IndexDefinition[relationship type:TYPE on:prop] " +
                                "(Index( id=%d, name='textRelTypePropertyIndex', type='GENERAL TEXT', " +
                                "schema=-[:TYPE {prop}]-, indexProvider='text-1.0' ))" );
+            assertIndexString( pointRelTypeProperty, "IndexDefinition[relationship type:TYPE on:prop] " +
+                               "(Index( id=%d, name='pointRelTypePropertyIndex', type='GENERAL POINT', " +
+                               "schema=-[:TYPE {prop}]-, indexProvider='point-1.0' ))" );
         }
     }
 
