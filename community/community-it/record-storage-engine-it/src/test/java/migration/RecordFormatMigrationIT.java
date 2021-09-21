@@ -29,6 +29,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
@@ -45,6 +46,7 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
@@ -204,12 +206,18 @@ class RecordFormatMigrationIT
 
     private DatabaseManagementService startManagementService( String name )
     {
-        return new TestDatabaseManagementServiceBuilder( databaseDirectory ).setConfig( record_format, name ).build();
+        return new TestDatabaseManagementServiceBuilder( databaseDirectory )
+                .setConfig( record_format, name )
+                .setConfig( storage_engine, RecordStorageEngineFactory.NAME )
+                .build();
     }
 
     private static DatabaseManagementService startDatabaseServiceWithUpgrade( Path storeDir, String formatName )
     {
-        return new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, true ).build();
+        return new TestDatabaseManagementServiceBuilder( storeDir )
+                .setConfig( storage_engine, RecordStorageEngineFactory.NAME )
+                .setConfig( record_format, formatName )
+                .setConfig( allow_upgrade, true )
+                .build();
     }
 }
