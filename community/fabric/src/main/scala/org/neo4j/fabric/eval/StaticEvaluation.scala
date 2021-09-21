@@ -19,6 +19,10 @@
  */
 package org.neo4j.fabric.eval
 
+import java.net.URL
+import java.time.Clock
+import java.util.function.Supplier
+
 import org.neo4j.common.DependencyResolver
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.evaluator.EvaluationException
@@ -77,9 +81,6 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
-import java.net.URL
-import java.time.Clock
-import java.util.function.Supplier
 import scala.collection.Iterator
 
 object StaticEvaluation {
@@ -181,10 +182,6 @@ object StaticEvaluation {
     override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] = notAvailable()
 
     override def nodeCursor(): NodeCursor = notAvailable()
-
-    override def relationshipScanCursor(): RelationshipScanCursor = notAvailable()
-
-    override def propertyCursor(): PropertyCursor = notAvailable()
 
     override def traversalCursor(): RelationshipTraversalCursor = notAvailable()
 

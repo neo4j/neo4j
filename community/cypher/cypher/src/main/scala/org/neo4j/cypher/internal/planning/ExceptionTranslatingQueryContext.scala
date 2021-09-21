@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.planning
 
+import java.net.URL
+
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -67,7 +69,6 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
-import java.net.URL
 import scala.collection.Iterator
 
 class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
@@ -348,10 +349,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     translateException(tokenNameLookup, inner.getRelationshipsByType(tokenReadSession, relType, indexOrder))
 
   override def nodeCursor(): NodeCursor = translateException(tokenNameLookup, inner.nodeCursor())
-
-  override def relationshipScanCursor(): RelationshipScanCursor = translateException(tokenNameLookup, inner.relationshipScanCursor())
-
-  override def propertyCursor(): PropertyCursor = translateException(tokenNameLookup, inner.propertyCursor())
 
   override def traversalCursor(): RelationshipTraversalCursor = translateException(tokenNameLookup, inner.traversalCursor())
 

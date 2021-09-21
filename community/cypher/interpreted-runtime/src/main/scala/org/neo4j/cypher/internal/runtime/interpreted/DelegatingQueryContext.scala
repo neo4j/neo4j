@@ -140,10 +140,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def nodeCursor(): NodeCursor = manyDbHits(inner.nodeCursor())
 
-  override def relationshipScanCursor(): RelationshipScanCursor = manyDbHits(inner.relationshipScanCursor())
-
-  override def propertyCursor(): PropertyCursor = manyDbHits(inner.propertyCursor())
-
   override def traversalCursor(): RelationshipTraversalCursor = manyDbHits(inner.traversalCursor())
 
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit =  singleDbHit(inner.singleRelationship(id, cursor))
