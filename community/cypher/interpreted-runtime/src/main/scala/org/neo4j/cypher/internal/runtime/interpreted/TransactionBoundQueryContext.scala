@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -54,6 +55,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.OnlyDi
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.TypeAndDirectionExpander
 import org.neo4j.cypher.operations.CursorUtils
 import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.dbms.database.DatabaseContext
+import org.neo4j.dbms.database.DatabaseManager
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.exceptions.FailedIndexException
 import org.neo4j.graphalgo.BasicEvaluationContext
@@ -110,6 +113,8 @@ import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.impl.util.DefaultValueMapper
+import org.neo4j.logging.LogProvider
+import org.neo4j.logging.internal.LogService
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
@@ -331,6 +336,14 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
 
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.schemaWrite
+
+  override def getDatabaseManager: DatabaseManager[DatabaseContext] = {
+    val dependencyResolver = transactionalContext.graph.getDependencyResolver
+    dependencyResolver.resolveDependency(classOf[DatabaseManager[_ <: DatabaseContext]]).asInstanceOf[DatabaseManager[DatabaseContext]]
+  }
+
+  override def getConfig: Config =
+    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[Config])
 
   class NodeWriteOperations extends NodeReadOperations with org.neo4j.cypher.internal.runtime.NodeOperations {
 
@@ -1145,6 +1158,10 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
 
   override def systemGraph: GraphDatabaseService = {
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[DatabaseManagementService]).database(SYSTEM_DATABASE_NAME)
+  }
+
+  override def logProvider: LogProvider  = {
+    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[LogService]).getInternalLogProvider
   }
 
   override def providedLanguageFunctions(): Seq[FunctionInformation] = {

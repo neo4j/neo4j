@@ -23,6 +23,7 @@ import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;

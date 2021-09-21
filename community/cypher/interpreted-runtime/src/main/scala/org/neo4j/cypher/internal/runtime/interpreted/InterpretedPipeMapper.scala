@@ -128,9 +128,11 @@ import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
+import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
+import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
@@ -170,6 +172,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowC
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowFunctionsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowProceduresCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowTransactionsCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.TerminateTransactionsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllNodesScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllOrderedDistinctPipe
@@ -405,6 +409,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case ShowProcedures(executableBy, verbose, columns) => CommandPipe(ShowProceduresCommand(executableBy, verbose, columns))(id)
 
       case ShowFunctions(functionType, executableBy, verbose, columns) => CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns))(id)
+
+      case ShowTransactions(ids, verbose, columns) => CommandPipe(ShowTransactionsCommand(ids, verbose, columns))(id)
+
+      case TerminateTransactions(ids, columns) => CommandPipe(TerminateTransactionsCommand(ids, columns))(id)
 
       // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>

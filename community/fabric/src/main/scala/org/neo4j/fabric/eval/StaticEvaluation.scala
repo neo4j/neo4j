@@ -21,6 +21,7 @@ package org.neo4j.fabric.eval
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.evaluator.EvaluationException
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
@@ -43,6 +44,8 @@ import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.dbms.database.DatabaseContext
+import org.neo4j.dbms.database.DatabaseManager
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
@@ -70,6 +73,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.internal.GraphDatabaseAPI
+import org.neo4j.logging.LogProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ValueMapper
@@ -418,7 +422,13 @@ object StaticEvaluation {
 
     override def systemGraph: GraphDatabaseService = notAvailable()
 
+    override def logProvider: LogProvider = notAvailable()
+
     override def providedLanguageFunctions(): Seq[FunctionInformation] = notAvailable()
+
+    override def getDatabaseManager: DatabaseManager[DatabaseContext] = notAvailable()
+
+    override def getConfig: Config = notAvailable()
   }
 
 }

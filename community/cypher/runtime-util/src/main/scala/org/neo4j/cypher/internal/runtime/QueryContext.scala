@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
+import org.neo4j.dbms.database.DatabaseContext
+import org.neo4j.dbms.database.DatabaseManager
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
@@ -63,6 +66,7 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.FunctionInformation
+import org.neo4j.logging.LogProvider
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.util.VisibleForTesting
@@ -234,6 +238,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   def assertShowConstraintAllowed(): Unit
 
   def systemGraph: GraphDatabaseService
+
+  def logProvider: LogProvider
 
   def providedLanguageFunctions(): Seq[FunctionInformation]
 
@@ -410,6 +416,10 @@ trait WriteQueryContext {
   def detachDeleteNode(id: Long): Int
 
   def assertSchemaWritesAllowed(): Unit
+
+  def getDatabaseManager: DatabaseManager[DatabaseContext]
+
+  def getConfig: Config
 }
 
 trait ReadOperations[T, CURSOR] {

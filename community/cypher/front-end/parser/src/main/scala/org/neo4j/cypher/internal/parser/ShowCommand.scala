@@ -17,16 +17,18 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule1
+import org.parboiled.scala.group
 
 trait ShowCommand extends Parser
                   with Base
                   with GraphSelection
                   with CommandHelper {
 
-  def ShowSchemaCommand: Rule1[ast.Query] = rule(ShowIndexes | ShowConstraints | ShowProcedures | ShowFunctions)
+  def ShowSchemaCommand: Rule1[ast.Query] = rule(ShowIndexes | ShowConstraints | ShowProcedures | ShowFunctions | ShowTransactions | TerminateTransactions)
 
   private def briefVerboseOutput: Rule1[Boolean] = rule("type of show output") {
     keyword("VERBOSE") ~~ optional(keyword("OUTPUT")) ~~~> (_ => true) |
@@ -196,5 +198,59 @@ trait ShowCommand extends Parser
     case Right(where)       => Seq(ast.ShowFunctionsClause(functionType, executableBy, Some(where), hasYield = false)(pos))
     case Left((y, Some(r))) => Seq(ast.ShowFunctionsClause(functionType, executableBy, None, hasYield = true)(pos), y, r)
     case Left((y, None))    => Seq(ast.ShowFunctionsClause(functionType, executableBy, None, hasYield = true)(pos), y)
+  }
+
+  // Transaction commands
+
+  private def TransactionIdStringList: Rule1[List[String]] = rule("a list of string transaction ids") {
+    //noinspection LanguageFeature
+    (oneOrMore(WS ~~ StringLiteral ~~ WS, separator = ",") memoMismatches).suppressSubnodes ~~>>(strings => _ => strings.map(_.value))
+  }
+
+  private def TransactionIds: Rule1[Either[List[String], Parameter]] = rule("transaction ids, either a parameter or a list of strings") {
+    TransactionIdStringList ~~> (ids => Left(ids)) |
+    Parameter ~~> (p => Right(p))
+  }
+
+  // SHOW TRANSACTIONS
+
+  private def ShowTransactions: Rule1[ast.Query] = rule("SHOW TRANSACTIONS") {
+    UseGraph ~~ ShowTransactionsClauses ~~>> ((use, show) => pos => ast.Query(None, ast.SingleQuery(use +: show)(pos))(pos)) |
+    ShowTransactionsClauses ~~>> (show => pos => ast.Query(None, ast.SingleQuery(show)(pos))(pos))
+  }
+
+  private def ShowTransactionsClauses: Rule1[Seq[ast.Clause]] = rule("SHOW TRANSACTIONS YIELD / WHERE / RETURN") {
+    val showTransactionsClausesStart = keyword("SHOW") ~~ TransactionKeyword
+    group(showTransactionsClausesStart ~~ TransactionIds ~~ ShowCommandClauses) ~~>>
+      ((ids, clauses) => pos => showTransactionClauses(ids, clauses, pos)) |
+    group(showTransactionsClausesStart ~~ ShowCommandClauses) ~~>>
+      (clauses => pos => showTransactionClauses(Left(List.empty), clauses, pos)) |
+    group(showTransactionsClausesStart ~~ TransactionIds) ~~>>
+      (ids => pos => Seq(ast.ShowTransactionsClause(ids, None, hasYield = false)(pos))) |
+    showTransactionsClausesStart ~~~>
+      (pos => Seq(ast.ShowTransactionsClause(Left(List.empty), None, hasYield = false)(pos)))
+  }
+
+  private def showTransactionClauses(ids: Either[List[String], Parameter],
+                                     clauses: Either[(ast.Yield, Option[ast.Return]), ast.Where],
+                                     pos: InputPosition): Seq[ast.Clause] = clauses match {
+    case Right(where)       => Seq(ast.ShowTransactionsClause(ids, Some(where), hasYield = false)(pos))
+    case Left((y, Some(r))) => Seq(ast.ShowTransactionsClause(ids, None, hasYield = true)(pos), y, r)
+    case Left((y, None))    => Seq(ast.ShowTransactionsClause(ids, None, hasYield = true)(pos), y)
+  }
+
+  // TERMINATE TRANSACTIONS
+
+  private def TerminateTransactions: Rule1[ast.Query] = rule("TERMINATE TRANSACTIONS") {
+    UseGraph ~~ TerminateTransactionsClauses ~~>> ((use, show) => pos => ast.Query(None, ast.SingleQuery(use +: show)(pos))(pos)) |
+    TerminateTransactionsClauses ~~>> (show => pos => ast.Query(None, ast.SingleQuery(show)(pos))(pos))
+  }
+
+  private def TerminateTransactionsClauses: Rule1[Seq[ast.Clause]] = rule("TERMINATE TRANSACTIONS") {
+    val terminateTransactionsClausesStart = keyword("TERMINATE") ~~ TransactionKeyword
+    terminateTransactionsClausesStart ~~ TransactionIds ~~>>
+      (ids => pos => Seq(ast.TerminateTransactionsClause(ids)(pos))) |
+    terminateTransactionsClausesStart ~~~>
+      (pos => Seq(ast.TerminateTransactionsClause(Left(List.empty))(pos)))
   }
 }

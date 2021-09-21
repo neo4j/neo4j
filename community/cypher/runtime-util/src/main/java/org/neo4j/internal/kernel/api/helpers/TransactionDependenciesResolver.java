@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin;
+package org.neo4j.internal.kernel.api.helpers;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -45,23 +45,23 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
-class TransactionDependenciesResolver
+public class TransactionDependenciesResolver
 {
     private final Map<KernelTransactionHandle,Optional<QuerySnapshot>> handleSnapshotsMap;
     private final Map<KernelTransactionHandle,Set<KernelTransactionHandle>> directDependencies;
 
-    TransactionDependenciesResolver( Map<KernelTransactionHandle,Optional<QuerySnapshot>> handleSnapshotsMap )
+    public TransactionDependenciesResolver( Map<KernelTransactionHandle,Optional<QuerySnapshot>> handleSnapshotsMap )
     {
         this.handleSnapshotsMap = handleSnapshotsMap;
         this.directDependencies = initDirectDependencies();
     }
 
-    boolean isBlocked( KernelTransactionHandle handle )
+    public boolean isBlocked( KernelTransactionHandle handle )
     {
         return directDependencies.get( handle ) != null;
     }
 
-    String describeBlockingTransactions( KernelTransactionHandle handle )
+    public String describeBlockingTransactions( KernelTransactionHandle handle )
     {
         Set<KernelTransactionHandle> allBlockers = new TreeSet<>(
                 Comparator.comparingLong( KernelTransactionHandle::getUserTransactionId ) );
@@ -85,7 +85,7 @@ class TransactionDependenciesResolver
         return describe( allBlockers );
     }
 
-    Map<String,Object> describeBlockingLocks( KernelTransactionHandle handle )
+    public Map<String,Object> describeBlockingLocks( KernelTransactionHandle handle )
     {
         Optional<QuerySnapshot> snapshot = handleSnapshotsMap.get( handle );
         return snapshot.map( QuerySnapshot::resourceInformation ).orElse( Collections.emptyMap() );

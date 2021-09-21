@@ -39,6 +39,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -345,9 +346,10 @@ public class BuiltInDbmsProcedures
         }
     }
 
+    @Deprecated( since = "4.4.0", forRemoval = true )
     @SystemProcedure
     @Description( "List all transactions currently executing at this instance that are visible to the user." )
-    @Procedure( name = "dbms.listTransactions", mode = DBMS )
+    @Procedure( name = "dbms.listTransactions", mode = DBMS, deprecatedBy = "SHOW TRANSACTIONS command" )
     public Stream<TransactionStatusResult> listTransactions() throws InvalidArgumentsException
     {
         ZoneId zoneId = getConfiguredTimeZone();
@@ -380,18 +382,20 @@ public class BuiltInDbmsProcedures
         return result.stream();
     }
 
+    @Deprecated( since = "4.4.0", forRemoval = true )
     @SystemProcedure
     @Description( "Kill transaction with provided id." )
-    @Procedure( name = "dbms.killTransaction", mode = DBMS )
+    @Procedure( name = "dbms.killTransaction", mode = DBMS, deprecatedBy = "TERMINATE TRANSACTIONS command" )
     public Stream<TransactionMarkForTerminationResult> killTransaction( @Name( "id" ) String transactionId ) throws InvalidArgumentsException
     {
         requireNonNull( transactionId );
         return killTransactions( singletonList( transactionId ) );
     }
 
+    @Deprecated( since = "4.4.0", forRemoval = true )
     @SystemProcedure
     @Description( "Kill transactions with provided ids." )
-    @Procedure( name = "dbms.killTransactions", mode = DBMS )
+    @Procedure( name = "dbms.killTransactions", mode = DBMS, deprecatedBy = "TERMINATE TRANSACTIONS command" )
     public Stream<TransactionMarkForTerminationResult> killTransactions( @Name( "ids" ) List<String> transactionIds ) throws InvalidArgumentsException
     {
         requireNonNull( transactionIds );
@@ -438,9 +442,10 @@ public class BuiltInDbmsProcedures
         return transactionIds.stream().map( id -> terminateTransaction( handles, id ) );
     }
 
+    @Deprecated( since = "4.4.0", forRemoval = true )
     @SystemProcedure
     @Description( "List all queries currently executing at this instance that are visible to the user." )
-    @Procedure( name = "dbms.listQueries", mode = DBMS )
+    @Procedure( name = "dbms.listQueries", mode = DBMS, deprecatedBy = "SHOW TRANSACTIONS command" )
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException
     {
         ZoneId zoneId = getConfiguredTimeZone();
@@ -506,17 +511,19 @@ public class BuiltInDbmsProcedures
         }
     }
 
+    @Deprecated( since = "4.4.0", forRemoval = true )
     @SystemProcedure
     @Description( "Kill all transactions executing the query with the given query id." )
-    @Procedure( name = "dbms.killQuery", mode = DBMS )
+    @Procedure( name = "dbms.killQuery", mode = DBMS, deprecatedBy = "TERMINATE TRANSACTIONS command" )
     public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException
     {
         return killQueries( singletonList( idText ) );
     }
 
+    @Deprecated( since = "4.4.0", forRemoval = true )
     @SystemProcedure
     @Description( "Kill all transactions executing a query with any of the given query ids." )
-    @Procedure( name = "dbms.killQueries", mode = DBMS )
+    @Procedure( name = "dbms.killQueries", mode = DBMS, deprecatedBy = "TERMINATE TRANSACTIONS command" )
     public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException
     {
         DatabaseManager<DatabaseContext> databaseManager = getDatabaseManager();

@@ -605,8 +605,6 @@ trait AdministrationCommand extends Parser
 
   private def NameKeyword: Rule0 = keyword("NAMES") | keyword("NAME")
 
-  private def TransactionKeyword: Rule0 = keyword("TRANSACTIONS") | keyword("TRANSACTION")
-
   // Graph specific
 
   private def GraphKeyword: Rule0 = keyword("GRAPHS") | keyword("GRAPH")

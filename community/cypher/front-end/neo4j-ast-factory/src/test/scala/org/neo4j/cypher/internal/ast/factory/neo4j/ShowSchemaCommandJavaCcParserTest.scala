@@ -481,6 +481,8 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
         |  "RELATIONSHIP"
         |  "ROLES"
         |  "TEXT"
+        |  "TRANSACTION"
+        |  "TRANSACTIONS"
         |  "UNIQUE"
         |  "USER"
         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
@@ -527,6 +529,8 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
         |  "RELATIONSHIP"
         |  "ROLES"
         |  "TEXT"
+        |  "TRANSACTION"
+        |  "TRANSACTIONS"
         |  "UNIQUE"
         |  "USER"
         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
@@ -573,6 +577,8 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
         |  "RELATIONSHIP"
         |  "ROLES"
         |  "TEXT"
+        |  "TRANSACTION"
+        |  "TRANSACTIONS"
         |  "UNIQUE"
         |  "USER"
         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)

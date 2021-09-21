@@ -95,7 +95,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "REVOKE"
          |  "SHOW"
          |  "START"
-         |  "STOP" (line 1, column 9 (offset: 8))""".stripMargin
+         |  "STOP"
+         |  "TERMINATE" (line 1, column 9 (offset: 8))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
   }
@@ -133,6 +134,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "RELATIONSHIP"
          |  "ROLES"
          |  "TEXT"
+         |  "TRANSACTION"
+         |  "TRANSACTIONS"
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 14 (offset: 13))""".stripMargin
@@ -189,6 +192,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "RELATIONSHIP"
          |  "ROLES"
          |  "TEXT"
+         |  "TRANSACTION"
+         |  "TRANSACTIONS"
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
@@ -229,6 +234,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "RELATIONSHIP"
          |  "ROLES"
          |  "TEXT"
+         |  "TRANSACTION"
+         |  "TRANSACTIONS"
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
@@ -273,6 +280,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "RELATIONSHIP"
          |  "ROLES"
          |  "TEXT"
+         |  "TRANSACTION"
+         |  "TRANSACTIONS"
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin

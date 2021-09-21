@@ -1181,6 +1181,69 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         |  ORDER BY name ASCENDING
         |  SKIP 1
         |  LIMIT 1""".stripMargin,
+
+    // show transactions
+
+    "show transaction" ->
+      "SHOW TRANSACTIONS",
+
+    "show transACTIONs" ->
+      "SHOW TRANSACTIONS",
+
+    "show transactions 'db1-transaction-123'" ->
+      """SHOW TRANSACTIONS "db1-transaction-123"""",
+
+    "show transactions $param" ->
+      "SHOW TRANSACTIONS $param",
+
+    "show transactions 'db1-transaction-123', 'db2-transaction-456'" ->
+      """SHOW TRANSACTIONS "db1-transaction-123", "db2-transaction-456"""",
+
+    "show \ntransaction\n 'db1-transaction-123'" ->
+      """SHOW TRANSACTIONS "db1-transaction-123"""",
+
+    "show transACTIONs WHERE transactionId = 'db1-transaction-123'" ->
+      """SHOW TRANSACTIONS
+        |  WHERE transactionId = "db1-transaction-123"""".stripMargin,
+
+    "show transaction  YIELD *" ->
+      """SHOW TRANSACTIONS
+        |YIELD *""".stripMargin,
+
+    "show transaction  YIELD * Return DISTINCT database" ->
+      """SHOW TRANSACTIONS
+        |YIELD *
+        |RETURN DISTINCT database""".stripMargin,
+
+    "show transaction YIELD * where database = 'neo4j' Return *" ->
+      """SHOW TRANSACTIONS
+        |YIELD *
+        |  WHERE database = "neo4j"
+        |RETURN *""".stripMargin,
+
+    "show transaction yield currentQueryId order by currentQueryId skip 1 limit 1" ->
+      """SHOW TRANSACTIONS
+        |YIELD currentQueryId
+        |  ORDER BY currentQueryId ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
+
+    // terminate transactions
+
+    "terminate transaction" ->
+      "TERMINATE TRANSACTIONS",
+
+    "terminate transactions 'db1-transaction-123'" ->
+      """TERMINATE TRANSACTIONS "db1-transaction-123"""",
+
+    "terminate transactions $param" ->
+      "TERMINATE TRANSACTIONS $param",
+
+    "terminate transactions 'db1-transaction-123', 'db2-transaction-456'" ->
+      """TERMINATE TRANSACTIONS "db1-transaction-123", "db2-transaction-456"""",
+
+    "terminate \ntransaction\n 'db1-transaction-123'" ->
+      """TERMINATE TRANSACTIONS "db1-transaction-123"""",
   )
 
   def administrationTests(): Seq[(String, String)] = Seq[(String, String)](

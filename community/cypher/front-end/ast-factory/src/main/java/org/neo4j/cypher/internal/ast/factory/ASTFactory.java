@@ -249,6 +249,10 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE showFunctionClause( POS p, ShowCommandFilterTypes functionType, boolean currentUser, String user, WHERE where, boolean hasYield );
 
+    CLAUSE showTransactionsClause( POS p, SimpleEither<List<String>, PARAMETER> ids, WHERE where, boolean hasYield );
+
+    CLAUSE terminateTransactionsClause( POS p, SimpleEither<List<String>, PARAMETER> ids );
+
     // Schema Commands
     // Constraint Commands
 

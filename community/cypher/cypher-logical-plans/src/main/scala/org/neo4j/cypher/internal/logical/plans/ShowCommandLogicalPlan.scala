@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowIndexType
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 case class ShowIndexes(indexType: ShowIndexType, verbose: Boolean, defaultColumns: List[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
@@ -34,3 +35,7 @@ case class ShowProcedures(executableBy: Option[ExecutableBy], verbose: Boolean, 
 
 case class ShowFunctions(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, defaultColumns: List[ShowColumn])
                         (implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
+
+case class ShowTransactions(ids: Either[List[String], Parameter], verbose: Boolean, defaultColumns: List[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
+
+case class TerminateTransactions(ids: Either[List[String], Parameter], defaultColumns: List[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)

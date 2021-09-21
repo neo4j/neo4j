@@ -76,6 +76,16 @@ import org.neo4j.cypher.internal.administration.EnsureNodeExistsExecutionPlanner
 import org.neo4j.cypher.internal.administration.SetOwnPasswordExecutionPlanner
 import org.neo4j.cypher.internal.administration.ShowUsersExecutionPlanner
 import org.neo4j.cypher.internal.administration.SystemProcedureCallPlanner
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
+import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
+
+import scala.annotation.tailrec
 
 /**
  * This runtime takes on queries that work on the system database, such as multidatabase and security administration commands.
@@ -233,10 +243,33 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES
     case AllowedNonAdministrationCommands(statement) => _ =>
+      val updatedStatement = statement.rewrite(new Rewriter {
+        override def apply(v: AnyRef): AnyRef = instance(v)
+
+        private val instance = bottomUp(Rewriter.lift {
+          case s@SingleQuery(clauses) => s.copy(clauses = rewriteClauses(clauses.toList, List()))(s.position)
+        })
+
+        @tailrec
+        // Remove internally added YIELD and RETURN for TERMINATE TRANSACTION
+        // as the command does not allow those clauses and otherwise will fail to parse
+        // No risk of throwing away any WHERE clauses, as those are not allowed either
+        private def rewriteClauses(clauses: List[Clause], rewrittenClause: List[Clause]): List[Clause] = clauses match {
+          // Terminate transaction command with only a YIELD (don't think this case exists but to be on the safe side)
+          case (terminateClause: TerminateTransactionsClause) :: (_: Yield) :: Nil =>
+            rewrittenClause :+ terminateClause
+          // Terminate transaction command with YIELD and RETURN
+          case (terminateClause: TerminateTransactionsClause) :: (_: Yield) :: (_: Return) :: Nil =>
+            rewrittenClause :+ terminateClause
+          case c :: cs => rewriteClauses(cs, rewrittenClause :+ c)
+          case Nil => rewrittenClause
+        }
+      }).asInstanceOf[Statement]
+
       SystemCommandExecutionPlan("AllowedNonAdministrationCommand",
         normalExecutionEngine,
         securityAuthorizationHandler,
-        QueryRenderer.render(statement),
+        QueryRenderer.render(updatedStatement),
         MapValue.EMPTY,
         modeConverter = s => s // Keep the users permissions
       )

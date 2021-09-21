@@ -198,11 +198,13 @@ import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
+import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
+import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
@@ -498,6 +500,21 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
         val executableDescription = s.executableBy.map(e => asPrettyString.raw(e.description("functions"))).getOrElse(pretty"functionsForUser(all)")
         val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
         PlanDescriptionImpl(id, "ShowFunctions", NoChildren, Seq(Details(pretty"$typeDescription, $executableDescription, $colsDescription")), variables, withRawCardinalities)
+
+      case s: ShowTransactions =>
+        val idsDescription = s.ids match {
+          case Left(ls) => asPrettyString.raw(if (ls.isEmpty) "allTransactions" else s"transactions: ${ls.mkString(", ")}")
+          case Right(p) => asPrettyString.raw(s"transactions: $$${p.name}")
+        }
+        val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
+        PlanDescriptionImpl(id, "ShowTransactions", NoChildren, Seq(Details(pretty"$colsDescription, $idsDescription")), variables, withRawCardinalities)
+
+      case t: TerminateTransactions =>
+        val idsDescription = t.ids match {
+          case Left(ls) => asPrettyString.raw(ls.mkString(", "))
+          case Right(p) => asPrettyString.raw(s"$$${p.name}")
+        }
+        PlanDescriptionImpl(id, "TerminateTransactions", NoChildren, Seq(Details(pretty"transactions: $idsDescription")), variables, withRawCardinalities)
 
       case SystemProcedureCall(procedureName, _, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables, withRawCardinalities)

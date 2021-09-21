@@ -80,6 +80,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
@@ -289,12 +290,14 @@ import org.neo4j.cypher.internal.logical.plans.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.ShowRoles
+import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StartDatabase
 import org.neo4j.cypher.internal.logical.plans.StopDatabase
+import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
@@ -1092,6 +1095,31 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(ShowFunctions(UserDefinedFunctions, Some(User("foo")), verbose = false, List.empty), 1.0),
       planDescription(id, "ShowFunctions", NoChildren, Seq(details("userDefinedFunctions, functionsForUser(foo), defaultColumns")), Set.empty))
+  }
+
+  test("ShowTransactions") {
+    assertGood(attach(ShowTransactions(Left(List.empty), verbose = false, List.empty), 1.0),
+      planDescription(id, "ShowTransactions", NoChildren, Seq(details("defaultColumns, allTransactions")), Set.empty))
+
+    assertGood(attach(ShowTransactions(Left(List("db1-transaction-123")), verbose = true, List.empty), 1.0),
+      planDescription(id, "ShowTransactions", NoChildren, Seq(details("allColumns, transactions: db1-transaction-123")), Set.empty))
+
+    assertGood(attach(ShowTransactions(Left(List("db1-transaction-123", "db2-transaction-456")), verbose = false, List.empty), 1.0),
+      planDescription(id, "ShowTransactions", NoChildren, Seq(details("defaultColumns, transactions: db1-transaction-123, db2-transaction-456")), Set.empty))
+
+    assertGood(attach(ShowTransactions(Right(ExplicitParameter("foo", CTAny)(pos)), verbose = true, List.empty), 1.0),
+      planDescription(id, "ShowTransactions", NoChildren, Seq(details("allColumns, transactions: $foo")), Set.empty))
+  }
+
+  test("TerminateTransactions") {
+    assertGood(attach(TerminateTransactions(Left(List("db1-transaction-123")), List.empty), 1.0),
+      planDescription(id, "TerminateTransactions", NoChildren, Seq(details("transactions: db1-transaction-123")), Set.empty))
+
+    assertGood(attach(TerminateTransactions(Left(List("db1-transaction-123", "db2-transaction-456")), List.empty), 1.0),
+      planDescription(id, "TerminateTransactions", NoChildren, Seq(details("transactions: db1-transaction-123, db2-transaction-456")), Set.empty))
+
+    assertGood(attach(TerminateTransactions(Right(ExplicitParameter("foo", CTAny)(pos)), List.empty), 1.0),
+      planDescription(id, "TerminateTransactions", NoChildren, Seq(details("transactions: $foo")), Set.empty))
   }
 
   test("Aggregation") {

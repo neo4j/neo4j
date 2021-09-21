@@ -410,10 +410,22 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         throw new UnsupportedOperationException( "showFunctionClause is not a literal" );
     }
 
+    @Override
+    public NULL showTransactionsClause( NULL p, SimpleEither<List<String>, Object> ids, NULL where, boolean hasYield )
+    {
+        throw new UnsupportedOperationException( "showTransactionsClause is not a literal" );
+    }
+
+    @Override
+    public NULL terminateTransactionsClause( NULL p, SimpleEither<List<String>, Object> ids )
+    {
+        throw new UnsupportedOperationException( "terminateTransactionsClause is not a literal" );
+    }
+
     // Schema commands
 
     @Override
-    public NULL createConstraint( NULL p, ConstraintType constraintType, boolean replace, boolean ifNotExsits, String name, Object o, StringPos<NULL> label,
+    public NULL createConstraint( NULL p, ConstraintType constraintType, boolean replace, boolean ifNotExists, String name, Object o, StringPos<NULL> label,
                                   List<Object> objects, SimpleEither<Map<String,Object>,Object> options, boolean containsOn,
                                   ConstraintVersion constraintVersion )
     {

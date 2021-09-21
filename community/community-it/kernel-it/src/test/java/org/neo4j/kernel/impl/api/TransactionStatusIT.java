@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.builtin.TransactionId;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 

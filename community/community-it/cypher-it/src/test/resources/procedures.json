@@ -2030,7 +2030,7 @@
       "admin"
     ],
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": false
   },
@@ -2073,7 +2073,7 @@
       "admin"
     ],
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": false
   },
@@ -2116,7 +2116,7 @@
       "admin"
     ],
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": false
   },
@@ -2159,7 +2159,7 @@
       "admin"
     ],
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": false
   },
@@ -2563,7 +2563,7 @@
       "admin"
     ],
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": false
   },
@@ -2715,7 +2715,7 @@
       "admin"
     ],
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": false
   },

@@ -53,7 +53,9 @@ import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.UniquePropertyConstraintCommand
 import org.neo4j.cypher.internal.ast.UnresolvedCall
@@ -278,6 +280,15 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("SET DATABASE ACCESS privilege is not supported in this Cypher version.", p.position)
       case p@RevokePrivilege(DbmsPrivilege(SetDatabaseAccessAction), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("SET DATABASE ACCESS privilege is not supported in this Cypher version.", p.position)
+
+      // SHOW TRANSACTION[S] [id[, ...]] [WHERE clause | YIELD clause]
+      case c: ShowTransactionsClause =>
+        throw cypherExceptionFactory.syntaxException("`SHOW TRANSACTIONS` is not supported in this Cypher version.", c.position)
+
+      // TERMINATE TRANSACTION[S] id[, ...]
+      case c: TerminateTransactionsClause =>
+        throw cypherExceptionFactory.syntaxException("`TERMINATE TRANSACTIONS` is not supported in this Cypher version.", c.position)
+
     }
 
     private def hasRangeOptions(options: Options): Boolean = options match {

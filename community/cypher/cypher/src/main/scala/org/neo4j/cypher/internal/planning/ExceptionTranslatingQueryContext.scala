@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.planning
 
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
@@ -43,6 +44,8 @@ import org.neo4j.cypher.internal.runtime.RelationshipReadOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
+import org.neo4j.dbms.database.DatabaseContext
+import org.neo4j.dbms.database.DatabaseManager
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
@@ -63,6 +66,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
+import org.neo4j.logging.LogProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
@@ -337,6 +341,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def systemGraph: GraphDatabaseService = translateException(tokenNameLookup, inner.systemGraph)
 
+  override def logProvider: LogProvider = translateException(tokenNameLookup, inner.logProvider)
+
   override def providedLanguageFunctions(): Seq[FunctionInformation] = translateException(tokenNameLookup, inner.providedLanguageFunctions)
 
   override def close(): Unit = inner.close()
@@ -476,6 +482,10 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends
     translateException(tokenNameLookup, inner.detachDeleteNode(node))
 
   override def assertSchemaWritesAllowed(): Unit = translateException(tokenNameLookup, inner.assertSchemaWritesAllowed())
+
+  override def getDatabaseManager: DatabaseManager[DatabaseContext] = translateException(tokenNameLookup, inner.getDatabaseManager)
+
+  override def getConfig: Config = translateException(tokenNameLookup, inner.getConfig)
 
   class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
     extends ExceptionTranslatingReadOperations[T, CURSOR](inner) with Operations[T, CURSOR] {

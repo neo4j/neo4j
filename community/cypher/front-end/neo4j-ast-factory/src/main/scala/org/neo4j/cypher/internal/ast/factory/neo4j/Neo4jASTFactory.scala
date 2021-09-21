@@ -225,6 +225,7 @@ import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
+import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -238,6 +239,7 @@ import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.TraverseAction
@@ -1150,6 +1152,19 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     // either we have 'EXECUTABLE BY user', 'EXECUTABLE [BY CURRENT USER]' or nothing
     val executableBy = if (user != null) Some(User(user)) else if (currentUser) Some(CurrentUser) else None
     ShowFunctionsClause(functionType, executableBy, Option(where), hasYield)(p)
+  }
+
+  override def showTransactionsClause(p: InputPosition,
+                                      ids: SimpleEither[util.List[String], Parameter],
+                                      where: Where,
+                                      hasYield: Boolean): Clause = {
+    val scalaIds = ids.asScala.left.map(_.asScala.toList) // if left: map the string list to scala, if right: changes nothing
+    ShowTransactionsClause.apply(scalaIds, Option(where), hasYield)(p)
+  }
+
+  override def terminateTransactionsClause(p: InputPosition, ids: SimpleEither[util.List[String], Parameter]): Clause = {
+    val scalaIds = ids.asScala.left.map(_.asScala.toList) // if left: map the string list to scala, if right: changes nothing
+    TerminateTransactionsClause(scalaIds)(p)
   }
 
   // Schema Commands

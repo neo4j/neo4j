@@ -164,6 +164,7 @@ import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
+import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
@@ -175,6 +176,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
@@ -317,7 +319,7 @@ case class Prettifier(
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"${startOfCommand}$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS NODE KEY${asString(options)}"
+        s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS NODE KEY${asString(options)}"
 
       case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY"
@@ -326,7 +328,7 @@ case class Prettifier(
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"${startOfCommand}$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
+        s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
 
       case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"
@@ -337,7 +339,7 @@ case class Prettifier(
         val optionsString = asString(options)
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"${startOfCommand}$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire $propertyString$optionsString"
+        s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire $propertyString$optionsString"
 
       case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})"
@@ -348,7 +350,7 @@ case class Prettifier(
         val optionsString = asString(options)
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
-        s"${startOfCommand}$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire $propertyString$optionsString"
+        s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire $propertyString$optionsString"
 
       case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, _) =>
         s"DROP CONSTRAINT ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})"
@@ -610,26 +612,28 @@ case class Prettifier(
     def asString(clause: Clause): String = dispatch(clause)
 
     def dispatch(clause: Clause): String = clause match {
-      case u: UseGraph              => asString(u)
-      case e: Return                => asString(e)
-      case m: Match        => asString(m)
-      case c: SubqueryCall => asString(c)
-      case w: With         => asString(w)
-      case y: Yield                 => asString(y)
-      case c: Create                => asString(c)
-      case u: Unwind                => asString(u)
-      case u: UnresolvedCall        => asString(u)
-      case s: ShowIndexesClause     => asString(s)
-      case s: ShowConstraintsClause => asString(s)
-      case s: ShowProceduresClause  => asString(s)
-      case s: ShowFunctionsClause  => asString(s)
-      case s: SetClause             => asString(s)
-      case r: Remove                => asString(r)
-      case d: Delete                => asString(d)
-      case m: Merge                 => asString(m)
-      case l: LoadCSV               => asString(l)
-      case f: Foreach               => asString(f)
-      case s: Start                 => asString(s)
+      case u: UseGraph       => asString(u)
+      case e: Return         => asString(e)
+      case m: Match          => asString(m)
+      case c: SubqueryCall   => asString(c)
+      case w: With           => asString(w)
+      case y: Yield          => asString(y)
+      case c: Create         => asString(c)
+      case u: Unwind         => asString(u)
+      case u: UnresolvedCall => asString(u)
+      case s: ShowIndexesClause           => asString(s)
+      case s: ShowConstraintsClause       => asString(s)
+      case s: ShowProceduresClause        => asString(s)
+      case s: ShowFunctionsClause         => asString(s)
+      case s: ShowTransactionsClause      => asString(s)
+      case t: TerminateTransactionsClause => asString(t)
+      case s: SetClause => asString(s)
+      case r: Remove    => asString(r)
+      case d: Delete    => asString(d)
+      case m: Merge     => asString(m)
+      case l: LoadCSV   => asString(l)
+      case f: Foreach   => asString(f)
+      case s: Start     => asString(s)
       case c =>
         val ext = extension.asString(this)
         ext.applyOrElse(c, fallback)
@@ -821,6 +825,23 @@ case class Prettifier(
       case Some(CurrentUser) => " EXECUTABLE BY CURRENT USER"
       case Some(User(name))  => s" EXECUTABLE BY ${ExpressionStringifier.backtick(name)}"
       case None              => ""
+    }
+
+    def asString(s: ShowTransactionsClause): String = {
+      val ids = idsAsString(s.ids)
+      val ind = indented()
+      val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
+      s"SHOW TRANSACTIONS$ids$where"
+    }
+
+    def asString(s: TerminateTransactionsClause): String = {
+      val ids = idsAsString(s.ids)
+      s"TERMINATE TRANSACTIONS$ids"
+    }
+
+    private def idsAsString(ids: Either[List[String], Parameter]): String = ids match {
+      case Left(s) => if (s.nonEmpty) s.map(id => expr.quote(id)).mkString(" ", ", ", "") else ""
+      case Right(p) => s" $$${ExpressionStringifier.backtick(p.name)}"
     }
 
     def asString(s: SetClause): String = {

@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -193,9 +195,11 @@ import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
+import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
+import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
@@ -1140,6 +1144,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         ShowProcedures(s.executable, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
       case s: ShowFunctionsClause =>
         ShowFunctions(s.functionType, s.executable, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+      case s: ShowTransactionsClause =>
+        ShowTransactions(s.ids, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+      case s: TerminateTransactionsClause =>
+        TerminateTransactions(s.ids, s.unfilteredColumns.columns)
     }
 
     annotate(plan, solved, ProvidedOrder.empty, context)
