@@ -337,11 +337,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override val lastCommittedTxIdProvider: LastCommittedTxIdProvider = LastCommittedTxIdProvider(tc.graph)
 
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = TransactionBoundPlanContext.procedureSignature(tc.transaction, name)
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = TransactionBoundPlanContext.procedureSignature(tc.kernelTransaction, name)
 
-  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.transaction, name)
+  override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
 
   override def notificationLogger(): InternalNotificationLogger = logger
 
-  override def txStateHasChanges(): Boolean = tc.transaction.dataRead().transactionStateHasChanges()
+  override def txStateHasChanges(): Boolean = tc.kernelTransaction.dataRead().transactionStateHasChanges()
 }

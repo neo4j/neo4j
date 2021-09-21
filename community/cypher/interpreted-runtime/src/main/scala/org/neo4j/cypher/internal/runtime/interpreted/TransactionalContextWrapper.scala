@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.KernelTransaction.ExecutionContext
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DbmsInfo
@@ -55,7 +56,7 @@ class TransactionalContextWrapper(private[this] val tc: TransactionalContext, th
 
   def graph: GraphDatabaseQueryService = tc.graph()
 
-  override def transaction: KernelTransaction = tc.kernelTransaction
+  override def createKernelExecutionContext(): ExecutionContext = tc.kernelTransaction.createExecutionContext()
 
   override def commitTransaction(): Unit = tc.transaction.commit()
 

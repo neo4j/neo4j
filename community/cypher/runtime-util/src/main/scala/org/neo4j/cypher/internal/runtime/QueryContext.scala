@@ -60,7 +60,7 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.io.pagecache.context.CursorContext
-import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.KernelTransaction.ExecutionContext
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
@@ -480,7 +480,7 @@ trait RelationshipOperations extends Operations[RelationshipValue, RelationshipS
 
 trait QueryTransactionalContext extends CloseableResource {
 
-  def transaction: KernelTransaction
+  def createKernelExecutionContext(): ExecutionContext // TODO: Manage this internally in a parallel transactional context instead
 
   def commitTransaction(): Unit
 
