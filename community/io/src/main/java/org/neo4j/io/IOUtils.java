@@ -19,6 +19,7 @@
  */
 package org.neo4j.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
@@ -126,6 +127,27 @@ public final class IOUtils
     public static <T extends AutoCloseable> void closeAllSilently( T... closeables )
     {
         close( ( msg, cause ) -> null, closeables );
+    }
+
+    /**
+     * Closes the given {@code closeable} if it's not {@code null}, otherwise if {@code null} does nothing.
+     * Any caught {@link IOException} will be rethrown as {@link UncheckedIOException}.
+     *
+     * @param closeable instance to close, if it's not {@code null}.
+     */
+    public static void closeUnchecked( Closeable closeable )
+    {
+        if ( closeable != null )
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
     }
 
     /**
