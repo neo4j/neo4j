@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
@@ -41,7 +40,7 @@ import org.neo4j.memory.MemoryTracker
 class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
                         private[this] var cursorContext: CursorContext,
                         memoryTracker: MemoryTracker)
-  extends DefaultCloseListenable with ResourceManagedCursorPool with AutoCloseablePlus {
+  extends DefaultCloseListenable with ResourceManagedCursorPool {
 
   private[this] var _nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
   private[this] var _relationshipScanCursor: RelationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext)

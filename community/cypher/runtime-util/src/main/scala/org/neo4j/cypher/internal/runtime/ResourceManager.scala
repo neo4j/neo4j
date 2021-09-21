@@ -98,7 +98,7 @@ object ResourceMonitor {
  * Used by LoadCsvPeriodicCommitObserver to close all cursors in a cursor pool
  * and set new cursor factory and context.
  */
-trait ResourceManagedCursorPool {
+trait ResourceManagedCursorPool extends AutoCloseablePlus {
   def closeCursors(): Unit
   def setCursorFactoryAndContext(cursorFactory: CursorFactory, cursorContext: CursorContext): Unit
 }
