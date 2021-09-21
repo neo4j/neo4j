@@ -109,10 +109,6 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def nodeCursor(): NodeCursor
 
-  def relationshipScanCursor(): RelationshipScanCursor
-
-  def propertyCursor(): PropertyCursor
-
   def traversalCursor(): RelationshipTraversalCursor
 
   def getOrCreateLabelId(labelName: String): Int

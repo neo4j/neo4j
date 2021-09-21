@@ -335,10 +335,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def nodeCursor(): NodeCursor = translateException(tokenNameLookup, inner.nodeCursor())
 
-  override def relationshipScanCursor(): RelationshipScanCursor = translateException(tokenNameLookup, inner.relationshipScanCursor())
-
-  override def propertyCursor(): PropertyCursor = translateException(tokenNameLookup, inner.propertyCursor())
-
   override def traversalCursor(): RelationshipTraversalCursor = translateException(tokenNameLookup, inner.traversalCursor())
 
   override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): RelationshipValue =

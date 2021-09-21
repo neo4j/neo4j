@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.net.URL
+
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -122,7 +124,6 @@ import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
-import java.net.URL
 import scala.collection.Iterator
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
@@ -291,12 +292,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def nodeCursor(): NodeCursor =
     transactionalContext.cursors.allocateNodeCursor(transactionalContext.kernelTransaction.cursorContext)
-
-  override def relationshipScanCursor(): RelationshipScanCursor =
-    transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.cursorContext)
-
-  override def propertyCursor(): PropertyCursor =
-    transactionalContext.cursors.allocatePropertyCursor(transactionalContext.kernelTransaction.cursorContext, transactionalContext.tc.kernelTransaction().memoryTracker())
 
   override def traversalCursor(): RelationshipTraversalCursor =
     transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.kernelTransaction.cursorContext)
