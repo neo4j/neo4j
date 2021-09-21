@@ -999,13 +999,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             return false;
         }
 
+        isInternal = TreeNode.isInternal( cursor );
+        keyCount = TreeNode.keyCount( cursor );
         currentNodeGeneration = TreeNode.generation( cursor );
-
         successor = TreeNode.successor( cursor, stableGeneration, unstableGeneration, generationKeeper );
         successorGeneration = generationKeeper.generation;
-        isInternal = TreeNode.isInternal( cursor );
-        // Find the left-most key within from-range
-        keyCount = TreeNode.keyCount( cursor );
 
         forceReadHeader = false;
         return keyCountIsSane( keyCount );
