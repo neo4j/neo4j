@@ -70,6 +70,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
     private final BufferingLog startupLog = new BufferingLog();
     private volatile Log log = startupLog;
     private String serverAddress = "unknown address";
+    private String serverLocation = "unknown location";
     private MachineMemory machineMemory = MachineMemory.DEFAULT;
 
     public static int start( Bootstrapper boot, String... argv )
@@ -128,7 +129,8 @@ public abstract class NeoBootstrapper implements Bootstrapper
 
         try
         {
-            serverAddress = HttpConnector.listen_address.toString();
+            serverAddress = config.get( HttpConnector.listen_address ).toString();
+            serverLocation = config.get( GraphDatabaseInternalSettings.databases_root_path ).toString();
 
             log.info( "Starting..." );
             databaseManagementService = createNeo( config, dependencies );
@@ -143,9 +145,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
         }
         catch ( TransactionFailureException tfe )
         {
-            String locationMsg = (databaseManagementService == null) ? "" :
-                                 " Another process may be using databases at location: " + config.get( GraphDatabaseInternalSettings.databases_root_path );
-            log.error( format( "Failed to start Neo4j on %s.", serverAddress ) + locationMsg, tfe );
+            log.error( format( "Failed to start Neo4j on %s. Another process may be using databases at location: %s", serverAddress, serverLocation ), tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }
         catch ( Exception e )
@@ -175,7 +175,6 @@ public abstract class NeoBootstrapper implements Bootstrapper
     @Override
     public int stop()
     {
-        String location = "unknown location";
         try
         {
             doShutdown();
@@ -189,7 +188,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
         {
             switchToErrorLoggingIfLoggingNotConfigured();
             log.error( "Failed to cleanly shutdown Neo Server on port [%s], database [%s]. Reason [%s] ",
-                    serverAddress, location, e.getMessage(), e );
+                    serverAddress, serverLocation, e.getMessage(), e );
             closeUserLogFileStream();
             return 1;
         }
