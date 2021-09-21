@@ -800,11 +800,11 @@ PreParserResult parse() throws Exception:
         (
             Option( options )
         )*
-    ( queryStart = <IDENTIFIER> | queryStart = <UNKNOWN> | queryStart = <CYPHER>  | queryStart = <EQ> | queryStart = <SLASH> | queryStart = <NUMBER> )?
+    ( queryStart = <IDENTIFIER> | queryStart = <UNKNOWN> | queryStart = <EQ> | queryStart = <SLASH> | queryStart = <NUMBER> | queryStart = <VERSION> )?
         {
             if ( queryStart == null )
             {
-                 throw exceptionFactory.syntaxException( new IllegalStateException("Unexpected end of input: expected CYPHER, EXPLAIN, PROFILE or Query"),
+                 throw exceptionFactory.syntaxException( new IllegalStateException( PreParserResult.getEmptyQueryExceptionMsg() ),
                     token.endOffset + 1, token.endLine, token.endColumn + 1 );
             }
             return new PreParserResult( options, queryStart != null ? pos(queryStart) : new InputPosition(1, 0, 0) );
