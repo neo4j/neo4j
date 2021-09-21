@@ -46,8 +46,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static java.lang.String.format;
@@ -274,7 +274,7 @@ public final class CypherBoolean
     private static final class BooleanMapper implements ValueMapper<Value>
     {
         @Override
-        public Value mapPath( PathValue value )
+        public Value mapPath( VirtualPathValue value )
         {
             return value.size() > 0 ? TRUE : FALSE;
         }

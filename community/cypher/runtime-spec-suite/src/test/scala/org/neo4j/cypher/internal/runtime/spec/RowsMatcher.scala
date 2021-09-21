@@ -36,8 +36,8 @@ import org.neo4j.values.storable.TimeValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.PathValue
 import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.matchers.Matcher
@@ -427,7 +427,7 @@ class RowDiffStringBuilder {
 }
 
 object SortListValueMapper extends ValueMapper[AnyValue] {
-  override def mapPath(value: PathValue): AnyValue = value
+  override def mapPath(value: VirtualPathValue): AnyValue = value
   override def mapNode(value: VirtualNodeValue): AnyValue = value
   override def mapRelationship(value: VirtualRelationshipValue): AnyValue = value
   override def mapMap(value: MapValue): AnyValue = value

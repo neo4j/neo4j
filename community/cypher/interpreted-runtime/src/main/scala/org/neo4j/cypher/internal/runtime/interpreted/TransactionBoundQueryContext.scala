@@ -397,9 +397,11 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
 
   private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor( transactionalContext.cursorContext )
 
-  private def allocateRelationshipScanCursor() = transactionalContext.cursors.allocateRelationshipScanCursor( transactionalContext.cursorContext )
-
   protected def tokenRead: TokenRead = transactionalContext.tokenRead
+
+  override def singleNode(id: Long, cursor: NodeCursor): Unit = {
+    reads().singleNode(id, cursor)
+  }
 
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = {
     reads().singleRelationship(id, cursor)

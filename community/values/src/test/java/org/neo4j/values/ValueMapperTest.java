@@ -34,9 +34,9 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -175,7 +175,7 @@ class ValueMapperTest
     private static class Mapper extends ValueMapper.JavaMapper
     {
         @Override
-        public Object mapPath( PathValue value )
+        public Object mapPath( VirtualPathValue value )
         {
             return new MappedGraphType( value );
         }

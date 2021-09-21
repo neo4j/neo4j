@@ -389,6 +389,8 @@ object StaticEvaluation {
 
     override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notAvailable()
 
+    override def singleNode(id: Long, cursor: NodeCursor): Unit = notAvailable()
+
     override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = notAvailable()
 
     override def getLabelsForNode(id: Long, nodeCursor: NodeCursor): ListValue = notAvailable()

@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
-import org.neo4j.cypher.internal.runtime.ValuePopulation
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ValuePopulation.populate
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
@@ -33,31 +34,35 @@ case class ProduceResultsPipe(source: Pipe, columns: Array[String])
     // key-value pairs and thus should not have any stats
     val subscriber = state.subscriber
     if (state.prePopulateResults) {
-      val cursors = state.query.createExpressionCursors() // NOTE: We need to create these through the QueryContext so that they get a profiling tracer if profiling is enabled
+
+      val query = state.query
+      val cursors = query.createExpressionCursors() // NOTE: We need to create these through the QueryContext so that they get a profiling tracer if profiling is enabled
       input.map {
         original =>
-          produceAndPopulate(original, subscriber, cursors)
+          produceAndPopulate(original, subscriber, query, cursors)
           original
       }
-    } else
+    } else {
       input.map {
         original =>
           produce(original, subscriber)
           original
       }
+    }
   }
 
-  private def produceAndPopulate(original: CypherRow, subscriber: QuerySubscriber, cursors: ExpressionCursors): Unit = {
+  private def produceAndPopulate(original: CypherRow,
+                                 subscriber: QuerySubscriber,
+                                 query: QueryContext,
+                                 cursors: ExpressionCursors): Unit = {
+
     val nodeCursor = cursors.nodeCursor
     val relCursor = cursors.relationshipScanCursor
     val propertyCursor = cursors.propertyCursor
-
     var i = 0
     subscriber.onRecord()
     while (i < columns.length) {
-      val value = original.getByName(columns(i))
-      ValuePopulation.populate(value, nodeCursor, relCursor, propertyCursor)
-      subscriber.onField(i, value)
+      subscriber.onField(i, populate(original.getByName(columns(i)), query, nodeCursor, relCursor, propertyCursor))
       i += 1
     }
     subscriber.onRecordCompleted()

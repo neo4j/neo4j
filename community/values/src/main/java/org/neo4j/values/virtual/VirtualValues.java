@@ -135,6 +135,41 @@ public final class VirtualValues
         return new RelationshipReference( id );
     }
 
+    public static PathReference pathReference( long[] nodes, long[] relationships )
+    {
+        assert nodes != null;
+        assert relationships != null;
+        if ( (nodes.length + relationships.length) % 2 == 0 )
+        {
+            throw new IllegalArgumentException( "Tried to construct a path that is not built like a path: even number of elements" );
+        }
+        assert nodes.length == relationships.length + 1;
+
+        return new PathReference( nodes, relationships );
+    }
+
+    public static PathReference pathReference( VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships )
+    {
+        assert nodes != null;
+        assert relationships != null;
+        assert nodes.length == relationships.length + 1;
+        if ( (nodes.length + relationships.length) % 2 == 0 )
+        {
+            throw new IllegalArgumentException( "Tried to construct a path that is not built like a path: even number of elements" );
+        }
+        long[] nodeIds = new long[nodes.length];
+        long[] relIds = new long[relationships.length];
+        for ( int i = 0; i < nodeIds.length; i++ )
+        {
+            nodeIds[i] = nodes[i].id();
+        }
+        for ( int i = 0; i < relationships.length; i++ )
+        {
+            relIds[i] = relationships[i].id();
+        }
+        return new PathReference( nodeIds, relIds );
+    }
+
     public static PathValue path( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         assert nodes != null;
@@ -144,13 +179,24 @@ public final class VirtualValues
             throw new IllegalArgumentException( "Tried to construct a path that is not built like a path: even number of elements" );
         }
         long payloadSize = 0;
-        for ( NodeValue node : nodes )
+        assert nodes.length == relationships.length + 1;
+        int i = 0;
+        for ( ;  i < relationships.length; i++ )
         {
-            payloadSize += node.estimatedHeapUsage();
+            payloadSize += nodes[i].estimatedHeapUsage() + relationships[i].estimatedHeapUsage();
         }
-        for ( RelationshipValue relationship : relationships )
+        payloadSize += nodes[i].estimatedHeapUsage();
+
+        return new DirectPathValue( nodes, relationships, payloadSize );
+    }
+
+    public static PathValue path( NodeValue[] nodes, RelationshipValue[] relationships, long payloadSize )
+    {
+        assert nodes != null;
+        assert relationships != null;
+        if ( (nodes.length + relationships.length) % 2 == 0 )
         {
-            payloadSize += relationship.estimatedHeapUsage();
+            throw new IllegalArgumentException( "Tried to construct a path that is not built like a path: even number of elements" );
         }
         return new DirectPathValue( nodes, relationships, payloadSize );
     }

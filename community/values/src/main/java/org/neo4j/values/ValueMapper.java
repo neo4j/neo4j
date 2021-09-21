@@ -72,15 +72,15 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeArray;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 public interface ValueMapper<Base>
 {
     // Virtual
 
-    Base mapPath( PathValue value );
+    Base mapPath( VirtualPathValue value );
 
     Base mapNode( VirtualNodeValue value );
 

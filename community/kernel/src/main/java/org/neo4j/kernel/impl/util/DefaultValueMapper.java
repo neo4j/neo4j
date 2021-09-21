@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.function.Function;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
@@ -32,10 +33,8 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static org.neo4j.internal.helpers.collection.Iterators.iteratorsEqual;
@@ -52,25 +51,17 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     @Override
     public Node mapNode( VirtualNodeValue value )
     {
-        if ( value instanceof NodeEntityWrappingNodeValue )
-        { // this is the back door through which "virtual nodes" slip
-            return ((NodeEntityWrappingNodeValue) value).getEntity();
-        }
-        return new NodeEntity( transaction, value.id() );
+        return mapNode( value.id() );
     }
 
     @Override
     public Relationship mapRelationship( VirtualRelationshipValue value )
     {
-        if ( value instanceof RelationshipEntityWrappingValue )
-        { // this is the back door through which "virtual relationships" slip
-            return ((RelationshipEntityWrappingValue) value).getEntity();
-        }
-        return new RelationshipEntity( transaction, value.id() );
+        return mapRelationship( value.id() );
     }
 
     @Override
-    public Path mapPath( PathValue value )
+    public Path mapPath( VirtualPathValue value )
     {
         if ( value instanceof PathWrappingPathValue )
         {
@@ -79,7 +70,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         return new CoreAPIPath( value );
     }
 
-    private static <U, V> Iterable<V> asList( U[] values, Function<U,V> mapper )
+    private static <U, V> Iterable<V> asList( long[] values, LongToObjectFunction<V> mapper )
     {
         return () -> new Iterator<>()
         {
@@ -103,7 +94,17 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         };
     }
 
-    private static <U, V> Iterable<V> asReverseList( U[] values, Function<U,V> mapper )
+    private Node mapNode( long value )
+    {
+        return new NodeEntity( transaction, value );
+    }
+
+    private Relationship mapRelationship( long value )
+    {
+        return new RelationshipEntity( transaction, value );
+    }
+
+    private static <U, V> Iterable<V> asReverseList( long[] values, LongToObjectFunction<V> mapper )
     {
         return () -> new Iterator<>()
         {
@@ -129,9 +130,9 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
 
     private class CoreAPIPath implements Path
     {
-        private final PathValue value;
+        private final VirtualPathValue value;
 
-        CoreAPIPath( PathValue value )
+        CoreAPIPath( VirtualPathValue value )
         {
             this.value = value;
         }
@@ -162,7 +163,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
             else if ( obj instanceof Path )
             {
                 Path other = (Path) obj;
-                if ( value.nodes()[0].id() != other.startNode().getId() )
+                if ( value.nodeIds()[0] != other.startNode().getId() )
                 {
                     return false;
                 }
@@ -177,13 +178,14 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         @Override
         public Node startNode()
         {
-            return mapNode( value.startNode() );
+            return mapNode( value.nodeIds()[0] );
         }
 
         @Override
         public Node endNode()
         {
-            return mapNode( value.endNode() );
+            long[] longs = value.nodeIds();
+            return mapNode( longs[longs.length - 1] );
         }
 
         @Override
@@ -195,32 +197,33 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
             }
             else
             {
-                return mapRelationship( value.lastRelationship() );
+                long[] relationshipIds = value.relationshipIds();
+                return mapRelationship( relationshipIds[relationshipIds.length - 1] );
             }
         }
 
         @Override
         public Iterable<Relationship> relationships()
         {
-            return asList( value.relationships(), DefaultValueMapper.this::mapRelationship );
+            return asList( value.relationshipIds(), DefaultValueMapper.this::mapRelationship );
         }
 
         @Override
         public Iterable<Relationship> reverseRelationships()
         {
-            return asReverseList( value.relationships(), DefaultValueMapper.this::mapRelationship );
+            return asReverseList( value.relationshipIds(), DefaultValueMapper.this::mapRelationship );
         }
 
         @Override
         public Iterable<Node> nodes()
         {
-            return asList( value.nodes(), DefaultValueMapper.this::mapNode );
+            return asList( value.nodeIds(), DefaultValueMapper.this::mapNode );
         }
 
         @Override
         public Iterable<Node> reverseNodes()
         {
-            return asReverseList( value.nodes(), DefaultValueMapper.this::mapNode );
+            return asReverseList( value.nodeIds(), DefaultValueMapper.this::mapNode );
         }
 
         @Override
@@ -236,8 +239,8 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
             {
                 private final int size = 2 * value.size() + 1;
                 private int index;
-                private final NodeValue[] nodes = value.nodes();
-                private final RelationshipValue[] relationships = value.relationships();
+                private final long[] nodes = value.nodeIds();
+                private final long[] relationships = value.relationshipIds();
 
                 @Override
                 public boolean hasNext()

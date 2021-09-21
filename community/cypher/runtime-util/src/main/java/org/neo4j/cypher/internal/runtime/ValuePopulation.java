@@ -19,19 +19,27 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
+import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 public final class ValuePopulation
 {
@@ -40,58 +48,192 @@ public final class ValuePopulation
         throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
-    public static AnyValue populate( AnyValue value, NodeCursor nodeCursor, RelationshipScanCursor relCursor,  PropertyCursor propertyCursor )
+    public static AnyValue populate( AnyValue value,
+                                     DbAccess dbAccess,
+                                     NodeCursor nodeCursor,
+                                     RelationshipScanCursor relCursor, PropertyCursor propertyCursor )
     {
-        if ( value instanceof NodeEntityWrappingNodeValue )
+        if ( value instanceof VirtualNodeValue )
         {
-            ((NodeEntityWrappingNodeValue) value).populate( nodeCursor, propertyCursor );
+            return populate( (VirtualNodeValue) value, dbAccess, nodeCursor, propertyCursor );
         }
-        else if ( value instanceof RelationshipEntityWrappingValue )
+        else if ( value instanceof VirtualRelationshipValue )
         {
-            ((RelationshipEntityWrappingValue) value).populate( relCursor, propertyCursor );
+            return populate( (VirtualRelationshipValue) value, dbAccess, nodeCursor, relCursor, propertyCursor );
         }
-        else if ( value instanceof PathValue )
+        else if ( value instanceof VirtualPathValue )
         {
-            PathValue path = (PathValue) value;
-            for ( NodeValue node : path.nodes() )
-            {
-                populate( node, nodeCursor, propertyCursor );
-            }
-            for ( RelationshipValue relationship : path.relationships() )
-            {
-                populate( relationship, relCursor, propertyCursor );
-            }
+            return populate( (VirtualPathValue) value, dbAccess, nodeCursor, relCursor, propertyCursor );
         }
         else if ( value instanceof ListValue )
         {
-            for ( AnyValue v : (ListValue) value )
-            {
-                populate( v, nodeCursor, relCursor, propertyCursor );
-            }
+            return populate( (ListValue) value, dbAccess, nodeCursor, relCursor, propertyCursor );
         }
         else if ( value instanceof MapValue )
         {
-            ((MapValue) value).foreach( ( ignore, anyValue ) -> populate( anyValue, nodeCursor, relCursor, propertyCursor ) );
+            return populate( (MapValue) value, dbAccess, nodeCursor, relCursor, propertyCursor );
         }
-
-        return value;
+        else
+        {
+            return value;
+        }
     }
 
-    public static VirtualNodeValue populate( VirtualNodeValue value, NodeCursor nodeCursor, PropertyCursor propertyCursor )
+    public static NodeValue populate( VirtualNodeValue value,
+                                      DbAccess dbAccess,
+                                      NodeCursor nodeCursor,
+                                      PropertyCursor propertyCursor )
     {
         if ( value instanceof NodeEntityWrappingNodeValue )
         {
-            ((NodeEntityWrappingNodeValue) value).populate( nodeCursor, propertyCursor );
+            NodeEntityWrappingNodeValue wrappingNodeValue = (NodeEntityWrappingNodeValue) value;
+            wrappingNodeValue.populate( nodeCursor, propertyCursor );
+            return wrappingNodeValue;
         }
-        return value;
+        else if ( value instanceof NodeValue )
+        {
+            return (NodeValue) value;
+        }
+        else
+        {
+            return nodeValue( value.id(), dbAccess, nodeCursor, propertyCursor );
+        }
     }
 
-    public static VirtualRelationshipValue populate( VirtualRelationshipValue value, RelationshipScanCursor relCursor, PropertyCursor propertyCursor )
+    public static RelationshipValue populate( VirtualRelationshipValue value,
+                                              DbAccess dbAccess,
+                                              NodeCursor nodeCursor,
+                                              RelationshipScanCursor relCursor,
+                                              PropertyCursor propertyCursor )
     {
         if ( value instanceof RelationshipEntityWrappingValue )
         {
-            ((RelationshipEntityWrappingValue) value).populate( relCursor, propertyCursor );
+            RelationshipEntityWrappingValue wrappingValue = (RelationshipEntityWrappingValue) value;
+            wrappingValue.populate( relCursor, propertyCursor );
+            return wrappingValue;
         }
-        return value;
+        else if ( value instanceof RelationshipValue )
+        {
+            return (RelationshipValue) value;
+        }
+        else
+        {
+            return relationshipValue( value.id(), dbAccess, nodeCursor, relCursor, propertyCursor );
+        }
+    }
+
+    public static PathValue populate( VirtualPathValue value,
+                                      DbAccess dbAccess,
+                                      NodeCursor nodeCursor,
+                                      RelationshipScanCursor relCursor,
+                                      PropertyCursor propertyCursor )
+    {
+        if ( value instanceof PathValue )
+        {
+            return (PathValue) value;
+        }
+        else
+        {
+            var nodeIds = value.nodeIds();
+            var relIds = value.relationshipIds();
+            var nodes = new NodeValue[nodeIds.length];
+            var rels = new RelationshipValue[relIds.length];
+            long payloadSize = 0;
+            //we know that rels.length + 1 = nodes.length
+            int i = 0;
+            for ( ; i < rels.length; i++ )
+            {
+                NodeValue nodeValue = nodeValue( nodeIds[i],dbAccess, nodeCursor, propertyCursor );
+                RelationshipValue relationshipValue = relationshipValue( relIds[i],dbAccess, nodeCursor, relCursor, propertyCursor );
+                payloadSize += nodeValue.estimatedHeapUsage() + relationshipValue.estimatedHeapUsage();
+                nodes[i] = nodeValue;
+                rels[i] = relationshipValue;
+            }
+            NodeValue nodeValue = nodeValue( nodeIds[i],dbAccess, nodeCursor, propertyCursor );
+            payloadSize += nodeValue.estimatedHeapUsage();
+            nodes[i] = nodeValue;
+
+            return VirtualValues.path( nodes, rels, payloadSize );
+        }
+    }
+
+    public static MapValue populate( MapValue value,
+                                     DbAccess dbAccess,
+                                     NodeCursor nodeCursor,
+                                     RelationshipScanCursor relCursor,
+                                     PropertyCursor propertyCursor )
+    {
+        MapValueBuilder builder = new MapValueBuilder();
+        value.foreach( ( key, anyValue ) ->
+                               builder.add( key, populate( anyValue,dbAccess, nodeCursor, relCursor, propertyCursor ) ) );
+        return builder.build();
+    }
+
+    public static ListValue populate( ListValue value,
+                                      DbAccess dbAccess,
+                                      NodeCursor nodeCursor,
+                                      RelationshipScanCursor relCursor,
+                                      PropertyCursor propertyCursor )
+    {
+        ListValueBuilder builder = ListValueBuilder.newListBuilder( value.size() );
+        for ( AnyValue v : value )
+        {
+            builder.add( populate( v, dbAccess, nodeCursor, relCursor, propertyCursor ) );
+        }
+        return builder.build();
+    }
+
+    private static NodeValue nodeValue( long id,
+                                        DbAccess dbAccess,
+                                        NodeCursor nodeCursor,
+                                        PropertyCursor propertyCursor )
+    {
+        dbAccess.singleNode( id, nodeCursor );
+
+        if ( !nodeCursor.next() )
+        {
+            throw new EntityNotFoundException( String.format( "Node with id=%d has been deleted in this transaction", id ) );
+        }
+        nodeCursor.properties( propertyCursor );
+
+        return VirtualValues.nodeValue( id, labels( dbAccess, nodeCursor.labels() ), properties( propertyCursor, dbAccess ) );
+    }
+
+    private static RelationshipValue relationshipValue( long id,
+                                                        DbAccess dbAccess,
+                                                        NodeCursor nodeCursor,
+                                                        RelationshipScanCursor relCursor,
+                                                        PropertyCursor propertyCursor )
+    {
+        dbAccess.singleRelationship( id, relCursor );
+        if ( !relCursor.next() )
+        {
+            throw new EntityNotFoundException( String.format( "Relationship with id=%d has been deleted in this transaction", id ) );
+        }
+        NodeValue start = nodeValue( relCursor.sourceNodeReference(), dbAccess, nodeCursor, propertyCursor );
+        NodeValue end = nodeValue( relCursor.targetNodeReference(), dbAccess, nodeCursor, propertyCursor );
+        relCursor.properties( propertyCursor );
+        return VirtualValues.relationshipValue( id, start, end, Values.stringValue( dbAccess.relationshipTypeName( relCursor.type() ) ),
+                                                properties( propertyCursor, dbAccess ) );
+    }
+
+    private static TextArray labels( DbAccess dbAccess, TokenSet labelsTokens )
+    {
+        String[] labels = new String[labelsTokens.numberOfTokens()];
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            labels[i] = dbAccess.nodeLabelName( labelsTokens.token( i ) );
+        }
+        return Values.stringArray( labels );
+    }
+
+    private static MapValue properties( PropertyCursor propertyCursor, DbAccess dbAccess )
+    {
+        MapValueBuilder builder = new MapValueBuilder();
+        while ( propertyCursor.next() )
+        {
+            builder.add( dbAccess.propertyKeyName( propertyCursor.propertyKey() ), propertyCursor.propertyValue() );
+        }
+        return builder.build();
     }
 }

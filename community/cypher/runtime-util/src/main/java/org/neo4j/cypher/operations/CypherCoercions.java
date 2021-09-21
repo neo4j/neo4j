@@ -51,10 +51,8 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -109,24 +107,24 @@ public final class CypherCoercions
         return (TextValue) value;
     }
 
-    public static NodeValue asNodeValue( AnyValue value )
+    public static VirtualNodeValue asNodeValue( AnyValue value )
     {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof NodeValue) )
+        if ( !(value instanceof VirtualNodeValue) )
         {
             throw cantCoerce( value, "Node" );
         }
-        return (NodeValue) value;
+        return (VirtualNodeValue) value;
     }
 
-    public static RelationshipValue asRelationshipValue( AnyValue value )
+    public static VirtualRelationshipValue asRelationshipValue( AnyValue value )
     {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof RelationshipValue) )
+        if ( !(value instanceof VirtualRelationshipValue) )
         {
             throw cantCoerce( value, "Relationship" );
         }
-        return (RelationshipValue) value;
+        return (VirtualRelationshipValue) value;
     }
 
     public static PathValue asPathValue( AnyValue value )
@@ -292,7 +290,7 @@ public final class CypherCoercions
     {
 
         @Override
-        public ListValue mapPath( PathValue value )
+        public ListValue mapPath( VirtualPathValue value )
         {
             return null;
         }
@@ -462,9 +460,9 @@ public final class CypherCoercions
         {
             return VirtualValues.fromArray( (ArrayValue) value );
         }
-        else if ( value instanceof PathValue )
+        else if ( value instanceof VirtualPathValue )
         {
-            return ((PathValue) value).asList();
+            return ((VirtualPathValue) value).asList();
         }
         throw cantCoerce( value, "List" );
     }

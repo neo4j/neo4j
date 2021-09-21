@@ -43,6 +43,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.storable.Values.byteArray;
@@ -184,6 +185,12 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
+        public void writePathReference( long[] nodes, long[] relationships ) throws IOException
+        {
+            throw new UnsupportedOperationException( "Cannot write a raw path reference" );
+        }
+
+        @Override
         public void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws IOException
         {
             //A path is serialized in the following form
@@ -248,7 +255,7 @@ public class Neo4jPackV1 implements Neo4jPack
         private void writeNodesForPath( NodeValue[] nodes ) throws IOException
         {
             nodeIndexes.reset( nodes.length );
-            for ( NodeValue node : nodes )
+            for ( VirtualNodeValue node : nodes )
             {
                 nodeIndexes.putIfAbsent( node.id(), nodeIndexes.size() );
             }
@@ -257,7 +264,7 @@ public class Neo4jPackV1 implements Neo4jPack
             packListHeader( size );
             if ( size > 0 )
             {
-                NodeValue node = nodes[0];
+                VirtualNodeValue node = nodes[0];
                 for ( long id : nodeIndexes.keys() )
                 {
                     int i = 1;

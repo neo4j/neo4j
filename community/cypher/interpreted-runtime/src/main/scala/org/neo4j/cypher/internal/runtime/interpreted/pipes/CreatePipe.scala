@@ -33,9 +33,8 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 /**
@@ -53,7 +52,7 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
                               ops: WriteOperations[_, _]): Unit = {
     val value = properties(context, state)
     value match {
-      case _: NodeValue | _: RelationshipValue =>
+      case _: VirtualNodeValue | _: VirtualRelationshipValue =>
         throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
       case IsMap(map) =>
         map(state).foreach((k: String, v: AnyValue) => setProperty(entityId, k, v, state.query, ops))
@@ -117,9 +116,9 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
     data.idName -> relationship
   }
 
-  private def getNode(row: CypherRow, relName: String, name: String, lenient: Boolean): NodeValue =
+  private def getNode(row: CypherRow, relName: String, name: String, lenient: Boolean): VirtualNodeValue =
     row.getByName(name) match {
-      case n: NodeValue => n
+      case n: VirtualNodeValue => n
       case IsNoValue() =>
         if (lenient) null
         else throw new InternalException(LenientCreateRelationship.errorMsg(relName, name))

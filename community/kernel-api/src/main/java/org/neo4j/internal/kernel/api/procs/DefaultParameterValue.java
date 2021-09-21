@@ -26,8 +26,8 @@ import java.util.Objects;
 
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 public class DefaultParameterValue
@@ -157,7 +157,7 @@ public class DefaultParameterValue
             return ((Value) obj).map( new ValueMapper.JavaMapper()
             {
                 @Override
-                public Object mapPath( PathValue value )
+                public Object mapPath( VirtualPathValue value )
                 {
                     throw new UnsupportedOperationException( "Not allowed as default values " );
                 }

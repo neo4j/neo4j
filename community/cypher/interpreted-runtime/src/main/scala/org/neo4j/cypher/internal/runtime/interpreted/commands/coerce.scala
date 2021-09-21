@@ -55,10 +55,11 @@ import org.neo4j.values.storable.PointValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.TimeValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.PathValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualPathValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
+
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 object coerce {
@@ -68,9 +69,9 @@ object coerce {
       typ match {
         case CTAny => value
         case CTString => value.asInstanceOf[TextValue]
-        case CTNode => value.asInstanceOf[NodeValue]
-        case CTRelationship => value.asInstanceOf[RelationshipValue]
-        case CTPath => value.asInstanceOf[PathValue]
+        case CTNode => value.asInstanceOf[VirtualNodeValue]
+        case CTRelationship => value.asInstanceOf[VirtualRelationshipValue]
+        case CTPath => value.asInstanceOf[VirtualPathValue]
         case CTInteger => Values.longValue(value.asInstanceOf[NumberValue].longValue())
         case CTFloat => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
         case CTMap => value match {
@@ -78,9 +79,9 @@ object coerce {
           case _ => throw cantCoerce(value, typ)
         }
         case t: ListType => value match {
-          case _: PathValue if t.innerType == CTNode => throw cantCoerce(value, typ)
-          case _: PathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
-          case p: PathValue => p.asList
+          case _: VirtualPathValue if t.innerType == CTNode => throw cantCoerce(value, typ)
+          case _: VirtualPathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
+          case p: VirtualPathValue => p.asList
           case IsList(coll) if t.innerType == CTAny => coll
           case IsList(coll) => VirtualValues.list(coll.iterator().asScala.map(coerce(_, state, t.innerType)).toArray:_*)
           case _ => throw cantCoerce(value, typ)

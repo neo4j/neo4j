@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.runtime.CypherRow;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 class SimpleExpressionEvaluator implements ExpressionEvaluator
@@ -86,7 +86,7 @@ class SimpleExpressionEvaluator implements ExpressionEvaluator
     private static final ValueMapper<Object> MAPPER = new ValueMapper.JavaMapper()
     {
         @Override
-        public Object mapPath( PathValue value )
+        public Object mapPath( VirtualPathValue value )
         {
             throw new EvaluationRuntimeException( "Unable to evaluate paths" );
         }

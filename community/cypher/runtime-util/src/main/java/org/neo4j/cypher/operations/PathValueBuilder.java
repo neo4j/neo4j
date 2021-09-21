@@ -19,19 +19,20 @@
  */
 package org.neo4j.cypher.operations;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
+import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.virtual.VirtualValues.path;
+import static org.neo4j.values.virtual.VirtualValues.pathReference;
 
 /**
  * Builder for building paths from generated code, used when the length of the path is not known at compile time.
@@ -42,8 +43,8 @@ import static org.neo4j.values.virtual.VirtualValues.path;
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class PathValueBuilder
 {
-    private final List<NodeValue> nodes = new ArrayList<>();
-    private final List<RelationshipValue> rels = new ArrayList<>();
+    private final MutableLongList nodes = LongLists.mutable.empty();
+    private final MutableLongList rels = LongLists.mutable.empty();
     private final DbAccess dbAccess;
     private final RelationshipScanCursor cursor;
     private boolean seenNoValue;
@@ -62,7 +63,7 @@ public class PathValueBuilder
     public AnyValue build()
     {
         return seenNoValue ? NO_VALUE
-                           : path( nodes.toArray( new NodeValue[0] ), rels.toArray( new RelationshipValue[0] ) );
+                           : pathReference( nodes.toArray(), rels.toArray() );
     }
 
     /**
@@ -75,7 +76,7 @@ public class PathValueBuilder
     {
         if ( notNoValue( value ) )
         {
-            addNode( (NodeValue) value );
+            addNode( (VirtualNodeValue) value );
         }
     }
 
@@ -84,14 +85,14 @@ public class PathValueBuilder
     {
         if ( notNoValue( value ) )
         {
-            addRelationship( (RelationshipValue) value );
+            addRelationship( (VirtualRelationshipValue) value );
         }
     }
 
     @CalledFromGeneratedCode
-    public void addRelationship( RelationshipValue value )
+    public void addRelationship( VirtualRelationshipValue value )
     {
-        rels.add( value );
+        rels.add( value.id() );
     }
 
     /**
@@ -100,9 +101,9 @@ public class PathValueBuilder
      * @param nodeValue the node to add
      */
     @CalledFromGeneratedCode
-    public void addNode( NodeValue nodeValue )
+    public void addNode( VirtualNodeValue nodeValue )
     {
-        nodes.add( nodeValue );
+        nodes.add( nodeValue.id() );
     }
 
     /**
@@ -115,7 +116,7 @@ public class PathValueBuilder
     {
         if ( notNoValue( value ) )
         {
-            addIncoming( (RelationshipValue) value );
+            addIncoming( (VirtualRelationshipValue) value );
         }
     }
 
@@ -125,10 +126,11 @@ public class PathValueBuilder
      * @param relationship the incoming relationship to add
      */
     @CalledFromGeneratedCode
-    public void addIncoming( RelationshipValue relationship )
+    public void addIncoming( VirtualRelationshipValue relationship )
     {
-        nodes.add( relationship.startNode() );
-        rels.add( relationship );
+        singleRelationship( relationship );
+        nodes.add( cursor.sourceNodeReference() );
+        rels.add( relationship.id() );
     }
 
     /**
@@ -141,7 +143,7 @@ public class PathValueBuilder
     {
         if ( notNoValue( value ) )
         {
-            addOutgoing( (RelationshipValue) value );
+            addOutgoing( (VirtualRelationshipValue) value );
         }
     }
 
@@ -151,10 +153,17 @@ public class PathValueBuilder
      * @param relationship the outgoing relationship to add
      */
     @CalledFromGeneratedCode
-    public void addOutgoing( RelationshipValue relationship )
+    public void addOutgoing( VirtualRelationshipValue relationship )
     {
-        nodes.add( relationship.endNode() );
+        singleRelationship( relationship );
+        nodes.add( cursor.targetNodeReference() );
+        rels.add( relationship.id() );
+    }
+
+    private void add( long relationship, long nextNode )
+    {
         rels.add( relationship );
+        nodes.add( nextNode );
     }
 
     /**
@@ -167,7 +176,7 @@ public class PathValueBuilder
     {
         if ( notNoValue( value ) )
         {
-            addUndirected( (RelationshipValue) value );
+            addUndirected( (VirtualRelationshipValue) value );
         }
     }
 
@@ -177,16 +186,17 @@ public class PathValueBuilder
      * @param relationship the undirected relationship to add
      */
     @CalledFromGeneratedCode
-    public void addUndirected( RelationshipValue relationship )
+    public void addUndirected( VirtualRelationshipValue relationship )
     {
-        long previous = nodes.get( nodes.size() - 1 ).id();
-        if ( previous == relationship.startNodeId() )
+        long previous = nodes.get( nodes.size() - 1 );
+        singleRelationship( relationship );
+        if ( previous == cursor.sourceNodeReference() )
         {
-            addOutgoing( relationship );
+            add( relationship.id(), cursor.targetNodeReference() );
         }
-        else if ( previous == relationship.endNodeId() )
+        else if ( previous == cursor.targetNodeReference() )
         {
-            addIncoming( relationship );
+            add( relationship.id(), cursor.sourceNodeReference() );
         }
         else
         {
@@ -205,7 +215,7 @@ public class PathValueBuilder
     {
         if ( notNoValue( value ) && notNoValue( target ) )
         {
-            addMultipleIncoming( (ListValue) value, (NodeValue) target );
+            addMultipleIncoming( (ListValue) value, (VirtualNodeValue) target );
         }
     }
 
@@ -216,7 +226,7 @@ public class PathValueBuilder
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
-    public void addMultipleIncoming( ListValue relationships, NodeValue target )
+    public void addMultipleIncoming( ListValue relationships, VirtualNodeValue target )
     {
         if ( relationships.isEmpty() )
         {
@@ -229,16 +239,17 @@ public class PathValueBuilder
             AnyValue value = relationships.value( i );
             if ( notNoValue( value ) )
             {
-                RelationshipValue relationship = (RelationshipValue) value;
-                nodes.add( relationship.startNode() );
-                rels.add( relationship );
+                VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
+                singleRelationship( relationship );
+                nodes.add( cursor.sourceNodeReference() );
+                rels.add( relationship.id() );
             }
         }
         AnyValue last = relationships.value( i );
         if ( notNoValue( last ) )
         {
-            rels.add( (RelationshipValue) last );
-            nodes.add( target );
+            rels.add( ((VirtualRelationshipValue) last).id() );
+            nodes.add( target.id() );
         }
     }
 
@@ -268,11 +279,10 @@ public class PathValueBuilder
         {
             if ( notNoValue( value ) )
             {
-                //we know these relationships have already loaded start and end relationship
-                //so we should not use CypherFunctions::[start,end]Node to look them up
-                RelationshipValue relationship = (RelationshipValue) value;
-                nodes.add( relationship.startNode() );
-                rels.add( relationship );
+                VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
+                singleRelationship( relationship );
+                nodes.add( cursor.sourceNodeReference() );
+                rels.add( relationship.id() );
             }
         }
     }
@@ -288,7 +298,7 @@ public class PathValueBuilder
     {
         if ( notNoValue( value ) && notNoValue( target ) )
         {
-            addMultipleOutgoing( (ListValue) value, (NodeValue) target );
+            addMultipleOutgoing( (ListValue) value, (VirtualNodeValue) target );
         }
     }
 
@@ -299,7 +309,7 @@ public class PathValueBuilder
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
-    public void addMultipleOutgoing( ListValue relationships, NodeValue target )
+    public void addMultipleOutgoing( ListValue relationships, VirtualNodeValue target )
     {
         if ( relationships.isEmpty() )
         {
@@ -312,18 +322,18 @@ public class PathValueBuilder
             AnyValue value = relationships.value( i );
             if ( notNoValue( value ) )
             {
-                //we know these relationships have already loaded start and end relationship
-                //so we should not use CypherFunctions::[start,end]Node to look them up
-                RelationshipValue relationship = (RelationshipValue) value;
-                nodes.add( relationship.endNode() );
-                rels.add( relationship );
+                VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
+                singleRelationship( relationship );
+
+                nodes.add( cursor.targetNodeReference() );
+                rels.add( relationship.id() );
             }
         }
         AnyValue last = relationships.value( i );
         if ( notNoValue( last ) )
         {
-            rels.add( (RelationshipValue) last );
-            nodes.add( target );
+            rels.add( ((VirtualRelationshipValue) last).id() );
+            nodes.add( target.id() );
         }
     }
 
@@ -353,11 +363,11 @@ public class PathValueBuilder
         {
             if ( notNoValue( value ) )
             {
-                //we know these relationships have already loaded start and end relationship
-                //so we should not use CypherFunctions::[start,end]Node to look them up
-                RelationshipValue relationship = (RelationshipValue) value;
-                nodes.add( relationship.endNode() );
-                rels.add( relationship );
+
+                VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
+                singleRelationship( relationship );
+                nodes.add( cursor.targetNodeReference() );
+                rels.add( relationship.id() );
             }
         }
     }
@@ -373,7 +383,7 @@ public class PathValueBuilder
     {
         if ( notNoValue( value ) && notNoValue( target ) )
         {
-            addMultipleUndirected( (ListValue) value, (NodeValue) target );
+            addMultipleUndirected( (ListValue) value, (VirtualNodeValue) target );
         }
     }
 
@@ -384,16 +394,17 @@ public class PathValueBuilder
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
-    public void addMultipleUndirected( ListValue relationships, NodeValue target )
+    public void addMultipleUndirected( ListValue relationships, VirtualNodeValue target )
     {
         if ( relationships.isEmpty() )
         {
             //nothing to add
             return;
         }
-        long previous = nodes.get( nodes.size() - 1 ).id();
-        RelationshipValue first = (RelationshipValue) relationships.head();
-        boolean correctDirection = first.startNodeId() == previous || first.endNodeId() == previous;
+        long previous = nodes.get( nodes.size() - 1 );
+        VirtualRelationshipValue first = (VirtualRelationshipValue) relationships.head();
+        singleRelationship( first );
+        boolean correctDirection = cursor.sourceNodeReference() == previous || cursor.targetNodeReference() == previous;
 
         int i;
         if ( correctDirection )
@@ -403,9 +414,7 @@ public class PathValueBuilder
                 AnyValue value = relationships.value( i );
                 if ( notNoValue( value ) )
                 {
-                    //we know these relationships have already loaded start and end relationship
-                    //so we should not use CypherFunctions::[start,end]Node to look them up
-                    addUndirectedWhenRelationshipsAreFullyLoaded( (RelationshipValue) value );
+                    addUndirected( (VirtualRelationshipValue) value );
                 }
             }
         }
@@ -416,17 +425,15 @@ public class PathValueBuilder
                 AnyValue value = relationships.value( i );
                 if ( notNoValue( value ) )
                 {
-                    //we know these relationships have already loaded start and end relationship
-                    //so we should not use CypherFunctions::[start,end]Node to look them up
-                    addUndirectedWhenRelationshipsAreFullyLoaded( (RelationshipValue) relationships.value( i ) );
+                    addUndirected( (VirtualRelationshipValue) relationships.value( i ) );
                 }
             }
         }
         AnyValue last = relationships.value( i );
         if ( notNoValue( last ) )
         {
-            rels.add( (RelationshipValue) last );
-            nodes.add( target );
+            rels.add( ((VirtualRelationshipValue) last).id() );
+            nodes.add( target.id() );
         }
     }
 
@@ -457,9 +464,11 @@ public class PathValueBuilder
             //nothing to add
             return;
         }
-        long previous = nodes.get( nodes.size() - 1 ).id();
-        RelationshipValue first = (RelationshipValue) relationships.head();
-        boolean correctDirection = first.startNodeId() == previous || first.endNodeId() == previous;
+        long previous = nodes.get( nodes.size() - 1 );
+        VirtualRelationshipValue first = (VirtualRelationshipValue) relationships.head();
+
+        singleRelationship( first );
+        boolean correctDirection = cursor.sourceNodeReference() == previous || previous == cursor.targetNodeReference();
 
         if ( correctDirection )
         {
@@ -467,7 +476,7 @@ public class PathValueBuilder
             {
                 if ( notNoValue( value ) )
                 {
-                    addUndirectedWhenRelationshipsAreFullyLoaded( (RelationshipValue) value );
+                    addUndirected( (VirtualRelationshipValue) value );
                 }
             }
         }
@@ -478,9 +487,18 @@ public class PathValueBuilder
             {
                 if ( notNoValue( rel ) )
                 {
-                    addUndirectedWhenRelationshipsAreFullyLoaded( (RelationshipValue) rel );
+                    addUndirected( (VirtualRelationshipValue) rel );
                 }
             }
+        }
+    }
+
+    private void singleRelationship( VirtualRelationshipValue relationship )
+    {
+        dbAccess.singleRelationship( relationship.id(), cursor );
+        if ( !cursor.next() )
+        {
+            throw new EntityNotFoundException( String.format( "Relationship with id=%d has been deleted in this transaction", relationship.id() ) );
         }
     }
 
@@ -491,27 +509,5 @@ public class PathValueBuilder
             seenNoValue = true;
         }
         return !seenNoValue;
-    }
-
-    /*
-     * If we know that relationship has loaded start and end node we can use this method instead
-     */
-    private void addUndirectedWhenRelationshipsAreFullyLoaded( RelationshipValue relationship )
-    {
-        long previous = nodes.get( nodes.size() - 1 ).id();
-        if ( previous == relationship.startNodeId() )
-        {
-            addOutgoing( relationship );
-        }
-        else if ( previous == relationship.endNodeId() )
-        {
-            addIncoming( relationship );
-        }
-        else
-        {
-            throw new IllegalArgumentException(
-                    "Wanted to add relationship to path: " + nodes + " but neither startNode:" + relationship.startNodeId() + " nor endNode:" +
-                            relationship.endNodeId() + " was " + previous );
-        }
     }
 }

@@ -164,6 +164,27 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
+    public void writePathReference( long[] nodes, long[] relationships ) throws E
+    {
+        assert nodes != null;
+        assert nodes.length > 0;
+        assert relationships != null;
+        assert nodes.length == relationships.length + 1;
+
+        Node[] nodeProxies = new Node[nodes.length];
+        for ( int i = 0; i < nodes.length; i++ )
+        {
+            nodeProxies[i] = newNodeEntityById( nodes[i] );
+        }
+        Relationship[] relProxies = new Relationship[relationships.length];
+        for ( int i = 0; i < relationships.length; i++ )
+        {
+            relProxies[i] = newRelationshipEntityById( relationships[i] );
+        }
+        writeValue( new PathProxy( nodeProxies, relProxies ) );
+    }
+
+    @Override
     public void writePath( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         assert nodes != null;
@@ -176,137 +197,12 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         {
             nodeProxies[i] = newNodeEntityById( nodes[i].id() );
         }
-        Relationship[] relationship = new Relationship[relationships.length];
+        Relationship[] relProxies = new Relationship[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
         {
-            relationship[i] = newRelationshipEntityById( relationships[i].id() );
+            relProxies[i] = newRelationshipEntityById( relationships[i].id() );
         }
-        writeValue( new Path()
-        {
-            @Override
-            public Node startNode()
-            {
-                return nodeProxies[0];
-            }
-
-            @Override
-            public Node endNode()
-            {
-                return nodeProxies[nodeProxies.length - 1];
-            }
-
-            @Override
-            public Relationship lastRelationship()
-            {
-                return relationship[relationship.length - 1];
-            }
-
-            @Override
-            public Iterable<Relationship> relationships()
-            {
-                return Arrays.asList( relationship );
-            }
-
-            @Override
-            public Iterable<Relationship> reverseRelationships()
-            {
-                return () -> new ReverseArrayIterator<>( relationship );
-            }
-
-            @Override
-            public Iterable<Node> nodes()
-            {
-                return Arrays.asList( nodeProxies );
-            }
-
-            @Override
-            public Iterable<Node> reverseNodes()
-            {
-                return () -> new ReverseArrayIterator<>( nodeProxies );
-            }
-
-            @Override
-            public int length()
-            {
-                return relationship.length;
-            }
-
-            @Override
-            public int hashCode()
-            {
-                if ( relationship.length == 0 )
-                {
-                    return startNode().hashCode();
-                }
-                else
-                {
-                    return Arrays.hashCode( relationship );
-                }
-            }
-
-            @Override
-            public boolean equals( Object obj )
-            {
-                if ( this == obj )
-                {
-                    return true;
-                }
-                else if ( obj instanceof Path )
-                {
-                    Path other = (Path) obj;
-                    return startNode().equals( other.startNode() ) &&
-                           iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
-
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            @Override
-            public Iterator<Entity> iterator()
-            {
-                return new Iterator<>()
-                {
-                    Iterator<? extends Entity> current = nodes().iterator();
-                    Iterator<? extends Entity> next = relationships().iterator();
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return current.hasNext();
-                    }
-
-                    @Override
-                    public Entity next()
-                    {
-                        try
-                        {
-                            return current.next();
-                        }
-                        finally
-                        {
-                            Iterator<? extends Entity> temp = current;
-                            current = next;
-                            next = temp;
-                        }
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        next.remove();
-                    }
-                };
-            }
-
-            @Override
-            public String toString()
-            {
-                return Paths.defaultPathToStringWithNotInTransactionFallback( this );
-            }
-        } );
+        writeValue( new PathProxy( nodeProxies, relProxies ) );
     }
 
     @Override
@@ -430,6 +326,140 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
         writeValue( zonedDateTime );
     }
 
+    private static class PathProxy implements Path
+    {
+        private final Node[] nodes;
+        private final Relationship[] relationships;
+
+        private PathProxy( Node[] nodes, Relationship[] relationships )
+        {
+            this.nodes = nodes;
+            this.relationships = relationships;
+        }
+
+        @Override
+        public Node startNode()
+        {
+            return nodes[0];
+        }
+
+        @Override
+        public Node endNode()
+        {
+            return nodes[nodes.length - 1];
+        }
+
+        @Override
+        public Relationship lastRelationship()
+        {
+            return relationships[relationships.length - 1];
+        }
+
+        @Override
+        public Iterable<Relationship> relationships()
+        {
+            return Arrays.asList( relationships );
+        }
+
+        @Override
+        public Iterable<Relationship> reverseRelationships()
+        {
+            return () -> new ReverseArrayIterator<>( relationships );
+        }
+
+        @Override
+        public Iterable<Node> nodes()
+        {
+            return Arrays.asList( nodes );
+        }
+
+        @Override
+        public Iterable<Node> reverseNodes()
+        {
+            return () -> new ReverseArrayIterator<>( nodes );
+        }
+
+        @Override
+        public int length()
+        {
+            return relationships.length;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            if ( relationships.length == 0 )
+            {
+                return startNode().hashCode();
+            }
+            else
+            {
+                return Arrays.hashCode( relationships );
+            }
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( this == obj )
+            {
+                return true;
+            }
+            else if ( obj instanceof Path )
+            {
+                Path other = (Path) obj;
+                return startNode().equals( other.startNode() ) &&
+                       iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        @Override
+        public Iterator<Entity> iterator()
+        {
+            return new Iterator<>()
+            {
+                Iterator<? extends Entity> current = nodes().iterator();
+                Iterator<? extends Entity> next = relationships().iterator();
+
+                @Override
+                public boolean hasNext()
+                {
+                    return current.hasNext();
+                }
+
+                @Override
+                public Entity next()
+                {
+                    try
+                    {
+                        return current.next();
+                    }
+                    finally
+                    {
+                        Iterator<? extends Entity> temp = current;
+                        current = next;
+                        next = temp;
+                    }
+                }
+
+                @Override
+                public void remove()
+                {
+                    next.remove();
+                }
+            };
+        }
+
+        @Override
+        public String toString()
+        {
+            return Paths.defaultPathToStringWithNotInTransactionFallback( this );
+        }
+    }
     private interface Writer
     {
         void write( Object value );

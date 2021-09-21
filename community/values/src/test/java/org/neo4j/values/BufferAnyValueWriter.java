@@ -27,6 +27,8 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static java.lang.String.format;
 
@@ -44,6 +46,7 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         WriteRelationshipReference,
         EndEdge,
         WritePath,
+        WritePathReference,
         BeginMap,
         WriteKeyId,
         EndMap,
@@ -148,6 +151,12 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         buffer.add( Specials.writePath( nodes, relationships ) );
     }
 
+    @Override
+    public void writePathReference( long[] nodes, long[] relationships ) throws RuntimeException
+    {
+        buffer.add( Specials.writePathReference( nodes, relationships ) );
+    }
+
     public static class Specials
     {
 
@@ -164,9 +173,14 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
                     Arrays.hashCode( new Object[]{edgeId, startNodeId, endNodeId, type, properties} ) );
         }
 
-        public static Special writePath( NodeValue[] nodes, RelationshipValue[] edges )
+        public static Special writePath( VirtualNodeValue[] nodes, VirtualRelationshipValue[] edges )
         {
             return new Special( SpecialKind.WritePath, Arrays.hashCode( nodes ) + 31 * Arrays.hashCode( edges ) );
+        }
+
+        public static Special writePathReference( long[] nodes, long[] edges )
+        {
+            return new Special( SpecialKind.WritePathReference, Arrays.hashCode( nodes ) + 31 * Arrays.hashCode( edges ) );
         }
 
         public static Special writeNodeReference( long nodeId )

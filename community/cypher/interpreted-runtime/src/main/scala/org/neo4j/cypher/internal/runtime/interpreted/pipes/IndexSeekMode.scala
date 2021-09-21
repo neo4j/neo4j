@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.exceptions.InternalException
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
   def fromQueryExpression[T](qexpr: QueryExpression[T]): IndexSeekMode = qexpr match {
@@ -38,7 +38,7 @@ case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
 }
 
 object IndexSeekMode {
-  type MultipleValueQuery = QueryState => Seq[Any] => Iterator[NodeValue]
+  type MultipleValueQuery = QueryState => Seq[Any] => Iterator[VirtualNodeValue]
 
   def assertSingleValue(values: Seq[Any]): Any = {
     if(values.size != 1)

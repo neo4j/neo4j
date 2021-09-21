@@ -242,7 +242,11 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   override def propertyKey(name: String): Int = transactionalContext.tokenRead.propertyKey(name)
 
+  override def propertyKeyName(token : Int): String = transactionalContext.tokenRead.propertyKeyName(token)
+
   override def nodeLabel(name: String): Int = transactionalContext.tokenRead.nodeLabel(name)
+
+  override def nodeLabelName(token: Int): String = transactionalContext.tokenRead.nodeLabelName(token)
 
   override def relationshipType(name: String): Int = transactionalContext.tokenRead.relationshipType(name)
 

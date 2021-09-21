@@ -48,7 +48,11 @@ public interface DbAccess extends EntityById
 
     int propertyKey( String name );
 
+    String propertyKeyName( int type );
+
     int nodeLabel( String name );
+
+    String nodeLabelName( int type );
 
     int relationshipType( String name );
 
@@ -97,6 +101,8 @@ public interface DbAccess extends EntityById
     int nodeGetTotalDegree( long node, NodeCursor nodeCursor );
 
     int nodeGetTotalDegree( long node, int relationship, NodeCursor nodeCursor );
+
+    void singleNode( long id, NodeCursor cursor );
 
     void singleRelationship( long id, RelationshipScanCursor cursor );
 

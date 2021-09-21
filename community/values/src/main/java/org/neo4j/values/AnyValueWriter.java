@@ -68,6 +68,8 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 
     void endList() throws E;
 
+    void writePathReference( long[] nodes, long[] relationships ) throws E;
+
     void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws E;
 
     default void writeVirtualNodeHack( Object node )

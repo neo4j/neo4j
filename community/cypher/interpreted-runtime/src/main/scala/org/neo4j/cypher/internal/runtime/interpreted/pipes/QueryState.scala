@@ -83,7 +83,7 @@ class QueryState(val query: QueryContext,
 
   def clearPathValueBuilder: PathValueBuilder = {
     if (_pathValueBuilder == null) {
-      _pathValueBuilder = new PathValueBuilder()
+      _pathValueBuilder = new PathValueBuilder(this)
     }
     _pathValueBuilder.clear()
   }

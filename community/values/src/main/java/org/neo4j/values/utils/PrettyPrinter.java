@@ -181,6 +181,23 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
+    public void writePathReference( long[] nodes, long[] relationships )
+    {
+        if ( nodes.length == 0 )
+        {
+            return;
+        }
+        //Path guarantees that nodes.length = edges.length = 1
+       writeNodeReference( nodes[0] );
+        for ( int i = 0; i < relationships.length; i++ )
+        {
+            writeRelationshipReference( relationships[i] );
+            append( ">" );
+            writeNodeReference(  nodes[i + 1] );
+        }
+    }
+
+    @Override
     public void writePath( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         if ( nodes.length == 0 )
@@ -195,7 +212,6 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
             append( ">" );
             nodes[i + 1].writeTo( this );
         }
-
     }
 
     @Override

@@ -26,13 +26,13 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.TernaryComparator;
-import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
-public abstract class PathValue extends VirtualValue
+public abstract class PathValue extends VirtualPathValue
 {
     public abstract NodeValue startNode();
 
@@ -45,23 +45,62 @@ public abstract class PathValue extends VirtualValue
     public abstract RelationshipValue[] relationships();
 
     @Override
+    public long startNodeId()
+    {
+        return startNode().id();
+    }
+
+    @Override
+    public long endNodeId()
+    {
+        return endNode().id();
+    }
+
+    @Override
+    public long[] nodeIds()
+    {
+        var nodes = nodes();
+        var nodeIds = new long[nodes.length];
+        for ( int i = 0; i < nodeIds.length; i++ )
+        {
+            nodeIds[i] = nodes[i].id();
+        }
+        return nodeIds;
+    }
+
+    @Override
+    public long[] relationshipIds()
+    {
+        var relationionships = relationships();
+        var relIds = new long[relationionships.length];
+        for ( int i = 0; i < relIds.length; i++ )
+        {
+            relIds[i] = relationionships[i].id();
+        }
+        return relIds;
+    }
+
+    @Override
     public boolean equals( VirtualValue other )
     {
-        if ( !(other instanceof PathValue) )
+        if ( other instanceof PathValue )
         {
-            return false;
+            PathValue that = (PathValue) other;
+            return size() == that.size() &&
+                   Arrays.equals( nodes(), that.nodes() ) &&
+                   Arrays.equals( relationships(), that.relationships() );
         }
-        PathValue that = (PathValue) other;
-        return size() == that.size() &&
-               Arrays.equals( nodes(), that.nodes() ) &&
-               Arrays.equals( relationships(), that.relationships() );
+        else
+        {
+            return super.equals( other );
+        }
     }
 
     @Override
     protected int computeHashToMemoize()
     {
         NodeValue[] nodes = nodes();
-        RelationshipValue[] relationships = relationships();
+        VirtualRelationshipValue[] relationships = relationships();
         int result = nodes[0].hashCode();
         for ( int i = 1; i < nodes.length; i++ )
         {
@@ -74,49 +113,51 @@ public abstract class PathValue extends VirtualValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writer.writePath( nodes(), relationships() );
-    }
-
-    @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapPath( this );
-    }
-
-    @Override
-    public VirtualValueGroup valueGroup()
-    {
-        return VirtualValueGroup.PATH;
+        if ( writer.entityMode() == REFERENCE )
+        {
+            writer.writePathReference( nodeIds(), relationshipIds() );
+        }
+        else
+        {
+            writer.writePath( nodes(), relationships() );
+        }
     }
 
     @Override
     public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        PathValue otherPath = (PathValue) other;
-        NodeValue[] nodes = nodes();
-        RelationshipValue[] relationships = relationships();
-        NodeValue[] otherNodes = otherPath.nodes();
-        RelationshipValue[] otherRelationships = otherPath.relationships();
-
-        int x = nodes[0].unsafeCompareTo( otherNodes[0], comparator );
-        if ( x == 0 )
+        if ( other instanceof PathValue )
         {
-            int i = 0;
-            int length = Math.min( relationships.length, otherRelationships.length );
+            PathValue otherPath = (PathValue) other;
+            NodeValue[] nodes = nodes();
+            RelationshipValue[] relationships = relationships();
+            NodeValue[] otherNodes = otherPath.nodes();
+            RelationshipValue[] otherRelationships = otherPath.relationships();
 
-            while ( x == 0 && i < length )
-            {
-                x = relationships[i].unsafeCompareTo( otherRelationships[i], comparator );
-                ++i;
-            }
-
+            int x = nodes[0].unsafeCompareTo( otherNodes[0], comparator );
             if ( x == 0 )
             {
-                x = Integer.compare( relationships.length, otherRelationships.length );
-            }
-        }
+                int i = 0;
+                int length = Math.min( relationships.length, otherRelationships.length );
 
-        return x;
+                while ( x == 0 && i < length )
+                {
+                    x = relationships[i].unsafeCompareTo( otherRelationships[i], comparator );
+                    ++i;
+                }
+
+                if ( x == 0 )
+                {
+                    x = Integer.compare( relationships.length, otherRelationships.length );
+                }
+            }
+
+            return x;
+        }
+        else
+        {
+            return super.unsafeCompareTo( other, comparator );
+        }
     }
 
     @Override
@@ -143,11 +184,6 @@ public abstract class PathValue extends VirtualValue
     }
 
     @Override
-    public String getTypeName()
-    {
-        return "Path";
-    }
-
     public ListValue asList()
     {
         NodeValue[] nodes = nodes();
@@ -168,6 +204,7 @@ public abstract class PathValue extends VirtualValue
         return builder.build();
     }
 
+    @Override
     public int size()
     {
         return relationships().length;

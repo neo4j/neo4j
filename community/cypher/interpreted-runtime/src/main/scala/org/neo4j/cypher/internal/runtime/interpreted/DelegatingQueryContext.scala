@@ -147,6 +147,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def traversalCursor(): RelationshipTraversalCursor = manyDbHits(inner.traversalCursor())
 
+  override def singleNode(id: Long, cursor: NodeCursor): Unit =  singleDbHit(inner.singleNode(id, cursor))
+
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit =  singleDbHit(inner.singleRelationship(id, cursor))
 
   override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): VirtualRelationshipValue =

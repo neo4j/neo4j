@@ -206,6 +206,9 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int =
     translateException(tokenNameLookup, inner.nodeGetTotalDegree(node, nodeCursor))
 
+  override def singleNode(id: Long, cursor: NodeCursor): Unit =
+    translateException(tokenNameLookup, inner.singleNode(id,cursor))
+
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit =
     translateException(tokenNameLookup, inner.singleRelationship(id,cursor))
 

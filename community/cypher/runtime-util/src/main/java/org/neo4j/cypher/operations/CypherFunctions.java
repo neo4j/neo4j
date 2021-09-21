@@ -59,6 +59,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -1040,6 +1041,16 @@ public final class CypherFunctions
         {
             return VirtualValues.list( ((PathValue) in).nodes() );
         }
+        else if ( in instanceof VirtualPathValue )
+        {
+            long[] ids = ((VirtualPathValue) in).nodeIds();
+            ListValueBuilder builder = ListValueBuilder.newListBuilder(ids.length);
+            for ( long id : ids )
+            {
+                builder.add( VirtualValues.node( id ) );
+            }
+            return builder.build();
+        }
         else
         {
             throw new CypherTypeException( format( "Invalid input for function 'nodes()': Expected %s to be a path", in ) );
@@ -1052,6 +1063,16 @@ public final class CypherFunctions
         if ( in instanceof PathValue )
         {
             return VirtualValues.list( ((PathValue) in).relationships() );
+        }
+        else if ( in instanceof VirtualPathValue )
+        {
+            long[] ids = ((VirtualPathValue) in).relationshipIds();
+            ListValueBuilder builder = ListValueBuilder.newListBuilder(ids.length);
+            for ( long id : ids )
+            {
+                builder.add( VirtualValues.relationship( id ) );
+            }
+            return builder.build();
         }
         else
         {
