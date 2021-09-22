@@ -27,7 +27,7 @@ import org.neo4j.values.AnyValue
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.`type`(value)
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = CypherFunctions.`type`(value, state.query, state.cursors.relationshipScanCursor)
 
   override def rewrite(f: Expression => Expression): Expression = f(RelationshipTypeFunction(relationship.rewrite(f)))
 
