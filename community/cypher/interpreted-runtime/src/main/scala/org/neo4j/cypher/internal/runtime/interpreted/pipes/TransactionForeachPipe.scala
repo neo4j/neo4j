@@ -23,9 +23,13 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue
 import org.neo4j.kernel.impl.util.PathWrappingPathValue
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.ListValueBuilder
@@ -44,13 +48,14 @@ case class TransactionForeachPipe(source: Pipe, inner: Pipe)
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.map { outerRow =>
 
-      replaceEntityWrappingValues(outerRow)
       // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).
       // Since we do not share the transaction state we must clear the cached properties.
       outerRow.invalidateCachedProperties()
 
       inNewTransaction(state) { stateWithNewTransaction =>
-        val innerState = stateWithNewTransaction.withInitialContext(outerRow)
+        val entityTransformer = new EntityTransformer(stateWithNewTransaction.query.transactionalContext.internalTransaction)
+        val reboundRow = entityTransformer.copyWithEntityWrappingValuesRebound(outerRow)
+        val innerState = stateWithNewTransaction.withInitialContext(reboundRow)
         val ignoredResult = inner.createResults(innerState)
         while (ignoredResult.hasNext) {
           ignoredResult.next()
@@ -59,44 +64,57 @@ case class TransactionForeachPipe(source: Pipe, inner: Pipe)
         state.query.addStatistics(subqueryStatistics)
       }
 
-      // In cases where the inner pipe did not copy the outer row but rather reused it, we need to invalidate the cache again
-      outerRow.invalidateCachedProperties()
+
       outerRow
     }
   }
 
   /**
-   * Recursively finds wrapping values and replaces them with their non-wrapping counterparts.
+   * Recursively finds entity wrappers and rebinds the entities to the current transaction
    */
-  private def replaceEntityWrappingValues(row: CypherRow): Unit =
-    row.transformRefs(replaceEntityWrappingValues)
+  // TODO: Remove rebinding here, and transform wrappers to Reference:s
+  // Currently, replacing e.g. NodeEntityWrappingNodeValue with NodeReference causes failures downstream.
+  // We can for example end up in PathValueBuilder, which assumes that we have NodeValue and not NodeReference.
+  class EntityTransformer(entityFactory: TransactionalEntityFactory) {
 
-  private def replaceEntityWrappingValues(value: AnyValue): AnyValue = value match {
+    def copyWithEntityWrappingValuesRebound(row: CypherRow): CypherRow =
+      row.copyMapped(rebindEntityWrappingValues)
 
-    case n: NodeEntityWrappingNodeValue =>
-      VirtualValues.node(n.id)
+    private def rebindEntityWrappingValues(value: AnyValue): AnyValue = value match {
 
-    case r: RelationshipEntityWrappingValue =>
-      VirtualValues.relationship(r.id)
+      case n: NodeEntityWrappingNodeValue =>
+        rebindNode(n.getEntity)
 
-    case p: PathWrappingPathValue =>
-      val nodeValues = p.path().nodes().asScala.map(node => VirtualValues.node(node.getId).asInstanceOf[NodeValue]).toArray
-      val relValues = p.path().relationships().asScala.map(relationship => VirtualValues.relationship(relationship.getId).asInstanceOf[RelationshipValue]).toArray
-      VirtualValues.path(nodeValues, relValues)
+      case r: RelationshipEntityWrappingValue =>
+      rebindRelationship(r.getEntity)
 
-    case m: MapValue =>
-      val builder = new MapValueBuilder(m.size())
-      m.foreach((k, v) => builder.add(k, replaceEntityWrappingValues(v)))
-      builder.build()
+      case p: PathWrappingPathValue =>
+        val nodeValues = p.path().nodes().asScala.map(rebindNode).toArray
+        val relValues = p.path().relationships().asScala.map(rebindRelationship).toArray
+        VirtualValues.path(nodeValues, relValues)
 
-    case l: ListValue =>
-      val builder = ListValueBuilder.newListBuilder(l.size())
-      l.forEach(v => builder.add(replaceEntityWrappingValues(v)))
-      builder.build()
+      case m: MapValue =>
+        val builder = new MapValueBuilder(m.size())
+        m.foreach((k, v) => builder.add(k, rebindEntityWrappingValues(v)))
+        builder.build()
 
-    case other =>
-      other
+      case l: ListValue =>
+        val builder = ListValueBuilder.newListBuilder(l.size())
+        l.forEach(v => builder.add(rebindEntityWrappingValues(v)))
+        builder.build()
+
+      case other =>
+        other
+    }
+
+    private def rebindNode(node: Node): NodeValue =
+      ValueUtils.fromNodeEntity(entityFactory.newNodeEntity(node.getId))
+
+    private def rebindRelationship(relationship:Relationship): RelationshipValue =
+      ValueUtils.fromRelationshipEntityLazyLoad(entityFactory.newRelationshipEntity(relationship.getId))
   }
+
+
 
   private def inNewTransaction(state: QueryState)(f: QueryState => Unit): Unit = {
 
