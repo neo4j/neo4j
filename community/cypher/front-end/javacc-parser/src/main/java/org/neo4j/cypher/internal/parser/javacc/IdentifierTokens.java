@@ -92,8 +92,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRAPH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRAPHS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.HEADERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.HOME;
-import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IDENTIFIER;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEX;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEXES;
@@ -150,6 +150,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RETURN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REVOKE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ROLE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ROLES;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ROW;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ROWS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SCAN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SEC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SECOND;
@@ -323,6 +325,8 @@ public class IdentifierTokens
             REVOKE,
             ROLE,
             ROLES,
+            ROW,
+            ROWS,
             SCAN,
             SEC,
             SECOND,

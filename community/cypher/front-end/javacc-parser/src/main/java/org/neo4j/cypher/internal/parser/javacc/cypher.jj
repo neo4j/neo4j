@@ -450,6 +450,8 @@ TOKEN [IGNORE_CASE] :
     | < REVOKE: "REVOKE">
     | < ROLE: "ROLE">
     | < ROLES: "ROLES">
+    | < ROW: "ROW">
+    | < ROWS: "ROWS">
     | < RPAREN: ")" >
     | < SCAN: "SCAN" >
     | < SEC: "SEC">
@@ -1803,11 +1805,13 @@ CLAUSE SubqueryClause() :
 SUBQUERY_IN_TRANSACTIONS_PARAMETERS SubqueryInTransactionsParameters() :
 {
     Token t;
+    EXPRESSION batchSize = null;
 }
 {
     t=<IN> <TRANSACTIONS>
+    (<OF> batchSize=Expression() (<ROW> | <ROWS>))?
     {
-        return astFactory.subqueryInTransactionsParams( pos( t ) );
+        return astFactory.subqueryInTransactionsParams( pos( t ), batchSize );
     }
 }
 
@@ -4856,6 +4860,8 @@ Token SymbolicNameString() :
         | t=<REVOKE>
         | t=<ROLE>
         | t=<ROLES>
+        | t=<ROW>
+        | t=<ROWS>
         | t=<SCAN>
         | t=<SEC>
         | t=<SECOND>

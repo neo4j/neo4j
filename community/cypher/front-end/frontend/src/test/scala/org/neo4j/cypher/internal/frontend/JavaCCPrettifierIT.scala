@@ -36,9 +36,32 @@ class JavaCCPrettifierIT extends CypherFunSuite {
     "CALL nsp.proc() yield *" ->
       """CALL nsp.proc()
         |  YIELD *""".stripMargin,
+
     "MATCH (n WHERE n:N)" -> "MATCH (n WHERE n:N)",
+
     "MATCH (n:N WHERE n.prop > 0)" -> "MATCH (n:N WHERE n.prop > 0)",
+
     "MATCH (n:N {foo: 5} WHERE n.prop > 0)" -> "MATCH (n:N {foo: 5} WHERE n.prop > 0)",
+
+    "call { create ( n ) } in transactions" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS""".stripMargin,
+
+    "call { create ( n ) } in transactions of 1 row" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 1 ROWS""".stripMargin,
+
+    "call { create ( n ) } in transactions of 10 rows" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 10 ROWS""".stripMargin,
+
+    "call { create ( n ) } in transactions of $p rows" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF $p ROWS""".stripMargin,
   )
 
   (parboiledPrettifier.tests ++ javaCcOnlyTests) foreach {

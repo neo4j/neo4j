@@ -358,7 +358,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL subqueryInTransactionsParams( NULL p )
+    public NULL subqueryInTransactionsParams( NULL p, Object batchSize )
     {
         throw new UnsupportedOperationException( "subqueryInTransactionsParams is not a literal" );
     }

@@ -640,8 +640,9 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                              clauses: util.List[Clause]): Clause =
     Foreach(v, list, clauses.asScala.toList)(p)
 
-  override def subqueryInTransactionsParams(p: InputPosition): SubqueryCall.InTransactionsParameters =
-    SubqueryCall.InTransactionsParameters()(p)
+  override def subqueryInTransactionsParams(p: InputPosition, batchSize: Expression): SubqueryCall.InTransactionsParameters = {
+    SubqueryCall.InTransactionsParameters(Option(batchSize))(p)
+  }
 
   override def subqueryClause(p: InputPosition, subquery: Query, inTransactions: SubqueryCall.InTransactionsParameters): Clause =
     SubqueryCall(subquery.part, Option(inTransactions))(p)

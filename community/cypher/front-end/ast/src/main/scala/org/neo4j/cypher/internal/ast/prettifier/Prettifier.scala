@@ -170,6 +170,7 @@ import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
@@ -632,9 +633,15 @@ case class Prettifier(
     }
 
     def asString(c: SubqueryCall): String = {
+      val ofRows = c.inTransactionsParameters.map(asString).getOrElse("")
       s"""${INDENT}CALL {
          |${indented().queryPart(c.part)}
-         |$INDENT}""".stripMargin
+         |$INDENT}$ofRows""".stripMargin
+    }
+
+    def asString(ip: InTransactionsParameters): String = {
+      val ofRows = ip.batchSize.map(n => s" OF ${expr(n)} ROWS").getOrElse("")
+      s" IN TRANSACTIONS$ofRows"
     }
 
     def asString(w: Where): String =

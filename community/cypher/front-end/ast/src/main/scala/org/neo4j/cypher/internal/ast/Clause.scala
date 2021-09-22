@@ -984,7 +984,7 @@ case class Yield(returnItems: ReturnItems,
 }
 
 object SubqueryCall {
-  final case class InTransactionsParameters()(val position: InputPosition) extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
+  final case class InTransactionsParameters(batchSize: Option[Expression])(val position: InputPosition) extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
     override def semanticCheck: SemanticCheck =
       requireFeatureSupport("The CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallSubqueryInTransactions, position)
   }

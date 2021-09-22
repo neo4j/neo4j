@@ -79,7 +79,7 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
           "OPTIONAL", "USING", "ORDER", "BY", "ASC", "ASCENDING", "DESC", "DESCENDING",
           "SKIP", "LIMIT", "UNION", "DROP", "INDEX", "SEEK", "SCAN", "JOIN", "CONSTRAINT",
           "ASSERT", "IS", "NODE", "KEY", "UNIQUE", "ON", "AS", "OR", "XOR", "AND", "NOT",
-          "STARTS", "ENDS", "CONTAINS", "IN", "count", "FILTER", "EXTRACT", "REDUCE",
+          "STARTS", "ENDS", "CONTAINS", "IN", "count", "FILTER", "EXTRACT", "REDUCE", "ROW", "ROWS",
           "EXISTS", "ALL", "ANY", "NONE", "SINGLE", "CASE", "ELSE", "WHEN", "THEN", "END",
           "shortestPath", "allShortestPaths")
 
@@ -255,10 +255,6 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   }
 
   test("WITH 1 AS x CALL { WITH x USE neo4j RETURN x AS y } RETURN x, y") {
-    assertSameAST(testName)
-  }
-
-  test("CALL { MATCH (n) RETURN n } IN TRANSACTIONS RETURN n") {
     assertSameAST(testName)
   }
 

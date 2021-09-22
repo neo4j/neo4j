@@ -241,6 +241,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.TimeoutAfter
@@ -1119,7 +1120,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _subqueryCall: Gen[SubqueryCall] = for {
     part <- _queryPart
-  } yield SubqueryCall(part, None)(pos)
+    params <- option(_inTransactionsParameters)
+  } yield SubqueryCall(part, params)(pos)
+
+  def _inTransactionsParameters: Gen[InTransactionsParameters] = for {
+    batchSize <- option(_expression)
+  } yield InTransactionsParameters(batchSize)(pos)
 
   def _clause: Gen[Clause] = oneOf(
     lzy(_use),

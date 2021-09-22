@@ -220,7 +220,7 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE subqueryClause( POS p, QUERY subquery, SUBQUERY_IN_TRANSACTIONS_PARAMETERS inTransactions );
 
-    SUBQUERY_IN_TRANSACTIONS_PARAMETERS subqueryInTransactionsParams( POS p );
+    SUBQUERY_IN_TRANSACTIONS_PARAMETERS subqueryInTransactionsParams( POS p, EXPRESSION batchSize );
 
     // Commands
     STATEMENT_WITH_GRAPH useGraph( STATEMENT_WITH_GRAPH statement, USE_GRAPH useGraph );

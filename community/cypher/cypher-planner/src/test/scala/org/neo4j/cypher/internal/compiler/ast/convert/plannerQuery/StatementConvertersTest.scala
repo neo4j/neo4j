@@ -195,7 +195,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       RegularSinglePlannerQuery(queryGraph = QueryGraph.empty.addMutatingPatterns(createPattern(Seq(createNode("x"))))),
       correlated = false,
       yielding = false,
-      inTransactionsParameters = Some(inTransactionsParameters())
+      inTransactionsParameters = Some(inTransactionsParameters(None))
     )
 
     query.tail should not be empty
@@ -218,7 +218,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         .addArgumentId("n")),
       correlated = true,
       yielding = false,
-      inTransactionsParameters = Some(inTransactionsParameters())
+      inTransactionsParameters = Some(inTransactionsParameters(None))
     )
 
     subQuery.tail should not be empty
@@ -236,7 +236,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = false,
       yielding = true,
-      inTransactionsParameters = Some(inTransactionsParameters())
+      inTransactionsParameters = Some(inTransactionsParameters(None))
     )
 
     query.tail should not be empty
@@ -262,7 +262,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       correlated = true,
       yielding = true,
-      inTransactionsParameters = Some(inTransactionsParameters())
+      inTransactionsParameters = Some(inTransactionsParameters(None))
     )
 
     subQuery.tail should not be empty
