@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.eclipse.collections.impl.factory.primitive.LongLists
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -153,11 +152,10 @@ final class PathValueBuilder(state: QueryState) {
     (cursor.sourceNodeReference(), cursor.targetNodeReference())
   }
 
+  //This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
   private def singleRelationship(rel: VirtualRelationshipValue, cursor: RelationshipScanCursor): Unit = {
     state.query.singleRelationship(rel.id(), cursor)
-    if (!cursor.next()) {
-      throw new EntityNotFoundException(s"Relationship with id=${rel.id()}has been deleted in this transaction")
-    }
+    cursor.next()
   }
 
   private def nullCheck[A <: AnyRef](value: A)(f: => PathValueBuilder):PathValueBuilder = value match {

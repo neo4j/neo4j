@@ -23,7 +23,6 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
-import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
@@ -188,8 +187,8 @@ public class PathValueBuilder
     @CalledFromGeneratedCode
     public void addUndirected( VirtualRelationshipValue relationship )
     {
-        long previous = nodes.get( nodes.size() - 1 );
         singleRelationship( relationship );
+        long previous = nodes.get( nodes.size() - 1 );
         if ( previous == cursor.sourceNodeReference() )
         {
             add( relationship.id(), cursor.targetNodeReference() );
@@ -324,7 +323,6 @@ public class PathValueBuilder
             {
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
                 singleRelationship( relationship );
-
                 nodes.add( cursor.targetNodeReference() );
                 rels.add( relationship.id() );
             }
@@ -493,13 +491,11 @@ public class PathValueBuilder
         }
     }
 
+    //This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
     private void singleRelationship( VirtualRelationshipValue relationship )
     {
         dbAccess.singleRelationship( relationship.id(), cursor );
-        if ( !cursor.next() )
-        {
-            throw new EntityNotFoundException( String.format( "Relationship with id=%d has been deleted in this transaction", relationship.id() ) );
-        }
+        cursor.next();
     }
 
     private boolean notNoValue( AnyValue value )
