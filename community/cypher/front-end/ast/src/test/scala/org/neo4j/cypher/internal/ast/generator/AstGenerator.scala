@@ -1089,25 +1089,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     fieldTerminator <- option(_stringLit)
   } yield LoadCSV(withHeaders, urlString, variable, fieldTerminator)(pos)
 
-  def _startItem: Gen[StartItem] = for {
-    variable <- _variable
-    parameter <- _parameter
-    ids <- oneOrMore(_unsignedDecIntLit)
-    item <- oneOf(
-      NodeByParameter(variable, parameter)(pos),
-      AllNodes(variable)(pos),
-      NodeByIds(variable, ids)(pos),
-      RelationshipByIds(variable, ids)(pos),
-      RelationshipByParameter(variable, parameter)(pos),
-      AllRelationships(variable)(pos)
-    )
-  } yield item
-
-  def _start: Gen[Start] = for {
-    items <- oneOrMore(_startItem)
-    where <- option(_where)
-  } yield Start(items, where)(pos)
-
   // Hints
   // ----------------------------------
 
@@ -1158,7 +1139,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     lzy(_call),
     lzy(_foreach),
     lzy(_loadCsv),
-    lzy(_start),
     lzy(_subqueryCall),
   )
 
