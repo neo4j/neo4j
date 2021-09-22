@@ -19,9 +19,11 @@
  */
 package org.neo4j.server;
 
+import org.apache.commons.lang3.SystemUtils;
 import sun.misc.Signal;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.lang.management.MemoryUsage;
 import java.nio.file.Path;
 import java.util.Map;
@@ -50,6 +52,7 @@ import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.memory.MachineMemory;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
+import org.neo4j.server.startup.PidFileHelper;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -72,6 +75,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
     private String serverAddress = "unknown address";
     private String serverLocation = "unknown location";
     private MachineMemory machineMemory = MachineMemory.DEFAULT;
+    private Path pidFile;
 
     public static int start( Bootstrapper boot, String... argv )
     {
@@ -109,6 +113,8 @@ public abstract class NeoBootstrapper implements Bootstrapper
                 .setRaw( configOverrides )
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
                 .build();
+        pidFile = config.get( BootloaderSettings.pid_file );
+        writePidSilently();
         Log4jLogProvider userLogProvider = setupLogging( config );
         userLogFileStream = userLogProvider;
 
@@ -152,6 +158,36 @@ public abstract class NeoBootstrapper implements Bootstrapper
         {
             log.error( format( "Failed to start Neo4j on %s.", serverAddress ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
+        }
+    }
+
+    private void writePidSilently()
+    {
+        if ( !SystemUtils.IS_OS_WINDOWS ) //Windows does not use PID-files (for somewhat mysterious reasons)
+        {
+            try //The neo4j.pid should already be there, but in the case of using the `console --dry-run` functionality we need to ensure it!
+            {
+                Long currentPid = ProcessHandle.current().pid();
+                Long pid = PidFileHelper.readPid( pidFile );
+                if ( !currentPid.equals( pid ) )
+                {
+                    PidFileHelper.storePid( pidFile, currentPid );
+                }
+            }
+            catch ( IOException ignored )
+            {
+            }
+        }
+    }
+
+    private void deletePidSilently()
+    {
+        if ( !SystemUtils.IS_OS_WINDOWS )
+        {
+            if ( pidFile != null )
+            {
+                PidFileHelper.remove( pidFile );
+            }
         }
     }
 
@@ -270,6 +306,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
             log.info( "Stopping..." );
             databaseManagementService.shutdown();
         }
+        deletePidSilently();
         log.info( "Stopped." );
     }
 

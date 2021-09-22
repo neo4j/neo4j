@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +34,6 @@ import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.server.NeoBootstrapper.SIGINT;
@@ -257,31 +253,19 @@ class ProcessManager
 
     Long getPidFromFile()
     {
-        Path pidFilePath = pidFile();
-        if ( Files.exists( pidFilePath ) )
+        Path pidFile = pidFile();
+        try
         {
-            try
-            {
-                try
-                {
-                    return Long.parseLong( Files.readString( pidFilePath ).trim() );
-                }
-                catch ( NumberFormatException e )
-                {
-                    deletePid();
-                    return null;
-                }
-            }
-            catch ( AccessDeniedException e )
-            {
-                throw new BootFailureException( "Access denied reading pid file " + pidFilePath, 1 );
-            }
-            catch ( IOException e )
-            {
-                throw new BootFailureException( "Unexpected error reading pid file " + pidFilePath, 1, e );
-            }
+            return PidFileHelper.readPid( pidFile );
         }
-        return null;
+        catch ( AccessDeniedException e )
+        {
+            throw new BootFailureException( "Access denied reading pid file " + pidFile, 1 );
+        }
+        catch ( IOException e )
+        {
+            throw new BootFailureException( "Unexpected error reading pid file " + pidFile, 1, e );
+        }
     }
 
     ProcessHandle getProcessHandle( long pid ) throws BootFailureException
@@ -297,13 +281,7 @@ class ProcessManager
 
     private void deletePid()
     {
-        try
-        {
-            Files.deleteIfExists( pidFile() );
-        }
-        catch ( IOException ignored )
-        { //We can ignore this safely, as it will either be cleaned up later or fail at a later stage
-        }
+        PidFileHelper.remove( pidFile() );
     }
 
     private void storePid( long pid, boolean throwOnFailure ) throws IOException
@@ -311,8 +289,7 @@ class ProcessManager
         Path pidFilePath = pidFile();
         try
         {
-            Files.createDirectories( pidFilePath.getParent() );
-            Files.write( pidFilePath, Long.toString( pid ).getBytes(), CREATE, WRITE, TRUNCATE_EXISTING );
+            PidFileHelper.storePid( pidFile(), pid );
         }
         catch ( AccessDeniedException exception )
         {

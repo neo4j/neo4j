@@ -24,13 +24,17 @@ import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -53,6 +57,8 @@ import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.forced_kernel_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
@@ -232,6 +238,26 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         GraphDatabaseAPI db = (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database( DEFAULT_DATABASE_NAME );
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         assertThat( config.get( log_queries_rotation_threshold ) ).isEqualTo( 100000L );
+    }
+
+    @Test
+    @DisabledOnOs( OS.WINDOWS )
+    void shouldWriteAndDeletePidFile()
+    {
+        // When
+        int resultCode = NeoBootstrapper.start( bootstrapper, "--home-dir", testDirectory.homePath().toString() );
+
+        // Then
+        assertEquals( NeoBootstrapper.OK, resultCode );
+        assertEventually( "Server was not started", bootstrapper::isRunning, Conditions.TRUE, 1, TimeUnit.MINUTES );
+        Path pidFile = getDependencyResolver().resolveDependency( Config.class ).get( BootloaderSettings.pid_file );
+        assertTrue( Files.exists( pidFile ) );
+
+        //When
+        bootstrapper.stop();
+
+        //Then
+        assertFalse( Files.exists( pidFile ) );
     }
 
     protected abstract DatabaseManagementService newEmbeddedDbms( Path homeDir );
