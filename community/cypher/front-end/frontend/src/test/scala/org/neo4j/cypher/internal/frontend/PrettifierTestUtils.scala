@@ -18,9 +18,11 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -92,15 +94,14 @@ trait PrettifierTestUtils extends Matchers {
     println("  - ast2: " + parsed2)
   }
 
+  // We are not using OpenCypherJavaCCParserWithFallback here since we want to fallback on any parser failure, not just if we have a fallback trigger.
+  // That is because the new parser does not support some older constructs that we previously parsed for nicer error messages.
   private def parse(original: String): Statement =
-    parser.parse(original, OpenCypherExceptionFactory(None))
-// TODO: use the try catch below to use new parser and fallback,
-//  the update will be part of https://trello.com/c/GcTY5tC4/252-use-the-new-parser-in-tests-and-utilities
-//    try {
-//      JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
-//    } catch {
-//      case _ if JavaCCParser.shouldFallBack(original) =>
-//        parser.parse(original, OpenCypherExceptionFactory(None))
-//    }
+    try {
+      JavaCCParser.parse(original, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
+    } catch {
+      case _: OpenCypherExceptionFactory.SyntaxException =>
+        parser.parse(original, OpenCypherExceptionFactory(None))
+    }
 
 }
