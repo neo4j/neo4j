@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.lifecycle;
 
-import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.HALT;
-import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.IDLE;
-import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.PRE;
-import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.RUN;
+import static org.neo4j.kernel.lifecycle.LifecycleStatus.NONE;
+import static org.neo4j.kernel.lifecycle.LifecycleStatus.SHUTDOWN;
+import static org.neo4j.kernel.lifecycle.LifecycleStatus.STARTED;
+import static org.neo4j.kernel.lifecycle.LifecycleStatus.STOPPED;
 
 /**
  * A safer lifecycle adapter with strict semantics and as
@@ -36,34 +36,34 @@ import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.RUN;
  *  *: No-op    (will not invoke operation)
  *  -: Error    (will throw IllegalStateException)
  *
- *  P: PRE      ("pre init")
- *  I: IDLE     ("initialized" or "stopped")
- *  R: RUN      ("started")
- *  H: HALT     ("shutdown")
+ *  NONE:       ("pre initialization")
+ *  STOPPED:    ("initialized" or "stopped")
+ *  STARTED:    ("started")
+ *  SHUTDOWN:   ("shutdown")
  * </pre>
  * A successful operation is an operation not throwing an exception.
  * <p>
  * End states on a successful operation.
  * <pre>
- *  ---------------------------------------------------
- * | FROM \ op |  init()  start()  stop()  shutdown()  |
- *  ---------------------------------------------------
- * | PRE       |   IDLE      -       -       HALT(*)   |
- * | IDLE      |    -       RUN    IDLE(*)    HALT     |
- * | RUN       |    -        -      IDLE       -       |
- * | HALT      |    -        -       -         -       |
- *  ---------------------------------------------------
+ * +----------+---------+---------+------------+-------------+
+ * | FROM \op | init()  | start() |   stop()   | shutdown()  |
+ * +----------+---------+---------+------------+-------------+
+ * | NONE     | STOPPED | -       | -          | NONE(*)     |
+ * | STOPPED  | -       | STARTED | STOPPED(*) | SHUTDOWN    |
+ * | STARTED  | -       | -       | STOPPED    | -           |
+ * | SHUTDOWN | -       | -       | -          | -           |
+ * +----------+---------+---------+------------+-------------+
  * </pre>
  * End states on a failed operation.
  * <pre>
- *  ---------------------------------------------------
- * | FROM \ op |  init()  start()  stop()  shutdown()  |
- *  ---------------------------------------------------
- * | PRE       |   PRE       -       -       HALT(*)   |
- * | IDLE      |    -       IDLE   IDLE(*)    HALT     |
- * | RUN       |    -        -      IDLE       -       |
- * | HALT      |    -        -       -         -       |
- *  ---------------------------------------------------
+ *+----------+---------+---------+------------+-------------+
+ * | FROM \op | init()  | start() |   stop()   | shutdown()  |
+ * +----------+---------+---------+------------+-------------+
+ * | NONE     | STOPPED | -       | -          | NONE(*)     |
+ * | STOPPED  | -       | STOPPED | STOPPED(*) | SHUTDOWN    |
+ * | STARTED  | -       | -       | STOPPED    | -           |
+ * | SHUTDOWN | -       | -       | -          | -           |
+ * +----------+---------+---------+------------+-------------+
  * </pre>
  * A few notes:
  * <ul>
@@ -72,12 +72,12 @@ import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.RUN;
  * </ul>
  * The expectation with regards to error handling and cleanup is that
  * an unclean start() is cleaned up by the start0() method and thus
- * the component is left in IDLE. The same goes for issues happening
- * during init0(), which leaves the component in PRE.
+ * the component is left in STOPPED. The same goes for issues happening
+ * during init0().
  * <p>
  * Because of the way that {@link LifeSupport} operates today, this
- * class will ignore stop() calls made while in IDLE. Similarly, calls
- * to shutdown() will be ignored while in PRE. This allows this class
+ * class will ignore stop() calls made while in STOPPED. Similarly, calls
+ * to shutdown() will be ignored while in NONE. This allows this class
  * to be managed by a {@link LifeSupport} without throwing
  * {@link IllegalStateException} on those state transitions, which
  * otherwise would have been disallowed and handled in the same way
@@ -86,16 +86,16 @@ import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.RUN;
  * This adapter will not allow a shutdown lifecycle to be reinitialized
  * and started again.
  */
-public abstract class SafeLifecycle implements Lifecycle
+public abstract class SafeLifecycle implements Lifecycle, LifecycleStatusProvider
 {
-    private State state;
+    private volatile LifecycleStatus state;
 
     protected SafeLifecycle()
     {
-        this( PRE );
+        this( NONE );
     }
 
-    SafeLifecycle( State state )
+    SafeLifecycle( LifecycleStatus state )
     {
         this.state = state;
     }
@@ -107,7 +107,7 @@ public abstract class SafeLifecycle implements Lifecycle
      * @param force Causes the state to be updated regardless of if the operation throws.
      * @throws Throwable Issues.
      */
-    private void transition( State expected, State to, Operation op, boolean force ) throws Exception
+    private void transition( LifecycleStatus expected, LifecycleStatus to, Operation op, boolean force ) throws Exception
     {
         if ( state != expected )
         {
@@ -129,34 +129,34 @@ public abstract class SafeLifecycle implements Lifecycle
     @Override
     public final synchronized void init() throws Exception
     {
-        transition( PRE, IDLE, this::init0, false );
+        transition( NONE, STOPPED, this::init0, false );
     }
 
     @Override
     public final synchronized void start() throws Exception
     {
-        transition( IDLE, RUN, this::start0, false );
+        transition( STOPPED, STARTED, this::start0, false );
     }
 
     @Override
     public final synchronized void stop() throws Exception
     {
-        if ( state == IDLE )
+        if ( state == STOPPED )
         {
             return;
         }
-        transition( RUN, IDLE, this::stop0, true );
+        transition( STARTED, STOPPED, this::stop0, true );
     }
 
     @Override
     public final synchronized void shutdown() throws Exception
     {
-        if ( state == PRE )
+        if ( state == NONE )
         {
-            state = HALT;
+            state = NONE;
             return;
         }
-        transition( IDLE, HALT, this::shutdown0, true );
+        transition( STOPPED, SHUTDOWN, this::shutdown0, true );
     }
 
     public void init0() throws Exception
@@ -175,17 +175,10 @@ public abstract class SafeLifecycle implements Lifecycle
     {
     }
 
-    public State state()
+    @Override
+    public LifecycleStatus getStatus()
     {
         return state;
-    }
-
-    protected enum State
-    {
-        PRE,
-        IDLE,
-        RUN,
-        HALT
     }
 
     interface Operation

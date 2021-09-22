@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.LifecycleStatusProvider;
+import org.neo4j.kernel.lifecycle.SafeLifecycle;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.util.stream.Collectors.joining;
@@ -35,7 +37,7 @@ import static java.util.stream.Collectors.joining;
  *
  * @see AvailabilityGuard
  */
-public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard
+public class CompositeDatabaseAvailabilityGuard extends SafeLifecycle implements AvailabilityGuard
 {
     private final Clock clock;
     private final CopyOnWriteArraySet<DatabaseAvailabilityGuard> guards = new CopyOnWriteArraySet<>();
@@ -69,7 +71,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     }
 
     @Override
-    public void stop()
+    public void stop0()
     {
         started = false;
     }

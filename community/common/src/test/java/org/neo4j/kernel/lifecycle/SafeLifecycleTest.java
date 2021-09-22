@@ -22,15 +22,14 @@ package org.neo4j.kernel.lifecycle;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.kernel.lifecycle.SafeLifecycle.State;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.HALT;
-import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.IDLE;
-import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.PRE;
-import static org.neo4j.kernel.lifecycle.SafeLifecycle.State.RUN;
+import static org.neo4j.kernel.lifecycle.LifecycleStatus.NONE;
+import static org.neo4j.kernel.lifecycle.LifecycleStatus.SHUTDOWN;
+import static org.neo4j.kernel.lifecycle.LifecycleStatus.STARTED;
+import static org.neo4j.kernel.lifecycle.LifecycleStatus.STOPPED;
 
 class SafeLifecycleTest
 {
@@ -40,39 +39,40 @@ class SafeLifecycleTest
     private ThrowingConsumer<Lifecycle,Throwable> shutdown = Lifecycle::shutdown;
     @SuppressWarnings( "unchecked" )
     private ThrowingConsumer<Lifecycle,Throwable>[] ops = new ThrowingConsumer[]{init, start, stop, shutdown};
+    private LifecycleStatus[] states = new LifecycleStatus[]{NONE,STOPPED,STARTED,SHUTDOWN};
 
     private Object[][] onSuccess = new Object[][]{
-            //            init()  start()  stop()  shutdown()
-            new State[] { IDLE,    null,   null,     HALT }, // from PRE
-            new State[] { null,    RUN,    IDLE,     HALT }, // from IDLE
-            new State[] { null,    null,   IDLE,     null }, // from RUN
-            new State[] { null,    null,   null,     null }, // from HALT
+            //                       init()  start()  stop()  shutdown()
+            new LifecycleStatus[] { STOPPED,  null,     null,     NONE }, // from NONE
+            new LifecycleStatus[] { null,     STARTED,  STOPPED,  SHUTDOWN }, // from STOPPED
+            new LifecycleStatus[] { null,     null,     STOPPED,  null }, // from STARTED
+            new LifecycleStatus[] { null,     null,     null,     null }, // from SHUTDOWN
     };
 
     private Object[][] onFailed = new Object[][]{
-            //            init()  start()  stop()  shutdown()
-            new State[] { PRE,     null,   null,     HALT }, // from PRE
-            new State[] { null,    IDLE,   IDLE,     HALT }, // from IDLE
-            new State[] { null,    null,   IDLE,     null }, // from RUN
-            new State[] { null,    null,   null,     null }, // from HALT
+            //                      init()  start()  stop()  shutdown()
+            new LifecycleStatus[] { NONE,    null,    null,     NONE }, // from NONE
+            new LifecycleStatus[] { null,    STOPPED, STOPPED,  SHUTDOWN }, // from STOPPED
+            new LifecycleStatus[] { null,    null,    STOPPED,  null }, // from STARTED
+            new LifecycleStatus[] { null,    null,    null,     null }, // from SHUTDOWN
     };
 
     private Boolean[][] ignored = new Boolean[][]{
             //              init()  start()  stop()  shutdown()
-            new Boolean[] { false,  false,   false,    true },  // from PRE
-            new Boolean[] { false,  false,   true,     false }, // from IDLE
-            new Boolean[] { false,  false,   false,    false }, // from RUN
-            new Boolean[] { false,  false,   false,    false }, // from HALT
+            new Boolean[] { false,  false,   false,    true },  // from NONE
+            new Boolean[] { false,  false,   true,     false }, // from STOPPED
+            new Boolean[] { false,  false,   false,    false }, // from STARTED
+            new Boolean[] { false,  false,   false,    false }, // from SHUTDOWN
     };
 
     @Test
     void shouldPerformSuccessfulTransitionsCorrectly() throws Throwable
     {
-        for ( int state = 0; state < State.values().length; state++ )
+        for ( int state = 0; state < states.length; state++ )
         {
             for ( int op = 0; op < ops.length; op++ )
             {
-                MySafeAndSuccessfulLife sf = new MySafeAndSuccessfulLife( State.values()[state] );
+                MySafeAndSuccessfulLife sf = new MySafeAndSuccessfulLife( states[state] );
                 boolean caughtIllegalTransition = false;
                 try
                 {
@@ -86,12 +86,12 @@ class SafeLifecycleTest
                 if ( onSuccess[state][op] == null )
                 {
                     assertTrue( caughtIllegalTransition );
-                    assertEquals( State.values()[state], sf.state() );
+                    assertEquals( states[state], sf.getStatus() );
                 }
                 else
                 {
                     assertFalse( caughtIllegalTransition );
-                    assertEquals( onSuccess[state][op], sf.state() );
+                    assertEquals( onSuccess[state][op], sf.getStatus() );
                     int expectedOpCode = ignored[state][op] ? -1 : op;
                     assertEquals( expectedOpCode, sf.opCode );
                 }
@@ -102,11 +102,11 @@ class SafeLifecycleTest
     @Test
     void shouldPerformFailedTransitionsCorrectly() throws Throwable
     {
-        for ( int state = 0; state < State.values().length; state++ )
+        for ( int state = 0; state < states.length; state++ )
         {
             for ( int op = 0; op < ops.length; op++ )
             {
-                MyFailedLife sf = new MyFailedLife( State.values()[state] );
+                MyFailedLife sf = new MyFailedLife( states[state] );
                 boolean caughtIllegalTransition = false;
                 boolean failedOperation = false;
                 try
@@ -125,12 +125,12 @@ class SafeLifecycleTest
                 if ( onFailed[state][op] == null )
                 {
                     assertTrue( caughtIllegalTransition );
-                    assertEquals( State.values()[state], sf.state() );
+                    assertEquals( states[state], sf.getStatus() );
                 }
                 else
                 {
                     assertFalse( caughtIllegalTransition );
-                    assertEquals( onFailed[state][op], sf.state() );
+                    assertEquals( onFailed[state][op], sf.getStatus() );
 
                     if ( ignored[state][op] )
                     {
@@ -151,7 +151,7 @@ class SafeLifecycleTest
     {
         int opCode;
 
-        MySafeAndSuccessfulLife( State state )
+        MySafeAndSuccessfulLife( LifecycleStatus state )
         {
             super( state );
             opCode = -1;
@@ -198,7 +198,7 @@ class SafeLifecycleTest
     {
         int opCode;
 
-        MyFailedLife( State state )
+        MyFailedLife( LifecycleStatus state )
         {
             super( state );
             opCode = -1;
