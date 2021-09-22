@@ -47,7 +47,6 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
-import static org.neo4j.server.startup.Bootloader.PROP_JAVA_VERSION;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_VENDOR;
 import static org.neo4j.server.startup.Neo4jCommandTestBase.isCurrentlyRunningAsWindowsAdmin;
@@ -114,9 +113,10 @@ class Neo4jAdminCommandTest
         }
 
         @Override
-        protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup )
+        protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
+                Runtime.Version version )
         {
-            return Neo4jAdminCommand.asCommandLine( new Neo4jAdminCommand.Neo4jAdminBootloaderContext( out, err, envLookup, propLookup ) );
+            return Neo4jAdminCommand.asCommandLine( new Neo4jAdminCommand.Neo4jAdminBootloaderContext( out, err, envLookup, propLookup, version ) );
         }
     }
 
@@ -190,10 +190,11 @@ class Neo4jAdminCommandTest
         @Test
         void shouldPrintJVMInfo()
         {
-            Map<String,String> vm = Map.of( PROP_JAVA_VERSION, "11.0", PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM", PROP_VM_VENDOR, "Oracle" );
-            assertThat( execute( List.of( "test-command"), vm ) ).isEqualTo( EXIT_CODE_OK );
+            Runtime.Version version = Runtime.Version.parse( "11.0.11+9-LTS" );
+            Map<String,String> vm = Map.of( PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM", PROP_VM_VENDOR, "Oracle" );
+            assertThat( execute( List.of( "test-command"), vm, version ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).containsSubsequence( String.format( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
-                    vm.get( PROP_JAVA_VERSION ), vm.get( PROP_VM_NAME ), vm.get( PROP_VM_VENDOR ) ) );
+                    version, vm.get( PROP_VM_NAME ), vm.get( PROP_VM_VENDOR ) ) );
         }
 
         @Test
@@ -234,9 +235,11 @@ class Neo4jAdminCommandTest
         }
 
         @Override
-        protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup )
+        protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
+                Runtime.Version version )
         {
-            Neo4jAdminCommand.Neo4jAdminBootloaderContext ctx = spy( new Neo4jAdminCommand.Neo4jAdminBootloaderContext( out, err, envLookup, propLookup ) );
+            Neo4jAdminCommand.Neo4jAdminBootloaderContext ctx =
+                    spy( new Neo4jAdminCommand.Neo4jAdminBootloaderContext( out, err, envLookup, propLookup, version ) );
             ProcessManager pm = new FakeProcessManager( config, ctx, new ProcessHandler(), AdminTool.class );
             doAnswer( inv -> pm ).when( ctx ).processManager();
             return Neo4jAdminCommand.asCommandLine( ctx );

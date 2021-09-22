@@ -263,7 +263,7 @@ class Neo4jCommandTest
         @Test
         void shouldNotComplainOnJavaWhenCorrectVersion()
         {
-            Map<String,String> java = Map.of( Bootloader.PROP_JAVA_VERSION, "11.0.8", Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
+            Map<String,String> java = Map.of( "java.version", "11.0.8", Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
             assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).doesNotContain( "WARNING! You are using an unsupported Java runtime" );
         }
@@ -271,15 +271,16 @@ class Neo4jCommandTest
         @Test
         void shouldComplainWhenJavaVersionIsTooNew()
         {
-            Map<String,String> java = Map.of( Bootloader.PROP_JAVA_VERSION, "15.0.1", Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
-            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
+            Runtime.Version version = Runtime.Version.parse( "15.0.1+2" );
+            Map<String,String> java = Map.of( Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
+            assertThat( execute( List.of( "start" ), java, version ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).contains( "WARNING! You are using an unsupported Java runtime." );
         }
 
         @Test
         void shouldComplainWhenRunningUnsupportedJvm()
         {
-            Map<String,String> java = Map.of( Bootloader.PROP_JAVA_VERSION, "11.0.2", Bootloader.PROP_VM_NAME, "Eclipse OpenJ9 VM" );
+            Map<String,String> java = Map.of( "java.version", "11.0.2", Bootloader.PROP_VM_NAME, "Eclipse OpenJ9 VM" );
             assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).contains( "WARNING! You are using an unsupported Java runtime." );
         }
@@ -445,9 +446,10 @@ class Neo4jCommandTest
         }
 
         @Override
-        protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup )
+        protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
+                Runtime.Version version )
         {
-            Neo4jCommand.Neo4jBootloaderContext ctx = spy( new Neo4jCommand.Neo4jBootloaderContext( out, err, envLookup, propLookup, entrypoint() ) );
+            Neo4jCommand.Neo4jBootloaderContext ctx = spy( new Neo4jCommand.Neo4jBootloaderContext( out, err, envLookup, propLookup, entrypoint(), version ) );
             ProcessManager pm = new FakeProcessManager( config, ctx, handler, TestEntryPoint.class );
             doAnswer( inv -> pm ).when( ctx ).processManager();
             return Neo4jCommand.asCommandLine( ctx );

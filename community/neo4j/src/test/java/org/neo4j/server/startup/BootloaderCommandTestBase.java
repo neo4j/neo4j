@@ -145,15 +145,20 @@ abstract class BootloaderCommandTestBase
 
     protected int execute( List<String> args, Map<String, String> env )
     {
+        return execute( args, env, Runtime.version() );
+    }
+
+    protected int execute( List<String> args, Map<String, String> env, Runtime.Version version )
+    {
         HashMap<String,String> environment = new HashMap<>( env );
         environment.putIfAbsent( Bootloader.ENV_NEO4J_HOME, home.toString() );
 
-        return createCommand( environment )
+        return createCommand( environment, version )
                 .setResourceBundle( bundleFromMap( environment ) )
                 .execute( args.toArray( new String[0] ) );
     }
 
-    private CommandLine createCommand( Map<String,String> environment )
+    private CommandLine createCommand( Map<String,String> environment, Runtime.Version version )
     {
         Function<String,String> envLookup = key ->
         {
@@ -173,10 +178,11 @@ abstract class BootloaderCommandTestBase
             return System.getProperty( key );
         };
 
-        return createCommand( new PrintStream( out ), new PrintStream( err ), envLookup, propLookup );
+        return createCommand( new PrintStream( out ), new PrintStream( err ), envLookup, propLookup, version );
     }
 
-    protected abstract CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup );
+    protected abstract CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
+            Runtime.Version version );
 
     protected void addConf( Setting<?> setting, String value )
     {

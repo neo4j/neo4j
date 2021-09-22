@@ -176,9 +176,9 @@ class Neo4jCommand extends BootloaderCommand
 
         @VisibleForTesting
         Neo4jBootloaderContext( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
-                Class<? extends EntryPoint> entrypoint )
+                Class<? extends EntryPoint> entrypoint, Runtime.Version version )
         {
-            super( out, err, envLookup, propLookup, entrypoint );
+            super( out, err, envLookup, propLookup, entrypoint, version );
         }
 
         @Override

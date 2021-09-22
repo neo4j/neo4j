@@ -21,6 +21,7 @@ package org.neo4j.server.startup;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.BootloaderSettings;
@@ -49,7 +50,6 @@ class Bootloader
     static final String ENV_JAVA_HOME = "JAVA_HOME";
     static final String ENV_JAVA_CMD = "JAVA_CMD";
     static final String PROP_JAVA_CP = "java.class.path";
-    static final String PROP_JAVA_VERSION = "java.version";
     static final String PROP_VM_NAME = "java.vm.name";
     static final String PROP_VM_VENDOR = "java.vm.vendor";
     static final String PROP_BASEDIR = "basedir";
@@ -259,8 +259,7 @@ class Bootloader
 
     int admin()
     {
-        ctx.out.printf( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
-                ctx.getProp( PROP_JAVA_VERSION ), ctx.getProp( PROP_VM_NAME ), ctx.getProp( PROP_VM_VENDOR ) );
+        ctx.out.printf( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n", ctx.version(), ctx.getProp( PROP_VM_NAME ), ctx.getProp( PROP_VM_VENDOR ) );
         try
         {
             ctx.validateConfig();

@@ -68,19 +68,22 @@ abstract class BootloaderContext
     private boolean fullConfig;
     private BootloaderOsAbstraction os;
     private ProcessManager processManager;
+    private final Runtime.Version version;
 
     protected BootloaderContext( Class<?> entrypoint )
     {
-        this( System.out, System.err, System::getenv, System::getProperty, entrypoint );
+        this( System.out, System.err, System::getenv, System::getProperty, entrypoint, Runtime.version() );
     }
 
-    protected BootloaderContext( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup, Class<?> entrypoint )
+    protected BootloaderContext( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup, Class<?> entrypoint,
+            Runtime.Version version )
     {
         this.out = out;
         this.err = err;
         this.envLookup = envLookup;
         this.propLookup = propLookup;
         this.entrypoint = entrypoint;
+        this.version = version;
     }
 
     String getEnv( String key )
@@ -259,5 +262,10 @@ abstract class BootloaderContext
     private void assertInitiated()
     {
         Preconditions.checkArgument( initiated, "Context not initiated" );
+    }
+
+    public Runtime.Version version()
+    {
+        return version;
     }
 }

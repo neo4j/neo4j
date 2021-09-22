@@ -45,7 +45,6 @@ import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.server.startup.Bootloader.ENV_HEAP_SIZE;
 import static org.neo4j.server.startup.Bootloader.PROP_JAVA_CP;
-import static org.neo4j.server.startup.Bootloader.PROP_JAVA_VERSION;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
 import static org.neo4j.server.startup.ProcessManager.behaviour;
 
@@ -177,9 +176,7 @@ abstract class BootloaderOsAbstraction
 
     private void checkJavaVersion()
     {
-        //Is it okay to check this on the boostrapper VM or should it be done on the "real"?
-        String version = ctx.getProp( PROP_JAVA_VERSION );
-        if ( !version.startsWith( "11" ) )
+        if ( ctx.version().feature() != 11 )
         {
             //too new java
             printBadRuntime();
