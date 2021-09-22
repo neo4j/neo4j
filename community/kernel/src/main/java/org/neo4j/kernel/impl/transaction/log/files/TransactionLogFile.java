@@ -55,8 +55,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
@@ -67,7 +67,6 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
@@ -123,6 +122,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     {
         long currentLogVersion = logVersionRepository.getCurrentLogVersion();
         channel = createLogChannelForVersion( currentLogVersion, context::getLastCommittedTransactionId );
+        context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), currentLogVersion );
 
         //try to set position
         seekChannelPosition( currentLogVersion );

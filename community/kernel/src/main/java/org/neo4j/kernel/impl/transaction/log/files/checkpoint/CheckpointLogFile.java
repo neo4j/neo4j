@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
+import org.neo4j.kernel.impl.transaction.log.files.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
@@ -246,5 +248,33 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     public synchronized Path rotate() throws IOException
     {
         return checkpointAppender.rotate();
+    }
+
+    @Override
+    public long getLowestLogVersion()
+    {
+        return visitLogFiles( new RangeLogVersionVisitor() ).getLowestVersion();
+    }
+
+    @Override
+    public long getHighestLogVersion()
+    {
+        return visitLogFiles( new RangeLogVersionVisitor() ).getHighestVersion();
+    }
+
+    private <V extends LogVersionVisitor> V visitLogFiles( V visitor )
+    {
+        try
+        {
+            for ( Path file : fileHelper.getMatchedFiles() )
+            {
+                visitor.visit( file, TransactionLogFilesHelper.getLogVersion( file ) );
+            }
+            return visitor;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 }

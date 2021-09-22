@@ -114,6 +114,12 @@ public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInfo
     }
 
     @Override
+    public void started( Path logFile, long logVersion )
+    {
+        log.info( "Starting transaction log [%s] at version=%d", logFile, logVersion );
+    }
+
+    @Override
     public void startRotation( long currentLogVersion )
     {
     }
