@@ -1201,14 +1201,36 @@ STATEMENT Statement() throws Exception:
 {
     (
         statement=PeriodicCommitQuery()
-        | ( useClause=UseClause() )? statement=SingleQueryOrCommand(useClause)
+        | useClause=UseClause() statement=SingleQueryOrCommandWithUseClause(useClause)
+        | statement=SingleQueryOrCommand()
     )
     {
         return statement;
     }
 }
 
-STATEMENT SingleQueryOrCommand( USE_CLAUSE useClause ) throws Exception:
+STATEMENT SingleQueryOrCommand() throws Exception:
+{
+    STATEMENT statement = null;
+    QUERY query = null;
+    boolean hasCatalog = false;
+}
+{
+    (
+        LOOKAHEAD(2) (<CATALOG> { hasCatalog = true; })? statement=CreateCommand( null ) // CREATE admin thing vs CREATE graph thing
+        | (<CATALOG> { hasCatalog = true; })? statement=Command( null )
+        | query=SingleQuery() ( query=Union(query) )*
+    )
+    {
+        if ( query != null )
+        {
+            return query;
+        }
+        return hasCatalog ? astFactory.hasCatalog( statement ) : statement;
+    }
+}
+
+STATEMENT SingleQueryOrCommandWithUseClause( USE_CLAUSE useClause ) throws Exception:
 {
     STATEMENT statement = null;
     QUERY query = null;
@@ -1218,7 +1240,7 @@ STATEMENT SingleQueryOrCommand( USE_CLAUSE useClause ) throws Exception:
     (
         LOOKAHEAD(2) (<CATALOG> { hasCatalog = true; })? statement=CreateCommand( useClause ) // CREATE admin thing vs CREATE graph thing
         | (<CATALOG> { hasCatalog = true; })? statement=Command( useClause )
-        | query=SingleQuery( useClause ) ( query=Union(query) )*
+        | query=SingleQueryWithUseClause( useClause ) ( query=Union(query) )*
     )
     {
         if ( query != null )
@@ -1263,7 +1285,7 @@ QUERY RegularQuery() :
     QUERY x;
 }
 {
-    x=SingleQuery(null) ( x=Union(x) )*
+    x=SingleQuery() ( x=Union(x) )*
     {
         return x;
     }
@@ -1276,13 +1298,25 @@ QUERY Union( QUERY lhs ) :
     boolean all = false;
 }
 {
-    t=<UNION> ( <ALL> { all = true; } )? rhs=SingleQuery( null )
+    t=<UNION> ( <ALL> { all = true; } )? rhs=SingleQuery()
     {
         return astFactory.newUnion( pos( t ), lhs, rhs, all );
     }
 }
 
-QUERY SingleQuery( CLAUSE useClause ) :
+QUERY SingleQuery() :
+{
+    CLAUSE x;
+    List<CLAUSE> clauses = new ArrayList<>();
+}
+{
+    ( x=Clause() { clauses.add( x ); } )+
+    {
+        return astFactory.newSingleQuery( clauses );
+    }
+}
+
+QUERY SingleQueryWithUseClause( CLAUSE useClause ) :
 {
     CLAUSE x;
     List<CLAUSE> clauses = new ArrayList<>();
@@ -1292,7 +1326,7 @@ QUERY SingleQuery( CLAUSE useClause ) :
     }
 }
 {
-    ( x=Clause() { clauses.add( x ); } )+
+    ( x=Clause() { clauses.add( x ); } )*
     {
         return astFactory.newSingleQuery( clauses );
     }

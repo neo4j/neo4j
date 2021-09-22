@@ -378,4 +378,8 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   test("RETURN 0-0.1") {
     assertSameAST(testName)
   }
+
+  test("USE foo UNION ALL RETURN 1") {
+    assertSameAST(testName)
+  }
 }
