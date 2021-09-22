@@ -20,11 +20,14 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
+import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.values.storable.ValueCategory;
 
 import static java.lang.String.format;
@@ -78,25 +81,23 @@ class QueryValidator
      */
     static void validateCompositeQuery( PropertyIndexQuery[] predicates )
     {
-        String illegalQueryMessage = "Tried to query index with illegal composite query.";
-        PropertyIndexQuery prev = null;
-        for ( PropertyIndexQuery current : predicates )
+        final var illegalQueryMessage = "Tried to query index with illegal composite query.";
+        final var types = Arrays.stream( predicates ).map( IndexQuery::type ).iterator();
+        IndexQueryType prev = null;
+        while ( types.hasNext() )
         {
-            if ( current instanceof PropertyIndexQuery.AllEntriesPredicate
-                 || current instanceof PropertyIndexQuery.StringContainsPredicate
-                 || current instanceof PropertyIndexQuery.StringSuffixPredicate )
+            final var current = types.next();
+            if ( EnumSet.of( IndexQueryType.ALL_ENTRIES, IndexQueryType.STRING_CONTAINS, IndexQueryType.STRING_SUFFIX ).contains( current ) )
             {
                 if ( predicates.length > 1 )
                 {
                     throw new IllegalArgumentException( format( "%s %s queries are not allowed in composite query. Query was: %s ",
-                                                                illegalQueryMessage, current.type(), Arrays.toString( predicates ) ) );
+                                                                illegalQueryMessage, current, Arrays.toString( predicates ) ) );
                 }
             }
-            if ( prev instanceof PropertyIndexQuery.RangePredicate
-                 || prev instanceof PropertyIndexQuery.StringPrefixPredicate
-                 || prev instanceof PropertyIndexQuery.ExistsPredicate )
+            if ( EnumSet.of( IndexQueryType.EXISTS, IndexQueryType.RANGE, IndexQueryType.STRING_PREFIX ).contains( prev ) )
             {
-                if ( !(current instanceof PropertyIndexQuery.ExistsPredicate) )
+                if ( current != IndexQueryType.EXISTS )
                 {
                     throw new IllegalArgumentException( format( "%s Composite query must have decreasing precision. Query was: %s ",
                                                                 illegalQueryMessage, Arrays.toString( predicates ) ) );

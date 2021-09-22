@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import java.util.Arrays;
+import java.util.EnumSet;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexCapability;
@@ -105,20 +108,13 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
         @Override
         public double getCostMultiplier( IndexQueryType... queryTypes )
         {
-            for ( int i = 0; i < queryTypes.length; i++ )
+            // for now, just make the operations which are more efficiently supported by
+            // btree-based indexes slightly more expensive so the planner would choose a
+            // btree-based index instead of lucene-based index if there is a choice
+            if ( Arrays.stream( queryTypes ).anyMatch( EnumSet.of( IndexQueryType.EXACT, IndexQueryType.RANGE, IndexQueryType.STRING_PREFIX )::contains ) )
             {
-                // for now, just make the operations which are also supported by GBP+ tree
-                // slightly more expensive so the planner would choose GBP-based index
-                // instead of lucene-based if there is a choice
-                IndexQueryType indexQueryType = queryTypes[i];
-                if ( indexQueryType == IndexQueryType.EXACT
-                        || indexQueryType == IndexQueryType.STRING_PREFIX
-                        || indexQueryType == IndexQueryType.RANGE )
-                {
-                    return 1.1;
-                }
+                return 1.1;
             }
-
             return 1.0;
         }
 

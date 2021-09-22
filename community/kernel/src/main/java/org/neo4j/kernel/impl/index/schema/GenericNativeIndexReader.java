@@ -267,6 +267,6 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
 
     private static boolean isGeometryRangeQuery( PropertyIndexQuery predicate )
     {
-        return predicate instanceof PropertyIndexQuery.GeometryRangePredicate;
+        return predicate.type() == IndexQueryType.RANGE && predicate.valueGroup() == ValueGroup.GEOMETRY;
     }
 }

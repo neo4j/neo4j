@@ -30,13 +30,13 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -213,13 +213,13 @@ public class TokenIndexProvider extends IndexProvider
         }
 
         @Override
-        public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
-            return queryType == IndexQuery.IndexQueryType.TOKEN_LOOKUP && valueCategory == ValueCategory.NO_CATEGORY;
+            return queryType == IndexQueryType.TOKEN_LOOKUP && valueCategory == ValueCategory.NO_CATEGORY;
         }
 
         @Override
-        public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+        public double getCostMultiplier( IndexQueryType... queryTypes )
         {
             return 1.0;
         }
@@ -229,7 +229,7 @@ public class TokenIndexProvider extends IndexProvider
         {
             Preconditions.requireNonEmpty( queries );
             Preconditions.requireNoNullElements( queries );
-            return queries.length == 1 && queries[0] instanceof TokenPredicate;
+            return queries.length == 1 && queries[0].type() == IndexQueryType.TOKEN_LOOKUP;
         }
     }
 }

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,6 +38,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -223,9 +225,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
      */
     private boolean passesFilter( long entityId, PropertyIndexQuery[] predicates )
     {
-        if ( (predicates.length == 1)
-             && (predicates[0] instanceof PropertyIndexQuery.AllEntriesPredicate
-                 || predicates[0] instanceof PropertyIndexQuery.ExistsPredicate) )
+        if ( predicates.length == 1 && EnumSet.of( IndexQueryType.ALL_ENTRIES, IndexQueryType.EXISTS ).contains( predicates[0].type() ) )
         {
             return true;
         }
@@ -234,7 +234,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
         for ( int i = 0; i < values.length; i++ )
         {
             PropertyIndexQuery predicate = predicates[i];
-            if ( predicate.valueGroup() == ValueGroup.GEOMETRY || predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY
+            if ( EnumSet.of( ValueGroup.GEOMETRY, ValueGroup.GEOMETRY_ARRAY ).contains( predicate.valueGroup() )
                  || (predicate.valueGroup() == ValueGroup.NUMBER && !testSuite.supportFullValuePrecisionForNumbers()) )
             {
                 if ( !predicates[i].acceptsValue( values[i] ) )

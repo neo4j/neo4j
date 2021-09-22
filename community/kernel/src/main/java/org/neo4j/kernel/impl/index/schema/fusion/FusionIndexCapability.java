@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -100,13 +100,13 @@ public class FusionIndexCapability implements IndexCapability
     {
         Preconditions.requireNonEmpty( queries );
         Preconditions.requireNoNullElements( queries );
-        if ( Arrays.stream( queries ).anyMatch( query ->
-                query instanceof TokenPredicate
-                || query instanceof PropertyIndexQuery.TruePredicate
-                || query instanceof PropertyIndexQuery.ExistsPredicate ) )
+        if ( Arrays.stream( queries )
+                   .map( IndexQuery::type )
+                   .anyMatch( EnumSet.of( IndexQueryType.TOKEN_LOOKUP, IndexQueryType.ALL_ENTRIES, IndexQueryType.EXISTS )::contains ) )
         {
             return false;
         }
+
         final var propertyIndexQueries = Arrays.stream( queries ).map( PropertyIndexQuery.class::cast ).toArray( PropertyIndexQuery[]::new );
         final var slot = slotSelector.selectSlot( propertyIndexQueries, PropertyIndexQuery::valueCategory );
         if ( slot == null )

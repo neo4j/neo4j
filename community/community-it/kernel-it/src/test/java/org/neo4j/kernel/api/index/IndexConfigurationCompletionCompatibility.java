@@ -26,6 +26,7 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
@@ -90,13 +91,13 @@ abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCo
             }
 
             @Override
-            public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+            public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
             {
                 return true;
             }
 
             @Override
-            public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+            public double getCostMultiplier( IndexQueryType... queryTypes )
             {
                 return 1.0;
             }

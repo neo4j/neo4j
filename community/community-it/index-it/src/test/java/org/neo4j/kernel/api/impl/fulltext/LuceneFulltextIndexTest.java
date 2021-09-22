@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -650,13 +651,13 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             }
 
             @Override
-            public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+            public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
             {
                 return true;
             }
 
             @Override
-            public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+            public double getCostMultiplier( IndexQueryType... queryTypes )
             {
                 return 1.0;
             }

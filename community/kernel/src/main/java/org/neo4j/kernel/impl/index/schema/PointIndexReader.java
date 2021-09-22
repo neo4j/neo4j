@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
@@ -76,9 +77,8 @@ class PointIndexReader extends NativeIndexReader<PointKey>
 
     private void validateSupportedPredicates( PropertyIndexQuery predicate )
     {
-        if ( predicate instanceof PropertyIndexQuery.AllEntriesPredicate
-             || predicate instanceof PropertyIndexQuery.ExactPredicate
-             || predicate instanceof PropertyIndexQuery.GeometryRangePredicate )
+        if ( EnumSet.of( IndexQueryType.ALL_ENTRIES, IndexQueryType.EXACT ).contains( predicate.type() )
+             || (predicate.type() == IndexQueryType.RANGE && predicate.valueGroup() == ValueGroup.GEOMETRY) )
         {
             return;
         }

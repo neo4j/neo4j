@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -46,6 +47,7 @@ import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -53,9 +55,8 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.values.storable.PointArray;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -134,7 +135,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             // Extract out the equality queries
             List<Value> exactQueryValues = new ArrayList<>( query.length );
             int i = 0;
-            while ( i < query.length && query[i] instanceof PropertyIndexQuery.ExactPredicate )
+            while ( i < query.length && query[i].type() == IndexQueryType.EXACT )
             {
                 exactQueryValues.add( ((PropertyIndexQuery.ExactPredicate) query[i]).value() );
                 i++;
@@ -338,14 +339,9 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private boolean containsPoints()
     {
-        for ( Value value : values )
-        {
-            if ( value instanceof PointValue || value instanceof PointArray )
-            {
-                return true;
-            }
-        }
-        return false;
+        return Arrays.stream( values )
+                     .map( Value::valueGroup )
+                     .anyMatch( EnumSet.of( ValueGroup.GEOMETRY, ValueGroup.GEOMETRY_ARRAY )::contains );
     }
 
     private boolean eagerizingPoints()

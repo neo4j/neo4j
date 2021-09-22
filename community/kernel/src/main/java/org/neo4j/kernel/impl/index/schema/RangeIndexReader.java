@@ -158,7 +158,7 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
 
     private static void throwIfGeometryRangeQuery( PropertyIndexQuery[] predicates, PropertyIndexQuery predicate )
     {
-        if ( predicate instanceof PropertyIndexQuery.GeometryRangePredicate )
+        if ( predicate.type() == IndexQueryType.RANGE && predicate.valueGroup() == ValueGroup.GEOMETRY )
         {
             throw new IllegalArgumentException( format( "Tried to query index with illegal query. Geometry range predicate is not allowed " +
                                                 "for RANGE index. Query was: %s ", Arrays.toString( predicates ) ) );

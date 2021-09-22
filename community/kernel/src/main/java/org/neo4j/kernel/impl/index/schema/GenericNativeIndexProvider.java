@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Map;
 
 import org.neo4j.common.TokenNameLookup;
@@ -30,7 +31,6 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
@@ -259,18 +259,13 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         @Override
         public double getCostMultiplier( IndexQueryType... queryTypes )
         {
-            for ( IndexQueryType indexQueryType : queryTypes )
+            // for now, just make the operations which are more efficiently supported by
+            // lucene-based indexes slightly more expensive so the planner would choose a
+            // lucene-based index instead of btree-based index if there is a choice
+            if ( Arrays.stream( queryTypes ).anyMatch( EnumSet.of( IndexQueryType.STRING_SUFFIX, IndexQueryType.STRING_CONTAINS )::contains ) )
             {
-                // for now, just make the operations which are more efficiently supported
-                // by lucene-based indexes slightly more expensive so the planner
-                // would choose a lucene-based index instead of b-tree if there is a choice
-                if ( indexQueryType == IndexQueryType.STRING_SUFFIX
-                        || indexQueryType == IndexQueryType.STRING_CONTAINS )
-                {
-                    return 1.1;
-                }
+                return 1.1;
             }
-
             return 1.0;
         }
 
@@ -280,30 +275,28 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
             Preconditions.requireNonEmpty( queries );
             Preconditions.requireNoNullElements( queries );
             if ( Arrays.stream( queries ).anyMatch( query ->
-                    query instanceof TokenPredicate
-                    || query instanceof PropertyIndexQuery.GeometryRangePredicate
-                    || query instanceof PropertyIndexQuery.RangePredicate && ((PropertyIndexQuery) query).valueGroup() == ValueGroup.GEOMETRY_ARRAY )
-                 || queries.length > 1 && Arrays.stream( queries ).anyMatch( query ->
-                    query instanceof PropertyIndexQuery.TruePredicate
-                    || query instanceof PropertyIndexQuery.StringSuffixPredicate
-                    || query instanceof PropertyIndexQuery.StringContainsPredicate ) )
+                    (query.type() == IndexQueryType.TOKEN_LOOKUP)
+                    || (query.type() == IndexQueryType.RANGE
+                        && EnumSet.of( ValueGroup.GEOMETRY, ValueGroup.GEOMETRY_ARRAY ).contains( ((PropertyIndexQuery) query).valueGroup() )) )
+                 || (queries.length > 1
+                     && Arrays.stream( queries )
+                              .map( IndexQuery::type )
+                              .anyMatch( EnumSet.of( IndexQueryType.ALL_ENTRIES, IndexQueryType.STRING_SUFFIX, IndexQueryType.STRING_CONTAINS )::contains )) )
             {
                 return false;
             }
 
             for ( int i = 1; i < queries.length; i++ )
             {
-                final var prev = queries[i - 1];
-                final var query = queries[i];
+                final var prev = queries[i - 1].type();
+                final var curr = queries[i].type();
 
-                if ( prev instanceof PropertyIndexQuery.ExactPredicate )
+                if ( prev == IndexQueryType.EXACT )
                 {
                     continue;
                 }
-                if ( (prev instanceof PropertyIndexQuery.ExistsPredicate
-                      || prev instanceof PropertyIndexQuery.RangePredicate
-                      || prev instanceof PropertyIndexQuery.StringPrefixPredicate)
-                     && !(query instanceof PropertyIndexQuery.ExistsPredicate) )
+                if ( (EnumSet.of( IndexQueryType.EXISTS, IndexQueryType.RANGE, IndexQueryType.STRING_PREFIX ).contains( prev ))
+                     && !(curr == IndexQueryType.EXISTS) )
                 {
                     return false;
                 }

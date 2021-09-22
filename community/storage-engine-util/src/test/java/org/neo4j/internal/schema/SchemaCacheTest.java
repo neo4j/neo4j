@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.test.Race;
@@ -683,13 +684,13 @@ class SchemaCacheTest
             }
 
             @Override
-            public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+            public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
             {
                 return true;
             }
 
             @Override
-            public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+            public double getCostMultiplier( IndexQueryType... queryTypes )
             {
                 return 1.0;
             }
