@@ -268,6 +268,10 @@ TOKEN :
     | < UNSIGNED_OCTAL_INTEGER: "0" ( "o" )? ( <PART_LETTER> )* >
 }
 
+TOKEN : {
+    < PARAMETER: <DOLLAR> ( <IDENTIFIER> | (["0"-"9"] (<PART_LETTER>)*) ) > { matchedToken.image = image.substring( 1, image.length() ); }
+}
+
 MORE : { < STRING1_OPEN: "'" > : STRING1 }
 <STRING1> MORE: { "\\\\" { image.delete( image.length() - 2, image.length() ); image.append( "\\" ); } }
 <STRING1> MORE: { "\\\'" { image.delete( image.length() - 2, image.length() ); image.append( "'" ); } }
@@ -2740,10 +2744,8 @@ PARAMETER Parameter( ParameterType type ) :
     VARIABLE v;
 }
 {
-    t=<DOLLAR> (
-        v=Variable() { return astFactory.newParameter( pos( t ), v, type ); }
-        | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newParameter( pos( t ), token.image, type ); }
-    )
+    t=<PARAMETER> { return astFactory.newParameter( pos( t ), t.image, type ); }
+    | t=<DOLLAR> v=Variable() { return astFactory.newParameter( pos( t ), v, type ); }
 }
 
 EXPRESSION OldParameter() :
