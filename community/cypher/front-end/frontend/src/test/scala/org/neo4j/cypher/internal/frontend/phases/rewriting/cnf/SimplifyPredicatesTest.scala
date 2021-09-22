@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Ors
@@ -71,6 +72,11 @@ class SimplifyPredicatesTest extends CypherFunSuite {
   test("OR + double negation") {
     // or(not(not(P)), not(not(Q))) <=> or(P, Q)
     assertRewrittenMatches("NOT NOT 'P' OR NOT NOT 'Q'", { case Ors(List(StringLiteral("P"), StringLiteral("Q"))) => () })
+  }
+
+  test("NOT IS NULL is rewritten") {
+    // not(isNull(P)) <=> isNotNull(P)
+    assertRewrittenMatches("NOT( 'P' IS NULL )", { case IsNotNull(StringLiteral("P")) => () })
   }
 
   test("Do not simplify expressions with different auto extracted parameters") {

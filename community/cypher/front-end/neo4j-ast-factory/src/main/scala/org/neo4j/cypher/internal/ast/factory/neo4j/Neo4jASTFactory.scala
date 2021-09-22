@@ -810,11 +810,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def ands(exprs: util.List[Expression]): Expression = Ands(exprs.asScala.toList)(exprs.get(0).position)
 
-  override def not(p: InputPosition, e: Expression): Expression =
-    e match {
-      case IsNull(e) => IsNotNull(e)(p)
-      case _ => Not(e)(p)
-    }
+  override def not(p: InputPosition, e: Expression): Expression = Not(e)(p)
 
   override def plus(p: InputPosition,
                     lhs: Expression,
@@ -895,6 +891,8 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                   rhs: Expression): Expression = In(lhs, rhs)(p)
 
   override def isNull(p: InputPosition, e: Expression): Expression = IsNull(e)(p)
+
+  override def isNotNull(p: InputPosition, e: Expression): Expression = IsNotNull(e)(p)
 
   override def listLookup(list: Expression,
                           index: Expression): Expression = ContainerIndex(list, index)(index.position)

@@ -1108,6 +1108,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public Object isNotNull( NULL p, Object e )
+    {
+        throw new UnsupportedOperationException( "isNotNull is not a literal" );
+    }
+
+    @Override
     public Object listLookup( Object list, Object index )
     {
         throw new UnsupportedOperationException( "listLookup is not a literal" );

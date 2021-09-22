@@ -587,6 +587,27 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (scan) with NOT IS NULL") {
+      val query = s"MATCH (a)-[r:REL]-(b) WHERE NOT(r.prop IS NULL) RETURN r.prop ORDER BY r.prop $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 100)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      plan should equal(planner.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = plannedOrder, getValue = _ => GetValue)
+        .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (seek)") {
       val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN r.prop ORDER BY r.prop $cypherToken"
 

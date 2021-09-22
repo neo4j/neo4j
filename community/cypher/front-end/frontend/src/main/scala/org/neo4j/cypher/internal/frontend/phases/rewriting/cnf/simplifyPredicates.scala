@@ -21,6 +21,8 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.True
@@ -50,6 +52,7 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
 
   private def computeReplacement: Expression => Expression = {
     case n@Not(Not(innerExpression)) => simplifyToInnerExpression(n, innerExpression)
+    case n@Not(IsNull(innerExpression)) => IsNotNull(innerExpression)(n.position)
     case Ands(exps)   if exps.isEmpty => throw new IllegalStateException("Found an instance of Ands with empty expressions")
     case Ors(exps)    if exps.isEmpty => throw new IllegalStateException("Found an instance of Ors with empty expressions")
     case p@Ands(exps) if exps.contains(F) => False()(p.position)

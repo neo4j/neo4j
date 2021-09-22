@@ -2161,7 +2161,7 @@ EXPRESSION ComparisonExpression6( EXPRESSION lhs ) :
     | t=<IN> rhs=Expression6() { return astFactory.in( pos( t ), lhs, rhs ); }
     | t=<IS> (
         <NULL> { return astFactory.isNull( pos( t ), lhs ); }
-        | <NOT> <NULL> { return astFactory.not( pos( t ), astFactory.isNull( pos( t ), lhs ) ); } // We will not use the position of IsNull
+        | <NOT> <NULL> { return astFactory.isNotNull( pos( t ), lhs ); }
     )
 }
 

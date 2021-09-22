@@ -132,6 +132,8 @@ public interface ASTExpressionFactory<
 
     EXPRESSION isNull( POS p, EXPRESSION e );
 
+    EXPRESSION isNotNull( POS p, EXPRESSION e );
+
     EXPRESSION listLookup( EXPRESSION list, EXPRESSION index );
 
     EXPRESSION listSlice( POS p, EXPRESSION list, EXPRESSION start, EXPRESSION end );
