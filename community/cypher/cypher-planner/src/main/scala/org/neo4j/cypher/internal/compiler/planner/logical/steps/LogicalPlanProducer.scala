@@ -502,20 +502,28 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solvedRight = solveds.get(right.id)
     val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated, yielding, inTransactionsParameters)))
 
+    def chooseBatchSize(maybeBatchSize: Option[Expression]): Expression = {
+      maybeBatchSize match {
+        case Some(batchSize) => batchSize
+        case None => SignedDecimalIntegerLiteral(TransactionForeach.defaultBatchSize.toString)(InputPosition.NONE)
+      }
+    }
+
     val plan =
       if (yielding) {
-        if (inTransactionsParameters.isDefined) {
-          TransactionApply(left, right)
-        } else if (!correlated && solvedRight.readOnly) {
-          CartesianProduct(left, right, fromSubquery = true)
-        } else {
-          Apply(left, right, fromSubquery = true)
+        inTransactionsParameters match {
+          case Some(InTransactionsParameters(maybeBatchSize)) => TransactionApply(left, right, chooseBatchSize(maybeBatchSize))
+          case None =>
+            if (!correlated && solvedRight.readOnly) {
+              CartesianProduct(left, right, fromSubquery = true)
+            } else {
+              Apply(left, right, fromSubquery = true)
+            }
         }
       } else {
-        if (inTransactionsParameters.isDefined) {
-          TransactionForeach(left, right, SignedDecimalIntegerLiteral(TransactionForeach.defaultBatchSize.toString)(InputPosition.NONE))
-        } else {
-          SubqueryForeach(left, right)
+        inTransactionsParameters match {
+          case Some(InTransactionsParameters(maybeBatchSize)) => TransactionForeach(left, right, chooseBatchSize(maybeBatchSize))
+          case None => SubqueryForeach(left, right)
         }
       }
 

@@ -439,6 +439,7 @@ object LogicalPlanToPlanBuilderString {
       case Apply(_, _, fromSubquery) => fromSubquery.toString
       case Eager(_, reasons)  => reasons.map(eagernessReasonStr).mkString("Seq(", ", ", ")")
       case TransactionForeach(_, _, batchSize) => expressionStringifier(batchSize)
+      case TransactionApply(_, _, batchSize) => expressionStringifier(batchSize)
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[NodeIndexSeekLeafPlan]) =>

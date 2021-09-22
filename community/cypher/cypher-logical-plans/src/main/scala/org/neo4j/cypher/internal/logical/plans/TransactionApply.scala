@@ -19,23 +19,27 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
- * For every row in left:
+ * For every batchSize rows in left:
  *   Begin a new transaction
- *   Evaluate RHS with left row as an argument
- *   Record right output rows
+ *   For every row in batch:
+ *     Evaluate RHS with left row as an argument
+ *     Record right output rows
  *   Once the output from RHS is depleted:
  *     Commit transaction
  *     Produce all recorded output rows
  *
  * {{{
- * for ( leftRow <- left ) {
+ * for ( batch <- left.grouped(batchSize) {
  *   beginTx()
- *   right.setArgument( leftRow )
- *   for ( rightRow <- right ) {
- *     record( rightRow )
+ *   for ( leftRow <- batch ) {
+ *     right.setArgument( leftRow )
+ *     for ( rightRow <- right ) {
+ *       record( rightRow )
+ *     }
  *   }
  *   commitTx()
  *   for ( r <- recordedRows ) {
@@ -45,7 +49,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * }}}
  */
 
-case class TransactionApply(override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen)
+case class TransactionApply(override val left: LogicalPlan,
+                            override val right: LogicalPlan,
+                            batchSize: Expression,
+                           )(implicit idGen: IdGen)
   extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): TransactionApply = copy(left = newLHS)(idGen)

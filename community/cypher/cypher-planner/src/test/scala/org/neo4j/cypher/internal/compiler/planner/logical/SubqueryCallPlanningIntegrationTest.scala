@@ -854,6 +854,30 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
+  test("call unit subquery in transactions with specified batch size") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |} IN TRANSACTIONS OF 42 ROWS
+        |RETURN a
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionForeach(42)
+      .|.create(createNode("b"))
+      .|.argument()
+      .allNodeScan("a")
+      .build()
+  }
+
   test("call correlated unit subquery in transactions") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -899,6 +923,32 @@ class SubqueryCallPlanningIntegrationTest
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .transactionApply()
+      .|.create(createNode("b"))
+      .|.argument()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call returning subquery in transactions with specified batch size") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
+      .addSemanticFeature(SemanticFeature.CallReturningSubqueryInTransactions)
+      .build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |  RETURN b
+        |} IN TRANSACTIONS OF 400 ROWS
+        |RETURN a, b
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionApply(400)
       .|.create(createNode("b"))
       .|.argument()
       .allNodeScan("a")

@@ -23,12 +23,14 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
- * For every row in left:
+ * For every batchSize rows in left:
  *   Begin a new transaction
- *   Evaluate RHS with left row as an argument
- *   Once the output from RHS is depleted:
+ *   For every row in batch:
+ *     Evaluate RHS with left row as an argument
+ *     Record the original left row
+ *   Once the output from all RHS in batch is depleted:
  *     Commit transaction
- *     Produce the original left row
+ *     Produce all recorded output rows
  *
  * {{{
  * for ( batch <- left.grouped(batchSize) ) {
@@ -38,16 +40,19 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *     for ( rightRow <- right ) {
  *       // just consume
  *     }
- *     produce leftRow
+ *     record( leftRow )
  *   }
  *   commitTx()
+ *   for ( r <- recordedRows ) {
+ *     produce r
+ *   }
  * }
  * }}}
  */
 
 case class TransactionForeach(override val left: LogicalPlan,
                               override val right: LogicalPlan,
-                              batchSize: Expression
+                              batchSize: Expression,
                              )(implicit idGen: IdGen)
   extends LogicalBinaryPlan(idGen) with ApplyPlan {
 

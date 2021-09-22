@@ -1108,8 +1108,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def transactionForeach(batchSize: Long = TransactionForeach.defaultBatchSize): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionForeach(lhs, rhs, literalInt(batchSize))(_)))
 
-  def transactionApply(): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionApply(lhs, rhs)(_)))
+  def transactionApply(batchSize: Long = TransactionForeach.defaultBatchSize): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionApply(lhs, rhs, literalInt(batchSize))(_)))
 
   // SHIP IP
 

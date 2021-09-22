@@ -1170,6 +1170,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .allNodeScan("x")
       .build())
 
+  testPlan("transactionApply with batchSize",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .transactionApply(42)
+      .|.create(createNode("y"))
+      .|.argument("x")
+      .allNodeScan("x")
+      .build())
+
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =
       s"""
