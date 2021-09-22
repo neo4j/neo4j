@@ -151,4 +151,16 @@ public class CompositeCheckpointLogFile extends LifecycleAdapter implements Chec
     {
         return checkpointLogFile.rotate();
     }
+
+    @Override
+    public long getLowestLogVersion()
+    {
+        return checkpointLogFile.getLowestLogVersion();
+    }
+
+    @Override
+    public long getHighestLogVersion()
+    {
+        return checkpointLogFile.getHighestLogVersion();
+    }
 }

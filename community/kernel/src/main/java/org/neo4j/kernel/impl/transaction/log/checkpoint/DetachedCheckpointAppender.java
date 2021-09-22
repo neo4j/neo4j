@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocato
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -80,7 +81,9 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     {
         this.storeId = context.getStoreId();
         logVersionRepository = requireNonNull( context.getLogVersionRepository() );
-        channel = channelAllocator.createLogChannel( logVersionRepository.getCheckpointLogVersion(), context::getLastCommittedTransactionId );
+        long initialVersion = logVersionRepository.getCheckpointLogVersion();
+        channel = channelAllocator.createLogChannel( initialVersion, context::getLastCommittedTransactionId );
+        context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), initialVersion );
         channel.position( channel.size() );
         buffer = new NativeScopedBuffer( kibiBytes( 1 ), context.getMemoryTracker() );
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, buffer );

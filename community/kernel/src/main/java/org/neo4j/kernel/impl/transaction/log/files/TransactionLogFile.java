@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
@@ -120,6 +121,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     {
         long currentLogVersion = logVersionRepository.getCurrentLogVersion();
         channel = createLogChannelForVersion( currentLogVersion, context::getLastCommittedTransactionId );
+        context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), currentLogVersion );
 
         //try to set position
         seekChannelPosition( currentLogVersion );

@@ -29,6 +29,7 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 
 public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
 {
@@ -44,26 +45,42 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
     public void dump( DiagnosticsLogger logger )
     {
         LogFiles logFiles = database.getDependencyResolver().resolveDependency( LogFiles.class );
-        LogFile logFile = logFiles.getLogFile();
         try
         {
             logger.log( "Transaction log files stored on file store: " + FileUtils.getFileStoreType( logFiles.logFilesDirectory() ) );
-            for ( long logVersion = logFile.getLowestLogVersion(); logFile.versionExists( logVersion ); logVersion++ )
-            {
-                if ( logFile.hasAnyEntries( logVersion ) )
-                {
-                    LogHeader header = logFile.extractHeader( logVersion );
-                    long firstTransactionIdInThisLog = header.getLastCommittedTxId() + 1;
-                    logger.log( "Oldest transaction " + firstTransactionIdInThisLog + " found in log with version " + logVersion );
-                    return;
-                }
-            }
-            logger.log( "No transactions found in any log" );
+            dumpTransactionLogInformation( logger, logFiles.getLogFile() );
+            dumpCheckpointLogInformation( logger, logFiles.getCheckpointFile() );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             logger.log( "Error trying to dump transaction log files info." );
             logger.log( Exceptions.stringify( e ) );
         }
+    }
+
+    private void dumpTransactionLogInformation( DiagnosticsLogger logger, LogFile logFile ) throws IOException
+    {
+        logger.log( "Transaction log files:" );
+        logger.log( " - existing transaction log versions " + logFile.getLowestLogVersion() + "-" + logFile.getHighestLogVersion() );
+        for ( long logVersion = logFile.getLowestLogVersion(); logFile.versionExists( logVersion ); logVersion++ )
+        {
+            if ( logFile.hasAnyEntries( logVersion ) )
+            {
+                LogHeader header = logFile.extractHeader( logVersion );
+                long firstTransactionIdInThisLog = header.getLastCommittedTxId() + 1;
+                logger.log( " - oldest transaction " + firstTransactionIdInThisLog + " found in log with version " + logVersion );
+                return;
+            }
+        }
+        logger.log( " - no transactions found" );
+    }
+
+    private void dumpCheckpointLogInformation( DiagnosticsLogger logger, CheckpointFile checkpointFile ) throws IOException
+    {
+        logger.log( "Checkpoint log files:" );
+        logger.log( " - existing checkpoint log versions " + checkpointFile.getLowestLogVersion() + "-" + checkpointFile.getHighestLogVersion() );
+        checkpointFile.findLatestCheckpoint().ifPresentOrElse(
+                checkpoint -> logger.log( " - last checkpoint: " + checkpoint ),
+                () -> logger.log( " - no checkpoints found" ) );
     }
 }
