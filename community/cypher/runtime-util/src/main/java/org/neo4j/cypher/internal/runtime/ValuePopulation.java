@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
-import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -40,6 +39,11 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
+
+import static org.neo4j.values.storable.Values.EMPTY_STRING;
+import static org.neo4j.values.storable.Values.EMPTY_TEXT_ARRAY;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
+import static org.neo4j.values.virtual.VirtualValues.MISSING_NODE;
 
 public final class ValuePopulation
 {
@@ -192,11 +196,14 @@ public final class ValuePopulation
 
         if ( !nodeCursor.next() )
         {
-            throw new EntityNotFoundException( String.format( "Node with id=%d has been deleted in this transaction", id ) );
+            //the node has probably been deleted, we still return it but just a bare id
+            return VirtualValues.nodeValue( id, EMPTY_TEXT_ARRAY, EMPTY_MAP );
         }
-        nodeCursor.properties( propertyCursor );
-
-        return VirtualValues.nodeValue( id, labels( dbAccess, nodeCursor.labels() ), properties( propertyCursor, dbAccess ) );
+        else
+        {
+            nodeCursor.properties( propertyCursor );
+            return VirtualValues.nodeValue( id, labels( dbAccess, nodeCursor.labels() ), properties( propertyCursor, dbAccess ) );
+        }
     }
 
     private static RelationshipValue relationshipValue( long id,
@@ -208,13 +215,17 @@ public final class ValuePopulation
         dbAccess.singleRelationship( id, relCursor );
         if ( !relCursor.next() )
         {
-            throw new EntityNotFoundException( String.format( "Relationship with id=%d has been deleted in this transaction", id ) );
+            //the relationship has probably been deleted, we still return it but just a bare id
+            return VirtualValues.relationshipValue( id, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP );
         }
-        NodeValue start = nodeValue( relCursor.sourceNodeReference(), dbAccess, nodeCursor, propertyCursor );
-        NodeValue end = nodeValue( relCursor.targetNodeReference(), dbAccess, nodeCursor, propertyCursor );
-        relCursor.properties( propertyCursor );
-        return VirtualValues.relationshipValue( id, start, end, Values.stringValue( dbAccess.relationshipTypeName( relCursor.type() ) ),
-                                                properties( propertyCursor, dbAccess ) );
+        else
+        {
+            NodeValue start = nodeValue( relCursor.sourceNodeReference(), dbAccess, nodeCursor, propertyCursor );
+            NodeValue end = nodeValue( relCursor.targetNodeReference(), dbAccess, nodeCursor, propertyCursor );
+            relCursor.properties( propertyCursor );
+            return VirtualValues.relationshipValue( id, start, end, Values.stringValue( dbAccess.relationshipTypeName( relCursor.type() ) ),
+                                                    properties( propertyCursor, dbAccess ) );
+        }
     }
 
     private static TextArray labels( DbAccess dbAccess, TokenSet labelsTokens )

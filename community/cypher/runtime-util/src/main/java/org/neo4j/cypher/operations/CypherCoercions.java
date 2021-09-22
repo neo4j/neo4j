@@ -127,14 +127,14 @@ public final class CypherCoercions
         return (VirtualRelationshipValue) value;
     }
 
-    public static PathValue asPathValue( AnyValue value )
+    public static VirtualPathValue asPathValue( AnyValue value )
     {
         assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(value instanceof PathValue) )
+        if ( !(value instanceof VirtualPathValue) )
         {
             throw cantCoerce( value, "Path" );
         }
-        return (PathValue) value;
+        return (VirtualPathValue) value;
     }
 
     public static IntegralValue asIntegralValue( AnyValue value )

@@ -57,7 +57,6 @@ import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
@@ -1007,19 +1006,6 @@ public final class CypherFunctions
         }
     }
 
-    public static TextValue type( AnyValue item )
-    {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( item instanceof RelationshipValue )
-        {
-            return ((RelationshipValue) item).type();
-        }
-        else
-        {
-            throw new CypherTypeException( "Invalid input for function 'type()': Expected a Relationship, got: " + item );
-        }
-    }
-
     public static TextValue type( AnyValue item, DbAccess access, RelationshipScanCursor relCursor )
     {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -1215,9 +1201,9 @@ public final class CypherFunctions
     public static IntegralValue length( AnyValue item )
     {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( item instanceof PathValue )
+        if ( item instanceof VirtualPathValue )
         {
-            return longValue( ((PathValue) item).size() );
+            return longValue( ((VirtualPathValue) item).size() );
         }
         else
         {

@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
@@ -57,7 +57,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
                        input: Array[AnyValue]): AnyValue = {
       val iterator = input(0).asInstanceOf[ListValue].iterator()
       while (iterator.hasNext) {
-        val node = iterator.next().asInstanceOf[NodeValue]
+        val node = iterator.next().asInstanceOf[VirtualNodeValue]
         if (!tx.kernelTransaction().dataRead().nodeDeletedInTransaction(node.id())) {
           return node
         }

@@ -28,6 +28,7 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueRepresentation;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.PathValue.DirectPathValue;
 
 import static org.neo4j.memory.HeapEstimator.sizeOf;
@@ -39,6 +40,7 @@ public final class VirtualValues
 {
     public static final MapValue EMPTY_MAP = MapValue.EMPTY;
     public static final ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0], 0, ValueRepresentation.UNKNOWN );
+    public static final NodeValue MISSING_NODE = nodeValue( -1L, Values.stringArray(  ), EMPTY_MAP );
 
     private VirtualValues()
     {
