@@ -23,17 +23,23 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.neo4j.collection.Dependencies;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.StoreId;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -43,7 +49,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 class TransactionRangeDiagnosticsTest
 {
     @Test
-    void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs()
+    void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs() throws IOException
     {
         // GIVEN
         Database database = databaseWithLogFilesContainingLowestTxId( noLogs() );
@@ -56,7 +62,8 @@ class TransactionRangeDiagnosticsTest
         // THEN
         assertThat( logProvider )
                 .containsMessages( "Transaction log files stored on file store:" )
-                .containsMessages( "No transactions" );
+                .containsMessages( " - no transactions found" )
+                .containsMessages( " - no checkpoints found" );
     }
 
     @Test
@@ -66,7 +73,7 @@ class TransactionRangeDiagnosticsTest
         long logVersion = 2;
         long prevLogLastTxId = 45;
         Database database = databaseWithLogFilesContainingLowestTxId(
-                logWithTransactions( logVersion, prevLogLastTxId ) );
+                logWithTransactions( logVersion, logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log logger = logProvider.getLog( getClass() );
 
@@ -74,8 +81,10 @@ class TransactionRangeDiagnosticsTest
         new TransactionRangeDiagnostics( database ).dump( logger::info );
 
         // THEN
-        assertThat( logProvider ).containsMessages( "transaction " + (prevLogLastTxId + 1),
-                                                    "version " + logVersion );
+        assertThat( logProvider )
+                .containsMessages( "oldest transaction " + (prevLogLastTxId + 1), "version " + logVersion )
+                .containsMessages( " - existing transaction log versions " )
+                .containsMessages( " - no checkpoints found" );
     }
 
     @Test
@@ -93,7 +102,55 @@ class TransactionRangeDiagnosticsTest
         new TransactionRangeDiagnostics( database ).dump( logger::info );
 
         // THEN
-        assertThat( logProvider ).containsMessages( "transaction " + (prevLogLastTxId + 1), "version " + (logVersion + 1) );
+        assertThat( logProvider )
+                .containsMessages( "oldest transaction " + (prevLogLastTxId + 1), "version " + (logVersion + 1) )
+                .containsMessages( " - no checkpoints found" );
+    }
+
+    @Test
+    void shouldLogCorrectTransactionLogDiagnosticsForTransactionsAndCheckpointLogs() throws Exception
+    {
+        // GIVEN
+        long txLogLowVersion = 2;
+        long txLogHighVersion = 10;
+        long checkpointLogLowVersion = 0;
+        long checkpointLogHighVersion = 3;
+        StoreId storeId = new StoreId( 12345 );
+        LogPosition checkpointLogPosition = new LogPosition( checkpointLogHighVersion, 34 );
+        Database database = databaseWithLogFilesContainingLowestTxId( logs(
+                transactionLogsWithTransaction( txLogLowVersion, txLogHighVersion, 42 ),
+                checkpointLogsWithLastCheckpoint( checkpointLogLowVersion, checkpointLogHighVersion, new CheckpointInfo(
+                        new LogEntryDetachedCheckpoint( (byte) 0, checkpointLogPosition, 1234, storeId, "testing" ), checkpointLogPosition ) ) ) );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log logger = logProvider.getLog( getClass() );
+
+        // WHEN
+        new TransactionRangeDiagnostics( database ).dump( logger::info );
+
+        // THEN
+        assertThat( logProvider )
+                .containsMessages( " - existing transaction log versions " + txLogLowVersion + "-" + txLogHighVersion )
+                .containsMessages( " - existing checkpoint log versions " + checkpointLogLowVersion + "-" + checkpointLogHighVersion );
+    }
+
+    @Test
+    void shouldLogNoCheckpointFoundForEmptyPresentCheckpointLog() throws IOException
+    {
+        // GIVEN
+        Database database = databaseWithLogFilesContainingLowestTxId( logs(
+                transactionLogs -> {},
+                checkpointLogsWithLastCheckpoint( 0, 0, null ) ) );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log logger = logProvider.getLog( getClass() );
+
+        // WHEN
+        new TransactionRangeDiagnostics( database ).dump( logger::info );
+
+        // THEN
+        assertThat( logProvider )
+                .containsMessages( " - no transactions found" )
+                .containsMessages( " - existing checkpoint log versions 0-0" )
+                .containsMessages( " - no checkpoints found" );
     }
 
     private static Database databaseWithLogFilesContainingLowestTxId( LogFiles files )
@@ -108,35 +165,64 @@ class TransactionRangeDiagnosticsTest
     private static LogFiles logWithTransactionsInNextToOldestLog( long logVersion, long prevLogLastTxId )
             throws IOException
     {
-        LogFiles files = logWithTransactions( logVersion + 1, prevLogLastTxId );
+        LogFiles files = logWithTransactions( logVersion, logVersion + 1, prevLogLastTxId );
         var logFile = files.getLogFile();
-        when( logFile.getLowestLogVersion() ).thenReturn( logVersion );
         when( logFile.hasAnyEntries( logVersion ) ).thenReturn( false );
-        when( logFile.versionExists( logVersion ) ).thenReturn( true );
         return files;
     }
 
-    private static LogFiles logWithTransactions( long logVersion, long headerTxId ) throws IOException
+    private ThrowingConsumer<CheckpointFile,IOException> checkpointLogsWithLastCheckpoint( long lowVersion, long highVersion,
+            CheckpointInfo lastCheckpoint )
     {
-        LogFiles files = mock( TransactionLogFiles.class );
-        LogFile file = mock( TransactionLogFile.class );
-        when( files.getLogFile() ).thenReturn( file );
-        when( files.logFilesDirectory() ).thenReturn( Path.of( "." ) );
-        when( file.getLowestLogVersion() ).thenReturn( logVersion );
-        when( file.hasAnyEntries( logVersion ) ).thenReturn( true );
-        when( file.versionExists( logVersion ) ).thenReturn( true );
-        when( file.extractHeader( logVersion ) )
-                .thenReturn( new LogHeader( TransactionLogVersionSelector.LATEST.versionByte(), logVersion, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
-        return files;
+        return checkpointLogs ->
+        {
+            when( checkpointLogs.getLowestLogVersion() ).thenReturn( lowVersion );
+            when( checkpointLogs.getHighestLogVersion() ).thenReturn( highVersion );
+            when( checkpointLogs.findLatestCheckpoint() ).thenReturn( Optional.ofNullable( lastCheckpoint ) );
+        };
     }
 
-    private static LogFiles noLogs()
+    private static LogFiles logWithTransactions( long lowVersion, long highVersion, long headerTxId ) throws IOException
+    {
+        return logs( transactionLogsWithTransaction( lowVersion, highVersion, headerTxId ), checkpointLogs -> {} );
+    }
+
+    private static ThrowingConsumer<LogFile,IOException> transactionLogsWithTransaction( long lowVersion, long highVersion, long headerTxId )
+    {
+        return transactionLogs ->
+        {
+            when( transactionLogs.getLowestLogVersion() ).thenReturn( lowVersion );
+            when( transactionLogs.getHighestLogVersion() ).thenReturn( highVersion );
+            for ( long version = lowVersion; version <= highVersion; version++ )
+            {
+                when( transactionLogs.hasAnyEntries( version ) ).thenReturn( true );
+                when( transactionLogs.versionExists( version ) ).thenReturn( true );
+                when( transactionLogs.extractHeader( version ) ).thenReturn(
+                        new LogHeader( TransactionLogVersionSelector.LATEST.versionByte(), version, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
+            }
+        };
+    }
+
+    private static LogFiles noLogs() throws IOException
+    {
+        return logs(
+                transactionLogs -> when( transactionLogs.getLowestLogVersion() ).thenReturn( -1L ),
+                checkpointFiles -> when( checkpointFiles.getLowestLogVersion() ).thenReturn( -1L ) );
+    }
+
+    private static LogFiles logs( ThrowingConsumer<LogFile,IOException> transactionLogs, ThrowingConsumer<CheckpointFile,IOException> checkpointLogs )
+            throws IOException
     {
         LogFiles files = mock( TransactionLogFiles.class );
-        LogFile file = mock( TransactionLogFile.class );
-        when( files.getLogFile() ).thenReturn( file );
-        when( file.getLowestLogVersion() ).thenReturn( -1L );
         when( files.logFilesDirectory() ).thenReturn( Path.of( "." ) );
+
+        LogFile transactionFiles = mock( LogFile.class );
+        when( files.getLogFile() ).thenReturn( transactionFiles );
+        transactionLogs.accept( transactionFiles );
+
+        CheckpointFile checkpointFiles = mock( CheckpointFile.class );
+        when( files.getCheckpointFile() ).thenReturn( checkpointFiles );
+        checkpointLogs.accept( checkpointFiles );
         return files;
     }
 }

@@ -89,4 +89,14 @@ public interface CheckpointFile extends Lifecycle, RotatableFile
      * @return Version of the provided checkpoint file
      */
     long getDetachedCheckpointLogFileVersion( Path checkpointLogFile );
+
+    /**
+     * @return the highest version found.
+     */
+    long getHighestLogVersion();
+
+    /**
+     * @return the lowest version found.
+     */
+    long getLowestLogVersion();
 }
