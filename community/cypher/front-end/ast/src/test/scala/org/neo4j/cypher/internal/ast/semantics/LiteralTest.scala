@@ -37,7 +37,7 @@ class LiteralTest extends SemanticFunSuite {
 
   test("throws error for invalid unsigned decimal numbers") {
     assertSemanticError(unsignedDecimal("12g3"), "invalid literal number")
-    assertSemanticError(unsignedDecimal("923_23"), "invalid literal number")
+    assertSemanticError(unsignedDecimal("92323_"), "invalid literal number")
   }
 
   test("throws error for too large unsigned decimal numbers") {
@@ -53,7 +53,7 @@ class LiteralTest extends SemanticFunSuite {
 
   test("throws error for invalid signed decimal numbers") {
     assertSemanticError(signedDecimal("12g3"), "invalid literal number")
-    assertSemanticError(signedDecimal("923_23"), "invalid literal number")
+    assertSemanticError(signedDecimal("92323_"), "invalid literal number")
     assertSemanticError(signedDecimal("-92f3"), "invalid literal number")
   }
 

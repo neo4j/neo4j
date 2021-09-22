@@ -20,6 +20,8 @@ import java.util
 
 import org.neo4j.cypher.internal.util.InputPosition
 
+import scala.util.matching.Regex
+
 /**
  * Used for extracting the value from a Literal.
  *
@@ -77,7 +79,12 @@ sealed trait SignedIntegerLiteral extends IntegerLiteral
 sealed trait UnsignedIntegerLiteral extends IntegerLiteral
 
 sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLiteral {
-  lazy val value: java.lang.Long = java.lang.Long.parseLong(stringVal)
+  lazy val integerMatcher: Regex = """-?\d+((_\d+)?)*"""r
+  lazy val value: java.lang.Long = stringVal match {
+    case integerMatcher(_*) => java.lang.Long.parseLong(stringVal.toList.filter(c => c != '_').mkString)
+    // pass along to keep the same error message
+    case _ => java.lang.Long.parseLong(stringVal)
+  }
 }
 
 case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with SignedIntegerLiteral {
@@ -92,7 +99,11 @@ case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputP
 }
 
 sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLiteral {
-  lazy val value: java.lang.Long = java.lang.Long.decode(stringVal.toList.filter(c => c != 'o').mkString)
+  lazy val octalMatcher: Regex = """-?0o(_?[0-7]+)+"""r
+  lazy val value: java.lang.Long = stringVal match {
+    case octalMatcher(_*) => java.lang.Long.decode(stringVal.toList.filter(c => c != '_').filter(c => c != 'o').mkString)
+    case _ => java.lang.Long.decode(stringVal.toList.filter(c => c != 'o').mkString)
+  }
 }
 
 case class SignedOctalIntegerLiteral(stringVal: String)(val position: InputPosition) extends OctalIntegerLiteral(stringVal) with SignedIntegerLiteral {
@@ -102,7 +113,12 @@ case class SignedOctalIntegerLiteral(stringVal: String)(val position: InputPosit
 }
 
 sealed abstract class HexIntegerLiteral(stringVal: String) extends IntegerLiteral {
-  lazy val value: java.lang.Long = java.lang.Long.decode(stringVal)
+  lazy val hexMatcher: Regex = """-?0x(_?[0-9a-fA-F]+)+"""r
+  lazy val value: java.lang.Long = stringVal match {
+    case hexMatcher(_*) => java.lang.Long.decode(stringVal.toList.filter(c => c != '_').mkString)
+    // pass along to keep the same error message
+    case _ => java.lang.Long.decode(stringVal)
+  }
 }
 
 case class SignedHexIntegerLiteral(stringVal: String)(val position: InputPosition) extends HexIntegerLiteral(stringVal) with SignedIntegerLiteral {
@@ -118,7 +134,12 @@ sealed trait DoubleLiteral extends NumberLiteral {
 }
 
 case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) extends DoubleLiteral {
-  lazy val value: java.lang.Double = java.lang.Double.parseDouble(stringVal)
+  lazy val doubleMatcher: Regex = """-?(\d+((_\d+)?)*)?(\.\d+((_\d+)?)*)?([eE]([+-])?\d+((_\d+)?)*)?"""r
+  lazy val value: java.lang.Double = stringVal match {
+    case doubleMatcher(_*) => java.lang.Double.parseDouble(stringVal.toList.filter(c => c != '_').mkString)
+    // pass along to keep the same error message
+    case _ => java.lang.Double.parseDouble(stringVal)
+  }
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new DecimalDoubleLiteral(stringVal)(position) with SensitiveLiteral {
     override def literalLength: Option[Int] = Some(stringVal.length)

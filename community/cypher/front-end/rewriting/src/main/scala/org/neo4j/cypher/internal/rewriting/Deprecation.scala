@@ -107,8 +107,8 @@ object Deprecations {
   case object syntacticallyDeprecatedFeaturesIn4_X extends SyntacticDeprecations {
     override val find: PartialFunction[Any, Deprecation] = {
 
-      // old octal literal syntax
-      case p@SignedOctalIntegerLiteral(stringVal) if stringVal.charAt(stringVal.indexOf('0') + 1) != 'o' =>
+      // old octal literal syntax, don't support underscores
+      case p@SignedOctalIntegerLiteral(stringVal) if stringVal.charAt(stringVal.indexOf('0') + 1) != 'o' && stringVal.charAt(stringVal.indexOf('0') + 1) != '_' =>
         Deprecation(
           Some(Ref(p) -> SignedOctalIntegerLiteral(stringVal.patch(stringVal.indexOf('0') + 1, "o", 0))(p.position)),
           Some(DeprecatedOctalLiteralSyntax(p.position))
