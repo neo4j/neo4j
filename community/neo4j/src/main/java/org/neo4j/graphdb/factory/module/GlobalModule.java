@@ -207,7 +207,7 @@ public class GlobalModule
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
         globalDependencies.satisfyDependency( memoryPools );
 
-        centralBufferMangerHolder = crateCentralBufferManger();
+        centralBufferMangerHolder = createCentralBufferManger();
 
         var recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ),
                                                    memoryPools.pool( MemoryGroup.RECENT_QUERY_BUFFER, 0, null ).getPoolMemoryTracker() );
@@ -218,7 +218,7 @@ public class GlobalModule
 
         globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler, globalMonitors ) );
 
-        globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock );
+        globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock, globalConfig );
         globalDependencies.satisfyDependency( globalAvailabilityGuard );
         globalLife.setLast( globalAvailabilityGuard );
 
@@ -426,7 +426,7 @@ public class GlobalModule
         }
     }
 
-    private CentralBufferMangerHolder crateCentralBufferManger()
+    private CentralBufferMangerHolder createCentralBufferManger()
     {
         // since network buffers are currently the only use of the central byte buffer manager ...
         if ( !globalConfig.get( GraphDatabaseInternalSettings.managed_network_buffers ) )

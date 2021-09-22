@@ -24,7 +24,6 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
@@ -45,7 +44,6 @@ public class CheckPointScheduler extends LifecycleAdapter
             FeatureToggles.getInteger( CheckPointScheduler.class, "failure_tolerance", 10 );
 
     private final CheckPointer checkPointer;
-    private final IOController ioController;
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
     private final Health health;
@@ -109,16 +107,15 @@ public class CheckPointScheduler extends LifecycleAdapter
         }
     };
 
-    private volatile JobHandle handle;
+    private volatile JobHandle<?> handle;
     private volatile boolean stopped;
     private volatile boolean checkPointing;
     private final BooleanSupplier checkPointingCondition = () -> !checkPointing;
 
-    public CheckPointScheduler( CheckPointer checkPointer, IOController ioController, JobScheduler scheduler, long recurringPeriodMillis,
+    public CheckPointScheduler( CheckPointer checkPointer, JobScheduler scheduler, long recurringPeriodMillis,
             Health health, String databaseName )
     {
         this.checkPointer = checkPointer;
-        this.ioController = ioController;
         this.scheduler = scheduler;
         this.recurringPeriodMillis = recurringPeriodMillis;
         this.health = health;
@@ -144,15 +141,7 @@ public class CheckPointScheduler extends LifecycleAdapter
 
     private void waitOngoingCheckpointCompletion()
     {
-        ioController.disable();
-        try
-        {
-            Predicates.awaitForever( checkPointingCondition, 100, MILLISECONDS );
-        }
-        finally
-        {
-            ioController.enable();
-        }
+        Predicates.awaitForever( checkPointingCondition, 100, MILLISECONDS );
     }
 
     private void schedule()

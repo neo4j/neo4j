@@ -426,7 +426,7 @@ public class Database extends LifecycleAdapter
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             validateStoreAndTxLogs( logFiles, pageCacheTracer, storageExists );
 
-            Recovery.performRecovery( Recovery.context( fs, databasePageCache, tracers, databaseConfig, databaseLayout, otherDatabaseMemoryTracker )
+            Recovery.performRecovery( Recovery.context( fs, databasePageCache, tracers, databaseConfig, databaseLayout, otherDatabaseMemoryTracker, ioController )
                             .storageEngineFactory( storageEngineFactory )
                             .log( internalLogProvider )
                             .recoveryPredicate( RecoveryPredicate.ALL )
@@ -510,7 +510,7 @@ public class Database extends LifecycleAdapter
             var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
             this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi );
 
-            this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth, ioController );
+            this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
 
             life.add( databaseHealth );
             life.add( databaseAvailabilityGuard );
@@ -764,11 +764,10 @@ public class Database extends LifecycleAdapter
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         final CheckPointerImpl checkPointer =
                 new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, checkpointAppender, databaseHealth, logProvider,
-                        tracers, ioController, storeCopyCheckPointMutex, versionContextSupplier, clock );
+                        tracers, storeCopyCheckPointMutex, versionContextSupplier, clock );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
-        CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioController, scheduler,
-                recurringPeriod, databaseHealth, namedDatabaseId.name() );
+        CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, scheduler, recurringPeriod, databaseHealth, namedDatabaseId.name() );
 
         life.add( checkPointer );
         life.add( checkPointScheduler );

@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.util.VisibleForTesting;
 
@@ -38,12 +40,14 @@ import static java.util.stream.Collectors.joining;
 public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard
 {
     private final Clock clock;
+    private final Config config;
     private final CopyOnWriteArraySet<DatabaseAvailabilityGuard> guards = new CopyOnWriteArraySet<>();
     private volatile boolean started = true;
 
-    public CompositeDatabaseAvailabilityGuard( Clock clock )
+    public CompositeDatabaseAvailabilityGuard( Clock clock, Config config )
     {
         this.clock = clock;
+        this.config = config;
     }
 
     void addDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )
@@ -72,6 +76,8 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     public void stop()
     {
         started = false;
+        // Propagate iops limit removal for all io controllers that monitor this property
+        config.set( GraphDatabaseSettings.check_point_iops_limit, -1 );
     }
 
     @Override

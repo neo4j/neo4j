@@ -26,18 +26,13 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.io.pagecache.EmptyIOController;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -57,8 +52,6 @@ import org.neo4j.util.concurrent.BinaryLatch;
 import static java.time.Duration.ofMinutes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.contains;
@@ -74,7 +67,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.test.ThreadTestUtils.forkFuture;
 
 class CheckPointerImplTest
 {
@@ -88,7 +80,6 @@ class CheckPointerImplTest
     private final CheckpointAppender appender = mock( CheckpointAppender.class );
     private final Health health = mock( DatabaseHealth.class );
     private final DatabaseTracer tracer = mock( DatabaseTracer.class, RETURNS_MOCKS );
-    private IOController limiter = mock( IOController.class );
 
     private final long initialTransactionId = 2L;
     private final long transactionId = 42L;
@@ -328,55 +319,6 @@ class CheckPointerImplTest
     }
 
     @Test
-    void mustFlushAsFastAsPossibleDuringForceCheckPoint() throws Exception
-    {
-        AtomicBoolean doneDisablingLimits = new AtomicBoolean();
-        limiter = new EmptyIOController()
-        {
-            @Override
-            public void enable()
-            {
-                doneDisablingLimits.set( true );
-            }
-
-            @Override
-            public boolean isEnabled()
-            {
-                return doneDisablingLimits.get();
-            }
-        };
-        mockTxIdStore();
-        CheckPointerImpl checkPointer = checkPointer();
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
-        assertTrue( doneDisablingLimits.get() );
-    }
-
-    @Test
-    void mustFlushAsFastAsPossibleDuringTryCheckPoint() throws Exception
-    {
-
-        AtomicBoolean doneDisablingLimits = new AtomicBoolean();
-        limiter = new EmptyIOController()
-        {
-            @Override
-            public void enable()
-            {
-                doneDisablingLimits.set( true );
-            }
-
-            @Override
-            public boolean isEnabled()
-            {
-                return doneDisablingLimits.get();
-            }
-        };
-        mockTxIdStore();
-        CheckPointerImpl checkPointer = checkPointer();
-        checkPointer.tryCheckPoint( INFO );
-        assertTrue( doneDisablingLimits.get() );
-    }
-
-    @Test
     void tryCheckPointMustWaitForOnGoingCheckPointsToCompleteAsLongAsTimeoutPredicateIsFalse() throws Exception
     {
         mockTxIdStore();
@@ -417,76 +359,6 @@ class CheckPointerImplTest
         assertThat( checkPointer.tryCheckPoint( INFO, predicate ) ).isEqualTo( this.transactionId );
     }
 
-    private void verifyAsyncActionCausesConcurrentFlushingRush(
-            ThrowingConsumer<CheckPointerImpl,IOException> asyncAction ) throws Exception
-    {
-        AtomicLong limitDisableCounter = new AtomicLong();
-        AtomicLong observedRushCount = new AtomicLong();
-        BinaryLatch backgroundCheckPointStartedLatch = new BinaryLatch();
-        BinaryLatch forceCheckPointStartLatch = new BinaryLatch();
-
-        limiter = new EmptyIOController()
-        {
-            @Override
-            public void disable()
-            {
-                limitDisableCounter.getAndIncrement();
-                forceCheckPointStartLatch.release();
-            }
-
-            @Override
-            public void enable()
-            {
-                limitDisableCounter.getAndDecrement();
-            }
-
-            @Override
-            public boolean isEnabled()
-            {
-                return limitDisableCounter.get() != 0;
-            }
-        };
-
-        mockTxIdStore();
-        CheckPointerImpl checkPointer = checkPointer();
-
-        doAnswer( invocation ->
-        {
-            backgroundCheckPointStartedLatch.release();
-            forceCheckPointStartLatch.await();
-            long newValue = limitDisableCounter.get();
-            observedRushCount.set( newValue );
-            return null;
-        } ).when( forceOperation ).flushAndForce( any() );
-
-        Future<Object> forceCheckPointer = forkFuture( () ->
-        {
-            backgroundCheckPointStartedLatch.await();
-            asyncAction.accept( checkPointer );
-            return null;
-        } );
-
-        when( threshold.isCheckPointingNeeded( anyLong(), any( LogPosition.class ), eq( INFO ) ) ).thenReturn( true );
-        checkPointer.checkPointIfNeeded( INFO );
-        forceCheckPointer.get();
-        assertThat( observedRushCount.get() ).isEqualTo( 1L );
-    }
-
-    @Test
-    void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint()
-    {
-        assertTimeoutPreemptively( TIMEOUT, () ->
-                verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
-
-    }
-
-    @Test
-    void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint()
-    {
-        assertTimeoutPreemptively( TIMEOUT, () ->
-                verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
-    }
-
     private CheckPointerImpl checkPointer( StoreCopyCheckPointMutex mutex )
     {
         var databaseTracers = mock( DatabaseTracers.class );
@@ -494,7 +366,7 @@ class CheckPointerImplTest
         when( databaseTracers.getPageCacheTracer() ).thenReturn( PageCacheTracer.NULL );
         when( metadataProvider.getStoreId() ).thenReturn( storeId );
         return new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, appender, health,
-                NullLogProvider.getInstance(), databaseTracers, limiter, mutex, EMPTY, clock );
+                NullLogProvider.getInstance(), databaseTracers, mutex, EMPTY, clock );
     }
 
     private CheckPointerImpl checkPointer()

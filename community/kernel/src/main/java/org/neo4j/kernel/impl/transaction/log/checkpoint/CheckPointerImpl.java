@@ -52,8 +52,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final ForceOperation forceOperation;
     private final LogPruning logPruning;
     private final Health databaseHealth;
-    private final IOController ioController;
-    private final Log msgLog;
+    private final Log log;
     private final DatabaseTracers tracers;
     private final StoreCopyCheckPointMutex mutex;
     private final VersionContextSupplier versionContextSupplier;
@@ -70,7 +69,6 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             Health databaseHealth,
             LogProvider logProvider,
             DatabaseTracers tracers,
-            IOController ioController,
             StoreCopyCheckPointMutex mutex,
             VersionContextSupplier versionContextSupplier,
             Clock clock )
@@ -81,8 +79,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.forceOperation = forceOperation;
         this.logPruning = logPruning;
         this.databaseHealth = databaseHealth;
-        this.ioController = ioController;
-        this.msgLog = logProvider.getLog( CheckPointerImpl.class );
+        this.log = logProvider.getLog( CheckPointerImpl.class );
         this.tracers = tracers;
         this.mutex = mutex;
         this.versionContextSupplier = versionContextSupplier;
@@ -99,14 +96,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long forceCheckPoint( TriggerInfo info ) throws IOException
     {
-        ioController.disable();
         try ( Resource lock = mutex.checkPoint() )
         {
             return doCheckPoint( info );
-        }
-        finally
-        {
-            ioController.enable();
         }
     }
 
@@ -125,37 +117,29 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long tryCheckPoint( TriggerInfo info, BooleanSupplier timeout ) throws IOException
     {
-        ioController.disable();
-        try
+        Resource lockAttempt = mutex.tryCheckPoint();
+        if ( lockAttempt != null )
         {
-            Resource lockAttempt = mutex.tryCheckPoint();
-            if ( lockAttempt != null )
+            try ( lockAttempt )
             {
-                try ( Resource lock = lockAttempt )
-                {
-                    return doCheckPoint( info );
-                }
-            }
-            else
-            {
-                try ( Resource lock = mutex.tryCheckPoint( timeout ) )
-                {
-                    if ( lock != null )
-                    {
-                        msgLog.info( info.describe( lastCheckPointedTx ) +
-                                " Check pointing was already running, completed now" );
-                        return lastCheckPointedTx;
-                    }
-                    else
-                    {
-                        return NO_TRANSACTION_ID;
-                    }
-                }
+                return doCheckPoint( info );
             }
         }
-        finally
+        else
         {
-            ioController.enable();
+            try ( Resource lock = mutex.tryCheckPoint( timeout ) )
+            {
+                if ( lock != null )
+                {
+                    log.info( info.describe( lastCheckPointedTx ) +
+                            " Check pointing was already running, completed now" );
+                    return lastCheckPointedTx;
+                }
+                else
+                {
+                    return NO_TRANSACTION_ID;
+                }
+            }
         }
     }
 
@@ -196,7 +180,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * First we flush the store. If we fail now or during the flush, on recovery we'll find the
              * earlier check point and replay from there all the log entries. Everything will be ok.
              */
-            msgLog.info( checkpointReason + " checkpoint started..." );
+            log.info( checkpointReason + " checkpoint started..." );
             Stopwatch startTime = Stopwatch.start();
             forceOperation.flushAndForce( cursorContext );
             /*
@@ -208,7 +192,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             checkpointAppender.checkPoint( event, logPosition, clock.instant(), checkpointReason );
             threshold.checkPointHappened( lastClosedTransactionId, logPosition );
             long durationMillis = startTime.elapsed( MILLISECONDS );
-            msgLog.info( checkpointReason + " checkpoint completed in " + duration( durationMillis ) );
+            log.info( checkpointReason + " checkpoint completed in " + duration( durationMillis ) );
             event.checkpointCompleted( durationMillis );
 
             /*
@@ -224,7 +208,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             // Why only log failure here? It's because check point can potentially be made from various
             // points of execution e.g. background thread triggering check point if needed and during
             // shutdown where it's better to have more control over failure handling.
-            msgLog.error( "Checkpoint failed", t );
+            log.error( "Checkpoint failed", t );
             throw t;
         }
     }

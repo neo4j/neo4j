@@ -201,9 +201,9 @@ public final class Recovery
     }
 
     public static Context context( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, DatabaseLayout databaseLayout,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, IOController ioController )
     {
-        return new Context( fs, pageCache, databaseLayout, config, memoryTracker, tracers );
+        return new Context( fs, pageCache, databaseLayout, config, memoryTracker, tracers, ioController );
     }
 
     /**
@@ -227,6 +227,7 @@ public final class Recovery
         private Optional<LogFiles> providedLogFiles = Optional.empty();
         private RecoveryStartupChecker startupChecker = EMPTY_CHECKER;
         private Clock clock = systemClock();
+        private IOController ioController;
         private RecoveryPredicate recoveryPredicate = RecoveryPredicate.ALL;
 
         /**
@@ -238,7 +239,7 @@ public final class Recovery
          * @param tracers underlying operation tracers
          */
         private Context( FileSystemAbstraction fileSystemAbstraction, PageCache pageCache, DatabaseLayout databaseLayout, Config config,
-                MemoryTracker memoryTracker, DatabaseTracers tracers )
+                MemoryTracker memoryTracker, DatabaseTracers tracers, IOController ioController )
         {
             requireNonNull( pageCache );
             requireNonNull( fileSystemAbstraction );
@@ -338,32 +339,6 @@ public final class Recovery
     }
 
     /**
-     * Use {@link Recovery#performRecovery(Context)} instead. Only for external tools!
-     *
-     * Performs recovery of database described by provided layout.
-     * Transaction logs should be located in their default location.
-     * If recovery is not required - nothing will be done to the database or logs.
-     * Note: used by external tools.
-     *
-     * @param databaseLayout database to recover layout.
-     * @param tracers        underlying events tracers.
-     * @param memoryTracker  memory tracker
-     * @throws Exception
-     */
-    @Deprecated( forRemoval = true, since = "5.0" )
-    public static void performRecovery( DatabaseLayout databaseLayout, DatabaseTracers tracers, MemoryTracker memoryTracker ) throws Exception
-    {
-        requireNonNull( databaseLayout );
-        Config config = defaults();
-        try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-              JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-              PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
-        {
-            performRecovery( context( fs, pageCache, tracers, config, databaseLayout, memoryTracker ) );
-        }
-    }
-
-    /**
      * Perform recovery as specified by the provided context
      * @param context The context to use
      * @throws IOException on any unexpected I/O exception encountered during recovery.
@@ -379,14 +354,14 @@ public final class Recovery
 
         performRecovery( context.fs, context.pageCache, context.tracers, context.config, context.databaseLayout,
                 storageEngineFactory, context.forceRunRecovery, context.logProvider, context.globalMonitors, extensionFactories,
-                context.providedLogFiles, context.startupChecker, context.memoryTracker, context.clock, context.recoveryPredicate );
+                context.providedLogFiles, context.startupChecker, context.memoryTracker, context.clock, context.ioController, context.recoveryPredicate );
     }
 
     private static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
             Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery,
             LogProvider logProvider, Monitors globalMonitors,
             Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogFiles> providedLogFiles,
-            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock, RecoveryPredicate recoveryPredicate )
+            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock, IOController ioController, RecoveryPredicate recoveryPredicate )
             throws IOException
     {
         Log recoveryLog = logProvider.getLog( Recovery.class );
@@ -398,7 +373,7 @@ public final class Recovery
         LifeSupport recoveryLife = new LifeSupport();
         var namedDatabaseId = createRecoveryDatabaseId( fs, pageCache, databaseLayout, storageEngineFactory );
         Monitors monitors = new Monitors( globalMonitors, logProvider );
-        DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, IOController.DISABLED );
+        DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, ioController );
         SimpleLogService logService = new SimpleLogService( logProvider );
         VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         DatabaseReadOnlyChecker readOnlyChecker = writable();
@@ -486,7 +461,7 @@ public final class Recovery
         LogPruning logPruning = new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, new ReentrantLock() );
         CheckPointerImpl checkPointer =
                 new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, logPruning, checkpointAppender,
-                        databaseHealth, logProvider, tracers, IOController.DISABLED, new StoreCopyCheckPointMutex(), versionContextSupplier, clock );
+                        databaseHealth, logProvider, tracers, new StoreCopyCheckPointMutex(), versionContextSupplier, clock );
         recoveryLife.add( storageEngine );
         recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logTailInfo, recoveryLog ) );
         recoveryLife.add( logFiles );
@@ -597,7 +572,8 @@ public final class Recovery
     {
         RecoveryAvailabilityGuard( NamedDatabaseId namedDatabaseId, Clock clock, Log log )
         {
-            super( namedDatabaseId, clock, log, 0, new CompositeDatabaseAvailabilityGuard( clock ) );
+            // we do not want ot pass real config to guard for recovery
+            super( namedDatabaseId, clock, log, 0, new CompositeDatabaseAvailabilityGuard( clock, Config.defaults() ) );
             init();
             start();
         }

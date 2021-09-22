@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
 
@@ -27,14 +26,12 @@ public class CheckpointerLifecycle extends LifecycleAdapter
 {
     private final CheckPointer checkPointer;
     private final Health databaseHealth;
-    private final IOController ioController;
     private volatile boolean checkpointOnShutdown = true;
 
-    public CheckpointerLifecycle( CheckPointer checkPointer, Health databaseHealth, IOController ioController )
+    public CheckpointerLifecycle( CheckPointer checkPointer, Health databaseHealth )
     {
         this.checkPointer = checkPointer;
         this.databaseHealth = databaseHealth;
-        this.ioController = ioController;
     }
 
     public void setCheckpointOnShutdown( boolean checkpointOnShutdown )
@@ -49,7 +46,6 @@ public class CheckpointerLifecycle extends LifecycleAdapter
         // We cannot throw here since we need to shutdown without exceptions.
         if ( checkpointOnShutdown && databaseHealth.isHealthy() )
         {
-            ioController.disable();
             checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Database shutdown" ) );
         }
     }

@@ -356,7 +356,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper );
               var buffer = bufferFactory.createBuffer() )
         {
-            flushAndForceInternal( flushEvent, true, IOController.DISABLED, buffer );
+            flushAndForceInternal( flushEvent, true, ioController, buffer );
         }
         pageCache.clearEvictorException();
     }

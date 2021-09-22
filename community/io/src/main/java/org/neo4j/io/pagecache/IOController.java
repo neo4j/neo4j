@@ -60,47 +60,11 @@ public interface IOController
     void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent );
 
     /**
-     * Temporarily disable the IOController, to allow IO to proceed at full speed.
-     * This call <strong>MUST</strong> be paired with a subsequent {@link #enable()} call.
-     * This method is thread-safe and reentrant. Multiple concurrent calls will "stack", and IO limitations will be
-     * enabled again once the last overlapping limit-disabling period ends with the "last" call to
-     * {@link #enable()}. This is conceptually similar to how a reentrant read-lock works.
-     *
-     * Thus, the typical usage pattern is with a {@code try-finally} clause, like this:
-     *
-     * <pre><code>
-     *     controller.disable();
-     *     try
-     *     {
-     *         // ... do work that needs maximum IO performance ...
-     *     }
-     *     finally
-     *     {
-     *         controller.enable();
-     *     }
-     * </code></pre>
-     */
-    default void disable()
-    {
-        // By default this method does nothing, assuming the implementation always has no or fixed limits.
-    }
-
-    /**
      * Report any external IO that could be taken into account during evaluation of limits, to inject pauses or sleeps.
      *
      * @param completedIOs - number of completed external IOs.
      */
     void reportIO( int completedIOs );
-
-    /**
-     * Re-enable the IOController, after having disabled it with {@link #disable()}.
-     *
-     * @see #disable() for how to use this method.
-     */
-    default void enable()
-    {
-        // Same as for disable().
-    }
 
     /**
      * @return {@code true} if controller is currently enabled

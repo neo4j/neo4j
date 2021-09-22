@@ -70,6 +70,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -869,7 +870,7 @@ class RecoveryIT
         fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
         assertTrue( isRecoveryRequired( layout ) );
 
-        performRecovery( Recovery.context( fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE ) );
+        performRecovery( Recovery.context( fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE, IOController.DISABLED ) );
         assertFalse( isRecoveryRequired( layout ) );
 
         assertTrue( fileSystem.fileExists( layout.idRelationshipStore() ) );
@@ -892,7 +893,7 @@ class RecoveryIT
         assertTrue( isRecoveryRequired( layout ) );
 
         Config config = defaults( Map.of( GraphDatabaseSettings.keep_logical_logs, "keep_none" ));
-        performRecovery( Recovery.context( fileSystem, pageCache, EMPTY, config, layout, INSTANCE ) );
+        performRecovery( Recovery.context( fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED ) );
         assertThat( Arrays.stream( fileSystem.listFiles( layout.getTransactionLogsDirectory() ) ).filter( path -> path.toString().contains( "transaction.db" ) )
                 .count() ).isEqualTo( 2 );
     }
@@ -1077,7 +1078,7 @@ class RecoveryIT
         Config config = Config.defaults();
         StorageEngineFactory storageEngineFactory = defaultStorageEngine();
 
-        Recovery.performRecovery( Recovery.context( fileSystem, pageCache, EMPTY, config, layout, INSTANCE )
+        Recovery.performRecovery( Recovery.context( fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED )
                                           .storageEngineFactory( storageEngineFactory )
                                           .log( NullLogProvider.getInstance() )
                                           .recoveryPredicate( RecoveryPredicate.ALL )
@@ -1419,7 +1420,7 @@ class RecoveryIT
         assertTrue( isRecoveryRequired( layout ) );
 
         LogFiles spiedLogFiles = Mockito.spy( buildLogFiles() );
-        performRecovery( context( fileSystem, pageCache, EMPTY, Config.defaults(), databaseLayout, INSTANCE )
+        performRecovery( context( fileSystem, pageCache, EMPTY, Config.defaults(), databaseLayout, INSTANCE, IOController.DISABLED )
                                  .log( logProvider )
                                  .logFiles( Optional.of( spiedLogFiles ) )
                                  .clock( fakeClock ) );
@@ -1508,7 +1509,7 @@ class RecoveryIT
         assertTrue( isRecoveryRequired( databaseLayout, config ) );
         StorageEngineFactory storageEngineFactory = defaultStorageEngine();
 
-        Recovery.performRecovery( Recovery.context( fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE )
+        Recovery.performRecovery( Recovery.context( fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE, IOController.DISABLED )
                                           .storageEngineFactory( storageEngineFactory )
                                           .log( logProvider )
                                           .recoveryPredicate( recoveryCriteria.toPredicate() )
