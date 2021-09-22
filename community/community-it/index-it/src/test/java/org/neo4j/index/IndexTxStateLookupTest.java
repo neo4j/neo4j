@@ -237,24 +237,6 @@ public class IndexTxStateLookupTest
 
     @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
     @MethodSource( "argumentsProvider" )
-    public void lookupWithinTransactionWithCacheEviction( Object store, Object lookup )
-    {
-        init( store, lookup );
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            // when
-            tx.createNode( label( "Node" ) ).setProperty( "prop", this.store );
-
-            // then
-            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", this.lookup ) ) );
-
-            // no need to actually commit this node
-        }
-    }
-
-    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
-    @MethodSource( "argumentsProvider" )
     public void lookupWithoutTransaction( Object store, Object lookup )
     {
         init( store, lookup );
@@ -282,27 +264,5 @@ public class IndexTxStateLookupTest
             tx.getNodeById( node.getId() ).delete();
             tx.commit();
         }
-    }
-
-    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
-    @MethodSource( "argumentsProvider" )
-    public void lookupWithoutTransactionWithCacheEviction( Object store, Object lookup )
-    {
-        init( store, lookup );
-
-        // when
-        Node node;
-        try ( Transaction tx = db.beginTx() )
-        {
-            (node = tx.createNode( label( "Node" ) )).setProperty( "prop", this.store );
-            tx.commit();
-        }
-        // then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", this.lookup ) ) );
-            tx.commit();
-        }
-        deleteNode( node );
     }
 }
