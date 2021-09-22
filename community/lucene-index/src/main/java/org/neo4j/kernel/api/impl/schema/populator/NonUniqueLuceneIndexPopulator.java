@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
@@ -35,9 +36,9 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex>
 {
 
-    public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex )
+    public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy )
     {
-        super( luceneIndex );
+        super( luceneIndex, ignoreStrategy );
     }
 
     @Override

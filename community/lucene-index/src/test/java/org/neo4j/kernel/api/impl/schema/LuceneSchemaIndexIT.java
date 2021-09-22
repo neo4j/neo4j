@@ -59,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 
 @TestDirectoryExtension
@@ -247,7 +248,7 @@ class LuceneSchemaIndexIT
                 .build();
         index.create();
         index.open();
-        return new LuceneIndexAccessor( index, descriptor, SIMPLE_TOKEN_LOOKUP );
+        return new LuceneIndexAccessor( index, descriptor, SIMPLE_TOKEN_LOOKUP, UPDATE_IGNORE_STRATEGY );
     }
 
     private List<String> asFileInsidePartitionNames( ResourceIterator<Path> resources )

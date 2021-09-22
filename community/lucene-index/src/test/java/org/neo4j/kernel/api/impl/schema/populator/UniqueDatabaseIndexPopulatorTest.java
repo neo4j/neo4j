@@ -69,6 +69,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
@@ -468,7 +469,7 @@ class UniqueDatabaseIndexPopulatorTest
 
     private UniqueLuceneIndexPopulator newPopulator()
     {
-        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( index, descriptor );
+        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( index, descriptor, UPDATE_IGNORE_STRATEGY );
         populator.create();
         return populator;
     }

@@ -61,6 +61,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -85,6 +86,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALY
 
 public class FulltextIndexProvider extends IndexProvider
 {
+    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = update -> false;
     private final FileSystemAbstraction fileSystem;
     private final Config config;
     private final TokenHolders tokenHolders;
@@ -243,7 +245,7 @@ public class FulltextIndexProvider extends IndexProvider
                     .withPopulatingMode( true )
                     .build();
             log.debug( "Creating populator for fulltext schema index: %s", descriptor );
-            return new FulltextIndexPopulator( descriptor, fulltextIndex, propertyNames );
+            return new FulltextIndexPopulator( descriptor, fulltextIndex, propertyNames, UPDATE_IGNORE_STRATEGY );
         }
         catch ( Exception e )
         {
@@ -273,7 +275,7 @@ public class FulltextIndexProvider extends IndexProvider
         DatabaseIndex<FulltextIndexReader> fulltextIndex = fulltextIndexBuilder.build();
         fulltextIndex.open();
 
-        FulltextIndexAccessor accessor = new FulltextIndexAccessor( indexUpdateSink, fulltextIndex, index, propertyNames );
+        FulltextIndexAccessor accessor = new FulltextIndexAccessor( indexUpdateSink, fulltextIndex, index, propertyNames, UPDATE_IGNORE_STRATEGY );
         log.debug( "Created online accessor for fulltext schema index %s: %s", index, accessor );
         return accessor;
     }

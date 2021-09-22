@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
@@ -40,12 +42,14 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
  */
 public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> implements IndexPopulator
 {
+    private final IndexUpdateIgnoreStrategy ignoreStrategy;
     protected INDEX luceneIndex;
     protected LuceneIndexWriter writer;
 
-    protected LuceneIndexPopulator( INDEX luceneIndex )
+    protected LuceneIndexPopulator( INDEX luceneIndex, IndexUpdateIgnoreStrategy ignoreStrategy )
     {
         this.luceneIndex = luceneIndex;
+        this.ignoreStrategy = ignoreStrategy;
     }
 
     @Override
@@ -80,6 +84,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
             // That is why we create a lazy Iterator and then Iterable
             writer.addDocuments( updates.size(), () -> updates.stream()
                     .map( u -> (ValueIndexEntryUpdate<?>) u )
+                    .filter( Predicate.not( ignoreStrategy::ignore ) )
                     .map( LuceneIndexPopulator::updateAsDocument )
                     .filter( Objects::nonNull )
                     .iterator() );

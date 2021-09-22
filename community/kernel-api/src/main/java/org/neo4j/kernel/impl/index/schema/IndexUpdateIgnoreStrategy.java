@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 @FunctionalInterface
-interface IndexUpdateIgnoreStrategy
+public interface IndexUpdateIgnoreStrategy
 {
     /**
      * @param update the update to process

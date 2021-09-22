@@ -33,6 +33,8 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
+
 /**
  * An {@link IndexUpdater} used while index population is in progress. Takes special care of node property additions
  * and changes applying them via {@link LuceneIndexWriter#updateDocument(Term, Document)} to make sure no duplicated
@@ -51,6 +53,11 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
     public void process( IndexEntryUpdate<?> update )
     {
         ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+        if ( UPDATE_IGNORE_STRATEGY.ignore( valueUpdate ) )
+        {
+            return;
+        }
+
         long nodeId = valueUpdate.getEntityId();
 
         try

@@ -105,6 +105,9 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
             var alex = tx.createNode( PERSON );
             alex.setProperty( NAME, "Alex" );
 
+            var matt = tx.createNode( PERSON );
+            matt.setProperty( NAME, 42 );
+
             tx.commit();
         }
     }

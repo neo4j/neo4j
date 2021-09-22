@@ -35,6 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 
 class LuceneIndexAccessorTest
@@ -46,7 +47,8 @@ class LuceneIndexAccessorTest
     @BeforeEach
     void setUp()
     {
-        accessor = new LuceneIndexAccessor( schemaIndex, IndexPrototype.forSchema( forLabel( 1, 2 ) ).withName( "a" ).materialise( 1 ), SIMPLE_TOKEN_LOOKUP );
+        accessor = new LuceneIndexAccessor( schemaIndex, IndexPrototype.forSchema( forLabel( 1, 2 ) ).withName( "a" ).materialise( 1 ),
+                                            SIMPLE_TOKEN_LOOKUP, UPDATE_IGNORE_STRATEGY );
     }
 
     @Test

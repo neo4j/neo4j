@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.kernel.impl.index.schema.PointIndexAccessor.UPDATE_IGNORE_STRATEGY;
+import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.UPDATE_IGNORE_STRATEGY;
 
 public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<PointKey>
 {

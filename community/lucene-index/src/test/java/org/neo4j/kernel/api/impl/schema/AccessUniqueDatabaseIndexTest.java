@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
@@ -152,7 +153,7 @@ class AccessUniqueDatabaseIndexTest
                 .withIndexStorage( indexStorage )
                 .build();
         luceneIndex.open();
-        return new LuceneIndexAccessor( luceneIndex, index, SIMPLE_TOKEN_LOOKUP );
+        return new LuceneIndexAccessor( luceneIndex, index, SIMPLE_TOKEN_LOOKUP, UPDATE_IGNORE_STRATEGY );
     }
 
     private PartitionedIndexStorage getIndexStorage()

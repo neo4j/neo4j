@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -43,9 +44,10 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
     private final IndexDescriptor descriptor;
     private final String[] propertyNames;
 
-    FulltextIndexPopulator( IndexDescriptor descriptor, DatabaseIndex<FulltextIndexReader> luceneFulltext, String[] propertyNames )
+    FulltextIndexPopulator( IndexDescriptor descriptor, DatabaseIndex<FulltextIndexReader> luceneFulltext, String[] propertyNames,
+                            IndexUpdateIgnoreStrategy ignoreStrategy )
     {
-        super( luceneFulltext );
+        super( luceneFulltext, ignoreStrategy );
         this.descriptor = descriptor;
         this.propertyNames = propertyNames;
     }

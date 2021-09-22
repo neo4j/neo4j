@@ -36,16 +36,18 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,SchemaIndex>
 {
+
     private final LuceneIndexValueValidator valueValidator;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, IndexUpdateIgnoreStrategy ignoreStrategy )
     {
-        super( luceneIndex, descriptor );
+        super( luceneIndex, descriptor, ignoreStrategy );
         this.valueValidator = new LuceneIndexValueValidator( descriptor, tokenNameLookup );
     }
 

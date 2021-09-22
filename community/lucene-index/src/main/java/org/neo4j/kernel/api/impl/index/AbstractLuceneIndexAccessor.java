@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -54,12 +55,14 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     protected final LuceneIndexWriter writer;
     protected final INDEX luceneIndex;
     protected final IndexDescriptor descriptor;
+    private final IndexUpdateIgnoreStrategy ignoreStrategy;
 
-    protected AbstractLuceneIndexAccessor( INDEX luceneIndex, IndexDescriptor descriptor )
+    protected AbstractLuceneIndexAccessor( INDEX luceneIndex, IndexDescriptor descriptor, IndexUpdateIgnoreStrategy ignoreStrategy )
     {
         this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
         this.luceneIndex = luceneIndex;
         this.descriptor = descriptor;
+        this.ignoreStrategy = ignoreStrategy;
     }
 
     @Override
@@ -260,6 +263,10 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
         {
             assert update.indexKey().schema().equals( descriptor.schema() );
             ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+            if ( ignoreStrategy.ignore( valueUpdate ) )
+            {
+                return;
+            }
 
             switch ( valueUpdate.updateMode() )
             {

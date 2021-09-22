@@ -28,13 +28,11 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+
+import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.UPDATE_IGNORE_STRATEGY;
 
 class PointIndexAccessor extends NativeIndexAccessor<PointKey>
 {
-    // Ignore everything except GEOMETRY values
-    static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = update -> update.values()[0].valueGroup() != ValueGroup.GEOMETRY;
-
     private final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings;
     private final SpaceFillingCurveConfiguration configuration;
 

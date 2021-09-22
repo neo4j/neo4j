@@ -52,17 +52,21 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.util.VisibleForTesting;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 public abstract class AbstractLuceneIndexProvider extends IndexProvider
 {
+    // Ignore everything except TEXT values
+    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = update -> update.values()[0].valueGroup() != ValueGroup.TEXT;
     private final IndexStorageFactory indexStorageFactory;
     private final Config config;
     private final DatabaseReadOnlyChecker readOnlyChecker;
@@ -127,8 +131,8 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
         return descriptor.isUnique()
-               ? new UniqueLuceneIndexPopulator( luceneIndex, descriptor )
-               : new NonUniqueLuceneIndexPopulator( luceneIndex );
+               ? new UniqueLuceneIndexPopulator( luceneIndex, descriptor, UPDATE_IGNORE_STRATEGY )
+               : new NonUniqueLuceneIndexPopulator( luceneIndex, UPDATE_IGNORE_STRATEGY );
     }
 
     @Override
@@ -139,7 +143,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
                                                           .withIndexStorage( getIndexStorage( descriptor.getId() ) )
                                                           .build();
         luceneIndex.open();
-        return new LuceneIndexAccessor( luceneIndex, descriptor, tokenNameLookup );
+        return new LuceneIndexAccessor( luceneIndex, descriptor, tokenNameLookup, UPDATE_IGNORE_STRATEGY );
     }
 
     @Override

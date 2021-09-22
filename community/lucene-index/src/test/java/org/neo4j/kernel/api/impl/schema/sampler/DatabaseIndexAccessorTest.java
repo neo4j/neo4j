@@ -82,6 +82,7 @@ import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.test.extension.Threading.waitingWhileIn;
 
@@ -122,7 +123,7 @@ public class DatabaseIndexAccessorTest
 
                             index.create();
                             index.open();
-                            return new LuceneIndexAccessor( index, GENERAL_INDEX, SIMPLE_TOKEN_LOOKUP );
+                            return new LuceneIndexAccessor( index, GENERAL_INDEX, SIMPLE_TOKEN_LOOKUP, UPDATE_IGNORE_STRATEGY );
                         }
                 ),
                 Arguments.of(
@@ -137,7 +138,7 @@ public class DatabaseIndexAccessorTest
 
                             index.create();
                             index.open();
-                            return new LuceneIndexAccessor( index, UNIQUE_INDEX, SIMPLE_TOKEN_LOOKUP );
+                            return new LuceneIndexAccessor( index, UNIQUE_INDEX, SIMPLE_TOKEN_LOOKUP, UPDATE_IGNORE_STRATEGY );
                         }
                 )
         );

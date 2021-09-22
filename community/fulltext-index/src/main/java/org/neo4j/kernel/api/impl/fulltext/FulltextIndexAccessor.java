@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
@@ -43,14 +44,15 @@ import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure
 
 public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,DatabaseIndex<FulltextIndexReader>>
 {
+
     private final IndexUpdateSink indexUpdateSink;
     private final IndexDescriptor index;
     private final String[] propertyNames;
 
     FulltextIndexAccessor( IndexUpdateSink indexUpdateSink, DatabaseIndex<FulltextIndexReader> luceneIndex, IndexDescriptor index,
-            String[] propertyNames )
+                           String[] propertyNames, IndexUpdateIgnoreStrategy ignoreStrategy )
     {
-        super( luceneIndex, index );
+        super( luceneIndex, index, ignoreStrategy );
         this.indexUpdateSink = indexUpdateSink;
         this.index = index;
         this.propertyNames = propertyNames;
