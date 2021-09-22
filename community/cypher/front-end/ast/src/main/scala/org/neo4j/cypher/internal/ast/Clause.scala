@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.ASTSlicingPhrase.checkExpressionIsStaticInt
 import org.neo4j.cypher.internal.ast.connectedComponents.RichConnectedComponent
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.TypeGenerator
+import org.neo4j.cypher.internal.ast.semantics.optionSemanticChecking
 import org.neo4j.cypher.internal.ast.semantics.traversableOnceSemanticChecking
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
@@ -986,7 +988,10 @@ case class Yield(returnItems: ReturnItems,
 object SubqueryCall {
   final case class InTransactionsParameters(batchSize: Option[Expression])(val position: InputPosition) extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
     override def semanticCheck: SemanticCheck =
-      requireFeatureSupport("The CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallSubqueryInTransactions, position)
+      requireFeatureSupport("The CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallSubqueryInTransactions, position) chain
+        batchSize.foldSemanticCheck {
+          checkExpressionIsStaticInt(_,"OF ... ROWS", acceptsZero = false)
+        }
   }
 
   def isTransactionalSubquery(clause: SubqueryCall): Boolean = clause.inTransactionsParameters.isDefined

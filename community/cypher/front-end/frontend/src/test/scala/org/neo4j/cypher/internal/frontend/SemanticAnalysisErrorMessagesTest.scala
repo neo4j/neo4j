@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseGraphSelector
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.InitialState
-import org.neo4j.cypher.internal.frontend.phases.Parsing
+import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCWithFallbackParsing
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -41,7 +41,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
   private def pipelineWithFeatures(features: Seq[SemanticFeature]) =
-    Parsing andThen
+    OpenCypherJavaCCWithFallbackParsing andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, features: _*) andThen
       SemanticAnalysis(warn = false, features: _*)

@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CallSubqueryInTransactions
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
@@ -663,6 +664,137 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     context.errors.map(_.msg) shouldBe Seq(
       "Node pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension"
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize 1") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN TRANSACTIONS OF 1 ROW
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize 0") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN TRANSACTIONS OF 0 ROWS
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("Invalid input. '0' is not a valid value. Must be a positive integer.", InputPosition(40, 3, 22))
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize -1") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN TRANSACTIONS OF -1 ROWS
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("Invalid input. '-1' is not a valid value. Must be a positive integer.", InputPosition(40, 3, 22))
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize 1.5") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN TRANSACTIONS OF 1.5 ROWS
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("Invalid input. '1.5' is not a valid value. Must be a positive integer.", InputPosition(40, 3, 22)),
+      SemanticError("Type mismatch: expected Integer but was Float", InputPosition(40, 3, 22)),
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize 'foo'") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN TRANSACTIONS OF 'foo' ROWS
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("Invalid input. 'foo' is not a valid value. Must be a positive integer.", InputPosition(40, 3, 22)),
+      SemanticError("Type mismatch: expected Integer but was String", InputPosition(40, 3, 22)),
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize larger than Long.Max") {
+    val batchSize = Long.MaxValue.toString + "0"
+    val query =
+      s"""CALL {
+         |  CREATE ()
+         |} IN TRANSACTIONS OF $batchSize ROWS
+         |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("integer is too large", InputPosition(40, 3, 22))
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize with a variable reference") {
+    val query =
+      s"""WITH 1 AS b
+         |CALL {
+         |  CREATE ()
+         |} IN TRANSACTIONS OF b ROWS
+         |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("It is not allowed to refer to variables in OF ... ROWS", InputPosition(52, 4, 22))
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with batchSize with a PatternComprehension") {
+    val query =
+      s"""CALL {
+         |  CREATE ()
+         |} IN TRANSACTIONS OF [path IN ()--() | 5] ROWS
+         |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+
+    context.errors shouldBe Seq(
+      SemanticError("It is not allowed to refer to variables in OF ... ROWS", InputPosition(40, 3, 22)),
+      SemanticError("Type mismatch: expected Integer but was List<Integer>", InputPosition(40, 3, 22)),
     )
   }
 
