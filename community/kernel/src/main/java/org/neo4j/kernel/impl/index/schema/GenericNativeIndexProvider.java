@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -251,9 +252,27 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         }
 
         @Override
+        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
+        {
+            Preconditions.requireNonEmpty( valueCategories );
+            Preconditions.requireNoNullElements( valueCategories );
+            return true;
+        }
+
+        @Override
+        public boolean areValuesAccepted( Value... values )
+        {
+            Preconditions.requireNonEmpty( values );
+            Preconditions.requireNoNullElements( values );
+            return true;
+        }
+
+        @Override
         public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
-            return queryType != IndexQueryType.FULLTEXT_SEARCH && queryType != IndexQueryType.TOKEN_LOOKUP;
+            return queryType != IndexQueryType.FULLTEXT_SEARCH
+                   && queryType != IndexQueryType.TOKEN_LOOKUP
+                   && areValueCategoriesAccepted( valueCategory );
         }
 
         @Override

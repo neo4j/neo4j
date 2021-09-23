@@ -21,6 +21,7 @@ package org.neo4j.internal.schema;
 
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.util.Preconditions;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
 /**
@@ -61,6 +62,38 @@ public interface IndexCapability
     IndexValueCapability valueCapability( ValueCategory... valueCategories );
 
     /**
+     * Checks whether the index can accept values for a given combination of {@link ValueCategory}.
+     * Ordering of ValueCategory correspond to ordering of {@link SchemaDescriptor#getPropertyIds()}.
+     *
+     * @param valueCategories Ordered array of {@link ValueCategory ValueCategories} for which index should be queried. Note that valueCategory
+     * must correspond to related {@link SchemaDescriptor#getPropertyIds()}.
+     * @throws IllegalArgumentException if {@code valueCategories} empty, {@code null}, or contains {@code null}s.
+     * @return true if the index is capable of accepting values for a provided array of value categories; false otherwise.
+     */
+    boolean areValueCategoriesAccepted( ValueCategory... valueCategories );
+
+    /**
+     * Checks whether the index can accept values for a given combination of {@link Value}.
+     * Ordering of Value correspond to ordering of {@link SchemaDescriptor#getPropertyIds()}.
+     *
+     * @param values Ordered array of {@link Value Values} for which index should be queried. Note that value
+     * must correspond to related {@link SchemaDescriptor#getPropertyIds()}.
+     * @throws IllegalArgumentException if {@code values} empty, {@code null}, or contains {@code null}s.
+     * @return true if the index is capable of accepting values; false otherwise.
+     */
+    default boolean areValuesAccepted( Value... values )
+    {
+        Preconditions.requireNonEmpty( values );
+        Preconditions.requireNoNullElements( values );
+        final var categories = new ValueCategory[values.length];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            categories[i] = values[i].valueGroup().category();
+        }
+        return areValueCategoriesAccepted( categories );
+    }
+
+    /**
      * Checks whether the index supports a query type for a given value category.
      * This does not take into account how query types can be combined for composite index queries.
      * <p>
@@ -84,6 +117,7 @@ public interface IndexCapability
      *
      * @param queries a relevant set of queries for the index; such as TokenPredicate, for token indexes; or PropertyIndexQuery, for property indexes.
      * @return {@code true} if the index supports PartitionedScan for the given {@code queries}; false otherwise.
+     * @throws IllegalArgumentException if {@code queries} empty, {@code null}, or contains {@code null}s.
      */
     boolean supportPartitionedScan( IndexQuery... queries );
 
@@ -108,6 +142,14 @@ public interface IndexCapability
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.NO;
+        }
+
+        @Override
+        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
+        {
+            Preconditions.requireNonEmpty( valueCategories );
+            Preconditions.requireNoNullElements( valueCategories );
+            return false;
         }
 
         @Override

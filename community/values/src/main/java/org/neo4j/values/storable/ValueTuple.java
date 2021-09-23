@@ -36,19 +36,15 @@ public class ValueTuple
 
     public static ValueTuple of( Value... values )
     {
-        requireNonEmpty( values );
-        requireNoNullElements( values );
         return new ValueTuple( values );
     }
 
     public static ValueTuple of( Object... objects )
     {
-        requireNonEmpty( objects );
-        requireNoNullElements( objects );
         Value[] values = new Value[objects.length];
         for ( int i = 0; i < values.length; i++ )
         {
-            values[i] = Values.of( objects[i] );
+            values[i] = Values.of( objects[i], false );
         }
         return new ValueTuple( values );
     }
@@ -57,6 +53,8 @@ public class ValueTuple
 
     protected ValueTuple( Value[] values )
     {
+        requireNonEmpty( values );
+        requireNoNullElements( values );
         this.values = values;
     }
 

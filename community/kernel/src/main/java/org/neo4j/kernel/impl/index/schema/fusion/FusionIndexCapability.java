@@ -50,7 +50,7 @@ public class FusionIndexCapability implements IndexCapability
     private static IndexBehaviour[] buildBehaviours( SlotSelector slotSelector )
     {
         // If we delegate single property text queries to anything else than Lucene, we have slow contains
-        IndexSlot slot = slotSelector.selectSlot( new ValueCategory[]{ValueCategory.TEXT}, categoryOf );
+        final var slot = slotSelector.selectSlot( new ValueCategory[]{ValueCategory.TEXT}, categoryOf );
         if ( slot != IndexSlot.LUCENE )
         {
             return new IndexBehaviour[]{IndexBehaviour.SLOW_CONTAINS};
@@ -64,7 +64,7 @@ public class FusionIndexCapability implements IndexCapability
     @Override
     public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
     {
-        IndexSlot slot = slotSelector.selectSlot( valueCategories, categoryOf );
+        final var slot = slotSelector.selectSlot( valueCategories, categoryOf );
         if ( slot == null )
         {
             return IndexOrderCapability.NONE;
@@ -75,12 +75,21 @@ public class FusionIndexCapability implements IndexCapability
     @Override
     public IndexValueCapability valueCapability( ValueCategory... valueCategories )
     {
-        IndexSlot slot = slotSelector.selectSlot( valueCategories, categoryOf );
+        final var slot = slotSelector.selectSlot( valueCategories, categoryOf );
         if ( slot == null )
         {
             return IndexValueCapability.PARTIAL;
         }
         return instanceSelector.select( slot ).valueCapability( valueCategories );
+    }
+
+    @Override
+    public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
+    {
+        Preconditions.requireNonEmpty( valueCategories );
+        Preconditions.requireNoNullElements( valueCategories );
+        final var slot = slotSelector.selectSlot( valueCategories, categoryOf );
+        return slot != null && instanceSelector.select( slot ).areValueCategoriesAccepted( valueCategories );
     }
 
     @Override

@@ -84,16 +84,29 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
         }
 
         @Override
+        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
+        {
+            Preconditions.requireNonEmpty( valueCategories );
+            Preconditions.requireNoNullElements( valueCategories );
+            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.TEXT;
+        }
+
+        @Override
         public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
-            if ( valueCategory != ValueCategory.TEXT )
+
+            if ( queryType == IndexQueryType.ALL_ENTRIES )
+            {
+                return true;
+            }
+
+            if ( !areValueCategoriesAccepted( valueCategory ) )
             {
                 return false;
             }
 
             switch ( queryType )
             {
-            case ALL_ENTRIES:
             case EXACT:
             case STRING_PREFIX:
             case STRING_SUFFIX:

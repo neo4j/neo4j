@@ -91,6 +91,14 @@ abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCo
             }
 
             @Override
+            public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
+            {
+                Preconditions.requireNonEmpty( valueCategories );
+                Preconditions.requireNoNullElements( valueCategories );
+                return true;
+            }
+
+            @Override
             public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
             {
                 return true;

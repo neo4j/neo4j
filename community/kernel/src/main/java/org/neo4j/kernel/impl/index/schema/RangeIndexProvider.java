@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -110,7 +111,7 @@ import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout>
 {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "range", "1.0" );
-    static final RangeIndexCapability CAPABILITY = new RangeIndexCapability();
+    public static final RangeIndexCapability CAPABILITY = new RangeIndexCapability();
 
     private final boolean archiveFailedIndex;
     private final Config config;
@@ -190,8 +191,29 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
         }
 
         @Override
+        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
+        {
+            Preconditions.requireNonEmpty( valueCategories );
+            Preconditions.requireNoNullElements( valueCategories );
+            return true;
+        }
+
+        @Override
+        public boolean areValuesAccepted( Value... values )
+        {
+            Preconditions.requireNonEmpty( values );
+            Preconditions.requireNoNullElements( values );
+            return true;
+        }
+
+        @Override
         public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
+            if ( !areValueCategoriesAccepted( valueCategory ) )
+            {
+                return false;
+            }
+
             switch ( queryType )
             {
             case ALL_ENTRIES:

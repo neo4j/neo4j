@@ -575,6 +575,14 @@ public final class Values
 
     public static Value unsafeOf( Object value, boolean allowNull )
     {
+        if ( value == null )
+        {
+            if ( allowNull )
+            {
+                return NO_VALUE;
+            }
+            throw new IllegalArgumentException( "[null] is not a supported property value" );
+        }
         if ( value instanceof String )
         {
             return utf8Value( ((String) value).getBytes( StandardCharsets.UTF_8 ) );
@@ -634,14 +642,6 @@ public final class Values
         if ( value instanceof short[] )
         {
             return shortArray( Arrays.copyOf( (short[]) value, ((short[]) value).length) );
-        }
-        if ( value == null )
-        {
-            if ( allowNull )
-            {
-                return NO_VALUE;
-            }
-            throw new IllegalArgumentException( "[null] is not a supported property value" );
         }
         if ( value instanceof Point )
         {

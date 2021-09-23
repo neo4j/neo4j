@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import java.util.Arrays;
+
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -53,9 +55,17 @@ class FulltextIndexCapability implements IndexCapability
     }
 
     @Override
+    public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
+    {
+        Preconditions.requireNonEmpty( valueCategories );
+        Preconditions.requireNoNullElements( valueCategories );
+        return Arrays.stream( valueCategories ).allMatch( ValueCategory.TEXT::equals );
+    }
+
+    @Override
     public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
     {
-        return queryType == IndexQueryType.FULLTEXT_SEARCH && valueCategory == ValueCategory.TEXT;
+        return queryType == IndexQueryType.FULLTEXT_SEARCH && areValueCategoriesAccepted( valueCategory );
     }
 
     @Override

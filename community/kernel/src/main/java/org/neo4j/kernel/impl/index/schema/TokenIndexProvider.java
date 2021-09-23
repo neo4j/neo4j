@@ -213,6 +213,14 @@ public class TokenIndexProvider extends IndexProvider
         }
 
         @Override
+        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
+        {
+            Preconditions.requireNonEmpty( valueCategories );
+            Preconditions.requireNoNullElements( valueCategories );
+            return false;
+        }
+
+        @Override
         public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
             return queryType == IndexQueryType.TOKEN_LOOKUP && valueCategory == ValueCategory.NO_CATEGORY;

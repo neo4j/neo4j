@@ -51,7 +51,6 @@ import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration;
-import static org.neo4j.values.storable.ValueCategory.GEOMETRY;
 
 public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout>
 {
@@ -185,9 +184,17 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
         @Override
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            return valueCategories.length == 1 && valueCategories[0].equals( GEOMETRY ) ?
-                   IndexValueCapability.YES :
-                   IndexValueCapability.NO;
+            return areValueCategoriesAccepted( valueCategories )
+                   ? IndexValueCapability.YES
+                   : IndexValueCapability.NO;
+        }
+
+        @Override
+        public boolean areValueCategoriesAccepted( ValueCategory... valueCategories )
+        {
+            Preconditions.requireNonEmpty( valueCategories );
+            Preconditions.requireNoNullElements( valueCategories );
+            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.GEOMETRY;
         }
 
         @Override
@@ -198,7 +205,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
                 return true;
             }
 
-            if ( valueCategory != GEOMETRY )
+            if ( !areValueCategoriesAccepted( valueCategory ) )
             {
                 return false;
             }
