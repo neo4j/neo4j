@@ -132,7 +132,7 @@ trait DeprecationTestSupport extends Suite with Matchers {
         withClue(s"Failed for query '$query' in version $version \n") {
           val transaction = dbms.begin()
           try {
-            val result = transaction.execute(s"$version $query")
+            val result = transaction.execute(s"$version EXPLAIN $query")
             val notifications: Iterable[Notification] = result.getNotifications()
             val hasNotification = notifications.exists(notification => matchesCode(notification, notificationCode, details: _*))
             hasNotification should be(shouldContainNotification)

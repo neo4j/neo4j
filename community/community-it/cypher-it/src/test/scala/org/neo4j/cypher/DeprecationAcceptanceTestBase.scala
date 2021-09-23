@@ -64,13 +64,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   // DEPRECATED PROCEDURE THINGS
 
   test("deprecated procedure calls") {
-    val queries = Seq("EXPLAIN CALL oldProc()", "EXPLAIN CALL oldProc() RETURN 1")
+    val queries = Seq("CALL oldProc()", "CALL oldProc() RETURN 1")
     val detail = NotificationDetail.Factory.deprecatedName("oldProc", "newProc")
     assertNotificationInSupportedVersions(queries, DEPRECATED_PROCEDURE, detail)
   }
 
   test("deprecated procedure result field") {
-    val query = "EXPLAIN CALL changedProc() YIELD oldField RETURN oldField"
+    val query = "CALL changedProc() YIELD oldField RETURN oldField"
     val detail = NotificationDetail.Factory.deprecatedField("changedProc", "oldField")
     assertNotificationInSupportedVersions(query, DEPRECATED_PROCEDURE_RETURN_FIELD, detail)
   }
@@ -78,91 +78,91 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   // DEPRECATED INDEX / CONSTRAINT SYNTAX in 4.X
 
   test("deprecated create index syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN CREATE INDEX ON :Label(prop)", DEPRECATED_CREATE_INDEX_SYNTAX)
+    assertNotificationInSupportedVersions("CREATE INDEX ON :Label(prop)", DEPRECATED_CREATE_INDEX_SYNTAX)
   }
 
   test("deprecated create btree index syntax") {
     // Note: This index syntax was introduced in 4.X
 
     // CREATE BTREE INDEX ...
-    assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE BTREE INDEX FOR (n:Label) ON (n.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
-    assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE BTREE INDEX name FOR ()-[r:TYPE]-() ON (r.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
+    assertNotificationInSupportedVersions_4_X("CREATE BTREE INDEX FOR (n:Label) ON (n.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
+    assertNotificationInSupportedVersions_4_X("CREATE BTREE INDEX name FOR ()-[r:TYPE]-() ON (r.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
 
     // CREATE INDEX ... OPTIONS { <btree options> }
     assertNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE INDEX FOR (n:Label) ON (n.prop)
+      s"""CREATE INDEX FOR (n:Label) ON (n.prop)
          |OPTIONS {IndexProvider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE INDEX FOR ()-[r:TYPE]-() ON (r.prop)
+      s"""CREATE INDEX FOR ()-[r:TYPE]-() ON (r.prop)
          |OPTIONS {indexprovider: '${NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()}'}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE INDEX FOR (n:Label) ON (n.prop)
+      s"""CREATE INDEX FOR (n:Label) ON (n.prop)
          |OPTIONS {IndexConfig: {`${SPATIAL_CARTESIAN_MAX.getSettingName}`: [40, 60]}}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE INDEX FOR ()-[r:TYPE]-() ON (r.prop)
+      s"""CREATE INDEX FOR ()-[r:TYPE]-() ON (r.prop)
          |OPTIONS {indexconfig: {`${SPATIAL_WGS84_MIN.getSettingName}`: [-40, -60]}}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNoNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE INDEX FOR (n:Label) ON (n.prop)
+      s"""CREATE INDEX FOR (n:Label) ON (n.prop)
          |OPTIONS {indexconfig: {`${FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName}`: false}}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
   }
 
   test("deprecated drop index syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN DROP INDEX ON :Label(prop)", DEPRECATED_DROP_INDEX_SYNTAX)
+    assertNotificationInSupportedVersions("DROP INDEX ON :Label(prop)", DEPRECATED_DROP_INDEX_SYNTAX)
   }
 
   test("deprecated drop node key constraint syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN DROP CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NODE KEY", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
+    assertNotificationInSupportedVersions("DROP CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NODE KEY", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
   }
 
   test("deprecated drop uniqueness constraint syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN DROP CONSTRAINT ON (n:Label) ASSERT (n.prop) IS UNIQUE", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
+    assertNotificationInSupportedVersions("DROP CONSTRAINT ON (n:Label) ASSERT (n.prop) IS UNIQUE", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
   }
 
   test("deprecated drop node property existence constraint syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN DROP CONSTRAINT ON (n:Label) ASSERT EXISTS (n.prop)", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
+    assertNotificationInSupportedVersions("DROP CONSTRAINT ON (n:Label) ASSERT EXISTS (n.prop)", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
   }
 
   test("deprecated drop relationship existence constraint syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN DROP CONSTRAINT ON ()-[r:TYPE]-() ASSERT EXISTS (r.prop)", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
+    assertNotificationInSupportedVersions("DROP CONSTRAINT ON ()-[r:TYPE]-() ASSERT EXISTS (r.prop)", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
   }
 
   test("deprecated create node property existence constraint syntax - deprecate version 0") {
-    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT EXISTS (n.prop)",
+    assertNotificationInSupportedVersions("CREATE CONSTRAINT ON (n:Label) ASSERT EXISTS (n.prop)",
       DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX)
   }
 
   test("deprecated create relationship property existence constraint syntax - deprecate version 0") {
-    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT EXISTS (r.prop)",
+    assertNotificationInSupportedVersions("CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT EXISTS (r.prop)",
       DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX)
   }
 
   test("deprecated create node property existence constraint syntax - deprecate version 1") {
-    assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NOT NULL",
+    assertNotificationInSupportedVersions_4_X("CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NOT NULL",
       DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
   }
 
   test("deprecated create relationship property existence constraint syntax - deprecate version 1") {
-    assertNotificationInSupportedVersions_4_X("EXPLAIN CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT (r.prop) IS NOT NULL",
+    assertNotificationInSupportedVersions_4_X("CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT (r.prop) IS NOT NULL",
       DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
   }
 
   test("deprecated create node key constraint syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NODE KEY",
+    assertNotificationInSupportedVersions("CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NODE KEY",
       DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
   }
 
   test("deprecated create uniqueness constraint syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS UNIQUE",
+    assertNotificationInSupportedVersions("CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS UNIQUE",
       DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
   }
 
@@ -170,31 +170,31 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     // OPTIONS was introduced in 4.2
     // FOR ... REQUIRE was introduced in 4.4 and can therefore not be used in this test (since it tests 4.3)
     assertNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+      s"""CREATE CONSTRAINT ON (n:Label)
          |ASSERT (n.prop) IS NODE KEY
          |OPTIONS {IndexProvider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+      s"""CREATE CONSTRAINT ON (n:Label)
          |ASSERT (n.prop) IS UNIQUE
          |OPTIONS {indexprovider: '${NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()}'}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+      s"""CREATE CONSTRAINT ON (n:Label)
          |ASSERT (n.prop) IS NODE KEY
          |OPTIONS {IndexConfig: {`${SPATIAL_CARTESIAN_MAX.getSettingName}`: [40, 60]}}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+      s"""CREATE CONSTRAINT ON (n:Label)
          |ASSERT (n.prop) IS UNIQUE
          |OPTIONS {indexconfig: {`${SPATIAL_WGS84_MIN.getSettingName}`: [-40, -60]}}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNoNotificationInSupportedVersions_4_X(
-      s"""EXPLAIN CREATE CONSTRAINT ON (n:Label)
+      s"""CREATE CONSTRAINT ON (n:Label)
          |ASSERT (n.prop) IS UNIQUE
          |OPTIONS {indexconfig: {`${FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName}`: false}}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
@@ -203,10 +203,10 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("deprecated show index syntax") {
     val queries = Seq(
-      "EXPLAIN SHOW INDEXES BRIEF",
-      "EXPLAIN SHOW INDEXES BRIEF OUTPUT",
-      "EXPLAIN SHOW INDEXES VERBOSE",
-      "EXPLAIN SHOW INDEXES VERBOSE OUTPUT",
+      "SHOW INDEXES BRIEF",
+      "SHOW INDEXES BRIEF OUTPUT",
+      "SHOW INDEXES VERBOSE",
+      "SHOW INDEXES VERBOSE OUTPUT",
     )
 
     // Note: Show indexes was introduced in Neo4j 4.2
@@ -215,15 +215,15 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("deprecated show btree index syntax") {
     // Note: Show indexes was introduced in Neo4j 4.2
-    assertNotificationInSupportedVersions_4_X("EXPLAIN SHOW BTREE INDEXES", DEPRECATED_BTREE_INDEX_SYNTAX)
+    assertNotificationInSupportedVersions_4_X("SHOW BTREE INDEXES", DEPRECATED_BTREE_INDEX_SYNTAX)
   }
 
   test("deprecated show constraint syntax") {
     val queries = Seq(
-      "EXPLAIN SHOW CONSTRAINTS BRIEF",
-      "EXPLAIN SHOW CONSTRAINTS BRIEF OUTPUT",
-      "EXPLAIN SHOW CONSTRAINTS VERBOSE",
-      "EXPLAIN SHOW CONSTRAINTS VERBOSE OUTPUT",
+      "SHOW CONSTRAINTS BRIEF",
+      "SHOW CONSTRAINTS BRIEF OUTPUT",
+      "SHOW CONSTRAINTS VERBOSE",
+      "SHOW CONSTRAINTS VERBOSE OUTPUT",
     )
 
     // Note: Show constraints was introduced in Neo4j 4.2
@@ -232,9 +232,9 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("deprecated show existence constraint syntax") {
     val queries = Seq(
-      "EXPLAIN SHOW EXISTS CONSTRAINT",
-      "EXPLAIN SHOW NODE EXISTS CONSTRAINT",
-      "EXPLAIN SHOW RELATIONSHIP EXISTS CONSTRAINT",
+      "SHOW EXISTS CONSTRAINT",
+      "SHOW NODE EXISTS CONSTRAINT",
+      "SHOW RELATIONSHIP EXISTS CONSTRAINT",
     )
 
     // Note: Show constraints was introduced in Neo4j 4.2
@@ -244,27 +244,27 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   // OTHER DEPRECATIONS IN 4.X
 
   test("deprecated octal literal syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN RETURN 0123 AS octal", DEPRECATED_OCTAL_LITERAL_SYNTAX)
+    assertNotificationInSupportedVersions("RETURN 0123 AS octal", DEPRECATED_OCTAL_LITERAL_SYNTAX)
   }
 
   test("deprecated hex literal syntax") {
-    assertNotificationInSupportedVersions("EXPLAIN RETURN 0X12B AS hex", DEPRECATED_HEX_LITERAL_SYNTAX)
+    assertNotificationInSupportedVersions("RETURN 0X12B AS hex", DEPRECATED_HEX_LITERAL_SYNTAX)
   }
 
   test("deprecated binding variable length relationship") {
-    val query = "EXPLAIN MATCH ()-[rs*]-() RETURN rs"
+    val query = "MATCH ()-[rs*]-() RETURN rs"
     val detail = NotificationDetail.Factory.bindingVarLengthRelationship("rs")
     assertNotificationInSupportedVersions(query, DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP, detail)
   }
 
   test("not deprecated binding variable length relationship") {
-    assertNoNotificationInSupportedVersions("EXPLAIN MATCH p = ()-[*]-() RETURN relationships(p) AS rs", DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP)
+    assertNoNotificationInSupportedVersions("MATCH p = ()-[*]-() RETURN relationships(p) AS rs", DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP)
   }
 
   test("deprecated pattern expression syntax") {
     val queries = Seq(
-      "EXPLAIN MATCH (a) RETURN (a)--()",
-      "EXPLAIN MATCH (a) WHERE ANY (x IN (a)--() WHERE 1=1) RETURN a",
+      "MATCH (a) RETURN (a)--()",
+      "MATCH (a) WHERE ANY (x IN (a)--() WHERE 1=1) RETURN a",
     )
 
     assertNotificationInSupportedVersions(queries, DEPRECATED_USE_OF_PATTERN_EXPRESSION)
@@ -272,16 +272,16 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("not deprecated pattern expression syntax") {
     // Existential subqueries was introduced in Neo4j 4.0
-    assertNoNotificationInSupportedVersions_4_X("EXPLAIN MATCH (a) WHERE EXISTS {(x) WHERE (x)--()} RETURN a", DEPRECATED_USE_OF_PATTERN_EXPRESSION)
+    assertNoNotificationInSupportedVersions_4_X("MATCH (a) WHERE EXISTS {(x) WHERE (x)--()} RETURN a", DEPRECATED_USE_OF_PATTERN_EXPRESSION)
 
     val queries = Seq(
-      "EXPLAIN MATCH (a)--() RETURN a",
-      "EXPLAIN MATCH (a) WHERE exists((a)--()) RETURN a",
-      "EXPLAIN MATCH (a) WHERE (a)--() RETURN a",
-      "EXPLAIN MATCH (a) RETURN [p=(a)--(b) | p]",
-      "EXPLAIN RETURN NOT exists(()--())",
-      "EXPLAIN RETURN NOT ()--()",
-      "EXPLAIN RETURN ()--() OR ()--()--()",
+      "MATCH (a)--() RETURN a",
+      "MATCH (a) WHERE exists((a)--()) RETURN a",
+      "MATCH (a) WHERE (a)--() RETURN a",
+      "MATCH (a) RETURN [p=(a)--(b) | p]",
+      "RETURN NOT exists(()--())",
+      "RETURN NOT ()--()",
+      "RETURN ()--() OR ()--()--()",
       """
         |EXPLAIN
         |MATCH (actor:Actor)
@@ -306,56 +306,56 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("deprecated property existence syntax") {
     val queries = Seq(
       // On node
-      "EXPLAIN MATCH (n) WHERE EXISTS(n.prop) RETURN n",
+      "MATCH (n) WHERE EXISTS(n.prop) RETURN n",
 
       // On node with not
-      "EXPLAIN MATCH (n) WHERE NOT EXISTS(n.prop) RETURN n",
+      "MATCH (n) WHERE NOT EXISTS(n.prop) RETURN n",
 
       // On relationship
-      "EXPLAIN MATCH ()-[r]-() WITH r WHERE EXISTS(r.prop) RETURN r.prop",
+      "MATCH ()-[r]-() WITH r WHERE EXISTS(r.prop) RETURN r.prop",
 
       // On map key
-      "EXPLAIN WITH {key:'blah'} as map RETURN EXISTS(map.key)",
+      "WITH {key:'blah'} as map RETURN EXISTS(map.key)",
 
       // On map notation in WHERE
-      "EXPLAIN MATCH (n) WHERE EXISTS(n['prop']) RETURN n",
+      "MATCH (n) WHERE EXISTS(n['prop']) RETURN n",
 
       // On map notation in WHERE with NOT
-      "EXPLAIN MATCH (n) WHERE NOT EXISTS(n['prop']) RETURN n",
+      "MATCH (n) WHERE NOT EXISTS(n['prop']) RETURN n",
 
       // On map notation in RETURN
-      "EXPLAIN MATCH (n) RETURN EXISTS(n['prop'])"
+      "MATCH (n) RETURN EXISTS(n['prop'])"
     )
 
     assertNotificationInSupportedVersions(queries, DEPRECATED_PROPERTY_EXISTENCE_SYNTAX)
   }
 
   test("exists on paths should not be deprecated") {
-    assertNoNotificationInSupportedVersions("EXPLAIN MATCH (n) WHERE EXISTS( (n)-[:REL]->() ) RETURN count(n)", DEPRECATED_PROPERTY_EXISTENCE_SYNTAX)
+    assertNoNotificationInSupportedVersions("MATCH (n) WHERE EXISTS( (n)-[:REL]->() ) RETURN count(n)", DEPRECATED_PROPERTY_EXISTENCE_SYNTAX)
   }
 
   test("exists subclause should not be deprecated") {
     // Note: Exists subclause was introduced in Neo4j 4.0
-    assertNoNotificationInSupportedVersions_4_X("EXPLAIN MATCH (n) WHERE EXISTS { MATCH (n)-[]->() } RETURN n.prop",
+    assertNoNotificationInSupportedVersions_4_X("MATCH (n) WHERE EXISTS { MATCH (n)-[]->() } RETURN n.prop",
       DEPRECATED_PROPERTY_EXISTENCE_SYNTAX)
   }
 
   test("deprecated coercion list to boolean") {
     val queries = Seq(
-      "EXPLAIN RETURN NOT []",
-      "EXPLAIN RETURN NOT [1]",
-      "EXPLAIN RETURN NOT ['a']",
-      "EXPLAIN RETURN ['a'] OR []",
-      "EXPLAIN RETURN TRUE OR []",
-      "EXPLAIN RETURN NOT (TRUE OR [])",
-      "EXPLAIN RETURN ['a'] AND []",
-      "EXPLAIN RETURN TRUE AND []",
-      "EXPLAIN RETURN NOT (TRUE AND [])",
-      "EXPLAIN MATCH (n) WHERE [] RETURN TRUE",
-      "EXPLAIN MATCH (n) WHERE range(0, 10) RETURN TRUE",
-      "EXPLAIN MATCH (n) WHERE range(0, 10) RETURN range(0, 10)",
-      "EXPLAIN RETURN NOT ()--()",
-      "EXPLAIN RETURN ()--() OR ()--()--()",
+      "RETURN NOT []",
+      "RETURN NOT [1]",
+      "RETURN NOT ['a']",
+      "RETURN ['a'] OR []",
+      "RETURN TRUE OR []",
+      "RETURN NOT (TRUE OR [])",
+      "RETURN ['a'] AND []",
+      "RETURN TRUE AND []",
+      "RETURN NOT (TRUE AND [])",
+      "MATCH (n) WHERE [] RETURN TRUE",
+      "MATCH (n) WHERE range(0, 10) RETURN TRUE",
+      "MATCH (n) WHERE range(0, 10) RETURN range(0, 10)",
+      "RETURN NOT ()--()",
+      "RETURN ()--() OR ()--()--()",
       """
         |EXPLAIN
         |MATCH (actor:Actor)
@@ -377,35 +377,35 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
     assertNotificationInSupportedVersions(queries, DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
 
-    assertNoNotificationInSupportedVersions("EXPLAIN RETURN NOT TRUE", DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
+    assertNoNotificationInSupportedVersions("RETURN NOT TRUE", DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
   }
 
   test("should not allow referencing elements being created by the pattern within that same pattern") {
     val badQueries = Seq(
-      "EXPLAIN CREATE (a {prop:7})-[r:R {prop: a.prop}]->(b)",
-      "EXPLAIN CREATE (a {prop:7})-[r:R]->(b {prop: a.prop})",
-      "EXPLAIN CREATE (a {prop: r.prop})-[r:R {prop:7}]->(b)",
-      "EXPLAIN CREATE (a)-[r:R {prop:7}]->(b {prop: r.prop})",
-      "EXPLAIN CREATE (a {prop:b.prop})-[r:R]->(b {prop: 7})",
-      "EXPLAIN CREATE (a)-[r:R {prop:b.prop}]->(b {prop: 7})",
-      "EXPLAIN CREATE (a:A:B)-[r:R]->(b {prop: labels(a)})",
-      "EXPLAIN CREATE p=(a {prop:7})-[r:R {prop: a.prop}]->(b)",
-      "EXPLAIN CREATE p=(a {prop:7})-[:R]->(b {prop: nodes(p)[0].prop})",
-      "EXPLAIN CREATE (a {prop:7})-[:R {prop: a.prop}]->(b)",
-      "EXPLAIN CREATE (a {prop:7})-[r:R]->({prop: a.prop})",
-      "EXPLAIN CREATE p=({prop:7})-[:R]->(b {prop: nodes(p)[0].prop})",
+      "CREATE (a {prop:7})-[r:R {prop: a.prop}]->(b)",
+      "CREATE (a {prop:7})-[r:R]->(b {prop: a.prop})",
+      "CREATE (a {prop: r.prop})-[r:R {prop:7}]->(b)",
+      "CREATE (a)-[r:R {prop:7}]->(b {prop: r.prop})",
+      "CREATE (a {prop:b.prop})-[r:R]->(b {prop: 7})",
+      "CREATE (a)-[r:R {prop:b.prop}]->(b {prop: 7})",
+      "CREATE (a:A:B)-[r:R]->(b {prop: labels(a)})",
+      "CREATE p=(a {prop:7})-[r:R {prop: a.prop}]->(b)",
+      "CREATE p=(a {prop:7})-[:R]->(b {prop: nodes(p)[0].prop})",
+      "CREATE (a {prop:7})-[:R {prop: a.prop}]->(b)",
+      "CREATE (a {prop:7})-[r:R]->({prop: a.prop})",
+      "CREATE p=({prop:7})-[:R]->(b {prop: nodes(p)[0].prop})",
     )
 
     assertNotificationInSupportedVersions(badQueries, DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN)
 
     val okQueries = Seq(
-      "EXPLAIN CREATE (a)-[:R]->(a)",
-      "EXPLAIN CREATE (a {prop: 7})-[:R]->(a)",
-      "EXPLAIN MATCH (b) CREATE ()-[:R]->(a {prop: b.prop})",
-      "EXPLAIN CREATE (a {prop: 7}) CREATE (b {prop: a.prop})",
-      "EXPLAIN MATCH (a {prop:7})-[r:R {prop: a.prop}]->(b) RETURN *",
-      "EXPLAIN CREATE (a {prop:7}) CREATE (a)-[:R]->(b {prop: a.prop})",
-      "EXPLAIN MATCH (a) CREATE (a)-[:R]->(b {prop: a.prop})",
+      "CREATE (a)-[:R]->(a)",
+      "CREATE (a {prop: 7})-[:R]->(a)",
+      "MATCH (b) CREATE ()-[:R]->(a {prop: b.prop})",
+      "CREATE (a {prop: 7}) CREATE (b {prop: a.prop})",
+      "MATCH (a {prop:7})-[r:R {prop: a.prop}]->(b) RETURN *",
+      "CREATE (a {prop:7}) CREATE (a)-[:R]->(b {prop: a.prop})",
+      "MATCH (a) CREATE (a)-[:R]->(b {prop: a.prop})",
     )
 
     assertNoNotificationInSupportedVersions(okQueries, DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN)
@@ -416,66 +416,66 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 
   test("deprecated toInt") {
-    val query = "EXPLAIN RETURN toInt('1') AS one"
+    val query = "RETURN toInt('1') AS one"
     val detail = NotificationDetail.Factory.deprecatedName("toInt", "toInteger")
     assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
   }
 
   test("deprecated upper") {
-    val query = "EXPLAIN RETURN upper('foo') AS upper"
+    val query = "RETURN upper('foo') AS upper"
     val detail = NotificationDetail.Factory.deprecatedName("upper", "toUpper")
     assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
   }
 
   test("deprecated lower") {
-    val query = "EXPLAIN RETURN lower('BAR') AS lower"
+    val query = "RETURN lower('BAR') AS lower"
     val detail = NotificationDetail.Factory.deprecatedName("lower", "toLower")
     assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
   }
 
   test("deprecated rels") {
-    val query = "EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r"
+    val query = "MATCH p = ()-->() RETURN rels(p) AS r"
     val detail = NotificationDetail.Factory.deprecatedName("rels", "relationships")
     assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
   }
 
   test("deprecated filter") {
-    val query = "EXPLAIN WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds"
+    val query = "WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds"
     val detail = NotificationDetail.Factory.deprecatedName("filter(...)", "[...]")
     assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
   }
 
   test("deprecated extract") {
-    val query = "EXPLAIN WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens"
+    val query = "WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens"
     val detail = NotificationDetail.Factory.deprecatedName("extract(...)", "[...]")
     assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
   }
 
   test("deprecated parameter syntax") {
-    assertNotificationInLastMajorVersion("EXPLAIN RETURN {param} AS parameter", DEPRECATED_PARAMETER_SYNTAX)
+    assertNotificationInLastMajorVersion("RETURN {param} AS parameter", DEPRECATED_PARAMETER_SYNTAX)
   }
 
   test("deprecated parameter syntax for property map") {
-    assertNotificationInLastMajorVersion("EXPLAIN CREATE (:Label {props})", DEPRECATED_PARAMETER_SYNTAX)
+    assertNotificationInLastMajorVersion("CREATE (:Label {props})", DEPRECATED_PARAMETER_SYNTAX)
   }
 
   test("deprecated length of string") {
-    assertNotificationInLastMajorVersion("EXPLAIN RETURN length('a string')", LENGTH_ON_NON_PATH)
+    assertNotificationInLastMajorVersion("RETURN length('a string')", LENGTH_ON_NON_PATH)
   }
 
   test("deprecated length of list") {
-    assertNotificationInLastMajorVersion("EXPLAIN RETURN length([1, 2, 3])", LENGTH_ON_NON_PATH)
+    assertNotificationInLastMajorVersion("RETURN length([1, 2, 3])", LENGTH_ON_NON_PATH)
   }
 
   test("deprecated length of pattern expression") {
-    assertNotificationInLastMajorVersion("EXPLAIN MATCH (a) WHERE a.name='Alice' RETURN length((a)-->()-->())", LENGTH_ON_NON_PATH)
+    assertNotificationInLastMajorVersion("MATCH (a) WHERE a.name='Alice' RETURN length((a)-->()-->())", LENGTH_ON_NON_PATH)
   }
 
   test("deprecated future ambiguous reltype separator") {
     val queries = Seq(
-      "EXPLAIN MATCH (a)-[:A|:B|:C {foo:'bar'}]-(b) RETURN a,b",
-      "EXPLAIN MATCH (a)-[x:A|:B|:C]-() RETURN a",
-      "EXPLAIN MATCH (a)-[:A|:B|:C*]-() RETURN a"
+      "MATCH (a)-[:A|:B|:C {foo:'bar'}]-(b) RETURN a,b",
+      "MATCH (a)-[x:A|:B|:C]-() RETURN a",
+      "MATCH (a)-[:A|:B|:C*]-() RETURN a"
     )
 
     assertNotificationInLastMajorVersion(queries, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR)
@@ -486,9 +486,9 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("not deprecated reltype separator cases") {
     val queries = Seq(
-      "EXPLAIN MATCH (a)-[:A|B|C {foo:'bar'}]-(b) RETURN a,b",
-      "EXPLAIN MATCH (a)-[:A|:B|:C]-(b) RETURN a,b",
-      "EXPLAIN MATCH (a)-[:A|B|C]-(b) RETURN a,b"
+      "MATCH (a)-[:A|B|C {foo:'bar'}]-(b) RETURN a,b",
+      "MATCH (a)-[:A|:B|:C]-(b) RETURN a,b",
+      "MATCH (a)-[:A|B|C]-(b) RETURN a,b"
     )
 
     assertNoNotificationInLastMajorVersion(queries, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR)
