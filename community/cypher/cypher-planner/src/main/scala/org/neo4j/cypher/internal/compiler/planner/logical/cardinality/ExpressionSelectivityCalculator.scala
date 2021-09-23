@@ -199,11 +199,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
       ids match {
         case (Some(labelId: LabelId), Some(propertyKeyId)) =>
-          val descriptor = IndexDescriptor.forLabel(labelId, Seq(propertyKeyId))
+          val descriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, labelId, Seq(propertyKeyId))
           stats.indexPropertyIsNotNullSelectivity(descriptor)
 
         case (Some(relTypeId: RelTypeId), Some(propertyKeyId)) =>
-          val descriptor = IndexDescriptor.forRelType(relTypeId, Seq(propertyKeyId))
+          val descriptor = IndexDescriptor.forRelType(IndexDescriptor.IndexType.Btree, relTypeId, Seq(propertyKeyId))
           stats.indexPropertyIsNotNullSelectivity(descriptor)
 
         case _ => Some(Selectivity.ZERO)
@@ -223,8 +223,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       val indexSelectivities = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
 
         val descriptor: Option[IndexDescriptor] = (name, semanticTable.id(propertyKey)) match {
-          case (labelName: LabelName, Some(propKeyId)) => semanticTable.id(labelName).map(id => IndexDescriptor.forLabel(id, Seq(propKeyId)))
-          case (relTypeName: RelTypeName, Some(propKeyId)) => semanticTable.id(relTypeName).map(id => IndexDescriptor.forRelType(id, Seq(propKeyId)))
+          case (labelName: LabelName, Some(propKeyId)) => semanticTable.id(labelName).map(id => IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, id, Seq(propKeyId)))
+          case (relTypeName: RelTypeName, Some(propKeyId)) => semanticTable.id(relTypeName).map(id => IndexDescriptor.forRelType(IndexDescriptor.IndexType.Btree, id, Seq(propKeyId)))
           case _ => None
         }
 
@@ -276,8 +276,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       ids match {
         case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
           val descriptor = labelOrRelTypeId match {
-            case labelId: LabelId => IndexDescriptor.forLabel(labelId, Seq(propertyKeyId))
-            case relTypeId: RelTypeId => IndexDescriptor.forRelType(relTypeId, Seq(propertyKeyId))
+            case labelId: LabelId => IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, labelId, Seq(propertyKeyId))
+            case relTypeId: RelTypeId => IndexDescriptor.forRelType(IndexDescriptor.IndexType.Btree, relTypeId, Seq(propertyKeyId))
           }
 
           for {

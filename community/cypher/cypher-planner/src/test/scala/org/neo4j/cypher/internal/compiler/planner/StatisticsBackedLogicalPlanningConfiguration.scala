@@ -71,11 +71,9 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexType.BTREE
 import org.neo4j.internal.schema.IndexType.LOOKUP
-import org.neo4j.internal.schema.IndexType.TEXT
 
 trait StatisticsBackedLogicalPlanningSupport {
 
@@ -149,7 +147,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   }
 
   case class IndexDefinition(entityType: IndexDefinition.EntityType,
-                             indexType: schema.IndexType,
+                             indexType: IndexDescriptor.IndexType,
                              propertyKeys: Seq[String],
                              uniqueValueSelectivity: Double,
                              propExistsSelectivity: Double,
@@ -257,7 +255,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                    isUnique: Boolean = false,
                    withValues: Boolean = false,
                    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
-                   indexType: schema.IndexType = BTREE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+                   indexType: IndexDescriptor.IndexType = IndexDescriptor.IndexType.Btree): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(IndexDefinition.EntityType.Node(label),
       indexType = indexType,
@@ -278,7 +276,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                            isUnique: Boolean = false,
                            withValues: Boolean = false,
                            providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
-                           indexType: schema.IndexType = BTREE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+                           indexType: IndexDescriptor.IndexType = IndexDescriptor.IndexType.Btree): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(IndexDefinition.EntityType.Relationship(relType),
       indexType = indexType,
@@ -523,25 +521,25 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
-        indexesGetForEntityAndIndexType(entityType, BTREE)
+        indexesGetForEntityAndIndexType(entityType, IndexDescriptor.IndexType.Btree)
       }
 
       override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
-        indexesGetForEntityAndIndexType(entityType, BTREE)
+        indexesGetForEntityAndIndexType(entityType, IndexDescriptor.IndexType.Btree)
       }
 
       override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
-        indexesGetForEntityAndIndexType(entityType, TEXT)
+        indexesGetForEntityAndIndexType(entityType, IndexDescriptor.IndexType.Text)
       }
 
       override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
-        indexesGetForEntityAndIndexType(entityType, TEXT)
+        indexesGetForEntityAndIndexType(entityType, IndexDescriptor.IndexType.Text)
       }
 
-      private def indexesGetForEntityAndIndexType(entityType: IndexDefinition.EntityType, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
+      private def indexesGetForEntityAndIndexType(entityType: IndexDefinition.EntityType, indexType: IndexDescriptor.IndexType): Iterator[IndexDescriptor] = {
         indexes.propertyIndexes.collect {
           case indexDef@IndexDefinition(`entityType`, `indexType`, _, _, _, _, _, _) =>
             newIndexDescriptor(indexDef)
@@ -652,6 +650,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         }
 
         IndexDescriptor(
+          indexDef.indexType,
           entityType,
           props,
           valueCapability = valueCapability,

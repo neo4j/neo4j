@@ -31,7 +31,7 @@ class MinimumGraphStatisticsTest extends CypherFunSuite {
   test("should not decrease the isNotNull selectivity below what the delegate specified") {
     // Given
     val labelId = LabelId(0)
-    val indexDescriptor = IndexDescriptor.forLabel(labelId, Seq(PropertyKeyId(1)))
+    val indexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, labelId, Seq(PropertyKeyId(1)))
     val delegate = mock[GraphStatistics]
     when(delegate.nodesWithLabelCardinality(Some(labelId))).thenReturn(Cardinality(1))
     val isNotNullSelectivity = Selectivity(0.4)
@@ -48,7 +48,7 @@ class MinimumGraphStatisticsTest extends CypherFunSuite {
   test("should not decrease the isNotNull selectivity below MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY") {
     // Given
     val labelId = LabelId(0)
-    val indexDescriptor = IndexDescriptor.forLabel(labelId, Seq(PropertyKeyId(1)))
+    val indexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, labelId, Seq(PropertyKeyId(1)))
     val delegate = mock[GraphStatistics]
     when(delegate.nodesWithLabelCardinality(Some(labelId))).thenReturn(Cardinality(1))
     val isNotNullSelectivity = Selectivity(0.04)
@@ -65,7 +65,7 @@ class MinimumGraphStatisticsTest extends CypherFunSuite {
   test("should not return selectivity if the underlying delegate does not return a selectivity") {
     // Given
     val labelId = LabelId(0)
-    val indexDescriptor = IndexDescriptor.forLabel(labelId, Seq(PropertyKeyId(1)))
+    val indexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, labelId, Seq(PropertyKeyId(1)))
     val delegate = mock[GraphStatistics]
     when(delegate.nodesWithLabelCardinality(Some(labelId))).thenReturn(Cardinality(1))
     when(delegate.indexPropertyIsNotNullSelectivity(indexDescriptor)).thenReturn(None)
@@ -82,7 +82,7 @@ class MinimumGraphStatisticsTest extends CypherFunSuite {
     for (isNotNullSelectivity <- Seq(Some(Selectivity(0.4)), Some(Selectivity(0.04)), None)) {
       // Given
       val labelId = LabelId(0)
-      val indexDescriptor = IndexDescriptor.forLabel(labelId, Seq(PropertyKeyId(1)))
+      val indexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, labelId, Seq(PropertyKeyId(1)))
       val delegate = mock[GraphStatistics]
       when(delegate.nodesWithLabelCardinality(Some(labelId))).thenReturn(Cardinality(11))
       when(delegate.indexPropertyIsNotNullSelectivity(indexDescriptor)).thenReturn(isNotNullSelectivity)

@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
-import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
+import org.neo4j.internal.schema
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
 
@@ -50,7 +50,7 @@ object TransactionBoundGraphStatistics {
 
     override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
-        val maybeIndexDescriptor = Option(Iterators.singleOrNull(schemaRead.index(cypherToKernelSchema(index))))
+        val maybeIndexDescriptor = maybeKernelIndexDescriptor(index)
         maybeIndexDescriptor.map { indexDescriptor =>
           val indexSize = schemaRead.indexSize(indexDescriptor)
           if (indexSize == 0)
@@ -91,7 +91,7 @@ object TransactionBoundGraphStatistics {
           Some(Selectivity.ZERO)
         else {
           // Probability of any entity with the given type, to have a given property
-          val maybeIndexDescriptor = Option(Iterators.singleOrNull(schemaRead.index(cypherToKernelSchema(index))))
+          val maybeIndexDescriptor = maybeKernelIndexDescriptor(index)
           maybeIndexDescriptor.map { indexDescriptor =>
             val indexSize = schemaRead.indexSize(indexDescriptor)
             val indexSelectivity = indexSize / entitiesCount
@@ -118,5 +118,10 @@ object TransactionBoundGraphStatistics {
 
     override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
       Cardinality(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
+
+    private def maybeKernelIndexDescriptor(indexDescriptor: IndexDescriptor): Option[schema.IndexDescriptor] = {
+      Option(schemaRead.index(cypherToKernelSchema(indexDescriptor), cypherToKernel(indexDescriptor.indexType)))
+        .filter(_ != schema.IndexDescriptor.NO_INDEX)
+    }
   }
 }

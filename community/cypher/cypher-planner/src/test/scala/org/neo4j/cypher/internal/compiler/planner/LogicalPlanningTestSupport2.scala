@@ -261,6 +261,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
             semanticTable.resolvedRelTypeNames(relType))
         }
         IndexDescriptor(
+          IndexDescriptor.IndexType.Btree,
           entityType,
           indexDef.propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
           valueCapability = valueCapability,

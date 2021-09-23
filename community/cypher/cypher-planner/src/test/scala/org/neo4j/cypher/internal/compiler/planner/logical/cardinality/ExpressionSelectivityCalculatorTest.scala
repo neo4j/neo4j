@@ -67,8 +67,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   // NODES
 
-  protected val indexPerson: IndexDescriptor = IndexDescriptor.forLabel(LabelId(0), Seq(PropertyKeyId(0)))
-  protected val indexAnimal: IndexDescriptor = IndexDescriptor.forLabel(LabelId(1), Seq(PropertyKeyId(0)))
+  protected val indexPerson: IndexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(0), Seq(PropertyKeyId(0)))
+  protected val indexAnimal: IndexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(1), Seq(PropertyKeyId(0)))
 
   protected val nProp: Property = prop("n", "nodeProp")
 
@@ -84,7 +84,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   // RELATIONSHIPS
 
-  protected val indexFriends: IndexDescriptor = IndexDescriptor.forRelType(RelTypeId(0), Seq(PropertyKeyId(0)))
+  protected val indexFriends: IndexDescriptor = IndexDescriptor.forRelType(IndexDescriptor.IndexType.Btree, RelTypeId(0), Seq(PropertyKeyId(0)))
 
   protected val rProp: Property = prop("r", "relProp")
 

@@ -220,7 +220,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             // Ignore eventually consistent indexes. Those are for explicit querying via procedures.
             None
           } else {
-            Some(IndexDescriptor(entityType, properties, behaviours, orderCapability, valueCapability, isUnique))
+            kernelToCypher(reference.getIndexType) map { indexType =>
+              IndexDescriptor(indexType, entityType, properties, behaviours, orderCapability, valueCapability, isUnique)
+            }
           }
         case _ => None
       }

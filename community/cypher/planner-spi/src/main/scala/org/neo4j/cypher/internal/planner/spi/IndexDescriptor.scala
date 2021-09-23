@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.util.LabelId
@@ -64,11 +65,11 @@ object IndexDescriptor {
   type ValueCapability = Seq[CypherType] => Seq[GetValueFromIndexBehavior]
   val noValueCapability: ValueCapability = s => s.map(_ => DoNotGetValue)
 
-  def forLabel(labelId: LabelId, properties: Seq[PropertyKeyId]): IndexDescriptor =
-    IndexDescriptor(EntityType.Node(labelId), properties)
+  def forLabel(indexType: IndexType, labelId: LabelId, properties: Seq[PropertyKeyId]): IndexDescriptor =
+    IndexDescriptor(indexType, EntityType.Node(labelId), properties)
 
-  def forRelType(relTypeId: RelTypeId, properties: Seq[PropertyKeyId]): IndexDescriptor =
-    IndexDescriptor(EntityType.Relationship(relTypeId), properties)
+  def forRelType(indexType: IndexType, relTypeId: RelTypeId, properties: Seq[PropertyKeyId]): IndexDescriptor =
+    IndexDescriptor(indexType, EntityType.Relationship(relTypeId), properties)
 
   sealed trait EntityType
   object EntityType {
@@ -76,10 +77,17 @@ object IndexDescriptor {
     final case class Relationship(relType: RelTypeId) extends EntityType
   }
 
+  sealed trait IndexType
+  object IndexType {
+    case object Btree extends IndexType
+    case object Text extends IndexType
+  }
+
   implicit def toKernelEncode(properties: Seq[PropertyKeyId]): Array[Int] = properties.map(_.id).toArray
 }
 
-case class IndexDescriptor(entityType: EntityType,
+case class IndexDescriptor(indexType: IndexType,
+                           entityType: EntityType,
                            properties: Seq[PropertyKeyId],
                            behaviours: Set[IndexBehaviour] = Set.empty[IndexBehaviour],
                            orderCapability: OrderCapability = IndexDescriptor.noOrderCapability,
@@ -96,6 +104,7 @@ case class IndexDescriptor(entityType: EntityType,
   override def equals(other: Any): Boolean = other match {
     case that: IndexDescriptor =>
       (that canEqual this) &&
+        indexType == that.indexType &&
         entityType == that.entityType &&
         properties == that.properties &&
         behaviours == that.behaviours &&
@@ -104,7 +113,7 @@ case class IndexDescriptor(entityType: EntityType,
   }
 
   override def hashCode(): Int = {
-    val state = Seq(entityType, properties, behaviours, isUnique)
+    val state = Seq(indexType, entityType, properties, behaviours, isUnique)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 

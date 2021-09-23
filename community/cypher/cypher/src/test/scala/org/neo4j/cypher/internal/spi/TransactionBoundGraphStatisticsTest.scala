@@ -38,14 +38,11 @@ import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.logging.Log
 
-import java.util.Collections
-import java.util.Collections.singletonList
-
 class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
   private val labelId = 42
   private val propertyId = 1337
-  private val index = IndexDescriptor.forLabel(LabelId(labelId), Seq(PropertyKeyId(propertyId)))
+  private val index = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(labelId), Seq(PropertyKeyId(propertyId)))
   private val descriptor: schema.IndexDescriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId)).withName("wut!").materialise(11L)
   private var read: Read = _
   private var schemaRead: SchemaRead = _
@@ -104,7 +101,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
   }
 
   test("indexPropertyExistsSelectivity should not log if index was not found") {
-    when(schemaRead.index(any[SchemaDescriptor])).thenReturn(Collections.emptyIterator[org.neo4j.internal.schema.IndexDescriptor]())
+    when(schemaRead.index(any[SchemaDescriptor], any[schema.IndexType])).thenReturn(schema.IndexDescriptor.NO_INDEX)
     when(read.countsForNodeWithoutTxState(labelId)).thenReturn(20L)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
@@ -183,7 +180,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
   test("uniqueValueSelectivity should not log if index was not found") {
     //given
-    when(schemaRead.index(any[SchemaDescriptor])).thenReturn(Collections.emptyIterator[org.neo4j.internal.schema.IndexDescriptor]())
+    when(schemaRead.index(any[SchemaDescriptor], any[schema.IndexType])).thenReturn(schema.IndexDescriptor.NO_INDEX)
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
@@ -200,6 +197,6 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
   override protected def beforeEach(): Unit = {
     read = mock[Read]
     schemaRead = mock[SchemaRead]
-    when(schemaRead.index(any[SchemaDescriptor])).thenReturn(singletonList(descriptor).iterator())
+    when(schemaRead.index(any[SchemaDescriptor], any[schema.IndexType])).thenReturn(descriptor)
   }
 }
