@@ -34,10 +34,11 @@ case class DirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ
     val typeId = typ.getId(query)
     if (typeId == LazyType.UNKNOWN) ClosingIterator.empty
     else {
-      PrimitiveLongHelper.map(query.getRelationshipsByType(state.relTypeTokenReadSession.get, typeId, indexOrder), relationshipId => {
+      val relIterator = query.getRelationshipsByType(state.relTypeTokenReadSession.get, typeId, indexOrder)
+      PrimitiveLongHelper.map(relIterator, relationshipId => {
         val relationship = state.query.relationshipById(relationshipId)
-        val startNode = relationship.startNode()
-        val endNode = relationship.endNode()
+        val startNode = query.nodeById(relIterator.startNodeId())
+        val endNode = query.nodeById(relIterator.endNodeId())
         rowFactory.copyWith(ctx, ident, relationship, fromNode, startNode, toNode, endNode)
       })
     }
