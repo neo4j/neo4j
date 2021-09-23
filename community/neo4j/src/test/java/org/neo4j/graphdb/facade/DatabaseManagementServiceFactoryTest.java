@@ -31,7 +31,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SkipThreadLeakageGuard;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -44,7 +43,6 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@SkipThreadLeakageGuard
 @EphemeralTestDirectoryExtension
 class DatabaseManagementServiceFactoryTest
 {
