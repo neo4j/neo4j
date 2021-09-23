@@ -311,14 +311,14 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         //Record(0x71) {
         //    fields: [ Relationship(0x52) {
         //                 relId: 00
-        //                 startId: 00
-        //                 endId: 01
-        //                 type: "T" (81 54)
+        //                 startId: -01
+        //                 endId: -01
+        //                 type: "" (80)
         //                 props: {} (A0)]
         //}
         assertThat( connection ).satisfies(
-                eventuallyReceives( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
-                        0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00, 0x00 ) ) );
+                eventuallyReceives( bytes( 0x00, 0x0A, 0xB1, 0x71, 0x91,
+                        0xB5, 0x52, 0x00, -0x01, -0x01, 0x80, 0xA0, 0x00, 0x00 ) ) );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
