@@ -71,6 +71,8 @@ case class DeprecatedCatalogKeywordForAdminCommandSyntax(position: InputPosition
 
 case class DeprecatedCoercionOfListToBoolean(position: InputPosition) extends InternalNotification
 
+case class DeprecatedSelfReferenceToVariableInCreatePattern(position: InputPosition) extends InternalNotification
+
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
 
 case class MissingAliasNotification(pos: InputPosition) extends InternalNotification

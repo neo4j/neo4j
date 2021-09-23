@@ -598,7 +598,8 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
 
   override def semanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
-      checkRelTypes(pattern)
+      checkRelTypes(pattern) chain
+      SemanticState.recordCurrentScope(pattern)
 }
 
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {

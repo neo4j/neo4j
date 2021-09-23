@@ -165,7 +165,7 @@ final case class Scope(symbolTable: Map[String, Symbol],
     symbolTable.values.map(_.definition).toSet
 
   /**
-   * @return A map from any use (read or definition) of a variable to its definition, in the all scopes.
+   * @return A map from any use (read or definition) of a variable to its definition, in all scopes.
    */
   def allVariableDefinitions: Map[SymbolUse, SymbolUse] =
     allScopes.map(_.variableDefinitions).reduce(_ ++ _)

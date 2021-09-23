@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSy
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
+import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
 import org.neo4j.cypher.internal.util.DeprecatedShowExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
@@ -164,6 +165,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCoercionOfListToBoolean(pos) =>
       NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedSelfReferenceToVariableInCreatePattern(pos) =>
+      NotificationCode.DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN.notification(pos.withOffset(offset).asInputPosition)
     case SubqueryVariableShadowing(pos, varName)             =>
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.shadowingVariable(varName))
     case MissingAliasNotification(pos) =>

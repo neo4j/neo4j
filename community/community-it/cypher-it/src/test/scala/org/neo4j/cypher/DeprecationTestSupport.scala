@@ -19,17 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.javacompat.NotificationTestSupport
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.impl.notification.NotificationDetail
-import org.neo4j.procedure.Procedure
 import org.scalatest.Matchers
 import org.scalatest.Suite
-
-import java.util.stream.Stream
 
 trait DeprecationTestSupport extends Suite with Matchers {
 

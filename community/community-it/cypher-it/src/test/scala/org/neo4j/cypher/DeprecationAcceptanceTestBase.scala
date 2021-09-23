@@ -37,6 +37,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHOW_EXISTENCE_CONSTRAINT_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHOW_SCHEMA_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION
@@ -378,6 +379,39 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
     assertNoNotificationInSupportedVersions("EXPLAIN RETURN NOT TRUE", DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
   }
+
+  test("should not allow referencing elements being created by the pattern within that same pattern") {
+    val badQueries = Seq(
+      "EXPLAIN CREATE (a {prop:7})-[r:R {prop: a.prop}]->(b)",
+      "EXPLAIN CREATE (a {prop:7})-[r:R]->(b {prop: a.prop})",
+      "EXPLAIN CREATE (a {prop: r.prop})-[r:R {prop:7}]->(b)",
+      "EXPLAIN CREATE (a)-[r:R {prop:7}]->(b {prop: r.prop})",
+      "EXPLAIN CREATE (a {prop:b.prop})-[r:R]->(b {prop: 7})",
+      "EXPLAIN CREATE (a)-[r:R {prop:b.prop}]->(b {prop: 7})",
+      "EXPLAIN CREATE (a:A:B)-[r:R]->(b {prop: labels(a)})",
+      "EXPLAIN CREATE p=(a {prop:7})-[r:R {prop: a.prop}]->(b)",
+      "EXPLAIN CREATE p=(a {prop:7})-[:R]->(b {prop: nodes(p)[0].prop})",
+      "EXPLAIN CREATE (a {prop:7})-[:R {prop: a.prop}]->(b)",
+      "EXPLAIN CREATE (a {prop:7})-[r:R]->({prop: a.prop})",
+      "EXPLAIN CREATE p=({prop:7})-[:R]->(b {prop: nodes(p)[0].prop})",
+    )
+
+    assertNotificationInSupportedVersions(badQueries, DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN)
+
+    val okQueries = Seq(
+      "EXPLAIN CREATE (a)-[:R]->(a)",
+      "EXPLAIN CREATE (a {prop: 7})-[:R]->(a)",
+      "EXPLAIN MATCH (b) CREATE ()-[:R]->(a {prop: b.prop})",
+      "EXPLAIN CREATE (a {prop: 7}) CREATE (b {prop: a.prop})",
+      "EXPLAIN MATCH (a {prop:7})-[r:R {prop: a.prop}]->(b) RETURN *",
+      "EXPLAIN CREATE (a {prop:7}) CREATE (a)-[:R]->(b {prop: a.prop})",
+      "EXPLAIN MATCH (a) CREATE (a)-[:R]->(b {prop: a.prop})",
+    )
+
+    assertNoNotificationInSupportedVersions(okQueries, DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN)
+  }
+
+
 
   // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 

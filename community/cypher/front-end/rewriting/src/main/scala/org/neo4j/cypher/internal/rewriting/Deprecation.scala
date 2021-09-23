@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -32,12 +33,15 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
@@ -67,9 +71,11 @@ import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
 import org.neo4j.cypher.internal.util.DeprecatedShowExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -388,19 +394,39 @@ object Deprecations {
       typeInfo => typeInfo.expected.fold(false)(CTBoolean.covariant.containsAll)
     )
 
-    private def isListCoercedToBoolean(semanticTable: SemanticTable, e: Expression) = semanticTable.types.get(e).exists(
+    private def isListCoercedToBoolean(semanticTable: SemanticTable, e: Expression): Boolean = semanticTable.types.get(e).exists(
       typeInfo =>
         CTList(CTAny).covariant.containsAll(typeInfo.specified) && isExpectedTypeBoolean(semanticTable, e)
     )
 
-    override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = {
+    private def hasSelfReferenceToVariableInPattern(pattern: Pattern, semanticTable: SemanticTable): Boolean = {
+      val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
 
+      def findAllVariables(e: Any): Set[LogicalVariable] = e.findAllByClass[LogicalVariable].toSet
+      def isDefinition(variable: LogicalVariable): Boolean = allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
+
+      val (declaredVariables, referencedVariables) = pattern.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
+        case NodePattern(maybeVariable, _, maybeProperties, _)               => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+        case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+        case NamedPatternPart(variable, _)                                   => acc => TraverseChildren((acc._1 + variable, acc._2))
+      }
+
+      (declaredVariables & referencedVariables).nonEmpty
+    }
+
+    override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = {
       case e: Expression if isListCoercedToBoolean(semanticTable, e) =>
         Deprecation(
           None,
           Some(DeprecatedCoercionOfListToBoolean(e.position))
         )
 
+      // CREATE (a {prop:7})-[r:R]->(b {prop: a.prop})
+      case Create(p: Pattern) if hasSelfReferenceToVariableInPattern(p, semanticTable) =>
+        Deprecation(
+          None,
+          Some(DeprecatedSelfReferenceToVariableInCreatePattern(p.position))
+        )
     }
 
     override def findWithContext(statement: ast.Statement,
