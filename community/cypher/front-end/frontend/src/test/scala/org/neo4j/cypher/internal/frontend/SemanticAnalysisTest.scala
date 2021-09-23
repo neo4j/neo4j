@@ -264,9 +264,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val context = new ErrorCollectingContext()
     pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions).transform(startState, context)
 
-    context.errors.map(_.msg) shouldBe Seq(
-      "CALL { ... } IN TRANSACTIONS importing a variable is not supported at the moment"
-    )
+    context.errors.map(_.msg) shouldBe empty
   }
 
   test("returning CALL { ... } IN TRANSACTIONS with feature enabled") {
@@ -285,11 +283,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallReturningSubqueryInTransactions)
     pipeline.transform(startState, context)
 
-    context.errors.map(_.msg) shouldBe Seq(
-      "CALL { ... } IN TRANSACTIONS importing a variable is not supported at the moment"
-    )
-    // ENABLE ONCE CORRELATED TRANSACTIONAL SUBQUERIES ARE ALLOWED
-//    context.errors.map(_.msg) shouldBe empty
+    context.errors.map(_.msg) shouldBe empty
   }
 
   test("nested CALL { ... } IN TRANSACTIONS") {
