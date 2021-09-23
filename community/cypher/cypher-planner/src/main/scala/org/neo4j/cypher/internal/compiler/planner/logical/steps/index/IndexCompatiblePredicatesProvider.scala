@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
@@ -70,61 +71,63 @@ trait IndexCompatiblePredicatesProvider {
     def valid(ident: LogicalVariable, dependencies: Set[LogicalVariable]): Boolean =
       !arguments.contains(ident) && dependencies.subsetOf(arguments)
 
-    val explicitCompatiblePredicates = predicates.flatMap {
+    val explicitCompatiblePredicates = predicates.collect {
       // n.prop IN [ ... ]
       case predicate@AsPropertySeekable(seekable: PropertySeekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.args.asQueryExpression
         val exactness = if (queryExpression.isInstanceOf[SingleQueryExpression[_]]) SingleExactPredicate else MultipleExactPredicate
-        Set(IndexCompatiblePredicate(seekable.ident, seekable.expr, predicate, queryExpression, seekable.propertyValueType(semanticTable),
-          predicateExactness = exactness, solvedPredicate = Some(predicate), dependencies = seekable.dependencies))
+        IndexCompatiblePredicate(seekable.ident, seekable.expr, predicate, queryExpression, seekable.propertyValueType(semanticTable),
+          predicateExactness = exactness, solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
+          compatibleIndexTypes = Set(IndexType.Btree))
 
       // ... = n.prop
       // In some rare cases, we can't rewrite these predicates cleanly,
       // and so planning needs to search for these cases explicitly
       case predicate@Equals(a, prop@Property(variable: LogicalVariable, _)) if valid(variable, a.dependencies) =>
         val expr = SingleQueryExpression(a)
-        Set(IndexCompatiblePredicate(variable, prop, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)),
-          predicateExactness = SingleExactPredicate, solvedPredicate = Some(predicate), dependencies = a.dependencies))
+        IndexCompatiblePredicate(variable, prop, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)),
+          predicateExactness = SingleExactPredicate, solvedPredicate = Some(predicate), dependencies = a.dependencies,
+          compatibleIndexTypes = Set(IndexType.Btree))
 
       // n.prop STARTS WITH "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
-        Set(IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
+        IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate,
-          solvedPredicate = Some(predicate), dependencies = seekable.dependencies))
+          solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
+          compatibleIndexTypes = Set(IndexType.Btree, IndexType.Text))
 
       // n.prop <|<=|>|>= value
       case predicate@AsValueRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
-        Set(IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
-          predicateExactness = NotExactPredicate, solvedPredicate = Some(predicate), dependencies = seekable.dependencies))
+        IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
+          predicateExactness = NotExactPredicate, solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
+          compatibleIndexTypes = Set(IndexType.Btree))
 
       // An index seek for this will almost satisfy the predicate, but with the possibility of some false positives.
       // Since it reduces the cardinality to almost the level of the predicate, we can use the predicate to calculate cardinality,
       // but not mark it as solved, since the planner will still need to solve it with a Filter.
       case predicate@AsDistanceSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
-        Set(IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
-          predicateExactness = NotExactPredicate, solvedPredicate = Some(PartialDistanceSeekWrapper(predicate)), dependencies = seekable.dependencies))
+        IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
+          predicateExactness = NotExactPredicate, solvedPredicate = Some(PartialDistanceSeekWrapper(predicate)), dependencies = seekable.dependencies,
+          compatibleIndexTypes = Set(IndexType.Btree))
 
       // MATCH (n:User) WHERE n.prop IS NOT NULL RETURN n
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty) =>
-        Set(IndexCompatiblePredicate(scannable.ident, scannable.property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
-          solvedPredicate = Some(predicate), dependencies = Set.empty).convertToScannable)
+        IndexCompatiblePredicate(scannable.ident, scannable.property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
+          solvedPredicate = Some(predicate), dependencies = Set.empty, compatibleIndexTypes = Set(IndexType.Btree)).convertToScannable
 
       // n.prop ENDS WITH 'substring'
       case predicate@EndsWith(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
-        Set(IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
-          solvedPredicate = Some(predicate), dependencies = expr.dependencies))
+        IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
+          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Btree))
 
       // n.prop CONTAINS 'substring'
       case predicate@Contains(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
-        Set(IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
-          solvedPredicate = Some(predicate), dependencies = expr.dependencies))
-
-      case _ =>
-        Set.empty[IndexCompatiblePredicate]
+        IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
+          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Btree))
     }
 
     val implicitCompatiblePredicates = implicitIndexCompatiblePredicates(planContext, indexPredicateProviderContext, predicates, explicitCompatiblePredicates, valid)

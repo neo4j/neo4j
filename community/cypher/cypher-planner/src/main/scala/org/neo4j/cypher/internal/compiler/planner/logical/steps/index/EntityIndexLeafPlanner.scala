@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -94,7 +95,8 @@ object EntityIndexLeafPlanner {
       predicateExactness = NotExactPredicate,
       solvedPredicate = None,
       dependencies = Set.empty,
-      isImplicit = true
+      isImplicit = true,
+      compatibleIndexTypes = Set(IndexType.Btree)
     )
   }
 
@@ -110,6 +112,7 @@ object EntityIndexLeafPlanner {
 
     // Group predicates by which property they include
     val predicatesByProperty = predicates
+      .filter(_.compatibleIndexTypes.contains(indexDescriptor.indexType))
       .groupBy(icp => semanticTable.id(icp.propertyKeyName))
       // Sort out predicates that are not found in semantic table
       .collect { case (Some(x), v) => (x, v) }
@@ -150,15 +153,16 @@ object EntityIndexLeafPlanner {
   /**
    * A predicate that could potentially be solved by a property index
    *
-   * @param variable           The variable to solve for
-   * @param property           The property involved in the predicate
-   * @param predicate          The original predicate from the query
-   * @param queryExpression    The index query expression
-   * @param propertyType       The cypher type of the property
-   * @param predicateExactness Determines seek possibility
-   * @param solvedPredicate    If a plan is created, this is what to register as solved predicate
-   * @param dependencies       Predicate dependencies
-   * @param isImplicit         if `true` than the predicate is not explicitly stated inthe queryy
+   * @param variable             The variable to solve for
+   * @param property             The property involved in the predicate
+   * @param predicate            The original predicate from the query
+   * @param queryExpression      The index query expression
+   * @param propertyType         The cypher type of the property
+   * @param predicateExactness   Determines seek possibility
+   * @param solvedPredicate      If a plan is created, this is what to register as solved predicate
+   * @param dependencies         Predicate dependencies
+   * @param isImplicit           if `true` than the predicate is not explicitly stated in the query
+   * @param compatibleIndexTypes Index types which can solve this predicate
    */
   case class IndexCompatiblePredicate(
                                        variable: LogicalVariable,
@@ -170,6 +174,7 @@ object EntityIndexLeafPlanner {
                                        solvedPredicate: Option[Expression],
                                        dependencies: Set[LogicalVariable],
                                        isImplicit: Boolean = false,
+                                       compatibleIndexTypes: Set[IndexType],
                                      ) {
     def name: String = variable.name
 

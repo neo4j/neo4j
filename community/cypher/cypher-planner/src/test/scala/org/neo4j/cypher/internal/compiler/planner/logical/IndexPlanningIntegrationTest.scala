@@ -854,4 +854,47 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .nodeByLabelScan("a", "A")
       .build()
   }
+
+  test("should not plan text index usage when feature flag is not set") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .build()
+
+    for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheN[a.prop] AS `a.prop`")
+        .filter(s"cacheNFromStore[a.prop] $op 'hello'")
+        .nodeByLabelScan("a", "A")
+        .build()
+    }
+  }
+
+  test("should plan text index usage only for supported predicates when feature flag is set") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .enablePlanningTextIndexes()
+      .build()
+
+    for (op <- List("STARTS WITH")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("a.prop AS `a.prop`")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')")
+        .build()
+    }
+
+    for (op <- List("=", "<", "<=", ">", ">=", "ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheN[a.prop] AS `a.prop`")
+        .filter(s"cacheNFromStore[a.prop] $op 'hello'")
+        .nodeByLabelScan("a", "A")
+        .build()
+    }
+  }
 }

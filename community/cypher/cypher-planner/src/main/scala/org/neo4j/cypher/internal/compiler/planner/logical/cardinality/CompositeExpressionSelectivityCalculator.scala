@@ -194,7 +194,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
   private def findNodeIndexMatches(queryGraph: QueryGraph,
                                    semanticTable: SemanticTable,
                                    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Set[IndexMatch] = {
-    NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext).toSet[IndexMatch]
+    NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext, planningTextIndexesEnabled = false).toSet[IndexMatch]
   }
 
   private def findRelationshipIndexMatches(queryGraph: QueryGraph,

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
@@ -73,7 +74,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     in(property, listOfInt(1, 2)),
     isExact = true)
 
-  testFindIndexCompatiblePredicate("startsWith", startsWith(property, literalString("test")))
+  testFindIndexCompatiblePredicate("startsWith", startsWith(property, literalString("test")), indexTypes = Set(IndexType.Btree, IndexType.Text))
 
   testFindIndexCompatiblePredicate("endsWith", endsWith(property, literalString("test")))
 
@@ -108,6 +109,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
                                                argumentIds: Set[String] = Set.empty,
                                                dependencies: Set[String] = Set.empty,
                                                propertyTypes: Map[Expression, TypeSpec] = Map.empty,
+                                               indexTypes: Set[IndexType] = Set(IndexType.Btree),
                                                expectToExist: Boolean = true): Unit = {
     val predicates = Set(predicate)
     test(s"findIndexCompatiblePredicates ($name)") {
@@ -132,6 +134,9 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
                 }
                 withClue("including dependencies") {
                   compatiblePredicate.dependencies.map(_.name) should equal(dependencies)
+                }
+                withClue("including index types") {
+                  compatiblePredicate.compatibleIndexTypes shouldBe indexTypes
                 }
               }
             }

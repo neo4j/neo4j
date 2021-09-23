@@ -65,7 +65,9 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
       context.planContext,
       context.indexCompatiblePredicatesProviderContext,
       interestingOrderConfig,
-      context.providedOrderFactory)
+      context.providedOrderFactory,
+      context.planningTextIndexesEnabled,
+    )
 
     // Find plans solving given property predicates together with any label predicates from QG
     val result: Set[LogicalPlan] = if (indexMatches.isEmpty) {
@@ -158,6 +160,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
                                      indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
                                      interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
                                      providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
+                                     planningTextIndexesEnabled: Boolean
                                    ): Set[NodeIndexMatch] = {
     val predicates = qg.selections.flatPredicates.toSet
     val allLabelPredicatesMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
@@ -177,7 +180,14 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
         propertyPredicates <- compatiblePropertyPredicates.groupBy(_.name)
         variableName = propertyPredicates._1
         labelPredicates = allLabelPredicatesMap.getOrElse(variableName, Set.empty)
-        indexMatch <- findIndexMatches(variableName, propertyPredicates._2, labelPredicates, interestingOrderConfig, semanticTable, planContext, providedOrderFactory)
+        indexMatch <- findIndexMatches(
+          variableName,
+          propertyPredicates._2,
+          labelPredicates, interestingOrderConfig,
+          semanticTable,
+          planContext,
+          providedOrderFactory,
+          planningTextIndexesEnabled)
       } yield indexMatch
       matches.toSet
     }
@@ -190,11 +200,12 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
                                semanticTable: SemanticTable,
                                planContext: PlanContext,
                                providedOrderFactory: ProvidedOrderFactory,
+                               planningTextIndexesEnabled: Boolean
                               ): Set[NodeIndexMatch] = for {
     labelPredicate <- labelPredicates
     labelName <- labelPredicate.labels
     labelId: LabelId <- semanticTable.id(labelName).toSet
-    indexDescriptor: IndexDescriptor <- planContext.btreeIndexesGetForLabel(labelId)
+    indexDescriptor: IndexDescriptor <- indexDescriptorsForLabel(labelId, planContext, planningTextIndexesEnabled)
     predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrderConfig, semanticTable, providedOrderFactory)
     indexMatch = NodeIndexMatch(
       variableName,
@@ -207,6 +218,13 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       indexDescriptor,
     )
   } yield indexMatch
+
+  private def indexDescriptorsForLabel(labelId: LabelId, planContext: PlanContext, planningTextIndexesEnabled: Boolean): Iterator[IndexDescriptor] = {
+    planContext.btreeIndexesGetForLabel(labelId) ++ {
+      if (planningTextIndexesEnabled) planContext.textIndexesGetForLabel(labelId)
+      else Iterator.empty
+    }
+  }
 
   override protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
                                                            indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
