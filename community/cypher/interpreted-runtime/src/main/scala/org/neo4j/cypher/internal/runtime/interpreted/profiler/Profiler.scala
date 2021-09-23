@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.profiling.OperatorProfileEvent
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
@@ -288,6 +289,13 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
   override protected def manyDbHits(count: Int): Int = {
     increment(count)
     count
+  }
+
+  override def createExpressionCursors(): ExpressionCursors = {
+    val expressionCursors = super.createExpressionCursors()
+    val tracer = new PipeTracer
+    expressionCursors.setKernelTracer(tracer)
+    expressionCursors
   }
 
   abstract class ProfilingCursor(inner: Cursor) extends DefaultCloseListenable with Cursor {
