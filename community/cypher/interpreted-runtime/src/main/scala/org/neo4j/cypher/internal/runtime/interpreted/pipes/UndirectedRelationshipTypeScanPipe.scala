@@ -62,8 +62,8 @@ private class UndirectedIterator(relName: String,
     } else {
       emitSibling = true
       lastRelationship = query.relationshipById(relIterator.next())
-      lastStart = lastRelationship.startNode()
-      lastEnd = lastRelationship.endNode()
+      lastStart = query.nodeById(relIterator.startNodeId())
+      lastEnd = query.nodeById(relIterator.endNodeId())
       rowFactory.copyWith(baseContext, relName, lastRelationship, fromNode, lastStart, toNode, lastEnd)
     }
   }
