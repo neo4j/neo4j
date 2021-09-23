@@ -31,7 +31,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -40,6 +43,8 @@ import org.neo4j.test.extension.Inject;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 
@@ -208,6 +213,7 @@ public class IndexTxStateLookupTest
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
+            tx.schema().indexFor( RelationshipType.withName( "Rel" ) ).on( "prop" ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -263,6 +269,74 @@ public class IndexTxStateLookupTest
         {
             tx.getNodeById( node.getId() ).delete();
             tx.commit();
+        }
+    }
+
+    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
+    @MethodSource( "argumentsProvider" )
+    public void lookupWithoutTransactionWithCacheEviction( Object store, Object lookup )
+    {
+        init( store, lookup );
+
+        // when
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            (node = tx.createNode( label( "Node" ) )).setProperty( "prop", this.store );
+            tx.commit();
+        }
+        // then
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( 1, count( tx.findNodes( label( "Node" ), "prop", this.lookup ) ) );
+            tx.commit();
+        }
+        deleteNode( node );
+    }
+
+    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
+    @MethodSource( "argumentsProvider" )
+    void shouldRemoveDeletedNodeCreatedInSameTransactionFromIndexTxState( Object store, Object lookup )
+    {
+        init( store, lookup );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // given
+            Label label = label( "Node" );
+            String key = "prop";
+            Node node = tx.createNode( label );
+            node.setProperty( key, this.store );
+            assertTrue( tx.findNodes( label, key, this.lookup ).hasNext() );
+
+            // when
+            node.delete();
+
+            // then
+            assertFalse( tx.findNodes( label, key, this.lookup ).hasNext() );
+        }
+    }
+
+    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
+    @MethodSource( "argumentsProvider" )
+    void shouldRemoveDeletedRelationshipCreatedInSameTransactionFromIndexTxState( Object store, Object lookup )
+    {
+        init( store, lookup );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // given
+            RelationshipType type = RelationshipType.withName( "Rel" );
+            String key = "prop";
+            Relationship relationship = tx.createNode().createRelationshipTo( tx.createNode(), type );
+            relationship.setProperty( key, this.store );
+            assertTrue( tx.findRelationships( type, key, this.lookup ).hasNext() );
+
+            // when
+            relationship.delete();
+
+            // then
+            assertFalse( tx.findRelationships( type, key, this.lookup ).hasNext() );
         }
     }
 }

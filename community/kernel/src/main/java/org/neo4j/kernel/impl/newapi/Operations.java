@@ -315,6 +315,15 @@ public class Operations implements Write, SchemaWrite
         TransactionState txState = ktx.txState();
         if ( txState.relationshipIsAddedInThisTx( relationship ) )
         {
+            try
+            {
+                singleRelationship( relationship );
+            }
+            catch ( EntityNotFoundException e )
+            {
+                throw new IllegalStateException( "Relationship " + relationship + " was created in this transaction, but was not found when deleting it" );
+            }
+            updater.onDeleteUncreated( relationshipCursor, propertyCursor );
             txState.relationshipDoDeleteAddedInThisTx( relationship );
             return true;
         }
@@ -470,6 +479,15 @@ public class Operations implements Write, SchemaWrite
             TransactionState state = ktx.txState();
             if ( state.nodeIsAddedInThisTx( node ) )
             {
+                try
+                {
+                    singleNode( node );
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    throw new IllegalStateException( "Node " + node + " was created in this transaction, but was not found when it was about to be deleted" );
+                }
+                updater.onDeleteUncreated( nodeCursor, propertyCursor );
                 state.nodeDoDelete( node );
                 return true;
             }

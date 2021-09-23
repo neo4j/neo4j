@@ -360,6 +360,7 @@ public class PlainOperationsTest extends OperationsTest
         // THEN
         txState.nodeDoCreate( 123 );
         when( transaction.hasTxStateWithChanges() ).thenReturn( true );
+        when( nodeCursor.next() ).thenReturn( true );
 
         // WHEN
         operations.nodeDelete( 123 );

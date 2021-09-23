@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 
 import java.util.Arrays;
@@ -42,6 +44,7 @@ import org.neo4j.values.storable.ValueTuple;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.token.api.TokenConstants.ANY_PROPERTY_KEY;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -145,12 +148,58 @@ public class IndexTxStateUpdater
                 afterValue );
     }
 
+    void onDeleteUncreated( NodeCursor node, PropertyCursor propertyCursor )
+    {
+        onDeleteUncreated( new NodeCursorWrapper( node ), propertyCursor, node.labels().all() );
+    }
+
+    void onDeleteUncreated( RelationshipScanCursor relationship, PropertyCursor propertyCursor )
+    {
+        onDeleteUncreated( new RelationshipCursorWrapper( relationship ), propertyCursor, new long[]{relationship.type()} );
+    }
+
     private boolean noSchemaChangedInTx()
     {
         return !(read.txState().hasChanges() && !read.txState().hasDataChanges());
     }
 
     //PROPERTY CHANGES
+
+    /**
+     * Creating an entity with its data in a transaction adds also adds that state to index transaction state (for matching indexes).
+     * When deleting an entity this method will delete this state from the index transaction state.
+     *
+     * @param entity entity that was deleted.
+     * @param propertyCursor property cursor for accessing the properties of the entity.
+     * @param tokens the entity tokens this entity has.
+     */
+    private void onDeleteUncreated( EntityCursor entity, PropertyCursor propertyCursor, long[] tokens )
+    {
+        assert noSchemaChangedInTx();
+        entity.properties( propertyCursor, PropertySelection.ALL_PROPERTY_KEYS );
+        MutableIntList propertyKeyList = IntLists.mutable.empty();
+        while ( propertyCursor.next() )
+        {
+            propertyKeyList.add( propertyCursor.propertyKey() );
+        }
+        int[] propertyKeyIds = propertyKeyList.toArray();
+        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyIds, entity.entityType() );
+        if ( !indexes.isEmpty() )
+        {
+            MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
+            SchemaMatcher.onMatchingSchema( indexes.iterator(), ANY_PROPERTY_KEY, propertyKeyIds,
+                    index ->
+                    {
+                        MemoryTracker memoryTracker = read.txState().memoryTracker();
+                        SchemaDescriptor schema = index.schema();
+                        Value[] values = getValueTuple( entity, propertyCursor, ANY_PROPERTY_KEY, NO_VALUE, schema.getPropertyIds(), materializedProperties,
+                                memoryTracker );
+                        ValueTuple valueTuple = ValueTuple.of( values );
+                        memoryTracker.allocateHeap( valueTuple.getShallowSize() );
+                        read.txState().indexDoUpdateEntry( schema, entity.reference(), valueTuple, null );
+                    } );
+        }
+    }
 
     private void onPropertyAdd( EntityCursor entity, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId, int[] existingPropertyKeyIds,
             Value value )
