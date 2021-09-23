@@ -331,7 +331,7 @@ public class TypeReference
         return new TypeReference( packageName, name, arrayDepth - 1, isTypeParameter, declaringClass, modifiers, parameters );
     }
 
-    int arrayDepth()
+    public int arrayDepth()
     {
         return arrayDepth;
     }
@@ -419,7 +419,7 @@ public class TypeReference
         return result;
     }
 
-    String baseName()
+    public String baseName()
     {
         return writeBaseType( new StringBuilder() ).toString();
     }

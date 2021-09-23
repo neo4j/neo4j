@@ -44,7 +44,7 @@ import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 abstract class MergeTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int,
+                                                               val sizeHint: Int,
                                                                useWritesWithProfiling: Boolean = false
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
   test("merge should create node with empty all node scan") {
@@ -1244,6 +1244,68 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     a[CantCompileQueryException] shouldBe thrownBy(execute(logicalQuery, runtime))
+  }
+
+  test("merge should not create node with non-empty multi index seek") {
+    val (drunkNodes, childNodes) = given {
+      nodeIndex("Drunk", "prop")
+      nodeIndex("Child", "prop")
+      val drunks = nodePropertyGraph(sizeHint, { case i => Map("prop" -> i ) }, "Drunk")
+      val children = nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "Child")
+      (drunks, children)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("d", "c")
+      .merge(
+        nodes = Seq(
+          createNodeWithProperties("d", Seq("Drunk"), "{prop: 42}"),
+          createNodeWithProperties("c", Seq("Child"), "{prop: 42}")
+        )
+      )
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("d:Drunk(prop=42)"),
+        _.nodeIndexSeek("c:Child(prop=42)")
+      )
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    runtimeResult should beColumns("d", "c").withSingleRow(drunkNodes(42), childNodes(42)).withNoUpdates()
+  }
+
+  test("merge should create node with empty multi index seek") {
+    given {
+      nodeIndex("Drunk", "prop")
+      nodeIndex("Child", "prop")
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "Drunk")
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "Child")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("d", "c")
+      .merge(
+        nodes = Seq(
+          createNodeWithProperties("d", Seq("Drunk"), "{prop: 'hello'}"),
+          createNodeWithProperties("c", Seq("Child"), "{prop: 'hello'}")
+        )
+      )
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("d:Drunk(prop='hello')"),
+        _.nodeIndexSeek("c:Child(prop='hello')")
+      )
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val drunkNode = Iterators.single(tx.findNodes(label("Drunk"), "prop", "hello"))
+    val childNode = Iterators.single(tx.findNodes(label("Child"), "prop", "hello"))
+    runtimeResult should beColumns("d", "c").withSingleRow(drunkNode, childNode).withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
   }
 }
 

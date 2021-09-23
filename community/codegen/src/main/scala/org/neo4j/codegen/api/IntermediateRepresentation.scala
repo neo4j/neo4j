@@ -19,8 +19,6 @@
  */
 package org.neo4j.codegen.api
 
-import java.io.PrintStream
-
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
 import org.neo4j.values.storable.BooleanValue
@@ -28,6 +26,7 @@ import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
+import java.io.PrintStream
 import scala.annotation.tailrec
 
 /**
@@ -1088,6 +1087,11 @@ object IntermediateRepresentation {
 
   def booleanValue(ir: IntermediateRepresentation): IntermediateRepresentation =
     invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), ir)
+
+  def scalaObjectInstance(instance: AnyRef): IntermediateRepresentation = {
+    val typeReference = codegen.TypeReference.typeReference(instance.getClass)
+    GetStatic(Some(typeReference), typeReference, "MODULE$")
+  }
 
   private val BOOLEAN_VALUE_TYPE: TypeReference = typeRefOf[BooleanValue]
   private val VALUES_TYPE: TypeReference = typeRefOf[Values]

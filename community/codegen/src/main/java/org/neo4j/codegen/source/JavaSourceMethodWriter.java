@@ -549,7 +549,16 @@ class JavaSourceMethodWriter implements MethodWriter, ExpressionVisitor
     @Override
     public void newArray( TypeReference type, int size )
     {
-        append( "new " ).append( type.fullName() ).append( '[' ).append( size ).append( ']' );
+        if ( type.isArray() )
+        {
+            append( "new " ).append( type.baseName() )
+                            .append( '[' ).append( size ).append( ']' )
+                            .append( "[]".repeat( type.arrayDepth() ) );
+        }
+        else
+        {
+            append( "new " ).append( type.fullName() ).append( '[' ).append( size ).append( ']' );
+        }
     }
 
     @Override

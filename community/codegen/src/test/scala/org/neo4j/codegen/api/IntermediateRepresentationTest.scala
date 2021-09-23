@@ -19,6 +19,7 @@
  */
 package org.neo4j.codegen.api
 
+import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.api.IntermediateRepresentation.block
 import org.neo4j.codegen.api.IntermediateRepresentation.condition
 import org.neo4j.codegen.api.IntermediateRepresentation.constant
@@ -27,6 +28,7 @@ import org.neo4j.codegen.api.IntermediateRepresentation.isEmpty
 import org.neo4j.codegen.api.IntermediateRepresentation.load
 import org.neo4j.codegen.api.IntermediateRepresentation.noop
 import org.neo4j.codegen.api.IntermediateRepresentation.print
+import org.neo4j.codegen.api.IntermediateRepresentation.scalaObjectInstance
 import org.neo4j.codegen.api.IntermediateRepresentation.staticallyKnownPredicate
 import org.neo4j.codegen.api.IntermediateRepresentation.ternary
 import org.neo4j.codegen.api.IntermediateRepresentation.trueValue
@@ -99,6 +101,34 @@ class IntermediateRepresentationTest extends CypherFunSuite {
     } shouldBe condition(block(print(constant("hello")), load[Boolean]("foo")))(print(constant("hello")))
 
   }
+
+  test("scala objects") {
+    scalaObjectTest(TestSealedTraitObject)
+    scalaObjectTest(TestSealedCaseObject)
+    scalaObjectTest(TestStandAloneObject)
+    scalaObjectTest(TestStandAloneCaseObject)
+  }
+
+  private def scalaObjectTest(objectInstance: AnyRef) = {
+    val expectedRepresenation = GetStatic(
+      owner = Some(TypeReference.typeReference(objectInstance.getClass)),
+      output = TypeReference.typeReference(objectInstance.getClass),
+      name = "MODULE$"
+    )
+
+    // given that this is how we have implement scala object instance retrieval
+    scalaObjectInstance(objectInstance) shouldBe expectedRepresenation
+
+    // then this should also hold true (if this test fails scala has changed in some way and intermediate representation needs to be updated)
+    objectInstance.getClass.getField(expectedRepresenation.name).get(null) should be theSameInstanceAs objectInstance
+  }
+
   //this is here just because we cannot import IntermediateRepresentation.not because of scalatest
   private def notOp(inner: IntermediateRepresentation) = IntermediateRepresentation.not(inner)
 }
+
+sealed trait TestSealedTrait
+object TestSealedTraitObject extends TestSealedTrait
+case object TestSealedCaseObject extends TestSealedTrait
+object TestStandAloneObject
+case object TestStandAloneCaseObject
