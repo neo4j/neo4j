@@ -33,9 +33,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -43,11 +47,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 public class IndexingCompositeQueryAcceptanceTest
 {
     @Inject
     private GraphDatabaseAPI db;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
+    }
 
     public static Stream<Arguments> data()
     {
@@ -61,9 +71,9 @@ public class IndexingCompositeQueryAcceptanceTest
         {
             for ( IndexingMode indexingMode : indexingModes )
             {
-                for ( EntityControl enityControl : entityControls )
+                for ( EntityControl entityControl : entityControls )
                 {
-                    builder.add( arguments( dataSet, indexingMode, enityControl ) );
+                    builder.add( arguments( dataSet, indexingMode, entityControl ) );
                 }
             }
         }
@@ -84,23 +94,31 @@ public class IndexingCompositeQueryAcceptanceTest
                 tx.commit();
             }
             break;
-        case PROPERTY:
-            String indexName;
-            try ( Transaction tx = db.beginTx() )
-            {
-                indexName = entityControl.createIndex( tx, TOKEN_NAME, keys );
-                tx.commit();
-            }
-
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().awaitIndexOnline( indexName, 5, TimeUnit.MINUTES );
-                tx.commit();
-            }
+        case PROPERTY_BTREE:
+            createAndWaitForIndex( keys, entityControl, IndexType.BTREE );
+            break;
+        case PROPERTY_RANGE:
+            createAndWaitForIndex( keys, entityControl, IndexType.RANGE );
             break;
         case TOKEN:
         default:
             break;
+        }
+    }
+
+    private void createAndWaitForIndex( String[] keys, EntityControl entityControl, IndexType indexType )
+    {
+        String indexName;
+        try ( Transaction tx = db.beginTx() )
+        {
+            indexName = entityControl.createIndex( tx, TOKEN_NAME, keys, indexType );
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( indexName, 5, TimeUnit.MINUTES );
+            tx.commit();
         }
     }
 
@@ -306,7 +324,8 @@ public class IndexingCompositeQueryAcceptanceTest
     {
         NONE, // No index, fallback to scan
         TOKEN, // NLI or RTI only
-        PROPERTY // property index
+        PROPERTY_BTREE, // property index
+        PROPERTY_RANGE
     }
 
     enum DataSet
@@ -332,7 +351,7 @@ public class IndexingCompositeQueryAcceptanceTest
     interface EntityControl
     {
 
-        String createIndex( Transaction tx, String tokenName, String[] keys );
+        String createIndex( Transaction tx, String tokenName, String[] keys, IndexType indexType );
 
         long createEntity( Transaction tx, String token, Map<String,Object> properties );
 
@@ -352,9 +371,9 @@ public class IndexingCompositeQueryAcceptanceTest
         NODE
                 {
                     @Override
-                    public String createIndex( Transaction tx, String tokenName, String[] keys )
+                    public String createIndex( Transaction tx, String tokenName, String[] keys, IndexType indexType )
                     {
-                        IndexCreator indexCreator = tx.schema().indexFor( Label.label( tokenName ) );
+                        IndexCreator indexCreator = tx.schema().indexFor( Label.label( tokenName ) ).withIndexType( indexType );
                         for ( String key : keys )
                         {
                             indexCreator = indexCreator.on( key );
@@ -409,9 +428,9 @@ public class IndexingCompositeQueryAcceptanceTest
         RELATIONSHIP
                 {
                     @Override
-                    public String createIndex( Transaction tx, String tokenName, String[] keys )
+                    public String createIndex( Transaction tx, String tokenName, String[] keys, IndexType indexType )
                     {
-                        IndexCreator indexCreator = tx.schema().indexFor( RelationshipType.withName( tokenName ) );
+                        IndexCreator indexCreator = tx.schema().indexFor( RelationshipType.withName( tokenName ) ).withIndexType( indexType );
                         for ( String key : keys )
                         {
                             indexCreator = indexCreator.on( key );

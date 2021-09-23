@@ -19,246 +19,271 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterators;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
-public class NodeIndexingAcceptanceTest extends IndexingAcceptanceTestBase<Label,Node>
+public class NodeIndexingAcceptanceTest
 {
-    @Override
-    protected Label createToken( String name )
+    abstract static class NodeIndexingAcceptanceTestBase extends IndexingAcceptanceTestBase<Label,Node>
     {
-        return Label.label( name );
-    }
-
-    @Override
-    protected Node createEntity( GraphDatabaseService db, Map<String,Object> properties, Label label )
-    {
-        return createNode( db, properties, label );
-    }
-
-    private static Node createNode( GraphDatabaseService db, Map<String,Object> properties, Label... labels )
-    {
-        try ( Transaction tx = db.beginTx() )
+        @Override
+        protected Label createToken( String name )
         {
-            Node node = tx.createNode( labels );
-            properties.forEach( node::setProperty );
-            tx.commit();
-            return node;
-        }
-    }
-
-    @Override
-    protected Node createEntity( Transaction tx, Label label )
-    {
-        return tx.createNode( label );
-    }
-
-    @Override
-    protected void deleteEntity( Transaction tx, long id )
-    {
-        tx.getNodeById( id ).delete();
-    }
-
-    @Override
-    protected Node getEntity( Transaction tx, long id )
-    {
-        return tx.getNodeById( id );
-    }
-
-    @Override
-    protected IndexDefinition createIndex( GraphDatabaseService db, Label token, String... properties )
-    {
-        return SchemaAcceptanceTest.createIndex( db, token, properties );
-    }
-
-    @Override
-    protected List<Node> findEntitiesByTokenAndProperty( Transaction tx, Label label, String propertyName, Object value )
-    {
-        return Iterators.asList( tx.findNodes( label, propertyName, value ) );
-    }
-
-    @Override
-    protected ResourceIterator<Node> findEntities( Transaction tx, Label label, String key, Object value )
-    {
-        return tx.findNodes( label, key, value );
-    }
-
-    @Override
-    protected Node findEntity( Transaction tx, Label label, String key, Object value )
-    {
-        return tx.findNode( label, key, value );
-    }
-
-    @Test
-    void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction()
-    {
-        // When
-        long id = createNode( db, map( "key0", true, "key1", true ) ).getId();
-
-        createIndex( db, TOKEN1, "key2" );
-        Node myNode;
-        try ( Transaction tx = db.beginTx() )
-        {
-            myNode = tx.getNodeById( id );
-            myNode.addLabel( TOKEN1 );
-            myNode.setProperty( "key2", LONG_STRING );
-            myNode.setProperty( "key3", LONG_STRING );
-
-            tx.commit();
+            return Label.label( name );
         }
 
-        try ( Transaction transaction = db.beginTx() )
+        @Override
+        protected Node createEntity( GraphDatabaseService db, Map<String,Object> properties, Label label )
         {
-            myNode = transaction.getNodeById( myNode.getId() );
-            // Then
-            assertEquals( LONG_STRING, myNode.getProperty( "key2" ) );
-            assertEquals( LONG_STRING, myNode.getProperty( "key3" ) );
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "key2", LONG_STRING ) ).containsOnly( myNode );
-        }
-    }
-
-    @Test
-    void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime()
-    {
-        // Given
-        var myNode = createNode( db, map( "name", "Hawking" ), TOKEN1, TOKEN2 );
-        createIndex( db, TOKEN1, "name" );
-        createIndex( db, TOKEN2, "name" );
-        createIndex( db, TOKEN3, "name" );
-
-        // When
-        try ( Transaction tx = db.beginTx() )
-        {
-            myNode = tx.getNodeById( myNode.getId() );
-            myNode.removeLabel( TOKEN1 );
-            myNode.addLabel( TOKEN3 );
-            myNode.setProperty( "name", "Einstein" );
-            tx.commit();
+            return createNode( db, properties, label );
         }
 
-        try ( Transaction transaction = db.beginTx() )
+        private static Node createNode( GraphDatabaseService db, Map<String,Object> properties, Label... labels )
         {
-            myNode = transaction.getNodeById( myNode.getId() );
-            // Then
-            assertEquals( "Einstein", myNode.getProperty( "name" ) );
-            assertThat( myNode.getLabels() ).containsOnly( TOKEN2, TOKEN3 );
-
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Einstein" ) ).isEmpty();
-
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Einstein" ) ).containsOnly( myNode );
-
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Einstein" ) ).containsOnly( myNode );
-            transaction.commit();
-        }
-    }
-
-    @Test
-    void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce()
-    {
-        // Given
-        Node myNode = createNode( db, map( "name", "Hawking" ), TOKEN1, TOKEN2 );
-        createIndex( db, TOKEN1, "name" );
-        createIndex( db, TOKEN2, "name" );
-        createIndex( db, TOKEN3, "name" );
-
-        // When
-        try ( Transaction tx = db.beginTx() )
-        {
-            myNode = tx.getNodeById( myNode.getId() );
-            myNode.addLabel( TOKEN3 );
-            myNode.setProperty( "name", "Einstein" );
-            myNode.removeLabel( TOKEN1 );
-            myNode.setProperty( "name", "Feynman" );
-            tx.commit();
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = tx.createNode( labels );
+                properties.forEach( node::setProperty );
+                tx.commit();
+                return node;
+            }
         }
 
-        try ( Transaction transaction = db.beginTx() )
+        @Override
+        protected Node createEntity( Transaction tx, Label label )
         {
-            myNode = transaction.getNodeById( myNode.getId() );
-            // Then
-            assertEquals( "Feynman", myNode.getProperty( "name" ) );
-            assertThat( myNode.getLabels() ).containsOnly( TOKEN2, TOKEN3 );
-
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Einstein" ) ).isEmpty();
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Feynman" ) ).isEmpty();
-
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Einstein" ) ).isEmpty();
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Feynman" ) ).containsOnly( myNode );
-
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Einstein" ) ).isEmpty();
-            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Feynman" ) ).containsOnly( myNode );
-            transaction.commit();
-        }
-    }
-
-    @Test
-    void shouldAddIndexedPropertyToNodeWithDynamicLabels()
-    {
-        // Given
-        int indexesCount = 20;
-        String labelPrefix = "foo";
-        String propertyKeyPrefix = "bar";
-        String propertyValuePrefix = "baz";
-
-        for ( int i = 0; i < indexesCount; i++ )
-        {
-            createIndex( db, createToken( labelPrefix + i ), propertyKeyPrefix + i );
+            return tx.createNode( label );
         }
 
-        // When
-        long nodeId;
-        try ( Transaction tx = db.beginTx() )
+        @Override
+        protected void deleteEntity( Transaction tx, long id )
         {
-            nodeId = tx.createNode().getId();
-            tx.commit();
+            tx.getNodeById( id ).delete();
         }
 
-        try ( Transaction tx = db.beginTx() )
+        @Override
+        protected Node getEntity( Transaction tx, long id )
         {
-            Node node = tx.getNodeById( nodeId );
+            return tx.getNodeById( id );
+        }
+
+        @Override
+        protected IndexDefinition createIndex( GraphDatabaseService db, IndexType indexType, Label token, String... properties )
+        {
+            return SchemaAcceptanceTest.createIndex( db, indexType, token, properties );
+        }
+
+        @Override
+        protected List<Node> findEntitiesByTokenAndProperty( Transaction tx, Label label, String propertyName, Object value )
+        {
+            return Iterators.asList( tx.findNodes( label, propertyName, value ) );
+        }
+
+        @Override
+        protected ResourceIterator<Node> findEntities( Transaction tx, Label label, String key, Object value )
+        {
+            return tx.findNodes( label, key, value );
+        }
+
+        @Override
+        protected Node findEntity( Transaction tx, Label label, String key, Object value )
+        {
+            return tx.findNode( label, key, value );
+        }
+
+        @Test
+        void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction()
+        {
+            // When
+            long id = createNode( db, map( "key0", true, "key1", true ) ).getId();
+
+            createIndex( db, indexType(), TOKEN1, "key2" );
+            Node myNode;
+            try ( Transaction tx = db.beginTx() )
+            {
+                myNode = tx.getNodeById( id );
+                myNode.addLabel( TOKEN1 );
+                myNode.setProperty( "key2", LONG_STRING );
+                myNode.setProperty( "key3", LONG_STRING );
+
+                tx.commit();
+            }
+
+            try ( Transaction transaction = db.beginTx() )
+            {
+                myNode = transaction.getNodeById( myNode.getId() );
+                // Then
+                assertEquals( LONG_STRING, myNode.getProperty( "key2" ) );
+                assertEquals( LONG_STRING, myNode.getProperty( "key3" ) );
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "key2", LONG_STRING ) ).containsOnly( myNode );
+            }
+        }
+
+        @Test
+        void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime()
+        {
+            // Given
+            var myNode = createNode( db, map( "name", "Hawking" ), TOKEN1, TOKEN2 );
+            createIndex( db, indexType(), TOKEN1, "name" );
+            createIndex( db, indexType(), TOKEN2, "name" );
+            createIndex( db, indexType(), TOKEN3, "name" );
+
+            // When
+            try ( Transaction tx = db.beginTx() )
+            {
+                myNode = tx.getNodeById( myNode.getId() );
+                myNode.removeLabel( TOKEN1 );
+                myNode.addLabel( TOKEN3 );
+                myNode.setProperty( "name", "Einstein" );
+                tx.commit();
+            }
+
+            try ( Transaction transaction = db.beginTx() )
+            {
+                myNode = transaction.getNodeById( myNode.getId() );
+                // Then
+                assertEquals( "Einstein", myNode.getProperty( "name" ) );
+                assertThat( myNode.getLabels() ).containsOnly( TOKEN2, TOKEN3 );
+
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Einstein" ) ).isEmpty();
+
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Hawking" ) ).isEmpty();
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Einstein" ) ).containsOnly( myNode );
+
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Hawking" ) ).isEmpty();
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Einstein" ) ).containsOnly( myNode );
+                transaction.commit();
+            }
+        }
+
+        @Test
+        void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce()
+        {
+            // Given
+            Node myNode = createNode( db, map( "name", "Hawking" ), TOKEN1, TOKEN2 );
+            createIndex( db, indexType(), TOKEN1, "name" );
+            createIndex( db, indexType(), TOKEN2, "name" );
+            createIndex( db, indexType(), TOKEN3, "name" );
+
+            // When
+            try ( Transaction tx = db.beginTx() )
+            {
+                myNode = tx.getNodeById( myNode.getId() );
+                myNode.addLabel( TOKEN3 );
+                myNode.setProperty( "name", "Einstein" );
+                myNode.removeLabel( TOKEN1 );
+                myNode.setProperty( "name", "Feynman" );
+                tx.commit();
+            }
+
+            try ( Transaction transaction = db.beginTx() )
+            {
+                myNode = transaction.getNodeById( myNode.getId() );
+                // Then
+                assertEquals( "Feynman", myNode.getProperty( "name" ) );
+                assertThat( myNode.getLabels() ).containsOnly( TOKEN2, TOKEN3 );
+
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Einstein" ) ).isEmpty();
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Feynman" ) ).isEmpty();
+
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Hawking" ) ).isEmpty();
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Einstein" ) ).isEmpty();
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Feynman" ) ).containsOnly( myNode );
+
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Hawking" ) ).isEmpty();
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Einstein" ) ).isEmpty();
+                assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Feynman" ) ).containsOnly( myNode );
+                transaction.commit();
+            }
+        }
+
+        @Test
+        void shouldAddIndexedPropertyToNodeWithDynamicLabels()
+        {
+            // Given
+            int indexesCount = 20;
+            String labelPrefix = "foo";
+            String propertyKeyPrefix = "bar";
+            String propertyValuePrefix = "baz";
+
             for ( int i = 0; i < indexesCount; i++ )
             {
-                node.addLabel( Label.label( labelPrefix + i ) );
-                node.setProperty( propertyKeyPrefix + i, propertyValuePrefix + i );
+                createIndex( db, indexType(), createToken( labelPrefix + i ), propertyKeyPrefix + i );
             }
-            tx.commit();
+
+            // When
+            long nodeId;
+            try ( Transaction tx = db.beginTx() )
+            {
+                nodeId = tx.createNode().getId();
+                tx.commit();
+            }
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = tx.getNodeById( nodeId );
+                for ( int i = 0; i < indexesCount; i++ )
+                {
+                    node.addLabel( Label.label( labelPrefix + i ) );
+                    node.setProperty( propertyKeyPrefix + i, propertyValuePrefix + i );
+                }
+                tx.commit();
+            }
+
+            // Then
+            try ( Transaction tx = db.beginTx() )
+            {
+                for ( int i = 0; i < indexesCount; i++ )
+                {
+                    Label label = Label.label( labelPrefix + i );
+                    String key = propertyKeyPrefix + i;
+                    String value = propertyValuePrefix + i;
+
+                    ResourceIterator<Node> nodes = findEntities( tx, label, key, value );
+                    assertEquals( 1, Iterators.count( nodes ) );
+                }
+                tx.commit();
+            }
         }
 
-        // Then
-        try ( Transaction tx = db.beginTx() )
+        @Override
+        protected String getMultipleEntitiesMessageTemplate()
         {
-            for ( int i = 0; i < indexesCount; i++ )
-            {
-                Label label = Label.label( labelPrefix + i );
-                String key = propertyKeyPrefix + i;
-                String value = propertyValuePrefix + i;
-
-                ResourceIterator<Node> nodes = findEntities( tx, label, key, value );
-                assertEquals( 1, Iterators.count( nodes ) );
-            }
-            tx.commit();
+            return "Found multiple nodes with label: '%s', property name: 'name' " +
+                   "and property value: 'Stefan' while only one was expected.";
         }
     }
 
-    @Override
-    protected String getMultipleEntitiesMessageTemplate()
+    @Nested
+    class BtreeIndexTest extends NodeIndexingAcceptanceTestBase
     {
-        return "Found multiple nodes with label: '%s', property name: 'name' " +
-               "and property value: 'Stefan' while only one was expected.";
+        @Override
+        protected IndexType indexType()
+        {
+            return IndexType.BTREE;
+        }
+    }
+
+    @Nested
+    class RangeIndexTest extends NodeIndexingAcceptanceTestBase
+    {
+        @Override
+        protected IndexType indexType()
+        {
+            return IndexType.RANGE;
+        }
     }
 }

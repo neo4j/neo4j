@@ -46,8 +46,13 @@ public class TestIndexDescriptorFactory
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
+        return uniqueForSchema( IndexType.BTREE, schema );
+    }
+
+    public static IndexDescriptor uniqueForSchema( IndexType indexType, SchemaDescriptor schema )
+    {
         int id = randomId();
-        return IndexPrototype.uniqueForSchema( schema ).withName( "index_" + id ).materialise( id );
+        return IndexPrototype.uniqueForSchema( schema ).withIndexType( indexType ).withName( "index_" + id ).materialise( id );
     }
 
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )
@@ -68,6 +73,11 @@ public class TestIndexDescriptorFactory
     public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
         return uniqueForSchema( SchemaDescriptors.forLabel( labelId, propertyIds ) );
+    }
+
+    public static IndexDescriptor uniqueForLabel( IndexType indexType, int labelId, int... propertyIds )
+    {
+        return uniqueForSchema( indexType, SchemaDescriptors.forLabel( labelId, propertyIds ) );
     }
 
     private static int randomId()

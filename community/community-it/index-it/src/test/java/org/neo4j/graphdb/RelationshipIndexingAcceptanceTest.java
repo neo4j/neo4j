@@ -19,84 +19,108 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.jupiter.api.Nested;
+
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
-@ImpermanentDbmsExtension
-public class RelationshipIndexingAcceptanceTest extends IndexingAcceptanceTestBase<RelationshipType,Relationship>
+public class RelationshipIndexingAcceptanceTest
 {
-    @Override
-    protected RelationshipType createToken( String name )
+    abstract static class RelationshipIndexingAcceptanceTestBase extends IndexingAcceptanceTestBase<RelationshipType,Relationship>
     {
-        return RelationshipType.withName( name );
-    }
+        @Override
+        protected RelationshipType createToken( String name )
+        {
+            return RelationshipType.withName( name );
+        }
 
-    @Override
-    protected List<Relationship> findEntitiesByTokenAndProperty( Transaction tx, RelationshipType type, String propertyName, Object value )
-    {
-        return Iterators.asList( tx.findRelationships( type, propertyName, value ) );
-    }
+        @Override
+        protected List<Relationship> findEntitiesByTokenAndProperty( Transaction tx, RelationshipType type, String propertyName, Object value )
+        {
+            return Iterators.asList( tx.findRelationships( type, propertyName, value ) );
+        }
 
-    @Override
-    protected Relationship createEntity( GraphDatabaseService db, Map<String,Object> properties, RelationshipType type )
-    {
-        try ( Transaction tx = db.beginTx() )
+        @Override
+        protected Relationship createEntity( GraphDatabaseService db, Map<String,Object> properties, RelationshipType type )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node from = tx.createNode( Label.label( "test" ) );
+                Node to = tx.createNode( Label.label( "test" ) );
+                Relationship rel = from.createRelationshipTo( to, type );
+                properties.forEach( rel::setProperty );
+                tx.commit();
+                return rel;
+            }
+        }
+
+        @Override
+        protected Relationship createEntity( Transaction tx, RelationshipType type )
         {
             Node from = tx.createNode( Label.label( "test" ) );
             Node to = tx.createNode( Label.label( "test" ) );
-            Relationship rel = from.createRelationshipTo( to, type );
-            properties.forEach( rel::setProperty );
-            tx.commit();
-            return rel;
+            return from.createRelationshipTo( to, type );
+        }
+
+        @Override
+        protected void deleteEntity( Transaction tx, long id )
+        {
+            tx.getRelationshipById( id ).delete();
+        }
+
+        @Override
+        protected Relationship getEntity( Transaction tx, long id )
+        {
+            return tx.getRelationshipById( id );
+        }
+
+        @Override
+        protected IndexDefinition createIndex( GraphDatabaseService db, IndexType indexType, RelationshipType type, String... properties )
+        {
+            return SchemaAcceptanceTest.createIndex( db, indexType, type, properties );
+        }
+
+        @Override
+        protected ResourceIterator<Relationship> findEntities( Transaction tx, RelationshipType type, String key, Object value )
+        {
+            return tx.findRelationships( type, key, value );
+        }
+
+        @Override
+        protected Relationship findEntity( Transaction tx, RelationshipType type, String key, Object value )
+        {
+            return tx.findRelationship( type, key, value );
+        }
+
+        @Override
+        protected String getMultipleEntitiesMessageTemplate()
+        {
+            return "Found multiple relationships with type: '%s', property name: 'name' " +
+                   "and property value: 'Stefan' while only one was expected.";
         }
     }
 
-    @Override
-    protected Relationship createEntity( Transaction tx, RelationshipType type )
+    @Nested
+    class BTreeIndexTest extends RelationshipIndexingAcceptanceTestBase
     {
-        Node from = tx.createNode( Label.label( "test" ) );
-        Node to = tx.createNode( Label.label( "test" ) );
-        return from.createRelationshipTo( to, type );
+        @Override
+        protected IndexType indexType()
+        {
+            return IndexType.BTREE;
+        }
     }
 
-    @Override
-    protected void deleteEntity( Transaction tx, long id )
+    @Nested
+    class RangeIndexTest extends RelationshipIndexingAcceptanceTestBase
     {
-        tx.getRelationshipById( id ).delete();
-    }
-
-    @Override
-    protected Relationship getEntity( Transaction tx, long id )
-    {
-        return tx.getRelationshipById( id );
-    }
-
-    @Override
-    protected IndexDefinition createIndex( GraphDatabaseService db, RelationshipType type, String... properties )
-    {
-        return SchemaAcceptanceTest.createIndex( db, type, properties );
-    }
-
-    @Override
-    protected ResourceIterator<Relationship> findEntities( Transaction tx, RelationshipType type, String key, Object value )
-    {
-        return tx.findRelationships( type, key, value );
-    }
-
-    @Override
-    protected Relationship findEntity( Transaction tx, RelationshipType type, String key, Object value )
-    {
-        return tx.findRelationship( type, key, value );
-    }
-
-    @Override
-    protected String getMultipleEntitiesMessageTemplate()
-    {
-        return "Found multiple relationships with type: '%s', property name: 'name' " +
-               "and property value: 'Stefan' while only one was expected.";
+        @Override
+        protected IndexType indexType()
+        {
+            return IndexType.RANGE;
+        }
     }
 }

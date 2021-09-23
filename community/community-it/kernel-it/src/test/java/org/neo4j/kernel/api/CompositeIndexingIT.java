@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -43,8 +45,11 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
@@ -57,7 +62,7 @@ import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 @Timeout( 20 )
 class CompositeIndexingIT
 {
@@ -92,7 +97,13 @@ class CompositeIndexingIT
         }
     }
 
-    void setup( PrototypeFactory prototypeFactory ) throws Exception
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
+    }
+
+    void setup( IndexType indexType, PrototypeFactory prototypeFactory ) throws Exception
     {
         var prototype = prototypeFactory.build( labelId, relTypeId, propIds );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -100,12 +111,12 @@ class CompositeIndexingIT
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             if ( prototype.isUnique() )
             {
-                ConstraintDescriptor constraint = ktx.schemaWrite().uniquePropertyConstraintCreate( prototype );
+                ConstraintDescriptor constraint = ktx.schemaWrite().uniquePropertyConstraintCreate( prototype.withIndexType( indexType ) );
                 index = ktx.schemaRead().indexGetForName( constraint.getName() );
             }
             else
             {
-                index = ktx.schemaWrite().indexCreate( forSchema( prototype.schema() ) );
+                index = ktx.schemaWrite().indexCreate( forSchema( prototype.schema() ).withIndexType( indexType ) );
             }
             tx.commit();
         }
@@ -154,6 +165,12 @@ class CompositeIndexingIT
         }
     }
 
+    private static Stream<Arguments> paramsWithIndexType()
+    {
+        IndexType[] indexTypes = { IndexType.BTREE, IndexType.RANGE };
+        return Stream.of( indexTypes ).flatMap( x1 -> params().map( x2 -> Arguments.of( x1, x2 ) ) );
+    }
+
     private static Stream<Params> params()
     {
         return Stream.of(
@@ -188,10 +205,10 @@ class CompositeIndexingIT
     }
 
     @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldSeeEntityAddedByPropertyToIndexInTranslation( Params params ) throws Exception
+    @MethodSource( "paramsWithIndexType" )
+    void shouldSeeEntityAddedByPropertyToIndexInTranslation( IndexType indexType, Params params ) throws Exception
     {
-        setup( params.prototypeFactory );
+        setup( indexType, params.prototypeFactory );
         var entityControl = params.entityControl;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
@@ -204,10 +221,10 @@ class CompositeIndexingIT
     }
 
     @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldSeeEntityAddedByTokenToIndexInTransaction( Params params ) throws Exception
+    @MethodSource( "paramsWithIndexType" )
+    void shouldSeeEntityAddedByTokenToIndexInTransaction( IndexType indexType, Params params ) throws Exception
     {
-        setup( params.prototypeFactory );
+        setup( indexType, params.prototypeFactory );
         var entityControl = params.entityControl;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
@@ -220,10 +237,10 @@ class CompositeIndexingIT
     }
 
     @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotSeeEntityThatWasDeletedInTransaction( Params params ) throws Exception
+    @MethodSource( "paramsWithIndexType" )
+    void shouldNotSeeEntityThatWasDeletedInTransaction( IndexType indexType, Params params ) throws Exception
     {
-        setup( params.prototypeFactory );
+        setup( indexType, params.prototypeFactory );
         var entityControl = params.entityControl;
         long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -236,8 +253,8 @@ class CompositeIndexingIT
     }
 
     @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotSeeEntityThatHasItsTokenRemovedInTransaction( Params params ) throws Exception
+    @MethodSource( "paramsWithIndexType" )
+    void shouldNotSeeEntityThatHasItsTokenRemovedInTransaction( IndexType indexType, Params params ) throws Exception
     {
         // EntityControl::removeToken not supported
         var entityControl = params.entityControl;
@@ -246,7 +263,7 @@ class CompositeIndexingIT
             return;
         }
 
-        setup( params.prototypeFactory );
+        setup( indexType, params.prototypeFactory );
 
         long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -259,10 +276,10 @@ class CompositeIndexingIT
     }
 
     @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotSeeEntityhatHasAPropertyRemovedInTransaction( Params params ) throws Exception
+    @MethodSource( "paramsWithIndexType" )
+    void shouldNotSeeEntityThatHasAPropertyRemovedInTransaction( IndexType indexType, Params params ) throws Exception
     {
-        setup( params.prototypeFactory );
+        setup( indexType, params.prototypeFactory );
         var entityControl = params.entityControl;
         long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -275,10 +292,10 @@ class CompositeIndexingIT
     }
 
     @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldSeeAllEntitiesAddedInTransaction( Params params ) throws Exception
+    @MethodSource( "paramsWithIndexType" )
+    void shouldSeeAllEntitiesAddedInTransaction( IndexType indexType, Params params ) throws Exception
     {
-        setup( params.prototypeFactory );
+        setup( indexType, params.prototypeFactory );
         var entityControl = params.entityControl;
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
@@ -296,10 +313,10 @@ class CompositeIndexingIT
     }
 
     @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldSeeAllEntitiesAddedBeforeTransaction( Params params ) throws Exception
+    @MethodSource( "paramsWithIndexType" )
+    void shouldSeeAllEntitiesAddedBeforeTransaction( IndexType indexType, Params params ) throws Exception
     {
-        setup( params.prototypeFactory );
+        setup( indexType, params.prototypeFactory );
         var entityControl = params.entityControl;
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
@@ -316,10 +333,10 @@ class CompositeIndexingIT
     }
 
     @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldNotSeeEntitiesLackingOneProperty( Params params ) throws Exception
+    @MethodSource( "paramsWithIndexType" )
+    void shouldNotSeeEntitiesLackingOneProperty( IndexType indexType, Params params ) throws Exception
     {
-        setup( params.prototypeFactory );
+        setup( indexType, params.prototypeFactory );
         var entityControl = params.entityControl;
         long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )

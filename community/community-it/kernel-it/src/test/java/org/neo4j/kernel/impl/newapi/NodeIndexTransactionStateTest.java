@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -52,11 +53,11 @@ public class NodeIndexTransactionStateTest extends IndexTransactionStateTestBase
     }
 
     @Override
-    void createIndex()
+    void createIndex( IndexType indexType )
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().indexFor( Label.label( DEFAULT_LABEL ) ).on( DEFAULT_PROPERTY_NAME ).withName( INDEX_NAME ).create();
+            tx.schema().indexFor( Label.label( DEFAULT_LABEL ) ).on( DEFAULT_PROPERTY_NAME ).withIndexType( indexType ).withName( INDEX_NAME ).create();
             tx.commit();
         }
 

@@ -19,8 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.index.IndexProviderApprovalTest;
+import org.junit.jupiter.api.BeforeAll;
 
-public class DatabaseIndexIndexProviderApprovalTest extends IndexProviderApprovalTest
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.kernel.api.index.IndexProviderApprovalTest;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+
+public class BTreeIndexProviderApprovalTest extends IndexProviderApprovalTest
 {
+    @BeforeAll
+    public static void init()
+    {
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+        setupBeforeAllTests( managementService, IndexType.BTREE );
+    }
 }

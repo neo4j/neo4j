@@ -23,17 +23,23 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.collector.Collectors2;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
@@ -48,8 +54,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     static final String DEFAULT_PROPERTY_NAME = "prop";
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldPerformStringSuffixSearch( boolean needsValues ) throws Exception
+    @MethodSource( "parametersForSuffixAndContains" )
+    void shouldPerformStringSuffixSearch( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long, Value>> expected = new HashSet<>();
@@ -60,7 +66,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -74,8 +80,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldPerformScan( boolean needsValues ) throws Exception
+    @MethodSource( "parameters" )
+    void shouldPerformScan( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -90,7 +96,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -105,8 +111,9 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
         }
     }
 
-    @Test
-    void shouldPerformEqualitySeek() throws Exception
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = {"BTREE", "RANGE", "TEXT"} )
+    void shouldPerformEqualitySeek( IndexType indexType ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -117,7 +124,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -132,8 +139,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldPerformStringPrefixSearch( boolean needsValues ) throws Exception
+    @MethodSource( "parameters" )
+    void shouldPerformStringPrefixSearch( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -144,7 +151,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -159,8 +166,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldPerformStringRangeSearch( boolean needsValues ) throws Exception
+    @MethodSource( "parameters" )
+    void shouldPerformStringRangeSearch( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -171,7 +178,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -185,8 +192,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldPerformStringRangeSearchWithAddedEntityInTxState( boolean needsValues ) throws Exception
+    @MethodSource( "parameters" )
+    void shouldPerformStringRangeSearchWithAddedEntityInTxState( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -198,7 +205,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -217,8 +224,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldPerformStringRangeSearchWithChangedEntityInTxState( boolean needsValues ) throws Exception
+    @MethodSource( "parameters" )
+    void shouldPerformStringRangeSearchWithChangedEntityInTxState( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -230,7 +237,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -247,8 +254,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldPerformStringRangeSearchWithRemovedRemovedPropertyInTxState( boolean needsValues ) throws Exception
+    @MethodSource( "parameters" )
+    void shouldPerformStringRangeSearchWithRemovedRemovedPropertyInTxState( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -260,7 +267,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -276,8 +283,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldPerformStringRangeSearchWithDeletedEntityInTxState( boolean needsValues ) throws Exception
+    @MethodSource( "parameters" )
+    void shouldPerformStringRangeSearchWithDeletedEntityInTxState( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -289,7 +296,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -305,8 +312,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldPerformStringContainsSearch( boolean needsValues ) throws Exception
+    @MethodSource( "parametersForSuffixAndContains" )
+    void shouldPerformStringContainsSearch( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -317,7 +324,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             tx.commit();
         }
 
-        createIndex();
+        createIndex( indexType );
 
         // when
         try ( KernelTransaction tx = beginTransaction() )
@@ -347,7 +354,38 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     @Override
     public WriteTestSupport newTestSupport()
     {
-        return new WriteTestSupport();
+        return new WriteTestSupport()
+        {
+            @Override
+            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
+            {
+                return super.configure( builder )
+                        .setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true )
+                        .setConfig( GraphDatabaseInternalSettings.text_indexes_enabled, true );
+            }
+        };
+    }
+
+    private static Stream<Arguments> parameters()
+    {
+        // Text index doesn't contain values
+        return Stream.of(
+                Arguments.of( IndexType.BTREE, true ),
+                Arguments.of( IndexType.BTREE, false ),
+                Arguments.of( IndexType.RANGE, true ),
+                Arguments.of( IndexType.RANGE, false ),
+                Arguments.of( IndexType.TEXT, false )
+        );
+    }
+
+    // Range index doesn't support suffix/contains queries, and text index doesn't contain values
+    private static Stream<Arguments> parametersForSuffixAndContains()
+    {
+        return Stream.of(
+                Arguments.of( IndexType.BTREE, true ),
+                Arguments.of( IndexType.BTREE, false ),
+                Arguments.of( IndexType.TEXT, false )
+        );
     }
 
     private static void terminate( KernelTransaction transaction )
@@ -396,7 +434,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
 
     abstract Pair<Long,Value> entityWithProp( KernelTransaction tx, Object value ) throws Exception;
 
-    abstract void createIndex();
+    abstract void createIndex( IndexType indexType );
 
     abstract void deleteEntity( KernelTransaction tx, long entity ) throws Exception;
 

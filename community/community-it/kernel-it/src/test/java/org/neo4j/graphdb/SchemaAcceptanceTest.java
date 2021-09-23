@@ -2651,22 +2651,27 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
     public static IndexDefinition createIndex( GraphDatabaseService db, RelationshipType relType, String... properties )
     {
-        return createIndex( db, null, relType, properties );
+        return createIndex( db, BTREE, null, relType, properties );
     }
 
-    public static IndexDefinition createIndex( GraphDatabaseService db, String name, RelationshipType relType, String... properties )
+    public static IndexDefinition createIndex( GraphDatabaseService db, IndexType indexType, RelationshipType relType, String... properties )
     {
-        IndexDefinition indexDef = createIndexNoWait( db, name, relType, properties );
+        return createIndex( db, indexType, null, relType, properties );
+    }
+
+    public static IndexDefinition createIndex( GraphDatabaseService db, IndexType indexType, String name, RelationshipType relType, String... properties )
+    {
+        IndexDefinition indexDef = createIndexNoWait( db, indexType, name, relType, properties );
         waitForIndex( db, indexDef );
         return indexDef;
     }
 
-    static IndexDefinition createIndexNoWait( GraphDatabaseService db, String name, RelationshipType relType, String... properties )
+    static IndexDefinition createIndexNoWait( GraphDatabaseService db, IndexType indexType, String name, RelationshipType relType, String... properties )
     {
         IndexDefinition indexDef;
         try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator indexCreator = tx.schema().indexFor( relType );
+            IndexCreator indexCreator = tx.schema().indexFor( relType ).withIndexType( indexType );
             for ( String property : properties )
             {
                 indexCreator = indexCreator.on( property );
@@ -2681,14 +2686,24 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         return indexDef;
     }
 
+    public static IndexDefinition createIndex( GraphDatabaseService db, IndexType indexType, Label label, String... properties )
+    {
+        return createIndex( db, indexType, null, label, properties );
+    }
+
     public static IndexDefinition createIndex( GraphDatabaseService db, Label label, String... properties )
     {
-        return createIndex( db, null, label, properties );
+        return createIndex( db, BTREE, null, label, properties );
     }
 
     public static IndexDefinition createIndex( GraphDatabaseService db, String name, Label label, String... properties )
     {
-        IndexDefinition indexDef = createIndexNoWait( db, name, label, properties );
+        return createIndex( db, BTREE, name, label, properties );
+    }
+
+    public static IndexDefinition createIndex( GraphDatabaseService db, IndexType indexType, String name, Label label, String... properties )
+    {
+        IndexDefinition indexDef = createIndexNoWait( db, indexType, name, label, properties );
         waitForIndex( db, indexDef );
         return indexDef;
     }
@@ -2710,12 +2725,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         return index;
     }
 
-    static IndexDefinition createIndexNoWait( GraphDatabaseService db, String name, Label label, String... properties )
+    static IndexDefinition createIndexNoWait( GraphDatabaseService db, IndexType indexType, String name, Label label, String... properties )
     {
         IndexDefinition indexDef;
         try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator indexCreator = tx.schema().indexFor( label );
+            IndexCreator indexCreator = tx.schema().indexFor( label ).withIndexType( indexType );
             for ( String property : properties )
             {
                 indexCreator = indexCreator.on( property );

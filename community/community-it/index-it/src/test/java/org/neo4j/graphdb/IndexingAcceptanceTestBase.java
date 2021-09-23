@@ -26,9 +26,13 @@ import org.junit.jupiter.api.TestInfo;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.mockito.mock.SpatialMocks;
@@ -48,7 +52,7 @@ import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
 {
     protected static final String LONG_STRING = "a long string that has to be stored in dynamic records";
@@ -66,6 +70,12 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         TOKEN1 = createToken( "TOKEN1-" + testInfo.getDisplayName() );
         TOKEN2 = createToken( "TOKEN2-" + testInfo.getDisplayName() );
         TOKEN3 = createToken( "TOKEN3-" + testInfo.getDisplayName() );
+    }
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
     }
 
     /* This test is a bit interesting. It tests a case where we've got a property that sits in one
@@ -98,7 +108,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
             tx.commit();
         }
 
-        createIndex( db, TOKEN1, "key" );
+        createIndex( db, indexType(), TOKEN1, "key" );
 
         // WHEN
         try ( Transaction tx = db.beginTx() )
@@ -135,7 +145,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
     {
         // Given
         var entity = createEntity( db, map( "name", "Hawking" ), TOKEN1 );
-        createIndex( db, TOKEN1, "name" );
+        createIndex( db, indexType(), TOKEN1, "name" );
 
         // When
         try ( Transaction transaction = db.beginTx() )
@@ -158,7 +168,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
     void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction()
     {
         // GIVEN
-        createIndex( db, TOKEN1, "name" );
+        createIndex( db, indexType(), TOKEN1, "name" );
         var firstEntity = createEntity( db, map( "name", "Mattias" ), TOKEN1 );
 
         // WHEN THEN
@@ -177,7 +187,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
     void createdEntityShouldShowUpWithinTransaction()
     {
         // GIVEN
-        createIndex( db, TOKEN1, "name" );
+        createIndex( db, indexType(), TOKEN1, "name" );
 
         // WHEN
         long sizeBeforeDelete;
@@ -200,7 +210,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
     void deletedEntityShouldShowUpWithinTransaction()
     {
         // GIVEN
-        createIndex( db, TOKEN1, "name" );
+        createIndex( db, indexType(), TOKEN1, "name" );
         var entity = createEntity( db, map( "name", "Mattias" ), TOKEN1 );
 
         // WHEN
@@ -223,7 +233,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
     void createdEntityShouldShowUpInIndexQuery()
     {
         // GIVEN
-        createIndex( db, TOKEN1, "name" );
+        createIndex( db, indexType(), TOKEN1, "name" );
         createEntity( db, map( "name", "Mattias" ), TOKEN1 );
 
         // WHEN
@@ -249,7 +259,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
     {
         // GIVEN
         String property = "name";
-        createIndex( db, TOKEN1, property );
+        createIndex( db, indexType(), TOKEN1, property );
 
         // WHEN & THEN
         assertCanCreateAndFind( db, TOKEN1, property, "A String" );
@@ -304,7 +314,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         // this test was included here for now as a precondition for the following test
 
         // given
-        createIndex( db, TOKEN1, "name" );
+        createIndex( db, indexType(), TOKEN1, "name" );
 
         ENTITY entity1;
         ENTITY entity2;
@@ -328,10 +338,10 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
     }
 
     @Test
-    void shouldThrowWhenMultipleResultsForSingleEntites()
+    void shouldThrowWhenMultipleResultsForSingleEntities()
     {
         // given
-        createIndex( db, TOKEN1, "name" );
+        createIndex( db, indexType(), TOKEN1, "name" );
 
         ENTITY entity1;
         ENTITY entity2;
@@ -378,11 +388,13 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
 
     protected abstract ENTITY getEntity( Transaction tx, long id );
 
-    protected abstract IndexDefinition createIndex( GraphDatabaseService db, TOKEN token, String... properties );
+    protected abstract IndexDefinition createIndex( GraphDatabaseService db, IndexType indexType, TOKEN token, String... properties );
 
     protected abstract ResourceIterator<ENTITY> findEntities( Transaction tx, TOKEN token, String key, Object value );
 
     protected abstract ENTITY findEntity( Transaction tx, TOKEN token, String key, Object value );
 
     protected abstract String getMultipleEntitiesMessageTemplate();
+
+    protected abstract IndexType indexType();
 }

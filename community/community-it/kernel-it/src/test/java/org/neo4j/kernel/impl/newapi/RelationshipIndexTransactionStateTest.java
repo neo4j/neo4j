@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -54,11 +55,12 @@ public class RelationshipIndexTransactionStateTest extends IndexTransactionState
     }
 
     @Override
-    void createIndex()
+    void createIndex( IndexType indexType )
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
-            tx.schema().indexFor( RelationshipType.withName( DEFAULT_REl_TYPE ) ).on( DEFAULT_PROPERTY_NAME ).withName( INDEX_NAME ).create();
+            tx.schema().indexFor( RelationshipType.withName( DEFAULT_REl_TYPE ) ).on( DEFAULT_PROPERTY_NAME ).withIndexType( indexType ).withName( INDEX_NAME )
+                    .create();
             tx.commit();
         }
 
