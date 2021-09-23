@@ -850,7 +850,14 @@ class RecoveryIT
             @Override
             public void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
             {
-                guardExtensionFactory.getProvidedGuardConsumer().globalGuard.stop();
+                try
+                {
+                    guardExtensionFactory.getProvidedGuardConsumer().globalGuard.stop();
+                }
+                catch ( Exception e )
+                {
+                    // do nothing
+                }
                 reverseCompleted.set( true );
             }
 
