@@ -33,9 +33,10 @@ case class ProduceResultsPipe(source: Pipe, columns: Array[String])
     // key-value pairs and thus should not have any stats
     val subscriber = state.subscriber
     if (state.prePopulateResults) {
+      val cursors = state.query.createExpressionCursors() // NOTE: We need to create these through the QueryContext so that they get a profiling tracer if profiling is enabled
       input.map {
         original =>
-          produceAndPopulate(original, subscriber, state.cursors)
+          produceAndPopulate(original, subscriber, cursors)
           original
       }
     } else
@@ -47,13 +48,14 @@ case class ProduceResultsPipe(source: Pipe, columns: Array[String])
   }
 
   private def produceAndPopulate(original: CypherRow, subscriber: QuerySubscriber, cursors: ExpressionCursors): Unit = {
+    val nodeCursor = cursors.nodeCursor
+    val relCursor = cursors.relationshipScanCursor
+    val propertyCursor = cursors.propertyCursor
+
     var i = 0
     subscriber.onRecord()
     while (i < columns.length) {
       val value = original.getByName(columns(i))
-      val nodeCursor = cursors.nodeCursor
-      val relCursor = cursors.relationshipScanCursor
-      val propertyCursor = cursors.propertyCursor
       ValuePopulation.populate(value, nodeCursor, relCursor, propertyCursor)
       subscriber.onField(i, value)
       i += 1
