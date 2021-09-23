@@ -36,7 +36,7 @@ import static java.util.stream.Collectors.toList;
  * <p>
  * Components that internally owns other components that has a lifecycle can use this to control them as well.
  */
-public class LifeSupport implements Lifecycle
+public class LifeSupport implements Lifecycle, LifecycleStatusProvider
 {
     private volatile List<LifecycleInstance> instances = new ArrayList<>();
     private volatile LifecycleStatus status = LifecycleStatus.NONE;
