@@ -80,9 +80,9 @@ public abstract class PropertyIndexQuery implements IndexQuery
                                            Number from, boolean fromInclusive,
                                            Number to, boolean toInclusive )
     {
-        return NumberRangePredicate.create( propertyKeyId,
-                                            from == null ? null : Values.numberValue( from ), fromInclusive,
-                                            to == null ? null : Values.numberValue( to ), toInclusive );
+        return new NumberRangePredicate( propertyKeyId,
+                                         from == null ? null : Values.numberValue( from ), fromInclusive,
+                                         to == null ? null : Values.numberValue( to ), toInclusive );
     }
 
     public static RangePredicate<?> range( int propertyKeyId,
@@ -107,9 +107,9 @@ public abstract class PropertyIndexQuery implements IndexQuery
         switch ( valueGroup )
         {
         case NUMBER:
-            return NumberRangePredicate.create( propertyKeyId,
-                                                (NumberValue) from, fromInclusive,
-                                                (NumberValue) to, toInclusive );
+            return new NumberRangePredicate( propertyKeyId,
+                                             (NumberValue) from, fromInclusive,
+                                             (NumberValue) to, toInclusive );
 
         case TEXT:
             return new TextRangePredicate( propertyKeyId,
@@ -340,9 +340,9 @@ public abstract class PropertyIndexQuery implements IndexQuery
         protected final boolean toInclusive;
         protected final ValueGroup valueGroup;
 
-        RangePredicate( int propertyKeyId, ValueGroup valueGroup,
-                        T from, boolean fromInclusive,
-                        T to, boolean toInclusive )
+        private RangePredicate( int propertyKeyId, ValueGroup valueGroup,
+                                T from, boolean fromInclusive,
+                                T to, boolean toInclusive )
         {
             super( propertyKeyId );
             this.valueGroup = valueGroup;
@@ -352,7 +352,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
             this.toInclusive = toInclusive;
         }
 
-        RangePredicate( int propertyKeyId, ValueGroup valueGroup )
+        private RangePredicate( int propertyKeyId, ValueGroup valueGroup )
         {
             this( propertyKeyId, valueGroup, null, true, null, true );
         }
@@ -418,6 +418,30 @@ public abstract class PropertyIndexQuery implements IndexQuery
         public boolean isRegularOrder()
         {
             return true;
+        }
+    }
+
+    public static final class NumberRangePredicate extends RangePredicate<NumberValue>
+    {
+        private NumberRangePredicate( int propertyKeyId,
+                                      NumberValue from, boolean fromInclusive,
+                                      NumberValue to, boolean toInclusive )
+        {
+            // For range queries with numbers we need to redefine the upper bound from NaN to positive infinity.
+            // The reason is that we do not want to find NaNs for seeks, but for full scans we do.
+            super( propertyKeyId, ValueGroup.NUMBER,
+                   from, fromInclusive,
+                   requireNonNullElse( to, Values.doubleValue( Double.POSITIVE_INFINITY ) ), to == null || toInclusive );
+        }
+
+        public Number from()
+        {
+            return from == null ? null : from.asObject();
+        }
+
+        public Number to()
+        {
+            return to.asObject();
         }
     }
 
@@ -492,8 +516,9 @@ public abstract class PropertyIndexQuery implements IndexQuery
 
     public static final class TextRangePredicate extends RangePredicate<TextValue>
     {
-        private TextRangePredicate( int propertyKeyId, TextValue from, boolean fromInclusive, TextValue to,
-                boolean toInclusive )
+        private TextRangePredicate( int propertyKeyId,
+                                    TextValue from, boolean fromInclusive,
+                                    TextValue to, boolean toInclusive )
         {
             super( propertyKeyId, ValueGroup.TEXT, from, fromInclusive, to, toInclusive );
         }
