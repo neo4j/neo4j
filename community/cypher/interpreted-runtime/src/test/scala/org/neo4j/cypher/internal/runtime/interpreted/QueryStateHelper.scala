@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
@@ -42,6 +44,9 @@ import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -65,7 +70,7 @@ object QueryStateHelper extends MockitoSugar {
                 query: QueryContext = null,
                 resources: ExternalCSVResource = null,
                 params: Array[AnyValue] = Array.empty,
-                expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory], CursorContext.NULL, EmptyMemoryTracker.INSTANCE),
+                expressionCursors: ExpressionCursors = new ExpressionCursors(mockCursorFactory, CursorContext.NULL, EmptyMemoryTracker.INSTANCE),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
                 nodeTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
                 relTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
@@ -150,5 +155,13 @@ object QueryStateHelper extends MockitoSugar {
     }
     any.writeTo(writer)
     writer.value()
+  }
+
+  private def mockCursorFactory: CursorFactory = {
+    val factory = mock[CursorFactory]
+    when(factory.allocateNodeCursor(any())).thenReturn(mock[NodeCursor])
+    when(factory.allocateRelationshipScanCursor(any())).thenReturn(mock[RelationshipScanCursor])
+    when(factory.allocatePropertyCursor(any(), any())).thenReturn(mock[PropertyCursor])
+    factory
   }
 }

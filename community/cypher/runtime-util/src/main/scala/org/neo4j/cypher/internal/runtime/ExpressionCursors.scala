@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.internal.kernel.api.Cursor
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
@@ -50,7 +51,7 @@ class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
     if (_nodeCursor == null) {
       _nodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
     }
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!_nodeCursor.asInstanceOf[TraceableCursor[_]].returnedToPool)
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_nodeCursor))
     _nodeCursor
   }
 
@@ -58,7 +59,7 @@ class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
     if (_relationshipScanCursor == null) {
       _relationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext)
     }
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!_relationshipScanCursor.asInstanceOf[TraceableCursor[_]].returnedToPool)
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_relationshipScanCursor))
     _relationshipScanCursor
   }
 
@@ -66,7 +67,7 @@ class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
     if (_propertyCursor == null) {
       _propertyCursor = cursorFactory.allocatePropertyCursor(cursorContext, memoryTracker)
     }
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!_propertyCursor.asInstanceOf[TraceableCursor[_]].returnedToPool)
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(notReturnedToPool(_propertyCursor))
     _propertyCursor
   }
 
@@ -97,5 +98,12 @@ class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
   override def setCursorFactoryAndContext(cursorFactory: CursorFactory, cursorContext: CursorContext): Unit = {
     this.cursorFactory = cursorFactory
     this.cursorContext = cursorContext
+  }
+
+  private def notReturnedToPool(cursor: Cursor): Boolean = {
+    cursor match {
+      case tc: TraceableCursor[_] => !tc.returnedToPool()
+      case _ => true
+    }
   }
 }

@@ -87,12 +87,14 @@ class ContainerIndexTest extends CypherFunSuite {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
     implicit val expression = literal(node)
+    val nodeCursor = state.cursors.nodeCursor
+    val propertyCursor = state.cursors.propertyCursor
 
     when(qtx.propertyKey("v")).thenReturn(42)
     when(qtx.propertyKey("c")).thenReturn(43)
 
-    when(qtx.nodeProperty(0, 42, null, null, throwOnDeleted = true)).thenReturn(longValue(1))
-    when(qtx.nodeProperty(0, 43, null, null, throwOnDeleted = true)).thenReturn(Values.NO_VALUE)
+    when(qtx.nodeProperty(0, 42, nodeCursor, propertyCursor, throwOnDeleted = true)).thenReturn(longValue(1))
+    when(qtx.nodeProperty(0, 43, nodeCursor, propertyCursor, throwOnDeleted = true)).thenReturn(Values.NO_VALUE)
     idx("v") should equal(longValue(1))
     idx("c") should equal(expectedNull)
   }
@@ -101,11 +103,13 @@ class ContainerIndexTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     implicit val expression = literal(rel)
+    val relationshipScanCursor = state.cursors.relationshipScanCursor
+    val propertyCursor = state.cursors.propertyCursor
 
     when(qtx.propertyKey("v")).thenReturn(42)
     when(qtx.propertyKey("c")).thenReturn(43)
-    when(qtx.relationshipProperty(0, 42, null, null, throwOnDeleted = true)).thenReturn(longValue(1))
-    when(qtx.relationshipProperty(0, 43, null, null, throwOnDeleted = true)).thenReturn(Values.NO_VALUE)
+    when(qtx.relationshipProperty(0, 42, relationshipScanCursor, propertyCursor, throwOnDeleted = true)).thenReturn(longValue(1))
+    when(qtx.relationshipProperty(0, 43, relationshipScanCursor, propertyCursor, throwOnDeleted = true)).thenReturn(Values.NO_VALUE)
     idx("v") should equal(longValue(1))
     idx("c") should equal(expectedNull)
   }

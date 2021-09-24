@@ -38,10 +38,10 @@ import org.neo4j.values.virtual.VirtualValues.map
 
 class PropertiesFunctionTest extends CypherFunSuite {
 
-
   val query = mock[QueryContext]
   val nodeOps = mock[NodeOperations]
   val relOps = mock[RelationshipOperations]
+  val state = QueryStateHelper.empty.withQueryContext(query)
 
   when(query.nodeOps).thenReturn(nodeOps)
   when(query.relationshipOps).thenReturn(relOps)
@@ -68,7 +68,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.nodeAsMap(0, null, null)).thenReturn(value)
+    when(query.nodeAsMap(0, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(value)
 
     properties(node) should equal(value)
   }
@@ -77,7 +77,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.relationshipAsMap(0, null, null)).thenReturn(value)
+    when(query.relationshipAsMap(0, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)).thenReturn(value)
 
     properties(rel) should equal(value)
   }
@@ -101,6 +101,6 @@ class PropertiesFunctionTest extends CypherFunSuite {
   }
 
   private def properties(orig: Any) = {
-    PropertiesFunction(literal(orig))(CypherRow.empty, QueryStateHelper.empty.withQueryContext(query))
+    PropertiesFunction(literal(orig))(CypherRow.empty, state)
   }
 }
