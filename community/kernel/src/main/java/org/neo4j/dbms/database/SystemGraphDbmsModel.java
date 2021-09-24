@@ -100,6 +100,7 @@ public class SystemGraphDbmsModel
     public static final RelationshipType HOSTED_ON_RELATIONSHIP = RelationshipType.withName( "HOSTED_ON" );
     public static final RelationshipType WAS_HOSTED_ON_RELATIONSHIP = RelationshipType.withName( "WAS_HOSTED_ON" );
     public static final String HOSTED_ON_INSTALLED_AT_PROPERTY = "installed_at";
+    public static final String HOSTED_ON_BOOTSTRAPPER_PROPERTY = "bootstrapper";
     public static final String HOSTED_ON_MODE_PROPERTY = "mode";
     public static final String WAS_HOSTED_ON_REMOVED_AT_PROPERTY = "removed_at";
 
