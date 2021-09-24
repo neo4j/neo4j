@@ -57,8 +57,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
         {
             defaultNodeCursor.release();
             storeCursors.close();
-        }, storageReader.allocateNodeCursor( cursorContext, storeCursors ),
-                storageReader.allocateNodeCursor( cursorContext, storeCursors ) ) );
+        }, storageReader.allocateNodeCursor( cursorContext, storeCursors ), storageReader.allocateNodeCursor( cursorContext, storeCursors ),
+                storageReader.allocateRelationshipTraversalCursor( cursorContext, storeCursors ) ) );
     }
 
     @Override

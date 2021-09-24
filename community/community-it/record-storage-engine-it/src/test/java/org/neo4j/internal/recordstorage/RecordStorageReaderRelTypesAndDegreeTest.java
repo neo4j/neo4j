@@ -43,9 +43,9 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.util.EagerDegrees;
 import org.neo4j.storageengine.util.SingleDegree;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.storage.RecordStorageEngineSupport;
 
 import static java.util.Arrays.asList;
@@ -256,7 +256,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     private static int degree( StorageNodeCursor cursor, RelationshipSelection selection )
     {
         SingleDegree degree = new SingleDegree();
-        cursor.degrees( selection, degree, true );
+        cursor.degrees( selection, degree );
         return degree.getTotal();
     }
 
@@ -478,7 +478,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
         EagerDegrees nodeDegrees = new EagerDegrees();
-        nodeCursor.degrees( ALL_RELATIONSHIPS, nodeDegrees, true );
+        nodeCursor.degrees( ALL_RELATIONSHIPS, nodeDegrees );
         for ( int type : nodeDegrees.types() )
         {
             degrees.add( new TestDegreeItem( type, nodeDegrees.outgoingDegree( type ), nodeDegrees.incomingDegree( type ) ) );

@@ -118,7 +118,7 @@ class RecordNodeCursorTest
         nodeCursor.single( nodeId );
         assertThat( nodeCursor.next() ).isTrue();
         SingleDegree mutator = new SingleDegree();
-        nodeCursor.degrees( RelationshipSelection.ALL_RELATIONSHIPS, mutator, true );
+        nodeCursor.degrees( RelationshipSelection.ALL_RELATIONSHIPS, mutator );
 
         // then
         assertThat( mutator.getTotal() ).isEqualTo( degree );

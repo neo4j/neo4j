@@ -255,9 +255,9 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public void degrees( RelationshipSelection selection, Degrees.Mutator mutator, boolean allowFastDegreeLookup )
+    public void degrees( RelationshipSelection selection, Degrees.Mutator mutator )
     {
-        if ( !mutator.isSplit() && !isDense() && allowFastDegreeLookup && !selection.isLimited() )
+        if ( !mutator.isSplit() && !isDense() && !selection.isLimited() )
         {
             // There's an optimization for getting only the total degree directly and we're not limited by security
             ensureRelationshipScanCursorInitialized();
@@ -272,13 +272,13 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
             return;
         }
 
-        if ( !isDense() || !allowFastDegreeLookup )
+        if ( !isDense() )
         {
             ensureRelationshipTraversalCursorInitialized();
             relationshipCursor.init( this, ALL_RELATIONSHIPS );
             while ( relationshipCursor.next() )
             {
-                if ( selection.test( relationshipCursor.type(), relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() ) )
+                if ( selection.test( relationshipCursor.type() ) )
                 {
                     int outgoing = 0;
                     int incoming = 0;

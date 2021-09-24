@@ -546,7 +546,7 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void degrees( RelationshipSelection selection, Degrees.Mutator mutator, boolean allowFastDegreeLookup )
+        public void degrees( RelationshipSelection selection, Degrees.Mutator mutator )
         {
             throw new UnsupportedOperationException( "Not implemented yet" );
         }

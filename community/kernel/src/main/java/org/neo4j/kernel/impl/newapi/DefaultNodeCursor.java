@@ -28,7 +28,6 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -43,6 +42,7 @@ import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.util.EagerDegrees;
@@ -58,17 +58,20 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     boolean hasChanges;
     private LongIterator addedNodes;
     StorageNodeCursor storeCursor;
-    private final StorageNodeCursor securityStoreCursor;
+    private final StorageNodeCursor securityStoreNodeCursor;
+    private final StorageRelationshipTraversalCursor securityStoreRelationshipCursor;
     private long currentAddedInTx;
     private long single;
     private boolean isSingle;
     private AccessMode accessMode;
 
-    DefaultNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, StorageNodeCursor securityStoreCursor )
+    DefaultNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, StorageNodeCursor securityStoreNodeCursor,
+            StorageRelationshipTraversalCursor securityStoreRelationshipCursor )
     {
         super( pool );
         this.storeCursor = storeCursor;
-        this.securityStoreCursor = securityStoreCursor;
+        this.securityStoreNodeCursor = securityStoreNodeCursor;
+        this.securityStoreRelationshipCursor = securityStoreRelationshipCursor;
     }
 
     void scan( Read read )
@@ -287,11 +290,11 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         {
             if ( allowsTraverseAll() )
             {
-                storeCursor.degrees( selection, degrees, true );
+                storeCursor.degrees( selection, degrees );
             }
             else
             {
-                storeCursor.degrees( new SecureRelationshipSelection( selection ), degrees, false );
+                readRestrictedDegrees( selection, degrees );
             }
         }
         if ( nodeTxState != null )
@@ -311,6 +314,33 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
                         return;
                     }
                 }
+            }
+        }
+    }
+
+    private void readRestrictedDegrees( RelationshipSelection selection, Degrees.Mutator degrees )
+    {
+        //When we read degrees limited by security we need to traverse all relationships and check the "other side" if we can add it
+        storeCursor.relationships( securityStoreRelationshipCursor, selection );
+        while ( securityStoreRelationshipCursor.next() )
+        {
+            int type = securityStoreRelationshipCursor.type();
+            if ( accessMode.allowsTraverseRelType( type ) )
+            {
+                long source = securityStoreRelationshipCursor.sourceNodeReference();
+                long target = securityStoreRelationshipCursor.targetNodeReference();
+                boolean loop = source == target;
+                boolean outgoing = !loop && source == nodeReference();
+                boolean incoming = !loop && !outgoing;
+                if ( !loop )
+                { //No need to check labels for loops. We already know we are allowed since we have the node loaded in this cursor
+                    securityStoreNodeCursor.single( outgoing ? target : source );
+                    if ( !securityStoreNodeCursor.next() || !accessMode.allowsTraverseNode( securityStoreNodeCursor.labels() ) )
+                    {
+                        continue;
+                    }
+                }
+                degrees.add( type, outgoing ? 1 : 0, incoming ? 1 : 0, loop ? 1 : 0 );
             }
         }
     }
@@ -373,9 +403,13 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
             addedNodes = ImmutableEmptyLongIterator.INSTANCE;
             storeCursor.close();
             storeCursor.reset();
-            if ( securityStoreCursor != null )
+            if ( securityStoreNodeCursor != null )
             {
-                securityStoreCursor.reset();
+                securityStoreNodeCursor.reset();
+            }
+            if ( securityStoreRelationshipCursor != null )
+            {
+                securityStoreRelationshipCursor.reset();
             }
             accessMode = null;
         }
@@ -433,90 +467,6 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
 
     void release()
     {
-        IOUtils.closeAllUnchecked( storeCursor, securityStoreCursor );
-    }
-
-    private class SecureRelationshipSelection extends RelationshipSelection
-    {
-        private final RelationshipSelection inner;
-
-        SecureRelationshipSelection( RelationshipSelection selection )
-        {
-            inner = selection;
-        }
-
-        @Override
-        public boolean test( int type, long sourceReference, long targetReference )
-        {
-            if ( accessMode.allowsTraverseRelType( type ) )
-            {
-                if ( sourceReference == targetReference )
-                {
-                    return inner.test( type );
-                }
-                long otherReference = sourceReference == nodeReference() ? targetReference : sourceReference;
-                securityStoreCursor.single( otherReference );
-                return securityStoreCursor.next() && accessMode.allowsTraverseNode( securityStoreCursor.labels() ) && inner.test( type );
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        @Override
-        public boolean test( int type )
-        {
-            return inner.test( type );
-        }
-
-        @Override
-        public boolean test( RelationshipDirection direction )
-        {
-            return inner.test( direction );
-        }
-
-        @Override
-        public Direction direction()
-        {
-            return inner.direction();
-        }
-
-        @Override
-        public int numberOfCriteria()
-        {
-            return inner.numberOfCriteria();
-        }
-
-        @Override
-        public Criterion criterion( int index )
-        {
-            return inner.criterion( index );
-        }
-
-        @Override
-        public boolean test( int type, RelationshipDirection direction )
-        {
-            return inner.test( type, direction );
-        }
-
-        @Override
-        public boolean isTypeLimited()
-        {
-            return inner.isTypeLimited();
-        }
-
-        @Override
-        public LongIterator addedRelationship( NodeState transactionState )
-        {
-            return inner.addedRelationship( transactionState );
-        }
-
-        @Override
-        public RelationshipSelection reverse()
-        {
-            RelationshipSelection reverse = inner.reverse();
-            return reverse == inner ? this : new SecureRelationshipSelection( reverse ); //Reference check
-        }
+        IOUtils.closeAllUnchecked( storeCursor, securityStoreNodeCursor, securityStoreRelationshipCursor );
     }
 }

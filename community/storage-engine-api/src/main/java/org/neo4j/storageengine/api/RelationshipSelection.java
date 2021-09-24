@@ -46,19 +46,6 @@ public abstract class RelationshipSelection
     public abstract boolean test( int type );
 
     /**
-     * Tests whether a relationship of a certain type between certain nodes should be part of this selection.
-     *
-     * @param type the relationship type id of the relationship to test.
-     * @param sourceReference reference to start node.
-     * @param targetReference reference to end node.
-     * @return whether or not this relationship type is part of this selection.
-     */
-    public boolean test( int type, long sourceReference, long targetReference )
-    {
-        return test( type );
-    }
-
-    /**
      * Tests whether a relationship of a certain direction should be part of this selection.
      * @param direction {@link RelationshipDirection} of the relationship to test.
      * @return whether or not this relationship is part of this selection.

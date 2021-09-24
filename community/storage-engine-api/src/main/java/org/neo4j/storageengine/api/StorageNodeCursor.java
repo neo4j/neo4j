@@ -76,9 +76,8 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
      * Visits degrees, i.e. number of relationships, for relationships of the given {@code selection} and gives those degrees to the {@code mutator}.
      * @param selection {@link RelationshipSelection} to get degrees for.
      * @param mutator to given the degrees to.
-     * @param allowFastDegreeLookup set to false if there's a need to do security checks, which require the lookup to be done with traversal.
      */
-    void degrees( RelationshipSelection selection, Degrees.Mutator mutator, boolean allowFastDegreeLookup );
+    void degrees( RelationshipSelection selection, Degrees.Mutator mutator );
 
     /**
      * NOTE the fact that this method is here means physical details about underlying storage leaks into this API.
