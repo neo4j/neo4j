@@ -31,6 +31,7 @@ import org.neo4j.util.Preconditions;
 
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.schema.ConstraintType.EXISTS;
+import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 /**
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
@@ -286,5 +287,11 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
     {
         Preconditions.checkState( ownedIndexType != null, "ConstraintDescriptor missing IndexType when connected to index" );
         return new ConstraintDescriptorImplementation( type, schema, id, name, ownedIndex, ownedIndexType );
+    }
+
+    @Override
+    public String toString()
+    {
+        return userDescription( TOKEN_ID_NAME_LOOKUP );
     }
 }

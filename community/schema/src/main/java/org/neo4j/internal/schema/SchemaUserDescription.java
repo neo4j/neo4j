@@ -141,7 +141,7 @@ public final class SchemaUserDescription
         joiner.add( "schema=" + schema.userDescription( tokenNameLookup ) );
     }
 
-    static final TokenNameLookup TOKEN_ID_NAME_LOOKUP = new TokenNameLookup()
+    public static final TokenNameLookup TOKEN_ID_NAME_LOOKUP = new TokenNameLookup()
     {
         @Override
         public String labelGetName( int labelId )
