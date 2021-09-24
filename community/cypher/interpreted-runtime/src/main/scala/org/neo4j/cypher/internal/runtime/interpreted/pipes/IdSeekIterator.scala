@@ -65,7 +65,7 @@ case class RelationshipState(id: Long, startNode: Long, endNode: Long, relType: 
 
 class DirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], state: QueryState) extends ClosingLongIterator with RelationshipIterator {
   protected var cachedRelationship: RelationshipState = _
-  protected var _next = StatementConstants.NO_SUCH_RELATIONSHIP
+  protected var _next: Long = StatementConstants.NO_SUCH_RELATIONSHIP
   private var startNode = StatementConstants.NO_SUCH_NODE
   private var endNode = StatementConstants.NO_SUCH_NODE
   private var typ = StatementConstants.NO_SUCH_RELATIONSHIP_TYPE
