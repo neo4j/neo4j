@@ -21,17 +21,18 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.eclipse.collections.impl.factory.primitive.LongLists
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.RelationshipVisitor
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util.function.Consumer
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
-final class PathValueBuilder(state: QueryState) {
+final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVisitor] {
   private val nodes = LongLists.mutable.empty
   private val rels = LongLists.mutable.empty
   private var nulled = false
@@ -70,21 +71,22 @@ final class PathValueBuilder(state: QueryState) {
   def addIncomingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
     val rel = relOrNull.asInstanceOf[VirtualRelationshipValue]
     rels.add(rel.id())
-    nodes.add(startNode(rel))
+    nodes.add(rel.startNodeId(this))
     this
   }
 
   def addOutgoingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
     val rel = relOrNull.asInstanceOf[VirtualRelationshipValue]
     rels.add(rel.id())
-    nodes.add(endNode(rel))
+    nodes.add(rel.endNodeId(this))
     this
   }
 
   def addUndirectedRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
     val rel = relOrNull.asInstanceOf[VirtualRelationshipValue]
     val previousNode = nodes.getLast
-    val (start, end) = startAndEndNode(rel)
+    val start = rel.startNodeId(this)
+    val end = rel.endNodeId(this)
     if (start == previousNode) addOutgoingRelationship(rel)
     else if (end == previousNode) addIncomingRelationship(rel)
     else throw new IllegalArgumentException(s"Invalid usage of PathValueBuilder, $previousNode must be a node in $rel")
@@ -130,32 +132,18 @@ final class PathValueBuilder(state: QueryState) {
   }
 
   def correctDirection(rel: VirtualRelationshipValue, prevId: Long): Boolean = {
-    val (start, end) = startAndEndNode(rel)
+    val start = rel.startNodeId(this)
+    val end = rel.endNodeId(this)
     start == prevId ||end == prevId
   }
 
-  private def startNode(rel: VirtualRelationshipValue): Long = {
-    val cursor = state.cursors.relationshipScanCursor
-    singleRelationship(rel, cursor)
-    cursor.sourceNodeReference()
-  }
 
-  private def endNode(rel: VirtualRelationshipValue): Long = {
+  override def accept(t: RelationshipVisitor): Unit = {
     val cursor = state.cursors.relationshipScanCursor
-    singleRelationship(rel, cursor)
-    cursor.targetNodeReference()
-  }
-
-  private def startAndEndNode(rel: VirtualRelationshipValue): (Long, Long) = {
-    val cursor = state.cursors.relationshipScanCursor
-    singleRelationship(rel, cursor)
-    (cursor.sourceNodeReference(), cursor.targetNodeReference())
-  }
-
-  //This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
-  private def singleRelationship(rel: VirtualRelationshipValue, cursor: RelationshipScanCursor): Unit = {
-    state.query.singleRelationship(rel.id(), cursor)
+    state.query.singleRelationship(t.id(), cursor)
+    //This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
     cursor.next()
+    t.visit(cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.`type`())
   }
 
   private def nullCheck[A <: AnyRef](value: A)(f: => PathValueBuilder):PathValueBuilder = value match {

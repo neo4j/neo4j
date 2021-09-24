@@ -22,11 +22,14 @@ package org.neo4j.cypher.operations;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 
+import java.util.function.Consumer;
+
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.RelationshipVisitor;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
@@ -40,7 +43,7 @@ import static org.neo4j.values.virtual.VirtualValues.pathReference;
  * anthropic beings, so refactor with some care.
  */
 @SuppressWarnings( {"unused", "WeakerAccess"} )
-public class PathValueBuilder
+public class PathValueBuilder implements Consumer<RelationshipVisitor>
 {
     private final MutableLongList nodes = LongLists.mutable.empty();
     private final MutableLongList rels = LongLists.mutable.empty();
@@ -127,8 +130,7 @@ public class PathValueBuilder
     @CalledFromGeneratedCode
     public void addIncoming( VirtualRelationshipValue relationship )
     {
-        singleRelationship( relationship );
-        nodes.add( cursor.sourceNodeReference() );
+        nodes.add( relationship.startNodeId( this ) );
         rels.add( relationship.id() );
     }
 
@@ -154,8 +156,7 @@ public class PathValueBuilder
     @CalledFromGeneratedCode
     public void addOutgoing( VirtualRelationshipValue relationship )
     {
-        singleRelationship( relationship );
-        nodes.add( cursor.targetNodeReference() );
+        nodes.add( relationship.endNodeId( this ) );
         rels.add( relationship.id() );
     }
 
@@ -187,15 +188,16 @@ public class PathValueBuilder
     @CalledFromGeneratedCode
     public void addUndirected( VirtualRelationshipValue relationship )
     {
-        singleRelationship( relationship );
         long previous = nodes.get( nodes.size() - 1 );
-        if ( previous == cursor.sourceNodeReference() )
+        long start = relationship.startNodeId( this );
+        long end = relationship.endNodeId( this );
+        if ( previous == start )
         {
-            add( relationship.id(), cursor.targetNodeReference() );
+            add( relationship.id(), end );
         }
-        else if ( previous == cursor.targetNodeReference() )
+        else if ( previous == end )
         {
-            add( relationship.id(), cursor.sourceNodeReference() );
+            add( relationship.id(), start );
         }
         else
         {
@@ -239,16 +241,15 @@ public class PathValueBuilder
             if ( notNoValue( value ) )
             {
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                singleRelationship( relationship );
-                nodes.add( cursor.sourceNodeReference() );
+                nodes.add( relationship.startNodeId( this ) );
                 rels.add( relationship.id() );
             }
         }
         AnyValue last = relationships.value( i );
         if ( notNoValue( last ) )
         {
-            rels.add( ((VirtualRelationshipValue) last).id() );
             nodes.add( target.id() );
+            rels.add( ((VirtualRelationshipValue) last).id() );
         }
     }
 
@@ -279,8 +280,7 @@ public class PathValueBuilder
             if ( notNoValue( value ) )
             {
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                singleRelationship( relationship );
-                nodes.add( cursor.sourceNodeReference() );
+                nodes.add( relationship.startNodeId( this ) );
                 rels.add( relationship.id() );
             }
         }
@@ -322,8 +322,7 @@ public class PathValueBuilder
             if ( notNoValue( value ) )
             {
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                singleRelationship( relationship );
-                nodes.add( cursor.targetNodeReference() );
+                nodes.add( relationship.endNodeId( this ) );
                 rels.add( relationship.id() );
             }
         }
@@ -363,8 +362,7 @@ public class PathValueBuilder
             {
 
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                singleRelationship( relationship );
-                nodes.add( cursor.targetNodeReference() );
+                nodes.add( relationship.endNodeId( this ) );
                 rels.add( relationship.id() );
             }
         }
@@ -401,8 +399,7 @@ public class PathValueBuilder
         }
         long previous = nodes.get( nodes.size() - 1 );
         VirtualRelationshipValue first = (VirtualRelationshipValue) relationships.head();
-        singleRelationship( first );
-        boolean correctDirection = cursor.sourceNodeReference() == previous || cursor.targetNodeReference() == previous;
+        boolean correctDirection = first.startNodeId( this ) == previous || first.endNodeId(this) == previous;
 
         int i;
         if ( correctDirection )
@@ -465,8 +462,7 @@ public class PathValueBuilder
         long previous = nodes.get( nodes.size() - 1 );
         VirtualRelationshipValue first = (VirtualRelationshipValue) relationships.head();
 
-        singleRelationship( first );
-        boolean correctDirection = cursor.sourceNodeReference() == previous || previous == cursor.targetNodeReference();
+        boolean correctDirection = first.startNodeId( this ) == previous || previous == first.endNodeId(this);
 
         if ( correctDirection )
         {
@@ -491,11 +487,13 @@ public class PathValueBuilder
         }
     }
 
-    //This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
-    private void singleRelationship( VirtualRelationshipValue relationship )
+    @Override
+    public void accept( RelationshipVisitor relationshipVisitor )
     {
-        dbAccess.singleRelationship( relationship.id(), cursor );
+        dbAccess.singleRelationship( relationshipVisitor.id(), cursor );
+        //This ignores that a relationship might have been deleted here, this is weird but it is backwards compatible
         cursor.next();
+        relationshipVisitor.visit( cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.type() );
     }
 
     private boolean notNoValue( AnyValue value )

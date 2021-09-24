@@ -34,6 +34,7 @@ import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Equality;
@@ -488,11 +489,18 @@ public final class CypherFunctions
     public static VirtualNodeValue startNode( VirtualRelationshipValue relationship, DbAccess access,
                                        RelationshipScanCursor cursor )
     {
-
-        access.singleRelationship( relationship.id(), cursor );
-        //at this point we don't care if it is there or not just load what we got
-        cursor.next();
-        return access.nodeById( cursor.sourceNodeReference() );
+        return VirtualValues.node(
+                relationship.startNodeId( relationshipVisitor ->
+                                        {
+                                            access.singleRelationship( relationshipVisitor.id(), cursor );
+                                            if ( cursor.next() )
+                                            {
+                                                relationshipVisitor.visit( cursor.sourceNodeReference(), cursor.targetNodeReference(),
+                                                                           cursor.type() );
+                                            }
+                                        }
+                )
+        );
     }
 
     public static VirtualNodeValue endNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
@@ -509,12 +517,20 @@ public final class CypherFunctions
     }
 
     public static VirtualNodeValue endNode( VirtualRelationshipValue relationship, DbAccess access,
-                                     RelationshipScanCursor cursor )
+                                            RelationshipScanCursor cursor )
     {
-        access.singleRelationship( relationship.id(), cursor );
-        //at this point we don't care if it is there or not just load what we got
-        cursor.next();
-        return access.nodeById( cursor.targetNodeReference() );
+        return VirtualValues.node(
+                relationship.endNodeId( relationshipVisitor ->
+                                        {
+                                            access.singleRelationship( relationshipVisitor.id(), cursor );
+                                            if ( cursor.next() )
+                                            {
+                                                relationshipVisitor.visit( cursor.sourceNodeReference(), cursor.targetNodeReference(),
+                                                                           cursor.type() );
+                                            }
+                                        }
+                )
+        );
     }
 
     @CalledFromGeneratedCode
@@ -533,24 +549,16 @@ public final class CypherFunctions
     }
 
     public static VirtualNodeValue otherNode( VirtualRelationshipValue relationship, DbAccess access, VirtualNodeValue node,
-                                       RelationshipScanCursor cursor )
+                                              RelationshipScanCursor cursor )
     {
-
-        access.singleRelationship( relationship.id(), cursor );
-        //at this point we don't care if it is there or not just load what we got
-        cursor.next();
-        if ( node.id() == cursor.sourceNodeReference() )
+        return VirtualValues.node( relationship.otherNodeId( node.id(), relationshipVisitor ->
         {
-            return access.nodeById( cursor.targetNodeReference() );
-        }
-        else if ( node.id() == cursor.targetNodeReference() )
-        {
-            return access.nodeById( cursor.sourceNodeReference() );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Invalid argument, node is not member of relationship" );
-        }
+            access.singleRelationship( relationshipVisitor.id(), cursor );
+            if ( cursor.next() )
+            {
+                relationshipVisitor.visit( cursor.sourceNodeReference(), cursor.targetNodeReference(), cursor.type() );
+            }
+        } ) );
     }
 
     @CalledFromGeneratedCode
@@ -1011,7 +1019,12 @@ public final class CypherFunctions
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( item instanceof VirtualRelationshipValue )
         {
-            return access.getTypeForRelationship( ((VirtualRelationshipValue) item).id(), relCursor );
+            int typeToken = ((VirtualRelationshipValue) item).relationshipTypeId( relationshipVisitor -> {
+                access.singleRelationship( relationshipVisitor.id(), relCursor );
+                relCursor.next();
+                relationshipVisitor.visit( relCursor.sourceNodeReference(), relCursor.targetNodeReference(), relCursor.type() );
+            } );
+            return Values.stringValue( access.relationshipTypeName( typeToken ) );
         }
         else
         {
@@ -1025,7 +1038,24 @@ public final class CypherFunctions
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( entity instanceof VirtualRelationshipValue )
         {
-            return access.isTypeSetOnRelationship( typeToken, ((VirtualRelationshipValue) entity).id(), relCursor );
+            if ( typeToken == StatementConstants.NO_SUCH_RELATIONSHIP_TYPE )
+            {
+                return false;
+            }
+            else
+            {
+                int actualType = ((VirtualRelationshipValue) entity).relationshipTypeId( relationshipVisitor ->
+                                                                                         {
+                                                                                             access.singleRelationship( relationshipVisitor.id(), relCursor );
+                                                                                             if ( relCursor.next() )
+                                                                                             {
+                                                                                                 relationshipVisitor.visit( relCursor.sourceNodeReference(),
+                                                                                                                            relCursor.targetNodeReference(),
+                                                                                                                            relCursor.type() );
+                                                                                             }
+                                                                                         } );
+                return typeToken == actualType;
+            }
         }
         else
         {

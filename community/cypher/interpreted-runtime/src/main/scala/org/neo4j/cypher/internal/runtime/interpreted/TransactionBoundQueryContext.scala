@@ -113,8 +113,6 @@ import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.impl.util.DefaultValueMapper
-import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntity
-import org.neo4j.kernel.impl.util.ValueUtils.fromRelationshipEntityLazyLoad
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
@@ -486,11 +484,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
                                 startNodeId: Long,
                                 endNodeId: Long,
                                 typeId: Int): VirtualRelationshipValue =
-    try {
-      fromRelationshipEntity(entityAccessor.newRelationshipEntity(relationshipId, startNodeId, typeId, endNodeId))
-    } catch {
-      case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
-    }
+      VirtualValues.relationship(relationshipId, startNodeId, endNodeId, typeId)
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,
@@ -923,7 +917,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
     }
 
     override def getById(id: Long): VirtualRelationshipValue = try {
-      fromRelationshipEntityLazyLoad(entityAccessor.newRelationshipEntity(id))
+      VirtualValues.relationship(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }

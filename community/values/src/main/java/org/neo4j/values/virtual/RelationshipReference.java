@@ -19,20 +19,65 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.function.Consumer;
+
 import org.neo4j.values.AnyValueWriter;
 
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-public class RelationshipReference extends VirtualRelationshipValue
+public class RelationshipReference extends VirtualRelationshipValue implements RelationshipVisitor
 {
+    static final long NO_NODE = -1L;
+    static final int NO_TYPE = -1;
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipReference.class );
 
     private final long id;
+    private long startNode = NO_NODE;
+    private long endNode = NO_NODE;
+    private int type = NO_TYPE;
 
     RelationshipReference( long id )
     {
         this.id = id;
+    }
+
+    RelationshipReference( long id, long startNode, long endNode, int type )
+    {
+        this.id = id;
+        this.startNode = startNode;
+        this.endNode = endNode;
+        this.type = type;
+    }
+
+    @Override
+    public long startNodeId( Consumer<RelationshipVisitor> consumer )
+    {
+        if ( startNode == NO_NODE )
+        {
+            consumer.accept( this );
+        }
+        return startNode;
+    }
+
+    @Override
+    public long endNodeId( Consumer<RelationshipVisitor> consumer )
+    {
+        if ( endNode == NO_NODE )
+        {
+            consumer.accept( this );
+        }
+        return endNode;
+    }
+
+    @Override
+    public int relationshipTypeId( Consumer<RelationshipVisitor> consumer )
+    {
+        if ( type == NO_TYPE )
+        {
+            consumer.accept( this );
+        }
+        return type;
     }
 
     @Override
@@ -63,5 +108,13 @@ public class RelationshipReference extends VirtualRelationshipValue
     public long estimatedHeapUsage()
     {
         return SHALLOW_SIZE;
+    }
+
+    @Override
+    public void visit( long startNode, long endNode, int type )
+    {
+        this.startNode = startNode;
+        this.endNode = endNode;
+        this.type = type;
     }
 }

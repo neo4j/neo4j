@@ -21,6 +21,7 @@ package org.neo4j.values.virtual;
 
 
 import java.util.Comparator;
+import java.util.function.Consumer;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
@@ -31,6 +32,18 @@ import org.neo4j.values.VirtualValue;
 public abstract class VirtualRelationshipValue extends VirtualValue
 {
     public abstract long id();
+
+    public abstract long startNodeId( Consumer<RelationshipVisitor> consumer );
+
+    public abstract long endNodeId( Consumer<RelationshipVisitor> consumer );
+
+    public final long otherNodeId( long node, Consumer<RelationshipVisitor> consumer )
+    {
+        long startNodeId = startNodeId( consumer );
+        return node == startNodeId ? endNodeId( consumer ) : startNodeId;
+    }
+
+    public abstract int relationshipTypeId( Consumer<RelationshipVisitor> consumer );
 
     @Override
     public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )

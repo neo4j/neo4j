@@ -137,6 +137,11 @@ public final class VirtualValues
         return new RelationshipReference( id );
     }
 
+    public static RelationshipReference relationship( long id, long startNode, long endNode, int type )
+    {
+        return new RelationshipReference( id, startNode, endNode, type );
+    }
+
     public static PathReference pathReference( long[] nodes, long[] relationships )
     {
         assert nodes != null;
