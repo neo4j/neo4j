@@ -79,6 +79,7 @@ import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.KernelVersion.V4_2;
+import static org.neo4j.kernel.KernelVersion.V4_3_D4;
 import static org.neo4j.test.Race.throwing;
 
 @EphemeralTestDirectoryExtension
@@ -117,7 +118,7 @@ class DatabaseUpgradeTransactionIT
         //Then
         assertThat( getKernelVersion() ).isEqualTo( V4_2 );
         createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
-        setDbmsRuntime( DbmsRuntimeVersion.V4_3_D4 );
+        setDbmsRuntime( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION );
 
         //When
         createReadTransaction();
@@ -131,6 +132,34 @@ class DatabaseUpgradeTransactionIT
         //Then
         assertThat( getKernelVersion() ).isEqualTo( LATEST );
         assertUpgradeTransactionInOrder( V4_2, LATEST, startTransaction );
+    }
+
+    @Test
+    void shouldUpgradeDatabaseToMaxKernelVersionForDbmsRuntimeVersionOnFirstWriteTransaction() throws Exception
+    {
+        //Given
+        setKernelVersion( V4_2 );
+        setDbmsRuntime( DbmsRuntimeVersion.V4_3 );
+        restartDbms();
+        long startTransaction = db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
+
+        //Then
+        assertThat( getKernelVersion() ).isEqualTo( V4_2 );
+        createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
+        setDbmsRuntime( DbmsRuntimeVersion.V4_3_D4 );
+
+        //When
+        createReadTransaction();
+
+        //Then
+        assertThat( getKernelVersion() ).isEqualTo( V4_2 );
+
+        //When
+        createWriteTransaction();
+
+        //Then
+        assertThat( getKernelVersion() ).isEqualTo( V4_3_D4 );
+        assertUpgradeTransactionInOrder( V4_2, V4_3_D4, startTransaction );
     }
 
     @Test

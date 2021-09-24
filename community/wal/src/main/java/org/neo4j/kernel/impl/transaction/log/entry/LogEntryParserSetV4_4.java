@@ -21,15 +21,10 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.KernelVersion;
 
-public class LogEntryParserSetV4_3 extends LogEntryParserSetV4_2
+public class LogEntryParserSetV4_4 extends LogEntryParserSetV4_3
 {
-    LogEntryParserSetV4_3()
+    LogEntryParserSetV4_4()
     {
-        this( KernelVersion.V4_3_D4 );
-    }
-
-    LogEntryParserSetV4_3( KernelVersion version )
-    {
-        super( version );
+        super( KernelVersion.V4_4 );
     }
 }

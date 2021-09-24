@@ -36,11 +36,16 @@ public enum DbmsRuntimeVersion implements ComponentVersion
     V4_3( 3, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_43D2, KernelVersion.V4_2 ),
 
     /**
-     * Dense node locking changes
+     * Dense node locking changes, token indexes and relationship property indexes.
      */
-    V4_3_D4( 4, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_43D4, KernelVersion.V4_3_D4 );
+    V4_3_D4( 4, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_43D4, KernelVersion.V4_3_D4 ),
 
-    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V4_3_D4;
+    /**
+     * Range, Point and Text index types.
+     */
+    V4_4( 5, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_44, KernelVersion.V4_4 );
+
+    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V4_4;
 
     DbmsRuntimeVersion( int version, String componentName, String description, KernelVersion kernelVersion )
     {
