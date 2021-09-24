@@ -270,9 +270,12 @@ abstract class Read implements TxStateHolder,
             EntityIndexSeekClient indexSeekClient,
             IndexQueryConstraints constraints ) throws KernelException
     {
+        if ( indexSession.reference().getIndexType() == IndexType.TEXT )
+        {
+            throw new UnsupportedOperationException( "Index scan not supported for TEXT index" );
+        }
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = indexSession.reference.schema().getPropertyIds()[0];
-
         indexSeekClient.setRead( this );
         indexSession.reader.query( indexSeekClient, this, ktx.securityContext().mode(), constraints, PropertyIndexQuery.exists( firstProperty ) );
     }

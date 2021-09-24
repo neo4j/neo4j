@@ -42,6 +42,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.schema.IndexType.TEXT;
@@ -108,6 +109,9 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
             var matt = tx.createNode( PERSON );
             matt.setProperty( NAME, 42 );
 
+            var jack = tx.createNode( PERSON );
+            jack.setProperty( NAME, "77" );
+
             tx.commit();
         }
     }
@@ -117,6 +121,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     {
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "Mike Smith" ) ) ).isEqualTo( 1 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "Unknown" ) ) ).isEqualTo( 0 );
+        assertThat( indexedNodes( exact( token.propertyKey( NAME ), 77 ) ) ).isEqualTo( 0 );
         assertThat( indexedNodes( stringPrefix( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 1 );
         assertThat( indexedNodes( stringContains( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 3 );
         assertThat( indexedNodes( stringSuffix( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 2 );
@@ -135,33 +140,28 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     }
 
     @Test
-    void shouldScanIndex() throws Exception
+    void shouldRejectIndexScans()
     {
-        assertThat( scannedNodeCount() ).isEqualTo( 5 );
-        assertThat( scannedRelationshipCount() ).isEqualTo( 4 );
+        var expectedMessage = "Index scan not supported for TEXT index";
+        assertThat( assertThrows( UnsupportedOperationException.class, this::scanNodes ).getMessage() ).isEqualTo( expectedMessage );
+        assertThat( assertThrows( UnsupportedOperationException.class, this::scanRelationships ).getMessage() ).isEqualTo( expectedMessage );
     }
 
-    private long scannedNodeCount() throws Exception
+    private void scanNodes() throws Exception
     {
-        monitor.reset();
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( nodeIndexName ) );
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             read.nodeIndexScan( index, cursor, unconstrained() );
-            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
-            return count( cursor );
         }
     }
 
-    private long scannedRelationshipCount() throws Exception
+    private void scanRelationships() throws Exception
     {
-        monitor.reset();
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( relIndexName ) );
         try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             read.relationshipIndexScan( index, cursor, unconstrained() );
-            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
-            return count( cursor );
         }
     }
 
