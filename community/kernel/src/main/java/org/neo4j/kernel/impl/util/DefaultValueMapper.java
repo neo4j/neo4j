@@ -51,12 +51,20 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     @Override
     public Node mapNode( VirtualNodeValue value )
     {
+        if ( value instanceof NodeEntityWrappingNodeValue )
+        { // this is the back door through which "virtual nodes" slip
+            return ((NodeEntityWrappingNodeValue) value).getEntity();
+        }
         return mapNode( value.id() );
     }
 
     @Override
     public Relationship mapRelationship( VirtualRelationshipValue value )
     {
+        if ( value instanceof RelationshipEntityWrappingValue )
+        { // this is the back door through which "virtual relationships" slip
+            return ((RelationshipEntityWrappingValue) value).getEntity();
+        }
         return mapRelationship( value.id() );
     }
 
