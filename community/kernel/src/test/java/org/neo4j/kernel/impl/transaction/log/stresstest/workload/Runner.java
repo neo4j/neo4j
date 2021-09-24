@@ -119,7 +119,7 @@ public class Runner implements Callable<Long>
         DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, log );
         LogRotation logRotation = transactionLogRotation( logFiles, Clock.systemUTC(), databaseHealth, EMPTY );
         return createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, logRotation, config, databaseHealth,
-                jobScheduler, NullLogProvider.nullLogProvider() );
+                jobScheduler, NullLogProvider.getInstance() );
     }
 
     private LogFiles createLogFiles( TransactionIdStore transactionIdStore,

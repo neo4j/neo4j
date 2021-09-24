@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
@@ -56,7 +57,6 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 
 public class RecordStorageEngineTestUtils
 {
@@ -66,8 +66,8 @@ public class RecordStorageEngineTestUtils
                 createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                 createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        return new RecordStorageEngine( layout, config, pageCache, fs, nullLogProvider(), nullLogProvider(), tokenHolders, mock( SchemaState.class ),
-                new StandardConstraintRuleAccessor(), c -> c, NO_LOCK_SERVICE, mock( Health.class ),
+        return new RecordStorageEngine( layout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
+                mock( SchemaState.class ), new StandardConstraintRuleAccessor(), c -> c, NO_LOCK_SERVICE, mock( Health.class ),
                 new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(), immediate(), PageCacheTracer.NULL, true,
                 EmptyMemoryTracker.INSTANCE, writable(), CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
     }

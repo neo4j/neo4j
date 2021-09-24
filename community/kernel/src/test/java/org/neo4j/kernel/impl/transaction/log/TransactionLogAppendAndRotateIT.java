@@ -164,7 +164,7 @@ class TransactionLogAppendAndRotateIT
     private TransactionAppender createBatchAppender( LogFiles logFiles, TransactionIdStore txIdStore, TransactionMetadataCache metadataCache,
             Health health, LogRotation rotation, JobScheduler jobScheduler, Config config )
     {
-        return createTransactionAppender( logFiles, txIdStore, metadataCache, rotation, config, health, jobScheduler, NullLogProvider.nullLogProvider() );
+        return createTransactionAppender( logFiles, txIdStore, metadataCache, rotation, config, health, jobScheduler, NullLogProvider.getInstance() );
     }
 
     private static Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end, AllTheMonitoring monitoring )

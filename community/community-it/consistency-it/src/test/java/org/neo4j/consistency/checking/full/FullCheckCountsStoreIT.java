@@ -35,6 +35,7 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -46,7 +47,6 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.writeAll;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
@@ -104,7 +104,7 @@ public class FullCheckCountsStoreIT
 
         // when
         ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout,
-                defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() ), NONE, nullLogProvider(), false, DEFAULT );
+                defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() ), NONE, NullLogProvider.getInstance(), false, DEFAULT );
 
         // then
         assertThat( result.summary().getGenericErrors() ).contains( errorMessage );

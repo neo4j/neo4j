@@ -83,7 +83,7 @@ public class DynamicIndexStoreViewIT
         storeView = new DynamicIndexStoreView(
                 new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), scheduler ),
                 locks, lockService, Config.defaults(), indexDescriptor -> indexingService.getIndexProxy( indexDescriptor ),
-                storageEngine::newReader, storageEngine::createStorageCursors, NullLogProvider.nullLogProvider() );
+                storageEngine::newReader, storageEngine::createStorageCursors, NullLogProvider.getInstance() );
     }
 
     @Disabled( "disabled until we have token indexes on by default" )

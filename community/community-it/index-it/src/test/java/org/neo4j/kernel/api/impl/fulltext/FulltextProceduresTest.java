@@ -2094,7 +2094,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             {
                 ConsistencyCheckService cc = new ConsistencyCheckService();
                 ConsistencyCheckService.Result result = cc.runFullConsistencyCheck(
-                        layout, Config.defaults(), ProgressMonitorFactory.NONE, NullLogProvider.nullLogProvider(), false, ConsistencyFlags.DEFAULT );
+                        layout, Config.defaults(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
                 if ( !result.isSuccessful() )
                 {
                     Files.lines( result.reportFile() ).forEach( System.out::println );

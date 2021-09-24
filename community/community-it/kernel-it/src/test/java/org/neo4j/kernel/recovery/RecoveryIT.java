@@ -86,6 +86,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -125,7 +126,6 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_ST
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.StorageEngineFactory.defaultStorageEngine;
@@ -929,8 +929,8 @@ class RecoveryIT
         };
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
-        Recovery.performRecovery( fileSystem, pageCache, EMPTY, Config.defaults(), layout, defaultStorageEngine(), true, nullLogProvider(), monitors,
-                Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), null, INSTANCE, Clock.systemUTC() );
+        Recovery.performRecovery( fileSystem, pageCache, EMPTY, Config.defaults(), layout, defaultStorageEngine(), true, NullLogProvider.getInstance(),
+                monitors, Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), null, INSTANCE, Clock.systemUTC() );
 
         // then
         assertFalse( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE ) );

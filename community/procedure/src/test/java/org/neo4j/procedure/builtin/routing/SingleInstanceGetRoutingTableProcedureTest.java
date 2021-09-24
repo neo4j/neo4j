@@ -57,6 +57,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -85,7 +86,6 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller.DEFAULT_NAMESPACE;
 import static org.neo4j.procedure.builtin.routing.GetRoutingTableProcedure.ADDRESS_CONTEXT_KEY;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -216,7 +216,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var databaseManager = mock( DatabaseManager.class );
         when( databaseManager.databaseIdRepository() ).thenReturn( databaseIdRepository );
 
-        var procedure = newProcedure( databaseManager, portRegister, config, nullLogProvider() );
+        var procedure = newProcedure( databaseManager, portRegister, config, NullLogProvider.getInstance() );
 
         var error = assertThrows( ProcedureException.class, () -> invoke( Map.of(), procedure, clientAddress, UNKNOWN_DATABASE_NAME ) );
         assertEquals( DatabaseNotFound, error.status() );
@@ -227,7 +227,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
     {
         var portRegister = mock( ConnectorPortRegister.class );
         var databaseManager = databaseManagerMock( config, false );
-        var procedure = newProcedure( databaseManager, portRegister, config, nullLogProvider() );
+        var procedure = newProcedure( databaseManager, portRegister, config, NullLogProvider.getInstance() );
         var input = new AnyValue[]{MapValue.EMPTY, stringValue( DEFAULT_DATABASE_NAME )};
 
         var error = assertThrows( ProcedureException.class, () -> invoke( procedure, clientAddress ) );
@@ -498,7 +498,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
     private GetRoutingTableProcedure newProcedure( ConnectorPortRegister portRegister, Config config )
     {
         var databaseManager = databaseManagerMock( config, true );
-        return newProcedure( databaseManager, portRegister, config, nullLogProvider() );
+        return newProcedure( databaseManager, portRegister, config, NullLogProvider.getInstance() );
     }
 
     private static Config newConfig( Config config, Duration routingTtl, SocketAddress boltAddress )

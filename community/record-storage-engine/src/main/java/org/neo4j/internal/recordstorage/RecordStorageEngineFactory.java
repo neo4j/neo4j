@@ -274,7 +274,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         RecordDatabaseLayout databaseLayout = convert( layout );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
-                        NullLogProvider.nullLogProvider(), PageCacheTracer.NULL, readOnly() );
+                        NullLogProvider.getInstance(), PageCacheTracer.NULL, readOnly() );
         try ( NeoStores stores = factory.openNeoStores( false, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
               var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
         {

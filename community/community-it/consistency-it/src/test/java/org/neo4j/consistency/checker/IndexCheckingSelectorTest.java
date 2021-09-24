@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.DbmsExtension;
@@ -72,7 +73,6 @@ import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCh
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
@@ -199,7 +199,7 @@ class IndexCheckingSelectorTest
         ConsistencyCheckService.Result result;
         try
         {
-            result = new ConsistencyCheckService().runFullConsistencyCheck( layout, config, NONE, nullLogProvider(), fs, pageCache, debugContext,
+            result = new ConsistencyCheckService().runFullConsistencyCheck( layout, config, NONE, NullLogProvider.getInstance(), fs, pageCache, debugContext,
                     layout.databaseDirectory(), DEFAULT, NULL, INSTANCE );
         }
         finally

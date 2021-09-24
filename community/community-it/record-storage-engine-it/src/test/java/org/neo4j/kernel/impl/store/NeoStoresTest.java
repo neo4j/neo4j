@@ -126,7 +126,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
@@ -730,9 +729,9 @@ public class NeoStoresTest
                 createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         storageEngine =
-                new RecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider(), nullLogProvider(), tokenHolders,
-                        new DatabaseSchemaState( nullLogProvider() ), new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE, mock( Health.class ),
-                        idGeneratorFactory, new DefaultIdController(), immediate(), PageCacheTracer.NULL, true, INSTANCE, writable(),
+                new RecordStorageEngine( databaseLayout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
+                        new DatabaseSchemaState( NullLogProvider.getInstance() ), new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE,
+                        mock( Health.class ), idGeneratorFactory, new DefaultIdController(), immediate(), PageCacheTracer.NULL, true, INSTANCE, writable(),
                         CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
         life = new LifeSupport();
         life.add( storageEngine );

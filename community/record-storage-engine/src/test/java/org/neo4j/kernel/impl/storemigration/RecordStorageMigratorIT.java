@@ -126,7 +126,6 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 
@@ -510,7 +509,7 @@ class RecordStorageMigratorIT
 
         // then
         try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(),
-                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, nullLogProvider(),
+                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, NullLogProvider.getInstance(),
                 PageCacheTracer.NULL, writable() ).openNeoStores( StoreType.META_DATA ) )
         {
             neoStores.start( NULL );
@@ -547,7 +546,7 @@ class RecordStorageMigratorIT
 
         // then
         try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(),
-                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, nullLogProvider(),
+                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, NullLogProvider.getInstance(),
                 PageCacheTracer.NULL, writable() ).openNeoStores( StoreType.META_DATA ) )
         {
             neoStores.start( NULL );

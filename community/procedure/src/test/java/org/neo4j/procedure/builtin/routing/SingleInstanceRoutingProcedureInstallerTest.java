@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 
 import static java.util.stream.Collectors.toSet;
@@ -40,7 +41,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 
 class SingleInstanceRoutingProcedureInstallerTest
 {
@@ -51,7 +51,7 @@ class SingleInstanceRoutingProcedureInstallerTest
         ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
         ClientRoutingDomainChecker clientRoutingDomainChecker = mock( ClientRoutingDomainChecker.class );
         Config config = Config.defaults();
-        LogProvider logProvider = nullLogProvider();
+        LogProvider logProvider = NullLogProvider.getInstance();
 
         SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker,
                                                                                                          portRegister, config, logProvider );

@@ -85,7 +85,7 @@ class TransactionLogQueueIT
 
         logVersionRepository = new SimpleLogVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
-        logProvider = NullLogProvider.nullLogProvider();
+        logProvider = NullLogProvider.getInstance();
         metadataCache = new TransactionMetadataCache();
         config = Config.defaults();
         databaseHealth = new DatabaseHealth( NO_OP, logProvider.getLog( DatabaseHealth.class ) );

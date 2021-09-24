@@ -33,7 +33,7 @@ import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlace
  */
 public class Netty4LoggerFactory extends InternalLoggerFactory
 {
-    private LogProvider logProvider;
+    private final LogProvider logProvider;
 
     public Netty4LoggerFactory( LogProvider logProvider )
     {

@@ -80,15 +80,16 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static java.lang.String.format;
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;
@@ -101,7 +102,6 @@ import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST2;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.test.Race.throwing;
 
@@ -154,7 +154,8 @@ class DenseNodeConcurrencyIT
             Config config = deps.resolveDependency( Config.class );
             RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.cast( database.databaseLayout() );
             dbms.shutdown();
-            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, config, NONE, nullLogProvider(),
+            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, config, NONE,
+                    NullLogProvider.getInstance(),
                     deps.resolveDependency( FileSystemAbstraction.class ), false, ConsistencyFlags.DEFAULT );
             assertThat( result.isSuccessful() ).as( new Description()
             {

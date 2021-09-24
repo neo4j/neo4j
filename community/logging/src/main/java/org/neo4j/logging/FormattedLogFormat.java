@@ -25,5 +25,5 @@ import org.neo4j.annotations.api.PublicApi;
 public enum FormattedLogFormat
 {
     PLAIN,
-    JSON;
+    JSON
 }

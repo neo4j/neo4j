@@ -27,9 +27,8 @@ import org.neo4j.logging.NullLogProvider;
 public final class NullLogService implements LogService
 {
     private static final NullLogService INSTANCE = new NullLogService();
-
-    public final NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-    public final NullLog nullLog = NullLog.getInstance();
+    private static final NullLogProvider NULL_LOG_PROVIDER = NullLogProvider.getInstance();
+    private static final NullLog NULL_LOG = NullLog.getInstance();
 
     private NullLogService()
     {
@@ -43,24 +42,24 @@ public final class NullLogService implements LogService
     @Override
     public LogProvider getUserLogProvider()
     {
-        return nullLogProvider;
+        return NULL_LOG_PROVIDER;
     }
 
     @Override
     public Log getUserLog( Class<?> loggingClass )
     {
-        return nullLog;
+        return NULL_LOG;
     }
 
     @Override
     public LogProvider getInternalLogProvider()
     {
-        return nullLogProvider;
+        return NULL_LOG_PROVIDER;
     }
 
     @Override
     public Log getInternalLog( Class<?> loggingClass )
     {
-        return nullLog;
+        return NULL_LOG;
     }
 }

@@ -275,7 +275,7 @@ public class TransactionAppenderConcurrencyTest
     {
         return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, logRotation,
                 Config.defaults( dedicated_transaction_appender, false ),
-                databaseHealth, scheduler, NullLogProvider.nullLogProvider() );
+                databaseHealth, scheduler, NullLogProvider.getInstance() );
     }
 
     private static class OutOfMemoryAwareFileSystem extends EphemeralFileSystemAbstraction

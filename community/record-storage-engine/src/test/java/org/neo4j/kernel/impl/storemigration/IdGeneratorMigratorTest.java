@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.Inject;
@@ -55,7 +56,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
-import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 
 @PageCacheExtension
 class IdGeneratorMigratorTest
@@ -77,7 +77,7 @@ class IdGeneratorMigratorTest
         long stringStoreStartId;
         long relationshipStoreStartId;
         try ( NeoStores neoStores = new StoreFactory( db, defaults(), new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), pageCache, fs,
-                StandardV3_4.RECORD_FORMATS, nullLogProvider(), PageCacheTracer.NULL, writable(), immutable.empty() ).openAllNeoStores( true ) )
+                StandardV3_4.RECORD_FORMATS, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable(), immutable.empty() ).openAllNeoStores( true ) )
         {
             // Let nodes have every fourth a deleted record
             createSomeRecordsAndSomeHoles( neoStores.getNodeStore(), 500, 1, 3 );
@@ -87,7 +87,8 @@ class IdGeneratorMigratorTest
         }
         // Pretend that the relationship store was copied so that relationship id file should be migrated from there
         try ( NeoStores neoStores = new StoreFactory( upgrade, defaults(), new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), pageCache,
-                fs, Standard.LATEST_RECORD_FORMATS, nullLogProvider(), PageCacheTracer.NULL, writable(), immutable.empty() ).openAllNeoStores( true ) )
+                fs, Standard.LATEST_RECORD_FORMATS, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable(), immutable.empty() ).openAllNeoStores(
+                true ) )
         {
             // Let relationships have every fourth a created record
             createSomeRecordsAndSomeHoles( neoStores.getRelationshipStore(), 600, 3, 1 );
