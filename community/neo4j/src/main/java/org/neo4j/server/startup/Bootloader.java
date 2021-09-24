@@ -21,7 +21,6 @@ package org.neo4j.server.startup;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.BootloaderSettings;

@@ -54,6 +54,7 @@ abstract class BootloaderContext
     final Class<?> entrypoint;
     private final Function<String,String> envLookup;
     private final Function<String,String> propLookup;
+    private final Runtime.Version version;
 
     //init
     private boolean initiated;
@@ -68,7 +69,6 @@ abstract class BootloaderContext
     private boolean fullConfig;
     private BootloaderOsAbstraction os;
     private ProcessManager processManager;
-    private final Runtime.Version version;
 
     protected BootloaderContext( Class<?> entrypoint )
     {
@@ -264,7 +264,7 @@ abstract class BootloaderContext
         Preconditions.checkArgument( initiated, "Context not initiated" );
     }
 
-    public Runtime.Version version()
+    Runtime.Version version()
     {
         return version;
     }
