@@ -103,7 +103,7 @@ class ShutdownOnIndexUpdateIT
         @Override
         public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
         {
-            if ( (LifecycleStatus.STOPPED == to) && (instance instanceof RecordStorageEngine) )
+            if ( (LifecycleStatus.STOPPED == to) && instance instanceof RecordStorageEngine )
             {
                 transaction.commit();
                 transactionClosed = true;

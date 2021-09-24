@@ -710,7 +710,7 @@
       <!-- Checkstyle is always validated -->
       <plugin>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.2</version>
         <configuration>
           <configLocation>checkstyle/checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
@@ -723,7 +723,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.40</version>
+            <version>9.0</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>

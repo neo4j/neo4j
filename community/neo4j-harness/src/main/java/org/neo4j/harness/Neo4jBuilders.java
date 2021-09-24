@@ -58,5 +58,5 @@ public final class Neo4jBuilders
         return new InProcessNeo4jBuilder( workingDirectory );
     }
 
-    private Neo4jBuilders(){}
+    private Neo4jBuilders() {}
 }
