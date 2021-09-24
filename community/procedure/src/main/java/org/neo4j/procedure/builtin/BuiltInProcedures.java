@@ -401,7 +401,7 @@ public class BuiltInProcedures
 
         //now that index-stats are up-to-date, clear caches so that we are ready to re-plan
         graphDatabaseAPI.getDependencyResolver()
-                .resolveDependency( QueryExecutionEngine.class, DependencyResolver.SelectionStrategy.FIRST )
+                .resolveDependency( QueryExecutionEngine.class )
                 .clearQueryCaches();
     }
 
