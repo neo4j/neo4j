@@ -1,4 +1,3 @@
 org.neo4j.test.extension.TestInstanceValidationExtension
 org.neo4j.test.extension.guard.JUnitUsageGuardExtension
-org.neo4j.test.extension.ThreadLeakageGuardExtension
 org.neo4j.test.extension.timeout.VerboseTimeoutExceptionExtension
