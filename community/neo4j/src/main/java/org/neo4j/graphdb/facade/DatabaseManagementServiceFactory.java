@@ -56,6 +56,7 @@ import org.neo4j.internal.collector.DataCollector;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.database.DatabaseSizeServiceImpl;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -133,6 +134,7 @@ public class DatabaseManagementServiceFactory
         DatabaseManager<?> databaseManager = edition.createDatabaseManager( globalModule );
         DatabaseManagementService managementService = createManagementService( globalModule, globalLife, internalLog, databaseManager );
         globalDependencies.satisfyDependencies( managementService );
+        globalDependencies.satisfyDependency( new DatabaseSizeServiceImpl( databaseManager ) );
 
         var databaseInfoService = edition.createDatabaseInfoService( databaseManager );
         globalDependencies.satisfyDependencies( databaseInfoService );
