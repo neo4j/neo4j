@@ -126,7 +126,7 @@ class BufferingIdGeneratorFactoryTest
         // given
         AtomicLong nextId = new AtomicLong();
         AtomicInteger numMaintenanceCalls = new AtomicInteger();
-        Race race = new Race().withEndCondition( () -> numMaintenanceCalls.get() >= 10 && nextId.get() >= 1_000 );
+        Race race = new Race().withEndCondition( () -> numMaintenanceCalls.get() >= 10 || nextId.get() >= 1_000 );
         race.addContestants( 4, () ->
         {
             int numIds = ThreadLocalRandom.current().nextInt( 1, 5 );
