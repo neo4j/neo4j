@@ -43,14 +43,14 @@ class KeysFunctionTest extends CypherFunSuite {
     val node = mock[Node]
 
     val queryContext = mock[QueryContext]
+    val state = QueryStateHelper.emptyWith(query = queryContext)
 
-    when(queryContext.nodePropertyIds(node.getId, null, null)).thenReturn(Array(11, 12, 13))
+    when(queryContext.nodePropertyIds(node.getId, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(Array(11, 12, 13))
 
     when(queryContext.getPropertyKeyName(11)).thenReturn("theProp1")
     when(queryContext.getPropertyKeyName(12)).thenReturn("OtherProp")
     when(queryContext.getPropertyKeyName(13)).thenReturn("MoreProp")
 
-    val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = CypherRow(mutable.Map("n" -> node))
 
     // WHEN
@@ -64,9 +64,9 @@ class KeysFunctionTest extends CypherFunSuite {
     // GIVEN
     val node = mock[Node]
     val queryContext = mock[QueryContext]
-    when(queryContext.nodePropertyIds(node.getId, null, null)).thenReturn(Array.empty[Int])
-
     val state = QueryStateHelper.emptyWith(query = queryContext)
+    when(queryContext.nodePropertyIds(node.getId, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(Array.empty[Int])
+
     val ctx = CypherRow(mutable.Map("n" -> node))
 
     // WHEN
