@@ -68,8 +68,6 @@ trait IndexPipeWithValues extends Pipe {
                         ) extends IndexIteratorBase[CypherRow](cursor) {
     private val queryContext = state.query
 
-    private val queryContext = state.query
-
     override protected def fetchNext(): CypherRow = {
       while (cursor.next()) {
 
