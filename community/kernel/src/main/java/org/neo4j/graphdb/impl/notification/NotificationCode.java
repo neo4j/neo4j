@@ -191,8 +191,8 @@ public enum NotificationCode
     DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "Referencing a variable bound to a node or relationship that was created in the same CREATE clause is deprecated. " +
-            "The behaviour of using this syntax is undefined and should be avoided. Please consider only referencing to variables already assigned."
+            "Referencing a node or relationship variable that is created in the same CREATE clause is deprecated. " +
+            "The behaviour of using this syntax is undefined and should be avoided. Please consider only referencing variables created in earlier clauses."
     ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
