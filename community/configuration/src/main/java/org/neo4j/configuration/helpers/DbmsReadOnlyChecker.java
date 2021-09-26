@@ -29,20 +29,61 @@ import static org.neo4j.configuration.GraphDatabaseSettings.writable_databases;
 /**
  * Component for checking whether a database is configured to be read_only.
  */
-@FunctionalInterface
 public interface DbmsReadOnlyChecker
 {
     static DbmsReadOnlyChecker writable()
     {
-        return databaseName -> false;
+        return new DbmsReadOnlyChecker()
+        {
+            @Override
+            public boolean isReadOnly( String databaseName )
+            {
+                return false;
+            }
+
+            @Override
+            public DatabaseReadOnlyChecker forDatabase( Config databaseConfig, String databaseName )
+            {
+                return DatabaseReadOnlyChecker.WritableDatabaseReadOnlyChecker.INSTANCE;
+            }
+        };
     }
 
     static DbmsReadOnlyChecker readOnly()
     {
-        return databaseName -> true;
+        return new DbmsReadOnlyChecker()
+        {
+            @Override
+            public boolean isReadOnly( String databaseName )
+            {
+                return true;
+            }
+
+            @Override
+            public DatabaseReadOnlyChecker forDatabase( Config databaseConfig, String databaseName )
+            {
+                return DatabaseReadOnlyChecker.ReadOnlyDatabaseReadOnlyChecker.INSTANCE;
+            }
+        };
     }
 
+    /**
+     * Checks whether or not the database with the given {@code databaseName} is configured to be read-only.
+     *
+     * @param databaseName the name of the database to check.
+     * @return {@code true} if the database is read-only, otherwise {@code false}.
+     */
     boolean isReadOnly( String databaseName );
+
+    /**
+     * Instantiates and returns a {@link DatabaseReadOnlyChecker} which is primed to check read-only state of the database with
+     * the given {@code databaseName}.
+     *
+     * @param databaseConfig database-specific config to register listeners in.
+     * @param databaseName the name of the database to instantiate a {@link DatabaseReadOnlyChecker} for.
+     * @return a new {@link DatabaseReadOnlyChecker} for the given database.
+     */
+    DatabaseReadOnlyChecker forDatabase( Config databaseConfig, String databaseName );
 
     class Default implements DbmsReadOnlyChecker
     {
@@ -57,6 +98,12 @@ public interface DbmsReadOnlyChecker
         public boolean isReadOnly( String databaseName )
         {
             return check( config, databaseName );
+        }
+
+        @Override
+        public DatabaseReadOnlyChecker forDatabase( Config databaseConfig, String databaseName )
+        {
+            return new DatabaseReadOnlyChecker.Default( this, config, databaseName );
         }
 
         private static boolean check( Config config, String databaseName )

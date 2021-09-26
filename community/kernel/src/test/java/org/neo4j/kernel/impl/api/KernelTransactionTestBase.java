@@ -35,7 +35,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
@@ -185,7 +184,7 @@ class KernelTransactionTestBase
                                                     new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                                                     mock( IndexingService.class ), mock( IndexStatisticsStore.class ), dependencies, databaseId,
                                                     leaseService, memoryPool,
-                                                    new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseId.name() ),
+                                                    new DbmsReadOnlyChecker.Default( config ).forDatabase( config, databaseId.name() ),
                                                     TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST,
                                                     mock( DbmsRuntimeRepository.class ), locksClient, mock( KernelTransactions.class )
         );

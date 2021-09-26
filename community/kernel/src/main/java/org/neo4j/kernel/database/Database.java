@@ -106,6 +106,7 @@ import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
+import org.neo4j.kernel.impl.store.StoreFileListing;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
@@ -131,7 +132,6 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLog
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
-import org.neo4j.kernel.impl.store.StoreFileListing;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -304,7 +304,7 @@ public class Database extends LifecycleAdapter
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
-        this.readOnlyDatabaseChecker = new DatabaseReadOnlyChecker.Default( context.getDbmsReadOnlyChecker(), namedDatabaseId.name() );
+        this.readOnlyDatabaseChecker = context.getDbmsReadOnlyChecker().forDatabase( databaseConfig, namedDatabaseId.name() );
     }
 
     /**

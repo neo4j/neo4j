@@ -20,6 +20,7 @@
 package org.neo4j.configuration.helpers;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.util.VisibleForTesting;
 
@@ -51,23 +52,33 @@ public interface DatabaseReadOnlyChecker
     {
         private final DbmsReadOnlyChecker dbmsChecker;
         private final String databaseName;
+        private volatile boolean isReadOnly;
 
         @VisibleForTesting
         public Default( Config config, String databaseName )
         {
-            this( new DbmsReadOnlyChecker.Default( config ), databaseName );
+            this( new DbmsReadOnlyChecker.Default( config ), config, databaseName );
         }
 
-        public Default( DbmsReadOnlyChecker dbmsChecker, String databaseName )
+        Default( DbmsReadOnlyChecker.Default dbmsChecker, Config config, String databaseName )
         {
             this.dbmsChecker = requireNonNull( dbmsChecker );
             this.databaseName = requireNonNull( databaseName );
+            config.addListener( GraphDatabaseSettings.read_only_databases, ( oldValue, newValue ) -> calculateIsReadOnly() );
+            config.addListener( GraphDatabaseSettings.read_only_database_default, ( oldValue, newValue ) -> calculateIsReadOnly() );
+            config.addListener( GraphDatabaseSettings.writable_databases, ( oldValue, newValue ) -> calculateIsReadOnly() );
+            calculateIsReadOnly();
+        }
+
+        private void calculateIsReadOnly()
+        {
+            this.isReadOnly = dbmsChecker.isReadOnly( databaseName );
         }
 
         @Override
         public boolean isReadOnly()
         {
-            return dbmsChecker.isReadOnly( databaseName );
+            return isReadOnly;
         }
 
         @Override

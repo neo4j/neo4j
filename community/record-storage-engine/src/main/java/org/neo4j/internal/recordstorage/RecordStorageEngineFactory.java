@@ -211,7 +211,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         RecordDatabaseLayout databaseLayout = convert( layout );
         RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance(), cacheTracer );
-        var readOnlyChecker = new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseLayout.getDatabaseName() );
+        var readOnlyChecker = new DbmsReadOnlyChecker.Default( config ).forDatabase( config, databaseLayout.getDatabaseName() );
         var idGeneratorFactory = readOnlyChecker.isReadOnly() ? new ScanOnOpenReadOnlyIdGeneratorFactory()
                                                               : new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, NullLogProvider.getInstance(), cacheTracer,
