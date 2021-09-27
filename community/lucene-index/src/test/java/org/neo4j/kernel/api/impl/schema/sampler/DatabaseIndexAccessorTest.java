@@ -63,11 +63,13 @@ import org.neo4j.test.extension.Threading;
 import org.neo4j.test.extension.ThreadingExtension;
 import org.neo4j.util.concurrent.BinaryLatch;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
@@ -266,16 +268,11 @@ public class DatabaseIndexAccessorTest
         updateAndCommit( asList( add( 1, "1" ), add( 2, "2" ), add( 3, "3" ), add( 4, "4" ), add( 5, "Double.NaN" ) ) );
 
         var reader = accessor.newValueReader();
+        var query = range( PROP_ID, 2, true, 3, true );
+        assertThatThrownBy( () -> resultsArray( reader, query ) )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasMessageContaining( "Index query not supported for %s index. Query: %s", index.getIndexProvider().getKey(), query );
 
-        try
-        {
-            resultsArray( reader, range( PROP_ID, 2, true, 3, true ) );
-            fail( "Expected to throw" );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-            assertEquals( "Range scans of value group NUMBER are not supported", e.getMessage() );
-        }
     }
 
     @ParameterizedTest( name = "{0}" )

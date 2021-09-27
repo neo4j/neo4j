@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Arrays;
+
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -43,7 +45,6 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -69,7 +70,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.lang.String.format;
-import static java.util.Arrays.stream;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 abstract class Read implements TxStateHolder,
@@ -269,13 +269,12 @@ abstract class Read implements TxStateHolder,
         return propertyIndexScan( index, desiredNumberOfPartitions, queryContext );
     }
 
-    private void scanIndex( DefaultIndexReadSession indexSession,
-            EntityIndexSeekClient indexSeekClient,
-            IndexQueryConstraints constraints ) throws KernelException
+    private void scanIndex( DefaultIndexReadSession indexSession, EntityIndexSeekClient indexSeekClient, IndexQueryConstraints constraints )
+            throws KernelException
     {
         if ( indexSession.reference().getIndexType() == IndexType.TEXT )
         {
-            throw new UnsupportedOperationException( "Index scan not supported for TEXT index" );
+            throw new UnsupportedOperationException( format( "Index scan not supported for %s index.", IndexType.TEXT ) );
         }
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = indexSession.reference.schema().getPropertyIds()[0];
@@ -451,7 +450,11 @@ abstract class Read implements TxStateHolder,
 
     private boolean supportsValueCapability( IndexDescriptor index, PropertyIndexQuery[] query )
     {
-        return stream( query ).allMatch( p -> index.getCapability().valueCapability( p.valueCategory() ) != IndexValueCapability.NO );
+        final var capability = index.getCapability();
+        return Arrays.stream( query )
+                     .map( PropertyIndexQuery::valueCategory )
+                     .map( capability::valueCapability )
+                     .noneMatch( IndexValueCapability.NO::equals );
     }
 
     private <C extends Cursor> PartitionedScan<C> propertyIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
@@ -459,7 +462,7 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext,
-                                  stream( index.reference().schema().getPropertyIds() )
+                                  Arrays.stream( index.reference().schema().getPropertyIds() )
                                         .mapToObj( PropertyIndexQuery::exists )
                                         .toArray( PropertyIndexQuery[]::new ) );
     }

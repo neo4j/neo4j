@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -129,8 +129,11 @@ class SimpleValueIndexReaderTest
     void numberRangeSeekQueryReachSearcher()
     {
         var simpleIndexReader = getUniqueSimpleReader();
+        var query = range( 1, 7, true, 8, true );
 
-        assertThrows( UnsupportedOperationException.class, () -> doQuery( simpleIndexReader, range( 1, 7, true, 8, true ) ) );
+        assertThatThrownBy( () -> doQuery( simpleIndexReader, query ) )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasMessageContainingAll( "Index query not supported for", "Query:", query.toString() );
     }
 
     @Test

@@ -35,6 +35,8 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
@@ -51,7 +53,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.schema.IndexType.TEXT;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 
 /**
@@ -62,7 +63,6 @@ import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_K
 public class SimpleValueIndexReader extends AbstractValueIndexReader
 {
     private final SearcherReference searcherReference;
-    private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
     private final TaskCoordinator taskCoordinator;
 
@@ -73,7 +73,6 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
     {
         super( descriptor );
         this.searcherReference = searcherReference;
-        this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
         this.taskCoordinator = taskCoordinator;
     }
@@ -95,14 +94,13 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
     public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
                        IndexQueryConstraints constraints, PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        assertNotComposite( predicates );
+        validateQuery( descriptor, predicates );
         context.monitor().queried( descriptor );
-        if ( descriptor.getIndexType() == TEXT && predicates[0].valueGroup() != ValueGroup.TEXT )
-        {
-            return;
-        }
-        Query query = toLuceneQuery( predicates );
-        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), accessMode, false, constraints, predicates );
+
+        PropertyIndexQuery predicate = predicates[0];
+        Query query = toLuceneQuery( descriptor, predicate );
+        IndexProgressor progressor = search( query ).getIndexProgressor( NODE_ID_KEY, client );
+        client.initialize( descriptor, progressor, accessMode, false, constraints, predicate );
     }
 
     @Override
@@ -125,22 +123,20 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
         }
     }
 
-    private static Query toLuceneQuery( PropertyIndexQuery... predicates )
+    private static Query toLuceneQuery( IndexDescriptor index, PropertyIndexQuery predicate )
     {
-        PropertyIndexQuery predicate = predicates[0];
+        // Todo: After removal of Fusion index, remove `IndexDescriptor` parameter, and replace `key` with `IndexType.Text` for consistency
+        String key = index.getIndexProvider().getKey();
         switch ( predicate.type() )
         {
-        case EXACT:
-            return LuceneDocumentStructure.newSeekQuery( ((PropertyIndexQuery.ExactPredicate) predicate).value() );
+        case ALL_ENTRIES:
         case EXISTS:
             return LuceneDocumentStructure.newScanQuery();
+        case EXACT:
+            return LuceneDocumentStructure.newSeekQuery( ((PropertyIndexQuery.ExactPredicate) predicate).value() );
         case RANGE:
-            if ( predicate.valueGroup() == ValueGroup.TEXT )
-            {
-                PropertyIndexQuery.TextRangePredicate sp = (PropertyIndexQuery.TextRangePredicate) predicate;
-                return LuceneDocumentStructure.newRangeSeekByStringQuery( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
-            }
-            throw new UnsupportedOperationException( format( "Range scans of value group %s are not supported", predicate.valueGroup() ) );
+            PropertyIndexQuery.TextRangePredicate sp = (PropertyIndexQuery.TextRangePredicate) predicate;
+            return LuceneDocumentStructure.newRangeSeekByStringQuery( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
         case STRING_PREFIX:
             PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
             return LuceneDocumentStructure.newRangeSeekByPrefixQuery( spp.prefix().stringValue() );
@@ -151,14 +147,28 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
             PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
             return LuceneDocumentStructure.newSuffixStringQuery( ssp.suffix().stringValue() );
         default:
-            // todo figure out a more specific exception
-            throw new RuntimeException( "Index query not supported: " + Arrays.toString( predicates ) );
+            throw new IllegalArgumentException( format( "Index query not supported for %s index. Query: %s", key, predicate ) );
         }
     }
 
-    private static void assertNotComposite( PropertyIndexQuery[] predicates )
+    private static void validateQuery( IndexDescriptor index, PropertyIndexQuery... predicates )
     {
-        assert predicates.length == 1 : "composite indexes not yet supported for this operation";
+        // Todo: After removal of Fusion index, remove `IndexDescriptor` parameter, and replace `key` with `IndexType.Text` for consistency
+        String key = index.getIndexProvider().getKey();
+        if ( predicates.length > 1 )
+        {
+            throw new IllegalArgumentException( format(
+                    "Tried to query a %s index with a composite query. Composite queries are not supported by a %s index. Query was: %s ",
+                    key, key, Arrays.toString( predicates ) ) );
+        }
+
+        PropertyIndexQuery predicate = predicates[0];
+        // Todo: After removal of Fusion index, this can be simplified by removing the second line in the conditional expression
+        if ( !(predicate.valueGroup() == ValueGroup.TEXT || predicate.type() == IndexQueryType.ALL_ENTRIES
+               || (index.getIndexType() != IndexType.TEXT && predicate.type() == IndexQueryType.EXISTS)) )
+        {
+            throw new IllegalArgumentException( format( "Index query not supported for %s index. Query: %s", key, predicate ) );
+        }
     }
 
     @Override

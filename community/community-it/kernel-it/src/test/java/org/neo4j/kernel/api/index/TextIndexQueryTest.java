@@ -44,13 +44,15 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.schema.IndexType.TEXT;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringPrefix;
@@ -62,9 +64,9 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
 {
     private static final Label PERSON = label( "PERSON" );
     private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
-    private static final IndexAccessMonitor monitor = new IndexAccessMonitor();
-    private static final String nodeIndexName = "some_node_text_index";
-    private static final String relIndexName = "some_rel_text_index";
+    private static final IndexAccessMonitor MONITOR = new IndexAccessMonitor();
+    private static final String NODE_INDEX_NAME = "some_node_text_index";
+    private static final String REL_INDEX_NAME = "some_rel_text_index";
     private static final String NAME = "name";
     private static final String ADDRESS = "address";
     private static final String SINCE = "since";
@@ -72,7 +74,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     @BeforeEach
     void setup()
     {
-        monitor.reset();
+        MONITOR.reset();
     }
 
     @Override
@@ -80,8 +82,8 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     {
         try ( var tx = db.beginTx() )
         {
-            tx.schema().indexFor( PERSON ).on( NAME ).withName( nodeIndexName ).withIndexType( TEXT ).create();
-            tx.schema().indexFor( FRIEND ).on( SINCE ).withName( relIndexName ).withIndexType( TEXT ).create();
+            tx.schema().indexFor( PERSON ).on( NAME ).withName( NODE_INDEX_NAME ).withIndexType( TEXT ).create();
+            tx.schema().indexFor( FRIEND ).on( SINCE ).withName( REL_INDEX_NAME ).withIndexType( TEXT ).create();
             tx.commit();
         }
 
@@ -94,13 +96,13 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
             var james = tx.createNode( PERSON );
             james.setProperty( NAME, "James Smith" );
             james.setProperty( ADDRESS, "Heathrow, United Kingdom" );
-            mike.createRelationshipTo( james, FRIEND ).setProperty( SINCE, "3 years" );
+            james.createRelationshipTo( mike, FRIEND ).setProperty( SINCE, "3 years" );
 
             var smith = tx.createNode( PERSON );
             smith.setProperty( NAME, "Smith James Luke" );
             smith.setProperty( ADDRESS, "United Emirates" );
-            mike.createRelationshipTo( smith, FRIEND ).setProperty( SINCE, "2 years, 2 months" );
-            james.createRelationshipTo( smith, FRIEND ).setProperty( SINCE, "2 years" );
+            smith.createRelationshipTo( mike, FRIEND ).setProperty( SINCE, "2 years, 2 months" );
+            smith.createRelationshipTo( james, FRIEND ).setProperty( SINCE, "2 years" );
 
             var noah = tx.createNode( PERSON );
             noah.setProperty( NAME, "Noah" );
@@ -111,9 +113,11 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
 
             var matt = tx.createNode( PERSON );
             matt.setProperty( NAME, 42 );
+            matt.createRelationshipTo( mike, FRIEND ).setProperty( SINCE, 694_717_800 );
 
             var jack = tx.createNode( PERSON );
             jack.setProperty( NAME, "77" );
+            jack.createRelationshipTo( matt, FRIEND ).setProperty( SINCE, "1 year" );
 
             tx.commit();
         }
@@ -125,19 +129,23 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
         var query = exact( token.propertyKey( NAME ), "Mike Smith" );
         var needsValue = constrained( IndexOrder.NONE, true );
 
-        assertThat( assertThrows( UnsupportedOperationException.class, () -> indexedNodes( needsValue, query ) ).getMessage() )
-                .isEqualTo( "TEXT index has no value capability" );
+        assertThatThrownBy( () -> indexedNodes( needsValue, query ) )
+                .isInstanceOf( UnsupportedOperationException.class )
+                .hasMessageContaining( "%s index has no value capability", IndexType.TEXT );
 
-        assertThat( assertThrows( UnsupportedOperationException.class, () -> indexedRelations( needsValue, query ) ).getMessage() )
-                .isEqualTo( "TEXT index has no value capability" );
+        assertThatThrownBy( () -> indexedRelations( needsValue, query ) )
+                .isInstanceOf( UnsupportedOperationException.class )
+                .hasMessageContaining( "%s index has no value capability", IndexType.TEXT );
     }
 
     @Test
     void shouldFindNodes() throws Exception
     {
+        assertThat( indexedNodes( allEntries() ) ).isEqualTo( 6 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "Mike Smith" ) ) ).isEqualTo( 1 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "Unknown" ) ) ).isEqualTo( 0 );
-        assertThat( indexedNodes( exact( token.propertyKey( NAME ), 77 ) ) ).isEqualTo( 0 );
+        assertThat( indexedNodes( exact( token.propertyKey( NAME ), "42" ) ) ).isEqualTo( 0 );
+        assertThat( indexedNodes( exact( token.propertyKey( NAME ), "77" ) ) ).isEqualTo( 1 );
         assertThat( indexedNodes( stringPrefix( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 1 );
         assertThat( indexedNodes( stringContains( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 3 );
         assertThat( indexedNodes( stringSuffix( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 2 );
@@ -147,7 +155,9 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     @Test
     void shouldFindRelations() throws Exception
     {
+        assertThat( indexedRelations( allEntries() ) ).isEqualTo( 5 );
         assertThat( indexedRelations( exact( token.propertyKey( SINCE ), "3 years" ) ) ).isEqualTo( 1 );
+        assertThat( indexedRelations( exact( token.propertyKey( SINCE ), "694717800" ) ) ).isEqualTo( 0 );
         assertThat( indexedRelations( exact( token.propertyKey( SINCE ), "Unknown" ) ) ).isEqualTo( 0 );
         assertThat( indexedRelations( stringContains( token.propertyKey( SINCE ), stringValue( "years" ) ) ) ).isEqualTo( 4 );
         assertThat( indexedRelations( stringSuffix( token.propertyKey( SINCE ), stringValue( "years" ) ) ) ).isEqualTo( 3 );
@@ -156,28 +166,77 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     }
 
     @Test
-    void shouldRejectIndexScans()
+    void shouldFindAllEntries() throws Exception
     {
-        var expectedMessage = "Index scan not supported for TEXT index";
-        assertThat( assertThrows( UnsupportedOperationException.class, this::scanNodes ).getMessage() ).isEqualTo( expectedMessage );
-        assertThat( assertThrows( UnsupportedOperationException.class, this::scanRelationships ).getMessage() ).isEqualTo( expectedMessage );
+        assertThat( indexedNodes( allEntries() ) ).isEqualTo( 6 );
+        assertThat( indexedRelations( allEntries() ) ).isEqualTo( 5 );
     }
 
-    private void scanNodes() throws Exception
+    @Test
+    void shouldThrowOnExistsQuery()
     {
-        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( nodeIndexName ) );
+        PropertyIndexQuery query = exists( token.propertyKey( SINCE ) );
+
+        assertThatThrownBy( () -> indexedNodes( query ) )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasMessageContaining( "Index query not supported for %s index. Query: %s",
+                                       getIndex( NODE_INDEX_NAME ).getIndexProvider().getKey(), query );
+
+        assertThatThrownBy( () -> indexedRelations( exists( token.propertyKey( SINCE ) ) ) )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasMessageContaining( "Index query not supported for %s index. Query: %s",
+                                       getIndex( REL_INDEX_NAME ).getIndexProvider().getKey(), query );
+    }
+
+    @Test
+    void shouldThrowOnNonTextValues()
+    {
+        PropertyIndexQuery name = exact( token.propertyKey( SINCE ), 77 );
+        assertThatThrownBy( () -> indexedNodes( name ) )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasMessageContaining( "Index query not supported for %s index. Query: %s",
+                                       getIndex( NODE_INDEX_NAME ).getIndexProvider().getKey(), name );
+
+        PropertyIndexQuery since = exact( token.propertyKey( SINCE ), 694_717_800 );
+        assertThatThrownBy( () -> indexedRelations( since ) )
+                .isInstanceOf( IllegalArgumentException.class )
+                .hasMessageContaining( "Index query not supported for %s index. Query: %s",
+                                       getIndex( REL_INDEX_NAME ).getIndexProvider().getKey(), since );
+    }
+
+    @Test
+    void shouldRejectIndexScans()
+    {
+        assertThatThrownBy( this::scanNodes )
+                .isInstanceOf( UnsupportedOperationException.class )
+                .hasMessageContaining( "Index scan not supported for %s index", IndexType.TEXT );
+
+        assertThatThrownBy( this::scanRelationships )
+                .isInstanceOf( UnsupportedOperationException.class )
+                .hasMessageContaining( "Index scan not supported for %s index", IndexType.TEXT );
+    }
+
+    private long scanNodes() throws Exception
+    {
+        MONITOR.reset();
+        IndexReadSession index = read.indexReadSession( getIndex( NODE_INDEX_NAME ) );
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             read.nodeIndexScan( index, cursor, unconstrained() );
+            assertThat( MONITOR.accessed( IndexType.TEXT ) ).isEqualTo( 1 );
+            return count( cursor );
         }
     }
 
-    private void scanRelationships() throws Exception
+    private long scanRelationships() throws Exception
     {
-        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( relIndexName ) );
+        MONITOR.reset();
+        IndexReadSession index = read.indexReadSession( getIndex( REL_INDEX_NAME ) );
         try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             read.relationshipIndexScan( index, cursor, unconstrained() );
+            assertThat( MONITOR.accessed( IndexType.TEXT ) ).isEqualTo( 1 );
+            return count( cursor );
         }
     }
 
@@ -188,31 +247,36 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
 
     private long indexedNodes( IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws Exception
     {
-        monitor.reset();
-        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( nodeIndexName ) );
+        MONITOR.reset();
+        IndexReadSession index = read.indexReadSession( getIndex( NODE_INDEX_NAME ) );
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             read.nodeIndexSeek( tx.queryContext(), index, cursor, constraints, query );
-            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
+            assertThat( MONITOR.accessed( IndexType.TEXT ) ).isEqualTo( 1 );
             return count( cursor );
         }
     }
 
-    private long indexedRelations( PropertyIndexQuery query ) throws Exception
+    private long indexedRelations( PropertyIndexQuery... query ) throws Exception
     {
         return indexedRelations( unconstrained(), query );
     }
 
     private long indexedRelations( IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws Exception
     {
-        monitor.reset();
-        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( relIndexName ) );
+        MONITOR.reset();
+        IndexReadSession index = read.indexReadSession( getIndex( REL_INDEX_NAME ) );
         try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             read.relationshipIndexSeek( tx.queryContext(), index, cursor, constraints, query );
-            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
+            assertThat( MONITOR.accessed( IndexType.TEXT ) ).isEqualTo( 1 );
             return count( cursor );
         }
+    }
+
+    private IndexDescriptor getIndex( String indexName )
+    {
+        return schemaRead.indexGetForName( indexName );
     }
 
     private static class IndexAccessMonitor extends IndexMonitor.MonitorAdapter
@@ -226,7 +290,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
             counts.computeIfPresent( descriptor.getIndexType(), ( type, value ) -> value + 1 );
         }
 
-        public int accessed( org.neo4j.internal.schema.IndexType type )
+        public int accessed( IndexType type )
         {
             return counts.getOrDefault( type, 0 );
         }
@@ -241,7 +305,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     public ReadTestSupport newTestSupport()
     {
         Monitors monitors = new Monitors();
-        monitors.addMonitorListener( monitor );
+        monitors.addMonitorListener( MONITOR );
         ReadTestSupport support = new ReadTestSupport();
         support.addSetting( text_indexes_enabled, true );
         support.setMonitors( monitors );

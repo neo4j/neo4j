@@ -90,6 +90,7 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
 
             switch ( queryType )
             {
+            case ALL_ENTRIES:
             case EXACT:
             case STRING_PREFIX:
             case STRING_SUFFIX:
