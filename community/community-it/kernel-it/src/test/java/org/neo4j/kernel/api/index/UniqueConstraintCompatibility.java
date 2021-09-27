@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -130,11 +131,14 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
     {
         var originalDescriptor = indexProvider.getProviderDescriptor();
         var descriptorOverride = new IndexProviderDescriptor( "compatibility-test-" + originalDescriptor.getKey(), originalDescriptor.getVersion() );
+        Config.Builder config = Config.newBuilder();
+        config.set( default_schema_provider, descriptorOverride.name() );
+        testSuite.additionalConfig( config );
         managementService = new TestDatabaseManagementServiceBuilder( homePath )
                 .addExtension( new PredefinedIndexProviderFactory( indexProvider, descriptorOverride ) )
                 .noOpSystemGraphInitializer()
                 .impermanent()
-                .setConfig( default_schema_provider, descriptorOverride.name() )
+                .setConfig( config.build() )
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }

@@ -23,6 +23,7 @@ import java.nio.file.Path;
 
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexType;
@@ -90,5 +91,11 @@ class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderComp
     void consistencyCheck( IndexPopulator populator )
     {
         ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
+    }
+
+    @Override
+    void additionalConfig( Config.Builder configBuilder )
+    {
+        configBuilder.set( GraphDatabaseInternalSettings.range_indexes_enabled, true );
     }
 }

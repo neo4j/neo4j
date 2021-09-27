@@ -988,6 +988,14 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
+    private void assertRangeConstraintsSupported()
+    {
+        if ( !rangeIndexesEnabled )
+        {
+            throw new UnsupportedOperationException( "Constraints backed by index of RANGE type is not supported yet." );
+        }
+    }
+
     private void assertPointIndexesSupported()
     {
         if ( !pointIndexesEnabled )
@@ -1189,6 +1197,11 @@ public class Operations implements Write, SchemaWrite
     @Override
     public ConstraintDescriptor uniquePropertyConstraintCreate( IndexPrototype prototype ) throws KernelException
     {
+        if ( prototype.getIndexType() == IndexType.RANGE )
+        {
+            assertRangeConstraintsSupported();
+        }
+
         SchemaDescriptor schema = prototype.schema();
         exclusiveSchemaLock( schema );
         ktx.assertOpen();
@@ -1362,6 +1375,11 @@ public class Operations implements Write, SchemaWrite
     @Override
     public ConstraintDescriptor nodeKeyConstraintCreate( IndexPrototype prototype ) throws KernelException
     {
+        if ( prototype.getIndexType() == IndexType.RANGE )
+        {
+            assertRangeConstraintsSupported();
+        }
+
         SchemaDescriptor schema = prototype.schema();
         exclusiveSchemaLock( schema );
         ktx.assertOpen();
