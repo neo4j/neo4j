@@ -556,33 +556,42 @@ Feature: CypherTransactionsAcceptance
       |   42   |
 
   Scenario: Observe changes from within correlated transactional unit subqueries and not use stale property caches
+
+    The property a.prop is written only in the second iteration of the subquery.
+    Reads of a.prop preceding/succeeding this side-effect should observe the old/new value.
+
     Given having executed:
       """
-      CREATE ( { prop: 42 } )
+      CREATE (:A { prop: 'old' } )
+      CREATE (:B { i: 0 } ), (:B { i: 1 } ), (:B { i: 2 } )
       """
     When executing query:
       """
-        MATCH (n)
-        WITH n, n.prop as prop
-        UNWIND [0, 1, 2] as i
+        MATCH (a:A)
+        WITH *, a.prop as prop1
+        MATCH (b:B)
+        WITH *, b.i AS i ORDER BY i
         CALL {
-          WITH n, i
-          FOREACH (ignored in CASE i WHEN 1 THEN [1] ELSE [] END | SET n.prop = i )
-          WITH n, n.prop as prop2
-          SET n.prop2 = "dummy"
+          WITH a, b, i
+          FOREACH (ignored in CASE i WHEN 1 THEN [1] ELSE [] END | SET a.prop = 'new' )
+          SET b.prop = a.prop
         } IN TRANSACTIONS
-        RETURN prop, n.prop
+        RETURN i, prop1, b.prop, a.prop
       """
     Then the result should be, in any order:
-      | prop | n.prop |
-      |  42  |   1    |
-      |  42  |   1    |
-      |  42  |   1    |
+      | i | prop1 | b.prop | a.prop |
+      | 0 | 'old' | 'old'  | 'new'  |
+      | 1 | 'old' | 'new'  | 'new'  |
+      | 2 | 'old' | 'new'  | 'new'  |
 
   Scenario: Observe changes from within correlated transactional returning subqueries and not use stale property caches
+
+    The property n.prop is written only in the second iteration of the subquery.
+    Reads of n.prop preceding/succeeding this side-effect should observe the old/new value.
+
     Given having executed:
       """
-      CREATE ( { prop: 42 } )
+      CREATE ( { prop: 'old' } )
       """
     When executing query:
       """
@@ -591,13 +600,13 @@ Feature: CypherTransactionsAcceptance
         UNWIND [0, 1, 2] as i
         CALL {
           WITH n, i
-          FOREACH (ignored in CASE i WHEN 1 THEN [1] ELSE [] END | SET n.prop = i )
+          FOREACH (ignored in CASE i WHEN 1 THEN [1] ELSE [] END | SET n.prop = 'new' )
           RETURN n.prop as prop2
         } IN TRANSACTIONS
-        RETURN prop, n.prop, prop2
+        RETURN i, prop, prop2, n.prop
       """
     Then the result should be, in any order:
-      | prop | n.prop | prop2 |
-      |  42  |   1    |   42  |
-      |  42  |   1    |    1  |
-      |  42  |   1    |    1  |
+      | i | prop  | prop2 | n.prop |
+      | 0 | 'old' | 'old' | 'new'  |
+      | 1 | 'old' | 'new' | 'new'  |
+      | 2 | 'old' | 'new' | 'new'  |
