@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
@@ -31,7 +32,11 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
+class PushdownPropertyReadsTest
+  extends CypherFunSuite
+  with PlanMatchHelp
+  with LogicalPlanConstructionTestSupport
+  with LogicalPlanTestOps {
 
   test("should pushdown read in projection") {
     val plan = new LogicalPlanBuilder()
@@ -666,6 +671,71 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
+  }
+
+  ignore("should not pushdown from RHS to LHS of transactionForeach") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .transactionForeach().withEffectiveCardinality(50)
+      .|.filter("m.prop > 10").withEffectiveCardinality(50)
+      .|.allNodeScan("n", "m").withEffectiveCardinality(100)
+      .allNodeScan("m").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .transactionForeach()
+        .|.filter("m.prop > 10")
+        .|.allNodeScan("n", "m")
+        .allNodeScan("m")
+        .build()
+  }
+
+  test("should pushdown inside LHS of transactionForeach") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .transactionForeach().withEffectiveCardinality(100)
+      .|.filter("n.prop > 10").withEffectiveCardinality(100)
+      .|.allNodeScan("o", "n", "m").withEffectiveCardinality(500)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .transactionForeach()
+        .|.filter("n.prop > 10")
+        .|.allNodeScan("o", "n", "m")
+        .projection("n.prop AS x")
+        .expand("(n)-->(m)")
+        .cacheProperties("n.prop")
+        .allNodeScan("n")
+        .build()
+  }
+
+  test("should pushdown inside RHS of transactionForeach") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .transactionForeach().withEffectiveCardinality(100)
+      .|.filter("n.prop > 10").withEffectiveCardinality(100)
+      .|.expand("(n)-->(m)").withEffectiveCardinality(200)
+      .|.allNodeScan("n", "o").withEffectiveCardinality(20)
+      .allNodeScan("o").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .transactionForeach()
+        .|.filter("n.prop > 10")
+        .|.expand("(n)-->(m)")
+        .|.cacheProperties("n.prop")
+        .|.allNodeScan("n", "o")
+        .allNodeScan("o")
+        .build()
   }
 
   test("should not pushdown read if property is available from node index") {
