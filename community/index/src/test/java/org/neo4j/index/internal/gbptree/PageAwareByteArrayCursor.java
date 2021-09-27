@@ -165,9 +165,12 @@ class PageAwareByteArrayCursor extends PageCursor
     {
         if ( currentPageId >= pages.size() )
         {
-            for ( int i = pages.size(); i <= currentPageId; i++ )
+            synchronized ( pages )
             {
-                pages.add( new byte[pageSize] );
+                for ( int i = pages.size(); i <= currentPageId; i++ )
+                {
+                    pages.add( new byte[pageSize] );
+                }
             }
         }
     }
