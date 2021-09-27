@@ -379,22 +379,22 @@ trait WriteQueryContext {
 
   def dropIndexRule(name: String): Unit
 
-  /* return true if the constraint was created, false if preexisting, throws if failed */
+  /* throws if failed or pre-existing */
   def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
 
   def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
-  /* return true if the constraint was created, false if preexisting, throws if failed */
+  /* throws if failed or pre-existing */
   def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
 
   def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
-  /* return true if the constraint was created, false if preexisting, throws if failed */
+  /* throws if failed or pre-existing */
   def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit
 
   def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit
 
-  /* return true if the constraint was created, false if preexisting, throws if failed */
+  /* throws if failed or pre-existing */
   def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit
 
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit
