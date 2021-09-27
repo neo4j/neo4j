@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOController;
@@ -909,14 +908,14 @@ public class MuninnPageCache implements PageCache
                 Object nextPage = freePage.next;
                 if ( compareAndSetFreelistHead( freePage, nextPage ) )
                 {
-                    faultEvent.freeListSize( getFreeListSize( nextPage ) );
+                    faultEvent.freeListSize( getFreeListSize( pages, nextPage ) );
                     return freePage.pageRef;
                 }
             }
         }
     }
 
-    private static int getFreeListSize( Object next )
+    private static int getFreeListSize( PageList pageList, Object next )
     {
         if ( next instanceof FreePage )
         {
@@ -924,7 +923,7 @@ public class MuninnPageCache implements PageCache
         }
         else if ( next instanceof AtomicInteger )
         {
-            return ((AtomicInteger) next).get();
+            return pageList.getPageCount() - ((AtomicInteger) next).get();
         }
         else
         {
@@ -1054,7 +1053,7 @@ public class MuninnPageCache implements PageCache
                 return 0;
             }
 
-            int availablePages = tryGetNumberOfAvailablePages( keepFree );
+            int availablePages = tryGetNumberOfPagesToEvict( keepFree );
             if ( availablePages != UNKNOWN_AVAILABLE_PAGES )
             {
                 return availablePages;
@@ -1062,7 +1061,8 @@ public class MuninnPageCache implements PageCache
         }
     }
 
-    private int tryGetNumberOfAvailablePages( int keepFree )
+    @VisibleForTesting
+    int tryGetNumberOfPagesToEvict( int keepFree )
     {
         Object freelistHead = getFreelistHead();
 
@@ -1142,14 +1142,15 @@ public class MuninnPageCache implements PageCache
     {
         Object current;
         FreePage freePage = new FreePage( pageRef );
+        int pageCount = pages.getPageCount();
         do
         {
             current = getFreelistHead();
-            if ( current instanceof AtomicInteger && ((AtomicInteger) current).get() > pages.getPageCount() )
+            if ( current instanceof AtomicInteger && ((AtomicInteger) current).get() > pageCount )
             {
                 current = null;
             }
-            freePage.setNext( current );
+            freePage.setNext( pageCount, current );
         }
         while ( !compareAndSetFreelistHead( current, freePage ) );
         evictions.freeListSize( freePage.count );
@@ -1166,7 +1167,7 @@ public class MuninnPageCache implements PageCache
     @Override
     public String toString()
     {
-        int availablePages = tryGetNumberOfAvailablePages( keepFree );
+        int availablePages = tryGetNumberOfPagesToEvict( keepFree );
         return format( "%s[pageCacheId:%d, pageSize:%d, pages:%d, availablePages:%s]", getClass().getSimpleName(),
                 pageCacheId, cachePageSize, pages.getPageCount(), availablePages != UNKNOWN_AVAILABLE_PAGES ? String.valueOf( availablePages ) : "N/A" );
     }

@@ -37,7 +37,7 @@ final class FreePage
         this.pageRef = pageRef;
     }
 
-    void setNext( Object next )
+    void setNext( int pageCount, Object next )
     {
         this.next = next;
         if ( next == null )
@@ -46,7 +46,7 @@ final class FreePage
         }
         else if ( next.getClass() == AtomicInteger.class )
         {
-            count = 1 + ((AtomicInteger) next).get();
+            count = 1 + pageCount - ((AtomicInteger) next).get();
         }
         else
         {

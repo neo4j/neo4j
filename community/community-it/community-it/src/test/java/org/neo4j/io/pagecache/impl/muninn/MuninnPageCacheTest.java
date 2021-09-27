@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -78,6 +79,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -130,6 +132,158 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 return super.beginCacheFlush();
             }
         };
+    }
+
+    @Test
+    void countPagesToEvictOnEmptyPageCache()
+    {
+        try ( var pageCache = createPageCache( fs, 1024, new DefaultPageCacheTracer() ) )
+        {
+            assertEquals( -1, pageCache.tryGetNumberOfPagesToEvict( 10 ) );
+        }
+    }
+
+    @Test
+    void countPagesToEvictOnAllPagesLocked() throws IOException
+    {
+        int maxPages = 1024;
+        try ( var pageCache = createPageCache( fs, maxPages, new DefaultPageCacheTracer() ) )
+        {
+            for ( int i = 0; i < maxPages; i++ )
+            {
+                pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+            }
+            assertEquals( 12, pageCache.tryGetNumberOfPagesToEvict( 12 ) );
+        }
+    }
+
+    @Test
+    void countPagesToEvictWhenLiveLocked()
+    {
+        int maxPages = 1024;
+        try ( var pageCache = createPageCache( fs, maxPages, new DefaultPageCacheTracer() ) )
+        {
+            assertThrows( CacheLiveLockException.class, () ->
+            {
+                for ( int i = 0; i < maxPages + 1; i++ )
+                {
+                    pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+                }
+            } );
+            assertEquals( 12, pageCache.tryGetNumberOfPagesToEvict( 12 ) );
+            assertEquals( 1024, pageCache.tryGetNumberOfPagesToEvict( 1024 ) );
+        }
+    }
+
+    @Test
+    void countPagesToEvictWithReleasedPages() throws IOException
+    {
+        int maxPages = 1024;
+        try ( var pageCache = createPageCache( fs, maxPages, new DefaultPageCacheTracer() ) )
+        {
+            long pageRef = pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+            pageCache.addFreePageToFreelist( pageRef, EvictionRunEvent.NULL );
+            assertEquals( -1, pageCache.tryGetNumberOfPagesToEvict( 12 ) );
+        }
+    }
+
+    @Test
+    void countPagesToEvictWithAllPagesAcquiredAndReleased() throws IOException
+    {
+        int maxPages = 1024;
+        try ( var pageCache = createPageCache( fs, maxPages, new DefaultPageCacheTracer() ) )
+        {
+            for ( int i = 0; i < maxPages; i++ )
+            {
+                long pageRef = pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+                pageCache.addFreePageToFreelist( pageRef, EvictionRunEvent.NULL );
+            }
+            assertEquals( -1, pageCache.tryGetNumberOfPagesToEvict( 12 ) );
+        }
+    }
+
+    @Test
+    void countPagesToEvictWithPagesAcquiredSomeReleased() throws IOException
+    {
+        int maxPages = 1024;
+        try ( var pageCache = createPageCache( fs, maxPages, new DefaultPageCacheTracer() ) )
+        {
+            for ( int i = 0; i < maxPages - 20; i++ )
+            {
+                pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+            }
+            for ( int i = maxPages - 20; i < maxPages; i++ )
+            {
+                var page = pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+                pageCache.addFreePageToFreelist( page, EvictionRunEvent.NULL );
+            }
+
+            assertEquals( -1, pageCache.tryGetNumberOfPagesToEvict( 12 ) );
+            assertEquals( -1, pageCache.tryGetNumberOfPagesToEvict( 20 ) );
+            assertEquals( 1, pageCache.tryGetNumberOfPagesToEvict( 21 ) );
+        }
+    }
+
+    @Test
+    void countPagesToEvictWithPagesAcquiredOneReleasedInLoop() throws IOException
+    {
+        int maxPages = 1024;
+        try ( var pageCache = createPageCache( fs, maxPages, new DefaultPageCacheTracer() ) )
+        {
+            for ( int i = 0; i < maxPages - 5; i++ )
+            {
+                pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+            }
+            for ( int i = maxPages - 5; i < maxPages; i++ )
+            {
+                var page = pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+                pageCache.addFreePageToFreelist( page, EvictionRunEvent.NULL );
+            }
+
+            assertEquals( 7, pageCache.tryGetNumberOfPagesToEvict( 12 ) );
+            assertEquals( maxPages - 5, pageCache.tryGetNumberOfPagesToEvict( maxPages ) );
+        }
+    }
+
+    @Test
+    void countPagesToEvictWithAllPagesAcquiredAndReleasedLater() throws IOException
+    {
+        int maxPages = 1024;
+        try ( var pageCache = createPageCache( fs, maxPages, new DefaultPageCacheTracer() ) )
+        {
+            var pages = LongLists.mutable.withInitialCapacity( maxPages );
+            for ( int i = 0; i < maxPages; i++ )
+            {
+                pages.add( pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL ) );
+            }
+            pages.forEach( page -> pageCache.addFreePageToFreelist( page, EvictionRunEvent.NULL ) );
+
+            assertEquals( -1, pageCache.tryGetNumberOfPagesToEvict( 12 ) );
+            assertEquals( -1, pageCache.tryGetNumberOfPagesToEvict( maxPages ) );
+            assertEquals( 1, pageCache.tryGetNumberOfPagesToEvict( maxPages + 1 ) );
+        }
+    }
+
+    @Test
+    void countPagesToEvictWithAllWithExceptionPagesAcquiredAndReleased()
+    {
+        int maxPages = 1024;
+        try ( var pageCache = createPageCache( fs, maxPages, new DefaultPageCacheTracer() ) )
+        {
+            var pages = LongLists.mutable.withInitialCapacity( maxPages );
+            assertThrows( CacheLiveLockException.class, () ->
+            {
+                for ( int i = 0; i <= maxPages; i++ )
+                {
+                    pages.add( pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL ) );
+                }
+            } );
+            pages.forEach( page -> pageCache.addFreePageToFreelist( page, EvictionRunEvent.NULL ) );
+
+            assertEquals( -1, pageCache.tryGetNumberOfPagesToEvict( 12 ) );
+            assertEquals( -1, pageCache.tryGetNumberOfPagesToEvict( maxPages ) );
+            assertEquals( 1, pageCache.tryGetNumberOfPagesToEvict( maxPages + 1 ) );
+        }
     }
 
     @Test
