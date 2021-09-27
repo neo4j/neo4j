@@ -20,6 +20,8 @@
 package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -148,5 +150,54 @@ class IntegrityValidatorTest
         assertThatThrownBy( () -> validator.validateSchemaRule( index ) )
                 .isInstanceOf( TransactionFailureException.class )
                 .hasMessageContaining( "Required kernel version for this transaction is V4_3_D4, but actual version was V4_2." );
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = {"RANGE","POINT","TEXT"} )
+    void newIndexesNotAllowedForOldKernelVersions( IndexType indexType )
+    {
+        // Given
+        NeoStores store = mock( NeoStores.class );
+        MetaDataStore metaDataStore = mock( MetaDataStore.class );
+        when( store.getMetaDataStore() ).thenReturn( metaDataStore );
+        when( metaDataStore.kernelVersion() ).thenReturn( KernelVersion.V4_3_D4 );
+
+        IndexUpdateListener indexes = mock( IndexUpdateListener.class );
+        IntegrityValidator validator = new IntegrityValidator( store );
+        validator.setIndexValidator( indexes );
+
+        var index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 10, 28 ) )
+                .withIndexType( indexType )
+                .withName( "any name" )
+                .materialise( 4 );
+
+        // When
+        assertThatThrownBy( () -> validator.validateSchemaRule( index ) )
+                .isInstanceOf( TransactionFailureException.class )
+                .hasMessageContaining( "Required kernel version for this transaction is V4_4, but actual version was V4_3_D4." );
+    }
+
+    @Test
+    void constraintBackedByRangeNotAllowedForOldKernelVersions()
+    {
+        // Given
+        NeoStores store = mock( NeoStores.class );
+        MetaDataStore metaDataStore = mock( MetaDataStore.class );
+        when( store.getMetaDataStore() ).thenReturn( metaDataStore );
+        when( metaDataStore.kernelVersion() ).thenReturn( KernelVersion.V4_3_D4 );
+
+        IndexUpdateListener indexes = mock( IndexUpdateListener.class );
+        IntegrityValidator validator = new IntegrityValidator( store );
+        validator.setIndexValidator( indexes );
+
+        ConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptors.forLabel( 10, 28 ), IndexType.RANGE )
+                .withOwnedIndexId( 4 )
+                .withName( "any name" )
+                .withId( 5 );
+
+        // When
+        assertThatThrownBy( () -> validator.validateSchemaRule( constraint ) )
+                .isInstanceOf( TransactionFailureException.class )
+                .hasMessageContaining( "Required kernel version for this transaction is V4_4, but actual version was V4_3_D4." );
     }
 }

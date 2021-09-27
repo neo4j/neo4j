@@ -114,9 +114,6 @@ import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.point_indexes_enabled;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
@@ -161,9 +158,6 @@ public class Operations implements Write, SchemaWrite
     private DefaultPropertyCursor propertyCursor;
     private DefaultPropertyCursor restrictedPropertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
-    private final boolean textIndexesEnabled;
-    private final boolean rangeIndexesEnabled;
-    private final boolean pointIndexesEnabled;
 
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
             StorageLocks storageLocks, KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors,
@@ -185,9 +179,6 @@ public class Operations implements Write, SchemaWrite
         this.kernelVersionRepository = kernelVersionRepository;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.additionLockVerification = config.get( additional_lock_verification );
-        this.textIndexesEnabled = config.get( text_indexes_enabled );
-        this.rangeIndexesEnabled  = config.get( range_indexes_enabled );
-        this.pointIndexesEnabled  = config.get( point_indexes_enabled );
     }
 
     public void initialize( CursorContext cursorContext )
@@ -966,11 +957,11 @@ public class Operations implements Write, SchemaWrite
         }
         if ( indexType == IndexType.RANGE )
         {
-            assertRangeIndexesSupported();
+            assertRangePointTextIndexesSupported( "Failed to create RANGE index.");
         }
         if ( indexType == IndexType.POINT )
         {
-            assertPointIndexesSupported();
+            assertRangePointTextIndexesSupported( "Failed to create POINT index.");
         }
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();
@@ -988,44 +979,27 @@ public class Operations implements Write, SchemaWrite
 
     private void assertTextIndexSupport( IndexPrototype prototype )
     {
-        if ( !textIndexesEnabled )
-        {
-            throw new UnsupportedOperationException( "Text index is not supported." );
-        }
+        assertRangePointTextIndexesSupported( "Failed to create TEXT index." );
         if ( prototype.schema().getPropertyIds().length > 1 )
         {
             throw new UnsupportedOperationException( "Composite indexes are not supported for TEXT index type." );
         }
     }
 
-    private void assertRangeIndexesSupported()
+    private void assertRangePointTextIndexesSupported( String message )
     {
-        if ( !rangeIndexesEnabled )
-        {
-            throw new UnsupportedOperationException( "Index of RANGE type is not supported yet." );
-        }
-    }
-
-    private void assertRangeConstraintsSupported()
-    {
-        if ( !rangeIndexesEnabled )
-        {
-            throw new UnsupportedOperationException( "Constraints backed by index of RANGE type is not supported yet." );
-        }
-    }
-
-    private void assertPointIndexesSupported()
-    {
-        if ( !pointIndexesEnabled )
-        {
-            throw new UnsupportedOperationException( "Index of POINT type is not supported yet." );
-        }
+        assertIndexSupportedInVersion( message, KernelVersion.VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED );
     }
 
     private void assertTokenAndRelationshipPropertyIndexesSupported( String message )
     {
+        assertIndexSupportedInVersion( message, KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED );
+    }
+
+    private void assertIndexSupportedInVersion( String message, KernelVersion minimumVersionForSupport )
+    {
         KernelVersion currentStoreVersion = kernelVersionRepository.kernelVersion();
-        if ( currentStoreVersion.isAtLeast( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
+        if ( currentStoreVersion.isAtLeast( minimumVersionForSupport ) )
         {
             // new or upgraded store, good to go
             return;
@@ -1033,7 +1007,7 @@ public class Operations implements Write, SchemaWrite
 
         // store version is old
         KernelVersion currentDbmsVersion = dbmsRuntimeRepository.getVersion().kernelVersion();
-        if ( currentDbmsVersion.isAtLeast( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
+        if ( currentDbmsVersion.isAtLeast( minimumVersionForSupport ) )
         {
             // dbms runtime version is good, current transaction will trigger upgrade transaction
             // we will double check kernel version during commit
@@ -1041,7 +1015,7 @@ public class Operations implements Write, SchemaWrite
         }
         throw new UnsupportedOperationException(
                 format( "%s Version was %s, but required version for operation is %s. Please upgrade dbms using 'dbms.upgrade()'.",
-                        message, currentDbmsVersion.name(), KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED.name() ) );
+                        message, currentDbmsVersion.name(), minimumVersionForSupport.name() ) );
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
@@ -1217,7 +1191,8 @@ public class Operations implements Write, SchemaWrite
     {
         if ( prototype.getIndexType() == IndexType.RANGE )
         {
-            assertRangeConstraintsSupported();
+            assertIndexSupportedInVersion( "Failed to create constraint backed by RANGE index.",
+                    KernelVersion.VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED );
         }
 
         SchemaDescriptor schema = prototype.schema();
@@ -1395,7 +1370,8 @@ public class Operations implements Write, SchemaWrite
     {
         if ( prototype.getIndexType() == IndexType.RANGE )
         {
-            assertRangeConstraintsSupported();
+            assertIndexSupportedInVersion( "Failed to create constraint backed by RANGE index.",
+                    KernelVersion.VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED );
         }
 
         SchemaDescriptor schema = prototype.schema();

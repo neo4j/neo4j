@@ -35,6 +35,7 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.kernel.KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED;
+import static org.neo4j.kernel.KernelVersion.VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED;
 
 /**
  * Validates data integrity during the prepare phase of {@link TransactionRecordState}.
@@ -102,6 +103,33 @@ class IntegrityValidator
                 }
             }
         }
+        else if ( currentVersion.isLessThan( VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED ) )
+        {
+            if ( schemaRule instanceof IndexDescriptor )
+            {
+                IndexDescriptor index = (IndexDescriptor) schemaRule;
+                IndexType indexType = index.getIndexType();
+                if ( isRangePointOrTextIndex( indexType ) )
+                {
+                    throw new TransactionFailureException( Status.General.UpgradeRequired,
+                            "Index operation on index '%s' not allowed. " +
+                            "Required kernel version for this transaction is %s, but actual version was %s.",
+                            index, VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED.name(), currentVersion.name() );
+                }
+            }
+            else if ( schemaRule instanceof ConstraintDescriptor )
+            {
+                ConstraintDescriptor constraint = (ConstraintDescriptor)schemaRule;
+                if ( constraint.isIndexBackedConstraint() && isRangePointOrTextIndex( constraint.asIndexBackedConstraint().indexType() ) )
+                {
+                    throw new TransactionFailureException( Status.General.UpgradeRequired,
+                            "Constraint operation on constraint '%s' not allowed. " +
+                            "Required kernel version for this transaction is %s, but actual version was %s.",
+                            constraint, VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED.name(), currentVersion.name() );
+                }
+            }
+        }
+
         if ( schemaRule instanceof ConstraintDescriptor )
         {
             ConstraintDescriptor constraint = (ConstraintDescriptor) schemaRule;
@@ -130,5 +158,10 @@ class IntegrityValidator
     private boolean isBtreeRelationshipPropertyIndex( IndexDescriptor index )
     {
         return index.getIndexType() == IndexType.BTREE && index.schema().isRelationshipTypeSchemaDescriptor();
+    }
+
+    private boolean isRangePointOrTextIndex( IndexType indexType )
+    {
+        return indexType == IndexType.RANGE || indexType == IndexType.POINT || indexType == IndexType.TEXT;
     }
 }
