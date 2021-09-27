@@ -839,7 +839,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
   }
 
-  test("should not plan text index usage with IS NOT NULL predicate") {
+  test("should not plan node text index usage with IS NOT NULL predicate") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("A", 50)
@@ -855,7 +855,23 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
   }
 
-  test("should not plan text index usage when feature flag is not set") {
+  test("should not plan relationship text index usage with IS NOT NULL predicate") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 200)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .enablePlanningTextIndexes()
+      .build()
+
+    val plan = planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN r, r.prop").stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("cacheR[r.prop] AS `r.prop`")
+      .filter("cacheRFromStore[r.prop] IS NOT NULL")
+      .relationshipTypeScan("(a)-[r:REL]->(b)")
+      .build()
+  }
+
+  test("should not plan node text index usage when feature flag is not set") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
@@ -872,7 +888,24 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     }
   }
 
-  test("should plan text index usage only for supported predicates when feature flag is set") {
+  test("should not plan relationship text index usage when feature flag is not set") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 200)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .build()
+
+    for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .filter(s"cacheRFromStore[r.prop] $op 'hello'")
+        .relationshipTypeScan("(a)-[r:REL]->(b)")
+        .build()
+    }
+  }
+
+  test("should plan node text index usage only for supported predicates when feature flag is set") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
@@ -894,6 +927,32 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter(s"cacheNFromStore[a.prop] $op 'hello'")
         .nodeByLabelScan("a", "A")
+        .build()
+    }
+  }
+
+  test("should plan relationship text index usage only for supported predicates when feature flag is set") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 200)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .enablePlanningTextIndexes()
+      .build()
+
+    for (op <- List("STARTS WITH")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("r.prop AS `r.prop`")
+        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)")
+        .build()
+    }
+
+    for (op <- List("=", "<", "<=", ">", ">=", "ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .filter(s"cacheRFromStore[r.prop] $op 'hello'")
+        .relationshipTypeScan("(a)-[r:REL]->(b)")
         .build()
     }
   }
