@@ -26,6 +26,8 @@ import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util.UUID
+
 class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
   test("create clone") {
     // given
@@ -335,10 +337,62 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     row.estimatedHeapUsage should be >= node.estimatedHeapUsage()
   }
 
+  test("copyMapped - should copy all values") {
+    // given
+    val key1 = "key1"
+    val key2 = "key2"
+    val key3 = "key3"
+    val row = CypherRow.empty.copyWith(
+      key1, Values.booleanValue(false),
+      key2, Values.stringValue("x"),
+      key3, Values.doubleValue(1.2),
+    )
+    val cacheKey = cachedNodeProp("n", "prop")
+    row.setCachedProperty(cacheKey.runtimeKey, Values.longValue(123L))
+
+    // when
+    val newRow = row.copyMapped(identity)
+
+    // then
+    newRow.getByName(key1) should equal(Values.booleanValue(false))
+    newRow.getByName(key2) should equal(Values.stringValue("x"))
+    newRow.getByName(key3) should equal(Values.doubleValue(1.2))
+    newRow.getCachedProperty(cacheKey.runtimeKey) should equal(Values.longValue(123L))
+
+    mutatingLeftDoesNotAffectRight(row, newRow)
+    mutatingLeftDoesNotAffectRight(newRow, row)
+  }
+
+  test("copyMapped - should transform values") {
+    // given
+    val key1 = "key1"
+    val key2 = "key2"
+    val key3 = "key3"
+    val row = CypherRow.empty.copyWith(
+      key1, Values.booleanValue(false),
+      key2, Values.stringValue("x"),
+      key3, Values.doubleValue(1.2),
+      )
+    val cacheKey = cachedNodeProp("n", "prop")
+    row.setCachedProperty(cacheKey.runtimeKey, Values.longValue(123L))
+
+    // when
+    val newRow = row.copyMapped(_ => Values.longValue(888L))
+
+    // then
+    newRow.getByName(key1) should equal(Values.longValue(888L))
+    newRow.getByName(key2) should equal(Values.longValue(888L))
+    newRow.getByName(key3) should equal(Values.longValue(888L))
+    newRow.getCachedProperty(cacheKey.runtimeKey) should equal(Values.longValue(888L))
+
+    mutatingLeftDoesNotAffectRight(row, newRow)
+    mutatingLeftDoesNotAffectRight(newRow, row)
+  }
+
   private def mutatingLeftDoesNotAffectRight(left: CypherRow, right: CypherRow): Unit = {
     // given
     left should not be theSameInstanceAs(right)
-    val newKey = "this key should not yet exist in left or right"
+    val newKey = UUID.randomUUID().toString // this key should not yet exist in left or right
     val newCachedPropertyKey = cachedNodeProp("n", newKey)
     left.getCachedProperty(newCachedPropertyKey.runtimeKey) shouldBe null
     right.getCachedProperty(newCachedPropertyKey.runtimeKey) shouldBe null
