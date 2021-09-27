@@ -313,7 +313,10 @@ Feature: CypherTransactionsAcceptance
     When executing query:
       """
       UNWIND range(1, 5) as i
-      CALL { WITH i CREATE ({prop: i}) } IN TRANSACTIONS
+      CALL {
+        WITH i
+        CREATE ({prop: i})
+      } IN TRANSACTIONS
       """
     Then the result should be empty
     And the side effects should be:
@@ -328,8 +331,11 @@ Feature: CypherTransactionsAcceptance
       """
     When executing query:
       """
-      CALL { MATCH (n) RETURN n.prop AS prop } IN TRANSACTIONS
-      RETURN prop ORDER BY prop
+      CALL {
+        MATCH (n)
+        RETURN n.prop AS prop
+      } IN TRANSACTIONS
+      RETURN prop
       """
     Then the result should be, in any order:
       | prop |
@@ -349,7 +355,10 @@ Feature: CypherTransactionsAcceptance
     When executing query:
       """
       MATCH (n)
-      CALL { WITH n SET n.prop = 10 * n.prop } IN TRANSACTIONS
+      CALL {
+        WITH n
+        SET n.prop = 10 * n.prop
+      } IN TRANSACTIONS
       RETURN n.prop AS prop
       """
     Then the result should be, in any order:
@@ -364,16 +373,15 @@ Feature: CypherTransactionsAcceptance
       | +properties | 5 |
 
   Scenario: should support call in tx returning nodes
-    Given having executed:
-      """
-      UNWIND range(1, 5) as i
-      CREATE ( {prop: i})
-      """
     When executing query:
       """
-      MATCH ()
-      CALL { CREATE (n {prop: 1}) RETURN n } IN TRANSACTIONS
-      RETURN n.prop AS prop ORDER BY prop
+      UNWIND range(1, 5) as i
+      CALL {
+        WITH i
+        CREATE (n {prop: i})
+        RETURN n
+      } IN TRANSACTIONS
+      RETURN n.prop AS prop
       """
     Then the result should be, in any order:
       | prop |
@@ -395,7 +403,10 @@ Feature: CypherTransactionsAcceptance
     When executing query:
       """
       MATCH ()-[r]->()
-      CALL { WITH r SET r.prop = 10 * r.prop } IN TRANSACTIONS
+      CALL {
+        WITH r
+        SET r.prop = 10 * r.prop
+      } IN TRANSACTIONS
       RETURN r.prop AS prop
       """
     Then the result should be, in any order:
@@ -410,16 +421,15 @@ Feature: CypherTransactionsAcceptance
       | +properties | 5 |
 
   Scenario: should support call in tx returning rels
-    Given having executed:
-      """
-      UNWIND range(1, 5) as i
-      CREATE ( {prop: i})
-      """
     When executing query:
       """
-      MATCH ()
-      CALL { CREATE ()-[r:R {prop: 1}]->() RETURN r } IN TRANSACTIONS
-      RETURN r.prop AS prop ORDER BY prop
+      UNWIND range(1, 5) as i
+      CALL {
+        WITH i
+        CREATE ()-[r:R {prop: i}]->()
+        RETURN r
+      } IN TRANSACTIONS
+      RETURN r.prop AS prop
       """
     Then the result should be, in any order:
       | prop |
@@ -442,7 +452,11 @@ Feature: CypherTransactionsAcceptance
     When executing query:
       """
       MATCH p=()-[]->()
-      CALL { WITH p UNWIND relationships(p) AS r SET r.prop = 10 * r.prop } IN TRANSACTIONS
+      CALL {
+        WITH p
+        UNWIND relationships(p) AS r
+        SET r.prop = 10 * r.prop
+      } IN TRANSACTIONS
       UNWIND relationships(p) AS r
       RETURN r.prop AS prop
       """
@@ -458,15 +472,14 @@ Feature: CypherTransactionsAcceptance
       | +properties | 5 |
 
   Scenario: should support call in tx returning paths
-    Given having executed:
-      """
-      UNWIND range(1, 5) as i
-      CREATE ( {prop: i})
-      """
     When executing query:
       """
-      MATCH ()
-      CALL { CREATE p=()-[r:R {prop: 1}]->() RETURN p } IN TRANSACTIONS
+      UNWIND range(1, 5) as i
+      CALL {
+        WITH i
+        CREATE p=()-[r:R {prop: i}]->()
+        RETURN p
+      } IN TRANSACTIONS
       UNWIND relationships(p) AS r
       RETURN r.prop AS prop
       """
@@ -492,8 +505,8 @@ Feature: CypherTransactionsAcceptance
         MATCH (n)
         WITH n, n.prop as prop
         CALL {
-          MATCH (n)
-          SET n.prop = 42
+          MATCH (m)
+          SET m.prop = 42
         } IN TRANSACTIONS
         RETURN n.prop
       """
@@ -512,8 +525,8 @@ Feature: CypherTransactionsAcceptance
         WITH n, n.prop as prop
         UNWIND range(1,41) as i
         CALL {
-          MATCH (n)
-          SET n.prop = n.prop + 1
+          MATCH (m)
+          SET m.prop = m.prop + 1
         } IN TRANSACTIONS
         RETURN n.prop LIMIT 1
       """
