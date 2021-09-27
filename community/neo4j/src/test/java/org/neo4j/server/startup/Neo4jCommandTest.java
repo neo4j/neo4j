@@ -263,7 +263,7 @@ class Neo4jCommandTest
         @Test
         void shouldNotComplainOnJavaWhenCorrectVersion()
         {
-            Map<String,String> java = Map.of( "java.version", "11.0.8", Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
+            Map<String,String> java = Map.of( Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
             assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).doesNotContain( "WARNING! You are using an unsupported Java runtime" );
         }
@@ -280,7 +280,7 @@ class Neo4jCommandTest
         @Test
         void shouldComplainWhenRunningUnsupportedJvm()
         {
-            Map<String,String> java = Map.of( "java.version", "11.0.2", Bootloader.PROP_VM_NAME, "Eclipse OpenJ9 VM" );
+            Map<String,String> java = Map.of( Bootloader.PROP_VM_NAME, "Eclipse OpenJ9 VM" );
             assertThat( execute( List.of( "start" ), java ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).contains( "WARNING! You are using an unsupported Java runtime." );
         }
@@ -456,7 +456,7 @@ class Neo4jCommandTest
         }
 
         @Override
-        protected int execute( List<String> args, Map<String,String> env )
+        protected int execute( List<String> args, Map<String,String> env, Runtime.Version version )
         {
             if ( IS_OS_WINDOWS )
             {
@@ -465,14 +465,14 @@ class Neo4jCommandTest
                     List<String> installArgs = new ArrayList<>( args );
                     installArgs.remove( 0 );
                     installArgs.add( 0, "install-service" );
-                    int installExitCode = super.execute( installArgs, env );
+                    int installExitCode = super.execute( installArgs, env, version );
                     if ( installExitCode != EXIT_CODE_OK )
                     {
                         return installExitCode;
                     }
                 }
             }
-            int exitCode = super.execute( args, env );
+            int exitCode = super.execute( args, env, version );
             if ( IS_OS_WINDOWS )
             {
                 if ( !args.isEmpty() && args.get( 0 ).equals( "stop" ) && exitCode == EXIT_CODE_OK )
@@ -485,7 +485,7 @@ class Neo4jCommandTest
 
         int executeWithoutInjection( String arg )
         {
-            return super.execute( List.of( arg ), Map.of() );
+            return super.execute( List.of( arg ), Map.of(), Runtime.version() );
         }
 
         @Override
