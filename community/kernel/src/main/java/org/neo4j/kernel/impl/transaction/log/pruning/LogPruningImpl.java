@@ -23,11 +23,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongConsumer;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -42,7 +43,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
  */
 public class LogPruningImpl implements LogPruning
 {
-    private final Lock pruneLock = new ReentrantLock();
+    private final Lock pruneLock;
     private final FileSystemAbstraction fs;
     private final LogFiles logFiles;
     private final Log log;
@@ -57,7 +58,8 @@ public class LogPruningImpl implements LogPruning
                            LogProvider logProvider,
                            LogPruneStrategyFactory strategyFactory,
                            SystemNanoClock clock,
-                           Config config )
+                           Config config,
+                           Lock pruneLock )
     {
         this.fs = fs;
         this.logFiles = logFiles;
@@ -65,6 +67,7 @@ public class LogPruningImpl implements LogPruning
         this.log = logProvider.getLog( getClass() );
         this.strategyFactory = strategyFactory;
         this.clock = clock;
+        this.pruneLock = pruneLock;
         this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, logProvider, clock, config.get( keep_logical_logs ) );
         this.checkpointFilesToKeep = config.get( checkpoint_logical_log_keep_threshold );
 
@@ -82,23 +85,23 @@ public class LogPruningImpl implements LogPruning
     @Override
     public void pruneLogs( long upToVersion ) throws IOException
     {
-        // Only one is allowed to do pruning at any given time,
-        // and it's OK to skip pruning if another one is doing so right now.
-        if ( pruneLock.tryLock() )
+        pruneLock.lock();
+        try
         {
-            try
-            {
-                CountingDeleter deleter = new CountingDeleter( logFiles, fs );
-                LogPruneStrategy strategy = this.pruneStrategy;
-                strategy.findLogVersionsToDelete( upToVersion ).forEachOrdered( deleter );
-                log.info( deleter.describeResult( strategy ) );
+            LogFile logFile = logFiles.getLogFile();
+            LogPruneStrategy strategy = this.pruneStrategy;
 
-                cleanupCheckpointLogFiles();
-            }
-            finally
-            {
-                pruneLock.unlock();
-            }
+            CountingDeleter deleter = new CountingDeleter( logFile, fs );
+            LongRange versionsToDelete = strategy.findLogVersionsToDelete( upToVersion );
+            logFile.terminateExternalReaders( versionsToDelete.to() );
+            versionsToDelete.stream().forEachOrdered( deleter );
+            log.info( deleter.describeResult( strategy ) );
+
+            cleanupCheckpointLogFiles();
+        }
+        finally
+        {
+            pruneLock.unlock();
         }
     }
 
@@ -125,7 +128,7 @@ public class LogPruningImpl implements LogPruning
     @Override
     public boolean mightHaveLogsToPrune( long upToVersion )
     {
-        return pruneStrategy.findLogVersionsToDelete( upToVersion ).count() > 0;
+        return !pruneStrategy.findLogVersionsToDelete( upToVersion ).isEmpty();
     }
 
     @Override
@@ -137,14 +140,14 @@ public class LogPruningImpl implements LogPruning
     private static class CountingDeleter implements LongConsumer
     {
         private static final int NO_VERSION = -1;
-        private final LogFiles logFiles;
+        private final LogFile logFile;
         private final FileSystemAbstraction fs;
         private long fromVersion;
         private long toVersion;
 
-        private CountingDeleter( LogFiles logFiles, FileSystemAbstraction fs )
+        private CountingDeleter( LogFile logFile, FileSystemAbstraction fs )
         {
-            this.logFiles = logFiles;
+            this.logFile = logFile;
             this.fs = fs;
             fromVersion = NO_VERSION;
             toVersion = NO_VERSION;
@@ -155,10 +158,10 @@ public class LogPruningImpl implements LogPruning
         {
             fromVersion = fromVersion == NO_VERSION ? version : Math.min( fromVersion, version );
             toVersion = toVersion == NO_VERSION ? version : Math.max( toVersion, version );
-            Path logFile = logFiles.getLogFile().getLogFileForVersion( version );
+            Path logFilePath = logFile.getLogFileForVersion( version );
             try
             {
-                fs.deleteFile( logFile );
+                fs.deleteFile( logFilePath );
             }
             catch ( IOException e )
             {

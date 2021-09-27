@@ -19,12 +19,22 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import java.util.stream.LongStream;
+
 import static java.lang.String.format;
+import static org.neo4j.util.Preconditions.checkState;
+import static org.neo4j.util.Preconditions.requireNonNegative;
 
 public final class LongRange
 {
+    public static final LongRange EMPTY_RANGE = new LongRange( 0, 0 );
+
     public static LongRange range( long from, long to )
     {
+        if ( to < from )
+        {
+            return EMPTY_RANGE;
+        }
         return new LongRange( from, to );
     }
 
@@ -39,14 +49,8 @@ public final class LongRange
 
     public static void assertIsRange( long from, long to )
     {
-        if ( from < 0 )
-        {
-            throw new IllegalArgumentException( "Range cannot start from negative value. Got: " + from );
-        }
-        if ( to < from )
-        {
-            throw new IllegalArgumentException( format( "Not a valid range. RequiredTxId[%d] must be higher or equal to startTxId[%d].", to, from ) );
-        }
+        requireNonNegative( from );
+        checkState( to >= from, "Not a valid range. Range to [%d] must be higher or equal to range from [%d].", to, from );
     }
 
     private final long from;
@@ -80,6 +84,16 @@ public final class LongRange
     public boolean isWithinRangeExclusiveTo( long val )
     {
         return val >= from && val < to;
+    }
+
+    public LongStream stream()
+    {
+        return LongStream.rangeClosed( from, to );
+    }
+
+    public boolean isEmpty()
+    {
+        return from == to;
     }
 
     @Override

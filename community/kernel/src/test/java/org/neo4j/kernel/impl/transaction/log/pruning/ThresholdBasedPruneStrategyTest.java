@@ -84,7 +84,7 @@ class ThresholdBasedPruneStrategyTest
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
         // When
-        strategy.findLogVersionsToDelete( 7L ).forEachOrdered( uncheckedLongConsumer(
+        strategy.findLogVersionsToDelete( 7L ).stream().forEachOrdered( uncheckedLongConsumer(
                 v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ) ) ) );
 
         // Then
@@ -125,7 +125,7 @@ class ThresholdBasedPruneStrategyTest
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
         // When
-        strategy.findLogVersionsToDelete( 7L ).forEachOrdered( uncheckedLongConsumer(
+        strategy.findLogVersionsToDelete( 7L ).stream().forEachOrdered( uncheckedLongConsumer(
                 v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ) ) ) );
 
         // Then
@@ -146,7 +146,7 @@ class ThresholdBasedPruneStrategyTest
 
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
-        assertFalse( strategy.findLogVersionsToDelete( 5 ).findAny().isPresent() );
+        assertFalse( strategy.findLogVersionsToDelete( 5 ).stream().findAny().isPresent() );
     }
 
     @Test
@@ -158,7 +158,7 @@ class ThresholdBasedPruneStrategyTest
 
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
-        assertArrayEquals( new long[]{10, 11, 12, 13}, strategy.findLogVersionsToDelete( 15 ).toArray() );
+        assertArrayEquals( new long[]{10, 11, 12, 13}, strategy.findLogVersionsToDelete( 15 ).stream().toArray() );
     }
 
     @Test

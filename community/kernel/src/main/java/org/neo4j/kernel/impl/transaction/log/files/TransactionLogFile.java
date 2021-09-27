@@ -19,12 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,6 +71,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -92,6 +100,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     private LogVersionRepository logVersionRepository;
     private final LogHeaderCache logHeaderCache;
     private final FileSystemAbstraction fileSystem;
+    private final ConcurrentMap<Long,List<StoreChannel>> externalFileReaders = new ConcurrentHashMap<>();
     private TransactionLogWriter transactionLogWriter;
 
     TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context, String baseName )
@@ -468,6 +477,47 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
             databaseHealth.panic( panic );
             throw panic;
         }
+    }
+
+    @Override
+    public void registerExternalReaders( LongObjectMap<StoreChannel> internalChannels )
+    {
+        internalChannels.forEachKeyValue( (LongObjectProcedure<StoreChannel>) ( version, channel ) ->
+                        externalFileReaders.computeIfAbsent( version, any -> new CopyOnWriteArrayList<>() ).add( channel ) );
+    }
+
+    @Override
+    public void unregisterExternalReader( long version, StoreChannel channel )
+    {
+        externalFileReaders.computeIfPresent( version, ( aLong, storeChannels ) ->
+        {
+            storeChannels.remove( channel );
+            if ( storeChannels.isEmpty() )
+            {
+                return null;
+            }
+            return storeChannels;
+        } );
+    }
+
+    @Override
+    public void terminateExternalReaders( long maxDeletedVersion )
+    {
+        externalFileReaders.entrySet().removeIf( entry ->
+        {
+            if ( entry.getKey() <= maxDeletedVersion )
+            {
+                IOUtils.closeAllSilently( entry.getValue() );
+                return true;
+            }
+            return false;
+        } );
+    }
+
+    @VisibleForTesting
+    public ConcurrentMap<Long,List<StoreChannel>> getExternalFileReaders()
+    {
+        return externalFileReaders;
     }
 
     /**

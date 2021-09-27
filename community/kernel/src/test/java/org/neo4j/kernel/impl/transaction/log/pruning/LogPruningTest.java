@@ -26,10 +26,11 @@ import org.mockito.InOrder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.LongStream;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -82,8 +83,8 @@ class LogPruningTest
     void mustDeleteLogFilesThatCanBePruned() throws IOException
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
-                .thenReturn( upTo -> LongStream.range( 3, upTo ) );
-        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
+                .thenReturn( upTo -> LongRange.range( 3, upTo ) );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config, new ReentrantLock() );
         pruning.pruneLogs( 5 );
         InOrder order = inOrder( fs );
         order.verify( fs ).deleteFile( Path.of( "3" ) );
@@ -96,9 +97,9 @@ class LogPruningTest
     void mustHaveLogFilesToPruneIfStrategyFindsFiles()
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
-                .thenReturn( upTo -> LongStream.range( 3, upTo ) );
+                .thenReturn( upTo -> LongRange.range( 3, upTo ) );
         when( logFiles.getLogFile().getHighestLogVersion() ).thenReturn( 4L );
-        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config, new ReentrantLock() );
         assertTrue( pruning.mightHaveLogsToPrune( logFiles.getLogFile().getHighestLogVersion() ) );
     }
 
@@ -106,8 +107,8 @@ class LogPruningTest
     void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles()
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
-                .thenReturn( x -> LongStream.empty() );
-        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
+                .thenReturn( x -> LongRange.EMPTY_RANGE );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config, new ReentrantLock() );
         assertFalse( pruning.mightHaveLogsToPrune( logFiles.getLogFile().getHighestLogVersion() ) );
     }
 
@@ -116,7 +117,7 @@ class LogPruningTest
     {
         factory = new LogPruneStrategyFactory();
         config.setDynamic( GraphDatabaseSettings.keep_logical_logs, "keep_all", "" );
-        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config, new ReentrantLock() );
         assertEquals( "keep_all", pruning.describeCurrentStrategy() );
         config.setDynamic( GraphDatabaseSettings.keep_logical_logs, "10 files", "" );
         assertEquals( "10 files", pruning.describeCurrentStrategy() );
@@ -127,7 +128,7 @@ class LogPruningTest
     {
         // given
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
-                .thenReturn( x -> LongStream.empty() );
+                .thenReturn( x -> LongRange.EMPTY_RANGE );
         int checkpointLogFilesToKeep = config.get( checkpoint_logical_log_keep_threshold );
         CheckpointFile checkpointFile = mock( CheckpointFile.class );
         Path[] checkpointFiles = new Path[checkpointLogFilesToKeep + 2];
@@ -145,7 +146,7 @@ class LogPruningTest
         when( logFiles.getCheckpointFile() ).thenReturn( checkpointFile );
 
         // when
-        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config, new ReentrantLock() );
         pruning.pruneLogs( 1 );
 
         // then

@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -125,4 +128,24 @@ public interface LogFile extends RotatableFile
     void flush() throws IOException;
 
     void truncate() throws IOException;
+
+    /**
+     * Register map of externally exposed readers. Key is log version number. Value is log reader.
+     * @param internalChannels map of readers
+     */
+    void registerExternalReaders( LongObjectMap<StoreChannel> internalChannels );
+
+    /**
+     * Unregister externally exposed reader. If version is not registered or channel is not registered it will be just ignored
+     * @param version version of log file to unregister reader
+     * @param channel reader to unregister
+     */
+    void unregisterExternalReader( long version, StoreChannel channel );
+
+    /**
+     * Mass termination (unregistration and closing ) of externally exposed readers.
+     * All registered readers up to (inclusive) specified version will be closed and unregistered.
+     * @param maxDeletedVersion version up to terminate external readers.
+     */
+    void terminateExternalReaders( long maxDeletedVersion );
 }

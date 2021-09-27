@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.files;
 
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,8 +29,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,13 +53,12 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
-import org.neo4j.kernel.impl.transaction.log.files.LogFile;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -549,6 +551,170 @@ class TransactionLogFileTest
         assertThat( capturingChannel.getFlushCounter().get() - flushesBefore ).isEqualTo( 2 );
     }
 
+    @Test
+    void logFilesExternalRidersRegistration() throws IOException, ExecutionException
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        LogFile logFile = logFiles.getLogFile();
+        logFile.rotate();
+        logFile.rotate();
+        logFile.rotate();
+
+        assertEquals( 4, logFile.getHighestLogVersion() );
+
+        var channelMap = LongObjectMaps.mutable.<StoreChannel>empty();
+        channelMap.put( 1, logFile.openForVersion( 1 ) );
+        channelMap.put( 2, logFile.openForVersion( 2 ) );
+        channelMap.put( 3, logFile.openForVersion( 3 ) );
+
+        ExecutorService registerCalls = Executors.newFixedThreadPool( 5 );
+        ArrayList<Future<?>> futures = new ArrayList<>( 10 );
+        try
+        {
+            for ( int i = 0; i < 10; i++ )
+            {
+                futures.add( registerCalls.submit( () -> logFile.registerExternalReaders( channelMap ) ) );
+            }
+        }
+        finally
+        {
+            registerCalls.shutdown();
+        }
+        Futures.getAll( futures );
+
+        var externalFileReaders = ((TransactionLogFile) logFile).getExternalFileReaders();
+        assertThat( externalFileReaders ).containsOnlyKeys( 1L, 2L, 3L );
+        for ( var entry : externalFileReaders.entrySet() )
+        {
+            List<StoreChannel> channels = entry.getValue();
+            assertThat( channels ).hasSize( 10 );
+            // all channels should be equal
+            var exampleChannel = channels.get( 0 );
+            for ( StoreChannel channel : channels )
+            {
+                assertEquals( channel, exampleChannel);
+            }
+        }
+    }
+
+    @Test
+    void terminateLogFilesExternalReaders() throws IOException, ExecutionException
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        LogFile logFile = logFiles.getLogFile();
+        logFile.rotate();
+        logFile.rotate();
+        logFile.rotate();
+        logFile.rotate();
+
+        assertEquals( 5, logFile.getHighestLogVersion() );
+
+        var channelMap = LongObjectMaps.mutable.<StoreChannel>empty();
+        channelMap.put( 1, logFile.openForVersion( 1 ) );
+        channelMap.put( 2, logFile.openForVersion( 2 ) );
+        channelMap.put( 3, logFile.openForVersion( 3 ) );
+        channelMap.put( 4, logFile.openForVersion( 4 ) );
+
+        ExecutorService registerCalls = Executors.newCachedThreadPool( );
+        ArrayList<Future<?>> futures = new ArrayList<>( 10 );
+        try
+        {
+            for ( int i = 0; i < 10; i++ )
+            {
+                futures.add( registerCalls.submit( () -> logFile.registerExternalReaders( channelMap ) ) );
+            }
+        }
+        finally
+        {
+            registerCalls.shutdown();
+        }
+        Futures.getAll( futures );
+
+        logFile.terminateExternalReaders( 3 );
+
+        var externalFileReaders = ((TransactionLogFile) logFile).getExternalFileReaders();
+        assertThat( externalFileReaders ).containsOnlyKeys( 4L );
+        for ( var entry : externalFileReaders.entrySet() )
+        {
+            List<StoreChannel> channels = entry.getValue();
+            assertThat( channels ).hasSize( 10 );
+            // all channels should be equal
+            var exampleChannel = channels.get( 0 );
+            for ( StoreChannel channel : channels )
+            {
+                assertEquals( channel, exampleChannel);
+            }
+        }
+    }
+
+    @Test
+    void registerUnregisterLogFilesExternalReaders() throws IOException, ExecutionException
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        LogFile logFile = logFiles.getLogFile();
+        logFile.rotate();
+        logFile.rotate();
+        logFile.rotate();
+
+        assertEquals( 4, logFile.getHighestLogVersion() );
+
+        var channelMap = LongObjectMaps.mutable.<StoreChannel>empty();
+        var channel1 = logFile.openForVersion( 1 );
+        var channel2 = logFile.openForVersion( 2 );
+        channelMap.put( 1, channel1 );
+        channelMap.put( 2, channel2 );
+
+        ExecutorService registerCalls = Executors.newCachedThreadPool( );
+        ArrayList<Future<?>> futures = new ArrayList<>( 10 );
+        try
+        {
+            for ( int i = 0; i < 10; i++ )
+            {
+                futures.add( registerCalls.submit( () -> logFile.registerExternalReaders( channelMap ) ) );
+            }
+        }
+        finally
+        {
+            registerCalls.shutdown();
+        }
+        Futures.getAll( futures );
+
+        var externalFileReaders = ((TransactionLogFile) logFile).getExternalFileReaders();
+        assertThat( externalFileReaders ).containsOnlyKeys( 1L, 2L );
+
+        for ( int i = 0; i < 100; i++ )
+        {
+            logFile.unregisterExternalReader( 1, channel1 );
+        }
+        assertThat( externalFileReaders ).containsOnlyKeys( 2L );
+
+        //removing wrong channel
+        for ( int i = 0; i < 19; i++ )
+        {
+            logFile.unregisterExternalReader( 2, channel1 );
+        }
+        assertThat( externalFileReaders ).containsOnlyKeys( 2L );
+
+        for ( int i = 0; i < 9; i++ )
+        {
+            logFile.unregisterExternalReader( 2, channel2 );
+        }
+        assertThat( externalFileReaders ).containsOnlyKeys( 2L );
+        assertThat( externalFileReaders.get( 2L ) ).hasSize( 1 );
+
+        logFile.unregisterExternalReader( 2, channel2 );
+        assertThat( externalFileReaders ).isEmpty();
+    }
+
     private static byte[] readBytes( ReadableChannel reader, int length ) throws IOException
     {
         byte[] result = new byte[length];
@@ -709,7 +875,7 @@ class TransactionLogFileTest
         }
     }
 
-    private static class CapturingStoreChannel extends DelegatingStoreChannel
+    private static class CapturingStoreChannel extends DelegatingStoreChannel<StoreChannel>
     {
         private final AtomicInteger writeAllCounter = new AtomicInteger();
         private final AtomicInteger flushCounter = new AtomicInteger();

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.util.stream.LongStream;
+import org.neo4j.internal.helpers.collection.LongRange;
 
 /**
  * The LogPruneStrategy examines the current population of transaction logs, and decides which ones can be deleted,
@@ -43,8 +43,8 @@ public interface LogPruneStrategy
      * in the middle of log pruning.
      *
      * @param upToLogVersion Never suggest deleting log files at or greater than this version.
-     * @return The, possibly empty, stream of log versions whose files can be deleted, according to this log pruning
+     * @return The, possibly empty, range of log versions whose files can be deleted, according to this log pruning
      * strategy.
      */
-    LongStream findLogVersionsToDelete( long upToLogVersion );
+    LongRange findLogVersionsToDelete( long upToLogVersion );
 }

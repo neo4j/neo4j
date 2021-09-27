@@ -28,7 +28,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -70,6 +72,7 @@ import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.database.transaction.TransactionLogServiceImpl;
 import org.neo4j.kernel.api.impl.fulltext.DefaultFulltextAdapter;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -739,8 +742,9 @@ public class Database extends LifecycleAdapter
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
+        Lock pruneLock = new ReentrantLock();
         final LogPruning logPruning =
-                new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config );
+                new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, pruneLock );
 
         final LogRotation logRotation = transactionLogRotation( logFiles, clock, databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
 
@@ -765,7 +769,8 @@ public class Database extends LifecycleAdapter
         life.add( checkPointer );
         life.add( checkPointScheduler );
 
-        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, logRotation, transactionAppender );
+        TransactionLogServiceImpl transactionLogService = new TransactionLogServiceImpl( logFiles, logicalTransactionStore, pruneLock );
+        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, logRotation, transactionAppender, transactionLogService );
 
         return new DatabaseTransactionLogModule( checkPointer, transactionAppender );
     }

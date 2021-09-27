@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.util.stream.LongStream;
-
+import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFileInformation;
 
@@ -48,11 +47,11 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
     }
 
     @Override
-    public synchronized LongStream findLogVersionsToDelete( long upToVersion )
+    public synchronized LongRange findLogVersionsToDelete( long upToVersion )
     {
         if ( upToVersion == INITIAL_LOG_VERSION )
         {
-            return LongStream.empty();
+            return LongRange.EMPTY_RANGE;
         }
 
         threshold.init();
@@ -60,7 +59,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
         ThresholdEvaluationResult thresholdResult = pruneThresholdReached( upToVersion, lowestLogVersion );
         if ( !thresholdResult.reached() )
         {
-            return LongStream.empty();
+            return LongRange.EMPTY_RANGE;
         }
 
         /*
@@ -75,7 +74,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
          * This if statement does nothing more complicated than checking if the next-to-last log would be pruned
          * and simply skipping it if so.
          */
-        return LongStream.rangeClosed( lowestLogVersion, min( thresholdResult.logVersion(), upToVersion - 2 ) );
+        return LongRange.range( lowestLogVersion, min( thresholdResult.logVersion(), upToVersion - 2 ) );
     }
 
     private ThresholdEvaluationResult pruneThresholdReached( long upToVersion, long lowestLogVersion )

@@ -19,13 +19,15 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,7 +54,7 @@ class LongRangeTest
     @MethodSource( "validRanges" )
     void shouldBeWithinRange( RangeProvider rangeProvider )
     {
-        Assertions.assertDoesNotThrow( rangeProvider::get );
+        assertDoesNotThrow( rangeProvider::get );
     }
 
     @ParameterizedTest
@@ -70,6 +72,29 @@ class LongRangeTest
         LongRange joinedRange = LongRange.join( rangeA, rangeB );
         assertEquals( 10, joinedRange.from() );
         assertEquals( 15, joinedRange.to() );
+    }
+
+    @Test
+    void emptyRange()
+    {
+        assertTrue( LongRange.EMPTY_RANGE.isEmpty() );
+        assertTrue( LongRange.range( 5, 5 ).isEmpty() );
+    }
+
+    @Test
+    void rangeStream()
+    {
+        LongRange longRange = LongRange.range( 2, 5 );
+        assertEquals( 2, longRange.stream().min().orElseThrow() );
+        assertEquals( 5, longRange.stream().max().orElseThrow() );
+    }
+
+    @Test
+    void streamRangeAndRangeStreamAreEqual()
+    {
+        LongStream rangeStream = LongRange.range( 1, 10 ).stream();
+        LongStream longStream = LongStream.rangeClosed( 1, 10 );
+        assertThat( rangeStream ).containsExactlyElementsOf( longStream::iterator );
     }
 
     @Test
@@ -96,12 +121,13 @@ class LongRangeTest
 
     private static Stream<RangeProvider> invalidRanges()
     {
-        return Stream.of( new RangeProvider( 1, 0 ), new RangeProvider( Long.MAX_VALUE, Long.MIN_VALUE ), new RangeProvider( -1, 0 ) );
+        return Stream.of( new RangeProvider( -1, 0 ) );
     }
 
     private static Stream<RangeProvider> validRanges()
     {
-        return Stream.of( new RangeProvider( 0, 0 ), new RangeProvider( Long.MAX_VALUE, Long.MAX_VALUE ), new RangeProvider( 0, Long.MAX_VALUE ) );
+        return Stream.of( new RangeProvider( 1, 0 ), new RangeProvider( Long.MAX_VALUE, Long.MIN_VALUE ), new RangeProvider( 0, 0 ),
+                new RangeProvider( Long.MAX_VALUE, Long.MAX_VALUE ), new RangeProvider( 0, Long.MAX_VALUE ) );
     }
 
     static class RangeProvider
