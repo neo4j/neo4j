@@ -1690,7 +1690,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         private final PageCursor pageCursor;
         private final int cursorId;
 
-        public CursorSwapperId( PageCursor pageCursor, int cursorId )
+        CursorSwapperId( PageCursor pageCursor, int cursorId )
         {
             this.pageCursor = pageCursor;
             this.cursorId = cursorId;

@@ -82,6 +82,7 @@ import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -3294,7 +3295,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             pageCache = null;
 
             cursor.getByte();
-            assertThrows( FileIsNotMappedException.class, cursor::shouldRetry );
+            assertDoesNotThrow( cursor::shouldRetry );
             assertThrows( FileIsNotMappedException.class, cursor::next );
         } );
     }

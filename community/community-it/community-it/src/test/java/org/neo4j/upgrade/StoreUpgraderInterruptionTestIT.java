@@ -73,8 +73,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -210,13 +210,9 @@ public class StoreUpgraderInterruptionTestIT
         startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
 
-        assertEquals( 43, idMigratorTracer.faults() );
-        assertEquals( 82, idMigratorTracer.hits() );
         assertEquals( 125, idMigratorTracer.pins() );
         assertEquals( 125, idMigratorTracer.unpins() );
 
-        assertEquals( 61, recordMigratorTracer.faults() );
-        assertEquals( 170, recordMigratorTracer.hits() );
         assertEquals( 231, recordMigratorTracer.pins() );
         assertEquals( 231, recordMigratorTracer.unpins() );
     }

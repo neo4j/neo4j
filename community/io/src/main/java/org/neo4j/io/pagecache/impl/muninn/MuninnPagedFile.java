@@ -307,12 +307,15 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
                         long pageRef = deref( pageId );
                         // try to evict page, but we can fail if there is a race or if we still have cursor open for some page
                         // in this case we will deal with this page later on postponed sweep or eviction will do its business
-                        if ( pages.tryEvict( pageRef, evictionEvent ) )
+                        if ( PageList.isLoaded( pageRef ) )
                         {
-                            pageCache.addFreePageToFreelist( pageRef, evictionEvent );
-                            evictedPages++;
+                            if ( PageList.decrementUsage( pageRef ) && pages.tryEvict( pageRef, evictionEvent ) )
+                            {
+                                pageCache.addFreePageToFreelist( pageRef, evictionEvent );
+                                evictedPages++;
+                            }
+                            totalPages++;
                         }
-                        totalPages++;
                         TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, UNMAPPED_TTE );
                     }
                 }
