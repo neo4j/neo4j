@@ -1058,7 +1058,7 @@ class SubqueryCallPlanningIntegrationTest
     val query =
       """
         |MATCH (a)
-        |WITH a
+        |WITH *, 1 AS dummy
         |MATCH (a)-->(b)
         |CALL {
         |  MATCH (n)
@@ -1078,6 +1078,7 @@ class SubqueryCallPlanningIntegrationTest
       .|.setNodeProperty("n", "otherProp", "17")
       .|.allNodeScan("n")
       .expandAll("(a)-[anon_0]->(b)")
+      .projection("1 AS dummy")
       .allNodeScan("a")
       .build()
   }
