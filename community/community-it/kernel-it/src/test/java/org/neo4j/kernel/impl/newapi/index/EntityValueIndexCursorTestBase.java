@@ -113,7 +113,6 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
         indexParams.enrichSettings( readTestSupport );
-        entityParams.enrichSettings( readTestSupport );
         return readTestSupport;
     }
 

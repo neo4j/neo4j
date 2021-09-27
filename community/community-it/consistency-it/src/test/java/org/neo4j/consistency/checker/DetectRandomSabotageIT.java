@@ -48,7 +48,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -480,7 +479,6 @@ public class DetectRandomSabotageIT
 
     protected <T> T addConfig( T t, SetConfigAction<T> action )
     {
-        action.setConfig( t, GraphDatabaseInternalSettings.range_indexes_enabled, true );
         return t;
     }
 

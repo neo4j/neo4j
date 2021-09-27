@@ -32,11 +32,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -45,7 +42,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
+@ImpermanentDbmsExtension
 public class IndexingStringQueryAcceptanceTest
 {
 
@@ -54,12 +51,6 @@ public class IndexingStringQueryAcceptanceTest
 
     @Inject
     private GraphDatabaseService db;
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
-    }
 
     @BeforeEach
     void setup( TestInfo testInfo )

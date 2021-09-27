@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.junit.jupiter.api.BeforeAll;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.kernel.api.index.IndexProviderApprovalTest;
@@ -32,8 +31,7 @@ public class RangeIndexIndexProviderApprovalTest extends IndexProviderApprovalTe
     @BeforeAll
     public static void init()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent()
-                .setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         setupBeforeAllTests( managementService, IndexType.RANGE );
     }
 }

@@ -31,15 +31,10 @@ import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 import org.neo4j.values.storable.Value;
 
 public interface EntityParams<CURSOR extends Cursor & ValueIndexCursor>
 {
-    default void enrichSettings( ReadTestSupport testSupport )
-    {
-    }
-
     long entityWithProp( Transaction tx, String token, String key, Object value );
 
     long entityNoTokenWithProp( Transaction tx, String key, Object value );

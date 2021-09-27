@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
@@ -50,10 +49,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
                                                                     )
   extends RuntimeTestSuite[CONTEXT](
     runtime = runtime,
-    edition = edition.copyWith(
-      GraphDatabaseInternalSettings.text_indexes_enabled -> Boolean.box(true),
-      GraphDatabaseInternalSettings.range_indexes_enabled -> Boolean.box(true),
-    )
+    edition = edition
   )
   with RandomValuesTestSupport {
 

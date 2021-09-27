@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.schema.IndexType;
@@ -62,12 +61,6 @@ class EntityValueIndexCursorLimitedIndexTest
         }
 
         @Override
-        protected void enrichSettings( ReadTestSupport testSupport )
-        {
-            testSupport.addSetting( GraphDatabaseInternalSettings.point_indexes_enabled, true );
-        }
-
-        @Override
         protected Stream<Value> validValues()
         {
             return Stream.of( Values.pointValue( CoordinateReferenceSystem.WGS84, -122.322312, 37.563437 ),
@@ -89,12 +82,6 @@ class EntityValueIndexCursorLimitedIndexTest
         Text()
         {
             super( IndexType.TEXT );
-        }
-
-        @Override
-        protected void enrichSettings( ReadTestSupport testSupport )
-        {
-            testSupport.addSetting( GraphDatabaseInternalSettings.text_indexes_enabled, true );
         }
 
         @Override
@@ -124,10 +111,6 @@ class EntityValueIndexCursorLimitedIndexTest
         IndexSuite( IndexType type )
         {
             this.type = type;
-        }
-
-        protected void enrichSettings( ReadTestSupport testSupport )
-        {
         }
 
         protected abstract Stream<Value> validValues();
@@ -179,10 +162,7 @@ class EntityValueIndexCursorLimitedIndexTest
         @Override
         public ReadTestSupport newTestSupport()
         {
-            final var testSupport = new ReadTestSupport();
-            suite.enrichSettings( testSupport );
-            entityParams.enrichSettings( testSupport );
-            return testSupport;
+            return new ReadTestSupport();
         }
 
         @Override

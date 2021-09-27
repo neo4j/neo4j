@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -34,7 +33,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -406,13 +404,6 @@ class UniquenessConstraintValidationIT
         IndexType indexType()
         {
             return IndexType.RANGE;
-        }
-
-        @Override
-        protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder )
-        {
-            databaseManagementServiceBuilder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
-            return super.configure( databaseManagementServiceBuilder );
         }
     }
 }

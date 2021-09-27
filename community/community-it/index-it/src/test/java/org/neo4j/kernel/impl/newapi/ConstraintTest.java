@@ -21,13 +21,11 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Nested;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 
@@ -71,20 +69,6 @@ public class ConstraintTest
         protected IndexType indexType()
         {
             return IndexType.RANGE;
-        }
-
-        @Override
-        public WriteTestSupport newTestSupport()
-        {
-            return new WriteTestSupport()
-            {
-                @Override
-                protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-                {
-                    builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
-                    return super.configure( builder );
-                }
-            };
         }
     }
 }

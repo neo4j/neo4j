@@ -26,13 +26,10 @@ import org.junit.jupiter.api.TestInfo;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.mockito.mock.SpatialMocks;
@@ -52,7 +49,7 @@ import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
+@ImpermanentDbmsExtension
 abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
 {
     protected static final String LONG_STRING = "a long string that has to be stored in dynamic records";
@@ -70,12 +67,6 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         TOKEN1 = createToken( "TOKEN1-" + testInfo.getDisplayName() );
         TOKEN2 = createToken( "TOKEN2-" + testInfo.getDisplayName() );
         TOKEN3 = createToken( "TOKEN3-" + testInfo.getDisplayName() );
-    }
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
     }
 
     /* This test is a bit interesting. It tests a case where we've got a property that sits in one

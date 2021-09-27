@@ -47,7 +47,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checker.DebugContext;
@@ -216,7 +215,6 @@ public class FullCheckIntegrationTest
     @BeforeEach
     protected void setUp()
     {
-        settings.put( GraphDatabaseInternalSettings.range_indexes_enabled, true );
         fixture = createFixture();
     }
 

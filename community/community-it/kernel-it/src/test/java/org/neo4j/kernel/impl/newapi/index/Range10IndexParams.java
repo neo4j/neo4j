@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi.index;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 
 class Range10IndexParams implements IndexParams
@@ -28,7 +27,6 @@ class Range10IndexParams implements IndexParams
     @Override
     public void enrichSettings( ReadTestSupport testSupport )
     {
-        testSupport.addSetting( GraphDatabaseInternalSettings.range_indexes_enabled, true );
     }
 
     @Override

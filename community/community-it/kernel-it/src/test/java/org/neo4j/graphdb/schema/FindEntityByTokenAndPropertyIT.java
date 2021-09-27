@@ -37,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -92,9 +91,6 @@ public class FindEntityByTokenAndPropertyIT
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( indexMonitor );
         builder.setMonitors( monitors );
-        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
-        builder.setConfig( GraphDatabaseInternalSettings.text_indexes_enabled, true );
-        builder.setConfig( GraphDatabaseInternalSettings.point_indexes_enabled, true );
     }
 
     @BeforeEach

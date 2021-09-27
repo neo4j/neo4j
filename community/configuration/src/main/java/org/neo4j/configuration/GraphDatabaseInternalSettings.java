@@ -747,20 +747,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             .build();
 
     @Internal
-    @Description( "Feature flag to enable/disable text indexes" )
-    public static final Setting<Boolean> text_indexes_enabled = newBuilder( "unsupported.dbms.text_indexes_enabled", BOOL, false ).build();
-
-    @Internal
-    @Description( "Feature flag to enable/disable range indexes. Temporary setting to be able to test the ongoing work with range indexes, " +
-                  "will be removed when feature is complete." )
-    public static final Setting<Boolean> range_indexes_enabled = newBuilder( "unsupported.dbms.range_indexes_enabled", BOOL, false ).build();
-
-    @Internal
-    @Description( "Feature flag to enable/disable point indexes. Temporary setting to be able to test the ongoing work with point indexes, " +
-            "will be removed when feature is complete." )
-    public static final Setting<Boolean> point_indexes_enabled = newBuilder( "unsupported.dbms.point_indexes_enabled", BOOL, false ).build();
-
-    @Internal
     @Description( "Feature flag to enable/disable planning use of text indexes." )
     public static final Setting<Boolean> planning_text_indexes_enabled = newBuilder( "unsupported.cypher.planning_text_indexes_enabled", BOOL, false ).build();
 

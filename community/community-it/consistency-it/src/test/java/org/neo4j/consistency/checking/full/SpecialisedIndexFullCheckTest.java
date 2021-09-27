@@ -110,9 +110,6 @@ class SpecialisedIndexFullCheckTest
         @BeforeEach
         protected void setUp()
         {
-            settings.put( GraphDatabaseInternalSettings.point_indexes_enabled, true );
-            settings.put( GraphDatabaseInternalSettings.text_indexes_enabled, true );
-
             fixture = createFixture();
         }
 

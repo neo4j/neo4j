@@ -45,7 +45,6 @@ import org.neo4j.monitoring.Monitors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.schema.IndexType.TEXT;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
@@ -295,7 +294,6 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( MONITOR );
         ReadTestSupport support = new ReadTestSupport();
-        support.addSetting( text_indexes_enabled, true );
         support.setMonitors( monitors );
         return support;
     }

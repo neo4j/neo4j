@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Entity;
@@ -79,7 +78,6 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
         readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, getSchemaIndex().providerName() );
-        readTestSupport.addSetting( GraphDatabaseInternalSettings.range_indexes_enabled, true );
         return readTestSupport;
     }
 

@@ -50,7 +50,6 @@ import static java.util.Arrays.stream;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
@@ -68,26 +67,10 @@ public class TextIndexIT
     protected DatabaseLayout databaseLayout;
 
     @Test
-    void shouldNotAllowTextIndexCreation()
-    {
-        // Given
-        var person = label( "PERSON" );
-        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        var db = dbms.database( DEFAULT_DATABASE_NAME );
-
-        // Then
-        try ( var tx = db.beginTx() )
-        {
-            assertThrows( UnsupportedOperationException.class, () -> tx.schema().indexFor( person ).on( "name" ).withIndexType( IndexType.TEXT ).create() );
-        }
-        dbms.shutdown();
-    }
-
-    @Test
     void shouldNotAllowTextIndexCreationForMultipleTokens()
     {
         // Given
-        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).setConfig( text_indexes_enabled, true ).build();
+        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         var db = dbms.database( DEFAULT_DATABASE_NAME );
         var relations = new RelationshipType[]{RelationshipType.withName( "FRIEND" ), RelationshipType.withName( "FROM" )};
         var labels = new Label[]{label( "PERSON" ), label( "EMPLOYEE" )};
@@ -104,7 +87,7 @@ public class TextIndexIT
     @Test
     void shouldRejectIndexCreationWithCompositeKeys()
     {
-        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).setConfig( text_indexes_enabled, true ).build();
+        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         var db = dbms.database( DEFAULT_DATABASE_NAME );
         var rel = RelationshipType.withName( "FRIEND" );
         var label = label( "PERSON" );
@@ -131,7 +114,7 @@ public class TextIndexIT
         var relationshipIndex = "some_rel_text_index";
         var person = label( "PERSON" );
         var relation = RelationshipType.withName( "FRIEND" );
-        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).setConfig( text_indexes_enabled, true ).build();
+        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         var db = dbms.database( DEFAULT_DATABASE_NAME );
 
         // When
@@ -176,7 +159,7 @@ public class TextIndexIT
         var relationshipIndex = "some_rel_text_index";
         var person = label( "PERSON" );
         var relation = RelationshipType.withName( "FRIEND" );
-        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).setConfig( text_indexes_enabled, true ).build();
+        var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         var db = dbms.database( DEFAULT_DATABASE_NAME );
 
         // When
@@ -223,7 +206,6 @@ public class TextIndexIT
         var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setMonitors( monitor.monitors() )
                 .setConfig( default_schema_provider, provider )
-                .setConfig( text_indexes_enabled, true )
                 .build();
         var db = dbms.database( DEFAULT_DATABASE_NAME );
         try ( var tx = db.beginTx() )
@@ -270,7 +252,6 @@ public class TextIndexIT
         var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setMonitors( monitor.monitors() )
                 .setConfig( default_schema_provider, provider )
-                .setConfig( text_indexes_enabled, true )
                 .build();
         var db = dbms.database( DEFAULT_DATABASE_NAME );
         try ( var tx = db.beginTx() )
@@ -352,7 +333,6 @@ public class TextIndexIT
         var monitor = new IndexAccessMonitor();
         var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setMonitors( monitor.monitors() )
-                .setConfig( text_indexes_enabled, true )
                 .build();
         var db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
 
@@ -392,7 +372,6 @@ public class TextIndexIT
         var monitor = new IndexAccessMonitor();
         var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setMonitors( monitor.monitors() )
-                .setConfig( text_indexes_enabled, true )
                 .build();
         var db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
         createTextIndex( db, person, "idx_name" );
@@ -429,7 +408,6 @@ public class TextIndexIT
         return new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( fs )
                 .setMonitors( monitors )
-                .setConfig( text_indexes_enabled, true )
                 .build();
     }
 

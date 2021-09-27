@@ -27,7 +27,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -91,15 +90,8 @@ class ConstraintCreationIT
         assertFalse( Files.exists( indexDir ) );
     }
 
-    @ExtensionCallback
-    void enableRangeIndex( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
-    }
-
     @ParameterizedTest
     @EnumSource( value = IndexType.class, names = {"RANGE", "BTREE"} )
-    @DbmsExtension( configurationCallback = "enableRangeIndex" )
     void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails( IndexType indexType )
     {
         // given

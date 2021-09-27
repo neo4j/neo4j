@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -39,7 +38,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
@@ -354,16 +352,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     @Override
     public WriteTestSupport newTestSupport()
     {
-        return new WriteTestSupport()
-        {
-            @Override
-            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-            {
-                return super.configure( builder )
-                        .setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true )
-                        .setConfig( GraphDatabaseInternalSettings.text_indexes_enabled, true );
-            }
-        };
+        return new WriteTestSupport();
     }
 
     private static Stream<Arguments> parameters()

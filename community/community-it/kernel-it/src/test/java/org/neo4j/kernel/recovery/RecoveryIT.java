@@ -108,9 +108,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.point_indexes_enabled;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -1272,9 +1269,6 @@ class RecoveryIT
         if ( builder == null )
         {
             builder = new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                    .setConfig( range_indexes_enabled, true )
-                    .setConfig( text_indexes_enabled, true )
-                    .setConfig( point_indexes_enabled, true )
                     .setConfig( preallocate_logical_logs, false )
                     .setConfig( logical_log_rotation_threshold, logThreshold );
             builder = additionalConfiguration( builder );

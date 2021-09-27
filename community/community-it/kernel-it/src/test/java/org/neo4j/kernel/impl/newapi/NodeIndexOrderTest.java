@@ -34,11 +34,8 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
 
 class NodeIndexOrderTest
 {
@@ -158,20 +155,6 @@ class NodeIndexOrderTest
         IndexType indexType()
         {
             return IndexType.RANGE;
-        }
-
-        @Override
-        public WriteTestSupport newTestSupport()
-        {
-            return new WriteTestSupport()
-            {
-                @Override
-                protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-                {
-                    builder.setConfig( range_indexes_enabled, true );
-                    return super.configure( builder );
-                }
-            };
         }
     }
 }

@@ -43,7 +43,6 @@ import java.util.stream.Collector;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -60,8 +59,6 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.PartitionedScanFact
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -69,7 +66,7 @@ import org.neo4j.test.extension.RandomExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith( {SoftAssertionsExtension.class, RandomExtension.class} )
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
+@ImpermanentDbmsExtension
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR extends Cursor>
 {
@@ -90,12 +87,6 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
     PartitionedScanTestSuite( TestSuite<QUERY,SESSION,CURSOR> testSuite )
     {
         factory = testSuite.getFactory();
-    }
-
-    @ExtensionCallback
-    private void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
     }
 
     @BeforeAll

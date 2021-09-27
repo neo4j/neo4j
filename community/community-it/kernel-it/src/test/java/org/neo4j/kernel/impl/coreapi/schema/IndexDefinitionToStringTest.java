@@ -27,33 +27,20 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.point_indexes_enabled;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.graphdb.schema.IndexType.POINT;
 import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.graphdb.schema.IndexType.TEXT;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
+@ImpermanentDbmsExtension
 class IndexDefinitionToStringTest
 {
     @Inject
     private GraphDatabaseService db;
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( range_indexes_enabled, true )
-                .setConfig( text_indexes_enabled, true )
-                .setConfig( point_indexes_enabled, true );
-    }
 
     @BeforeEach
     void setup()

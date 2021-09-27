@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -37,7 +36,6 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -57,18 +55,7 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
     @Override
     public KernelAPIWriteTestSupport newTestSupport()
     {
-        return new WriteTestSupport()
-        {
-
-            @Override
-            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-            {
-                builder.setConfig( GraphDatabaseInternalSettings.range_indexes_enabled, true );
-                builder.setConfig( GraphDatabaseInternalSettings.text_indexes_enabled, true );
-                builder.setConfig( GraphDatabaseInternalSettings.point_indexes_enabled, true );
-                return builder;
-            }
-        };
+        return new WriteTestSupport();
     }
 
     @EnumSource( EntityType.class )
