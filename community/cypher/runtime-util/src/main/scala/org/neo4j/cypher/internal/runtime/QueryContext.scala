@@ -92,12 +92,13 @@ import scala.collection.Iterator
  * The driver for this was clarifying who is responsible for ensuring query isolation. By exposing a query concept in
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
-trait QueryContext extends ReadQueryContext with WriteQueryContext
+trait QueryContext extends ReadQueryContext with WriteQueryContext {
+  def createParallelQueryContext(): QueryContext = throw new UnsupportedOperationException("Not supported with parallel runtime.")
+}
+
 trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
-
-  def entityAccessor: TransactionalEntityFactory
 
   def transactionalContext: QueryTransactionalContext
 

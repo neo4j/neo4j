@@ -48,13 +48,30 @@ import org.neo4j.memory.MemoryTracker
 /**
  * @param threadSafeCursors use this instead of the cursors of the current transaction, unless this is `null`.
  */
-class TransactionalContextWrapper(private[this] val tc: TransactionalContext, threadSafeCursors: CursorFactory = null) extends QueryTransactionalContext {
+abstract class TransactionalContextWrapper extends QueryTransactionalContext {
 
-  def kernelTransaction: KernelTransaction = tc.kernelTransaction()
+  def kernelTransaction: KernelTransaction
 
-  def kernelTransactionalContext: TransactionalContext = tc
+  def kernelTransactionalContext: TransactionalContext
 
-  def graph: GraphDatabaseQueryService = tc.graph()
+  def graph: GraphDatabaseQueryService
+
+  def getOrCreateFromSchemaState[T](key: SchemaStateKey, f: => T): T
+
+  def contextWithNewTransaction: TransactionalContextWrapper
+
+  def createParallelTransactionalContext(): ParallelTransactionalContextWrapper = {
+    new ParallelTransactionalContextWrapper(kernelTransactionalContext)
+  }
+}
+
+class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, threadSafeCursors: CursorFactory = null) extends TransactionalContextWrapper {
+
+  override def kernelTransaction: KernelTransaction = tc.kernelTransaction()
+
+  override def kernelTransactionalContext: TransactionalContext = tc
+
+  override def graph: GraphDatabaseQueryService = tc.graph()
 
   override def createKernelExecutionContext(): ExecutionContext = tc.kernelTransaction.createExecutionContext()
 
@@ -111,7 +128,7 @@ class TransactionalContextWrapper(private[this] val tc: TransactionalContext, th
 
   override def rollback(): Unit = tc.rollback()
 
-  def contextWithNewTransaction: TransactionalContextWrapper = {
+  override def contextWithNewTransaction: TransactionalContextWrapper = {
     if (threadSafeCursors != null) {
       throw new UnsupportedOperationException("Cypher transactions are not designed to work with parallel runtime, yet.")
     }
@@ -128,6 +145,6 @@ class TransactionalContextWrapper(private[this] val tc: TransactionalContext, th
 
 object TransactionalContextWrapper {
   def apply(tc: TransactionalContext, threadSafeCursors: CursorFactory = null): TransactionalContextWrapper = {
-    new TransactionalContextWrapper(tc, threadSafeCursors)
+    new SingleThreadedTransactionalContextWrapper(tc, threadSafeCursors)
   }
 }

@@ -167,8 +167,6 @@ object StaticEvaluation {
 
   private trait EmptyQueryContext extends QueryContext {
 
-    override def entityAccessor: TransactionalEntityFactory = notAvailable()
-
     override def transactionalContext: QueryTransactionalContext = notAvailable()
 
     override def resources: ResourceManager = notAvailable()

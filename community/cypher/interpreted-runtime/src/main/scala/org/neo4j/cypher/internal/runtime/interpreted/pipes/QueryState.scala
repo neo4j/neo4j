@@ -159,6 +159,9 @@ class QueryState(val query: QueryContext,
 
   def kernelQueryContext: kernel.api.QueryContext = query.transactionalContext.kernelQueryContext
 
+  //def nodeLabelTokenReadSession: Option[TokenReadSession] // TODO: Override in parallel
+  //def relTypeTokenReadSession: Option[TokenReadSession]
+
   override def close(): Unit = {
     cursors.close()
     cachedIn.cache.foreach {

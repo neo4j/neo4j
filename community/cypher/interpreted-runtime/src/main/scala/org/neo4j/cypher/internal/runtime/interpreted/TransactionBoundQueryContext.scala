@@ -150,6 +150,12 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
 
   private def tokenWrite = transactionalContext.tokenWrite
 
+  override def createParallelQueryContext(): QueryContext = {
+    // TODO: Create a single-threaded copy of ResourceManager attach to the ThreadSafeResourceManager coming in
+    val parallelTransactionalContext = transactionalContext.createParallelTransactionalContext()
+    new ParallelTransactionBoundQueryContext(parallelTransactionalContext, resources, closeable)(indexSearchMonitor)
+  }
+
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count
   }
@@ -391,16 +397,16 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
   }
 }
 
-sealed class TransactionBoundReadQueryContext(val transactionalContext: TransactionalContextWrapper,
-                                              val resources: ResourceManager,
-                                              private val closeable: Option[AutoCloseable] = None)
-                                             (implicit indexSearchMonitor: IndexSearchMonitor)
+private[internal] class TransactionBoundReadQueryContext(val transactionalContext: TransactionalContextWrapper,
+                                                         val resources: ResourceManager,
+                                                         private val closeable: Option[AutoCloseable] = None)
+                                                        (implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundReadTokenContext(transactionalContext) with ReadQueryContext {
 
   override val nodeReadOps: NodeReadOperations = new NodeReadOperations
   override val relationshipReadOps: RelationshipReadOperations = new RelationshipReadOperations
-  override lazy val entityAccessor: TransactionalEntityFactory = transactionalContext.kernelTransactionalContext.transaction()
-  private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(transactionalContext.kernelTransactionalContext.transaction())
+  private[internal] lazy val entityAccessor: TransactionalEntityFactory = transactionalContext.kernelTransactionalContext.transaction() // TODO: FIXME PARALLEL
+  private[internal] lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(transactionalContext.kernelTransactionalContext.transaction()) // TODO: FIXME PARALLEL
 
   //We cannot assign to value because of periodic commit
   protected def reads(): Read = transactionalContext.dataRead
@@ -1089,31 +1095,31 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
 
   override def callReadOnlyProcedure(id: Int, args: Array[AnyValue],
                                      context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    CallSupport.callReadOnlyProcedure(transactionalContext.kernelTransactionalContext, id, args, context)
+    CallSupport.callReadOnlyProcedure(transactionalContext.procedures, id, args, context)
 
   override def callReadWriteProcedure(id: Int, args: Array[AnyValue],
                                       context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    CallSupport.callReadWriteProcedure(transactionalContext.kernelTransactionalContext, id, args, context)
+    CallSupport.callReadWriteProcedure(transactionalContext.procedures, id, args, context)
 
   override def callSchemaWriteProcedure(id: Int, args: Array[AnyValue],
                                         context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    CallSupport.callSchemaWriteProcedure(transactionalContext.kernelTransactionalContext, id, args, context)
+    CallSupport.callSchemaWriteProcedure(transactionalContext.procedures, id, args, context)
 
   override def callDbmsProcedure(id: Int, args: Array[AnyValue],
                                  context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    CallSupport.callDbmsProcedure(transactionalContext.kernelTransactionalContext, id, args, context)
+    CallSupport.callDbmsProcedure(transactionalContext.procedures, id, args, context)
 
   override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
-    CallSupport.callFunction(transactionalContext.kernelTransactionalContext, id, args)
+    CallSupport.callFunction(transactionalContext.procedures, id, args)
 
   override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
-    CallSupport.callBuiltInFunction(transactionalContext.kernelTransactionalContext, id, args)
+    CallSupport.callBuiltInFunction(transactionalContext.procedures, id, args)
 
   override def aggregateFunction(id: Int): UserDefinedAggregator =
-    CallSupport.aggregateFunction(transactionalContext.kernelTransactionalContext, id)
+    CallSupport.aggregateFunction(transactionalContext.procedures, id)
 
   override def builtInAggregateFunction(id: Int): UserDefinedAggregator =
-    CallSupport.builtInAggregateFunction(transactionalContext.kernelTransactionalContext, id)
+    CallSupport.builtInAggregateFunction(transactionalContext.procedures, id)
 
   private def buildPathFinder(depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                               filters: Seq[KernelPredicate[Entity]], memoryTracker: MemoryTracker): ShortestPath = {
@@ -1148,12 +1154,12 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
 
   override def assertShowIndexAllowed(): Unit = {
     val ktx = transactionalContext.kernelTransaction
-    ktx.securityAuthorizationHandler().assertShowIndexAllowed(transactionalContext.kernelTransaction.securityContext())
+    ktx.securityAuthorizationHandler().assertShowIndexAllowed(transactionalContext.securityContext)
   }
 
   override def assertShowConstraintAllowed(): Unit = {
     val ktx = transactionalContext.kernelTransaction
-    ktx.securityAuthorizationHandler().assertShowConstraintAllowed(transactionalContext.kernelTransaction.securityContext())
+    ktx.securityAuthorizationHandler().assertShowConstraintAllowed(transactionalContext.securityContext)
   }
 
   override def systemGraph: GraphDatabaseService = {

@@ -285,4 +285,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
       inner.setProperty(id, propertyKeyId, value)
     }
   }
+
+  override def createParallelQueryContext(): QueryContext = throw new UnsupportedOperationException("Not ")
 }

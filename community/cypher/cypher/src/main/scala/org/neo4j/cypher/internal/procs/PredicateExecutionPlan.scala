@@ -45,7 +45,7 @@ class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean,
                            prePopulateResults: Boolean,
                            ignore: InputDataStream,
                            subscriber: QuerySubscriber): RuntimeResult = {
-    val securityContext = originalCtx.kernelTransactionalContext.securityContext()
+    val securityContext = originalCtx.transactionalContext.securityContext
     if (predicate(params, securityContext)) {
       NoRuntimeResult(subscriber)
     } else {

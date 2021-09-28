@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.interpreted
 import org.neo4j.cypher.internal.CommunityRuntimeContext
 import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.runtime.spec.COMMUNITY
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.interpreted.InterpretedSpecSuite.SIZE_HINT
 import org.neo4j.cypher.internal.runtime.spec.tests.AggregationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.AllNodeScanTestBase
@@ -237,7 +238,24 @@ class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITIO
                                    with ProcedureCallDbHitsTestBase[CommunityRuntimeContext]
                                    with NestedPlanDbHitsTestBase[CommunityRuntimeContext]
                                    with NonFusedWriteOperatorsDbHitsTestBase[CommunityRuntimeContext]
-                                   with TransactionForeachDbHitsTestBase[CommunityRuntimeContext]
+                                   with TransactionForeachDbHitsTestBase[CommunityRuntimeContext] {
+  test("DEBUG should profile dbHits of all nodes scan") {
+    given { nodeGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should (be (sizeHint) or be (sizeHint + 1)) // all nodes scan
+  }
+}
 class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, 1)
                                   with EagerLimitProfileRowsTestBase[CommunityRuntimeContext]
                                   with MergeProfileRowsTestBase[CommunityRuntimeContext]

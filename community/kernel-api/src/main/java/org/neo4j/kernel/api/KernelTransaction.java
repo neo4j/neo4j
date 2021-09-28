@@ -523,6 +523,15 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      */
     interface ExecutionContext extends AutoCloseable
     {
+        Read dataRead();
+        TokenRead tokenRead();
+        QueryContext queryContext();
+        CursorFactory cursors();
+        Locks locks();
+        Procedures procedures();
+        SecurityContext securityContext();
+        SecurityAuthorizationHandler securityAuthorizationHandler();
+
         /**
          * Execution context cursor tracer. Page cache statistic recorded during execution reported back to owning transaction only when context is closed.
          * @return execution context cursor tracer.
@@ -533,6 +542,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
          * @return execution context security access mode
          */
         AccessMode accessMode();
+
+        /**
+         * @return memory
+         */
+        MemoryTracker memoryTracker();
 
         /**
          * Mark execution context as completed and prepare any data that needs to be reported back to owning transaction.

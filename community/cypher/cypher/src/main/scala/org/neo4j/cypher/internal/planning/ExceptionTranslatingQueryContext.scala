@@ -81,8 +81,6 @@ import scala.collection.Iterator
 
 class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends ReadQueryContext with ExceptionTranslationSupport {
 
-  override def entityAccessor: TransactionalEntityFactory = inner.entityAccessor
-
   override def resources: ResourceManager = inner.resources
 
   override def transactionalContext =
@@ -393,6 +391,10 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
 class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends ExceptionTranslatingReadQueryContext(inner)
   with QueryContext with ExceptionTranslationSupport {
+
+  override def createParallelQueryContext(): QueryContext = {
+    new ExceptionTranslatingQueryContext(inner.createParallelQueryContext())
+  }
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(tokenNameLookup, inner.setLabelsOnNode(node, labelIds))

@@ -232,6 +232,7 @@ object SingleThreadedResourcePool {
   private val SHALLOW_SIZE = shallowSizeOfInstance(classOf[SingleThreadedResourcePool])
 }
 
+// TODO: Maybe this should be per worker (and if needed synchronize on close) instead of using ConcurrentLinkedQueue
 class ThreadSafeResourcePool(monitor: ResourceMonitor) extends ResourcePool {
 
   val resources: java.util.Collection[AutoCloseablePlus] = new java.util.concurrent.ConcurrentLinkedQueue[AutoCloseablePlus]()

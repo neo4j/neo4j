@@ -354,7 +354,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                          subscriber: QuerySubscriber): QueryExecution = {
 
       val taskCloser = new TaskCloser
-      val queryContext = getQueryContext(transactionalContext, taskCloser)
+      val queryContext = getQueryContext(transactionalContext, taskCloser) // We create the QueryContext here
       if (isOutermostQuery) {
         taskCloser.addTask(success => {
           val context = queryContext.transactionalContext

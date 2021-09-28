@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
+import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.procs.UserAggregator
-import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
 
 /**
@@ -34,36 +34,36 @@ object CallSupport {
 
   type KernelProcedureCall = Array[AnyValue] => RawIterator[Array[AnyValue], ProcedureException]
 
-  def callFunction(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue]): AnyValue = {
-      transactionalContext.kernelTransaction().procedures().functionCall(id, args)
+  def callFunction(procedures: Procedures, id: Int, args: Array[AnyValue]): AnyValue = {
+      procedures.functionCall(id, args)
   }
 
-  def callBuiltInFunction(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue]): AnyValue = {
-    transactionalContext.kernelTransaction().procedures().builtInFunctionCall(id, args)
+  def callBuiltInFunction(procedures: Procedures, id: Int, args: Array[AnyValue]): AnyValue = {
+    procedures.builtInFunctionCall(id, args)
   }
 
-  def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
+  def callReadOnlyProcedure(procedures: Procedures, id: Int, args: Array[AnyValue],
                             context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    callProcedure(args, transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _, context))
+    callProcedure(args, procedures.procedureCallRead(id, _, context))
 
-  def callReadWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
+  def callReadWriteProcedure(procedures: Procedures, id: Int, args: Array[AnyValue],
                              context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallWrite(id, _, context))
+    callProcedure(args, procedures.procedureCallWrite(id, _, context))
 
-  def callSchemaWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
+  def callSchemaWriteProcedure(procedures: Procedures, id: Int, args: Array[AnyValue],
                                context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallSchema(id, _, context))
+    callProcedure(args, procedures.procedureCallSchema(id, _, context))
 
-  def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
+  def callDbmsProcedure(procedures: Procedures, id: Int, args: Array[AnyValue],
                         context: ProcedureCallContext): Iterator[Array[AnyValue]] =
-    callProcedure(args, transactionalContext.kernelTransaction().procedures().procedureCallDbms(id, _, context))
+    callProcedure(args, procedures.procedureCallDbms(id, _, context))
 
-  def aggregateFunction(transactionalContext: TransactionalContext, id: Int): UserDefinedAggregator = {
-    userDefinedAggregator(transactionalContext.kernelTransaction().procedures().aggregationFunction(id))
+  def aggregateFunction(procedures: Procedures, id: Int): UserDefinedAggregator = {
+    userDefinedAggregator(procedures.aggregationFunction(id))
   }
 
-  def builtInAggregateFunction(transactionalContext: TransactionalContext, id: Int): UserDefinedAggregator = {
-    userDefinedAggregator(transactionalContext.kernelTransaction().procedures().builtInAggregationFunction(id))
+  def builtInAggregateFunction(procedures: Procedures, id: Int): UserDefinedAggregator = {
+    userDefinedAggregator(procedures.builtInAggregationFunction(id))
   }
 
   private def callProcedure(args: Array[AnyValue], call: KernelProcedureCall): Iterator[Array[AnyValue]] = {

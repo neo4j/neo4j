@@ -40,9 +40,11 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
@@ -123,6 +125,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
@@ -1494,15 +1497,32 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private class ThreadExecutionContext implements ExecutionContext, AutoCloseable
     {
+        private final CursorFactory cursors;
         private final CursorContext context;
         private final AccessMode accessMode;
         private final ExecutionContextCursorTracer cursorTracer;
+        private final QueryContext queryContext;
+
+        //---------------------------------------------------------------------
+        // TODO
+        // We (at least) need new copies/separate instances of:
+        // - DefaultPooledCursors
+        // - StoreCursors
+        // - Locks.Client
+        //
+        // We need additional methods for these interfaces that are backed by those copies/separate instances:
+        // - Read dataRead()
+        // - CursorFactory cursors()
+        // - QueryContext queryContext()
+        //---------------------------------------------------------------------
 
         ThreadExecutionContext()
         {
             this.cursorTracer = new ExecutionContextCursorTracer( PageCacheTracer.NULL, TRANSACTION_TAG );
             this.context = new CursorContext( cursorTracer, cursorContext.getVersionContext() );
             this.accessMode = securityContext.mode();
+            this.cursors = new DefaultPooledCursors( storageReader, transactionalCursors, config ); // TODO: Make safe
+            this.queryContext = new ThreadQueryContext();
         }
 
         @Override
@@ -1515,6 +1535,60 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public AccessMode accessMode()
         {
             return accessMode;
+        }
+
+        @Override
+        public Read dataRead()
+        {
+            return allStoreHolder; // TODO: Make safe
+        }
+
+        @Override
+        public TokenRead tokenRead()
+        {
+            return operations.token(); // TODO: Make safe
+        }
+
+        @Override
+        public QueryContext queryContext()
+        {
+            return this.queryContext;
+        }
+
+        @Override
+        public CursorFactory cursors()
+        {
+            return this.cursors;
+        }
+
+        @Override
+        public org.neo4j.internal.kernel.api.Locks locks()
+        {
+            return allStoreHolder; // TODO: Make safe
+        }
+
+        @Override
+        public Procedures procedures()
+        {
+            return allStoreHolder; // TODO: Make safe
+        }
+
+        @Override
+        public SecurityContext securityContext()
+        {
+            return securityContext; // TODO: Safe?
+        }
+
+        @Override
+        public SecurityAuthorizationHandler securityAuthorizationHandler()
+        {
+            return securityAuthorizationHandler;
+        }
+
+        @Override
+        public MemoryTracker memoryTracker()
+        {
+            return memoryTracker; // TODO: Make safe
         }
 
         @Override
@@ -1533,6 +1607,48 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             mergeExecutionContext( this );
         }
 
+        private class ThreadQueryContext implements QueryContext
+        {
+            ThreadQueryContext()
+            {
+            }
+
+            @Override
+            public Read getRead()
+            {
+                return ThreadExecutionContext.this.dataRead();
+            }
+
+            @Override
+            public CursorFactory cursors()
+            {
+                return ThreadExecutionContext.this.cursors();
+            }
+
+            @Override
+            public ReadableTransactionState getTransactionStateOrNull()
+            {
+                return null;
+            }
+
+            @Override
+            public CursorContext cursorContext()
+            {
+                return ThreadExecutionContext.this.cursorContext();
+            }
+
+            @Override
+            public MemoryTracker memoryTracker()
+            {
+                return ThreadExecutionContext.this.memoryTracker();
+            }
+
+            @Override
+            public IndexMonitor monitor()
+            {
+                return allStoreHolder.monitor();
+            }
+        }
     }
 
     private static class ExecutionContextCursorTracer extends DefaultPageCursorTracer
