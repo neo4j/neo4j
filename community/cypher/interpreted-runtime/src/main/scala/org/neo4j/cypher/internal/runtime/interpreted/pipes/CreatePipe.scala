@@ -111,7 +111,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
         val typeId = data.relType.getOrCreateType(state.query)
         val relationship = state.query.createRelationshipId(start.id(), end.id(), typeId)
         data.properties.foreach(setProperties(context, state, relationship, _, state.query.relationshipWriteOps))
-        VirtualValues.relationship(relationship)
+        VirtualValues.relationship(relationship, start.id(), end.id(), typeId)
       }
     data.idName -> relationship
   }

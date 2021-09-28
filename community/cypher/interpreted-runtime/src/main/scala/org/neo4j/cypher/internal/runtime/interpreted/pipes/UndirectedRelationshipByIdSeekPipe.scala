@@ -34,7 +34,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
     val relationships = new UndirectedRelationshipIdSeekIterator(relIds.iterator(), state)
     PrimitiveLongHelper.map(relationships, r => {
       rowFactory.copyWith(ctx,
-        ident, VirtualValues.relationship(r),
+        ident, VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()),
         fromNode, VirtualValues.node(relationships.startNodeId()),
         toNode, VirtualValues.node(relationships.endNodeId()))
     })

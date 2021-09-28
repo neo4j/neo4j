@@ -116,7 +116,7 @@ case class CreateRelationship(command: CreateRelationshipCommand, allowNullOrNaN
           throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
 
       })
-      row.set(command.idName, VirtualValues.relationship(relationship))
+      row.set(command.idName, VirtualValues.relationship(relationship, start.id(), end.id(), typeId))
     }
 
   }

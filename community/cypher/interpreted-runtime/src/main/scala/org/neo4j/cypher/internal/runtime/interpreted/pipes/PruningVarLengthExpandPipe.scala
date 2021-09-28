@@ -253,7 +253,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         val builder = Array.newBuilder[(VirtualRelationshipValue, VirtualNodeValue)]
         // Immediately exhausting allRels. No ClosingIterator needed for connecting them to the outside.
         while (allRels.hasNext) {
-          val rel = VirtualValues.relationship(allRels.next())
+          val rel = VirtualValues.relationship(allRels.next(), allRels.startNodeId(), allRels.endNodeId(), allRels.typeId())
           val otherNode = VirtualValues.node(allRels.otherNodeId(node.id()))
           if (filteringStep.filterRelationship(row, queryState)(rel) &&
             filteringStep.filterNode(row, queryState)(otherNode)) {

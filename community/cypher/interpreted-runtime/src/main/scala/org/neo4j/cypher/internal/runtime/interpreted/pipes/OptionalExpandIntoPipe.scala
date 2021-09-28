@@ -82,7 +82,7 @@ case class OptionalExpandIntoPipe(source: Pipe,
                   // This is exhausting relationships directly, thus we do not need to return
                   // a ClosingIterator in this flatMap.
                   while (relationships.hasNext) {
-                    val candidateRow = rowFactory.copyWith(row, relName, VirtualValues.relationship(relationships.next()))
+                    val candidateRow = rowFactory.copyWith(row, relName, VirtualValues.relationship(relationships.next(), relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()))
                     if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)) {
                       filteredRows.append(candidateRow)
                     }

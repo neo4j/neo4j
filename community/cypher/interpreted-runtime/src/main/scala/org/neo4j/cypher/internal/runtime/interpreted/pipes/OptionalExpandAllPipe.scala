@@ -105,7 +105,7 @@ case class NonFilteringOptionalExpandAllPipe(source: Pipe,
                                  n: VirtualNodeValue): ClosingIterator[CypherRow] = {
     PrimitiveLongHelper.map(relationships, r => {
       val other = relationships.otherNodeId(n.id())
-      rowFactory.copyWith(row, relName, VirtualValues.relationship(r), toName, VirtualValues.node(other))
+      rowFactory.copyWith(row, relName, VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()), toName, VirtualValues.node(other))
     })
   }
 }
@@ -127,7 +127,7 @@ case class FilteringOptionalExpandAllPipe(source: Pipe,
 
     PrimitiveLongHelper.map(relationships, r => {
       val other = relationships.otherNodeId(n.id())
-      rowFactory.copyWith(row, relName, VirtualValues.relationship(r), toName, VirtualValues.node(other))
+      rowFactory.copyWith(row, relName, VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()), toName, VirtualValues.node(other))
     }).filter(ctx => predicate(ctx, state) eq Values.TRUE)
   }
 }

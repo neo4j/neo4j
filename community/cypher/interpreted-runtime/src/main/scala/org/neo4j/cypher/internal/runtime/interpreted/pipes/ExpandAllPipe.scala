@@ -45,7 +45,7 @@ case class ExpandAllPipe(source: Pipe,
             val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             PrimitiveLongHelper.map(relationships, relId => {
               val other = relationships.otherNodeId(n.id())
-              rowFactory.copyWith(row, relName, VirtualValues.relationship(relId), toName, VirtualValues.node(other))
+              rowFactory.copyWith(row, relName, VirtualValues.relationship(relId, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()), toName, VirtualValues.node(other))
 
             })
           case IsNoValue() => ClosingIterator.empty

@@ -93,7 +93,7 @@ case class ExpandIntoPipe(source: Pipe,
                   traceRelationshipSelectionCursor(query.resources, selectionCursor, traversalCursor)
                   val relationships = relationshipSelectionCursorIterator(selectionCursor, traversalCursor)
                   if (!relationships.hasNext) Iterator.empty
-                  else PrimitiveLongHelper.map(relationships, r => rowFactory.copyWith(row, relName, VirtualValues.relationship(r)))
+                  else PrimitiveLongHelper.map(relationships, r => rowFactory.copyWith(row, relName, VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId())))
                 } finally {
                   nodeCursor.close()
                 }
