@@ -48,7 +48,10 @@ trait OrderedInputPipe {
     new ClosingIterator[CypherRow] {
       private var processNextChunk = true
 
-      override protected[this] def closeMore(): Unit = receiver.close()
+      override protected[this] def closeMore(): Unit = {
+        receiver.close()
+        input.close()
+      }
 
       override def innerHasNext: Boolean = {
         val _hasNext = inputState.resultRowsOfChunk.hasNext ||

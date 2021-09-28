@@ -38,7 +38,7 @@ case class LimitPipe(source: Pipe, exp: Expression)
     new ClosingIterator[CypherRow] {
       private var remaining = limit
 
-      override def closeMore(): Unit = ()
+      override def closeMore(): Unit = input.close()
 
       override def innerHasNext: Boolean = remaining > 0 && input.hasNext
 

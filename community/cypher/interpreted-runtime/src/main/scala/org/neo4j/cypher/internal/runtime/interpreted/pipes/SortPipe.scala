@@ -47,6 +47,7 @@ case class SortPipe(source: Pipe, comparator: Comparator[ReadableRow])
       override def closeMore(): Unit = {
         arrayList = null
         scopedMemoryTracker.close()
+        input.close()
       }
     }
   }

@@ -365,6 +365,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       if (fullPruneState != null) {
         fullPruneState = null
         memoryTracker.close()
+        input.close()
       }
     }
 
