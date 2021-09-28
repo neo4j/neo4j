@@ -168,7 +168,6 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
   override def getOrCreateRelTypeId(relTypeName: String): Int =
     transactionalContext.tokenWrite.relationshipTypeGetOrCreateForName(relTypeName)
 
-
   override def getOrCreateLabelId(labelName: String): Int = {
     val id = tokenRead.nodeLabel(labelName)
     if (id != TokenRead.NO_TOKEN) id
@@ -323,7 +322,6 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
     indexPrototype.withName(name.orNull).withIndexConfig(indexConfig)
   }
 
-
   override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.schemaWrite
       .constraintDrop(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE)
@@ -407,8 +405,8 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
 
   override val nodeReadOps: NodeReadOperations = new NodeReadOperations
   override val relationshipReadOps: RelationshipReadOperations = new RelationshipReadOperations
-  override lazy val entityAccessor: TransactionalEntityFactory = transactionalContext.kernelTransactionalContext.transaction() // TODO: FIXME
-  private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(transactionalContext.kernelTransactionalContext.transaction()) // TODO: FIXME
+  override lazy val entityAccessor: TransactionalEntityFactory = transactionalContext.kernelTransactionalContext.transaction()
+  private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(transactionalContext.kernelTransactionalContext.transaction())
 
   //We cannot assign to value because of periodic commit
   protected def reads(): Read = transactionalContext.dataRead
@@ -689,7 +687,6 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
     reads().nodeIndexScan(index, nodeCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValues))
     nodeCursor
   }
-
 
   override def nodeIndexSeekByContains(index: IndexReadSession,
                                        needsValues: Boolean,
@@ -986,7 +983,6 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
   }
 
   class RelationshipReadOperations extends org.neo4j.cypher.internal.runtime.RelationshipReadOperations {
-
 
     override def propertyKeyIds(id: Long, relationshipScanCursor: RelationshipScanCursor,
                                 propertyCursor: PropertyCursor): Array[Int] = {
