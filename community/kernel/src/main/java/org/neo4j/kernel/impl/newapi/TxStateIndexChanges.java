@@ -317,8 +317,9 @@ class TxStateIndexChanges
 
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
         {
-            ValueTuple key = entry.getKey();
-            if ( filter == null || filter.acceptsValue( key.valueAt( 0 ) ) )
+            Value[] values = entry.getKey().getValues();
+            if ( descriptor.getCapability().areValuesAccepted( values )
+                 && (filter == null || filter.acceptsValue( values[0] )) )
             {
                 LongDiffSets diffSet = entry.getValue();
                 added.addAll( diffSet.getAdded() );
@@ -345,10 +346,10 @@ class TxStateIndexChanges
 
         for ( Map.Entry<ValueTuple,? extends LongDiffSets> entry : updates.entrySet() )
         {
-            ValueTuple key = entry.getKey();
-            if ( filter == null || filter.acceptsValue( key.valueAt( 0 ) ) )
+            Value[] values = entry.getKey().getValues();
+            if ( descriptor.getCapability().areValuesAccepted( values )
+                 && (filter == null || filter.acceptsValue( values[0] )) )
             {
-                Value[] values = key.getValues();
                 LongDiffSets diffSet = entry.getValue();
                 diffSet.getAdded().each( nodeId -> added.add( new EntityWithPropertyValues( nodeId, values ) ) );
                 removed.addAll( diffSet.getRemoved() );

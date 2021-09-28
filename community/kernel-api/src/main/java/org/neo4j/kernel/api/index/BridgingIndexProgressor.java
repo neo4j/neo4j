@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
@@ -91,12 +92,9 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
 
     private void assertKeysAlign( int[] keys )
     {
-        for ( int i = 0; i < this.keys.length; i++ )
+        if ( !Arrays.equals( this.keys, keys ) )
         {
-            if ( this.keys[i] != keys[i] )
-            {
-                throw new UnsupportedOperationException( "Cannot chain multiple progressors with different key set." );
-            }
+            throw new UnsupportedOperationException( "Cannot chain multiple progressors with different key set." );
         }
     }
 
