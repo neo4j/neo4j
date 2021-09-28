@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
  *
  * None of the functions in PlanContext takes any schema lock.
  */
-trait PlanContext extends TokenContext with ProcedureSignatureResolver {
+trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
 
   /**
    * Return all indexes (general and unique) for a given label, without taking any schema locks.

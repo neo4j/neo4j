@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundReadTokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherType
@@ -114,7 +114,7 @@ object TransactionBoundPlanContext {
 }
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: InstrumentedGraphStatistics)
-  extends TransactionBoundTokenContext(tc) with PlanContext with IndexDescriptorCompatibility {
+  extends TransactionBoundReadTokenContext(tc) with PlanContext with IndexDescriptorCompatibility {
 
   override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     indexesGetForLabel(labelId, schema.IndexType.BTREE)

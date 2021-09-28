@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.logical.builder.SimpleResolver
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -50,7 +50,7 @@ class LogicalPlanResolver(
                            procedures: Set[ProcedureSignature] = Set.empty
                          )
   extends SimpleResolver(labels, properties, relTypes, procedures)
-  with TokenContext {
+  with ReadTokenContext {
 
   override def getLabelName(id: Int): String = if (id >= labels.size) throw new IllegalStateException(s"Label $id undefined") else labels(id)
 

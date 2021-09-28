@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
@@ -39,7 +39,7 @@ abstract class AbstractCachedProperty extends Expression {
   // abstract stuff
 
   def getId(ctx: ReadableRow): Long
-  def getPropertyKey(tokenContext: TokenContext): Int
+  def getPropertyKey(tokenContext: ReadTokenContext): Int
   def getCachedProperty(ctx: ReadableRow): Value
   def setCachedProperty(ctx: ReadableRow, value: Value): Unit
 
@@ -112,7 +112,7 @@ case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTC
 
   override def setCachedProperty(ctx: ReadableRow, value: Value): Unit = ctx.setCachedProperty(key, value)
 
-  override def getPropertyKey(tokenContext: TokenContext): Int = propertyKey.getOptId(tokenContext).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)
+  override def getPropertyKey(tokenContext: ReadTokenContext): Int = propertyKey.getOptId(tokenContext).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)
 
   override def children: Seq[AstNode[_]] = Seq(propertyKey)
 }
@@ -133,7 +133,7 @@ case class CachedRelationshipProperty(nodeName: String, propertyKey: KeyToken, k
 
   override def setCachedProperty(ctx: ReadableRow, value: Value): Unit = ctx.setCachedProperty(key, value)
 
-  override def getPropertyKey(tokenContext: TokenContext): Int = propertyKey.getOptId(tokenContext).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)
+  override def getPropertyKey(tokenContext: ReadTokenContext): Int = propertyKey.getOptId(tokenContext).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)
 
   override def children: Seq[AstNode[_]] = Seq(propertyKey)
 }

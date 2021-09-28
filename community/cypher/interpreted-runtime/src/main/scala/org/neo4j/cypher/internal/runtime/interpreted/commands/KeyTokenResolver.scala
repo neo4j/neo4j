@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 
 object KeyTokenResolver {
   /*this is what you should use!*/
-  def resolveExpressions(expr: Expression, ctx: TokenContext): Expression = expr match {
+  def resolveExpressions(expr: Expression, ctx: ReadTokenContext): Expression = expr match {
     case keyToken: KeyToken => keyToken.resolve(ctx)
     case _                    => expr
   }

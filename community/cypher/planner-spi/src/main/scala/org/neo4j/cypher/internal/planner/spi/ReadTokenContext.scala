@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-trait TokenContext {
+trait ReadTokenContext {
   def getLabelName(id: Int): String
   def getOptLabelId(labelName: String): Option[Int]
   def getLabelId(labelName: String): Int
@@ -31,8 +31,8 @@ trait TokenContext {
   def getRelTypeId(relType: String): Int
 }
 
-object TokenContext {
-  val EMPTY = new TokenContext {
+object ReadTokenContext {
+  val EMPTY = new ReadTokenContext {
     override def getLabelName(id: Int): String = throw new IllegalArgumentException("No such label.", null)
 
     override def getOptLabelId(labelName: String): Option[Int] = None

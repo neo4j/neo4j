@@ -403,7 +403,7 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
                                               val resources: ResourceManager,
                                               private val closeable: Option[AutoCloseable] = None)
                                              (implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(transactionalContext) with ReadQueryContext {
+  extends TransactionBoundReadTokenContext(transactionalContext) with ReadQueryContext {
 
   override val nodeReadOps: NodeReadOperations = new NodeReadOperations
   override val relationshipReadOps: RelationshipReadOperations = new RelationshipReadOperations

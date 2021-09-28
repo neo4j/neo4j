@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
+import java.io.File
+import java.time.Clock
+
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
@@ -32,7 +35,7 @@ import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
@@ -42,9 +45,6 @@ import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.Log
 import org.neo4j.util.Preconditions
-
-import java.io.File
-import java.time.Clock
 
 /**
  * A cypher runtime. Compiles logical plans into a executable form, which can
@@ -101,7 +101,7 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
  * Context in which the Runtime performs physical planning
  */
 abstract class RuntimeContext {
-  def tokenContext: TokenContext
+  def tokenContext: ReadTokenContext
   def schemaRead: SchemaRead
   def config: CypherRuntimeConfiguration
   def compileExpressions: Boolean
@@ -119,7 +119,7 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
   /**
    * Create a new runtime context.
    */
-  def create(tokenContext: TokenContext,
+  def create(tokenContext: ReadTokenContext,
              schemaRead: SchemaRead,
              clock: Clock,
              debugOptions: CypherDebugOptions,

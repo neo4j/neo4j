@@ -114,7 +114,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
@@ -139,7 +139,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.ZERO_INT
 import org.neo4j.values.storable.Values.intValue
 
-case class CommunityExpressionConverter(tokenContext: TokenContext, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends ExpressionConverter {
+case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends ExpressionConverter {
 
   override def toCommandProjection(id: Id, projections: Map[String, Expression], self: ExpressionConverters): Option[CommandProjection] = {
     val projected = for ((k,Some(v)) <- projections.mapValues(e => toCommandExpression(id, e, self))) yield (k,v)

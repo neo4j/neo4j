@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.TokensResolved
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.rewriting.conditions.StateContainsSemanticTable
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.util.StepSequencer
  * Resolve token ids for labels, property keys and relationship types.
  */
 case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
-  def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+  def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext) {
     ast.fold(()) {
       case token: PropertyKeyName =>
         _ => resolvePropertyKeyName(token.name)
@@ -53,7 +53,7 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
     }
   }
 
-  private def resolvePropertyKeyName(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+  private def resolvePropertyKeyName(name: String)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext) {
     tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId) match {
       case Some(id) =>
         semanticTable.resolvedPropertyKeyNames += name -> id
@@ -61,7 +61,7 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
     }
   }
 
-  private def resolveLabelName(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+  private def resolveLabelName(name: String)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext) {
     tokenContext.getOptLabelId(name).map(LabelId) match {
       case Some(id) =>
         semanticTable.resolvedLabelNames += name -> id
@@ -69,7 +69,7 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
     }
   }
 
-  private def resolveRelTypeName(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+  private def resolveRelTypeName(name: String)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext) {
     tokenContext.getOptRelTypeId(name).map(RelTypeId) match {
       case Some(id) =>
         semanticTable.resolvedRelTypeNames += name -> id

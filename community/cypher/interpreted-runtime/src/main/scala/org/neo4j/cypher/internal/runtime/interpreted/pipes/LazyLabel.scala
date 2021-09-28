@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.internal.kernel.api.TokenWrite
 
@@ -29,7 +29,7 @@ class LazyLabel(val name: String) {
 
   private var id: Int = LazyLabel.UNKNOWN
 
-  def getId(context: TokenContext): Int = {
+  def getId(context: ReadTokenContext): Int = {
     if (id == LazyLabel.UNKNOWN) {
       id = context.getOptLabelId(name).getOrElse(LazyLabel.UNKNOWN)
     }

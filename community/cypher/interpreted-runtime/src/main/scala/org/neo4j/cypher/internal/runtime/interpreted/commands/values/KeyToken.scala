@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.values
 
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -36,10 +36,10 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
   def name: String
 
   def getOrCreateId(state: QueryContext): Int
-  def getIdOrFail(state: TokenContext): Int
-  def getOptId(state: TokenContext): Option[Int]
+  def getIdOrFail(state: ReadTokenContext): Int
+  def getOptId(state: ReadTokenContext): Option[Int]
 
-  def resolve(tokenContext: TokenContext): KeyToken
+  def resolve(tokenContext: ReadTokenContext): KeyToken
 
   override def arguments: Seq[Expression] = Seq.empty
 
@@ -52,10 +52,10 @@ object KeyToken {
 
   case class Unresolved(name: String, typ: TokenType) extends KeyToken(typ) {
     override def getOrCreateId(state: QueryContext): Int = typ.getOrCreateIdForName(name, state)
-    override def getIdOrFail(state: TokenContext): Int = typ.getIdForNameOrFail(name, state)
-    override def getOptId(state: TokenContext): Option[Int] = typ.getOptIdForName(name, state)
+    override def getIdOrFail(state: ReadTokenContext): Int = typ.getIdForNameOrFail(name, state)
+    override def getOptId(state: ReadTokenContext): Option[Int] = typ.getOptIdForName(name, state)
 
-    override def resolve(tokenContext: TokenContext): KeyToken = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
+    override def resolve(tokenContext: ReadTokenContext): KeyToken = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
 
     override def children: Seq[AstNode[_]] = Seq.empty
 
@@ -64,10 +64,10 @@ object KeyToken {
 
   case class Resolved(name: String, id: Int, typ: TokenType) extends KeyToken(typ) {
     override def getOrCreateId(state: QueryContext): Int = id
-    override def getIdOrFail(state: TokenContext): Int = id
-    override def getOptId(state: TokenContext): Option[Int] = Some(id)
+    override def getIdOrFail(state: ReadTokenContext): Int = id
+    override def getOptId(state: ReadTokenContext): Option[Int] = Some(id)
 
-    override def resolve(tokenContext: TokenContext): Resolved = this
+    override def resolve(tokenContext: ReadTokenContext): Resolved = this
 
     override def children: Seq[AstNode[_]] = Seq.empty
 

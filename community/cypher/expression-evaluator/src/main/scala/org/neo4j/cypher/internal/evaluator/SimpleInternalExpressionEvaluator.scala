@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.CON
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.parser.Expressions
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
@@ -105,7 +105,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 }
 
 object SimpleInternalExpressionEvaluator {
-  private val CONVERTERS = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+  private val CONVERTERS = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
 
   object ExpressionParser extends Expressions {
     private val parser: Rule1[Expression] = WS ~ Expression ~~ EOI

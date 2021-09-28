@@ -23,7 +23,7 @@ import org.neo4j.common.EntityType
 import org.neo4j.common.TokenNameLookup
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterator
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.KernelException
@@ -116,9 +116,9 @@ class TranslateExceptionMacrosTest extends CypherFunSuite {
   }
 
   test("should work with deeply generic type") {
-    def theIt: Iterator[Array[(String, List[Int], TokenContext) => String]] = new Iterator[Array[(String, List[Int], TokenContext) => String]] {
+    def theIt: Iterator[Array[(String, List[Int], ReadTokenContext) => String]] = new Iterator[Array[(String, List[Int], ReadTokenContext) => String]] {
       override def hasNext: Boolean = true
-      override def next(): Array[(String, List[Int], TokenContext) => String] = Array((s, _, _) => s)
+      override def next(): Array[(String, List[Int], ReadTokenContext) => String] = Array((s, _, _) => s)
     }
     translateIterator(tokenNameLookup, theIt).next().head("foo", List(1), null) should be("foo")
   }

@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.planning
 
 import org.neo4j.common.TokenNameLookup
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 
 /**
  * Intended to be used together with [[org.neo4j.cypher.internal.macros.TranslateExceptionMacros]]
  */
 trait ExceptionTranslationSupport {
-  inner: TokenContext =>
+  inner: ReadTokenContext =>
 
   val tokenNameLookup: TokenNameLookup = new TokenNameLookup {
     def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)

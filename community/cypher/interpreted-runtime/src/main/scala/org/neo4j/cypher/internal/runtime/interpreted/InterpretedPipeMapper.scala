@@ -146,7 +146,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
@@ -294,7 +294,7 @@ import org.neo4j.values.virtual.RelationshipValue
  */
 case class InterpretedPipeMapper(readOnly: Boolean,
                                  expressionConverters: ExpressionConverters,
-                                 tokenContext: TokenContext,
+                                 tokenContext: ReadTokenContext,
                                  indexRegistrator: QueryIndexRegistrator,
                                  anonymousVariableNameGenerator: AnonymousVariableNameGenerator)
                                 (implicit semanticTable: SemanticTable) extends PipeMapper {

@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.internal
 
+import java.time.Clock
+
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.Log
 
-import java.time.Clock
-
 /**
  * The regular community runtime context.
  */
-case class CommunityRuntimeContext(tokenContext: TokenContext,
+case class CommunityRuntimeContext(tokenContext: ReadTokenContext,
                                    schemaRead: SchemaRead,
                                    log: Log,
                                    config: CypherRuntimeConfiguration,
@@ -43,7 +43,7 @@ case class CommunityRuntimeContext(tokenContext: TokenContext,
 }
 
 case class CommunityRuntimeContextManager(log: Log, config: CypherRuntimeConfiguration) extends RuntimeContextManager[CommunityRuntimeContext] {
-  override def create(tokenContext: TokenContext,
+  override def create(tokenContext: ReadTokenContext,
                       schemaRead: SchemaRead,
                       clock: Clock,
                       debugOptions: CypherDebugOptions,

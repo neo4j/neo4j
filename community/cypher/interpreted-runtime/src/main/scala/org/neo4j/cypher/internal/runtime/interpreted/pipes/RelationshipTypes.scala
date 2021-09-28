@@ -21,19 +21,19 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 
 abstract class RelationshipTypes {
-  def types(context: TokenContext): Array[Int]
+  def types(context: ReadTokenContext): Array[Int]
 }
 
 final class EagerTypes(tokens: Array[Int]) extends RelationshipTypes {
-  override def types(context: TokenContext): Array[Int] = tokens
+  override def types(context: ReadTokenContext): Array[Int] = tokens
 }
 
 final class LazyTypes(names: Array[String], private var ids:Array[Int]) extends RelationshipTypes {
 
-  override def types(context: TokenContext): Array[Int] = {
+  override def types(context: ReadTokenContext): Array[Int] = {
     if (ids.length != names.length) {
       ids = names.flatMap(context.getOptRelTypeId)
     }
@@ -55,7 +55,7 @@ object RelationshipTypes {
     }
   }
 
-  def apply(names: Array[String], context: TokenContext): RelationshipTypes = {
+  def apply(names: Array[String], context: ReadTokenContext): RelationshipTypes = {
     if (names.isEmpty) empty
     else {
       val ids = names.flatMap(context.getOptRelTypeId)

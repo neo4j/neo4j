@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey.UNKNOWN
 
 case class LazyPropertyKey(name: String) {
   private var id: Int = UNKNOWN
 
-  def id(context: TokenContext): Int = {
+  def id(context: ReadTokenContext): Int = {
     if (id == UNKNOWN) {
       id = context.getOptPropertyKeyId(name).getOrElse(UNKNOWN)
     }

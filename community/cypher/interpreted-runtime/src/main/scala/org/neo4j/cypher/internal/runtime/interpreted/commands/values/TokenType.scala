@@ -19,30 +19,30 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.values
 
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
 
 object TokenType extends Enumeration {
   case object Label extends TokenType {
-    def getOptIdForName(name: String, tokenContext: TokenContext) = tokenContext.getOptLabelId(name)
+    def getOptIdForName(name: String, tokenContext: ReadTokenContext) = tokenContext.getOptLabelId(name)
 
-    def getIdForNameOrFail(name: String, tokenContext: TokenContext) = tokenContext.getLabelId(name)
+    def getIdForNameOrFail(name: String, tokenContext: ReadTokenContext) = tokenContext.getLabelId(name)
 
     def getOrCreateIdForName(name: String, queryContext: QueryContext) = queryContext.getOrCreateLabelId(name)
   }
 
   case object PropertyKey extends TokenType {
-    def getOptIdForName(name: String, tokenContext: TokenContext) = tokenContext.getOptPropertyKeyId(name)
+    def getOptIdForName(name: String, tokenContext: ReadTokenContext) = tokenContext.getOptPropertyKeyId(name)
 
-    def getIdForNameOrFail(name: String, tokenContext: TokenContext) = tokenContext.getPropertyKeyId(name)
+    def getIdForNameOrFail(name: String, tokenContext: ReadTokenContext) = tokenContext.getPropertyKeyId(name)
 
     def getOrCreateIdForName(name: String, queryContext: QueryContext) = queryContext.getOrCreatePropertyKeyId(name)
   }
 
   case object RelType extends TokenType {
-    def getOptIdForName(name: String, tokenContext: TokenContext) = tokenContext.getOptRelTypeId(name)
+    def getOptIdForName(name: String, tokenContext: ReadTokenContext) = tokenContext.getOptRelTypeId(name)
 
-    def getIdForNameOrFail(name: String, tokenContext: TokenContext) = tokenContext.getRelTypeId(name)
+    def getIdForNameOrFail(name: String, tokenContext: ReadTokenContext) = tokenContext.getRelTypeId(name)
 
     def getOrCreateIdForName(name: String, queryContext: QueryContext) = queryContext.getOrCreateRelTypeId(name)
   }
@@ -53,9 +53,9 @@ trait TokenType  {
 
   def apply(name: String, id: Int) = KeyToken.Resolved(name, id, this)
 
-  def getOptIdForName(name: String, tokenContext: TokenContext): Option[Int]
+  def getOptIdForName(name: String, tokenContext: ReadTokenContext): Option[Int]
 
-  def getIdForNameOrFail(name: String, tokenContext: TokenContext): Int
+  def getIdForNameOrFail(name: String, tokenContext: ReadTokenContext): Int
 
   def getOrCreateIdForName(name: String, queryContext: QueryContext): Int
 }

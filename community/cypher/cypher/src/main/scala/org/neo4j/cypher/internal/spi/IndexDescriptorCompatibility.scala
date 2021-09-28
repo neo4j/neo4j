@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.SkipAndLimit
 import org.neo4j.cypher.internal.planner.spi.SlowContains
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundReadTokenContext
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException
 import org.neo4j.internal.schema
@@ -65,7 +65,7 @@ trait IndexDescriptorCompatibility {
     case IndexDescriptor.IndexType.Text => schema.IndexType.TEXT
   }
 
-  def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext,
+  def toLabelSchemaDescriptor(tc: TransactionBoundReadTokenContext,
                               labelName: String,
                               propertyKeys: Seq[String]): Option[LabelSchemaDescriptor] = {
     catching(classOf[LabelNotFoundKernelException], classOf[PropertyKeyIdNotFoundKernelException]) opt {
@@ -75,7 +75,7 @@ trait IndexDescriptorCompatibility {
     }
   }
 
-  def toRelTypeSchemaDescriptor(tc: TransactionBoundTokenContext,
+  def toRelTypeSchemaDescriptor(tc: TransactionBoundReadTokenContext,
                                 relTypeName: String,
                                 propertyKeys: Seq[String]): Option[RelationTypeSchemaDescriptor] = {
     catching(classOf[RelationshipTypeNotFoundException], classOf[PropertyKeyIdNotFoundKernelException]) opt {

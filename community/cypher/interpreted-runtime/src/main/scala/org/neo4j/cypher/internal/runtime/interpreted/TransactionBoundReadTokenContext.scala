@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException
 import org.neo4j.kernel.api.exceptions.RelationshipTypeNotFoundException
 
-abstract class TransactionBoundTokenContext(transactionalContext: QueryTransactionalContext) extends TokenContext {
+abstract class TransactionBoundReadTokenContext(transactionalContext: QueryTransactionalContext) extends ReadTokenContext {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
     val propertyId: Int = transactionalContext.tokenRead.propertyKey(propertyKeyName)
     if (propertyId == TokenRead.NO_TOKEN) None

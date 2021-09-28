@@ -25,7 +25,7 @@ import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -38,7 +38,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
   test("if key is resolved, don't do any lookups") {
     // GIVEN
     implicit val table = mock[SemanticTable]
-    val context = mock[TokenContext]
+    val context = mock[ReadTokenContext]
     when(table.id(PROPERTY_KEY_NAME)).thenReturn(Some(PROPERTY_KEY_ID))
 
     //WHEN
@@ -52,7 +52,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
   test("if key is not resolved, do a lookup") {
     // GIVEN
     implicit val table = mock[SemanticTable]
-    val context = mock[TokenContext]
+    val context = mock[ReadTokenContext]
     when(context.getOptPropertyKeyId(PROPERTY_KEY_NAME.name)).thenReturn(Some(PROPERTY_KEY_ID.id))
     when(table.id(PROPERTY_KEY_NAME)).thenReturn(None)
 
@@ -68,7 +68,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
   test("multiple calls to id should result in only one lookup") {
     // GIVEN
     implicit val table = mock[SemanticTable]
-    val context = mock[TokenContext]
+    val context = mock[ReadTokenContext]
     when(context.getOptPropertyKeyId(PROPERTY_KEY_NAME.name)).thenReturn(Some(PROPERTY_KEY_ID.id))
     when(table.id(PROPERTY_KEY_NAME)).thenReturn(None)
 
