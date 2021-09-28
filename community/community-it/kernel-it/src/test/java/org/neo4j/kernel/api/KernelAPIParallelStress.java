@@ -26,11 +26,8 @@ import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.test.Race;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
@@ -42,9 +39,6 @@ class KernelAPIParallelStress
                                                                      BiFunction<Read, RESOURCE, Runnable> runnable ) throws Throwable
     {
         Race race = new Race();
-
-        long endTime = currentTimeMillis() + SECONDS.toMillis( 30 );
-        race.withEndCondition( () -> currentTimeMillis() > endTime );
 
         List<RESOURCE> resources = new ArrayList<>();
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
@@ -59,7 +53,7 @@ class KernelAPIParallelStress
             {
                 final RESOURCE resource = resourceSupplier.apply( tx );
 
-                race.addContestant( runnable.apply( tx.dataRead(), resource ) );
+                race.addContestant( runnable.apply( tx.dataRead(), resource ), 1 );
 
                 resources.add( resource );
             }
