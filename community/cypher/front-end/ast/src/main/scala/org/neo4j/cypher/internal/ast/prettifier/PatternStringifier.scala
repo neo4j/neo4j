@@ -91,10 +91,12 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
   override def apply(relationship: RelationshipPattern): String = {
     val variable = relationship.variable.map(expr(_))
 
+    val separator = if (relationship.legacyTypeSeparator) "|:" else "|"
+
     val types =
       Some(relationship.types)
         .filter(_.nonEmpty)
-        .map(_.map(expr(_)).mkString(":", "|", ""))
+        .map(_.map(expr(_)).mkString(":", separator, ""))
 
     val length = relationship.length match {
       case None => None

@@ -189,7 +189,10 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """FOREACH ( n IN [1, 2, 3] |
         |  CREATE ({key: n})
         |  CREATE ({foreignKey: n})
-        |)""".stripMargin
+        |)""".stripMargin,
+
+    "MATCH (a)-[r:R|:Q]->(b)" ->
+      "MATCH (a)-[r:R|:Q]->(b)",
   )
 
   def indexCommandTests(): Seq[(String, String)] = Seq[(String, String)](
