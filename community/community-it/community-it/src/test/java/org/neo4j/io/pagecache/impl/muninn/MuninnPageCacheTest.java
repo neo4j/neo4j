@@ -454,7 +454,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "mustEvictCleanPageWithoutFlushing" );
 
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ) );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, blockCacheFlush( tracer ) );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, new CursorContext( cursorContext ) ) )
@@ -479,7 +479,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "mustFlushDirtyPagesOnEvictingFirstPage" );
 
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ) );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, blockCacheFlush( tracer ) );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
 
@@ -510,7 +510,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "mustFlushDirtyPagesOnEvictingLastPage" );
 
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ) );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, blockCacheFlush( tracer ) );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
             try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, new CursorContext( cursorContext ) ) )
@@ -597,7 +597,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "mustFlushDirtyPagesOnEvictingAllPages", Fault.class );
 
-        try ( MuninnPageCache pageCache = createPageCache( fs, 4, blockCacheFlush( tracer ) );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, blockCacheFlush( tracer ) );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, new CursorContext( cursorContext ) ) )
@@ -1506,7 +1506,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
 
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, PageCacheTracer.NULL );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
             Future<?> task = executor.submit( () ->
@@ -1624,7 +1624,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 }
             };
 
-            try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
+            try ( MuninnPageCache pageCache = createPageCache( fs, 10, PageCacheTracer.NULL );
                     PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
             {
                 try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
