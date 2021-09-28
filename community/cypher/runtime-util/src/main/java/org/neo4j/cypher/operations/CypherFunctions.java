@@ -447,6 +447,41 @@ public final class CypherFunctions
         }
     }
 
+    public static Value withinBBox( AnyValue point, AnyValue lowerLeft, AnyValue upperRight )
+    {
+        if ( point instanceof PointValue && lowerLeft instanceof PointValue && upperRight instanceof PointValue )
+        {
+            return withinBBox( (PointValue) point, (PointValue) lowerLeft, (PointValue) upperRight );
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static Value withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight )
+    {
+        if ( point.getCoordinateReferenceSystem().equals( lowerLeft.getCoordinateReferenceSystem() ) &&
+             lowerLeft.getCoordinateReferenceSystem().equals( upperRight.getCoordinateReferenceSystem() ) )
+        {
+            var check = point.coordinate();
+            var ll = lowerLeft.coordinate();
+            var ur = upperRight.coordinate();
+            for ( int i = 0; i < check.length; i++ )
+            {
+                if ( check[i] < ll[i] || check[i] > ur[i] )
+                {
+                    return FALSE;
+                }
+            }
+            return TRUE;
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
     public static NodeValue startNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
