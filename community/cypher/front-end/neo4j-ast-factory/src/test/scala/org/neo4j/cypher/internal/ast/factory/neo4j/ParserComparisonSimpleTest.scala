@@ -382,4 +382,24 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   test("USE foo UNION ALL RETURN 1") {
     assertSameAST(testName)
   }
+
+  test("MATCH (n WHERE n.prop > 123)") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (n:A:B:C {prop: 42} WHERE n.otherProp < 123)") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (WHERE WHERE WHERE.prop > 123)") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN [(n:A WHERE n.prop >= 123)-->(end WHERE end.prop < 42) | n]") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN exists((n {prop: 'test'} WHERE n.otherProp = 123)-->(end WHERE end.prop = 42)) AS result") {
+    assertSameAST(testName)
+  }
 }
