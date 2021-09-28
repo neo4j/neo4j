@@ -1158,7 +1158,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield Query(None, part)(pos)
 
   def _periodicCommitHint: Gen[PeriodicCommitHint] = for {
-    size <- option(_signedIntLit)
+    size <- option(_unsignedDecIntLit)
   } yield PeriodicCommitHint(size)(pos)
 
   def _bulkImportQuery: Gen[Query] = for {

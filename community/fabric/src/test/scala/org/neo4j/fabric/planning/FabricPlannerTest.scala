@@ -155,7 +155,7 @@ class FabricPlannerTest
 
       parse(remote.query)
         .shouldEqual(
-          Query(Some(PeriodicCommitHint(Some(literalInt(200)))(pos)),
+          Query(Some(PeriodicCommitHint(Some(literalUnsignedInt(200)))(pos)),
             singleQuery(
               LoadCSV(withHeaders = false, literal("someurl"), varFor("line"), None)(pos),
               create(nodePat("n")),
@@ -775,7 +775,7 @@ class FabricPlannerTest
       val local = inst.asLocal(exec).query
 
       local.state.statement().shouldEqual(
-        Query(Some(PeriodicCommitHint(Some(literalInt(200)))(pos)),
+        Query(Some(PeriodicCommitHint(Some(literalUnsignedInt(200)))(pos)),
           singleQuery(
             LoadCSV(withHeaders = false, literal("someurl"), varFor("line"), None)(pos),
             create(nodePat("n")),

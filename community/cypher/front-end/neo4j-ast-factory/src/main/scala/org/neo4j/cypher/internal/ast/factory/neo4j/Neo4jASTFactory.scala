@@ -464,7 +464,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                                    batchSize: String,
                                    loadCsv: Clause,
                                    queryBody: util.List[Clause]): Query =
-    Query(Some(PeriodicCommitHint(Option(batchSize).map(SignedDecimalIntegerLiteral(_)(periodicCommitPosition)))(periodicCommitPosition)),
+    Query(Some(PeriodicCommitHint(Option(batchSize).map(UnsignedDecimalIntegerLiteral(_)(periodicCommitPosition)))(periodicCommitPosition)),
       SingleQuery(loadCsv +: queryBody.asScala)(loadCsv.position)
     )(p)
 
