@@ -120,7 +120,7 @@ public final class SchemaStatementProcedure
         if ( constraint.isIndexBackedConstraint() )
         {
             IndexBackedConstraintDescriptor indexBackedConstraint = constraint.asIndexBackedConstraint();
-            if ( indexBackedConstraint.hasOwnedIndexId() )
+            if ( indexBackedConstraint.indexType() == IndexType.BTREE && indexBackedConstraint.hasOwnedIndexId() )
             {
                 IndexDescriptor backingIndex = schemaRead.indexGetForName( constraint.getName() );
                 if ( backingIndex.getId() == indexBackedConstraint.ownedIndexId() )
@@ -148,12 +148,18 @@ public final class SchemaStatementProcedure
         {
             InternalIndexState indexState = schemaRead.indexGetState( index );
             boolean relationshipPropertyIndex = index.getIndexType().equals( IndexType.BTREE ) && index.schema().entityType().equals( EntityType.RELATIONSHIP );
-            return indexState == InternalIndexState.ONLINE && !index.isUnique() && !index.isTokenIndex() && !relationshipPropertyIndex;
+            return indexState == InternalIndexState.ONLINE && !index.isUnique() && !indexHasNewType( index ) && !relationshipPropertyIndex;
         }
         catch ( IndexNotFoundKernelException e )
         {
             return false;
         }
+    }
+
+    private static boolean indexHasNewType( IndexDescriptor indexDescriptor )
+    {
+        final IndexType indexType = indexDescriptor.getIndexType();
+        return indexType != IndexType.BTREE && indexType != IndexType.FULLTEXT;
     }
 
     public static String createStatement( Function<String,IndexDescriptor> indexLookup, TokenRead tokenRead, ConstraintDescriptor constraint )

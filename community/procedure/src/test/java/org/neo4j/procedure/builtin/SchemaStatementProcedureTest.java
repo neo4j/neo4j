@@ -20,6 +20,8 @@
 package org.neo4j.procedure.builtin;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -33,6 +35,7 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
 import static java.lang.String.format;
@@ -181,6 +184,35 @@ class SchemaStatementProcedureTest
         assertEquals( format( "DROP CONSTRAINT %s", ESCAPED_NAME_WITH_BACKTICKS ), next.dropStatement );
         assertEquals( NAME_WITH_BACKTICKS, next.name );
         assertFalse( iter.hasNext() );
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, names = {"RANGE", "TEXT", "POINT"} )
+    void schemaStatementsShouldNotIncludeNewIndexTypes( IndexType indexType ) throws IndexNotFoundKernelException, ProcedureException
+    {
+        IndexDescriptor index = forSchema( forLabel( 1, 1 ) ).withIndexType( indexType ).withName( "index" ).materialise( 1 );
+
+        SchemaReadCore schemaReadCore = getSchemaReadCore( index, InternalIndexState.ONLINE );
+        TokenRead tokenRead = mock( TokenRead.class );
+
+        Collection<BuiltInProcedures.SchemaStatementResult> result = createSchemaStatementResults( schemaReadCore, tokenRead );
+        assertEquals( 0, result.size() );
+    }
+
+    @Test
+    void schemaStatementsShouldNotIncludeNewConstraints() throws IndexNotFoundKernelException, ProcedureException
+    {
+        IndexDescriptor index = uniqueForSchema( forLabel( 1, 1 ) ).withIndexType( IndexType.RANGE ).withName( "index" ).materialise( 1 );
+        ConstraintDescriptor constraint =
+                ConstraintDescriptorFactory.uniqueForSchema( index.schema(), IndexType.RANGE ).withOwnedIndexId( index.getId() ).withName( CONSTRAINT_NAME )
+                        .withId( index.getId() + 1 );
+        index = index.withOwningConstraintId( constraint.getId() );
+
+        SchemaReadCore schemaReadCore = getSchemaReadCore( constraint, index, InternalIndexState.ONLINE );
+        TokenRead tokenRead = mock( TokenRead.class );
+
+        Collection<BuiltInProcedures.SchemaStatementResult> result = createSchemaStatementResults( schemaReadCore, tokenRead );
+        assertEquals( 0, result.size() );
     }
 
     private static IndexDescriptor indexBoundToConstraint( IndexDescriptor index, ConstraintDescriptor constraint )
