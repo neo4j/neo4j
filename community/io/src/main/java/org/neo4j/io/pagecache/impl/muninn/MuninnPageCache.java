@@ -158,7 +158,7 @@ public class MuninnPageCache implements PageCache
             StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );
 
     // Used when trying to figure out number of available pages in a page cache. Could be returned from tryGetNumberOfAvailablePages.
-    private static final int UNKNOWN_AVAILABLE_PAGES = -1;
+    private static final int UNKNOWN_PAGES_TO_EVICT = -1;
 
     private final int pageCacheId;
     private final PageSwapperFactory swapperFactory;
@@ -1053,10 +1053,10 @@ public class MuninnPageCache implements PageCache
                 return 0;
             }
 
-            int availablePages = tryGetNumberOfPagesToEvict( keepFree );
-            if ( availablePages != UNKNOWN_AVAILABLE_PAGES )
+            int namberOfPagesToEvict = tryGetNumberOfPagesToEvict( keepFree );
+            if ( namberOfPagesToEvict != UNKNOWN_PAGES_TO_EVICT )
             {
-                return availablePages;
+                return namberOfPagesToEvict;
             }
         }
     }
@@ -1087,7 +1087,7 @@ public class MuninnPageCache implements PageCache
                 return count < 0 ? keepFree : (int) (keepFree - count);
             }
         }
-        return UNKNOWN_AVAILABLE_PAGES;
+        return UNKNOWN_PAGES_TO_EVICT;
     }
 
     int evictPages( int pageCountToEvict, int clockArm, EvictionRunEvent evictionRunEvent )
@@ -1167,9 +1167,9 @@ public class MuninnPageCache implements PageCache
     @Override
     public String toString()
     {
-        int availablePages = tryGetNumberOfPagesToEvict( keepFree );
-        return format( "%s[pageCacheId:%d, pageSize:%d, pages:%d, availablePages:%s]", getClass().getSimpleName(),
-                pageCacheId, cachePageSize, pages.getPageCount(), availablePages != UNKNOWN_AVAILABLE_PAGES ? String.valueOf( availablePages ) : "N/A" );
+        int pagesToEvict = tryGetNumberOfPagesToEvict( keepFree );
+        return format( "%s[pageCacheId:%d, pageSize:%d, pages:%d, pagesToEvict:%s]", getClass().getSimpleName(),
+                pageCacheId, cachePageSize, pages.getPageCount(), pagesToEvict != UNKNOWN_PAGES_TO_EVICT ? String.valueOf( pagesToEvict ) : "N/A" );
     }
 
     void sweep( SwapperSet swappers )
