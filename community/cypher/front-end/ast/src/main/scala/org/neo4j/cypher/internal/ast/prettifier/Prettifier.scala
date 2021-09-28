@@ -649,10 +649,10 @@ case class Prettifier(
     }
 
     def asString(c: SubqueryCall): String = {
-      val ofRows = c.inTransactionsParameters.map(asString).getOrElse("")
+      val inTxParams = c.inTransactionsParameters.map(asString).getOrElse("")
       s"""${INDENT}CALL {
          |${indented().queryPart(c.part)}
-         |$INDENT}$ofRows""".stripMargin
+         |$INDENT}$inTxParams""".stripMargin
     }
 
     def asString(ip: InTransactionsParameters): String = {
