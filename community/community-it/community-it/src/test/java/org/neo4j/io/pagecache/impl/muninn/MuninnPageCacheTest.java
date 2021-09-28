@@ -333,9 +333,19 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     void evaluateNumberOfPagesToKeepFree()
     {
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, new DefaultPageCacheTracer() ) )
+        {
+            assertEquals( 1, pageCache.getKeepFree() );
+        }
+
+        try ( MuninnPageCache pageCache = createPageCache( fs, 30, new DefaultPageCacheTracer() ) )
+        {
+            assertEquals( 15, pageCache.getKeepFree() );
+        }
+
         try ( MuninnPageCache pageCache = createPageCache( fs, 50, new DefaultPageCacheTracer() ) )
         {
-            assertEquals( 30, pageCache.getKeepFree() );
+            assertEquals( 25, pageCache.getKeepFree() );
         }
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 100, new DefaultPageCacheTracer() ) )

@@ -407,11 +407,12 @@ public class MuninnPageCache implements PageCache
 
     private static int calculatePagesToKeepFree( int maxPages )
     {
-        // we can have number of pages that we want to keep free max at 50% of total pages and as low as 30 (absolute number)
+        // we can have number of pages that we want to keep free max at 50% of total pages
         int freePages = (int) (maxPages * ((float) Math.min( percentPagesToKeepFree, 50 ) / 100));
-        // here we want to have a number of free pages that be in a range of [30, 100_000] to avoid having page cache space wasted in PC is way too big
-        // and still have some free pages credit if that will be ever that small
-        return Math.max( 30, Math.min( freePages, 100_000 ) );
+        // We can go as low as 30 (absolute number), as long as it does not exceed 50% of total pages
+        int lowerBound = Math.min( maxPages / 2, 30 );
+        // We also want to have at most 100_000 free pages to avoid having page cache space wasted in PC is way too big
+        return Math.max( lowerBound, Math.min( freePages, 100_000 ) );
     }
 
     private static void verifyHacks()
