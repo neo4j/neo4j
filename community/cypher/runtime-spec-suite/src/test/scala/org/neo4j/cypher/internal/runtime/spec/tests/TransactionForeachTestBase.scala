@@ -646,12 +646,12 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should allow lists of node entity values as params") {
-    val nodes = given {
+    val nodeRows = given {
       val n = runtimeTestSupport.tx.createNode()
       n.setProperty("prop", 1L)
       val m = runtimeTestSupport.tx.createNode()
       m.setProperty("prop", 1L)
-      Seq(n, m)
+      Seq(Array[Any](Array(n)), Array[Any](Array(m)))
     }
 
     val query = new LogicalQueryBuilder(this)
@@ -672,7 +672,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       query,
       runtime,
       inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(Array[Any](nodes.toArray, nodes.toArray)).stream(),
+        inputValues(nodeRows:_*).stream(),
         (externalTx, offset) => {
           offset match {
             case 0L =>
@@ -690,7 +690,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
-      .withRows(singleColumn(Seq(2L, 2L)))
+      .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
 
   test("should allow maps of node entity values as params") {
