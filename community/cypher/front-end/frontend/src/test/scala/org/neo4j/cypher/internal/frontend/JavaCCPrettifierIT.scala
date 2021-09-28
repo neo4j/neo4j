@@ -36,6 +36,9 @@ class JavaCCPrettifierIT extends CypherFunSuite {
     "CALL nsp.proc() yield *" ->
       """CALL nsp.proc()
         |  YIELD *""".stripMargin,
+    "MATCH (n WHERE n:N)" -> "MATCH (n WHERE n:N)",
+    "MATCH (n:N WHERE n.prop > 0)" -> "MATCH (n:N WHERE n.prop > 0)",
+    "MATCH (n:N {foo: 5} WHERE n.prop > 0)" -> "MATCH (n:N {foo: 5} WHERE n.prop > 0)",
   )
 
   (parboiledPrettifier.tests ++ javaCcOnlyTests) foreach {

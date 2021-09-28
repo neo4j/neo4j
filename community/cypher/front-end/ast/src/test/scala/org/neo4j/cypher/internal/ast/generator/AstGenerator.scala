@@ -838,7 +838,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     variable <- option(_variable)
     labels <- zeroOrMore(_labelName)
     properties <- option(oneOf(_map, _parameter))
-  } yield NodePattern(variable, labels, properties, None)(pos)
+    predicate <- variable match {
+      case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
+      case None => const(None)
+    }
+  } yield NodePattern(variable, labels, properties, predicate)(pos)
 
   def _range: Gen[Range] = for {
     lower <- option(_unsignedDecIntLit)

@@ -49,8 +49,11 @@ case class PatternStringifier(expr: ExpressionStringifier) {
     val name = nodePattern.variable.map(expr(_)).getOrElse("")
     val labels = if (nodePattern.labels.isEmpty) "" else
       nodePattern.labels.map(expr(_)).mkString(":", ":", "")
-    val e = props(s"$name$labels", nodePattern.properties)
-    s"($e)"
+    val nameLabelsAndProperties = props(s"$name$labels", nodePattern.properties)
+    val predicate = nodePattern.predicate.map { p =>
+      s" WHERE ${expr(p)}"
+    }.getOrElse("")
+    s"($nameLabelsAndProperties$predicate)"
   }
 
   def apply(relationshipChain: RelationshipChain): String = {
