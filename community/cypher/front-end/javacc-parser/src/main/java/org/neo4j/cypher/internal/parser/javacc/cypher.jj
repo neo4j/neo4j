@@ -3012,6 +3012,28 @@ STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFil
     ) { return statement; }
 }
 
+RETURN_ITEM YieldItem() :
+{
+    VARIABLE e;
+    VARIABLE v = null;
+    Token eStart;
+    Token eEnd;
+}
+{
+    { eStart = token; }
+    e=Variable() { eEnd = token; } ( <AS> v=Variable() )?
+    {
+        if ( v != null )
+        {
+            return astFactory.newReturnItem( pos( eStart.next ), e, v );
+        }
+        else
+        {
+            return astFactory.newReturnItem( pos( eStart.next ), e, eStart.next.beginOffset, eEnd.endOffset );
+        }
+    }
+}
+
 YIELD YieldClause():
 {
     Token start;
@@ -3030,7 +3052,7 @@ YIELD YieldClause():
 {
     start=<YIELD>
     ( <TIMES> { returnAll = true; }  |
-    ( item=ReturnItem() { returnItems.add( item ); } ("," item=ReturnItem() { returnItems.add( item ); } )*))
+    ( item=YieldItem() { returnItems.add( item ); } ("," item=YieldItem() { returnItems.add( item ); } )*))
     ( orderToken=<ORDER> <BY> o=OrderItem() { orders.add( o ); } ( "," o=OrderItem() {orders.add( o ); } )*)?
     ( skipPosition=<SKIPROWS> skip=SignedIntegerLiteral() )?
     ( limitPosition=<LIMITROWS> limit=SignedIntegerLiteral() )?

@@ -102,6 +102,14 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
 
   // Negative tests
 
+  test("SHOW PROCEDURES YIELD (123 + xyz)") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW PROCEDURES YIELD (123 + xyz) AS foo") {
+    assertSameAST(testName)
+  }
+
   test("SHOW PROCEDURES YIELD") {
     assertSameAST(testName)
   }

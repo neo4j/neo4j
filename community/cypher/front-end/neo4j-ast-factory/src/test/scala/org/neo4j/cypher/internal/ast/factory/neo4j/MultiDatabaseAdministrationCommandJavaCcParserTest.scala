@@ -102,6 +102,14 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
     assertSameAST(testName) // throws exception and does therefore not validate position
   }
 
+  test("SHOW DATABASE YIELD (123 + xyz)") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW DATABASE YIELD (123 + xyz) AS foo") {
+    assertSameAST(testName)
+  }
+
   // CREATE DATABASE
 
   test("CREATE DATABASE foo") {

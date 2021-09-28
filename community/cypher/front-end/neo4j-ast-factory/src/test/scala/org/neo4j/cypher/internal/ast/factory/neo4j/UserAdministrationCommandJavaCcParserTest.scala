@@ -82,6 +82,14 @@ class UserAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
+  test("SHOW USERS YIELD (123 + xyz)") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USERS YIELD (123 + xyz) AS foo") {
+    assertSameAST(testName)
+  }
+
   // Showing current user
 
   test("CATALOG SHOW CURRENT USER") {

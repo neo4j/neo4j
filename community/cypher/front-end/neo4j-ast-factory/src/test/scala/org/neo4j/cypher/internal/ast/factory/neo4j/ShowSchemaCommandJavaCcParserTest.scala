@@ -192,6 +192,14 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
   // Negative tests for show indexes
 
+  test("SHOW INDEX YIELD (123 + xyz)") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW INDEX YIELD (123 + xyz) AS foo") {
+    assertSameAST(testName)
+  }
+
   test("SHOW ALL BTREE INDEXES") {
     assertJavaCCException(testName,
       """Invalid input 'BTREE': expected
@@ -603,6 +611,14 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
       test(s"SHOW $constraintTypeKeyword CONSTRAINTS VERBOSE OUTPUT") {
         assertSameAST(testName)
       }
+  }
+
+  test("SHOW CONSTRAINT YIELD (123 + xyz)") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS YIELD (123 + xyz) AS foo") {
+    assertSameAST(testName)
   }
 
   test("SHOW CONSTRAINT YIELD") {

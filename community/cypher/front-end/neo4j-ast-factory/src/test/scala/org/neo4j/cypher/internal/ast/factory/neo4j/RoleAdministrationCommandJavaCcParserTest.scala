@@ -352,6 +352,14 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertJavaCCException(testName, exceptionMessage)
   }
 
+  test("SHOW ROLES YIELD (123 + xyz)") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLES YIELD (123 + xyz) AS foo") {
+    assertSameAST(testName)
+  }
+
   //  Creating roles
 
   test("CREATE ROLE foo") {
