@@ -716,12 +716,7 @@ public class Config implements Configuration
                     }
                     groupInstances.put( id, group );
                     //Add all settings from created groups, to get possible default values.
-                    Map<String,SettingImpl<?>> definedSettings = getDefinedSettings( group.getClass(), group );
-                    if ( definedSettings.values().stream().anyMatch( SettingImpl::dynamic ) )
-                    {
-                        throw new IllegalArgumentException( format( "Group setting can not be dynamic: '%s'", key ) );
-                    }
-                    newSettings.addAll( definedSettings.values() );
+                    newSettings.addAll( getDefinedSettings( group.getClass(), group ).values() );
                 }
             }
         }
@@ -1168,12 +1163,13 @@ public class Config implements Configuration
 
         void internalSetValue( T value )
         {
-            isDefault = value == null;
-            this.value = isDefault ? defaultValue : value;
+            this.isDefault = value == null;
+            T newValue = isDefault ? defaultValue : value;
             if ( validate )
             {
-                setting.validate( this.value, validationConfig );
+                setting.validate( newValue, validationConfig );
             }
+            this.value = newValue;
         }
 
         protected void notifyListeners( T oldValue, T newValue )

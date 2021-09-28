@@ -153,6 +153,7 @@ class ConfigTest
     {
         Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
         assertThrows( IllegalArgumentException.class, () -> config.setDynamic( TestSettings.constrainedIntSetting, 4, getClass().getSimpleName() ) );
+        assertEquals( 1, config.get( TestSettings.constrainedIntSetting ) );
         assertDoesNotThrow( () -> config.setDynamic( TestSettings.constrainedIntSetting, 2, getClass().getSimpleName() ) );
     }
 
@@ -262,6 +263,134 @@ class ConfigTest
     }
 
     @Test
+    void testDynamicGroup()
+    {
+        var g1 = TestDynamicGroupSetting.group( "1" );
+        var g2 = TestDynamicGroupSetting.group( "2" );
+        Config config = Config.newBuilder()
+                              .addGroupSettingClass( TestDynamicGroupSetting.class )
+                              .set( g1.value, "value1" )
+                              .set( g2.value, "value2" )
+                              .build();
+
+        assertEquals( "value1", config.get( g1.value ) );
+        assertEquals( "value2", config.get( g2.value ) );
+
+        config.setDynamic( g1.value, "new1", getClass().getSimpleName() );
+        assertEquals( "new1", config.get( g1.value ) );
+        assertEquals( "value2", config.get( g2.value ) );
+
+        config.setDynamic( g2.value, "new2", getClass().getSimpleName() );
+        assertEquals( "new2", config.get( g2.value ) );
+
+        var groups = config.getGroups( TestDynamicGroupSetting.class );
+        assertEquals( 2, groups.size() );
+        assertEquals( "new1", config.get( groups.get( "1" ).value ) );
+        assertEquals( "new2", config.get( groups.get( "2" ).value ) );
+    }
+
+    @Test
+    void testDynamicGroupWithConstraint()
+    {
+        var g1 = TestDynamicGroupSetting.group( "1" );
+        var g2 = TestDynamicGroupSetting.group( "2" );
+        Config config = Config.newBuilder()
+                              .addGroupSettingClass( TestDynamicGroupSetting.class )
+                              .set( g1.constrainedValue, "avalue1" )
+                              .set( g2.value, "value" )
+                              .build();
+
+        assertEquals( "avalue1", config.get( g1.constrainedValue ) );
+        assertEquals( "aDefaultValue", config.get( g2.constrainedValue ) );
+
+        config.setDynamic( g1.constrainedValue, "aNewValue", getClass().getSimpleName() );
+        assertEquals( "aNewValue", config.get( g1.constrainedValue ) );
+        assertEquals( "aDefaultValue", config.get( g2.constrainedValue ) );
+
+        assertThrows( IllegalArgumentException.class, () -> config.setDynamic( g2.constrainedValue, "new2", getClass().getSimpleName() ));
+        assertEquals( "aDefaultValue", config.get( g2.constrainedValue ) );
+        assertEquals( "aNewValue", config.get( g1.constrainedValue ) );
+
+        var groups = config.getGroups( TestDynamicGroupSetting.class );
+        assertEquals( 2, groups.size() );
+        assertEquals( "aNewValue", config.get( groups.get( "1" ).constrainedValue ) );
+        assertEquals( "aDefaultValue", config.get( groups.get( "2" ).constrainedValue ) );
+    }
+
+    @Test
+    void testDynamicGroupFromConfigs()
+    {
+        var g1 = TestDynamicGroupSetting.group( "1" );
+        var g2 = TestDynamicGroupSetting.group( "2" );
+        Config config1 = Config.newBuilder()
+                               .addGroupSettingClass( TestDynamicGroupSetting.class )
+                               .set( TestDynamicGroupSetting.group( "1" ).value, "value1" )
+                               .set( TestDynamicGroupSetting.group( "2" ).value, "value2" )
+                               .build();
+
+        assertEquals( "value1", config1.get( g1.value ) );
+        assertEquals( "value2", config1.get( g2.value ) );
+
+        Config config2 = Config.newBuilder()
+                               .addGroupSettingClass( TestDynamicGroupSetting.class )
+                               .set( TestDynamicGroupSetting.group( "1" ).value, "value1" )
+                               .set( TestDynamicGroupSetting.group( "2" ).value, "value2" )
+                               .build();
+
+        assertEquals( "value1", config2.get( g1.value ) );
+        assertEquals( "value2", config2.get( g2.value ) );
+
+        config1.setDynamic( TestDynamicGroupSetting.group( "1" ).value, "new1", getClass().getSimpleName() );
+        config1.setDynamic( TestDynamicGroupSetting.group( "2" ).value, "new2", getClass().getSimpleName() );
+
+        var groups1 = config1.getGroups( TestDynamicGroupSetting.class );
+        assertEquals( 2, groups1.size() );
+        assertEquals( "new1", config1.get( groups1.get( "1" ).value ) );
+        assertEquals( "new2", config1.get( groups1.get( "2" ).value ) );
+
+        var groups2 = config2.getGroups( TestDynamicGroupSetting.class );
+        assertEquals( 2, groups2.size() );
+        assertEquals( "value1", config2.get( groups2.get( "1" ).value ) );
+        assertEquals( "value2", config2.get( groups2.get( "2" ).value ) );
+    }
+
+    @Test
+    void testDynamicGroupObserver()
+    {
+        var g1 = TestDynamicGroupSetting.group( "1" );
+        var g2 = TestDynamicGroupSetting.group( "2" );
+
+        Config config = Config.newBuilder()
+                              .addGroupSettingClass( TestDynamicGroupSetting.class )
+                              .set( g1.value, "value1" )
+                              .set( g2.value, "value2" )
+                              .build();
+
+        config.addListener( g1.value, ( oldValue, newValue ) ->
+        {
+            assertEquals( oldValue, "value1" );
+            assertEquals( newValue, "new1" );
+        } );
+        config.addListener( g2.value, ( oldValue, newValue ) ->
+        {
+            assertEquals( oldValue, "value2" );
+            assertEquals( newValue, "new2" );
+        } );
+
+        config.setDynamic( g1.value, "new1", getClass().getSimpleName() );
+        assertEquals( "new1", config.get( g1.value ) );
+        assertEquals( "value2", config.get( g2.value ) );
+
+        config.setDynamic( g2.value, "new2", getClass().getSimpleName() );
+        assertEquals( "new2", config.get( g2.value ) );
+
+        var groups = config.getGroups( TestDynamicGroupSetting.class );
+        assertEquals( 2, groups.size() );
+        assertEquals( "new1", config.get( groups.get( "1" ).value ) );
+        assertEquals( "new2", config.get( groups.get( "2" ).value ) );
+    }
+
+    @Test
     void testGroupInheritance()
     {
         ChildGroup group = new ChildGroup( "1" );
@@ -272,6 +401,32 @@ class ConfigTest
 
         assertEquals( "child", config.get( group.childSetting ) );
         assertEquals( "parent", config.get( group.parentSetting ) );
+    }
+
+    @Test
+    void testDynamicGroupInheritance()
+    {
+        ChildDynamicGroup group1 = new ChildDynamicGroup( "1" );
+        ChildDynamicGroup group2 = new ChildDynamicGroup( "2" );
+        Config config = Config.newBuilder()
+                              .addGroupSettingClass( ChildDynamicGroup.class )
+                              .set( group1.childSetting, "child" )
+                              .set( group2.childSetting, "child" )
+                              .build();
+
+        config.setDynamic( group1.parentSetting, "newParent", getClass().getSimpleName( ));
+        assertEquals( "newParent", config.get( group1.parentSetting ) );
+        assertEquals( "parent", config.get( group2.parentSetting ) );
+
+        config.setDynamic( group1.childSetting, "newChild", getClass().getSimpleName( ));
+        assertEquals( "newChild", config.get( group1.childSetting ) );
+        assertEquals( "child", config.get( group2.childSetting ) );
+
+        assertEquals( "newChild", config.get(config.getGroups( ChildDynamicGroup.class ).get( "1" ).childSetting));
+        assertEquals( "newParent", config.get(config.getGroups( ChildDynamicGroup.class ).get( "1" ).parentSetting));
+
+        assertEquals( "child", config.get(config.getGroups( ChildDynamicGroup.class ).get( "2" ).childSetting));
+        assertEquals( "parent", config.get(config.getGroups( ChildDynamicGroup.class ).get( "2" ).parentSetting));
     }
 
     @Test
@@ -1271,6 +1426,32 @@ class ConfigTest
         }
     }
 
+    public static class TestDynamicGroupSetting extends GroupSetting
+    {
+
+        public static TestDynamicGroupSetting group( String name )
+        {
+            return new TestDynamicGroupSetting( name );
+        }
+
+        @Override
+        public String getPrefix()
+        {
+            return "test.dynamic";
+        }
+
+        public final Setting<String> value = getBuilder( "value", STRING, "hello" ).dynamic().build();
+
+        public final Setting<String> constrainedValue = getBuilder( "constrainedValue", STRING, "aDefaultValue" )
+                .addConstraint( SettingConstraints.matches( "a.*" )  )
+                .dynamic().build();
+
+        TestDynamicGroupSetting( String id )
+        {
+            super( id );
+        }
+    }
+
     abstract static class ParentGroup extends GroupSetting
     {
 
@@ -1293,6 +1474,32 @@ class ConfigTest
         public String getPrefix()
         {
             return "test.inheritance";
+        }
+
+    }
+
+    abstract static class ParentDynamicGroup extends GroupSetting
+    {
+
+        final Setting<String> parentSetting = getBuilder( "parent" , STRING, "parent" ).dynamic().build();
+
+        ParentDynamicGroup( String name )
+        {
+            super( name );
+        }
+
+    }
+    static class ChildDynamicGroup extends ParentDynamicGroup
+    {
+        final Setting<String> childSetting = getBuilder( "child" , STRING, null ).dynamic().build();
+        private ChildDynamicGroup( String name )
+        {
+            super( name );
+        }
+        @Override
+        public String getPrefix()
+        {
+            return "test.dynamic.inheritance";
         }
 
     }
