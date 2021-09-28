@@ -1,0 +1,141 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package cypher.features
+
+import org.junit.runner.RunWith
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
+import org.opencypher.tools.tck.api.Execute
+import org.opencypher.tools.tck.api.Scenario
+import org.scalatest.Assertion
+import org.scalatest.FunSpecLike
+import org.scalatest.Matchers
+import org.scalatest.junit.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
+class PrettifierTCKTest extends BaseFeatureTest with FunSpecLike with Matchers {
+
+  val prettifier: Prettifier = Prettifier(ExpressionStringifier(
+    alwaysParens = true,
+    alwaysBacktick = true,
+    sensitiveParamsAsParams = true,
+  ))
+
+  val scenariosPerFeature: Map[String, Seq[Scenario]] =
+    (BaseFeatureTestHolder.allAcceptanceScenarios ++ BaseFeatureTestHolder.allTckScenarios).groupBy(_.featureName)
+  var x = 0
+
+  val DENYLIST: Set[String] = Set[String](
+    // Does not parse
+    """Feature "Mathematical3 - Subtraction": Scenario "Fail for invalid Unicode hyphen in subtraction"""",
+    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "26"""",
+    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "28"""",
+    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "29"""",
+    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "34"""",
+    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "35"""",
+    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "39"""",
+    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "40"""",
+    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "44"""",
+    """Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"""",
+    """Feature "Literals7 - List": Scenario "Fail on a list containing only a comma"""",
+    """Feature "Literals7 - List": Scenario "Fail on a nested list with missing commas"""",
+    """Feature "Literals2 - Decimal integer": Scenario "Fail on an integer containing a invalid symbol character"""",
+    """Feature "Match4 - Match variable length patterns scenarios": Scenario "Fail on negative bound"""",
+    """Feature "Match4 - Match variable length patterns scenarios": Scenario "Fail when asterisk operator is missing"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing only a comma"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing key starting with a number"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing key with dot"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing a list without key"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a nested map with non-matching braces"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing a value without key"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing a map without key"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing key with symbol"""",
+    """Feature "Literals6 - String": Scenario "Failing on incorrect unicode literal"""",
+    // EXPLAIN is not covered by the Parser, but by the pre-parser
+    """Feature "ExplainAcceptance": Scenario "Explanation of query without return columns"""",
+    """Feature "ExplainAcceptance": Scenario "Explanation of standalone procedure call"""",
+    """Feature "ExplainAcceptance": Scenario "Explanation of query with return columns"""",
+    """Feature "ExplainAcceptance": Scenario "Explanation of in-query procedure call"""",
+    """Feature "ExplainAcceptance": Scenario "Explanation of query ending in unit subquery call"""",
+  )
+
+  scenariosPerFeature foreach {
+    case (featureName, scenarios) =>
+      describe(featureName) {
+        scenarios
+          .filterNot(scenarioObj => DENYLIST(denyListEntry(scenarioObj)))
+          .foreach {
+            scenarioObj =>
+              val testName = denyListEntry(scenarioObj)
+              describe(testName) {
+                scenarioObj.steps foreach {
+                  case Execute(query, _, _) =>
+                    x = x + 1
+                    it(s"[$x]\n$query") {
+                      withClue(testName) {
+                        try {
+                          roundTripCheck(query)
+                        } catch {
+                          // Allow withClue to populate the testcase name
+                          case e: Exception => fail(e.getMessage, e)
+                        }
+                      }
+                    }
+                  case _ =>
+                }
+              }
+          }
+      }
+    case _ =>
+  }
+
+  // Use the same denylist format as the other TCK tests
+  private def denyListEntry(scenario:Scenario): String =
+    s"""Feature "${scenario.featureName}": Scenario "${scenario.name}"""" + scenario.exampleIndex.map(ix => s""": Example "$ix"""").getOrElse("")
+
+  private def roundTripCheck(query: String): Assertion = {
+    val parsed = parse(query)
+    val prettified = prettifier.asString(parsed)
+    val reParsed = parse(prettified)
+    reParsed should equal(parsed)
+  }
+
+  private def parse(query: String): Statement = {
+    canonicalizeUnaliasedReturnItem(JavaCCParser.parse(query, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator))
+  }
+
+  /**
+   * "RETURN a" might be round-tripped to "RETURN `a`"
+   * This is an acceptable diversion caused by the Prettifier,
+   * since it only can affect the final RETURN in a query and thus has no effect on [Fabric] subqueries.
+   */
+  private def canonicalizeUnaliasedReturnItem(statement: Statement): Statement = {
+    statement.endoRewrite(bottomUp(Rewriter.lift {
+      case x:UnaliasedReturnItem => x.copy(inputText = "")(x.position)
+    }))
+  }
+}
