@@ -108,6 +108,7 @@ import org.neo4j.cypher.internal.expressions.functions.ToStringOrNull
 import org.neo4j.cypher.internal.expressions.functions.ToUpper
 import org.neo4j.cypher.internal.expressions.functions.Trim
 import org.neo4j.cypher.internal.expressions.functions.Type
+import org.neo4j.cypher.internal.expressions.functions.WithinBBox
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
@@ -439,6 +440,11 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
         val secondArg = self.toCommandExpression(id, invocation.arguments(1))
         commands.expressions.DistanceFunction(firstArg, secondArg)
       case Point => commands.expressions.PointFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case WithinBBox =>
+        commands.expressions.WithinBBoxFunction(
+          self.toCommandExpression(id, invocation.arguments.head),
+          self.toCommandExpression(id, invocation.arguments(1)),
+          self.toCommandExpression(id, invocation.arguments(2)))
       case Radians => commands.expressions.RadiansFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Rand => commands.expressions.RandFunction()
       case RandomUUID => commands.expressions.RandomUUIDFunction()

@@ -118,7 +118,8 @@ object Function {
     ToUpper,
     Properties,
     Trim,
-    Type
+    Type,
+    WithinBBox
   )
 
   lazy val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap

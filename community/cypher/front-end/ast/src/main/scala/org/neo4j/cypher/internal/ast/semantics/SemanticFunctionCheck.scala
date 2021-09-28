@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.expressions.functions.Tail
 import org.neo4j.cypher.internal.expressions.functions.ToBoolean
 import org.neo4j.cypher.internal.expressions.functions.ToString
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
+import org.neo4j.cypher.internal.expressions.functions.WithinBBox
 import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
@@ -190,6 +191,10 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       case Distance =>
         checkArgs(invocation, 2) ifOkChain
           specifyType(CTFloat, invocation)
+
+      case WithinBBox =>
+        checkArgs(invocation, 3) ifOkChain
+          specifyType(CTBoolean, invocation)
 
       case UnresolvedFunction =>
         // We cannot do a full semantic check until we have resolved the function call.
