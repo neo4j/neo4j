@@ -33,11 +33,9 @@ import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllLabelResource
-import org.neo4j.cypher.internal.ast.AllNodes
 import org.neo4j.cypher.internal.ast.AllPrivilegeActions
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AllQualifier
-import org.neo4j.cypher.internal.ast.AllRelationships
 import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
@@ -151,8 +149,6 @@ import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
-import org.neo4j.cypher.internal.ast.NodeByIds
-import org.neo4j.cypher.internal.ast.NodeByParameter
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.OldValidSyntax
@@ -176,8 +172,6 @@ import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
-import org.neo4j.cypher.internal.ast.RelationshipByIds
-import org.neo4j.cypher.internal.ast.RelationshipByParameter
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
@@ -241,10 +235,8 @@ import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
-import org.neo4j.cypher.internal.ast.Start
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
-import org.neo4j.cypher.internal.ast.StartItem
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction

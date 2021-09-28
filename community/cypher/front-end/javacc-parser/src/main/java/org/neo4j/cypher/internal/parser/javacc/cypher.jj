@@ -193,19 +193,6 @@ public class Cypher<STATEMENT,
         }
     }
 
-    private Optional<ConstraintType> setOrThrowIfTypeAlreadySet( Token start, Optional<ConstraintType> optional, ConstraintType value ) throws Exception
-    {
-        if ( optional.isEmpty() )
-        {
-            return Optional.of( value );
-        }
-        else
-        {
-            throw exceptionFactory.syntaxException( new ParseException( ASTExceptionFactory.constraintTypeNotAllowed( value, optional.get() ) ),
-                                                    start.beginOffset, start.beginLine, start.beginColumn );
-        }
-    }
-
     private void assertNotAlreadySet( Object object, Token token, String errorMessage ) throws Exception
     {
         if ( object != null )
@@ -3321,7 +3308,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
     VARIABLE variable = null;
     List<PROPERTY> properties= new ArrayList<>();
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
-    Optional<ConstraintType> constraintType = Optional.empty();
+    ConstraintType constraintType = ConstraintType.NODE_EXISTS;
     boolean isNode = false;
     Token errorStart;
     boolean containsOn = true;
@@ -3345,63 +3332,58 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
         ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN>
     )
     (
-        <REQUIRE> { constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_2; } |
+         // CREATE CONSTRAINT ON (variable:LABEL) ASSERT EXISTS variable.prop
+        LOOKAHEAD(<ASSERT> <EXISTS>)
         <ASSERT> { constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_0; }
+        errorStart=<EXISTS> { constraintType = isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS; }
+        properties=PropertyList()
+    |
         (
-            // CREATE CONSTRAINT ON (variable:LABEL) ASSERT EXISTS variable.prop
-            errorStart=<EXISTS> { constraintType = Optional.of( isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS ); }
-        )?
-    )
-    properties=PropertyList()
-    (
-        errorStart=<IS>
-        (
-            <UNIQUE> {
-                    // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS UNIQUE
-                    // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS UNIQUE
-                    constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.UNIQUE );
-                    if ( !isNode )
-                    {
-                        throw exceptionFactory.syntaxException(
-                            new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType.get() ) ),
-                            errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
-                    }
-                 }
-            | <NODE> <KEY>
-                {
-                    // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NODE KEY
-                    // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS NODE KEY
-                    constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.NODE_KEY );
-                    if ( !isNode )
-                    {
-                        throw exceptionFactory.syntaxException(
-                            new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType.get() ) ),
-                            errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
-                    }
-                }
-            | <NOT> <NULL> {
-                // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NOT NULL
-                // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS NOT NULL
-                ConstraintType setType = isNode ? ConstraintType.NODE_IS_NOT_NULL : ConstraintType.REL_IS_NOT_NULL;
-                constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, setType );
-                if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_0)
-                {
-                    constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_1;
-                }
-            }
+            <REQUIRE> { constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_2; }
+            | <ASSERT> { constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_0; }
         )
-    )?
+        properties=PropertyList()
+        (
+            errorStart=<IS>
+            (
+                <UNIQUE> {
+                        // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS UNIQUE
+                        // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS UNIQUE
+                        constraintType = ConstraintType.UNIQUE ;
+                        if ( !isNode )
+                        {
+                            throw exceptionFactory.syntaxException(
+                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                        }
+                     }
+                | <NODE> <KEY>
+                    {
+                        // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NODE KEY
+                        // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS NODE KEY
+                        constraintType = ConstraintType.NODE_KEY;
+                        if ( !isNode )
+                        {
+                            throw exceptionFactory.syntaxException(
+                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                        }
+                    }
+                | <NOT> <NULL> {
+                    // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NOT NULL
+                    // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS NOT NULL
+                    constraintType = isNode ? ConstraintType.NODE_IS_NOT_NULL : ConstraintType.REL_IS_NOT_NULL;
+                    if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_0)
+                    {
+                        constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_1;
+                    }
+                }
+            )
+        )
+    )
     ( <OPTIONS> options=MapOrParameter() )?
-    <EOF>
     {
-        if ( constraintType.isEmpty() )
-        {
-            throw exceptionFactory.syntaxException( new ParseException( exceptionFactory.undefinedConstraintType ),
-                start.beginOffset,
-                start.beginLine,
-                start.beginColumn );
-        }
-        return astFactory.createConstraint( pos( start ), constraintType.get(), replace, ifNotExists, name, variable,
+        return astFactory.createConstraint( pos( start ), constraintType, replace, ifNotExists, name, variable,
         new StringPos<POS>( label.image, pos( label ) ), properties, options, containsOn, constraintVersion );
     }
 }
@@ -3413,7 +3395,7 @@ SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
         VARIABLE variable = null;
         Token label = null;
         List<PROPERTY> properties= new ArrayList<>();
-        Optional<ConstraintType> constraintType = Optional.empty();
+        ConstraintType constraintType = ConstraintType.NODE_EXISTS;
         boolean isNode = false;
         Token errorStart;
 }
@@ -3430,53 +3412,44 @@ SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
         )
         <ASSERT>
         (
-            //DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)
-            errorStart=<EXISTS> { constraintType = Optional.of( isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS ); }
-        )?
-        properties=PropertyList()
-        (
+            errorStart=<EXISTS> { constraintType = isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS; }
+            properties=PropertyList()
+       |
+            properties=PropertyList()
             errorStart=<IS>
-            (
-                //DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE
-                <UNIQUE> {
-                        constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.UNIQUE );
-                        if ( !isNode )
-                        {
-                            throw exceptionFactory.syntaxException(
-                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType.get() ) ),
-                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
-                        }
-                     }
-                | //DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY
-                    <NODE> <KEY>
-                    {
-                        constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, ConstraintType.NODE_KEY );
-                        if ( !isNode )
-                        {
-                            throw exceptionFactory.syntaxException(
-                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType.get() ) ),
-                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
-                        }
-                    }
-                | <NOT> <NULL> {
-                    ConstraintType setType = isNode ? ConstraintType.NODE_IS_NOT_NULL : ConstraintType.REL_IS_NOT_NULL;
-                    constraintType = setOrThrowIfTypeAlreadySet( errorStart, constraintType, setType );
-                }
-            )
-        )?
+              (
+                  //DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE
+                  <UNIQUE> {
+                          constraintType = ConstraintType.UNIQUE;
+                          if ( !isNode )
+                          {
+                              throw exceptionFactory.syntaxException(
+                                  new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                                  errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                          }
+                      }
+                  | //DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY
+                      <NODE> <KEY>
+                      {
+                          constraintType = ConstraintType.NODE_KEY ;
+                          if ( !isNode )
+                          {
+                              throw exceptionFactory.syntaxException(
+                                  new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                                  errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                          }
+                      }
+                  | <NOT> <NULL> {
+                      constraintType = isNode ? ConstraintType.NODE_IS_NOT_NULL : ConstraintType.REL_IS_NOT_NULL;
+                  }
+              )
+        )
         {
-            if ( constraintType.isEmpty() )
-            {
-                throw exceptionFactory.syntaxException( new ParseException( exceptionFactory.undefinedConstraintType ),
-                    start.beginOffset,
-                    start.beginLine,
-                    start.beginColumn );
-            }
-            return astFactory.dropConstraint( pos( start ), constraintType.get(), variable, new StringPos<POS>( label.image, pos( label ) ),
+            return astFactory.dropConstraint( pos( start ), constraintType, variable, new StringPos<POS>( label.image, pos( label ) ),
                 properties );
         }
     |   //DROP CONSTRAINT name IF EXISTS
-        name=SymbolicNameString() ( <IF> <EXISTS> { ifExists = true; } )? <EOF>
+        name=SymbolicNameString() ( <IF> <EXISTS> { ifExists = true; } )?
         {
             return astFactory.dropConstraint( pos( start ), name.image, ifExists );
         }

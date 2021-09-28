@@ -19,13 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-import java.util.Arrays;
 import java.util.List;
-
-import static org.neo4j.cypher.internal.ast.factory.ConstraintType.NODE_EXISTS;
-import static org.neo4j.cypher.internal.ast.factory.ConstraintType.NODE_IS_NOT_NULL;
-import static org.neo4j.cypher.internal.ast.factory.ConstraintType.NODE_KEY;
-import static org.neo4j.cypher.internal.ast.factory.ConstraintType.UNIQUE;
 
 public interface ASTExceptionFactory
 {
@@ -34,10 +28,6 @@ public interface ASTExceptionFactory
     Exception syntaxException( Exception source, int offset, int line, int column );
 
     //Exception messages
-
-    String undefinedConstraintType = String.format( "No constraint type %s is defined",
-                                                    Arrays.asList( NODE_EXISTS.description(), UNIQUE.description(), NODE_IS_NOT_NULL.description(),
-                                                                   NODE_KEY.description() ) );
     String invalidDropCommand = "Unsupported drop constraint command: Please delete the constraint by name instead";
     String invalidCatalogStatement = "CATALOG is not allowed for this statement";
 
@@ -49,11 +39,6 @@ public interface ASTExceptionFactory
     static String onlySinglePropertyAllowed( ConstraintType type )
     {
         return String.format("'%s' does not allow multiple properties", type.description());
-    }
-
-    static String constraintTypeNotAllowed( ConstraintType newType, ConstraintType oldType )
-    {
-        return String.format( "Invalid input '%s': conflicting with '%s'", newType.description(), oldType.description() );
     }
 
     static String invalidShowFilterType( String command, ShowCommandFilterTypes got )

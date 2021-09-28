@@ -32,10 +32,10 @@ import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.security.AuthorizationViolationException
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AuthManager
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
@@ -582,7 +582,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       execute("CREATE USER 4neo4j SET PASSWORD 'password'")
     }
     // THEN
-    exception.getMessage should include("Invalid input '4'")
+    exception.getMessage should include("Invalid input '4neo4j'")
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser, user("3neo4j"))

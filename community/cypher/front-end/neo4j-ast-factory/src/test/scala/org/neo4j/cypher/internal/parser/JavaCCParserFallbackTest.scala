@@ -26,16 +26,20 @@ class JavaCCParserFallbackTest extends CypherFunSuite {
 
   test("should fall back") {
     Seq(
-      "REVOKE SHOW INDEXES ON DATABASE foo FROM bar",
-      "MATCH (n) RETURN n // SHOW",
-      "MATCH (n) RETURN n.Id as INDEX",
-      "MATCH (n) RETURN n.Id as GRANT",
-      "MATCH (n) WITH n as SHOW RETURN SHOW as INDEX",
-      "DROP ROLE cheeseRoll",
-      "CREATE DATABASE store WAIT",
-      "SHOW INDEX WHERE name = 'GRANT'",
-      "MATCH (n:Label) WHERE n.cypher = 'SHOW INDEXES' and n.access = 'DENY' RETURN n",
-      "CREATE(n:Catalog)"
+      // Not (yet) supported commands
+      "SHOW PRIVILEGES",
+      "SHOW USER username PRIVILEGES",
+      "SHOW ROLE foo PRIVILEGE",
+      "SHOW PRIVILEGES AS COMMANDS",
+      "GRANT EXECUTE FUNCTION * ON DBMS TO role",
+      "DENY EXECUTE BOOSTED PROCEDURE apoc.match ON DBMS TO role",
+      "START n=node:people(name = 'neo') RETURN n",
+
+      // Supported commands containing fallback keywords
+      "MATCH (n) RETURN n // EXECUTE",
+      "MATCH (n) RETURN n.Id as privilege",
+      "MATCH (n:Label) WHERE n.cypher = 'SHOW PRIVILEGES' and n.access = 'DENY' RETURN n",
+      "RETURN 42 AS start"
     ).foreach(t => {
       withClue(t) { JavaCCParser.shouldFallback(t) shouldBe true }
     })
@@ -45,6 +49,12 @@ class JavaCCParserFallbackTest extends CypherFunSuite {
     Seq(
       "MATCH (n) RETURN n",
       "CREATE (n:Label)",
+      "CREATE INDEX people FOR (n:Person) ON n.name",
+      "DROP CONSTRAINT constr IF EXISTS",
+      "SHOW DATABASE foo",
+      "CREATE USER username SET PASSWORD 'secret'",
+      "SHOW ROLES",
+      "GRANT ACCESS ON DATABASE foo TO role"
     ).foreach(t => {
       withClue(t) { JavaCCParser.shouldFallback(t) shouldBe false }
     })

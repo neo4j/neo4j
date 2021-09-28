@@ -38,4 +38,5 @@ Feature "TypeConversion2 - To Integer": Scenario "`toInteger()` failing on inval
 Feature "TypeConversion1 - To Boolean": Scenario "`toBoolean()` on invalid types": Example "2"
 
 // Failing with M16 TCK - require investigation
-Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"
+// TODO: the below case does currently fallback to the parboiled parser, needs to be re-added/fixed when we remove the fallback for START
+// Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"

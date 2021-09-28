@@ -315,6 +315,14 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
         }
     }
 
+  test("CREATE CONSTRAINT my_constraint FOR (n:Person) REQUIRE n.prop IS NOT NULL OPTIONS {indexProvider : 'native-btree-1.0'};") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE CONSTRAINT FOR (n:Person) REQUIRE n.prop IS NOT NULL; CREATE CONSTRAINT FOR (n:User) REQUIRE n.prop IS UNIQUE") {
+    assertSameAST(testName)
+  }
+
   test(s"CREATE CONSTRAINT my_constraint ON ()-[r1:R]-() ASSERT r2.prop IS NULL") {
     assertJavaCCException(testName, "Invalid input 'NULL': expected \"NODE\", \"NOT\" or \"UNIQUE\" (line 1, column 67 (offset: 66))")
   }
@@ -452,7 +460,7 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   }
 
   test("CREATE CONSTRAINT my_constraint ON ()-[r1:R]-() ASSERT EXISTS (r2.prop) IS NOT NULL") {
-    assertJavaCCExceptionStart(testName, ASTExceptionFactory.constraintTypeNotAllowed(ConstraintType.REL_IS_NOT_NULL, ConstraintType.REL_EXISTS))
+    assertJavaCCExceptionStart(testName, "Invalid input 'IS': expected \"OPTIONS\" or <EOF> (line 1, column 73 (offset: 72))")
   }
 
   test("CREATE CONSTRAINT $my_constraint ON ()-[r1:R]-() ASSERT EXISTS (r2.prop)") {
@@ -465,6 +473,10 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
   test("CREATE CONSTRAINT FOR ()-[r1:R]-() REQUIRE EXISTS (r1.prop)") {
     assertJavaCCException(testName, "Invalid input '(': expected \".\" (line 1, column 51 (offset: 50))")
+  }
+
+  test("CREATE CONSTRAINT FOR (n:Label) REQUIRE (n.prop)") {
+    assertJavaCCException(testName, "Invalid input '': expected \"IS\" (line 1, column 49 (offset: 48))")
   }
 
   // Drop constraint
@@ -570,6 +582,14 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   }
 
   test("DROP CONSTRAINT $my_constraint") {
+    assertSameAST(testName)
+  }
+
+  test("DROP CONSTRAINT my_constraint IF EXISTS;") {
+    assertSameAST(testName)
+  }
+
+  test("DROP CONSTRAINT my_constraint; DROP CONSTRAINT my_constraint2;") {
     assertSameAST(testName)
   }
 
