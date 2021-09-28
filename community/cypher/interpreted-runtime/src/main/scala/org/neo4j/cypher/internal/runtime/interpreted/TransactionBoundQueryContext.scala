@@ -1294,7 +1294,6 @@ object TransactionBoundQueryContext {
     override protected def fetchNext(): Long =
       if (selectionCursor.next()) selectionCursor.relationshipReference()
       else {
-        selectionCursor.close()
         -1L
       }
 
@@ -1332,8 +1331,6 @@ object TransactionBoundQueryContext {
           return scanCursor.relationshipReference()
         }
       }
-      typeIndexCursor.close()
-      scanCursor.close()
       -1L
     }
 
