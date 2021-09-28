@@ -123,7 +123,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 public class DetectRandomSabotageIT
 {
     private static final int SOME_WAY_TOO_HIGH_ID = 10_000_000;
-    private static final int NUMBER_OF_NODES = 10_000;
+    private static final int NUMBER_OF_NODES = 1_000;
     private static final int NUMBER_OF_INDEXES = 7;
     private static final String[] TOKEN_NAMES = {"One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"};
 
