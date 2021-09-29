@@ -94,7 +94,7 @@ class SchemaComplianceChecker implements AutoCloseable
         for ( IndexDescriptor indexRule : indexes )
         {
             SchemaDescriptor schema = indexRule.schema();
-            Value[] valueArray = RecordLoading.entityIntersectionWithSchema( entityTokens, values, schema );
+            Value[] valueArray = RecordLoading.entityIntersectionWithSchema( entityTokens, values, schema, indexRule.getIndexType() );
             if ( valueArray == null )
             {
                 continue;
@@ -173,8 +173,7 @@ class SchemaComplianceChecker implements AutoCloseable
     {
         if ( count == 0 )
         {
-            // Fulltext indexes only index text values, so if the entity only have non-string properties it is correct to not find it in the index.
-            if ( !(indexRule.getIndexType() == IndexType.FULLTEXT && !valuesQualifiesForFulltextIndex( propertyValues ) ) )
+            if ( areValuesSupportedByIndex( indexRule.getIndexType(), propertyValues ) )
             {
                 reportSupplier.apply( context.recordLoader.entity( entity, storeCursors ) ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
             }
@@ -184,18 +183,6 @@ class SchemaComplianceChecker implements AutoCloseable
             reportSupplier.apply( context.recordLoader.entity( entity, storeCursors ) )
                     .indexedMultipleTimes( indexRule, Values.asObjects( propertyValues ), count );
         }
-    }
-
-    static boolean valuesQualifiesForFulltextIndex( Value[] values )
-    {
-        for ( Value value : values )
-        {
-            if ( value.valueGroup() == ValueGroup.TEXT )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private <ENTITY extends PrimitiveRecord> void checkMandatoryProperties( ENTITY entity, IntObjectMap<Value> seenProperties, long[] entityTokenIds,
@@ -221,6 +208,57 @@ class SchemaComplianceChecker implements AutoCloseable
                     }
                 }
             }
+        }
+    }
+
+    static boolean areValuesSupportedByIndex( IndexType indexType, Value... values )
+    {
+        if ( values == null )
+        {
+            return false;
+        }
+
+        switch ( indexType )
+        {
+        case BTREE:
+        case RANGE:
+            return true;
+        case FULLTEXT:
+            for ( Value value : values )
+            {
+                if ( isValueSupportedByIndex( indexType, value ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        case POINT:
+        case TEXT:
+            // Neither point nor text index can be composite,
+            // so this is just a convenient way how to handle the array type
+            for ( Value value : values )
+            {
+                return isValueSupportedByIndex( indexType, value );
+            }
+        default:
+            return false;
+        }
+    }
+
+    static boolean isValueSupportedByIndex( IndexType indexType, Value value )
+    {
+        switch ( indexType )
+        {
+        case BTREE:
+        case RANGE:
+            return true;
+        case TEXT:
+        case FULLTEXT:
+            return value.valueGroup() == ValueGroup.TEXT;
+        case POINT:
+            return value.valueGroup() == ValueGroup.GEOMETRY;
+        default:
+            return false;
         }
     }
 }

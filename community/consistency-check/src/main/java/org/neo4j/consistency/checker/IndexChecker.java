@@ -35,6 +35,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -48,9 +49,10 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.consistency.checker.RecordLoading.entityIntersectionWithSchema;
 import static org.neo4j.consistency.checker.RecordLoading.lightClear;
 import static org.neo4j.consistency.checker.RecordLoading.safeGetNodeLabels;
-import static org.neo4j.consistency.checker.SchemaComplianceChecker.valuesQualifiesForFulltextIndex;
+import static org.neo4j.consistency.checker.SchemaComplianceChecker.areValuesSupportedByIndex;
 
 public class IndexChecker implements Checker
 {
@@ -290,8 +292,8 @@ public class IndexChecker implements Checker
                             IndexContext index = indexes.get( i );
                             IndexDescriptor descriptor = index.descriptor;
                             long cachedValue = client.getFromCache( entityId, i );
-                            boolean nodeIsInIndex = (cachedValue & IN_USE_MASK ) != 0;
-                            Value[] values = RecordLoading.entityIntersectionWithSchema( entityTokens, allValues, descriptor.schema() );
+                            boolean nodeIsInIndex = (cachedValue & IN_USE_MASK) != 0;
+                            Value[] values = entityIntersectionWithSchema( entityTokens, allValues, descriptor.schema(), descriptor.getIndexType() );
                             if ( index.descriptor.schema().isFulltextSchemaDescriptor() )
                             {
                                 // The strategy for fulltext indexes is way simpler. Simply check of the sets of tokens (label tokens and property key tokens)
@@ -300,7 +302,7 @@ public class IndexChecker implements Checker
                                 int[] indexPropertyKeys = index.descriptor.schema().getPropertyIds();
                                 boolean nodeShouldBeInIndex =
                                         index.descriptor.schema().isAffected( entityTokens ) && containsAny( indexPropertyKeys, nodePropertyKeys ) &&
-                                                valuesQualifiesForFulltextIndex( values );
+                                                areValuesSupportedByIndex( IndexType.FULLTEXT, values );
                                 if ( nodeShouldBeInIndex && !nodeIsInIndex )
                                 {
                                     getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor, new Object[0] );

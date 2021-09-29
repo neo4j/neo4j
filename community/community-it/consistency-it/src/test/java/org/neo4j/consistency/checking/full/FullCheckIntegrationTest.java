@@ -1927,6 +1927,7 @@ public class FullCheckIntegrationTest
         createIndexRule( entityType, IndexType.BTREE, entityTokenId, propertyKeyId );
         createIndexRule( entityType, IndexType.RANGE, entityTokenId, propertyKeyId );
         createIndexRule( entityType, IndexType.TEXT, entityTokenId, propertyKeyId );
+        createIndexRule( entityType, IndexType.POINT, entityTokenId, propertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
