@@ -126,20 +126,27 @@ class Bootloader
     {
         BootloaderOsAbstraction os = ctx.os();
         ctx.validateConfig();
+
+        Long pid = os.getPidIfRunning();
+        boolean alreadyRunning = pid != null;
+        if ( alreadyRunning )
+        {
+            ctx.out.printf( "Neo4j is already running%s.%n", pidIfKnown( pid ) );
+        }
+
         if ( dryRun )
         {
             List<String> args = os.buildStandardStartArguments();
             String cmd = args.stream().map( Bootloader::quoteArgument ).collect( Collectors.joining( " " ) );
             ctx.out.println( cmd );
-            return EXIT_CODE_OK;
+            return alreadyRunning ? EXIT_CODE_RUNNING : EXIT_CODE_OK;
         }
 
-        Long pid = os.getPidIfRunning();
-        if ( pid != null )
+        if ( alreadyRunning )
         {
-            ctx.out.printf( "Neo4j is already running%s.%n", pidIfKnown( pid ) );
             return EXIT_CODE_RUNNING;
         }
+
         printDirectories();
         ctx.out.println( "Starting Neo4j." );
         os.console();

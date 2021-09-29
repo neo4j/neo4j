@@ -74,6 +74,7 @@ import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
+import static org.neo4j.server.startup.Bootloader.EXIT_CODE_RUNNING;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 class Neo4jCommandTest
@@ -408,6 +409,25 @@ class Neo4jCommandTest
             addConf( newBuilder( "apoc.export.file.enabled", BOOL, false ).build(), "true" );
             addConf( GraphDatabaseSettings.strict_config_validation, "true" );
             assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
+        }
+
+        @Test
+        void consoleShouldDetectAnotherConsoleRunning()
+        {
+            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
+            clearOutAndErr();
+            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_RUNNING );
+            assertThat( out.toString() ).contains( "Neo4j is already running" );
+        }
+
+        @Test
+        void dryRunShouldPrintWarningAndCommandIfAlreadyRunning()
+        {
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
+            clearOutAndErr();
+            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_RUNNING );
+            assertThat( out.toString() )
+                    .containsSubsequence( "Neo4j is already running", "java", "-cp", TestEntryPoint.class.getName() );
         }
 
         @Nested
