@@ -126,7 +126,7 @@ case object PushdownPropertyReads {
 
       plan match {
         case _: Anti =>
-          argumentAcc
+          throw new IllegalStateException("This plan is introduced in physical planning, I shouldn't need to know about it.")
 
         case _: Aggregation |
              _: OrderedAggregation |
@@ -228,23 +228,38 @@ case object PushdownPropertyReads {
 
     def foldTwoChildPlan(lhsAcc: Acc, rhsAcc: Acc, plan: LogicalPlan): Acc = {
       plan match {
-        case _: Union
-           | _: OrderedUnion
+
+          // Do _not_ pushdown from on top of these plans to the LHS or the RHS
+        case _: Union |
+             _: OrderedUnion |
           // TransactionForeach will clear caches, so it's useless to push down reads
-           | _: TransactionForeach =>
-          // Do _not_ pushdown past these plans
+             _: TransactionForeach =>
           val newVariables = plan.availableSymbols
           val outgoingCardinality = effectiveCardinalities(plan.id)
           val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
           Acc(outgoingVariableOptima, lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima, Set.empty, Set.empty, outgoingCardinality)
 
+          // Do not pushdown from on top of these plans to the RHS, but allow pushing down to the LHS
         case _: AbstractSemiApply
            | _: AbstractLetSemiApply
            | _: AbstractSelectOrSemiApply
            | _: AbstractLetSelectOrSemiApply
            | _: ForeachApply
            | _: RollUpApply =>
-          lhsAcc
+          val mergedAcc = Acc(
+            // Keep only optima for variables from the LHS
+            lhsAcc.variableOptima,
+            // Keep any pushdowns identified in either side
+            lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
+            // Keep only the available properties/entities from the LHS
+            lhsAcc.availableProperties,
+            lhsAcc.availableWholeEntities,
+            effectiveCardinalities(plan.id)
+          )
+          // No ApplyPlan needs an argumentAcc yet, so it is stubbed for now.
+          // If you need a real argumentAcc, this is where you have to fix it.
+          val argumentAcc = null
+          foldSingleChildPlan(mergedAcc, argumentAcc, plan)
 
         case _: ApplyPlan =>
           // No ApplyPlan needs an argumentAcc yet, so it is stubbed for now.
