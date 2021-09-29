@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexType.BTREE
@@ -147,7 +148,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   }
 
   case class IndexDefinition(entityType: IndexDefinition.EntityType,
-                             indexType: IndexDescriptor.IndexType,
+                             indexType: graphdb.schema.IndexType,
                              propertyKeys: Seq[String],
                              uniqueValueSelectivity: Double,
                              propExistsSelectivity: Double,
@@ -255,7 +256,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                    isUnique: Boolean = false,
                    withValues: Boolean = false,
                    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
-                   indexType: IndexDescriptor.IndexType = IndexDescriptor.IndexType.Btree): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+                   indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.BTREE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(IndexDefinition.EntityType.Node(label),
       indexType = indexType,
@@ -276,7 +277,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                            isUnique: Boolean = false,
                            withValues: Boolean = false,
                            providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
-                           indexType: IndexDescriptor.IndexType = IndexDescriptor.IndexType.Btree): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+                           indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.BTREE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val indexDef = IndexDefinition(IndexDefinition.EntityType.Relationship(relType),
       indexType = indexType,
@@ -521,33 +522,33 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
-        indexesGetForEntityAndIndexType(entityType, IndexDescriptor.IndexType.Btree)
+        indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.BTREE)
       }
 
       override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
-        indexesGetForEntityAndIndexType(entityType, IndexDescriptor.IndexType.Btree)
+        indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.BTREE)
       }
 
       override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
-        indexesGetForEntityAndIndexType(entityType, IndexDescriptor.IndexType.Text)
+        indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.TEXT)
       }
 
       override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
-        indexesGetForEntityAndIndexType(entityType, IndexDescriptor.IndexType.Text)
+        indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.TEXT)
       }
 
-      private def indexesGetForEntityAndIndexType(entityType: IndexDefinition.EntityType, indexType: IndexDescriptor.IndexType): Iterator[IndexDescriptor] = {
+      private def indexesGetForEntityAndIndexType(entityType: IndexDefinition.EntityType, indexType: graphdb.schema.IndexType): Iterator[IndexDescriptor] = {
         indexes.propertyIndexes.collect {
           case indexDef@IndexDefinition(`entityType`, `indexType`, _, _, _, _, _, _) =>
             newIndexDescriptor(indexDef)
-        }
+        }.flatten
       }.iterator
 
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = {
-        indexes.propertyIndexes.toIterator.map(newIndexDescriptor)
+        indexes.propertyIndexes.toIterator.flatMap(newIndexDescriptor)
       }
 
       override def canLookupNodesByLabel: Boolean = indexes.nodeLookupIndex
@@ -608,18 +609,20 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(labelName)
-        indexGetForEntityTypeAndProperties(entityType, propertyKeys)
+        indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.BTREE)
       }
 
       override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
-        indexGetForEntityTypeAndProperties(entityType, propertyKeys)
+        indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.BTREE)
       }
 
-      private def indexGetForEntityTypeAndProperties(entityType: IndexDefinition.EntityType, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-        indexes.propertyIndexes.collectFirst {
-          case indexDef if indexDef.entityType == entityType && indexDef.propertyKeys == propertyKeys => newIndexDescriptor(indexDef)
-        }
+      private def indexGetForEntityTypePropertiesAndIndexType(entityType: IndexDefinition.EntityType,
+                                                              propertyKeys: Seq[String],
+                                                              indexType: graphdb.schema.IndexType): Option[IndexDescriptor] = {
+        indexes.propertyIndexes.collect {
+          case indexDef@IndexDefinition(`entityType`, `indexType`, `propertyKeys`, _, _, _, _, _) => newIndexDescriptor(indexDef)
+        }.flatten.headOption
       }
 
       override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
@@ -634,7 +637,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def txStateHasChanges(): Boolean = options.txStateHasChanges
 
-      private def newIndexDescriptor(indexDef: IndexDefinition): IndexDescriptor = {
+      private def newIndexDescriptor(indexDef: IndexDefinition): Option[IndexDescriptor] = {
         // Our fake index either can always or never return property values
         val canGetValue = if (indexDef.withValues) CanGetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
@@ -649,14 +652,16 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
             IndexDescriptor.EntityType.Relationship(RelTypeId(resolver.getRelTypeId(relType)))
         }
 
-        IndexDescriptor(
-          indexDef.indexType,
-          entityType,
-          props,
-          valueCapability = valueCapability,
-          orderCapability = orderCapability,
-          isUnique = indexDef.isUnique
-        )
+        IndexDescriptor.IndexType.fromPublicApi(indexDef.indexType) map { indexType =>
+          IndexDescriptor(
+            indexType,
+            entityType,
+            props,
+            valueCapability = valueCapability,
+            orderCapability = orderCapability,
+            isUnique = indexDef.isUnique
+          )
+        }
       }
     }
     new StatisticsBackedLogicalPlanningConfiguration(

@@ -88,6 +88,12 @@ object IndexDescriptor {
     case object Text extends IndexType {
       override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.TEXT
     }
+
+    def fromPublicApi(indexType: graphdb.schema.IndexType): Option[IndexType] = indexType match {
+      case graphdb.schema.IndexType.BTREE => Some(IndexType.Btree)
+      case graphdb.schema.IndexType.TEXT  => Some(IndexType.Text)
+      case _ => None
+    }
   }
 
   implicit def toKernelEncode(properties: Seq[PropertyKeyId]): Array[Int] = properties.map(_.id).toArray

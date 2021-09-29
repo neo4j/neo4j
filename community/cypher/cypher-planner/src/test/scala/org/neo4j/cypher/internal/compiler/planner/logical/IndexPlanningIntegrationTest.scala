@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.GetValue
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
@@ -844,7 +843,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("A", 50)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
       .enablePlanningTextIndexes()
       .build()
 
@@ -860,7 +859,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
       .enablePlanningTextIndexes()
       .build()
 
@@ -876,7 +875,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
       .build()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
@@ -893,7 +892,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
       .build()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
@@ -910,7 +909,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
       .enablePlanningTextIndexes()
       .build()
 
@@ -936,7 +935,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexDescriptor.IndexType.Text)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
       .enablePlanningTextIndexes()
       .build()
 
