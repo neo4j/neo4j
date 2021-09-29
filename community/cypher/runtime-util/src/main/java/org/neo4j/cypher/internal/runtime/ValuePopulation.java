@@ -57,7 +57,7 @@ public final class ValuePopulation
                                      NodeCursor nodeCursor,
                                      RelationshipScanCursor relCursor, PropertyCursor propertyCursor )
     {
-        if ( value instanceof VirtualNodeValue )
+     if ( value instanceof VirtualNodeValue )
         {
             return populate( (VirtualNodeValue) value, dbAccess, nodeCursor, propertyCursor );
         }
@@ -220,8 +220,8 @@ public final class ValuePopulation
         }
         else
         {
-            NodeValue start = nodeValue( relCursor.sourceNodeReference(), dbAccess, nodeCursor, propertyCursor );
-            NodeValue end = nodeValue( relCursor.targetNodeReference(), dbAccess, nodeCursor, propertyCursor );
+            VirtualNodeValue start = VirtualValues.node( relCursor.sourceNodeReference() );
+            VirtualNodeValue end = VirtualValues.node( relCursor.targetNodeReference() );
             relCursor.properties( propertyCursor );
             return VirtualValues.relationshipValue( id, start, end, Values.stringValue( dbAccess.relationshipTypeName( relCursor.type() ) ),
                                                     properties( propertyCursor, dbAccess ) );

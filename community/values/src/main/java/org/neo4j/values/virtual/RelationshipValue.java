@@ -83,9 +83,9 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         return endNodeId;
     }
 
-    public abstract NodeValue startNode();
+    public abstract VirtualNodeValue startNode();
 
-    public abstract NodeValue endNode();
+    public abstract VirtualNodeValue endNode();
 
     @Override
     public long id()
@@ -107,7 +107,7 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
 
     public abstract MapValue properties();
 
-    public NodeValue otherNode( VirtualNodeValue node )
+    public VirtualNodeValue otherNode( VirtualNodeValue node )
     {
         return node.equals( startNode() ) ? endNode() : startNode();
     }
@@ -132,12 +132,12 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
     private static final long DIRECT_RELATIONSHIP_VALUE_SHALLOW_SIZE = shallowSizeOfInstance( DirectRelationshipValue.class );
     static class DirectRelationshipValue extends RelationshipValue
     {
-        private final NodeValue startNode;
-        private final NodeValue endNode;
+        private final VirtualNodeValue startNode;
+        private final VirtualNodeValue endNode;
         private final TextValue type;
         private final MapValue properties;
 
-        DirectRelationshipValue( long id, NodeValue startNode, NodeValue endNode, TextValue type, MapValue properties )
+        DirectRelationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type, MapValue properties )
         {
             super( id, startNode.id(), endNode.id() );
             assert properties != null;
@@ -149,13 +149,13 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         }
 
         @Override
-        public NodeValue startNode()
+        public VirtualNodeValue startNode()
         {
             return startNode;
         }
 
         @Override
-        public NodeValue endNode()
+        public VirtualNodeValue endNode()
         {
             return endNode;
         }

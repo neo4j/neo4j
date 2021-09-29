@@ -63,7 +63,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  val costOfCompositeUniqueIndexCursorRow: Long, // the reported dbHits for finding one row from a composite unique index
                                                                  cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
                                                                  val canFuseOverPipelines: Boolean,
-                                                                 createsRelValueInExpand: Boolean,
                                                                  val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
@@ -820,10 +819,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val result = profile(logicalQuery, runtime)
     consume(result)
 
-    val dbHitsForRelRead = if (createsRelValueInExpand) 0 else 1
-
     // then
-    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (sizeHint * (dbHitsForRelRead + 2 * costOfProperty)) // produceresults
+    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (sizeHint * (1 + 2 * costOfProperty)) // produceresults
   }
 
   test("should profile dbHits of populating collections in produceresults") {

@@ -218,7 +218,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
-    public NodeValue startNode()
+    public VirtualNodeValue startNode()
     {
         NodeValue start = startNode;
         if ( start == null )
@@ -236,7 +236,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
-    public NodeValue endNode()
+    public VirtualNodeValue endNode()
     {
         NodeValue end = endNode;
         if ( end == null )
@@ -254,7 +254,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
-    public NodeValue otherNode( VirtualNodeValue node )
+    public VirtualNodeValue otherNode( VirtualNodeValue node )
     {
         if ( node instanceof NodeEntityWrappingNodeValue )
         {

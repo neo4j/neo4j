@@ -213,7 +213,7 @@ public final class VirtualValues
         return new NodeValue.DirectNodeValue( id, labels, properties );
     }
 
-    public static RelationshipValue relationshipValue( long id, NodeValue startNode, NodeValue endNode, TextValue type,
+    public static RelationshipValue relationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type,
             MapValue properties )
     {
         return new RelationshipValue.DirectRelationshipValue( id, startNode, endNode, type, properties );

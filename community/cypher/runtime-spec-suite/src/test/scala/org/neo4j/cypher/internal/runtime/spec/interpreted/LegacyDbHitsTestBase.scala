@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.spec.interpreted
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
-import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.tests.ProfileDbHitsTestBase
 
 object LegacyDbHitsTestBase {
@@ -49,5 +48,4 @@ abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                 costOfCompositeUniqueIndexCursorRow = 1,
                                 cartesianProductChunkSize = 1,
                                 canFuseOverPipelines = false,
-                                createsRelValueInExpand = createsRelValueInExpand,
                                 useWritesWithProfiling = false)
