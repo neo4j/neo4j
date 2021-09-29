@@ -95,7 +95,6 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       useMinimumGraphStatistics: Boolean = false,
                       txStateHasChanges: Boolean = false,
                       semanticFeatures: Seq[SemanticFeature] = Seq.empty,
-                      planningTextIndexesEnabled: Boolean = false,
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
@@ -450,7 +449,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
   }
 
   def enablePlanningTextIndexes(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    this.copy(options = options.copy(planningTextIndexesEnabled = enabled))
+    withSetting(GraphDatabaseInternalSettings.planning_text_indexes_enabled, Boolean.box(enabled))
   }
 
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
@@ -686,9 +685,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
   }
 
   def planState(queryString: String): LogicalPlanState = {
-    val plannerConfiguration = CypherPlannerConfiguration.withSettings(
-      Map(GraphDatabaseInternalSettings.planning_text_indexes_enabled -> Boolean.box(options.planningTextIndexesEnabled))
-    )
+    val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
     val metrics = SimpleMetricsFactory.newMetrics(planContext, simpleExpressionEvaluator, options.executionModel)
