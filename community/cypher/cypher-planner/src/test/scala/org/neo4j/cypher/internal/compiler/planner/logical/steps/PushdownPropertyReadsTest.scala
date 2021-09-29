@@ -694,6 +694,28 @@ class PushdownPropertyReadsTest
     rewritten shouldBe plan
   }
 
+  test("should pushdown from top to top of Union") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .expandAll("(n)--(m)").withEffectiveCardinality(100)
+      .union().withEffectiveCardinality(80)
+      .|.nodeByLabelScan("n", "A", IndexOrderNone).withEffectiveCardinality(70)
+      .nodeByLabelScan("n", "B", IndexOrderNone).withEffectiveCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.prop AS x")
+      .expandAll("(n)--(m)")
+      .cacheProperties("n.prop")
+      .union()
+      .|.nodeByLabelScan("n", "A", IndexOrderNone)
+      .nodeByLabelScan("n", "B", IndexOrderNone)
+      .build()
+  }
+
   test("should not pushdown read past union into LHS") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("x")
@@ -707,6 +729,28 @@ class PushdownPropertyReadsTest
     rewritten shouldBe plan
   }
 
+  test("should pushdown from LHS to LHS of Union") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .union().withEffectiveCardinality(170)
+      .|.nodeByLabelScan("n", "A", IndexOrderNone).withEffectiveCardinality(70)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .expandAll("(n)--(m)").withEffectiveCardinality(100)
+      .nodeByLabelScan("n", "B", IndexOrderNone).withEffectiveCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe new LogicalPlanBuilder()
+      .produceResults("x")
+      .union()
+      .|.nodeByLabelScan("n", "A", IndexOrderNone)
+      .projection("n.prop AS x")
+      .expandAll("(n)--(m)")
+      .cacheProperties("n.prop")
+      .nodeByLabelScan("n", "B", IndexOrderNone)
+      .build()
+  }
+
   test("should not pushdown read past union into RHS") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("x")
@@ -718,6 +762,28 @@ class PushdownPropertyReadsTest
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
+  }
+
+  test("should pushdown from RHS to RHS of Union") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .union().withEffectiveCardinality(170)
+      .|.projection("n.prop AS x").withEffectiveCardinality(100)
+      .|.expandAll("(n)--(m)").withEffectiveCardinality(100)
+      .|.nodeByLabelScan("n", "A", IndexOrderNone).withEffectiveCardinality(10)
+      .nodeByLabelScan("n", "B", IndexOrderNone).withEffectiveCardinality(70)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe new LogicalPlanBuilder()
+      .produceResults("x")
+      .union()
+      .|.projection("n.prop AS x")
+      .|.expandAll("(n)--(m)")
+      .|.cacheProperties("n.prop")
+      .|.nodeByLabelScan("n", "A", IndexOrderNone)
+      .nodeByLabelScan("n", "B", IndexOrderNone)
+      .build()
   }
 
   test("should not pushdown read past orderedUnion into LHS") {

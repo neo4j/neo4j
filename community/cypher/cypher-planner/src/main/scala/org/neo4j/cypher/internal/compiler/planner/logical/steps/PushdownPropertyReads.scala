@@ -237,7 +237,16 @@ case object PushdownPropertyReads {
           val newVariables = plan.availableSymbols
           val outgoingCardinality = effectiveCardinalities(plan.id)
           val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
-          Acc(outgoingVariableOptima, lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima, Set.empty, Set.empty, outgoingCardinality)
+          Acc(
+            // Keep only optima of variables introduced in these plans
+            outgoingVariableOptima,
+            // Keep any pushdowns identified in either side
+            lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
+            // Keep no available properties/entities, which allows pushing down on top of these plans
+            Set.empty,
+            Set.empty,
+            outgoingCardinality
+          )
 
           // Do not pushdown from on top of these plans to the RHS, but allow pushing down to the LHS
         case _: AbstractSemiApply
