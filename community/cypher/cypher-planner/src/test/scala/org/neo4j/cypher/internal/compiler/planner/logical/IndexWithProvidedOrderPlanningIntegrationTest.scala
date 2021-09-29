@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.DESC
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class IndexWithProvidedOrderIDPPlanningIntegrationTest extends IndexWithProvidedOrderPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
 class IndexWithProvidedOrderGreedyPlanningIntegrationTest extends IndexWithProvidedOrderPlanningIntegrationTest(QueryGraphSolverWithGreedyConnectComponents)
@@ -2209,7 +2210,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 LabelToken("Awesome", LabelId(0)),
                 Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
                 Set.empty,
-                plannedOrder),
+                plannedOrder,
+                IndexType.BTREE),
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
@@ -2230,7 +2232,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             LabelToken("Awesome", LabelId(0)),
             Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
             Set.empty,
-            IndexOrderNone),
+            IndexOrderNone,
+            IndexType.BTREE),
           Map.empty,
           Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
         )
@@ -2551,7 +2554,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             LabelToken("Awesome", LabelId(0)),
             Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
             Set.empty,
-            IndexOrderNone),
+            IndexOrderNone,
+            IndexType.BTREE),
           Map.empty,
           Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
         )

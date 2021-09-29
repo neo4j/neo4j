@@ -56,7 +56,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     plan shouldBe a[CartesianProduct]
     // Sorted index should be placed on the left of the cartesian products
     plan.leftmostLeaf should beLike {
-      case NodeIndexScan(`orderedNode`, _, _, _, _) => ()
+      case NodeIndexScan(`orderedNode`, _, _, _, _, _) => ()
     }
   }
 

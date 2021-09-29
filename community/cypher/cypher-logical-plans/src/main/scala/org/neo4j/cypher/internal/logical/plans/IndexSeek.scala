@@ -36,8 +36,8 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.graphdb.schema.IndexType
 
-import scala.collection.GenTraversable
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -112,7 +112,8 @@ object IndexSeek {
                     propIds: Option[PartialFunction[String, Int]] = None,
                     labelId: Int = 0,
                     unique: Boolean = false,
-                    customQueryExpression: Option[QueryExpression[Expression]] = None)(implicit idGen: IdGen): NodeIndexLeafPlan = {
+                    customQueryExpression: Option[QueryExpression[Expression]] = None,
+                    indexType: IndexType = IndexType.BTREE)(implicit idGen: IdGen): NodeIndexLeafPlan = {
 
     val NODE_INDEX_SEEK_PATTERN(node, labelStr, predicateStr) = indexSeekString.trim
     val label = LabelToken(labelStr, LabelId(labelId))
@@ -121,22 +122,22 @@ object IndexSeek {
     def createSeek(properties: Seq[IndexedProperty],
                    valueExpr: QueryExpression[Expression]): NodeIndexSeekLeafPlan =
       if (unique) {
-        NodeUniqueIndexSeek(node, label, properties, valueExpr, argumentIds, indexOrder)
+        NodeUniqueIndexSeek(node, label, properties, valueExpr, argumentIds, indexOrder, indexType)
       } else {
-        NodeIndexSeek(node, label, properties, valueExpr, argumentIds, indexOrder)
+        NodeIndexSeek(node, label, properties, valueExpr, argumentIds, indexOrder, indexType)
       }
 
 
     def createEndsWithScan(property: IndexedProperty, valueExpr: Expression): NodeIndexLeafPlan = {
-      NodeIndexEndsWithScan(node, label, property, valueExpr, argumentIds, indexOrder)
+      NodeIndexEndsWithScan(node, label, property, valueExpr, argumentIds, indexOrder, indexType)
     }
 
     def createContainsScan(property: IndexedProperty, valueExpr: Expression): NodeIndexLeafPlan = {
-      NodeIndexContainsScan(node, label, property, valueExpr, argumentIds, indexOrder)
+      NodeIndexContainsScan(node, label, property, valueExpr, argumentIds, indexOrder, indexType)
     }
 
     def createScan(properties: Seq[IndexedProperty]): NodeIndexLeafPlan = {
-      NodeIndexScan(node, label, properties, argumentIds, indexOrder)
+      NodeIndexScan(node, label, properties, argumentIds, indexOrder, indexType)
     }
 
     createPlan[NodeIndexLeafPlan](
@@ -162,7 +163,8 @@ object IndexSeek {
                             argumentIds: Set[String] = Set.empty,
                             propIds: Option[PartialFunction[String, Int]] = None,
                             typeId: Int = 0,
-                            customQueryExpression: Option[QueryExpression[Expression]] = None)(implicit idGen: IdGen): RelationshipIndexLeafPlan = {
+                            customQueryExpression: Option[QueryExpression[Expression]] = None,
+                            indexType: IndexType = IndexType.BTREE)(implicit idGen: IdGen): RelationshipIndexLeafPlan = {
 
     val REL_INDEX_SEEK_PATTERN(leftNode, incoming, rel, typeStr, predicateStr, outgoing, rightNode) = indexSeekString.trim
     val (startNode, endNode, directed) = (incoming, outgoing) match {
@@ -177,33 +179,33 @@ object IndexSeek {
     def createSeek(properties: Seq[IndexedProperty],
                    valueExpr: QueryExpression[Expression]): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexSeek(rel,  startNode, endNode, typeToken, properties, valueExpr, argumentIds, indexOrder)
+        DirectedRelationshipIndexSeek(rel,  startNode, endNode, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType)
       } else {
-        UndirectedRelationshipIndexSeek(rel,  startNode, endNode, typeToken, properties, valueExpr, argumentIds, indexOrder)
+        UndirectedRelationshipIndexSeek(rel,  startNode, endNode, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType)
       }
     }
 
     def createEndsWithScan(property: IndexedProperty, valueExpr: Expression): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexEndsWithScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder)
+        DirectedRelationshipIndexEndsWithScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder, indexType)
       } else {
-        UndirectedRelationshipIndexEndsWithScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder)
+        UndirectedRelationshipIndexEndsWithScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder, indexType)
       }
     }
 
     def createContainsScan(property: IndexedProperty, valueExpr: Expression): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexContainsScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder)
+        DirectedRelationshipIndexContainsScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder, indexType)
       } else {
-        UndirectedRelationshipIndexContainsScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder)
+        UndirectedRelationshipIndexContainsScan(rel, startNode, endNode, typeToken, property, valueExpr, argumentIds, indexOrder, indexType)
       }
     }
 
     def createScan(properties: Seq[IndexedProperty]): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexScan(rel, startNode, endNode, typeToken, properties, argumentIds, indexOrder)
+        DirectedRelationshipIndexScan(rel, startNode, endNode, typeToken, properties, argumentIds, indexOrder, indexType)
       } else {
-        UndirectedRelationshipIndexScan(rel, startNode, endNode, typeToken, properties, argumentIds, indexOrder)
+        UndirectedRelationshipIndexScan(rel, startNode, endNode, typeToken, properties, argumentIds, indexOrder, indexType)
       }
     }
 

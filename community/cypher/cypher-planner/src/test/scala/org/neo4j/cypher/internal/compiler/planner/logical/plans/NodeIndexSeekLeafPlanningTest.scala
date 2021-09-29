@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
@@ -68,6 +67,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
+import org.neo4j.graphdb.schema.IndexType
 
 class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -132,7 +132,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), SingleQueryExpression(`lit42`), _, _)) => ()
+        case SetExtractor(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), SingleQueryExpression(`lit42`), _, _, _)) => ()
       }
     }
   }
@@ -159,8 +159,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       val prop1Token = PropertyKeyToken("prop", PropertyKeyId(0))
 
       val expected = Set(
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE)), prop1Predicate1Expr, Set(), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, DoNotGetValue, NODE_TYPE)), prop1Predicate2Expr, Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE)), prop1Predicate1Expr, Set(), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, DoNotGetValue, NODE_TYPE)), prop1Predicate2Expr, Set(), IndexOrderNone, IndexType.BTREE),
       )
 
       resultPlans shouldEqual expected
@@ -201,12 +201,12 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       val prop2Token = PropertyKeyToken("prop2", PropertyKeyId(1))
 
       val expected = Set(
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, DoNotGetValue, NODE_TYPE)), CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate2Expr)), Set(), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, DoNotGetValue, NODE_TYPE)), CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate2Expr)), Set(), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate3Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, DoNotGetValue, NODE_TYPE)), CompositeQueryExpression(Seq(prop1Predicate3Expr, prop2Predicate2Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)), Set(), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, DoNotGetValue, NODE_TYPE)), CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate2Expr)), Set(), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)), Set(), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, DoNotGetValue, NODE_TYPE)), CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate2Expr)), Set(), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate3Expr, prop2Predicate1Expr)), Set(), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, DoNotGetValue, NODE_TYPE)), CompositeQueryExpression(Seq(prop1Predicate3Expr, prop2Predicate2Expr)), Set(), IndexOrderNone, IndexType.BTREE),
       )
 
       resultPlans shouldEqual expected
@@ -243,10 +243,10 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       val prop2Token = PropertyKeyToken("prop2", PropertyKeyId(1))
 
       val expected = Set(
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)), Set(), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop2Token, CanGetValue, NODE_TYPE), IndexedProperty(prop1Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate1Expr)), Set(), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop2Token, CanGetValue, NODE_TYPE), IndexedProperty(prop1Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate2Expr)), Set(), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)), Set(), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)), Set(), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop2Token, CanGetValue, NODE_TYPE), IndexedProperty(prop1Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate1Expr)), Set(), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(prop2Token, CanGetValue, NODE_TYPE), IndexedProperty(prop1Token, CanGetValue, NODE_TYPE)),   CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate2Expr)), Set(), IndexOrderNone, IndexType.BTREE),
       )
 
       resultPlans shouldEqual expected
@@ -293,7 +293,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _, _)) => ()
+        case SetExtractor(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _, _, _)) => ()
       }
     }
   }
@@ -310,7 +310,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _, _)) => ()
+        case SetExtractor(NodeIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _, _, _)) => ()
       }
     }
   }
@@ -331,7 +331,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       resultPlans should beLike {
         case SetExtractor(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         Seq(IndexedProperty(PropertyKeyToken("prop", _), CanGetValue, NODE_TYPE), IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue, NODE_TYPE)),
-        CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _, _)) => ()
+        CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _, _, _)) => ()
       }
     }
   }
@@ -369,7 +369,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       resultPlans should beLike {
         case SetExtractor(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
         Seq(IndexedProperty(PropertyKeyToken("prop", _), CanGetValue, NODE_TYPE), IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue, NODE_TYPE)),
-        CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _, _)) => ()
+        CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _, _, _)) => ()
       }
     }
   }
@@ -404,6 +404,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         props@Seq(_*),
         CompositeQueryExpression(vals@Seq(_*)),
         _,
+        _,
         _))
           if assertPropsAndValuesMatch(propertyNames, values, props, vals.flatMap(_.expressions)) => ()
       }
@@ -432,7 +433,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`x`), _, _)) => ()
+        case SetExtractor(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`x`), _, _, _)) => ()
       }
     }
   }
@@ -493,7 +494,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       val nPropToken = PropertyKeyToken("prop", PropertyKeyId(0))
 
       val expected = Set(
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)), xPropExpr, Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)), xPropExpr, Set("x"), IndexOrderNone, IndexType.BTREE),
       )
 
       resultPlans shouldEqual expected
@@ -548,9 +549,9 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // This contains all combinations except n.prop = 42 AND n.foo = 42, because it does not depend on x
       val expected = Set(
-        NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(xPropExpr, lit42Expr)), Set("x"), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(xPropExpr, xPropExpr)), Set("x"), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(lit42Expr, xPropExpr)), Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(xPropExpr, lit42Expr)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(xPropExpr, xPropExpr)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(lit42Expr, xPropExpr)), Set("x"), IndexOrderNone, IndexType.BTREE),
       )
 
       resultPlans shouldEqual expected
@@ -607,12 +608,12 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       val nPropToken = PropertyKeyToken("prop", PropertyKeyId(0))
 
       val expected = Set(
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(literalFoo))(pos)), Set("x"), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone),
-        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)), xPropExpr, Set("x"), IndexOrderNone),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(literalFoo))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)), xPropExpr, Set("x"), IndexOrderNone, IndexType.BTREE),
       )
 
       resultPlans shouldEqual expected
@@ -631,7 +632,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), SingleQueryExpression(`lit42`), _, _)) => ()
+        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), SingleQueryExpression(`lit42`), _, _, _)) => ()
       }
     }
   }
@@ -648,7 +649,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _, _)) => ()
+        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _, _, _)) => ()
       }
     }
   }
@@ -665,7 +666,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _, _)) => ()
+        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _, _, _)) => ()
       }
     }
   }
@@ -684,7 +685,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _, _)) => ()
+        case SetExtractor(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _, _, _)) => ()
       }
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph).head.hints shouldEqual Set(hint)
@@ -705,7 +706,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _, _)) => ()
+        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _, _, _)) => ()
       }
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph).head.hints shouldEqual Set(hint)
@@ -726,8 +727,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(AssertSameNode(`idName`,
-        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _, _),
-        NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _, _))) => ()
+        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _, _, _),
+        NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _, _, _))) => ()
       }
     }
   }
@@ -744,7 +745,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _, _)) => ()
+        case SetExtractor(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _, _, _)) => ()
       }
     }
   }
@@ -766,9 +767,9 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         case SetExtractor(
         AssertSameNode(`idName`,
         AssertSameNode(`idName`,
-        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _, _),
-        NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _, _)),
-        NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _, _))) => ()
+        NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _, _, _),
+        NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _, _, _)),
+        NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _, _, _))) => ()
       }
     }
   }
@@ -793,10 +794,10 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         AssertSameNode(`idName`,
         AssertSameNode(`idName`,
         AssertSameNode(`idName`,
-        NodeUniqueIndexSeek(`idName`, LabelToken(l1, _), _, SingleQueryExpression(`lit42`), _, _),
-        NodeUniqueIndexSeek(`idName`, LabelToken(l2, _), _, SingleQueryExpression(`lit42`), _, _)),
-        NodeUniqueIndexSeek(`idName`, LabelToken(l3, _), _, SingleQueryExpression(`lit42`), _, _)),
-        NodeUniqueIndexSeek(`idName`, LabelToken(l4, _), _, SingleQueryExpression(`lit42`), _, _)))
+        NodeUniqueIndexSeek(`idName`, LabelToken(l1, _), _, SingleQueryExpression(`lit42`), _, _, _),
+        NodeUniqueIndexSeek(`idName`, LabelToken(l2, _), _, SingleQueryExpression(`lit42`), _, _, _)),
+        NodeUniqueIndexSeek(`idName`, LabelToken(l3, _), _, SingleQueryExpression(`lit42`), _, _, _)),
+        NodeUniqueIndexSeek(`idName`, LabelToken(l4, _), _, SingleQueryExpression(`lit42`), _, _, _)))
           if Set(l1, l2, l3, l4) == Set("Awesome", "Awesomer", "Awesomest", "Awesomestest") => ()
       }
     }
@@ -832,9 +833,9 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(IndexedProperty(PropertyKeyToken("prop1", _), CanGetValue, NODE_TYPE), IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue, NODE_TYPE)),
         CompositeQueryExpression(Seq(
         SingleQueryExpression(`val1`),
-        SingleQueryExpression(`val2`))), _, _),
+        SingleQueryExpression(`val2`))), _, _, _),
         NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _,
-        SingleQueryExpression(`val3`), _, _))) => ()
+        SingleQueryExpression(`val3`), _, _, _))) => ()
       }
     }
   }
@@ -869,11 +870,11 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(IndexedProperty(PropertyKeyToken("prop1", _), CanGetValue, NODE_TYPE), IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue, NODE_TYPE)),
         CompositeQueryExpression(Seq(
         SingleQueryExpression(`val1`),
-        SingleQueryExpression(`val2`))), _, _),
+        SingleQueryExpression(`val2`))), _, _, _),
         NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue, NODE_TYPE), IndexedProperty(PropertyKeyToken("prop3", _), CanGetValue, NODE_TYPE)),
         CompositeQueryExpression(Seq(
         SingleQueryExpression(`val2`),
-        SingleQueryExpression(`val3`))), _, _))) => ()
+        SingleQueryExpression(`val3`))), _, _, _))) => ()
       }
     }
   }
@@ -907,7 +908,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         CompositeQueryExpression(Seq(
         SingleQueryExpression(`val1`),
         SingleQueryExpression(`val2`),
-        SingleQueryExpression(`val3`))), _, _)
+        SingleQueryExpression(`val3`))), _, _, _)
         ) => ()
       }
     }
@@ -927,7 +928,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(p@NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _)) =>
+        case SetExtractor(p@NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _, _)) =>
           val plannedQG = ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
           plannedQG.selections.flatPredicates.toSet shouldEqual Set(
             nPropInLit42, nFooIsNotNull, hasLabel("Awesome")
@@ -957,7 +958,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _)) =>
+        case SetExtractor(NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _, _)) =>
       }
     }
   }
@@ -974,7 +975,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _)) =>
+        case SetExtractor(NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _, _)) =>
       }
     }
   }
@@ -991,7 +992,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _)) =>
+        case SetExtractor(NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _, _)) =>
       }
     }
   }

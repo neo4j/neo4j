@@ -521,7 +521,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // This is ManyQueryExpression with only a single expression. That is possible to get, but the test utility IndexSeek cannot create those.
     assertGood(
       attach(NodeUniqueIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
-        ManyQueryExpression(ListLiteral(Seq(stringLiteral("Andres")))(pos)), Set.empty, IndexOrderNone), 95.0),
+        ManyQueryExpression(ListLiteral(Seq(stringLiteral("Andres")))(pos)), Set.empty, IndexOrderNone, IndexType.BTREE), 95.0),
       planDescription(id, "NodeUniqueIndexSeek", NoChildren, Seq(details("UNIQUE x:Label(Prop) WHERE Prop = \"Andres\"")), Set("x")))
 
     assertGood(
@@ -533,7 +533,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             (key("crs"), stringLiteral("cartesian"))
           ))(pos), FunctionName(Point.name)(pos)), number("10"), inclusive = true
         ))(pos)),
-        Set.empty, IndexOrderNone),
+        Set.empty, IndexOrderNone, IndexType.BTREE),
         95.0),
       planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE distance(Prop, point(1, 2, \"cartesian\")) <= 10")), Set("x")))
   }

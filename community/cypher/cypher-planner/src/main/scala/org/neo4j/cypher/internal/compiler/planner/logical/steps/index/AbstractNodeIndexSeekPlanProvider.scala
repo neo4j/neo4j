@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 
 abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
 
@@ -46,8 +47,8 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
     providedOrder: ProvidedOrder,
     indexOrder: IndexOrder,
     solvedPredicates: Seq[Expression],
+    indexType: IndexType,
   )
-
 
   protected def constructPlan(solution: Solution, context: LogicalPlanningContext): LogicalPlan
 
@@ -76,6 +77,7 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
         indexMatch.providedOrder,
         indexMatch.indexOrder,
         predicateSet.allSolvedPredicates,
+        indexMatch.indexDescriptor.indexType,
       ))
     }
   }

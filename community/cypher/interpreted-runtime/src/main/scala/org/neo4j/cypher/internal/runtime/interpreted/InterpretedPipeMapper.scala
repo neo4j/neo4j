@@ -259,11 +259,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ShortestPathPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SubqueryForeachPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexContainsScanPipe
@@ -341,58 +341,58 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         indexRegistrator.registerTypeScan()
         UndirectedRelationshipTypeScanPipe(ident, fromNode,  LazyType(typ)(semanticTable), toNode, indexOrder)(id = id)
 
-      case DirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties, valueExpr, _, indexOrder) =>
+      case DirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         DirectedRelationshipIndexSeekPipe(idName, startNode, endNode, typeToken, properties.toArray,
           indexRegistrator.registerQueryIndex(typeToken, properties), valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
-      case UndirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties, valueExpr, _, indexOrder) =>
+      case UndirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         UndirectedRelationshipIndexSeekPipe(idName, startNode, endNode, typeToken, properties.toArray,
           indexRegistrator.registerQueryIndex(typeToken, properties), valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
-      case DirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder) =>
+      case DirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder, indexType) =>
         DirectedRelationshipIndexScanPipe(idName, startNode, endNode, typeToken, properties.toArray,
           indexRegistrator.registerQueryIndex(typeToken, properties), indexOrder)(id = id)
 
-      case UndirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder) =>
+      case UndirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder, indexType) =>
         UndirectedRelationshipIndexScanPipe(idName, startNode, endNode, typeToken, properties.toArray,
           indexRegistrator.registerQueryIndex(typeToken, properties), indexOrder)(id = id)
 
-      case DirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder) =>
+      case DirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
         DirectedRelationshipIndexContainsScanPipe(idName, startNode, endNode, typeToken, property,
           indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
 
-      case UndirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder) =>
+      case UndirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
         UndirectedRelationshipIndexContainsScanPipe(idName, startNode, endNode, typeToken, property,
           indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
 
-      case DirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder) =>
+      case DirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
         DirectedRelationshipIndexEndsWithScanPipe(idName, startNode, endNode, typeToken, property,
           indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
 
-      case UndirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder) =>
+      case UndirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
         UndirectedRelationshipIndexEndsWithScanPipe(idName, startNode, endNode, typeToken, property,
           indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
 
-      case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
+      case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(label, properties),
           valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
-      case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
+      case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(label, properties),
           valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
-      case NodeIndexScan(ident, label, properties, _, indexOrder) =>
+      case NodeIndexScan(ident, label, properties, _, indexOrder, indexType) =>
         NodeIndexScanPipe(ident, label, properties, indexRegistrator.registerQueryIndex(label, properties), indexOrder)(id = id)
 
-      case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder) =>
+      case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder, indexType) =>
         NodeIndexContainsScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
           buildExpression(valueExpr), indexOrder)(id = id)
 
-      case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, indexOrder) =>
+      case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, indexOrder, indexType) =>
         NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
           buildExpression(valueExpr), indexOrder)(id = id)
 

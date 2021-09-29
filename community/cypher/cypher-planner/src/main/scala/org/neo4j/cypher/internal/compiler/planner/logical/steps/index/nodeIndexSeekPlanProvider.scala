@@ -50,7 +50,8 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
         solution.argumentIds,
         solution.providedOrder,
         solution.indexOrder,
-        context
+        context,
+        solution.indexType,
       )
     } else {
       context.logicalPlanProducer.planNodeIndexSeek(
@@ -63,7 +64,9 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
         solution.argumentIds,
         solution.providedOrder,
         solution.indexOrder,
-        context)
+        context,
+        solution.indexType,
+      )
     }
 }
 

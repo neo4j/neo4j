@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.graphdb
 
 import scala.language.implicitConversions
 
@@ -77,10 +78,16 @@ object IndexDescriptor {
     final case class Relationship(relType: RelTypeId) extends EntityType
   }
 
-  sealed trait IndexType
+  sealed trait IndexType {
+    def toPublicApi: graphdb.schema.IndexType
+  }
   object IndexType {
-    case object Btree extends IndexType
-    case object Text extends IndexType
+    case object Btree extends IndexType {
+      override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.BTREE
+    }
+    case object Text extends IndexType {
+      override def toPublicApi: graphdb.schema.IndexType = graphdb.schema.IndexType.TEXT
+    }
   }
 
   implicit def toKernelEncode(properties: Seq[PropertyKeyId]): Array[Int] = properties.map(_.id).toArray

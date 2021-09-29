@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 
 object EntityIndexScanPlanProvider {
 
@@ -38,6 +39,7 @@ object EntityIndexScanPlanProvider {
                                    solvedPredicates: Seq[Expression],
                                    solvedHint: Option[UsingIndexHint],
                                    providedOrder: ProvidedOrder,
+                                   indexType: IndexType,
                                  )
 
   private[index] def predicatesForIndexScan(propertyPredicates: Seq[IndexCompatiblePredicate]): Seq[IndexCompatiblePredicate] =
@@ -45,12 +47,13 @@ object EntityIndexScanPlanProvider {
 
   private[index] def mergeSolutions[PARAMETERS](solutions: Set[Solution[PARAMETERS]]): Set[Solution[PARAMETERS]] =
     solutions
-      .groupBy(_.indexScanParameters)
-      .map { case (parameters, solutions) => Solution(
+      .groupBy(s => (s.indexScanParameters, s.indexType))
+      .map { case ((parameters, indexType), solutions) => Solution(
         indexScanParameters = parameters,
         solvedPredicates = mergeSolvedPredicates(solutions).toSeq,
         solvedHint = solutions.flatMap(_.solvedHint).headOption,
         providedOrder = solutions.map(_.providedOrder).head,
+        indexType = indexType,
       )}
       .toSet
 

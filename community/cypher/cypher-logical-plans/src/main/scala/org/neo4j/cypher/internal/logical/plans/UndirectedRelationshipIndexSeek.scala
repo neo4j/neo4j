@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.graphdb.schema.IndexType
 
 /**
  * For every relationship with the given type and property values, produces two rows for each relationship.
@@ -39,7 +40,8 @@ case class UndirectedRelationshipIndexSeek(idName: String,
                                            properties: Seq[IndexedProperty],
                                            valueExpr: QueryExpression[Expression],
                                            argumentIds: Set[String],
-                                           indexOrder: IndexOrder)
+                                           indexOrder: IndexOrder,
+                                           indexType: IndexType)
                                           (implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
@@ -49,10 +51,10 @@ case class UndirectedRelationshipIndexSeek(idName: String,
   override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexSeek =
-    UndirectedRelationshipIndexSeek(idName, leftNode, rightNode, typeToken, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue, p.entityType) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty):  UndirectedRelationshipIndexSeek =
-    UndirectedRelationshipIndexSeek(idName, leftNode, rightNode, typeToken, properties.map(f), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    copy(properties = properties.map(f))(SameId(this.id))
 }
 
 object UndirectedRelationshipIndexSeek extends IndexSeekNames {

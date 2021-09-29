@@ -202,6 +202,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.topDown
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.collection.GenTraversableOnce
 import scala.collection.mutable.ArrayBuffer
@@ -736,9 +737,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                         paramExpr: GenTraversableOnce[Expression] = None,
                         argumentIds: Set[String] = Set.empty,
                         unique: Boolean = false,
-                        customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
+                        customQueryExpression: Option[QueryExpression[Expression]] = None,
+                        indexType: IndexType = IndexType.BTREE): IMPL = {
     val planBuilder = (idGen: IdGen) => {
-      val plan = nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr.seq.toSeq, argumentIds, unique, customQueryExpression)(idGen)
+      val plan = nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr.seq.toSeq, argumentIds, unique, customQueryExpression, indexType)(idGen)
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
@@ -749,9 +751,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                 indexOrder: IndexOrder = IndexOrderNone,
                                 paramExpr: Iterable[Expression] = Seq.empty,
                                 argumentIds: Set[String] = Set.empty,
-                                customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
+                                customQueryExpression: Option[QueryExpression[Expression]] = None,
+                                indexType: IndexType = IndexType.BTREE): IMPL = {
     val planBuilder = (idGen: IdGen) => {
-      val plan = relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, customQueryExpression)(idGen)
+      val plan = relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, customQueryExpression, indexType)(idGen)
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
@@ -763,14 +766,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                     paramExpr: Iterable[Expression] = Seq.empty,
                     argumentIds: Set[String] = Set.empty,
                     unique: Boolean = false,
-                    customQueryExpression: Option[QueryExpression[Expression]] = None): IdGen => NodeIndexLeafPlan = {
+                    customQueryExpression: Option[QueryExpression[Expression]] = None,
+                    indexType: IndexType = IndexType.BTREE): IdGen => NodeIndexLeafPlan = {
     val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
     val propIds: PartialFunction[String, Int] = {
       case x => resolver.getPropertyKeyId(x)
     }
     val planBuilder = (idGen: IdGen) => {
       val plan = IndexSeek.nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique,
-        customQueryExpression)(idGen)
+        customQueryExpression, indexType)(idGen)
       newNode(varFor(plan.idName))
       plan
     }
@@ -782,14 +786,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                             indexOrder: IndexOrder = IndexOrderNone,
                             paramExpr: Iterable[Expression] = Seq.empty,
                             argumentIds: Set[String] = Set.empty,
-                            customQueryExpression: Option[QueryExpression[Expression]] = None): IdGen => RelationshipIndexLeafPlan = {
+                            customQueryExpression: Option[QueryExpression[Expression]] = None,
+                            indexType: IndexType = IndexType.BTREE): IdGen => RelationshipIndexLeafPlan = {
     val relType = resolver.getRelTypeId(IndexSeek.relTypeFromIndexSeekString(indexSeekString))
     val propIds: PartialFunction[String, Int] = {
       case x => resolver.getPropertyKeyId(x)
     }
     val planBuilder = (idGen: IdGen) => {
       val plan = IndexSeek.relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), relType,
-        customQueryExpression)(idGen)
+        customQueryExpression, indexType)(idGen)
       newRelationship(varFor(plan.idName))
       newNode(varFor(plan.leftNode))
       newNode(varFor(plan.rightNode))
@@ -813,8 +818,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                  getValue: GetValueFromIndexBehavior = DoNotGetValue,
                                  indexOrder: IndexOrder = IndexOrderNone,
                                  inclusive: Boolean = false,
-                                 argumentIds: Set[String] = Set.empty): IMPL = {
-    pointDistanceNodeIndexSeekExpr(node, labelName, property, point, literalFloat(distance), getValue, indexOrder, inclusive, argumentIds)
+                                 argumentIds: Set[String] = Set.empty,
+                                 indexType: IndexType = IndexType.BTREE): IMPL = {
+    pointDistanceNodeIndexSeekExpr(node, labelName, property, point, literalFloat(distance), getValue, indexOrder, inclusive, argumentIds, indexType)
   }
 
   def pointDistanceNodeIndexSeekExpr(node: String,
@@ -825,7 +831,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                      getValue: GetValueFromIndexBehavior = DoNotGetValue,
                                      indexOrder: IndexOrder = IndexOrderNone,
                                      inclusive: Boolean = false,
-                                     argumentIds: Set[String] = Set.empty): IMPL = {
+                                     argumentIds: Set[String] = Set.empty,
+                                     indexType: IndexType = IndexType.BTREE): IMPL = {
     val label = resolver.getLabelId(labelName)
 
     val propId = resolver.getPropertyKeyId(property)
@@ -841,7 +848,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                Seq(indexedProperty),
                                e,
                                argumentIds,
-                               indexOrder)(idGen)
+                               indexOrder,
+                               indexType)(idGen)
       newNode(varFor(plan.idName))
       plan
     }

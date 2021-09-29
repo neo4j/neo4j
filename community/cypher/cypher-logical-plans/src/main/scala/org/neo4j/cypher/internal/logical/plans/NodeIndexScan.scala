@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.graphdb.schema.IndexType
 
 /**
  * This operator does a full scan of an index, producing one row per entry.
@@ -30,7 +31,8 @@ case class NodeIndexScan(idName: String,
                          override val label: LabelToken,
                          properties: Seq[IndexedProperty],
                          argumentIds: Set[String],
-                         indexOrder: IndexOrder)
+                         indexOrder: IndexOrder,
+                         indexType: IndexType)
                         (implicit idGen: IdGen)
   extends NodeIndexLeafPlan(idGen) {
 
@@ -41,8 +43,8 @@ case class NodeIndexScan(idName: String,
   override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexScan =
-    NodeIndexScan(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue, p.entityType) }, argumentIds, indexOrder)(SameId(this.id))
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexLeafPlan =
-    NodeIndexScan(idName, label, properties.map(f), argumentIds, indexOrder)(SameId(this.id))
+    copy(properties = properties.map(f))(SameId(this.id))
 }

@@ -587,7 +587,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should beLike {
       case Apply(
                  RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-                 NodeIndexSeek("n", _, _, _, SetExtractor(argumentName), _), _
+                 NodeIndexSeek("n", _, _, _, SetExtractor(argumentName), _, _), _
                 ) if collectionName == argumentName => ()
     }
   }
@@ -613,7 +613,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       case Apply
         (RollUpApply
           (Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-        DirectedRelationshipIndexSeek("r", _, _, _, _, _, SetExtractor(argumentName), _),
+        DirectedRelationshipIndexSeek("r", _, _, _, _, _, SetExtractor(argumentName), _, _),
         _
         ) if collectionName == argumentName => ()
     }
@@ -633,7 +633,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should beLike {
       case Apply(
                  RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-                 NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName), _), _
+                 NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName), _, _), _
                 ) if collectionName == argumentName => ()
     }
   }
@@ -652,7 +652,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should beLike {
       case Apply(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-      NodeIndexContainsScan("n", _, _, _, SetExtractor(argumentName), _), _
+      NodeIndexContainsScan("n", _, _, _, SetExtractor(argumentName), _, _), _
       ) if collectionName == argumentName => ()
     }
   }
@@ -671,7 +671,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should beLike {
       case Apply(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-      DirectedRelationshipIndexContainsScan("r", _, _, _, _, _, SetExtractor(argumentName), _), _
+      DirectedRelationshipIndexContainsScan("r", _, _, _, _, _, SetExtractor(argumentName), _, _), _
       ) if collectionName == argumentName => ()
     }
   }
@@ -690,7 +690,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should beLike {
       case Apply(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-      UndirectedRelationshipIndexEndsWithScan("r", _, _, _, _, _, SetExtractor(argumentName), _), _
+      UndirectedRelationshipIndexEndsWithScan("r", _, _, _, _, _, SetExtractor(argumentName), _, _), _
       ) if collectionName == argumentName => ()
     }
   }
@@ -709,7 +709,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan should beLike {
       case Apply(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
-      NodeIndexEndsWithScan("n", _, _, _, SetExtractor(argumentName), _), _
+      NodeIndexEndsWithScan("n", _, _, _, SetExtractor(argumentName), _, _), _
       ) if collectionName == argumentName => ()
     }
   }

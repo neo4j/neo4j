@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.graphdb.schema.IndexType
 
 /**
  * This operator does a full scan of an index, producing rows for all entries that end with a string value
@@ -38,7 +39,8 @@ case class DirectedRelationshipIndexEndsWithScan(idName: String,
                                                  property: IndexedProperty,
                                                  valueExpr: Expression,
                                                  argumentIds: Set[String],
-                                                 indexOrder: IndexOrder)
+                                                 indexOrder: IndexOrder,
+                                                 indexType: IndexType)
                                                 (implicit idGen: IdGen)
   extends RelationshipIndexLeafPlan(idGen) {
 
@@ -51,10 +53,10 @@ case class DirectedRelationshipIndexEndsWithScan(idName: String,
   override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexEndsWithScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexEndsWithScan =
-    DirectedRelationshipIndexEndsWithScan(idName, leftNode, rightNode, typeToken, IndexedProperty(property.propertyKeyToken, DoNotGetValue, property.entityType), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipIndexEndsWithScan =
-    DirectedRelationshipIndexEndsWithScan(idName, leftNode, rightNode, typeToken, f(property), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    copy(property = f(property))(SameId(this.id))
 
   override def leftNode: String = startNode
 

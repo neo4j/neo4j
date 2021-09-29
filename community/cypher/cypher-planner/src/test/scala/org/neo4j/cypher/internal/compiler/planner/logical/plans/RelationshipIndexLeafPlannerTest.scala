@@ -66,6 +66,7 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -169,36 +170,36 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
 
       resultPlans.toSet shouldEqual Set(
         // nPropInLit6Lit42
-        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropLessThanLit6
-        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEqualsLit42
-        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropStartsWithLitFoo
-        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropDistance
-        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEqualsXProp
-        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone, IndexType.BTREE),
         // mPropEqualsXProp
-        UndirectedRelationshipIndexSeek("m", "m1", "m2", relationshipTypeToken, Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone),
+        UndirectedRelationshipIndexSeek("m", "m1", "m2", relationshipTypeToken, Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oFooEqualsLit6, oBarEqualsLit42
-        DirectedRelationshipIndexSeek("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(fooToken, CanGetValue, RELATIONSHIP_TYPE), IndexedProperty(barToken, CanGetValue, RELATIONSHIP_TYPE)), CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexSeek("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(fooToken, CanGetValue, RELATIONSHIP_TYPE), IndexedProperty(barToken, CanGetValue, RELATIONSHIP_TYPE)), CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         DirectedRelationshipIndexSeek("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(aaaToken, CanGetValue, RELATIONSHIP_TYPE), IndexedProperty(bbbToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(cccToken, DoNotGetValue, RELATIONSHIP_TYPE)),
-          CompositeQueryExpression(Seq(SingleQueryExpression(lit42), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), ExistenceQueryExpression())), Set("x"), IndexOrderNone),
+          CompositeQueryExpression(Seq(SingleQueryExpression(lit42), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), ExistenceQueryExpression())), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropContainsLitFoo
-        DirectedRelationshipIndexContainsScan("n", "n1", "n2", relationshipTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexContainsScan("n", "n1", "n2", relationshipTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEndsWithLitFoo
-        DirectedRelationshipIndexEndsWithScan("n", "n1", "n2", relationshipTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexEndsWithScan("n", "n1", "n2", relationshipTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.BTREE),
         // ..several..
-        DirectedRelationshipIndexScan("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexScan("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oPropIsNotNull, oPropExists
-        DirectedRelationshipIndexScan("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexScan("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oFooExists, oFooEqualsLit6, oBarEqualsLit42,
-        DirectedRelationshipIndexScan("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(fooToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(barToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexScan("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(fooToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(barToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
-        DirectedRelationshipIndexScan("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(aaaToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(bbbToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(cccToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone),
+        DirectedRelationshipIndexScan("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(aaaToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(bbbToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(cccToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
       )
 
       // DirectedRelationshipIndexScan(o, o1, o2, RelationshipTypeToken(Awesome,RelTypeId(0)), List(IndexedProperty(PropertyKeyToken(aaa,PropertyKeyId(3)),DoNotGetValue,RELATIONSHIP_TYPE), IndexedProperty(PropertyKeyToken(bbb,PropertyKeyId(4)),DoNotGetValue,RELATIONSHIP_TYPE), IndexedProperty(PropertyKeyToken(ccc,PropertyKeyId(5)),DoNotGetValue,RELATIONSHIP_TYPE)), Set(x), IndexOrderNone) {},

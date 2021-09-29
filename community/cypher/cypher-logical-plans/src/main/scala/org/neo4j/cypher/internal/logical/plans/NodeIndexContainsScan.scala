@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.graphdb.schema.IndexType
 
 /**
  * This operator does a full scan of an index, producing rows for all entries that contain a string value
@@ -35,7 +36,8 @@ case class NodeIndexContainsScan(idName: String,
                                  property: IndexedProperty,
                                  valueExpr: Expression,
                                  argumentIds: Set[String],
-                                 indexOrder: IndexOrder)
+                                 indexOrder: IndexOrder,
+                                 indexType: IndexType)
                                 (implicit idGen: IdGen)
   extends NodeIndexLeafPlan(idGen) {
 
@@ -48,8 +50,8 @@ case class NodeIndexContainsScan(idName: String,
   override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexContainsScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexContainsScan =
-    NodeIndexContainsScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue, property.entityType), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    copy(property = property.copy(getValueFromIndex = DoNotGetValue))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexLeafPlan =
-    NodeIndexContainsScan(idName, label, f(property), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    copy(property = f(property))(SameId(this.id))
 }

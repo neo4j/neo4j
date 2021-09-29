@@ -91,6 +91,7 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
+import org.neo4j.graphdb.schema.IndexType
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp with LogicalPlanningIntegrationTestSupport {
 
@@ -198,7 +199,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           Seq(indexedProperty("name", 0, GetValue, NODE_TYPE)),
           ManyQueryExpression(listOfString("prefix1", "prefix2")),
           Set.empty,
-          IndexOrderNone)
+          IndexOrderNone,
+          IndexType.BTREE)
       ))
   }
 
@@ -231,7 +233,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           )(pos)
         ),
         Set.empty,
-        IndexOrderNone)
+        IndexOrderNone,
+        IndexType.BTREE)
     )
   }
 
@@ -390,7 +393,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
         Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
-        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone)
+        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone, IndexType.BTREE)
     )
   }
 
@@ -488,7 +491,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
               "n",
               LabelToken("Awesome", _),
       Seq(IndexedProperty(PropertyKeyToken("prop", _), DoNotGetValue, NODE_TYPE)),
-              SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _, _) => ()
+              SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _, _, _) => ()
     }
   }
 
@@ -594,7 +597,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)),
         Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
-        ManyQueryExpression(listOfInt(42, 1337)), Set.empty, IndexOrderNone)
+        ManyQueryExpression(listOfInt(42, 1337)), Set.empty, IndexOrderNone, IndexType.BTREE)
     )
   }
 
@@ -634,7 +637,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
         Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
-        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone)
+        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone, IndexType.BTREE)
     )
   }
 
@@ -649,7 +652,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         ands(equals(prop("n", "prop1"), literalInt(42))),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
           Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
-          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone)
+          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone, IndexType.BTREE)
       )
     )
   }
@@ -665,7 +668,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         ands(equals(prop("n", "prop1"), literalInt(42))),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
           Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
-          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone)
+          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone, IndexType.BTREE)
       )
     )
   }
@@ -741,7 +744,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexSeekCost
     } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE a.name = b.prop AND b.prop = 42 RETURN b")._2 should beLike {
-      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _, _), _, _, _, _, _, _)) => ()
+      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _, _, _), _, _, _, _, _, _)) => ()
     }
   }
 
@@ -750,7 +753,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexSeekCost
     } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE b.prop = a.name AND b.prop = 42 RETURN b")._2 should beLike {
-      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _, _), _, _, _, _, _, _)) => ()
+      case Selection(_, Expand(NodeIndexSeek("a", _, _, _, _, _, _), _, _, _, _, _, _)) => ()
     }
   }
 

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.graphdb.schema.IndexType
 
 /**
  * For every node with the given label and property values, produces rows with that node.
@@ -32,7 +33,8 @@ case class NodeIndexSeek(idName: String,
                          properties: Seq[IndexedProperty],
                          valueExpr: QueryExpression[Expression],
                          argumentIds: Set[String],
-                         indexOrder: IndexOrder)
+                         indexOrder: IndexOrder,
+                         indexType: IndexType)
                         (implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName
@@ -42,10 +44,10 @@ case class NodeIndexSeek(idName: String,
   override def withoutArgumentIds(argsToExclude: Set[String]): NodeIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeIndexSeek =
-    NodeIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue, p.entityType) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexSeek =
-    NodeIndexSeek(idName, label, properties.map(f), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    copy(properties = properties.map(f))(SameId(this.id))
 }
 
 object NodeIndexSeek extends IndexSeekNames {

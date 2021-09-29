@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.graphdb.schema.IndexType
 
 /**
  * This operator does a full scan of an index, producing two rows per entry.
@@ -37,7 +38,8 @@ case class UndirectedRelationshipIndexScan(idName: String,
                                            override val typeToken: RelationshipTypeToken,
                                            properties: Seq[IndexedProperty],
                                            argumentIds: Set[String],
-                                           indexOrder: IndexOrder)
+                                           indexOrder: IndexOrder,
+                                           indexType: IndexType)
                                           (implicit idGen: IdGen)
   extends RelationshipIndexLeafPlan(idGen) {
 
@@ -48,8 +50,8 @@ case class UndirectedRelationshipIndexScan(idName: String,
   override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexScan =
-    UndirectedRelationshipIndexScan(idName, leftNode, rightNode, typeToken, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue, p.entityType) }, argumentIds, indexOrder)(SameId(this.id))
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): UndirectedRelationshipIndexScan =
-    UndirectedRelationshipIndexScan(idName, leftNode, rightNode, typeToken, properties.map(f), argumentIds, indexOrder)(SameId(this.id))
+    copy(properties = properties.map(f))(SameId(this.id))
 }

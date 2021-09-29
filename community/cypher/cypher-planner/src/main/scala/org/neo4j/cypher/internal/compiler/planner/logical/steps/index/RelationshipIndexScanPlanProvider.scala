@@ -72,7 +72,8 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
         argumentIds = argumentIds,
         providedOrder = solution.providedOrder,
         indexOrder = solution.indexScanParameters.indexOrder,
-        context = context
+        context = context,
+        indexType =  solution.indexType,
       )
     }
   }
@@ -94,6 +95,7 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
       solvedPredicates = predicateSet.allSolvedPredicates,
       solvedHint = hint,
       providedOrder = indexMatch.providedOrder,
+      indexType = indexMatch.indexDescriptor.indexType
     )
   }
 }

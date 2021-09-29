@@ -80,7 +80,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     plan.stripProduceResults shouldBe a[CartesianProduct]
     // Sorted index should be placed on the left of the cartesian products
     plan.leftmostLeaf should beLike {
-      case NodeIndexScan(`orderedNode`, _, _, _, _) => ()
+      case NodeIndexScan(`orderedNode`, _, _, _, _, _) => ()
     }
   }
 
@@ -105,7 +105,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     plan.stripProduceResults shouldBe a[Sort]
     // Sorted index should not be placed on the left of the cartesian products
     plan.leftmostLeaf shouldNot beLike {
-      case NodeIndexScan(`orderedNode`, _, _, _, _) => ()
+      case NodeIndexScan(`orderedNode`, _, _, _, _, _) => ()
     }
   }
 
@@ -374,7 +374,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |""".stripMargin)
 
     plan.stripProduceResults shouldNot beLike {
-      case Selection(_, Apply(_, NodeIndexSeek(_, _, _, _, args, _), _)) if args.isEmpty => ()
+      case Selection(_, Apply(_, NodeIndexSeek(_, _, _, _, args, _, _), _)) if args.isEmpty => ()
     }
   }
 
@@ -396,13 +396,13 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val beSolvedByApply = beLike {
       case Selection(_, Apply(
-      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
-      NodeIndexSeek(_, _, _, SingleQueryExpression(_), _, _), _)) => ()
+      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _, _),
+      NodeIndexSeek(_, _, _, SingleQueryExpression(_), _, _, _), _)) => ()
     }
     val beSolvedByJoin = beLike {
       case ValueHashJoin(
-      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
-      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _), _) => ()
+      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _, _),
+      NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _, _), _) => ()
     }
 
     plan.stripProduceResults should (beSolvedByApply or beSolvedByJoin)

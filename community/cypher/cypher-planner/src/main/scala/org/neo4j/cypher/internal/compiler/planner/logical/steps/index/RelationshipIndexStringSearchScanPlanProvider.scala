@@ -60,7 +60,9 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
             argumentIds = argumentIds,
             providedOrder = indexMatch.providedOrder,
             indexOrder = indexMatch.indexOrder,
-            context = context)
+            context = context,
+            indexType = indexMatch.indexDescriptor.indexType,
+          )
           Some(plan)
 
         case _ =>

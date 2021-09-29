@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -917,7 +918,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("a.prop AS `a.prop`")
-        .nodeIndexOperator(s"a:A(prop $op 'hello')")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.TEXT)
         .build()
     }
 
@@ -943,7 +944,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("r.prop AS `r.prop`")
-        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)")
+        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.TEXT)
         .build()
     }
 

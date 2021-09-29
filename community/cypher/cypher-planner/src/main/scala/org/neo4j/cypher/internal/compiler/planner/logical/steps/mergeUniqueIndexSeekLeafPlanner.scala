@@ -96,7 +96,8 @@ object nodeSingleUniqueIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanPr
       solution.argumentIds,
       solution.providedOrder,
       solution.indexOrder,
-      context
+      context,
+      solution.indexType,
     )
   }
 }

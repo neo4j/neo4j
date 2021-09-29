@@ -60,6 +60,7 @@ object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
             providedOrder = indexMatch.providedOrder,
             indexOrder = indexMatch.indexOrder,
             context = context,
+            indexType = indexMatch.indexDescriptor.indexType,
           )
           Some(plan)
 

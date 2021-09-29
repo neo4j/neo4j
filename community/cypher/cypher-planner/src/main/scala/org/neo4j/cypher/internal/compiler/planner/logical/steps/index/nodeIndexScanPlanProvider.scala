@@ -65,6 +65,7 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
         providedOrder = solution.providedOrder,
         indexOrder = solution.indexScanParameters.indexOrder,
         context = context,
+        indexType = solution.indexType,
       )
     )
   }
@@ -85,6 +86,7 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
       solvedPredicates = predicateSet.allSolvedPredicates,
       solvedHint = hint,
       providedOrder = indexMatch.providedOrder,
+      indexType = indexMatch.indexDescriptor.indexType,
     )
   }
 }

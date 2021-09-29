@@ -183,11 +183,11 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       AssertSameNode("n",
       Apply(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName1, _),
-      NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName1), _), _
+      NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName1), _, _), _
       ),
       Apply(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName2, _),
-      NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName2), _), _
+      NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName2), _, _), _
       ))
       , _, _, _, _, _) if collectionName1 == argumentName1 && collectionName2 == argumentName2 => ()
     }

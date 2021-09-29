@@ -76,6 +76,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
       solvedHint = hint,
       providedOrder = indexMatch.providedOrder,
       context = context,
+      indexType = indexMatch.indexDescriptor.indexType,
     )
   }
 }

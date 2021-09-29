@@ -427,13 +427,13 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
    */
   def containsDependentIndexSeeks(plan: LogicalPlan): Boolean =
     plan.leaves.exists {
-      case NodeIndexSeek(_, _, _, valueExpr, _, _) =>
+      case NodeIndexSeek(_, _, _, valueExpr, _, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
-      case NodeUniqueIndexSeek(_, _, _, valueExpr, _, _) =>
+      case NodeUniqueIndexSeek(_, _, _, valueExpr, _, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
-      case DirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _) =>
+      case DirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
-      case UndirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _) =>
+      case UndirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
       case _ => false
     }

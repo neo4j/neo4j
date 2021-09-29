@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -157,36 +158,36 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
 
       resultPlans.toSet shouldEqual Set(
         // nPropInLit6Lit42
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropLessThanLit6
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEqualsLit42
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropStartsWithLitFoo
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropDistance
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEqualsXProp
-        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone, IndexType.BTREE),
         // mPropEqualsXProp
-        NodeIndexSeek("m", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone),
+        NodeIndexSeek("m", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oFooEqualsLit6, oBarEqualsLit42
-        NodeIndexSeek("o", labelToken, Seq(IndexedProperty(fooToken, CanGetValue, NODE_TYPE), IndexedProperty(barToken, CanGetValue, NODE_TYPE)), CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))), Set("x"), IndexOrderNone),
+        NodeIndexSeek("o", labelToken, Seq(IndexedProperty(fooToken, CanGetValue, NODE_TYPE), IndexedProperty(barToken, CanGetValue, NODE_TYPE)), CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         NodeIndexSeek("o", labelToken, Seq(IndexedProperty(aaaToken, CanGetValue, NODE_TYPE), IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE), IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)),
-          CompositeQueryExpression(Seq(SingleQueryExpression(lit42), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), ExistenceQueryExpression())), Set("x"), IndexOrderNone),
+          CompositeQueryExpression(Seq(SingleQueryExpression(lit42), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), ExistenceQueryExpression())), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropContainsLitFoo
-        NodeIndexContainsScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone),
+        NodeIndexContainsScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEndsWithLitFoo
-        NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone),
+        NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.BTREE),
         // ..several..
-        NodeIndexScan("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone),
+        NodeIndexScan("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oPropIsNotNull, oPropExists
-        NodeIndexScan("o", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone),
+        NodeIndexScan("o", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oFooExists, oFooEqualsLit6, oBarEqualsLit42,
-        NodeIndexScan("o", labelToken, Seq(IndexedProperty(fooToken, DoNotGetValue, NODE_TYPE), IndexedProperty(barToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone),
+        NodeIndexScan("o", labelToken, Seq(IndexedProperty(fooToken, DoNotGetValue, NODE_TYPE), IndexedProperty(barToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
-        NodeIndexScan("o", labelToken, Seq(IndexedProperty(aaaToken, DoNotGetValue, NODE_TYPE), IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE), IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone),
+        NodeIndexScan("o", labelToken, Seq(IndexedProperty(aaaToken, DoNotGetValue, NODE_TYPE), IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE), IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
       )
 
     }

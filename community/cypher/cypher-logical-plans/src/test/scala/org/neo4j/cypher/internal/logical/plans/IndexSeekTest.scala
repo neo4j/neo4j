@@ -41,34 +41,35 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class IndexSeekTest extends CypherFunSuite {
 
   implicit val idGen: IdGen = SameId(Id(42))
   private val pos = InputPosition.NONE
 
-  def createNodeIndexSeek(idName: String,
-                          label: LabelToken,
-                          properties: Seq[IndexedProperty],
-                          valueExpr: QueryExpression[Expression],
-                          argumentIds: Set[String],
-                          indexOrder: IndexOrder): Boolean => NodeIndexSeekLeafPlan = { unique =>
+  private def createNodeIndexSeek(idName: String,
+                                  label: LabelToken,
+                                  properties: Seq[IndexedProperty],
+                                  valueExpr: QueryExpression[Expression],
+                                  argumentIds: Set[String],
+                                  indexOrder: IndexOrder): Boolean => NodeIndexSeekLeafPlan = { unique =>
     if (unique) {
-      NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder)
+      NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder, IndexType.BTREE)
     } else {
-      NodeIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder)
+      NodeIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder, IndexType.BTREE)
     }
   }
 
-  def createRelIndexSeek(idName: String,
-                         startNode: String,
-                         endNode: String,
-                         relId: RelationshipTypeToken,
-                         properties: Seq[IndexedProperty],
-                         valueExpr: QueryExpression[Expression],
-                         argumentIds: Set[String],
-                         indexOrder: IndexOrder) = {
-    DirectedRelationshipIndexSeek(idName, startNode, endNode, relId, properties, valueExpr, argumentIds, indexOrder)
+  private def createRelIndexSeek(idName: String,
+                                 startNode: String,
+                                 endNode: String,
+                                 relId: RelationshipTypeToken,
+                                 properties: Seq[IndexedProperty],
+                                 valueExpr: QueryExpression[Expression],
+                                 argumentIds: Set[String],
+                                 indexOrder: IndexOrder) = {
+    DirectedRelationshipIndexSeek(idName, startNode, endNode, relId, properties, valueExpr, argumentIds, indexOrder, IndexType.BTREE)
   }
 
   val nodeTestCaseCreators: List[(String => GetValueFromIndexBehavior, Set[String], IndexOrder) => (String, Boolean => LogicalPlan)] = List(
@@ -95,22 +96,22 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder) => "b:Y(dogs = 3, cats >= 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue("dogs"), NODE_TYPE, 0), prop("cats", getValue("cats"), NODE_TYPE, 1)), CompositeQueryExpression(Seq(exactInt(3), gte(intLiteral(4)))), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE)), startsWith("hi"), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi', cats)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("cats", getValue("cats"), NODE_TYPE, 1)), CompositeQueryExpression(Seq(startsWith("hi"), exists())), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name ENDS WITH 'hi')" -> (_ => NodeIndexEndsWithScan("b", label("Y"), prop("name", getValue("name"), NODE_TYPE), string("hi"), args, indexOrder)),
+    (getValue, args, indexOrder) => "b:Y(name ENDS WITH 'hi')" -> (_ => NodeIndexEndsWithScan("b", label("Y"), prop("name", getValue("name"), NODE_TYPE), string("hi"), args, indexOrder, IndexType.BTREE)),
     (getValue, args, indexOrder) => "b:Y(dogs = 1, name ENDS WITH 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue("dogs"), NODE_TYPE, 0), prop("name", getValue("name"), NODE_TYPE, 1)), CompositeQueryExpression(Seq(exactInt(1), exists())), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name ENDS WITH 'hi', dogs = 1)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder)),
-    (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi')" -> (_ => NodeIndexContainsScan("b", label("Y"), prop("name", getValue("name"), NODE_TYPE), string("hi"), args, indexOrder)),
+    (getValue, args, indexOrder) => "b:Y(name ENDS WITH 'hi', dogs = 1)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder, IndexType.BTREE)),
+    (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi')" -> (_ => NodeIndexContainsScan("b", label("Y"), prop("name", getValue("name"), NODE_TYPE), string("hi"), args, indexOrder, IndexType.BTREE)),
     (getValue, args, indexOrder) => "b:Y(dogs = 1, name CONTAINS 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue("dogs"), NODE_TYPE, 0), prop("name", getValue("name"), NODE_TYPE, 1)), CompositeQueryExpression(Seq(exactInt(1), exists())), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi', dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder)),
-    (getValue, args, indexOrder) => "b:Y(name)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE)), args, indexOrder)),
-    (getValue, args, indexOrder) => "b:Y(name, dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder)),
-    (getValue, args, indexOrder) => "b:Y(name, dogs = 3)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder))
+    (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi', dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder, IndexType.BTREE)),
+    (getValue, args, indexOrder) => "b:Y(name)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE)), args, indexOrder, IndexType.BTREE)),
+    (getValue, args, indexOrder) => "b:Y(name, dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder, IndexType.BTREE)),
+    (getValue, args, indexOrder) => "b:Y(name, dogs = 3)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder, IndexType.BTREE))
   )
 
   val relTestCaseCreators: List[(String => GetValueFromIndexBehavior, Set[String], IndexOrder) => (String, LogicalPlan)] = List(
-    (getValue, args, indexOrder) => "(a)-[r:R(prop = 1)]->(b)" -> DirectedRelationshipIndexSeek("r", "a", "b", typ("R"), Seq(prop("prop", getValue("prop"), RELATIONSHIP_TYPE)), exactInt(1), args, indexOrder),
-    (getValue, args, indexOrder) => "(a)<-[r:R(prop = 1)]-(b)" -> DirectedRelationshipIndexSeek("r", "b", "a", typ("R"), Seq(prop("prop", getValue("prop"), RELATIONSHIP_TYPE)), exactInt(1), args, indexOrder),
-    (getValue, args, indexOrder) => "(a)-[r:R(prop = 1)]-(b)" -> UndirectedRelationshipIndexSeek("r", "a", "b", typ("R"), Seq(prop("prop", getValue("prop"), RELATIONSHIP_TYPE)), exactInt(1), args, indexOrder),
-    (getValue, args, indexOrder) => "(a)-[r:REL_ABC(id)]-(b)" -> UndirectedRelationshipIndexScan("r", "a", "b", typ("REL_ABC"), Seq(prop("id", getValue("id"), RELATIONSHIP_TYPE)), args, indexOrder),
+    (getValue, args, indexOrder) => "(a)-[r:R(prop = 1)]->(b)" -> DirectedRelationshipIndexSeek("r", "a", "b", typ("R"), Seq(prop("prop", getValue("prop"), RELATIONSHIP_TYPE)), exactInt(1), args, indexOrder, IndexType.BTREE),
+    (getValue, args, indexOrder) => "(a)<-[r:R(prop = 1)]-(b)" -> DirectedRelationshipIndexSeek("r", "b", "a", typ("R"), Seq(prop("prop", getValue("prop"), RELATIONSHIP_TYPE)), exactInt(1), args, indexOrder, IndexType.BTREE),
+    (getValue, args, indexOrder) => "(a)-[r:R(prop = 1)]-(b)" -> UndirectedRelationshipIndexSeek("r", "a", "b", typ("R"), Seq(prop("prop", getValue("prop"), RELATIONSHIP_TYPE)), exactInt(1), args, indexOrder, IndexType.BTREE),
+    (getValue, args, indexOrder) => "(a)-[r:REL_ABC(id)]-(b)" -> UndirectedRelationshipIndexScan("r", "a", "b", typ("REL_ABC"), Seq(prop("id", getValue("id"), RELATIONSHIP_TYPE)), args, indexOrder, IndexType.BTREE),
   )
 
   val getValueFunctions: List[String => GetValueFromIndexBehavior] = List(
@@ -151,13 +152,13 @@ class IndexSeekTest extends CypherFunSuite {
 
   test("custom value expression") {
     nodeIndexSeek("a:X(prop = ???)", paramExpr = Some(string("101"))) should be(
-      NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue, NODE_TYPE)), exactString("101"), Set.empty, IndexOrderNone)
+      NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue, NODE_TYPE)), exactString("101"), Set.empty, IndexOrderNone, IndexType.BTREE)
     )
   }
 
   test("custom query expression") {
     nodeIndexSeek("a:X(prop)", customQueryExpression = Some(exactInts(1, 2, 3)) ) should be(
-      NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue, NODE_TYPE)), exactInts(1, 2, 3), Set.empty, IndexOrderNone)
+      NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue, NODE_TYPE)), exactInts(1, 2, 3), Set.empty, IndexOrderNone, IndexType.BTREE)
     )
   }
 
