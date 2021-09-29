@@ -94,7 +94,7 @@ case object PushdownPropertyReads {
                    availableWholeEntities: Set[String],
                    incomingCardinality: EffectiveCardinality)
 
-    def foldSingleChildPlan(acc: Acc, argumentAcc: Acc, plan: LogicalPlan): Acc = {
+    def foldSingleChildPlan(acc: Acc, plan: LogicalPlan): Acc = {
       val newPropertyExpressions =
         plan.treeFold(List.empty[Property]) {
           case lp: LogicalPlan if lp.id != plan.id =>
@@ -265,16 +265,10 @@ case object PushdownPropertyReads {
             lhsAcc.availableWholeEntities,
             effectiveCardinalities(plan.id)
           )
-          // No ApplyPlan needs an argumentAcc yet, so it is stubbed for now.
-          // If you need a real argumentAcc, this is where you have to fix it.
-          val argumentAcc = null
-          foldSingleChildPlan(mergedAcc, argumentAcc, plan)
+          foldSingleChildPlan(mergedAcc, plan)
 
         case _: ApplyPlan =>
-          // No ApplyPlan needs an argumentAcc yet, so it is stubbed for now.
-          // If you need a real argumentAcc, this is where you have to fix it.
-          val argumentAcc = null
-          foldSingleChildPlan(rhsAcc, argumentAcc, plan)
+          foldSingleChildPlan(rhsAcc, plan)
 
         case _ =>
           val mergedVariableOptima =

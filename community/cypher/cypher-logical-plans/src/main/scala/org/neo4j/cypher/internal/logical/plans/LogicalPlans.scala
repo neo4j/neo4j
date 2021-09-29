@@ -120,11 +120,11 @@ object LogicalPlans {
    *       unless you really know what you're doing. The same ACC instance might
    *       be passed into several callback with the expectation of it being unchanged.
    *
-   * @param f                   maps (currentAcc, argumentAcc, plan) => acc for plan
+   * @param f                   maps (currentAcc, plan) => acc for plan
    * @param combineLeftAndRight combines the lhsAcc and rhsAcc of plan
    */
   def foldPlan[ACC](initialAcc: ACC)(root: LogicalPlan,
-                                     f: (ACC, ACC, LogicalPlan) => ACC,
+                                     f: (ACC, LogicalPlan) => ACC,
                                      combineLeftAndRight: (ACC, ACC, LogicalPlan) => ACC): ACC = {
     var stack: List[LogicalPlan] = root :: Nil
     var argumentStack: List[ACC] = initialAcc :: Nil
@@ -146,9 +146,9 @@ object LogicalPlans {
 
       (current.lhs, current.rhs) match {
         case (None, None) =>
-          acc = f(acc, argumentStack.head, current)
+          acc = f(acc, current)
         case (Some(_), None) =>
-          acc = f(acc, argumentStack.head, current)
+          acc = f(acc, current)
         case (Some(lhs), Some(rhs)) if comingFrom eq lhs =>
           if (current.isInstanceOf[ApplyPlan]) {
             argumentStack = acc :: argumentStack

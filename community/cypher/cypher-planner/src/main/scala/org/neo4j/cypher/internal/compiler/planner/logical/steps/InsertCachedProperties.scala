@@ -224,7 +224,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
       // Traverses the plan tree in plan execution order
       LogicalPlans.foldPlan(initialAcc)(
         logicalPlan,
-        (acc, _, p) => {
+        (acc, p) => {
           val accWithProps = {
             val initialAcc = if (!p.isLeaf) acc else acc.resetUsagesCount()
             findPropertiesInPlan(initialAcc, p)
