@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
+import org.neo4j.internal.kernel.api.Read
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
@@ -63,13 +65,13 @@ case class RelationshipState(id: Long, startNode: Long, endNode: Long, relType: 
   def flip: RelationshipState = copy(startNode = endNode, endNode = startNode)
 }
 
-class DirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], state: QueryState) extends ClosingLongIterator with RelationshipIterator {
+class DirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], read: Read, cursor: RelationshipScanCursor) extends ClosingLongIterator with RelationshipIterator {
   protected var cachedRelationship: RelationshipState = _
   protected var _next: Long = StatementConstants.NO_SUCH_RELATIONSHIP
   private var startNode = StatementConstants.NO_SUCH_NODE
   private var endNode = StatementConstants.NO_SUCH_NODE
   private var typ = StatementConstants.NO_SUCH_RELATIONSHIP_TYPE
-  override def close(): Unit = {}
+  override def close(): Unit = {cursor.close()}
 
   override protected[this] def innerHasNext: Boolean = {
     if (cachedRelationship == null) {
@@ -118,14 +120,13 @@ class DirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], s
       if (value != Values.NO_VALUE) {
         val id = NumericHelper.asLongEntityIdPrimitive(value)
         if (id >= 0) {
-          val internalCursor = state.cursors.relationshipScanCursor
-          state.query.singleRelationship(id, internalCursor)
-          if (internalCursor.next()) {
-            cachedRelationship = RelationshipState(internalCursor.relationshipReference(),
-              internalCursor.sourceNodeReference(),
-              internalCursor.targetNodeReference(),
-              internalCursor.`type`())
-            return internalCursor.relationshipReference()
+          read.singleRelationship(id, cursor)
+          if (cursor.next()) {
+            cachedRelationship = RelationshipState(cursor.relationshipReference(),
+              cursor.sourceNodeReference(),
+              cursor.targetNodeReference(),
+              cursor.`type`())
+            return cursor.relationshipReference()
           }
         }
       }
@@ -134,7 +135,7 @@ class DirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], s
   }
 }
 
-class UndirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], state: QueryState) extends DirectedRelationshipIdSeekIterator(relIds, state) {
+class UndirectedRelationshipIdSeekIterator(relIds: java.util.Iterator[AnyValue], read: Read, cursor: RelationshipScanCursor) extends DirectedRelationshipIdSeekIterator(relIds, read, cursor) {
   private var emitSibling = false
   private var lastRel = -1L
 

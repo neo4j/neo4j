@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.net.URL
-
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -74,6 +72,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
+import java.net.URL
 import scala.collection.Iterator
 
 class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends ReadQueryContext with ExceptionTranslationSupport {
@@ -270,6 +269,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def nodeCursor(): NodeCursor = translateException(tokenNameLookup, inner.nodeCursor())
 
   override def traversalCursor(): RelationshipTraversalCursor = translateException(tokenNameLookup, inner.traversalCursor())
+
+  override def scanCursor(): RelationshipScanCursor = translateException(tokenNameLookup, inner.scanCursor())
 
   override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): VirtualRelationshipValue =
     translateException(tokenNameLookup, inner.relationshipById(relationshipId, startNodeId, endNodeId, typeId))

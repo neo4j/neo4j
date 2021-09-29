@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.net.URL
-
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -88,6 +86,7 @@ import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
+import java.net.URL
 import scala.collection.Iterator
 
 abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
@@ -146,6 +145,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def nodeCursor(): NodeCursor = manyDbHits(inner.nodeCursor())
 
   override def traversalCursor(): RelationshipTraversalCursor = manyDbHits(inner.traversalCursor())
+
+  override def scanCursor(): RelationshipScanCursor = manyDbHits(inner.scanCursor())
 
   override def singleNode(id: Long, cursor: NodeCursor): Unit =  inner.singleNode(id, cursor)
 

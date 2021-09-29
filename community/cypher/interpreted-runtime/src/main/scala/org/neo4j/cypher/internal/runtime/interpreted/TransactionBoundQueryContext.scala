@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.net.URL
-import java.util.NoSuchElementException
-
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -128,6 +125,8 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.net.URL
+import java.util.NoSuchElementException
 import scala.collection.Iterator
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -479,6 +478,9 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
 
   override def traversalCursor(): RelationshipTraversalCursor =
     transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.cursorContext)
+
+  override def scanCursor(): RelationshipScanCursor =
+    transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.cursorContext)
 
   override def relationshipById(relationshipId: Long,
                                 startNodeId: Long,

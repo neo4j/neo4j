@@ -31,7 +31,7 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val ctx = state.newRowWithArgument(rowFactory)
     val relIds = relIdExpr.expressions(ctx, state)
-    val relationships = new DirectedRelationshipIdSeekIterator(relIds.iterator(), state)
+    val relationships = new DirectedRelationshipIdSeekIterator(relIds.iterator(), state.query.transactionalContext.dataRead, state.query.scanCursor())
     PrimitiveLongHelper.map(relationships, r => {
       rowFactory.copyWith(ctx,
         ident, VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()),
