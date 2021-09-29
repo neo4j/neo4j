@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.ClosingIterator
@@ -1054,12 +1053,6 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
       }
   }
 
-  private def getDatabaseService = {
-    transactionalContext.graph
-      .asInstanceOf[GraphDatabaseCypherService]
-      .getGraphDatabaseService
-  }
-
   override def nodeCountByCountStore(labelId: Int): Long = {
     reads().countsForNode(labelId)
   }
@@ -1142,9 +1135,8 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
       override def test(path: Path): Boolean = pathPredicate.test(path)
     }
 
-    // ShortestPath uses GraphDatabaseFacade for dependency resolving monitor
-    new ShortestPath(new BasicEvaluationContext(null /* ShortestPath does not need transaction */, getDatabaseService), depth,
-      expanderWithAllPredicates.build(), shortestPathPredicate, memoryTracker) {
+    new ShortestPath(new BasicEvaluationContext(null /* ShortestPath does not need transaction */, null /* or GraphDatabaseService */),
+                     depth, expanderWithAllPredicates.build(), shortestPathPredicate, memoryTracker) {
       override protected def filterNextLevelNodes(nextNode: Node): Node =
         if (filters.isEmpty) nextNode
         else if (filters.forall(filter => filter test nextNode)) nextNode

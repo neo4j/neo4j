@@ -308,7 +308,8 @@ public class ShortestPath implements PathFinder<Path>
                 Hit hit = new Hit( startSideData, endSideData, nextNode );
                 Node start = startSide.startNode;
                 Node end = (startSide == directionData) ? otherSide.startNode : directionData.startNode;
-                monitorData( startSide, (otherSide == startSide) ? directionData : otherSide, nextNode );
+                //monitorData( startSide, (otherSide == startSide) ? directionData : otherSide, nextNode ); // Disabled. Needs GraphDatabaseService in context.
+
                 // NOTE: Applying the filter-condition could give the wrong results with allShortestPaths,
                 // so only use it for singleShortestPath
                 // TODO: We don't need to create an intermediate array list just to check if list is empty after filtering
