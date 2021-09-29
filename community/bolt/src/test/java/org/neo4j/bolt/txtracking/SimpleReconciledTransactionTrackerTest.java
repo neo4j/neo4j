@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
-import org.neo4j.kernel.impl.store.StoreFileClosedException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

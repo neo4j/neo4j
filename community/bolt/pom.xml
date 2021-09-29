@@ -53,12 +53,6 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-record-storage-engine</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-values</artifactId>
             <version>${project.version}</version>
         </dependency>

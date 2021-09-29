@@ -30,7 +30,7 @@ import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.store.StoreFileClosedException;
+import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class StandaloneDatabaseInfoService implements DatabaseInfoService
