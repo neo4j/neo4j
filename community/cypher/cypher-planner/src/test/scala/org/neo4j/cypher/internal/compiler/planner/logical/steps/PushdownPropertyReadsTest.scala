@@ -838,7 +838,7 @@ class PushdownPropertyReadsTest
     rewritten shouldBe plan
   }
 
-  ignore("should not pushdown from RHS to LHS of transactionForeach") {
+  test("should not pushdown from RHS to LHS of transactionForeach") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
       .transactionForeach().withEffectiveCardinality(50)
@@ -895,6 +895,54 @@ class PushdownPropertyReadsTest
         .|.allNodeScan("n", "o")
         .allNodeScan("o")
         .build()
+  }
+
+  test("should even pushdown properties inside RHS of transactionForeach that are already read in LHS") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("n")
+      .transactionForeach().withEffectiveCardinality(100)
+      .|.filter("o.prop > 10").withEffectiveCardinality(100)
+      .|.expand("(n)-->(m)").withEffectiveCardinality(200)
+      .|.allNodeScan("n", "o").withEffectiveCardinality(20)
+      .filter("o.prop IS NOT NULL").withEffectiveCardinality(10)
+      .allNodeScan("o").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .transactionForeach()
+        .|.filter("o.prop > 10")
+        .|.expand("(n)-->(m)")
+        .|.cacheProperties("o.prop")
+        .|.allNodeScan("n", "o")
+        .filter("o.prop IS NOT NULL")
+        .allNodeScan("o")
+        .build()
+  }
+
+  test("should pushdown from top to top of transactionForeach") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("n.prop > 10").withEffectiveCardinality(10)
+      .expandAll("(n)-->(x)").withEffectiveCardinality(25)
+      .transactionForeach().withEffectiveCardinality(20)
+      .|.optionalExpandAll("(n)-->(m)").withEffectiveCardinality(1)
+      .|.argument().withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(35)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe new LogicalPlanBuilder()
+      .produceResults("n")
+      .filter("n.prop > 10")
+      .expandAll("(n)-->(x)")
+      .cacheProperties("n.prop")
+      .transactionForeach()
+      .|.optionalExpandAll("(n)-->(m)")
+      .|.argument()
+      .allNodeScan("n")
+      .build()
   }
 
   test("should not pushdown read if property is available from node index") {

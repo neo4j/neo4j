@@ -290,11 +290,29 @@ case object PushdownPropertyReads {
       }
     }
 
+    def mapArguments(argumentAcc: Acc, plan: LogicalPlan): Acc = {
+      plan match {
+        case _:TransactionForeach =>
+          Acc(
+            // Keep no optima of variables so that no property read can get pushed down from RHS to LHS
+            Map.empty,
+            // Keep any pushdowns identified so far
+            argumentAcc.propertyReadOptima,
+            // Keep no available properties/entities, which allows pushing down within the RHS
+            Set.empty,
+            Set.empty,
+            argumentAcc.incomingCardinality
+          )
+        case _ => argumentAcc
+      }
+    }
+
     val Acc(_, propertyReadOptima, _, _, _) =
       LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
         logicalPlan,
         foldSingleChildPlan,
-        foldTwoChildPlan
+        foldTwoChildPlan,
+        mapArguments
       )
 
     val propertyMap = new mutable.HashMap[Id, Set[Property]].withDefaultValue(Set.empty)

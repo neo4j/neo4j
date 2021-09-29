@@ -122,12 +122,25 @@ object LogicalPlans {
    *
    * @param f                   maps (currentAcc, plan) => acc for plan
    * @param combineLeftAndRight combines the lhsAcc and rhsAcc of plan
+   * @param mapArguments        maps an accumulator before giving it to the LHS leaves of ApplyPlans.
+   *                            Invoked with the accumulator of LHS children of ApplyPlans and the ApplyPlan.
    */
   def foldPlan[ACC](initialAcc: ACC)(root: LogicalPlan,
                                      f: (ACC, LogicalPlan) => ACC,
-                                     combineLeftAndRight: (ACC, ACC, LogicalPlan) => ACC): ACC = {
+                                     combineLeftAndRight: (ACC, ACC, LogicalPlan) => ACC,
+                                     mapArguments: (ACC, LogicalPlan) => ACC = (acc: ACC, _:LogicalPlan) => acc
+  ): ACC = {
     var stack: List[LogicalPlan] = root :: Nil
-    var argumentStack: List[ACC] = initialAcc :: Nil
+
+    /**
+     * @param argumentAcc this is the ACC captured right after processing the LHS of an ApplyPlan.
+     *                    It is used as the the first argument to `combineLeftAndRight` after processing the RHS
+     * @param mappedArgumentAcc this is `mapArguments(argumentAcc, applyPlan)`. It is used while on the RHS of the ApplyPlan.
+     */
+    case class ArgumentStackEntry(argumentAcc: ACC, mappedArgumentAcc: ACC)
+
+    // For each ApplyPlan that we are currently nested under there is one element in this stack.
+    var argumentStack: List[ArgumentStackEntry] = ArgumentStackEntry(initialAcc, initialAcc) :: Nil
     var lhsStack: List[ACC] = Nil
     var acc: ACC = initialAcc
     var comingFrom: LogicalPlan = null
@@ -151,16 +164,18 @@ object LogicalPlans {
           acc = f(acc, current)
         case (Some(lhs), Some(rhs)) if comingFrom eq lhs =>
           if (current.isInstanceOf[ApplyPlan]) {
-            argumentStack = acc :: argumentStack
+            val mappedArgumentAcc = mapArguments(acc, current)
+            argumentStack = ArgumentStackEntry(acc, mappedArgumentAcc) :: argumentStack
+            acc = mappedArgumentAcc
           } else {
             lhsStack = acc :: lhsStack
-            acc = argumentStack.head
+            acc = argumentStack.head.mappedArgumentAcc
           }
           stack = rhs :: current :: stack
           populate()
         case (Some(_), Some(rhs)) if comingFrom eq rhs =>
           if (current.isInstanceOf[ApplyPlan]) {
-            val lhsAcc = argumentStack.head
+            val ArgumentStackEntry(lhsAcc, _) = argumentStack.head
             argumentStack = argumentStack.tail
             acc = combineLeftAndRight(lhsAcc, acc, current)
           } else {

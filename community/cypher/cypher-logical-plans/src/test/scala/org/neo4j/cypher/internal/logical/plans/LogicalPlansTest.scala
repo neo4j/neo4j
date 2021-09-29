@@ -107,7 +107,7 @@ class LogicalPlansTest extends CypherFunSuite {
     implicit val idGen: IdGen = new SequentialIdGen
 
     val p0 = AllNodesScan("p0", Set.empty)
-    val p1 = AllNodesScan("p2", Set.empty)
+    val p1 = AllNodesScan("p1", Set.empty)
     val p2 = Selection(List(True()(pos)), p1)
     val p3 = Apply(p0, p2)
 
@@ -124,7 +124,7 @@ class LogicalPlansTest extends CypherFunSuite {
     implicit val idGen: IdGen = new SequentialIdGen
 
     val p0 = AllNodesScan("p0", Set.empty)
-    val p1 = AllNodesScan("p2", Set.empty)
+    val p1 = AllNodesScan("p1", Set.empty)
     val p2 = Apply(p0, p1)
     val p3 = Selection(List(True()(pos)), p2)
 
@@ -136,12 +136,59 @@ class LogicalPlansTest extends CypherFunSuite {
     foldedString shouldBe "->p0->p1=>p2->p3"
   }
 
+  test("LogicalPlans.foldPlan: should map argument accumulator of apply") {
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = AllNodesScan("p1", Set.empty)
+    val p2 = Apply(p0, p1)
+    val p3 = Selection(List(True()(pos)), p2)
+
+    case class Acc(str: String = "", uppercase: Boolean = false)
+
+    val Acc(foldedString, _) =
+      LogicalPlans.foldPlan(Acc())(p3,
+        {
+          case (Acc(str, uppercase), plan) => Acc(s"$str->${id(plan, uppercase)}", uppercase)
+        },
+        (lhs, rhs, plan) => Acc(s"${rhs.str}=>${id(plan, lhs.uppercase)}", lhs.uppercase),
+        mapArguments = {
+          case (acc, `p2`) =>  acc.copy(uppercase = true)
+          case _ => fail("Should only call mapArguments with p2")
+        }
+      )
+
+    foldedString shouldBe "->p0->P1=>p2->p3"
+  }
+
+  test("LogicalPlans.foldPlan: should not map argument accumulator of CartesianProduct") {
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = AllNodesScan("p1", Set.empty)
+    val p2 = CartesianProduct(p0, p1)
+    val p3 = Selection(List(True()(pos)), p2)
+
+    case class Acc(str: String = "", uppercase: Boolean = false)
+
+    val Acc(foldedString, _) =
+      LogicalPlans.foldPlan(Acc())(p3,
+        {
+          case (Acc(str, uppercase), plan) => Acc(s"$str->${id(plan, uppercase)}", uppercase)
+        },
+        (lhs, rhs, plan) => Acc(s"${id(plan, lhs.uppercase)}(${lhs.str}, ${rhs.str})", lhs.uppercase),
+        mapArguments = (acc, _) =>  acc.copy(uppercase = true)
+      )
+
+    foldedString shouldBe "p2(->p0, ->p1)->p3"
+  }
+
   test("LogicalPlans.foldPlan: cartesian product") {
 
     implicit val idGen: IdGen = new SequentialIdGen
 
     val p0 = AllNodesScan("p0", Set.empty)
-    val p1 = AllNodesScan("p2", Set.empty)
+    val p1 = AllNodesScan("p1", Set.empty)
     val p2 = CartesianProduct(p0, p1)
     val p3 = Selection(List(True()(pos)), p2)
 
@@ -187,6 +234,43 @@ class LogicalPlansTest extends CypherFunSuite {
     foldedString shouldBe "p5(->p0->p1->p2->p3, ->p0->p1->p2->p4)=>p6=>p7"
   }
 
+  test("LogicalPlans.foldPlan: should map argument accumulator of apply with nested CartesianProduct") {
+    implicit val idGen: IdGen = new SequentialIdGen
+
+    /*
+     *         p5(Apply)
+     *        /  \
+     *       p1  p4(CartesianProduct)
+     *      /   /   \
+     *     p0  p2   p3
+     */
+    val p0 = AllNodesScan("p0", Set.empty)
+    val p1 = Selection(List(True()(pos)), p0)
+    val p2 = AllNodesScan("p2", Set.empty)
+    val p3 = AllNodesScan("p3", Set.empty)
+    val p4 = CartesianProduct(p2, p3)
+    val p5 = Apply(p1, p4)
+
+    case class Acc(str: String = "", uppercase: Boolean = false)
+
+    val Acc(foldedString, _) =
+      LogicalPlans.foldPlan(Acc())(p5,
+        {
+          case (Acc(str, uppercase), plan) => Acc(s"$str->${id(plan, uppercase)}", uppercase)
+        },
+        (lhs, rhs, plan) =>
+          plan match {
+            case _: Apply => Acc(s"${rhs.str}=>${id(plan, lhs.uppercase)}", lhs.uppercase)
+            case _ => Acc(s"${id(plan, lhs.uppercase)}(${lhs.str}, ${rhs.str})", lhs.uppercase)
+          },
+        mapArguments = {
+          case (acc, _) =>  acc.copy(uppercase = true)
+        }
+      )
+
+    foldedString shouldBe "P4(->p0->p1->P2, ->p0->p1->P3)=>p5"
+  }
+
   test("LogicalPlans.foldPlan: cartesian product and applies") {
 
     implicit val idGen: IdGen = new SequentialIdGen
@@ -221,5 +305,11 @@ class LogicalPlansTest extends CypherFunSuite {
     foldedString shouldBe "p6(->p0->p1=>p2, ->p3->p4=>p5)->p7"
   }
 
-  private def id(plan: LogicalPlan) = "p"+plan.id.x
+  private def id(plan: LogicalPlan, uppercase: Boolean = false) = {
+    if(uppercase) {
+      "P" + plan.id.x
+    } else {
+      "p" + plan.id.x
+    }
+  }
 }
