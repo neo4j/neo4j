@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -35,7 +34,7 @@ public final class CommunityDatabaseStateService implements DatabaseStateService
 {
     private final DatabaseManager<StandaloneDatabaseContext> databaseManager;
 
-    public CommunityDatabaseStateService( DefaultDatabaseManager databaseManager )
+    public CommunityDatabaseStateService( DatabaseManager<StandaloneDatabaseContext> databaseManager )
     {
         this.databaseManager = databaseManager;
     }

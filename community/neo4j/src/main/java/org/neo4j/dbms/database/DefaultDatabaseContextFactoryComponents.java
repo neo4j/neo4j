@@ -17,20 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.dbms.database;
 
-import java.time.Clock;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 
-import org.neo4j.internal.id.IdController;
-import org.neo4j.storageengine.api.TransactionIdStore;
-
-/**
- * Used to inject additional conditions (e.g. delays) to ID reuse, i.e. when a deleted ID can be available for reuse again.
- */
-@FunctionalInterface
-public interface ExternalIdReuseConditionProvider
+public interface DefaultDatabaseContextFactoryComponents
 {
-    ExternalIdReuseConditionProvider NONE = ( baseCondition, transactionIdStore, clock ) -> baseCondition;
-
-    IdController.IdFreeCondition get( IdController.IdFreeCondition baseCondition, TransactionIdStore transactionIdStore, Clock clock );
+    ReadOnlyDatabases readOnlyDatabases();
 }

@@ -27,6 +27,12 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 
 public class DatabaseTransactionStats implements TransactionMonitor, TransactionCounters
 {
+    @FunctionalInterface
+    public interface Factory
+    {
+        DatabaseTransactionStats create();
+    }
+
     private final AtomicLong activeReadTransactionCount = new AtomicLong();
     private final LongAdder startedTransactionCount = new LongAdder();
     private final LongAdder activeWriteTransactionCount = new LongAdder();

@@ -23,7 +23,6 @@ import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -33,9 +32,9 @@ import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID
 
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
-    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition )
+    public DefaultDatabaseManager( GlobalModule globalModule, DatabaseContextFactory<StandaloneDatabaseContext> databaseContextFactory )
     {
-        super( globalModule, edition, true );
+        super( globalModule, databaseContextFactory, true );
     }
 
     @Override
@@ -71,18 +70,9 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         requireNonNull( namedDatabaseId );
         log.info( "Creating '%s'.", namedDatabaseId );
         checkDatabaseLimit( namedDatabaseId );
-        StandaloneDatabaseContext databaseContext = createDatabaseContext( namedDatabaseId, DatabaseOptions.EMPTY );
+        StandaloneDatabaseContext databaseContext = databaseContextFactory.create( namedDatabaseId, DatabaseOptions.EMPTY );
         databaseMap.put( namedDatabaseId, databaseContext );
         return databaseContext;
-    }
-
-    @Override
-    protected StandaloneDatabaseContext createDatabaseContext( NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions )
-    {
-        var databaseCreationContext =
-                newDatabaseCreationContext( namedDatabaseId, databaseOptions, globalModule.getGlobalDependencies(), globalModule.getGlobalMonitors() );
-        var kernelDatabase = new Database( databaseCreationContext );
-        return new StandaloneDatabaseContext( kernelDatabase );
     }
 
     @Override

@@ -19,70 +19,34 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
 import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyListener;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
-import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
-import org.neo4j.graphdb.factory.module.id.IdContextFactory;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public abstract class StandaloneEditionModule extends AbstractEditionModule
 {
-    protected CommitProcessFactory commitProcessFactory;
-    IdContextFactory idContextFactory;
-    Function<NamedDatabaseId,TokenHolders> tokenHoldersProvider;
-    Supplier<Locks> locksSupplier;
-
     @Override
-    public EditionDatabaseComponents createDatabaseComponents( NamedDatabaseId namedDatabaseId )
+    public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule, DatabaseManager<?> databaseManager,
+            Dependencies dependencies, DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent )
     {
-        return new StandaloneDatabaseComponents( this, namedDatabaseId );
+        var dbmsRuntimeRepository = new StandaloneDbmsRuntimeRepository( databaseManager, dbmsRuntimeSystemGraphComponent );
+        globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, dbmsRuntimeRepository );
+        return dbmsRuntimeRepository;
     }
-
-    public CommitProcessFactory getCommitProcessFactory()
-    {
-        return commitProcessFactory;
-    }
-
-    public IdContextFactory getIdContextFactory()
-    {
-        return idContextFactory;
-    }
-
-    public Function<NamedDatabaseId,TokenHolders> getTokenHoldersProvider()
-    {
-        return tokenHoldersProvider;
-    }
-
-    public Supplier<Locks> getLocksSupplier()
-    {
-        return locksSupplier;
-    }
-
-    @Override
-    public abstract DatabaseManager<? extends StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule );
 
     protected static ReadOnlyDatabases createGlobalReadOnlyChecker( DatabaseManager<?> databaseManager, Config globalConfig,
             GlobalTransactionEventListeners txListeners, LifeSupport globalLife, LogProvider logProvider )
@@ -95,14 +59,5 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
         globalLife.add( configListener );
         globalLife.add( systemGraphListener );
         return globalChecker;
-    }
-
-    @Override
-    public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule, DatabaseManager<?> databaseManager,
-            Dependencies dependencies, DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent )
-    {
-        var dbmsRuntimeRepository = new StandaloneDbmsRuntimeRepository( databaseManager, dbmsRuntimeSystemGraphComponent );
-        globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, dbmsRuntimeRepository );
-        return dbmsRuntimeRepository;
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.graphdb.factory.module;
 
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -28,12 +29,12 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
+import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -54,8 +55,10 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
+import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
@@ -63,6 +66,7 @@ import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.DatabaseLogService;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
@@ -115,57 +119,117 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final ReadOnlyDatabases readOnlyDatabases;
 
-    public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, Dependencies globalDependencies,
-            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
-            CursorContextFactory contextFactory, DatabaseConfig databaseConfig, LeaseService leaseService,
-            ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
-            StorageEngineFactory storageEngineFactory, ReadOnlyDatabases globalReadOnlyChecker )
+    public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId,
+                                           GlobalModule globalModule,
+                                           Dependencies globalDependencies,
+                                           DatabaseConfig databaseConfig,
+                                           CursorContextFactory contextFactory,
+                                           ConstraintSemantics constraintSemantics,
+                                           QueryEngineProvider queryEngineProvider,
+                                           DatabaseTransactionStats transactionStats,
+                                           Predicate<String> databaseFileFilter,
+                                           AccessCapabilityFactory accessCapabilityFactory,
+                                           ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
+                                           Locks locks,
+                                           DatabaseIdContext databaseIdContext,
+                                           CommitProcessFactory commitProcessFactory,
+                                           TokenHolders tokenHolders,
+                                           DatabaseStartupController databaseStartupController,
+                                           ReadOnlyDatabases readOnlyDatabases )
+    {
+        this( namedDatabaseId,
+              globalModule,
+              globalDependencies,
+              contextFactory,
+              databaseConfig,
+              globalModule.getGlobalMonitors(),
+              LeaseService.NO_LEASES,
+              DatabaseCreationContext.selectStorageEngine( globalModule.getFileSystem(),
+                                                           globalModule.getNeo4jLayout(),
+                                                           globalModule.getPageCache(),
+                                                           databaseConfig,
+                                                           namedDatabaseId ),
+              constraintSemantics,
+              queryEngineProvider,
+              transactionStats,
+              databaseFileFilter,
+              accessCapabilityFactory,
+              externalIdReuseConditionProvider,
+              locks,
+              databaseIdContext,
+              commitProcessFactory,
+              tokenHolders,
+              databaseStartupController,
+              readOnlyDatabases );
+    }
+
+    public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId,
+                                           GlobalModule globalModule,
+                                           Dependencies globalDependencies,
+                                           CursorContextFactory contextFactory,
+                                           DatabaseConfig databaseConfig,
+                                           Monitors parentMonitors,
+                                           LeaseService leaseService,
+                                           StorageEngineFactory storageEngineFactory,
+                                           ConstraintSemantics constraintSemantics,
+                                           QueryEngineProvider queryEngineProvider,
+                                           DatabaseTransactionStats transactionStats,
+                                           Predicate<String> databaseFileFilter,
+                                           AccessCapabilityFactory accessCapabilityFactory,
+                                           ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
+                                           Locks locks,
+                                           DatabaseIdContext databaseIdContext,
+                                           CommitProcessFactory commitProcessFactory,
+                                           TokenHolders tokenHolders,
+                                           DatabaseStartupController databaseStartupController,
+                                           ReadOnlyDatabases readOnlyDatabases )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = databaseConfig;
         this.contextFactory = contextFactory;
-        this.queryEngineProvider = editionComponents.getQueryEngineProvider();
+        this.queryEngineProvider = queryEngineProvider;
         this.externalIdReuseConditionProvider = externalIdReuseConditionProvider;
-        DatabaseIdContext idContext = editionComponents.getIdContext();
-        this.idGeneratorFactory = idContext.getIdGeneratorFactory();
-        this.idController = idContext.getIdController();
+        this.idGeneratorFactory = databaseIdContext.getIdGeneratorFactory();
+        this.idController = databaseIdContext.getIdController();
         this.transactionsMemoryPool = globalModule.getTransactionsMemoryPool();
         this.otherMemoryPool = globalModule.getOtherMemoryPool();
         this.databaseLogService = new DatabaseLogService( namedDatabaseId, globalModule.getLogService() );
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
-        this.tokenHolders = editionComponents.getTokenHolders();
-        this.locks = editionComponents.getLocks();
+        this.tokenHolders = tokenHolders;
+        this.locks = locks;
         this.transactionEventListeners = globalModule.getTransactionEventListeners();
         this.parentMonitors = parentMonitors;
         this.fs = globalModule.getFileSystem();
-        this.transactionStats = editionComponents.getTransactionMonitor();
+        this.transactionStats = transactionStats;
         this.eventListeners = globalModule.getDatabaseEventListeners();
         this.databaseHealthFactory = () -> new DatabaseHealth( new DatabasePanicEventGenerator( eventListeners, namedDatabaseId ),
-                        databaseLogService.getInternalLog( DatabaseHealth.class ) );
-        this.commitProcessFactory = editionComponents.getCommitProcessFactory();
+                                                               databaseLogService.getInternalLog( DatabaseHealth.class ) );
+        this.commitProcessFactory = commitProcessFactory;
         this.pageCache = globalModule.getPageCache();
-        this.constraintSemantics = editionComponents.getConstraintSemantics();
+        this.constraintSemantics = constraintSemantics;
         this.tracers = globalModule.getTracers();
-        this.globalProcedures = globalProcedures;
+        this.globalProcedures = globalDependencies.resolveDependency( GlobalProcedures.class );
         this.ioControllerService = globalModule.getIoControllerService();
         this.clock = globalModule.getGlobalClock();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.dbmsInfo = globalModule.getDbmsInfo();
         this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
         this.extensionFactories = globalModule.getExtensionFactories();
-        this.watcherServiceFactory = editionComponents.getWatcherServiceFactory();
+        this.watcherServiceFactory =
+                databaseLayout -> createDatabaseFileSystemWatcher( globalModule.getFileWatcher(), databaseLayout, globalModule.getLogService(),
+                                                                   databaseFileFilter );
         this.databaseAvailabilityGuardFactory =
                 databaseTimeoutMillis -> databaseAvailabilityGuardFactory( namedDatabaseId, globalModule, databaseTimeoutMillis );
         Neo4jLayout neo4jLayout = globalModule.getNeo4jLayout();
         this.storageEngineFactory = storageEngineFactory;
         this.databaseLayout = storageEngineFactory.databaseLayout( neo4jLayout, namedDatabaseId.name() );
         this.fileLockerService = globalModule.getFileLockerService();
-        this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
+        this.accessCapabilityFactory = accessCapabilityFactory;
         this.leaseService = leaseService;
-        this.startupController = editionComponents.getStartupController();
-        this.readOnlyDatabases = globalReadOnlyChecker;
+        this.startupController = databaseStartupController;
+        this.readOnlyDatabases = readOnlyDatabases;
     }
 
     @Override
@@ -418,5 +482,17 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     {
         Log guardLog = databaseLogService.getInternalLog( DatabaseAvailabilityGuard.class );
         return new DatabaseAvailabilityGuard( namedDatabaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard() );
+    }
+
+    private static DatabaseLayoutWatcher createDatabaseFileSystemWatcher( FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging,
+                                                                          Predicate<String> fileNameFilter )
+    {
+        var listenerFactory = new DefaultFileDeletionListenerFactory( databaseLayout, logging, fileNameFilter );
+        return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
+    }
+
+    public static Predicate<String> defaultFileWatcherFilter()
+    {
+        return TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE;
     }
 }

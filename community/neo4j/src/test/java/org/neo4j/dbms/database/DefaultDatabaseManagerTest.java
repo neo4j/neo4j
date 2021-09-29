@@ -25,7 +25,6 @@ import java.util.UUID;
 
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -42,7 +41,7 @@ class DefaultDatabaseManagerTest
         // Given
         NamedDatabaseId namedDatabaseId = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
         GlobalModule mock = mock( GlobalModule.class, RETURNS_MOCKS );
-        DefaultDatabaseManager databaseManager = new DefaultDatabaseManager( mock, mock( AbstractEditionModule.class ) );
+        DefaultDatabaseManager databaseManager = new DefaultDatabaseManager( mock, ( a, b ) -> null );
 
         // Then
         DatabaseManagementException e = assertThrows( DatabaseManagementException.class, () -> databaseManager.upgradeDatabase( namedDatabaseId ) );

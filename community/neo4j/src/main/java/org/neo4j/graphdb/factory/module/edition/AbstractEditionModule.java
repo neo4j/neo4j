@@ -19,8 +19,7 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
@@ -28,7 +27,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseInfoService;
@@ -40,25 +38,18 @@ import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
+import org.neo4j.graphdb.factory.module.id.IdContextFactory;
+import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.collector.DataCollectorProcedures;
-import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
-import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -78,6 +69,7 @@ import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
 /**
@@ -88,20 +80,8 @@ import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTempora
 public abstract class AbstractEditionModule
 {
     protected NetworkConnectionTracker connectionTracker;
-    protected ConstraintSemantics constraintSemantics;
-    protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected SecurityProvider securityProvider;
     protected DefaultDatabaseResolver defaultDatabaseResolver;
-
-    public abstract EditionDatabaseComponents createDatabaseComponents( NamedDatabaseId namedDatabaseId );
-
-    protected static DatabaseLayoutWatcher createDatabaseFileSystemWatcher( FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging,
-            Predicate<String> fileNameFilter )
-    {
-        DefaultFileDeletionListenerFactory listenerFactory =
-                new DefaultFileDeletionListenerFactory( databaseLayout, logging, fileNameFilter );
-        return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
-    }
 
     public void registerProcedures( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig, GlobalModule globalModule,
             DatabaseManager<?> databaseManager ) throws KernelException
@@ -149,19 +129,9 @@ public abstract class AbstractEditionModule
         return new DefaultNetworkConnectionTracker();
     }
 
-    public DatabaseTransactionStats createTransactionMonitor()
+    public DatabaseTransactionStats.Factory getTransactionMonitorFactory()
     {
-        return new DatabaseTransactionStats();
-    }
-
-    public ConstraintSemantics getConstraintSemantics()
-    {
-        return constraintSemantics;
-    }
-
-    public Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory()
-    {
-        return watcherServiceFactory;
+        return DatabaseTransactionStats::new;
     }
 
     public NetworkConnectionTracker getConnectionTracker()
@@ -191,11 +161,6 @@ public abstract class AbstractEditionModule
         return defaultDatabaseResolver;
     }
 
-    /**
-     * @return the query engine provider for this edition.
-     */
-    public abstract QueryEngineProvider getQueryEngineProvider();
-
     public abstract void bootstrapFabricServices();
 
     public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( Dependencies dependencies,
@@ -216,8 +181,6 @@ public abstract class AbstractEditionModule
         return securityProvider.loopbackAuthManager();
     }
 
-    public abstract DatabaseStartupController getDatabaseStartupController();
-
     public abstract Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies,
             Config config, LogProvider userLogProvider, DbmsInfo dbmsInfo );
 
@@ -235,10 +198,18 @@ public abstract class AbstractEditionModule
 
     public abstract DatabaseInfoService createDatabaseInfoService( DatabaseManager<?> databaseManager );
 
-    public abstract ReadOnlyDatabases getReadOnlyChecker();
-
-    protected static Predicate<String> defaultFileWatcherFilter()
+    public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
     {
-        return TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE;
+        return dependencies.containsDependency( clazz ) ? dependencies.resolveDependency( clazz ) : newInstanceMethod.get();
+    }
+
+    protected IdContextFactory createIdContextFactory( GlobalModule globalModule )
+    {
+        return tryResolveOrCreate( IdContextFactory.class, globalModule.getExternalDependencyResolver(), () ->
+            IdContextFactoryBuilder.of( globalModule.getFileSystem(),
+                                        globalModule.getJobScheduler(),
+                                        globalModule.getGlobalConfig(),
+                                        new CursorContextFactory( globalModule.getTracers().getPageCacheTracer(), EMPTY ) )
+                                   .build() );
     }
 }

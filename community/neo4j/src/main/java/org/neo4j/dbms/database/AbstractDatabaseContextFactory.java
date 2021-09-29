@@ -1,0 +1,119 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.dbms.database;
+
+import java.util.Optional;
+import java.util.function.Supplier;
+
+import org.neo4j.configuration.DatabaseConfig;
+import org.neo4j.graphdb.factory.module.GlobalModule;
+import org.neo4j.graphdb.factory.module.id.IdContextFactory;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
+import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
+import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LocksFactory;
+import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.TokenCreator;
+import org.neo4j.token.TokenHolders;
+
+import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
+import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
+import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
+import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
+import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
+
+public abstract class AbstractDatabaseContextFactory<DB> implements DatabaseContextFactory<DB>
+{
+    protected final GlobalModule globalModule;
+    protected final IdContextFactory idContextFactory;
+
+    public AbstractDatabaseContextFactory( GlobalModule globalModule, IdContextFactory idContextFactory )
+    {
+        this.globalModule = globalModule;
+        this.idContextFactory = idContextFactory;
+    }
+
+    public static Supplier<Locks> createLockSupplier( GlobalModule globalModule, LocksFactory lockFactory )
+    {
+        return () -> createLockManager( lockFactory, globalModule.getGlobalConfig(), globalModule.getGlobalClock() );
+    }
+
+    public static TokenHolders createTokenHolderProvider( GlobalModule platform, NamedDatabaseId databaseId )
+    {
+        DatabaseManager<?> databaseManager = platform.getGlobalDependencies().resolveDependency( DatabaseManager.class );
+        Supplier<Kernel> kernelSupplier = () ->
+        {
+            var databaseContext = databaseManager.getDatabaseContext( databaseId )
+                                                 .orElseThrow( () -> new IllegalStateException( format( "Database %s not found.", databaseId.name() ) ) );
+            return databaseContext.dependencies().resolveDependency( Kernel.class );
+        };
+        return new TokenHolders(
+                new DelegatingTokenHolder( createPropertyKeyCreator( kernelSupplier ), TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( createLabelIdCreator( kernelSupplier ), TYPE_LABEL ),
+                new DelegatingTokenHolder( createRelationshipTypeCreator( kernelSupplier ), TYPE_RELATIONSHIP_TYPE ) );
+    }
+
+    private static TokenCreator createRelationshipTypeCreator( Supplier<Kernel> kernelSupplier )
+    {
+        return new DefaultRelationshipTypeCreator( kernelSupplier );
+    }
+
+    private static TokenCreator createPropertyKeyCreator( Supplier<Kernel> kernelSupplier )
+    {
+        return new DefaultPropertyTokenCreator( kernelSupplier );
+    }
+
+    private static TokenCreator createLabelIdCreator( Supplier<Kernel> kernelSupplier )
+    {
+        return new DefaultLabelIdCreator( kernelSupplier );
+    }
+
+    protected final CursorContextFactory createContextFactory( DatabaseConfig databaseConfig, NamedDatabaseId databaseId )
+    {
+        var pageCacheTracer = globalModule.getTracers().getPageCacheTracer();
+        var factory = externalVersionContextSupplierFactory( globalModule )
+                .orElse( internalVersionContextSupplierFactory( databaseConfig ) );
+        return new CursorContextFactory( pageCacheTracer, factory.create( databaseId ) );
+    }
+
+    private static Optional<VersionContextSupplier.Factory> externalVersionContextSupplierFactory( GlobalModule globalModule )
+    {
+        var externalDependencies = globalModule.getExternalDependencyResolver();
+        var klass = VersionContextSupplier.Factory.class;
+        if ( externalDependencies.containsDependency( klass ) )
+        {
+            return Optional.of( externalDependencies.resolveDependency( klass ) );
+        }
+        return Optional.empty();
+    }
+
+    private static VersionContextSupplier.Factory internalVersionContextSupplierFactory( DatabaseConfig databaseConfig )
+    {
+        return databaseId -> databaseConfig.get( snapshot_query ) ? new TransactionVersionContextSupplier() : EmptyVersionContextSupplier.EMPTY;
+    }
+}

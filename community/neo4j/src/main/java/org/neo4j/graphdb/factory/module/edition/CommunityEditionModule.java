@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
@@ -31,7 +29,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
 import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -40,10 +37,11 @@ import org.neo4j.dbms.database.DatabaseIdCacheClearingListener;
 import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
+import org.neo4j.dbms.database.DefaultDatabaseContextFactory;
+import org.neo4j.dbms.database.DefaultDatabaseContextFactoryComponents;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
-import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.StandaloneDatabaseInfoService;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
@@ -55,30 +53,16 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.id.IdContextFactory;
-import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
-import org.neo4j.kernel.database.DatabaseStartupController;
-import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
-import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
-import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
+import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.kernel.impl.locking.LocksFactory;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -95,45 +79,30 @@ import org.neo4j.server.security.systemgraph.CommunityDefaultDatabaseResolver;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.token.DelegatingTokenHolder;
-import org.neo4j.token.TokenCreator;
-import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
-import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
-import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
-import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
 
 /**
  * This implementation of {@link AbstractEditionModule} creates the implementations of services
  * that are specific to the Community edition.
  */
-public class CommunityEditionModule extends StandaloneEditionModule
+public class CommunityEditionModule extends StandaloneEditionModule implements DefaultDatabaseContextFactoryComponents
 {
     protected final SslPolicyLoader sslPolicyLoader;
     protected final GlobalModule globalModule;
     protected final ServerIdentity identityModule;
-    private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     private final FabricServicesBootstrap fabricServicesBootstrap;
 
     protected DatabaseStateService databaseStateService;
-    private ReadOnlyDatabases globalReadOnlyChecker;
+    protected ReadOnlyDatabases globalReadOnlyChecker;
 
     public CommunityEditionModule( GlobalModule globalModule )
     {
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
         Config globalConfig = globalModule.getGlobalConfig();
         LogService logService = globalModule.getLogService();
-        SystemNanoClock globalClock = globalModule.getGlobalClock();
-        DependencyResolver externalDependencies = globalModule.getExternalDependencyResolver();
         this.globalModule = globalModule;
-
-        watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher( globalModule.getFileWatcher(), databaseLayout,
-                logService, fileWatcherFileNameFilter() );
 
         this.sslPolicyLoader = SslPolicyLoader.create( globalConfig, logService.getInternalLogProvider() );
         globalDependencies.satisfyDependency( sslPolicyLoader ); // for bolt and web server
@@ -144,28 +113,20 @@ public class CommunityEditionModule extends StandaloneEditionModule
         identityModule = DefaultIdentityModule.fromGlobalModule( globalModule );
         globalDependencies.satisfyDependency( identityModule );
 
-        LocksFactory lockFactory = createLockFactory( globalConfig, logService );
-        locksSupplier = () -> createLockManager( lockFactory, globalConfig, globalClock );
-
-        idContextFactory = tryResolveOrCreate( IdContextFactory.class, externalDependencies, () -> createIdContextFactory( globalModule,
-                new CursorContextFactory( globalModule.getTracers().getPageCacheTracer(), EMPTY ) ) );
-
-        tokenHoldersProvider = createTokenHolderProvider( globalModule );
-
-        commitProcessFactory = new CommunityCommitProcessFactory();
-
-        constraintSemantics = createSchemaRuleVerifier();
-
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
-        globalAvailabilityGuard = globalModule.getGlobalAvailabilityGuard();
 
         fabricServicesBootstrap = new FabricServicesBootstrap.Community( globalModule.getGlobalLife(), globalDependencies, globalModule.getLogService() );
     }
 
     @Override
-    public DatabaseManager<? extends StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule )
+    public DatabaseManager<? extends DatabaseContext> createDatabaseManager( GlobalModule globalModule )
     {
-        var databaseManager = new DefaultDatabaseManager( globalModule, this );
+        var databaseContextFactory = new DefaultDatabaseContextFactory( globalModule,
+                                                                        getTransactionMonitorFactory(),
+                                                                        createIdContextFactory( globalModule ),
+                                                                        createCommitProcessFactory(),
+                                                                        this );
+        var databaseManager = new DefaultDatabaseManager( globalModule, databaseContextFactory );
         databaseStateService = new CommunityDatabaseStateService( databaseManager );
 
         globalModule.getGlobalLife().add( databaseManager );
@@ -180,71 +141,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, databaseIdCacheCleaner );
 
         return databaseManager;
-    }
-
-    protected Function<NamedDatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
-    {
-        return databaseId -> {
-            DatabaseManager<?> databaseManager = platform.getGlobalDependencies().resolveDependency( DefaultDatabaseManager.class );
-            Supplier<Kernel> kernelSupplier = () ->
-            {
-                DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseId )
-                        .orElseThrow( () -> new IllegalStateException( "Default and system database kernels should always be accessible" ) );
-                return databaseContext.dependencies().resolveDependency( Kernel.class );
-            };
-            return new TokenHolders(
-                    new DelegatingTokenHolder( createPropertyKeyCreator( kernelSupplier ), TYPE_PROPERTY_KEY ),
-                    new DelegatingTokenHolder( createLabelIdCreator( kernelSupplier ), TYPE_LABEL ),
-                    new DelegatingTokenHolder( createRelationshipTypeCreator( kernelSupplier ), TYPE_RELATIONSHIP_TYPE ) );
-        };
-    }
-
-    private static IdContextFactory createIdContextFactory( GlobalModule globalModule, CursorContextFactory contextFactory )
-    {
-        return IdContextFactoryBuilder.of( globalModule.getFileSystem(), globalModule.getJobScheduler(), globalModule.getGlobalConfig(),
-                contextFactory ).build();
-    }
-
-    protected Predicate<String> fileWatcherFileNameFilter()
-    {
-        return communityFileWatcherFileNameFilter();
-    }
-
-    static Predicate<String> communityFileWatcherFileNameFilter()
-    {
-        return defaultFileWatcherFilter();
-    }
-
-    protected ConstraintSemantics createSchemaRuleVerifier()
-    {
-        return new StandardConstraintSemantics();
-    }
-
-    protected static TokenCreator createRelationshipTypeCreator( Supplier<Kernel> kernelSupplier )
-    {
-        return new DefaultRelationshipTypeCreator( kernelSupplier );
-    }
-
-    protected static TokenCreator createPropertyKeyCreator( Supplier<Kernel> kernelSupplier )
-    {
-        return new DefaultPropertyTokenCreator( kernelSupplier );
-    }
-
-    protected static TokenCreator createLabelIdCreator( Supplier<Kernel> kernelSupplier )
-    {
-        return new DefaultLabelIdCreator( kernelSupplier );
-    }
-
-    @Override
-    public QueryEngineProvider getQueryEngineProvider()
-    {
-        return new CommunityCypherEngineProvider();
-    }
-
-    @Override
-    public DatabaseStartupController getDatabaseStartupController()
-    {
-        return new GlobalAvailabilityGuardController( globalAvailabilityGuard );
     }
 
     @Override
@@ -360,25 +256,25 @@ public class CommunityEditionModule extends StandaloneEditionModule
         setDefaultDatabaseResolver( defaultDatabaseResolver );
     }
 
-    public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
-    {
-        return dependencies.containsDependency( clazz ) ? dependencies.resolveDependency( clazz ) : newInstanceMethod.get();
-    }
-
     @Override
     public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( Dependencies dependencies,
             DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock, LogService logService )
     {
-        var kernelDatabaseManagementService = createBoltKernelDatabaseManagementServiceProvider(dependencies, managementService, monitors, clock, logService);
+        var kernelDatabaseManagementService = createBoltKernelDatabaseManagementServiceProvider( dependencies, managementService, monitors, clock );
         return fabricServicesBootstrap.createBoltDatabaseManagementServiceProvider( kernelDatabaseManagementService, managementService, monitors, clock );
     }
 
     protected static BoltGraphDatabaseManagementServiceSPI createBoltKernelDatabaseManagementServiceProvider( Dependencies dependencies,
-            DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock, LogService logService )
+            DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock )
     {
         var config = dependencies.resolveDependency( Config.class );
         var bookmarkAwaitDuration =  config.get( GraphDatabaseSettings.bookmark_ready_timeout );
         return new BoltKernelDatabaseManagementServiceProvider( managementService, monitors, clock, bookmarkAwaitDuration );
+    }
+
+    protected CommitProcessFactory createCommitProcessFactory()
+    {
+        return new CommunityCommitProcessFactory();
     }
 
     @Override
@@ -388,7 +284,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     }
 
     @Override
-    public ReadOnlyDatabases getReadOnlyChecker()
+    public ReadOnlyDatabases readOnlyDatabases()
     {
         return globalReadOnlyChecker;
     }

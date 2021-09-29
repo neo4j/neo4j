@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.internal.id.BufferedIdController;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
@@ -73,7 +74,7 @@ class CommunityEditionModuleIntegrationTest
     @Test
     void fileWatcherFileNameFilter()
     {
-        Predicate<String> filter = CommunityEditionModule.communityFileWatcherFileNameFilter();
+        Predicate<String> filter = ModularDatabaseCreationContext.defaultFileWatcherFilter();
         assertFalse( filter.test( databaseLayout.metadataStore().getFileName().toString() ) );
         assertFalse( filter.test( databaseLayout.nodeStore().getFileName().toString() ) );
         assertTrue( filter.test( TransactionLogFilesHelper.DEFAULT_NAME + ".1" ) );

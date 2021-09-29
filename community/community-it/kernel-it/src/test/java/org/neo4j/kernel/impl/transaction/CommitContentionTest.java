@@ -128,9 +128,9 @@ class CommitContentionTest
         managementService = new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override
-            public DatabaseTransactionStats createTransactionMonitor()
+            public DatabaseTransactionStats.Factory getTransactionMonitorFactory()
             {
-                return new SkipTransactionDatabaseStats();
+                return SkipTransactionDatabaseStats::new;
             }
         } ).build( cfg, GraphDatabaseDependencies.newDependencies().dependencies( noOpSystemGraphInitializer( cfg ) ) );
         return managementService.database( cfg.get( GraphDatabaseSettings.default_database ));

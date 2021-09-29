@@ -28,60 +28,44 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.context.VersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.SystemGraphDatabaseIdRepository;
-import org.neo4j.kernel.impl.api.LeaseService;
-import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.monitoring.Monitors;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableNavigableMap;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
 
 public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<DB>
 {
     protected final Map<NamedDatabaseId,DB> databaseMap;
-    protected final GlobalModule globalModule;
-    protected final AbstractEditionModule edition;
+    protected final DependencyResolver externalDependencyResolver;
     protected final Log log;
     protected final boolean manageDatabasesOnStartAndStop;
     protected final Config config;
-    protected final LogProvider logProvider;
+    protected final DatabaseContextFactory<DB> databaseContextFactory;
+
     private final DatabaseIdRepository.Caching databaseIdRepository;
 
-    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, boolean manageDatabasesOnStartAndStop )
+    protected AbstractDatabaseManager( GlobalModule globalModule, DatabaseContextFactory<DB> databaseContextFactory, boolean manageDatabasesOnStartAndStop )
     {
-        this.logProvider = globalModule.getLogService().getInternalLogProvider();
-        this.log = logProvider.getLog( getClass() );
-        this.globalModule = globalModule;
+        this.log = globalModule.getLogService().getInternalLogProvider().getLog( getClass() );
+        this.externalDependencyResolver = globalModule.getExternalDependencyResolver();
         this.config = globalModule.getGlobalConfig();
-        this.edition = edition;
         this.manageDatabasesOnStartAndStop = manageDatabasesOnStartAndStop;
         this.databaseMap = new ConcurrentHashMap<>();
+        this.databaseContextFactory = databaseContextFactory;
         this.databaseIdRepository = createDatabaseIdRepository( globalModule );
     }
 
@@ -187,23 +171,6 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         return databaseMap.entrySet().stream().filter( entry -> predicate.test( entry.getKey() ) ).map( Map.Entry::getValue ).findFirst();
     }
 
-    protected abstract DB createDatabaseContext( NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions ) throws Exception;
-
-    protected ModularDatabaseCreationContext newDatabaseCreationContext( NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions,
-            Dependencies parentDependencies, Monitors parentMonitors )
-    {
-        EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( namedDatabaseId );
-        var globalProcedures = parentDependencies.resolveDependency( GlobalProcedures.class );
-        var databaseConfig = new DatabaseConfig( databaseOptions.settings(), config, namedDatabaseId );
-        var storageEngineFactory = DatabaseCreationContext.selectStorageEngine( globalModule.getFileSystem(), globalModule.getNeo4jLayout(),
-                globalModule.getPageCache(), databaseConfig, namedDatabaseId );
-
-        return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors, editionDatabaseComponents,
-                globalProcedures, createContextFactory( globalModule.getTracers().getPageCacheTracer(), databaseConfig, namedDatabaseId ),
-                                                   databaseConfig, LeaseService.NO_LEASES, editionDatabaseComponents.getExternalIdReuseConditionProvider(),
-                                                   storageEngineFactory, edition.getReadOnlyChecker() );
-    }
-
     private void forEachDatabase( BiConsumer<NamedDatabaseId,DB> consumer, boolean systemDatabaseLast, String operationName )
     {
         var snapshot = systemDatabaseLast ? databasesSnapshot().descendingMap().entrySet() : databasesSnapshot().entrySet();
@@ -259,28 +226,5 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
             log.error( "Error stopping '%s'.", namedDatabaseId );
             throw new DatabaseManagementException( format( "An error occurred! Unable to stop `%s`.", namedDatabaseId ), t );
         }
-    }
-
-    protected final CursorContextFactory createContextFactory( PageCacheTracer pageCacheTracer, DatabaseConfig databaseConfig, NamedDatabaseId databaseId )
-    {
-        var factory = externalVersionContextSupplierFactory( globalModule )
-                .orElse( internalVersionContextSupplierFactory( databaseConfig ) );
-        return new CursorContextFactory( pageCacheTracer, factory.create( databaseId ) );
-    }
-
-    private static Optional<VersionContextSupplier.Factory> externalVersionContextSupplierFactory( GlobalModule globalModule )
-    {
-        var externalDependencies = globalModule.getExternalDependencyResolver();
-        var klass = VersionContextSupplier.Factory.class;
-        if ( externalDependencies.containsDependency( klass ) )
-        {
-            return Optional.of( externalDependencies.resolveDependency( klass ) );
-        }
-        return Optional.empty();
-    }
-
-    private static VersionContextSupplier.Factory internalVersionContextSupplierFactory( DatabaseConfig databaseConfig )
-    {
-        return databaseId -> databaseConfig.get( snapshot_query ) ? new TransactionVersionContextSupplier() : EmptyVersionContextSupplier.EMPTY;
     }
 }
