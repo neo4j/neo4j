@@ -50,7 +50,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
 {
     private static final String STORE = "store";
-    private static final int INITIAL_KEY_COUNT = 10_000;
+    private static final int INITIAL_KEY_COUNT = 1_000;
     private static final int PAGE_SIZE_8K = (int) ByteUnit.kibiBytes( 8 );
     private static final int PAGE_SIZE_16K = (int) ByteUnit.kibiBytes( 16 );
     private static final int PAGE_SIZE_32K = (int) ByteUnit.kibiBytes( 32 );
