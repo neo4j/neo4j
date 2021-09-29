@@ -206,7 +206,7 @@ class PushdownPropertyReadsTest
     rewritten shouldBe plan
   }
 
-  test("should not pushdown through Anti") {
+  test("should not pushdown from top to RHS of Apply/Anti") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
       .filter("n.prop > 10").withEffectiveCardinality(10)
@@ -221,7 +221,7 @@ class PushdownPropertyReadsTest
     rewritten shouldBe plan
   }
 
-  test("should not pushdown through SemiApply") {
+  test("should not pushdown from top to RHS SemiApply") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
       .filter("n.prop > 10").withEffectiveCardinality(10)
@@ -235,11 +235,11 @@ class PushdownPropertyReadsTest
     rewritten shouldBe plan
   }
 
-  test("should pushdown lhs of SemiApply") {
+  test("should pushdown from top to LHS of SemiApply") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
       .filter("n.prop > 10").withEffectiveCardinality(10)
-      .semiApply().withEffectiveCardinality(10)
+      .semiApply().withEffectiveCardinality(15)
       .|.optionalExpandAll("(n)-->(m)").withEffectiveCardinality(1)
       .|.argument().withEffectiveCardinality(10)
       .expandAll("(n)-->(x)").withEffectiveCardinality(20)
@@ -249,17 +249,17 @@ class PushdownPropertyReadsTest
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("n.prop > 10").withEffectiveCardinality(10)
-      .semiApply().withEffectiveCardinality(10)
-      .|.optionalExpandAll("(n)-->(m)").withEffectiveCardinality(1)
-      .|.argument().withEffectiveCardinality(10)
-      .expandAll("(n)-->(x)").withEffectiveCardinality(20)
+      .filter("n.prop > 10")
+      .semiApply()
+      .|.optionalExpandAll("(n)-->(m)")
+      .|.argument()
+      .expandAll("(n)-->(x)")
       .cacheProperties("n.prop")
-      .allNodeScan("n").withEffectiveCardinality(10)
+      .allNodeScan("n")
       .build()
   }
 
-  test("should not pushdown through AntiSemiApply") {
+  test("should not pushdown from top to RHS AntiSemiApply") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
       .filter("n.prop > 10").withEffectiveCardinality(10)
@@ -674,22 +674,16 @@ class PushdownPropertyReadsTest
   }
 
   ignore("should not pushdown from RHS to LHS of transactionForeach") {
-    val plan = new LogicalPlanBuilder()
+    val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
       .transactionForeach().withEffectiveCardinality(50)
       .|.filter("m.prop > 10").withEffectiveCardinality(50)
       .|.allNodeScan("n", "m").withEffectiveCardinality(100)
       .allNodeScan("m").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
-    rewritten shouldBe
-      new LogicalPlanBuilder()
-        .produceResults("n")
-        .transactionForeach()
-        .|.filter("m.prop > 10")
-        .|.allNodeScan("n", "m")
-        .allNodeScan("m")
-        .build()
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
   }
 
   test("should pushdown inside LHS of transactionForeach") {
