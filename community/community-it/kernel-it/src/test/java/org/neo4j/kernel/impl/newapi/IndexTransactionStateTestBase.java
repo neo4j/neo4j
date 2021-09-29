@@ -80,7 +80,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
+    @MethodSource( "parametersForScan" )
     void shouldPerformScan( IndexType indexType, boolean needsValues ) throws Exception
     {
         // given
@@ -375,6 +375,17 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
                 Arguments.of( IndexType.RANGE, true ),
                 Arguments.of( IndexType.RANGE, false ),
                 Arguments.of( IndexType.TEXT, false )
+        );
+    }
+
+    private static Stream<Arguments> parametersForScan()
+    {
+        // Text index doesn't support scan
+        return Stream.of(
+                Arguments.of( IndexType.BTREE, true ),
+                Arguments.of( IndexType.BTREE, false ),
+                Arguments.of( IndexType.RANGE, true ),
+                Arguments.of( IndexType.RANGE, false )
         );
     }
 
