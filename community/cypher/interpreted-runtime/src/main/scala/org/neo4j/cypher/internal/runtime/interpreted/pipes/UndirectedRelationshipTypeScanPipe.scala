@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 

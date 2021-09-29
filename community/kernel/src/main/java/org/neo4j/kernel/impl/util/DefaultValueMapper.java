@@ -136,13 +136,18 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         };
     }
 
-    private class CoreAPIPath implements Path
+    class CoreAPIPath implements Path
     {
         private final VirtualPathValue value;
 
         CoreAPIPath( VirtualPathValue value )
         {
             this.value = value;
+        }
+
+        public VirtualPathValue pathValue()
+        {
+            return value;
         }
 
         @Override

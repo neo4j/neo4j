@@ -50,6 +50,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 public final class ValueUtils
@@ -98,7 +99,7 @@ public final class ValueUtils
             {
                 if ( object instanceof Path )
                 {
-                    return fromPath( (Path) object );
+                    return pathReferenceFromPath( (Path)object );
                 }
                 else if ( object instanceof List<?> )
                 {
@@ -308,6 +309,29 @@ public final class ValueUtils
     public static PathValue fromPath( Path path )
     {
         return new PathWrappingPathValue( path );
+    }
+
+    public static VirtualPathValue pathReferenceFromPath( Path path )
+    {
+        if ( path instanceof DefaultValueMapper.CoreAPIPath ) {
+            return ((DefaultValueMapper.CoreAPIPath) path).pathValue();
+        }
+        else
+        {
+            int len = path.length();
+            long[] nodes = new long[len + 1];
+            long[] rels = new long[len];
+            Iterator<Node> nodeIterator = path.nodes().iterator();
+            Iterator<Relationship> relIterator = path.relationships().iterator();
+            int i = 0;
+            for ( ; i < len; i++ )
+            {
+                nodes[i] = nodeIterator.next().getId();
+                rels[i] = relIterator.next().getId();
+            }
+            nodes[i] = nodeIterator.next().getId();
+            return VirtualValues.pathReference( nodes, rels );
+        }
     }
 
     /**
