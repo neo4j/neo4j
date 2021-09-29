@@ -841,7 +841,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (sizeHint * (1 /* read node */ + 2 * costOfProperty)) // produceresults
+    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (2 *(sizeHint * (1 /* read node */ + 2 * costOfProperty)))// produceresults
   }
 }
 

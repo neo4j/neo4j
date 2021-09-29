@@ -55,7 +55,8 @@ public final class ValuePopulation
     public static AnyValue populate( AnyValue value,
                                      DbAccess dbAccess,
                                      NodeCursor nodeCursor,
-                                     RelationshipScanCursor relCursor, PropertyCursor propertyCursor )
+                                     RelationshipScanCursor relCursor,
+                                     PropertyCursor propertyCursor )
     {
      if ( value instanceof VirtualNodeValue )
         {
