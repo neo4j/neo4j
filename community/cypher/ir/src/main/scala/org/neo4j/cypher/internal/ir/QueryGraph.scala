@@ -406,7 +406,8 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
       selections.nonEmpty ||
       shortestPathPatterns.nonEmpty ||
       optionalMatches.nonEmpty ||
-      containsMergeRecursive
+      containsMergeRecursive ||
+      containsPropertyReadsInUpdates
   }
 
   def writeOnly: Boolean = !containsReads && containsUpdates

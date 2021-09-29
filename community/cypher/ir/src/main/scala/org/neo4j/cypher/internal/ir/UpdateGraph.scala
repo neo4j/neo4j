@@ -46,6 +46,11 @@ trait UpdateGraph {
   def containsMergeRecursive: Boolean = hasMergeNodePatterns || hasMergeRelationshipPatterns ||
     foreachPatterns.exists(_.innerUpdates.allQGsWithLeafInfo.map(_.queryGraph).exists(_.containsMergeRecursive))
 
+  def containsPropertyReadsInUpdates: Boolean = mutatingPatterns.treeExists {
+    case _:Property => true
+    case _:ContainerIndex => true
+  }
+
   /*
    * Finds all nodes being created with CREATE ...
    */
