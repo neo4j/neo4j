@@ -137,8 +137,10 @@ class SchemaProcedureIT extends KernelIntegrationTest
             assertEquals( 1, relationships.size() );
             RelationshipValue relationship = (RelationshipValue) relationships.value( 0 );
             assertEquals( "LIVES_IN", relationship.type().stringValue() );
-            assertThat( relationship.startNode().labels() ).isEqualTo( Values.stringArray( "Person" ) );
-            assertThat( relationship.endNode().labels() ).isEqualTo( Values.stringArray( "Location" ) );
+            NodeValue start = (NodeValue) relationship.startNode();
+            NodeValue end = (NodeValue) relationship.endNode();
+            assertThat( start.labels() ).isEqualTo( Values.stringArray( "Person" ) );
+            assertThat( end.labels() ).isEqualTo( Values.stringArray( "Location" ) );
         }
     }
 }

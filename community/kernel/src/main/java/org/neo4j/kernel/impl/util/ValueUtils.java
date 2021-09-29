@@ -313,7 +313,8 @@ public final class ValueUtils
 
     public static VirtualPathValue pathReferenceFromPath( Path path )
     {
-        if ( path instanceof DefaultValueMapper.CoreAPIPath ) {
+        if ( path instanceof DefaultValueMapper.CoreAPIPath )
+        {
             return ((DefaultValueMapper.CoreAPIPath) path).pathValue();
         }
         else

@@ -392,10 +392,10 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends
     translateException(tokenNameLookup, inner.createNodeId(labels))
 
   override val nodeWriteOps: NodeOperations =
-    new ExceptionTranslatingOperations[NodeValue, NodeCursor](inner.nodeWriteOps) with NodeOperations
+    new ExceptionTranslatingOperations[VirtualNodeValue, NodeCursor](inner.nodeWriteOps) with NodeOperations
 
   override val relationshipWriteOps: RelationshipOperations =
-    new ExceptionTranslatingOperations[RelationshipValue, RelationshipScanCursor](inner.relationshipWriteOps) with RelationshipOperations
+    new ExceptionTranslatingOperations[VirtualRelationshipValue, RelationshipScanCursor](inner.relationshipWriteOps) with RelationshipOperations
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(tokenNameLookup, inner.removeLabelsFromNode(node, labelIds))
