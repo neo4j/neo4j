@@ -19,6 +19,12 @@
  */
 package org.neo4j.cypher
 
+import java.net.URL
+import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.Files
+import java.nio.file.NoSuchFileException
+import java.nio.file.Paths
+
 import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
@@ -31,7 +37,6 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.api.security.AuthManager
-import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.procedure.Description
 import org.neo4j.procedure.Name
 import org.neo4j.procedure.UserAggregationFunction
@@ -44,11 +49,6 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
-import java.net.URL
-import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.Files
-import java.nio.file.NoSuchFileException
-import java.nio.file.Paths
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
 class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
@@ -59,7 +59,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
 
   override protected def onNewGraphDatabase(): Unit = {
     super.onNewGraphDatabase()
-    val globalProcedures: GlobalProcedures = graphOps.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[GlobalProcedures])
+    val globalProcedures: GlobalProcedures = graph.getDependencyResolver.resolveDependency(classOf[GlobalProcedures])
     globalProcedures.registerFunction(classOf[TestShowFunction])
     globalProcedures.registerAggregationFunction(classOf[TestShowFunction])
   }

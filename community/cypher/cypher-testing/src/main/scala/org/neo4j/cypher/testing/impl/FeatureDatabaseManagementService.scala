@@ -20,7 +20,6 @@
 package org.neo4j.cypher.testing.impl
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.api.StatementResult
@@ -36,7 +35,7 @@ case class FeatureDatabaseManagementService(private val databaseManagementServic
                                             private val databaseName: Option[String] = None) {
 
   private val database: GraphDatabaseFacade =
-    new GraphDatabaseCypherService(databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME))).getGraphDatabaseService
+    databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseFacade]
 
   private val cypherExecutor = databaseName match {
     case Some(name) => executorFactory.executor(name)

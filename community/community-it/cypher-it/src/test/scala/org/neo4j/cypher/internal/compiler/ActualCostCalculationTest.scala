@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import java.nio.file.Files
+import java.util.concurrent.TimeUnit
+
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression
 import org.apache.commons.math3.stat.regression.SimpleRegression
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -67,13 +70,10 @@ import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
-import java.nio.file.Files
-import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -92,7 +92,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
   ignore("do the test") {
     val path = Files.createTempDirectory("apa").toAbsolutePath
     val managementService = new TestDatabaseManagementServiceBuilder(path).build()
-    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
+    val gds = managementService.database(DEFAULT_DATABASE_NAME)
+    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(gds)
     try {
       graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
@@ -373,7 +374,6 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   implicit class RichGraph(graph: GraphDatabaseQueryService) {
-    val gds: GraphDatabaseFacade = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def withTx[T](f: InternalTransaction => T): T = {
       val tx = graph.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)

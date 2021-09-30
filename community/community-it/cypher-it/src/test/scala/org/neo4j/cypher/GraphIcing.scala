@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
@@ -38,13 +39,11 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
 
-import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
@@ -59,8 +58,6 @@ trait GraphIcing {
   }
 
   implicit class RichGraphDatabaseQueryService(graphService: GraphDatabaseQueryService) {
-
-    private val graph: GraphDatabaseFacade = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def createUniqueConstraint(label: String, property: String): ConstraintDefinition = {
       withTx( tx =>  {
@@ -450,7 +447,7 @@ trait GraphIcing {
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
     def withTx[T](f: InternalTransaction => T, txType: Type = Type.IMPLICIT): T = {
-      val tx = graph.beginTransaction(txType, AUTH_DISABLED)
+      val tx = graphService.beginTransaction(txType, AUTH_DISABLED)
       try {
         val result = f(tx)
         if (tx.isOpen) {
@@ -464,7 +461,7 @@ trait GraphIcing {
     }
 
     def rollback[T](f: InternalTransaction => T): T = {
-      val tx = graph.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)
+      val tx = graphService.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)
       try {
         val result = f(tx)
         tx.rollback()
@@ -476,7 +473,7 @@ trait GraphIcing {
 
     def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledBackTransactions, txMonitor.getNumberOfActiveTransactions)
 
-    private def txMonitor: DatabaseTransactionStats = graph.getDependencyResolver.resolveDependency(classOf[DatabaseTransactionStats])
+    private def txMonitor: DatabaseTransactionStats = graphService.getDependencyResolver.resolveDependency(classOf[DatabaseTransactionStats])
   }
 }
 

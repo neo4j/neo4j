@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseSettings
-
 import java.io.File
 import java.util.concurrent.TimeUnit
+
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.FailedIndexException
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException
@@ -66,7 +65,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   test("secondIndexCreationShouldFailIfIndexesHasFailed") {
     // GIVEN
-    createDbWithFailedIndex
+    createDbWithFailedIndex()
     try {
       // WHEN THEN
       val e = intercept[FailedIndexException](execute("CREATE INDEX FOR (n:Person) ON (n.name)"))
@@ -113,7 +112,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     indexDefs.map(_.getPropertyKeys.asScala.toList)
   }
 
-  private def createDbWithFailedIndex: GraphDatabaseService = {
+  private def createDbWithFailedIndex(): Unit = {
     val testDirectory = TestDirectory.testDirectory()
     testDirectory.prepareDirectory(getClass, "createDbWithFailedIndex")
     managementService.shutdown()
@@ -125,11 +124,12 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     dbFactory.addExtension(providerFactory)
     dbFactory.setConfig( GraphDatabaseSettings.default_schema_provider, FailingGenericNativeIndexProviderFactory.DESCRIPTOR.name() )
     managementService = dbFactory.build()
-    graph = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
+    graphOps = managementService.database(DEFAULT_DATABASE_NAME)
+    graph = new GraphDatabaseCypherService(graphOps)
     eengine = createEngine(graph)
     execute("create (:Person {name:42})")
     execute("CREATE INDEX FOR (n:Person) ON (n.name)")
-    val tx = graph.getGraphDatabaseService.beginTx()
+    val tx = graph.beginTx()
     try {
       tx.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)
       tx.commit()
@@ -138,6 +138,5 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     } finally {
       tx.close()
     }
-    graph.getGraphDatabaseService
   }
 }
