@@ -44,3 +44,9 @@ case class PointDistanceSeekRangeWrapper(
                                      )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
+
+case class PointBoundingBoxSeekRangeWrapper(
+                                          range: PointBoundingBoxRange[Expression]
+                                        )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+}

@@ -237,6 +237,8 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PreserveOrder
@@ -537,6 +539,23 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set.empty, IndexOrderNone, IndexType.BTREE),
         95.0),
       planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE distance(Prop, point(1, 2, \"cartesian\")) <= 10")), Set("x")))
+
+    assertGood(
+      attach(NodeIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
+        RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(PointBoundingBoxRange(
+          FunctionInvocation(MapExpression(Seq(
+            (key("x"), number("0")),
+            (key("y"), number("0")),
+            (key("crs"), stringLiteral("cartesian"))
+          ))(pos), FunctionName(Point.name)(pos)),
+          FunctionInvocation(MapExpression(Seq(
+            (key("x"), number("10")),
+            (key("y"), number("10")),
+            (key("crs"), stringLiteral("cartesian"))
+          ))(pos), FunctionName(Point.name)(pos))))(pos)),
+        Set.empty, IndexOrderNone, IndexType.BTREE),
+        95.0),
+      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE point.withinBBox(Prop, point(0, 0, \"cartesian\"), point(10, 10, \"cartesian\"))")), Set("x")))
   }
 
   test("RelationshipIndexSeek") {

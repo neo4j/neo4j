@@ -155,6 +155,12 @@ final case class PointDistanceRange[T](point: T, distance: T, inclusive: Boolean
   def map[X](f: T => X): PointDistanceRange[X] = copy(f(point), f(distance), inclusive)
 }
 
+final case class PointBoundingBoxRange[T](lowerLeft: T, upperRight: T) extends SeekRange[T] {
+  override def arguments: Seq[T] = Seq(lowerLeft, upperRight)
+
+  def map[X](f: T => X): PointBoundingBoxRange[X] = copy(f(lowerLeft), f(upperRight))
+}
+
 final case class MinBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[T]] {
   override def compare(x: Bound[T], y: Bound[T]): Int = {
     val cmp = inner.compare(x.endPoint, y.endPoint)

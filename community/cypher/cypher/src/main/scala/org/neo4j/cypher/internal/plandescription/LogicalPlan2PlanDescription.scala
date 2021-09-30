@@ -161,6 +161,8 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
@@ -1032,15 +1034,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
           (gtBoundString ++ ltBoundStrings).toIndexedSeq.mkPrettyString(" AND ")
 
         case PointDistanceSeekRangeWrapper(PointDistanceRange(point, distance, inclusive)) =>
-          val funcName = Point.name
-          val poi = point match {
-            case FunctionInvocation(Namespace(List()), FunctionName(`funcName`), _, Seq(MapExpression(args))) =>
-              pretty"point(${args.map(_._2).map(asPrettyString(_)).mkPrettyString(", ")})"
-            case _ => asPrettyString(point)
-          }
+          val poi = prettyPoint(point)
           val propertyKeyName = asPrettyString(propertyKeys.head.name)
           val distanceStr = asPrettyString(distance)
           pretty"distance($propertyKeyName, $poi) <${if (inclusive) pretty"=" else pretty""} $distanceStr"
+
+        case PointBoundingBoxSeekRangeWrapper(PointBoundingBoxRange(ll, ur)) =>
+          val pll = prettyPoint(ll)
+          val pur = prettyPoint(ur)
+          val propertyKeyName = asPrettyString(propertyKeys.head.name)
+          pretty"point.withinBBox($propertyKeyName, $pll, $pur)"
       }
 
     case e: SingleQueryExpression[expressions.Expression] =>
@@ -1066,6 +1069,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
   private def rangeBoundString(propertyKey: PropertyKeyToken, bound: Bound[expressions.Expression], sign: Char): PrettyString = {
     pretty"${asPrettyString(propertyKey.name)} ${asPrettyString.raw(sign + bound.inequalitySignSuffix)} ${asPrettyString(bound.endPoint)}"
+  }
+
+  private def prettyPoint(point: Expression) = {
+    val funcName = Point.name
+    point match {
+      case FunctionInvocation(Namespace(List()), FunctionName(`funcName`), _, Seq(MapExpression(args))) =>
+        pretty"point(${args.map(_._2).map(asPrettyString(_)).mkPrettyString(", ")})"
+      case _ => asPrettyString(point)
+    }
   }
 
   private def nodeCountFromCountStoreInfo(ident: String, labelNames: List[Option[LabelName]]): PrettyString = {

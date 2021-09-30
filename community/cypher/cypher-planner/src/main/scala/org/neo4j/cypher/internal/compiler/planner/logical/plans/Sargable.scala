@@ -328,6 +328,22 @@ case class PointDistanceSeekable(ident: LogicalVariable,
   def propertyKeyName: PropertyKeyName = property.propertyKey
 }
 
+case class PointBoundingBoxSeekable(ident: LogicalVariable,
+                                    property: LogicalProperty,
+                                    expr: Expression,
+                                    range: PointBoundingBoxRange[Expression])
+  extends RangeSeekable[Expression, Expression] {
+
+  override def dependencies: Set[LogicalVariable] = range.lowerLeft.dependencies ++ range.upperRight.dependencies
+
+  def asQueryExpression: QueryExpression[Expression] =
+    RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(range)(expr.position))
+
+  override def propertyValueType(semanticTable: SemanticTable): CypherType = CTPoint
+
+  def propertyKeyName: PropertyKeyName = property.propertyKey
+}
+
 case class InequalityRangeSeekable(ident: LogicalVariable, property: LogicalProperty, expr: AndedPropertyInequalities)
   extends RangeSeekable[AndedPropertyInequalities, Expression] {
 
