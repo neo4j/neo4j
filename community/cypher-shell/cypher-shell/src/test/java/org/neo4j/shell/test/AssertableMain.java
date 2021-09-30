@@ -189,7 +189,8 @@ public class AssertableMain
         {
             var logger = new AnsiLogger( false, Format.VERBOSE, new PrintStream( out ), new PrintStream( err ) );
             var parsedArgs = parseAndThrow( args.toArray( String[]::new ) );
-            var main = new Main( parsedArgs, in, new PrintStream( out ), logger, shell, isInputInteractive, isOutputInteractive, runnerFactory );
+            var printOut = new PrintStream( out );
+            var main = new Main( parsedArgs, in, printOut, logger, shell, isInputInteractive, isOutputInteractive, runnerFactory );
             var exitCode = main.startShell();
             return new AssertableMain( exitCode, out, err, shell );
         }

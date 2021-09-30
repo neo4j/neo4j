@@ -554,7 +554,8 @@ class MainIntegrationTest
             assertNull( runnerFactory );
             assertNull( shell );
             var parsedArgs = parseAndThrow( args.toArray( String[]::new ) );
-            var main = new Main( parsedArgs, in, new PrintStream( out ), new PrintStream( err ), isInputInteractive, isOutputInteractive );
+            var printOut = new PrintStream( out );
+            var main = new Main( parsedArgs, in, printOut, printOut, new PrintStream( err ), isInputInteractive, isOutputInteractive );
             var exitCode = main.startShell();
             return new AssertableMain( exitCode, out, err, main.getCypherShell() );
         }
