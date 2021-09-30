@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 

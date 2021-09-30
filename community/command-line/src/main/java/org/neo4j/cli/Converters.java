@@ -24,7 +24,7 @@ import picocli.CommandLine.TypeConversionException;
 
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.configuration.helpers.FromPaths;
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.io.ByteUnit;
 
 import static java.lang.String.format;

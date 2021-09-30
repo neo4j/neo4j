@@ -22,8 +22,6 @@ package org.neo4j.kernel.database;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -31,12 +29,15 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * Cannot be used to represent a database that has not been created yet or has not been resolved from persistent storage yet.
  * <p>
- * Create using a {@link DatabaseIdRepository}, or if reading from persistence or network use a {@link DatabaseIdFactory}
+ * Create using a {@code DatabaseIdRepository}, or if reading from persistence or network use a {@code DatabaseIdFactory}
  * <p>
  * Equality and hashcode are based only on UUID.
  */
 public class NamedDatabaseId implements Comparable<NamedDatabaseId>
 {
+    public static final String SYSTEM_DATABASE_NAME = "system";
+    public static final NamedDatabaseId NAMED_SYSTEM_DATABASE_ID = new NamedDatabaseId( SYSTEM_DATABASE_NAME, DatabaseId.SYSTEM_DATABASE_ID );
+
     private final String name;
     private final DatabaseId databaseId;
 

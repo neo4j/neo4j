@@ -22,6 +22,8 @@ package org.neo4j.configuration.helpers;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import org.neo4j.kernel.database.NormalizedDatabaseName;
+
 import static org.apache.commons.lang3.CharUtils.isAsciiAlphaLower;
 
 public class DatabaseNameValidator

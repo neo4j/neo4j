@@ -37,7 +37,7 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongArrayQueue;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.counts.CountsStorage;
 import org.neo4j.counts.InvalidCountException;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -61,7 +61,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.internal.counts.CountsChanges.ABSENT;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;

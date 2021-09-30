@@ -24,7 +24,7 @@ import java.nio.file.Path;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -229,11 +229,7 @@ public class LogsUpgrader
 
     private MetadataProvider getMetaDataStore() throws IOException
     {
-        // Make sure to create the TransactionMetaDataStore with a `read_only` config,
-        // to avoid relying on the persistent id generators.
-        // We can't use those id files because at this point they haven't been migrated yet.
-        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only_database_default, true );
-        return storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, readOnlyConfig, pageCache, tracer );
+        return storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, config, pageCache, tracer, DatabaseReadOnlyChecker.readOnly() );
     }
 
     private static DatabaseNotCleanlyShutDownException upgradeException( LogTailInformation tail )

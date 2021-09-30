@@ -22,7 +22,7 @@ package org.neo4j.dbms.database;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 public abstract class DbmsRuntimeRepository
 {

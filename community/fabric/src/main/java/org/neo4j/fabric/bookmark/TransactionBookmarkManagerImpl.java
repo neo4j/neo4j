@@ -30,7 +30,7 @@ import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 public class TransactionBookmarkManagerImpl implements TransactionBookmarkManager
 {

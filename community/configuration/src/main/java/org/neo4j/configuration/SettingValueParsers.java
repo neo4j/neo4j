@@ -41,7 +41,7 @@ import org.neo4j.configuration.helpers.DatabaseNameValidator;
 import org.neo4j.configuration.helpers.DurationRange;
 import org.neo4j.configuration.helpers.GlobbingPattern;
 import org.neo4j.configuration.helpers.GraphNameValidator;
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.configuration.helpers.NormalizedGraphName;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;

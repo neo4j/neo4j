@@ -38,7 +38,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;

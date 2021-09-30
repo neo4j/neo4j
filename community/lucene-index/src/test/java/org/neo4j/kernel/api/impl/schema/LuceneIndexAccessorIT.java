@@ -38,6 +38,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
@@ -45,7 +46,10 @@ import java.util.stream.Stream;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -57,6 +61,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -107,7 +112,7 @@ public class LuceneIndexAccessorIT
     private final LifeSupport life = new LifeSupport();
     private LuceneIndexProvider indexProvider;
     private IndexSamplingConfig samplingConfig;
-    private DatabaseReadOnlyChecker.Default readOnlyChecker;
+    private DatabaseReadOnlyChecker readOnlyChecker;
     private Config config;
 
     @BeforeEach
@@ -115,9 +120,14 @@ public class LuceneIndexAccessorIT
     {
         Path path = directory.directory( "db" );
         config = Config.defaults();
-        readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
+        var readOnlyLookup =  new ConfigBasedLookupFactory( config );
+        var globalChecker = new ReadOnlyDatabases( readOnlyLookup );
+        var listener = new ConfigReadOnlyDatabaseListener( globalChecker, config );
+        var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
+        readOnlyChecker = globalChecker.forDatabase( defaultDatabaseId );
         indexProvider = new LuceneIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ),
                                                  new Monitors(), config, readOnlyChecker );
+        life.add( listener );
         life.add( indexProvider );
         life.start();
         samplingConfig = new IndexSamplingConfig( config );

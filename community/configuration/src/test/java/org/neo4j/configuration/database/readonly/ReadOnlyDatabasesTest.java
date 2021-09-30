@@ -17,15 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration.helpers;
+package org.neo4j.configuration.database.readonly;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,34 +46,46 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_d
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
 import static org.neo4j.configuration.GraphDatabaseSettings.writable_databases;
 
-class DbmsReadOnlyCheckerTest
+@ExtendWith( LifeExtension.class )
+class ReadOnlyDatabasesTest
 {
+
+    @Inject
+    private LifeSupport life;
+
     @Test
     void globalReadOnlyConfigHasHigherPriorityThanReadOnlyDatabaseList()
     {
         // given
+        var fooDb = DatabaseIdFactory.from( "foo1234", UUID.randomUUID() );
         var configValues = Map.of( read_only_database_default, true,
                                    read_only_databases, Set.of() );
         var config = Config.defaults( configValues );
-        var checker = new DbmsReadOnlyChecker.Default( config );
+        var readOnlyLookup =  new ConfigBasedLookupFactory( config );
+        var checker = new ReadOnlyDatabases( readOnlyLookup );
+        var listener = new ConfigReadOnlyDatabaseListener( checker, config );
+        life.add( listener );
 
         //when/then
-        assertTrue( checker.isReadOnly( "foo1234" ) );
+        assertTrue( checker.isReadOnly( fooDb ) );
     }
 
     @Test
     void readOnlyDatabaseShouldBeTakenIntoAccountWhenGlobalReadOnlyConfigIsOff()
     {
         // given
-        final String fooDb = "foo";
+        var fooDb = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
         var configValues = Map.of( read_only_database_default, false,
-                                   read_only_databases, Set.of( fooDb ) );
+                                   read_only_databases, Set.of( fooDb.name() ) );
         var config = Config.defaults( configValues );
-        var checker = new DbmsReadOnlyChecker.Default( config );
+        var readOnlyLookup =  new ConfigBasedLookupFactory( config );
+        var checker = new ReadOnlyDatabases( readOnlyLookup );
+        var listener = new ConfigReadOnlyDatabaseListener( checker, config );
+        life.add( listener );
 
         //when/then
         assertTrue( checker.isReadOnly( fooDb ) );
-        assertFalse( checker.isReadOnly( "test12356" ) );
+        assertFalse( checker.isReadOnly( DatabaseIdFactory.from( "test12356", UUID.randomUUID() ) ) );
     }
 
     @Test
@@ -86,17 +107,18 @@ class DbmsReadOnlyCheckerTest
                                    read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
 
         var config = Config.defaults( configValues );
-        var checker = new DbmsReadOnlyChecker.Default( config );
+        var readOnlyLookup =  new ConfigBasedLookupFactory( config );
+        var checker = new ReadOnlyDatabases( readOnlyLookup );
 
         // when/then
-        assertFalse( checker.isReadOnly( SYSTEM_DATABASE_NAME ) );
+        assertFalse( checker.isReadOnly( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID ) );
 
         // when configs are changed
         assertThrows( IllegalArgumentException.class,
                       () -> config.setDynamic( read_only_databases, Set.of( DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME ), getClass().getSimpleName() ) );
 
         // then
-        assertFalse( checker.isReadOnly( SYSTEM_DATABASE_NAME ) );
+        assertFalse( checker.isReadOnly( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID ) );
     }
 
     @Test
@@ -125,31 +147,71 @@ class DbmsReadOnlyCheckerTest
     void writableShouldOverrideReadOnlyDefault()
     {
         // given
+        var foo = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
+        var bar = DatabaseIdFactory.from( "bar", UUID.randomUUID() );
         var configValues = Map.of(
                 read_only_database_default, true,
-                writable_databases, Set.of( "foo"  ) );
+                writable_databases, Set.of( foo.name() ) );
 
         var config = Config.defaults( configValues );
-        var checker = new DbmsReadOnlyChecker.Default( config );
+        var readOnlyLookup =  new ConfigBasedLookupFactory( config );
+        var checker = new ReadOnlyDatabases( readOnlyLookup );
+        var listener = new ConfigReadOnlyDatabaseListener( checker, config );
+        life.add( listener );
 
         // when/then
-        assertTrue( checker.isReadOnly( "bar" ) );
-        assertFalse( checker.isReadOnly( "foo" ) );
+        assertTrue( checker.isReadOnly( bar ) );
+        assertFalse( checker.isReadOnly( foo ) );
     }
 
     @Test
     void explicitReadOnlyShouldOverrideExplicitWritable()
     {
         // given
+        var foo = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
+        var bar = DatabaseIdFactory.from( "bar", UUID.randomUUID() );
+        var baz = DatabaseIdFactory.from( "baz", UUID.randomUUID() );
         Map<Setting<?>, Object> configValues = Map.of(
-                read_only_databases, Set.of( "foo", "bar" ),
-                writable_databases, Set.of( "bar", "baz" ) );
+                read_only_databases, Set.of( foo.name(), bar.name() ),
+                writable_databases, Set.of( bar.name(), baz.name() ) );
 
         var config = Config.defaults( configValues );
-        var checker = new DbmsReadOnlyChecker.Default( config );
+        var readOnlyLookup =  new ConfigBasedLookupFactory( config );
+        var checker = new ReadOnlyDatabases( readOnlyLookup );
+        var listener = new ConfigReadOnlyDatabaseListener( checker, config );
+        life.add( listener );
 
         // when/then
-        assertTrue( checker.isReadOnly( "bar" ) );
-        assertFalse( checker.isReadOnly( "baz" ) );
+        assertTrue( checker.isReadOnly( bar ) );
+        assertFalse( checker.isReadOnly( baz ) );
+    }
+
+    @Test
+    void refreshShouldReloadReadOnlyFromLookups()
+    {
+        // given
+        var foo = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
+        var bar = DatabaseIdFactory.from( "bar", UUID.randomUUID() );
+        var readOnlyDatabaseNames = new HashSet<NamedDatabaseId>();
+        readOnlyDatabaseNames.add( foo );
+        var readOnly = new ReadOnlyDatabases( () -> {
+            var snapshot = Set.copyOf( readOnlyDatabaseNames );
+            return snapshot::contains;
+        } );
+
+        // when
+        readOnly.refresh();
+        assertTrue( readOnly.isReadOnly( foo ) );
+        assertFalse( readOnly.isReadOnly( bar ) );
+
+        // given
+        readOnlyDatabaseNames.add( bar );
+        assertFalse( readOnly.isReadOnly( bar ) );
+
+        // when
+        readOnly.refresh();
+
+        // then
+        assertTrue( readOnly.isReadOnly( bar ) );
     }
 }

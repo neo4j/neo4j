@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.IdController;
@@ -145,7 +145,7 @@ public interface StorageEngineFactory
      * @throws IOException on I/O error or if the store doesn't exist.
      */
     MetadataProvider transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
-            PageCacheTracer cacheTracer ) throws IOException;
+            PageCacheTracer cacheTracer, DatabaseReadOnlyChecker readOnlyChecker ) throws IOException;
 
     StoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException;
 

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.administration
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.IdentityConverter
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getNameFields
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
@@ -52,6 +51,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.database.DefaultDatabaseResolver
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.storageengine.api.StoreIdProvider
 import org.neo4j.storageengine.util.StoreIdDecodeUtils

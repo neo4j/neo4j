@@ -17,25 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration.helpers;
+package org.neo4j.dbms.database.readonly;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
-import static org.neo4j.configuration.GraphDatabaseSettings.writable_databases;
-import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 
 class DatabaseReadOnlyCheckerTest
 {
@@ -53,31 +53,24 @@ class DatabaseReadOnlyCheckerTest
     }
 
     @Test
-    void byDefaultDatabaseAreWritable()
+    void databaseCheckersShouldReflectUpdatesToGlobalChecker()
     {
-        var config = Config.defaults();
-        var checker = new DatabaseReadOnlyChecker.Default( config, "foo" );
-        assertFalse( checker.isReadOnly() );
-        assertDoesNotThrow( checker::check );
-    }
+        var foo = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
+        var bar = DatabaseIdFactory.from( "bar", UUID.randomUUID() );
+        var databases = new HashSet<NamedDatabaseId>();
+        databases.add( foo );
+        var globalChecker = new ReadOnlyDatabases( () -> {
+            var snapshot = Set.copyOf( databases );
+            return snapshot::contains;
+        } );
+        var fooChecker = globalChecker.forDatabase( foo );
+        var barChecker = globalChecker.forDatabase( bar );
 
-    @Test
-    void readOnlyDatabase()
-    {
-        var dbName = "foo";
-        var config = Config.defaults( GraphDatabaseSettings.read_only_databases, Set.of( dbName ) );
-        var checker = new DatabaseReadOnlyChecker.Default( config, dbName );
-        var e = assertThrows( Exception.class, checker::check );
-        assertThat( e ).hasRootCauseInstanceOf( ReadOnlyDbException.class );
-    }
+        assertTrue( fooChecker.isReadOnly() );
+        assertFalse( barChecker.isReadOnly() );
 
-    @Test
-    void writableDatabase()
-    {
-        var dbName = "foo";
-        var config = Config.defaults( Map.of( writable_databases, Set.of( dbName ), read_only_database_default, true ) );
-        var checker = new DatabaseReadOnlyChecker.Default( config, dbName );
-        assertFalse( checker.isReadOnly() );
-        assertDoesNotThrow( checker::check );
+        databases.add( bar );
+        globalChecker.refresh();
+        assertTrue( barChecker.isReadOnly() );
     }
 }

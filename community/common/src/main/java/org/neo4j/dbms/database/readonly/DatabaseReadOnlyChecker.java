@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration.helpers;
+package org.neo4j.dbms.database.readonly;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
-import org.neo4j.util.VisibleForTesting;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static java.util.Objects.requireNonNull;
 
@@ -50,35 +48,19 @@ public interface DatabaseReadOnlyChecker
 
     class Default implements DatabaseReadOnlyChecker
     {
-        private final DbmsReadOnlyChecker dbmsChecker;
-        private final String databaseName;
-        private volatile boolean isReadOnly;
+        private final ReadOnlyDatabases dbmsChecker;
+        private final NamedDatabaseId namedDatabaseId;
 
-        @VisibleForTesting
-        public Default( Config config, String databaseName )
+        Default( ReadOnlyDatabases readOnlyDatabases, NamedDatabaseId namedDatabaseId )
         {
-            this( new DbmsReadOnlyChecker.Default( config ), config, databaseName );
-        }
-
-        Default( DbmsReadOnlyChecker.Default dbmsChecker, Config config, String databaseName )
-        {
-            this.dbmsChecker = requireNonNull( dbmsChecker );
-            this.databaseName = requireNonNull( databaseName );
-            config.addListener( GraphDatabaseSettings.read_only_databases, ( oldValue, newValue ) -> calculateIsReadOnly() );
-            config.addListener( GraphDatabaseSettings.read_only_database_default, ( oldValue, newValue ) -> calculateIsReadOnly() );
-            config.addListener( GraphDatabaseSettings.writable_databases, ( oldValue, newValue ) -> calculateIsReadOnly() );
-            calculateIsReadOnly();
-        }
-
-        private void calculateIsReadOnly()
-        {
-            this.isReadOnly = dbmsChecker.isReadOnly( databaseName );
+            this.dbmsChecker = readOnlyDatabases;
+            this.namedDatabaseId = namedDatabaseId;
         }
 
         @Override
         public boolean isReadOnly()
         {
-            return isReadOnly;
+            return dbmsChecker.isReadOnly( namedDatabaseId );
         }
 
         @Override
@@ -86,7 +68,7 @@ public interface DatabaseReadOnlyChecker
         {
             if ( isReadOnly() )
             {
-                throw new RuntimeException( new ReadOnlyDbException( databaseName ) );
+                throw new RuntimeException( new ReadOnlyDbException( namedDatabaseId.name() ) );
             }
         }
     }

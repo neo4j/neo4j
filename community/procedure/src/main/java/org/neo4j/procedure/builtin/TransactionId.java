@@ -22,7 +22,7 @@ package org.neo4j.procedure.builtin;
 import java.util.Objects;
 
 import org.neo4j.configuration.helpers.DatabaseNameValidator;
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 import static java.util.Objects.requireNonNull;

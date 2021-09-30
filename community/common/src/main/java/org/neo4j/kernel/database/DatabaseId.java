@@ -26,6 +26,8 @@ import org.neo4j.util.Id;
 
 public class DatabaseId
 {
+    public static final DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( new UUID( 0, 1 ) );
+
     private final Id id;
 
     DatabaseId( UUID uuid )
@@ -46,7 +48,7 @@ public class DatabaseId
 
     public boolean isSystemDatabase()
     {
-        return DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID.databaseId().equals( this );
+        return SYSTEM_DATABASE_ID.equals( this );
     }
 
     @Override

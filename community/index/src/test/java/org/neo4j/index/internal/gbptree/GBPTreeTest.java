@@ -43,6 +43,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -59,7 +60,9 @@ import java.util.function.Consumer;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.ByteUnit;
@@ -78,8 +81,11 @@ import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -99,7 +105,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
@@ -110,7 +116,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @TestDirectoryExtension
-@ExtendWith( RandomExtension.class )
+@ExtendWith( {RandomExtension.class, LifeExtension.class} )
 class GBPTreeTest
 {
     private static final Layout<MutableLong,MutableLong> layout = longLayout().build();
@@ -123,6 +129,8 @@ class GBPTreeTest
     private TestDirectory testDirectory;
     @Inject
     private RandomSupport random;
+    @Inject
+    private LifeSupport lifeSupport;
 
     private Path indexFile;
     private ExecutorService executor;
@@ -1884,10 +1892,15 @@ class GBPTreeTest
     void readOnlyTreeStillFlushesStateWhenReadOnly() throws IOException
     {
         var config = Config.defaults();
-        var readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
+        var readOnlyLookup =  new ConfigBasedLookupFactory( config );
+        var globalChecker = new ReadOnlyDatabases( readOnlyLookup );
+        var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
+        var checker = globalChecker.forDatabase( defaultDatabaseId );
+        var listener = new ConfigReadOnlyDatabaseListener( globalChecker, config );
+        lifeSupport.add( listener );
         var cursorContext = NULL;
         try ( PageCache pageCache = createPageCache( defaultPageSize );
-                var tree = index( pageCache ).with( readOnlyChecker ).build() )
+                var tree = index( pageCache ).with( checker ).build() )
         {
             try ( var writer = tree.writer( cursorContext ) )
             {
@@ -1901,7 +1914,7 @@ class GBPTreeTest
         }
 
         try ( PageCache pageCache = createPageCache( defaultPageSize );
-                var reopenedTree = index( pageCache ).with( readOnlyChecker ).build() )
+                var reopenedTree = index( pageCache ).with( checker ).build() )
         {
             assertThatThrownBy( () -> reopenedTree.writer( cursorContext ) ).isInstanceOf( Exception.class );
 

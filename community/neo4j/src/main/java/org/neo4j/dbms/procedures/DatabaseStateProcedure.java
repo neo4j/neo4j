@@ -22,7 +22,7 @@ package org.neo4j.dbms.procedures;
 import java.util.Arrays;
 import java.util.Optional;
 
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.dbms.OperatorState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;

@@ -19,18 +19,23 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
+import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.dbms.CommunityDatabaseStateService;
-import org.neo4j.dbms.DatabaseStateService;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
-import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
+import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
+import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyListener;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
@@ -38,6 +43,8 @@ import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -45,7 +52,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 public abstract class StandaloneEditionModule extends AbstractEditionModule
 {
     protected CommitProcessFactory commitProcessFactory;
-    protected DatabaseStateService databaseStateService;
     IdContextFactory idContextFactory;
     Function<NamedDatabaseId,TokenHolders> tokenHoldersProvider;
     Supplier<Locks> locksSupplier;
@@ -77,16 +83,19 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     }
 
     @Override
-    public DatabaseManager<? extends StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule )
+    public abstract DatabaseManager<? extends StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule );
+
+    protected static ReadOnlyDatabases createGlobalReadOnlyChecker( DatabaseManager<?> databaseManager, Config globalConfig,
+            GlobalTransactionEventListeners txListeners, LifeSupport globalLife )
     {
-        var databaseManager = new DefaultDatabaseManager( globalModule, this );
-        databaseStateService = new CommunityDatabaseStateService( databaseManager );
-
-        globalModule.getGlobalLife().add( databaseManager );
-        globalModule.getGlobalDependencies().satisfyDependency( databaseManager );
-        globalModule.getGlobalDependencies().satisfyDependency( databaseStateService );
-
-        return databaseManager;
+        var systemGraphReadOnlyLookup = new SystemGraphReadOnlyDatabaseLookupFactory( databaseManager );
+        var configReadOnlyLookup = new ConfigBasedLookupFactory( globalConfig );
+        var globalChecker = new ReadOnlyDatabases( systemGraphReadOnlyLookup, configReadOnlyLookup );
+        var configListener = new ConfigReadOnlyDatabaseListener( globalChecker, globalConfig );
+        var systemGraphListener = new SystemGraphReadOnlyListener( txListeners, globalChecker );
+        globalLife.add( configListener );
+        globalLife.add( systemGraphListener );
+        return globalChecker;
     }
 
     @Override

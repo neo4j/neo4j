@@ -20,17 +20,12 @@
 package org.neo4j.kernel.database;
 
 import java.util.Optional;
-import java.util.UUID;
-
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 
 /**
  * Encapsulates the retrieval of a persistent {@link NamedDatabaseId} for a database of a given name.
  */
 public interface DatabaseIdRepository
 {
-    NamedDatabaseId NAMED_SYSTEM_DATABASE_ID = new NamedDatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, new UUID( 0L, 1L ) );
 
     Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName );
     Optional<NamedDatabaseId> getById( DatabaseId databaseId );

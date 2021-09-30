@@ -27,7 +27,6 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Node;
@@ -85,7 +84,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     // Run on another thread to avoid running in an enclosing transaction on a different database
     private Optional<NamedDatabaseId> get( String propertyKey, String propertyValue )
     {
-        var context = databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
+        var context = databaseManager.getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID ).orElseThrow(
                 () -> new DatabaseNotFoundException( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
 
         var db = context.databaseFacade();

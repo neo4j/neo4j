@@ -19,7 +19,6 @@
  */
 package org.neo4j.fabric.eval
 
-import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.fabric.eval.Catalog.InternalGraph
@@ -27,6 +26,7 @@ import org.neo4j.fabric.executor.Location
 import org.neo4j.graphdb.event.DatabaseEventContext
 import org.neo4j.graphdb.event.DatabaseEventListener
 import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.kernel.database.NormalizedDatabaseName
 
 class CommunityCatalogManager(databaseLookup: DatabaseLookup, databaseManagementService: DatabaseManagementService ) extends CatalogManager {
 

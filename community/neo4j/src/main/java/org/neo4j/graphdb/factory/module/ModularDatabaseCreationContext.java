@@ -25,7 +25,7 @@ import java.util.function.LongFunction;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
@@ -113,12 +113,13 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseStartupController startupController;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
-    private final DbmsReadOnlyChecker dbmsReadOnlyChecker;
+    private final ReadOnlyDatabases readOnlyDatabases;
 
     public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, Dependencies globalDependencies,
-                                           Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
-                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, LeaseService leaseService,
-                                           ExternalIdReuseConditionProvider externalIdReuseConditionProvider, StorageEngineFactory storageEngineFactory )
+            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
+            VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, LeaseService leaseService,
+            ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
+            StorageEngineFactory storageEngineFactory, ReadOnlyDatabases globalReadOnlyChecker )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.globalConfig = globalModule.getGlobalConfig();
@@ -164,7 +165,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
         this.leaseService = leaseService;
         this.startupController = editionComponents.getStartupController();
-        this.dbmsReadOnlyChecker = globalModule.getDbmsReadOnlyChecker();
+        this.readOnlyDatabases = globalReadOnlyChecker;
     }
 
     @Override
@@ -402,9 +403,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DbmsReadOnlyChecker getDbmsReadOnlyChecker()
+    public ReadOnlyDatabases getDbmsReadOnlyChecker()
     {
-        return dbmsReadOnlyChecker;
+        return readOnlyDatabases;
     }
 
     @Override

@@ -20,15 +20,19 @@
 package org.neo4j.kernel.api.index;
 
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.UUID;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
 import org.neo4j.monitoring.Monitors;
 
@@ -56,7 +60,9 @@ class PointIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
         Monitors monitors = new Monitors();
         String monitorTag = "";
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-        var readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
+        var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config ) );
+        var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
+        var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return PointIndexProviderFactory.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
                 PageCacheTracer.NULL, DEFAULT_DATABASE_NAME );
     }

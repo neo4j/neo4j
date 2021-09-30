@@ -20,10 +20,12 @@
 package org.neo4j.kernel.api.index;
 
 import java.nio.file.Path;
+import java.util.UUID;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -32,8 +34,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.monitoring.Monitors;
+
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderCompatibilityTestSuite
 {
@@ -56,7 +61,9 @@ class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
         String monitorTag = "";
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( graphDbDir );
-        var readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, databaseLayout.getDatabaseName() );
+        var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config ) );
+        var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
+        var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return TokenIndexProviderFactory.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
                 databaseLayout, PageCacheTracer.NULL );
     }

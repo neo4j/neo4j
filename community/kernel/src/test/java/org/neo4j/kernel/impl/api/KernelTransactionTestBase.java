@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,7 +36,8 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -176,6 +178,8 @@ class KernelTransactionTestBase
         Locks.Client locksClient = mock( Locks.Client.class );
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
         var memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, ByteUnit.mebiBytes( 4 ), null );
+        var readOnlyLookup = new ConfigBasedLookupFactory( config );
+        var readOnlyChecker = new ReadOnlyDatabases( readOnlyLookup );
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                                                     null, null,
                                                     commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
@@ -183,8 +187,7 @@ class KernelTransactionTestBase
                                                     any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                                                     new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                                                     mock( IndexingService.class ), mock( IndexStatisticsStore.class ), dependencies, databaseId,
-                                                    leaseService, memoryPool,
-                                                    new DbmsReadOnlyChecker.Default( config ).forDatabase( config, databaseId.name() ),
+                                                    leaseService, memoryPool, readOnlyChecker.forDatabase( databaseId ),
                                                     TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST,
                                                     mock( DbmsRuntimeRepository.class ), locksClient, mock( KernelTransactions.class )
         );

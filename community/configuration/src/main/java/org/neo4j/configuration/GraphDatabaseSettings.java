@@ -35,6 +35,7 @@ import org.neo4j.configuration.connectors.ConnectorDefaults;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
@@ -89,7 +90,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     // default unspecified transaction timeout
     public static final long UNSPECIFIED_TIMEOUT = 0L;
 
-    public static final String SYSTEM_DATABASE_NAME = "system";
+    public static final String SYSTEM_DATABASE_NAME = NamedDatabaseId.SYSTEM_DATABASE_NAME;
     public static final String DEFAULT_DATABASE_NAME = "neo4j";
 
     public static final String DEFAULT_DATA_DIR_NAME = "data";

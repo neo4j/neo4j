@@ -27,7 +27,7 @@ import java.util.Date;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -84,7 +84,7 @@ import org.neo4j.token.api.TokenHolder;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
-import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;

@@ -31,7 +31,10 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
+import org.neo4j.dbms.CommunityDatabaseStateService;
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseInfoService;
@@ -40,6 +43,7 @@ import org.neo4j.dbms.database.DatabaseOperationCounts;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.StandaloneDatabaseInfoService;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
@@ -97,7 +101,7 @@ import org.neo4j.token.TokenHolders;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
-import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
@@ -113,6 +117,9 @@ public class CommunityEditionModule extends StandaloneEditionModule
     protected final ServerIdentity identityModule;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     private final FabricServicesBootstrap fabricServicesBootstrap;
+
+    protected DatabaseStateService databaseStateService;
+    private ReadOnlyDatabases globalReadOnlyChecker;
 
     public CommunityEditionModule( GlobalModule globalModule )
     {
@@ -150,6 +157,22 @@ public class CommunityEditionModule extends StandaloneEditionModule
         globalAvailabilityGuard = globalModule.getGlobalAvailabilityGuard();
 
         fabricServicesBootstrap = new FabricServicesBootstrap.Community( globalModule.getGlobalLife(), globalDependencies, globalModule.getLogService() );
+    }
+
+    @Override
+    public DatabaseManager<? extends StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule )
+    {
+        var databaseManager = new DefaultDatabaseManager( globalModule, this );
+        databaseStateService = new CommunityDatabaseStateService( databaseManager );
+
+        globalModule.getGlobalLife().add( databaseManager );
+        globalModule.getGlobalDependencies().satisfyDependency( databaseManager );
+        globalModule.getGlobalDependencies().satisfyDependency( databaseStateService );
+
+        globalReadOnlyChecker = createGlobalReadOnlyChecker( databaseManager, globalModule.getGlobalConfig(),
+                                                             globalModule.getTransactionEventListeners(), globalModule.getGlobalLife() );
+
+        return databaseManager;
     }
 
     protected Function<NamedDatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
@@ -356,5 +379,11 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public void bootstrapFabricServices()
     {
         fabricServicesBootstrap.bootstrapServices();
+    }
+
+    @Override
+    public ReadOnlyDatabases getReadOnlyChecker()
+    {
+        return globalReadOnlyChecker;
     }
 }

@@ -34,7 +34,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -155,7 +154,6 @@ public class GlobalModule
     private final CentralBufferMangerHolder centralBufferMangerHolder;
     private final TransactionManager transactionManager;
     private final IOControllerService ioControllerService;
-    private final DbmsReadOnlyChecker dbmsReadOnlyChecker;
     private final CapabilitiesService capabilitiesService;
 
     /**
@@ -266,7 +264,6 @@ public class GlobalModule
 
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency( connectorPortRegister );
-        dbmsReadOnlyChecker = new DbmsReadOnlyChecker.Default( globalConfig );
 
         //transaction manager used for Bolt and HTTP interfaces
         transactionManager = new StatementProcessorTxManager();
@@ -602,11 +599,6 @@ public class GlobalModule
     public IOControllerService getIoControllerService()
     {
         return ioControllerService;
-    }
-
-    public DbmsReadOnlyChecker getDbmsReadOnlyChecker()
-    {
-        return dbmsReadOnlyChecker;
     }
 
     public CapabilitiesService getCapabilitiesService()

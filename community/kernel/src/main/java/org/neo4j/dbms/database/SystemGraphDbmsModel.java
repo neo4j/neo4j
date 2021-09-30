@@ -19,9 +19,18 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 public class SystemGraphDbmsModel
 {
@@ -112,4 +121,30 @@ public class SystemGraphDbmsModel
 
     public static final Label TOPOLOGY_GRAPH_SETTINGS_LABEL = Label.label( "TopologyGraphSettings" );
     public static final String TOPOLOGY_GRAPH_SETTINGS_ALLOCATOR_PROPERTY = "allocator";
+
+    private final Transaction tx;
+
+    public SystemGraphDbmsModel( Transaction tx )
+    {
+        this.tx = tx;
+    }
+
+    public Map<NamedDatabaseId,DatabaseAccess> getAllDatabaseAccess()
+    {
+        return tx.findNodes( DATABASE_LABEL ).stream()
+                 .collect( Collectors.toMap( SystemGraphDbmsModel::getDatabaseId, SystemGraphDbmsModel::getDatabaseAccess ) );
+    }
+
+    private static NamedDatabaseId getDatabaseId( Node databaseNode )
+    {
+        var name = (String) databaseNode.getProperty( DATABASE_NAME_PROPERTY );
+        var uuid = UUID.fromString( (String) databaseNode.getProperty( DATABASE_UUID_PROPERTY ) );
+        return DatabaseIdFactory.from( name, uuid );
+    }
+
+    private static DatabaseAccess getDatabaseAccess( Node databaseNode )
+    {
+        var accessString = (String) databaseNode.getProperty( DATABASE_ACCESS_PROPERTY, DatabaseAccess.READ_WRITE.toString() );
+        return Enum.valueOf( DatabaseAccess.class, accessString );
+    }
 }

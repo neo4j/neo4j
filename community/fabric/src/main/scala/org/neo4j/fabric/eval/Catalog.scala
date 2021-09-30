@@ -20,13 +20,12 @@
 package org.neo4j.fabric.eval
 
 import java.util.UUID
-
-import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Errors.show
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.IntegralValue
 

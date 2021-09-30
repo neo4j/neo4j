@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -57,7 +57,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.GBPTREE_ID_FILES;

@@ -40,7 +40,7 @@ import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.new
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkForUnknownDatabaseError;
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkMixtureError;
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidSingleBookmarkError;
-import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 public final class BookmarksParserV4 implements BookmarksParser
 {

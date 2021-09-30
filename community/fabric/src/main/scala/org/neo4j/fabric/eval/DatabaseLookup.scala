@@ -20,11 +20,10 @@
 package org.neo4j.fabric.eval
 
 import java.util.function.Supplier
-
-import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.dbms.database.DatabaseManager
 import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.kernel.database.NormalizedDatabaseName
 
 import scala.collection.JavaConverters.asScalaSetConverter
 

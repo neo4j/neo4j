@@ -28,6 +28,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseInfoService;
@@ -233,6 +234,8 @@ public abstract class AbstractEditionModule
     }
 
     public abstract DatabaseInfoService createDatabaseInfoService( DatabaseManager<?> databaseManager );
+
+    public abstract ReadOnlyDatabases getReadOnlyChecker();
 
     protected static Predicate<String> defaultFileWatcherFilter()
     {

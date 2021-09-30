@@ -21,6 +21,8 @@ package org.neo4j.configuration.helpers;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.kernel.database.NormalizedDatabaseName;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

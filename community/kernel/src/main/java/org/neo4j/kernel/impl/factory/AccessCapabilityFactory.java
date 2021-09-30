@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 
 @FunctionalInterface
 public interface AccessCapabilityFactory

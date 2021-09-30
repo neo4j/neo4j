@@ -19,7 +19,6 @@
  */
 package org.neo4j.fabric.planning
 
-import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -63,6 +62,7 @@ import org.neo4j.fabric.config.FabricConfig
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.util.Folded.Descend
 import org.neo4j.fabric.util.Folded.FoldableOps
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.string.UTF8
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue

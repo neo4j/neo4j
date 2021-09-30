@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.factory;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 
 import static org.assertj.core.api.Assertions.assertThat;

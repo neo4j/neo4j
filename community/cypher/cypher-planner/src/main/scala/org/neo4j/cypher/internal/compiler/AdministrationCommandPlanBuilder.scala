@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterUser
@@ -108,6 +107,7 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.kernel.database.NormalizedDatabaseName
 
 /**
  * This planner takes on queries that run at the DBMS level for multi-database administration.

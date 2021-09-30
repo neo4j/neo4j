@@ -23,11 +23,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
-
 public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Caching
 {
-    private static final Optional<NamedDatabaseId> OPT_SYS_DB = Optional.of( NAMED_SYSTEM_DATABASE_ID );
+    private static final Optional<NamedDatabaseId> OPT_SYS_DB = Optional.of( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID );
 
     private final DatabaseIdRepository delegate;
     private final Map<String,NamedDatabaseId> databaseIdsByName;
@@ -43,7 +41,7 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
     @Override
     public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
     {
-        if ( NAMED_SYSTEM_DATABASE_ID.name().equals( databaseName.name() ) )
+        if ( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.name().equals( databaseName.name() ) )
         {
             return OPT_SYS_DB;
         }
@@ -55,7 +53,7 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
     @Override
     public Optional<NamedDatabaseId> getById( DatabaseId uuid )
     {
-        if ( NAMED_SYSTEM_DATABASE_ID.databaseId().equals( uuid ) )
+        if ( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.databaseId().equals( uuid ) )
         {
             return OPT_SYS_DB;
         }

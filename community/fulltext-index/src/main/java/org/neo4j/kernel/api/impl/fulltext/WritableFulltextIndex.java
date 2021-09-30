@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
 
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 
 class WritableFulltextIndex extends WritableAbstractDatabaseIndex<LuceneFulltextIndex,FulltextIndexReader>

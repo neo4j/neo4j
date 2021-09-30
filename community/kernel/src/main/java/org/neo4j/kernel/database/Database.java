@@ -43,7 +43,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
@@ -307,7 +307,7 @@ public class Database extends LifecycleAdapter
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
-        this.readOnlyDatabaseChecker = context.getDbmsReadOnlyChecker().forDatabase( databaseConfig, namedDatabaseId.name() );
+        this.readOnlyDatabaseChecker = context.getDbmsReadOnlyChecker().forDatabase( namedDatabaseId );
         this.externalIdReuseConditionProvider = context.externalIdReuseConditionProvider();
     }
 

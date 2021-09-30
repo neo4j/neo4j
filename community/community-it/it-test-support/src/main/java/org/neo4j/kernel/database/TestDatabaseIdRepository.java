@@ -30,7 +30,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.util.Preconditions;
 
