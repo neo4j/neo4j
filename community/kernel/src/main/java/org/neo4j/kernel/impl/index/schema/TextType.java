@@ -275,39 +275,17 @@ class TextType extends Type
         }
 
         int length = Math.min( aLength, bLength );
-        int compare = Arrays.compareUnsigned( a, 0, length, b, 0, length );
-        if ( compare != 0 )
+        int diffIndex = Arrays.mismatch(a, 0, length, b, 0, length);
+        if ( diffIndex >= 0 )
         {
-            return compare;
+            return Byte.compareUnsigned( a[diffIndex], b[diffIndex] );
         }
-//        int length = Math.min( aLength, bLength );
-//        int missmatchIndex = Arrays.mismatch( a, 0, aLength, b, 0, bLength );
-//        for ( int i = 0; i < length; i++ )
-//        {
-//            int compare = Short.compare( (short) (a[i] & 0xFF), (short) (b[i] & 0xFF) );
-//            if ( compare != 0 )
-//            {
-//                System.out.println( "compare" + compare );
-//                return compare;
-//            }
-//        }
 
         return ignoreLength ? 0 : Integer.compare( aLength, bLength );
     }
 
     private static int minimalLengthFromRightNeededToDifferentiateFromLeft( byte[] leftBytes, int leftLength, byte[] rightBytes, int rightLength )
     {
-//        int lastEqualIndex = -1;
-//        int maxLength = min( leftLength, rightLength );
-//        for ( int index = 0; index < maxLength; index++ )
-//        {
-//            if ( leftBytes[index] != rightBytes[index] )
-//            {
-//                break;
-//            }
-//            lastEqualIndex++;
-//        }
-
         int length = Math.min( leftLength, rightLength );
         int lastEqualIndex = Arrays.mismatch( leftBytes, 0, length, rightBytes, 0, length );
         if ( lastEqualIndex == -1 )
