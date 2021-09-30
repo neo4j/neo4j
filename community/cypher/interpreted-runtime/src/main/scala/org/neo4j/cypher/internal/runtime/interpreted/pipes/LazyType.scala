@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.WriteQueryContext
 import org.neo4j.internal.kernel.api.TokenWrite
 
 case class LazyType(name: String) {
 
   private var id = LazyType.UNKNOWN
 
-  def getOrCreateType(context: QueryContext): Int = {
+  def getOrCreateType(context: WriteQueryContext): Int = {
     if (id == LazyType.UNKNOWN) {
       id = context.getOrCreateRelTypeId(name)
     }

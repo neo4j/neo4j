@@ -116,7 +116,7 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
   override def graph: GraphDatabaseQueryService = unsupported
 
   private def unsupported(): Nothing = {
-    throw new UnsupportedOperationException("Not supported with parallel runtime.")
+    throw new UnsupportedOperationException("Not supported in parallel runtime.")
   }
 }
 
