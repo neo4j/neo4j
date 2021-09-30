@@ -122,6 +122,32 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
     }
   }
 
+  test("should not plan NodeHashJoin with label scan for same variable as argument") {
+    val query =
+      """MATCH (n:N)
+        |OPTIONAL MATCH (n:M)
+        |RETURN n
+        |""".stripMargin
+
+    val plan = new given {
+      cost = {
+        case (_: Selection, _, _, _) => 1000.0
+        case (_: NodeHashJoin, _, _, _) => 20.0
+        case (_: NodeByLabelScan, _, _, _) => 20.0
+      }
+    } getLogicalPlanFor query
+
+    plan._2 should beLike {
+      case
+        Apply
+          (NodeByLabelScan("n", _, _, _),
+          Optional
+            (Selection(_,
+            Argument(args)), _), _)
+        if args == Set("n") => ()
+    }
+  }
+
   test("should not produce any candidates when node by label lookup is disabled") {
     val planContext = mock[PlanContext]
     when(planContext.canLookupNodesByLabel).thenReturn(false)
