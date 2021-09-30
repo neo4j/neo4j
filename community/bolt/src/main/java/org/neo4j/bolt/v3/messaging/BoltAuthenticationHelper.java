@@ -38,7 +38,7 @@ public class BoltAuthenticationHelper
             BoltStateMachineSPI boltSpi = context.boltSpi();
 
             AuthenticationResult authResult = boltSpi.authenticate( authToken );
-            String username = authResult.getLoginContext().subject().username();
+            String username = authResult.getLoginContext().subject().executingUser();
             context.authenticatedAsUser( username, userAgent );
             context.initStatementProcessorProvider( authResult, routingContext );
 

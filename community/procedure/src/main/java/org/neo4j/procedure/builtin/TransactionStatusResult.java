@@ -80,7 +80,7 @@ public class TransactionStatusResult
     {
         this.database = database;
         this.transactionId = new TransactionId( database, transaction.getUserTransactionId() ).toString();
-        this.username = transaction.subject().username();
+        this.username = transaction.subject().executingUser();
         this.startTime = ProceduresTimeFormatHelper.formatTime( transaction.startTime(), zoneId );
         this.activeLockCount = transaction.activeLocks().count();
         Optional<QuerySnapshot> querySnapshot = handleSnapshotsMap.get( transaction );

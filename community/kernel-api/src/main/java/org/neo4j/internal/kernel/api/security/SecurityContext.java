@@ -116,12 +116,12 @@ public class SecurityContext extends LoginContext
 
     public String description()
     {
-        return MessageUtil.withUser( subject().username(), mode().name() );
+        return MessageUtil.withUser( subject().executingUser(), mode().name() );
     }
 
     protected String defaultString( String name )
     {
-        return String.format( "%s{ username=%s, accessMode=%s }", name, subject().username(), mode() );
+        return String.format( "%s{ username=%s, accessMode=%s }", name, subject().executingUser(), mode() );
     }
 
     /** Allows all operations. */

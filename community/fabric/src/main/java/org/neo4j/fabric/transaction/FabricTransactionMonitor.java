@@ -123,7 +123,7 @@ public class FabricTransactionMonitor extends TransactionMonitor
             var authSubject = fabricTransaction.getTransactionInfo().getLoginContext().subject();
             if ( authSubject != AuthSubject.ANONYMOUS && authSubject != AuthSubject.AUTH_DISABLED )
             {
-                sb.append( "," ).append( "username=" ).append( authSubject.username() );
+                sb.append( "," ).append( "username=" ).append( authSubject.executingUser() );
             }
 
             sb.append( "]" );

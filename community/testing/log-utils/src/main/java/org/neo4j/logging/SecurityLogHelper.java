@@ -164,7 +164,9 @@ public class SecurityLogHelper
                    Objects.equals( expected.expectedLevel, map.get( "level" ) ) &&
                    Objects.equals( expected.expectedSource, map.get( "source" ) ) &&
                    Objects.equals( expected.expectedDatabase, map.get( "database" ) ) &&
-                   Objects.equals( expected.expectedUser, map.get( "username" ) ) &&
+                   Objects.equals( expected.expectedExecutingUser, map.get( "username" ) ) &&
+                   Objects.equals( expected.expectedExecutingUser, map.get( "executing_user" ) ) &&
+                   Objects.equals( expected.expectedAuthenticatedUser, map.get( "authenticated_user" ) ) &&
                    Objects.equals( expected.expectedMessage, map.get( "message" ) );
         }
 
@@ -174,7 +176,9 @@ public class SecurityLogHelper
             assertEquals( expected.expectedLevel, map.get( "level" ), "'level' mismatch" );
             assertEquals( expected.expectedSource, map.get( "source" ), "'source' mismatch" );
             assertEquals( expected.expectedDatabase, map.get( "database" ), "'database' mismatch" );
-            assertEquals( expected.expectedUser, map.get( "username" ), "'user' mismatch" );
+            assertEquals( expected.expectedExecutingUser, map.get( "username" ), "'user' mismatch" );
+            assertEquals( expected.expectedExecutingUser, map.get( "executing_user" ), "'user' mismatch" );
+            assertEquals( expected.expectedAuthenticatedUser, map.get( "authenticated_user" ), "'user' mismatch" );
             assertMessage( expected, map.get( "message" ) );
         }
     }
@@ -231,7 +235,7 @@ public class SecurityLogHelper
             Matcher matcher = LOGGER_LINE_PARSER.matcher( contentLine );
             return matcher.matches() &&
                    Objects.equals( expected.expectedLevel, matcher.group( "level" ) ) &&
-                   ( expected.expectedUser == null || Objects.equals( expected.expectedUser, matcher.group( "user" ) ) ) &&
+                   (expected.expectedExecutingUser == null || Objects.equals( expected.expectedExecutingUser, matcher.group( "user" ) ) ) &&
                    Objects.equals( expected.expectedMessage, matcher.group( "message" ) );
         }
 
@@ -240,9 +244,9 @@ public class SecurityLogHelper
             Matcher matcher = LOGGER_LINE_PARSER.matcher( contentLine );
             assertTrue( matcher.matches() );
             assertEquals( expected.expectedLevel, matcher.group( "level" ), "'level' mismatch" );
-            if ( expected.expectedUser != null )
+            if ( expected.expectedExecutingUser != null )
             {
-                assertEquals( expected.expectedUser, matcher.group( "user" ), "'user' mismatch" );
+                assertEquals( expected.expectedExecutingUser, matcher.group( "user" ), "'user' mismatch" );
             }
             assertMessage( expected, matcher.group( "message" ) );
         }
@@ -274,7 +278,8 @@ public class SecurityLogHelper
         private String expectedLevel;
         private String expectedSource;
         private String expectedDatabase;
-        private String expectedUser;
+        private String expectedExecutingUser;
+        private String expectedAuthenticatedUser;
         private String expectedMessage;
         private String messagePrefix;
 
@@ -295,9 +300,10 @@ public class SecurityLogHelper
             return this;
         }
 
-        public LogLineContent user( String username )
+        public LogLineContent executingUser( String username )
         {
-            this.expectedUser = username;
+            this.expectedExecutingUser = username;
+            this.expectedAuthenticatedUser = username;
             return this;
         }
 
@@ -320,7 +326,8 @@ public class SecurityLogHelper
                    "expectedLevel='" + expectedLevel + '\'' +
                    ", expectedSource='" + expectedSource + '\'' +
                    ", expectedDatabase='" + expectedDatabase + '\'' +
-                   ", expectedUser='" + expectedUser + '\'' +
+                   ", expectedExecutingUser='" + expectedExecutingUser + '\'' +
+                   ", expectedAuthenticatedUser='" + expectedAuthenticatedUser + '\'' +
                    ", expectedMessage='" + expectedMessage + '\'' +
                    ", messagePrefix='" + messagePrefix + '\'' +
                    '}';

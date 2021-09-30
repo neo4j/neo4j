@@ -312,7 +312,7 @@ class TxStateTransactionDataViewTest
     void shouldAccessUsernameFromAuthSubject()
     {
         AuthSubject authSubject = mock( AuthSubject.class );
-        when( authSubject.username() ).thenReturn( "Christof" );
+        when( authSubject.executingUser() ).thenReturn( "Christof" );
         when( transaction.securityContext() )
                 .thenReturn( new SecurityContext( authSubject, AccessMode.Static.FULL, EMBEDDED_CONNECTION, null ) );
 

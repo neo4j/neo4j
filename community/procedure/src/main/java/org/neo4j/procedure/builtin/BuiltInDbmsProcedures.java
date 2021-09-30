@@ -354,7 +354,7 @@ public class BuiltInDbmsProcedures
                 Map<KernelTransactionHandle,Optional<QuerySnapshot>> handleQuerySnapshotsMap = new HashMap<>();
                 for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
                 {
-                    String username = tx.subject().username();
+                    String username = tx.subject().executingUser();
                     var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
                     if ( isSelfOrAllows( username, action ) )
                     {
@@ -389,7 +389,7 @@ public class BuiltInDbmsProcedures
     public Stream<TransactionMarkForTerminationResult> killTransactions( @Name( "ids" ) List<String> transactionIds ) throws InvalidArgumentsException
     {
         requireNonNull( transactionIds );
-        log.warn( "User %s trying to kill transactions: %s.", securityContext.subject().username(), transactionIds.toString() );
+        log.warn( "User %s trying to kill transactions: %s.", securityContext.subject().executingUser(), transactionIds.toString() );
 
         DatabaseManager<DatabaseContext> databaseManager = getDatabaseManager();
         DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
@@ -414,7 +414,7 @@ public class BuiltInDbmsProcedures
                 DatabaseContext databaseContext = maybeDatabaseContext.get();
                 for ( KernelTransactionHandle tx : getExecutingTransactions( databaseContext ) )
                 {
-                    String username = tx.subject().username();
+                    String username = tx.subject().executingUser();
                     var action = new AdminActionOnResource( TERMINATE_TRANSACTION, dbScope, new UserSegment( username ) );
                     if ( !isSelfOrAllows( username, action ) )
                     {
@@ -749,7 +749,7 @@ public class BuiltInDbmsProcedures
     private TransactionMarkForTerminationResult terminateTransaction( Map<String,KernelTransactionHandle> handles, String transactionId )
     {
         KernelTransactionHandle handle = handles.get( transactionId );
-        String currentUser = securityContext.subject().username();
+        String currentUser = securityContext.subject().executingUser();
         if ( handle == null )
         {
             return new TransactionMarkForTerminationFailedResult( transactionId, currentUser );
@@ -760,7 +760,7 @@ public class BuiltInDbmsProcedures
         }
         log.debug( "User %s terminated transaction %s.", currentUser, transactionId );
         handle.markForTermination( Status.Transaction.Terminated );
-        return new TransactionMarkForTerminationResult( transactionId, handle.subject().username() );
+        return new TransactionMarkForTerminationResult( transactionId, handle.subject().executingUser() );
     }
 
     private static Set<KernelTransactionHandle> getExecutingTransactions( DatabaseContext databaseContext )

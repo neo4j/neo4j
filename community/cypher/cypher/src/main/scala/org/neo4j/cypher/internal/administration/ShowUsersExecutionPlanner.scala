@@ -56,7 +56,7 @@ case class ShowUsersExecutionPlanner(normalExecutionEngine: ExecutionEngine, sec
       VirtualValues.EMPTY_MAP,
       parameterGenerator = (_, securityContext) => VirtualValues.map(
         Array(currentUserKey),
-        Array(Values.utf8Value(securityContext.subject().username()))),
+        Array(Values.utf8Value(securityContext.subject().executingUser()))),
     )
   }
 }

@@ -151,7 +151,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
     case AssertNotCurrentUser(source, userName, verb, violationMessage) => context =>
       new PredicateExecutionPlan((params, sc) => !sc.subject().hasUsername(runtimeStringValue(userName, params)),
-        onViolation = (_, sc) => new InvalidArgumentException(s"Failed to $verb the specified user '${sc.subject().username()}': $violationMessage."),
+        onViolation = (_, sc) => new InvalidArgumentException(s"Failed to $verb the specified user '${sc.subject().executingUser()}': $violationMessage."),
         source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
       )
 

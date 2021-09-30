@@ -95,7 +95,7 @@ public class AuthProcedures
     @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser()
     {
-        String username = securityContext.subject().username();
+        String username = securityContext.subject().executingUser();
         return Stream.of( new UserResult( username, false ) );
     }
 

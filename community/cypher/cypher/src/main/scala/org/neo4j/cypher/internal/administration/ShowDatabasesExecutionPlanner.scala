@@ -157,7 +157,7 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
     val allDatabaseAccess = if (allDatabaseNode != null) accessForDatabase(allDatabaseNode, roles) else None
     val defaultDatabaseNode = transaction.findNode(Label.label("DatabaseDefault"), "name", "DEFAULT")
     val defaultDatabaseAccess = if (defaultDatabaseNode != null) accessForDatabase(defaultDatabaseNode, roles) else None
-    val defaultDatabaseName = defaultDatabaseResolver.defaultDatabase(securityContext.subject().username())
+    val defaultDatabaseName = defaultDatabaseResolver.defaultDatabase(securityContext.subject().executingUser())
 
     val accessibleDatabases = transaction.findNodes(Label.label("Database")).asScala.foldLeft[Seq[String]](Seq.empty) { (acc, dbNode) =>
       val dbName = dbNode.getProperty("name").toString
@@ -184,7 +184,7 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
       }
     }
 
-    val username = Option(securityContext.subject().username()) match {
+    val username = Option(securityContext.subject().executingUser()) match {
       case None => Values.NO_VALUE
       case Some("") => Values.NO_VALUE
       case Some(user) => Values.stringValue(user)

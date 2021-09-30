@@ -96,7 +96,7 @@ case class SetOwnPasswordExecutionPlanner(normalExecutionEngine: ExecutionEngine
         p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()
         p.get(currentKeyBytes).asInstanceOf[ByteArray].zero()
       },
-      parameterGenerator = (_, securityContext) => VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().username()))),
+      parameterGenerator = (_, securityContext) => VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().executingUser()))),
       parameterConverter = (tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m))
     )
   }

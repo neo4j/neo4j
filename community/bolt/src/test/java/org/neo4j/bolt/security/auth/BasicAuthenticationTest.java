@@ -59,7 +59,7 @@ class BasicAuthenticationTest
                 map( "scheme", "basic", "principal", "mike", "credentials", password( "secret2" ) ), EMBEDDED_CONNECTION );
 
         // Then
-        assertThat( result.getLoginContext().subject().username() ).isEqualTo( "mike" );
+        assertThat( result.getLoginContext().subject().executingUser() ).isEqualTo( "mike" );
     }
 
     @Test

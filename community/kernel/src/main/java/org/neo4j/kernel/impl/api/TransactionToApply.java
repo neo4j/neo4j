@@ -132,7 +132,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
             return Subject.ANONYMOUS;
         }
 
-        return new Subject( transactionRepresentation.getAuthSubject().username() );
+        return new Subject( transactionRepresentation.getAuthSubject().executingUser() );
     }
 
     @Override

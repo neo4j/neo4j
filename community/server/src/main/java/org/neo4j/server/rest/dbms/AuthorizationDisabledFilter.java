@@ -54,7 +54,7 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
             LoginContext loginContext = getAuthDisabledLoginContext( connectionInfo );
             String userAgent = request.getHeader( HttpHeaders.USER_AGENT );
 
-            JettyHttpConnection.updateUserForCurrentConnection( loginContext.subject().username(), userAgent );
+            JettyHttpConnection.updateUserForCurrentConnection( loginContext.subject().executingUser(), userAgent );
 
             filterChain.doFilter(
                     new AuthorizedRequestWrapper( BASIC_AUTH, "neo4j", request, loginContext ),

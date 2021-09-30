@@ -165,7 +165,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     @Override
     public String username()
     {
-        return transaction.securityContext().subject().username();
+        return transaction.securityContext().subject().executingUser();
     }
 
     @Override

@@ -79,7 +79,7 @@ public class FabricStatementLifecycles
         var executingQuery = executingQueryFactory.createUnbound(
                 statement, params,
                 transactionInfo.getClientConnectionInfo(),
-                transactionInfo.getLoginContext().subject().username(),
+                transactionInfo.getLoginContext().subject().executingUser(),
                 transactionInfo.getTxMetadata() );
 
         return new StatementLifecycle( executingQuery );

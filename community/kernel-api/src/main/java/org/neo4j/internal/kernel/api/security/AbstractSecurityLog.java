@@ -42,7 +42,8 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
 
     public void debug( SecurityContext context, String message )
     {
-        inner.debug( new SecurityLogLine( context.connectionInfo(), context.database(), context.subject().username(), message ) );
+        AuthSubject subject = context.subject();
+        inner.debug( new SecurityLogLine( context.connectionInfo(), context.database(), subject.executingUser(), message, subject.authenticatedUser() ) );
     }
 
     public void info( String message )
@@ -50,14 +51,16 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
         inner.info( new SecurityLogLine( message ) );
     }
 
-    public void info( LoginContext loginContext, String message )
+    public void info( LoginContext context, String message )
     {
-        inner.info( new SecurityLogLine( loginContext.connectionInfo(), null, loginContext.subject().username(), message ) );
+        AuthSubject subject = context.subject();
+        inner.info( new SecurityLogLine( context.connectionInfo(), null, subject.executingUser(), message, subject.authenticatedUser() ) );
     }
 
     public void info( SecurityContext context, String message )
     {
-        inner.info( new SecurityLogLine( context.connectionInfo(), context.database(), context.subject().username(), message ) );
+        AuthSubject subject = context.subject();
+        inner.info( new SecurityLogLine( context.connectionInfo(), context.database(), subject.executingUser(), message, subject.authenticatedUser() ) );
     }
 
     public void warn( String message )
@@ -67,7 +70,8 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
 
     public void warn( SecurityContext context, String message )
     {
-        inner.warn( new SecurityLogLine( context.connectionInfo(), context.database(), context.subject().username(), message ) );
+        AuthSubject subject = context.subject();
+        inner.warn( new SecurityLogLine( context.connectionInfo(), context.database(), subject.executingUser(), message, subject.authenticatedUser() ) );
     }
 
     public void error( String message )
@@ -77,22 +81,25 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
 
     public void error( ClientConnectionInfo connectionInfo, String message )
     {
-        inner.error( new SecurityLogLine( connectionInfo, null, null, message ) );
+        inner.error( new SecurityLogLine( connectionInfo, null, null, message, null ) );
     }
 
     public void error( LoginContext context, String message )
     {
-        inner.error( new SecurityLogLine( context.connectionInfo(), null, context.subject().username(), message ) );
+        AuthSubject subject = context.subject();
+        inner.error( new SecurityLogLine( context.connectionInfo(), null, subject.executingUser(), message, subject.authenticatedUser() ) );
     }
 
     public void error( LoginContext context, String database, String message )
     {
-        inner.error( new SecurityLogLine( context.connectionInfo(), database, context.subject().username(), message ) );
+        AuthSubject subject = context.subject();
+        inner.error( new SecurityLogLine( context.connectionInfo(), database, subject.executingUser(), message, subject.authenticatedUser() ) );
     }
 
     public void error( SecurityContext context, String message )
     {
-        inner.error( new SecurityLogLine( context.connectionInfo(), context.database(), context.subject().username(), message ) );
+        AuthSubject subject = context.subject();
+        inner.error( new SecurityLogLine( context.connectionInfo(), context.database(), subject.executingUser(), message, subject.authenticatedUser() ) );
     }
 
     public boolean isDebugEnabled()
@@ -102,34 +109,37 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
 
     static class SecurityLogLine extends StructureAwareMessage
     {
-        private final String username;
+        private final String executingUser;
         private final String sourceString;
         private final String message;
+        private final String authenticatedUser;
         private final String database;
 
         SecurityLogLine( String message )
         {
             this.sourceString = null;
             this.database = null;
-            this.username = null;
+            this.executingUser = null;
+            this.authenticatedUser = null;
             this.message = message;
         }
 
-        SecurityLogLine( ClientConnectionInfo connectionInfo, String database, String username, String message )
+        SecurityLogLine( ClientConnectionInfo connectionInfo, String database, String executingUser, String message, String authenticatedUser )
         {
             this.sourceString = connectionInfo.asConnectionDetails();
             this.database = database;
-            this.username = username;
+            this.executingUser = executingUser;
             // clean message of newlines
             this.message = message.replaceAll( "\\R+", " " );
+            this.authenticatedUser = authenticatedUser;
         }
 
         @Override
         public void asString( StringBuilder sb )
         {
-            if ( username != null && username.length() > 0 )
+            if ( executingUser != null && executingUser.length() > 0 )
             {
-                sb.append( "[" ).append( escape( username ) ).append( "]: " );
+                sb.append( "[" ).append( escape( executingUser ) ).append( "]: " );
             }
             sb.append( message );
         }
@@ -143,9 +153,14 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
             {
                 fieldConsumer.add( "database", database );
             }
-            if ( username != null && username.length() > 0 )
+            if ( executingUser != null && executingUser.length() > 0 )
             {
-                fieldConsumer.add( "username", username );
+                fieldConsumer.add( "username", executingUser );
+                fieldConsumer.add( "executing_user", executingUser );
+            }
+            if ( authenticatedUser != null && authenticatedUser.length() > 0 )
+            {
+                fieldConsumer.add( "authenticated_user", authenticatedUser );
             }
             fieldConsumer.add( "message", message );
         }

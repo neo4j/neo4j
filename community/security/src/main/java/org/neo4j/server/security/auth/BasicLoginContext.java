@@ -75,7 +75,7 @@ public class BasicLoginContext extends LoginContext
         }
 
         @Override
-        public String username()
+        public String executingUser()
         {
             if ( user != null )
             {
@@ -87,7 +87,7 @@ public class BasicLoginContext extends LoginContext
         @Override
         public boolean hasUsername( String username )
         {
-            return username().equals( username );
+            return executingUser().equals( username );
         }
     }
 

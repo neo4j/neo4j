@@ -26,15 +26,25 @@ public interface AuthSubject
 
     /**
      * @param username a username
-     * @return true if the provided username is the underlying user name of this subject
+     * @return true if the provided username is the same as the executing username of this subject
      */
     boolean hasUsername( String username );
 
     /**
-     * Get the username associated with the auth subject
+     * Get the name of the user associated with the current transaction.
+     * This might be the same as the authenticated user or a different when using impersonation
      * @return the username
      */
-    String username();
+    String executingUser();
+
+    /**
+     * Get the name of the authenticated user
+     * @return the username
+     */
+    default String authenticatedUser()
+    {
+        return executingUser();
+    }
 
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
@@ -55,7 +65,7 @@ public interface AuthSubject
         }
 
         @Override
-        public String username()
+        public String executingUser()
         {
             return ""; // Should never clash with a valid username
         }
@@ -68,7 +78,7 @@ public interface AuthSubject
     AuthSubject AUTH_DISABLED = new AuthSubject()
     {
         @Override
-        public String username()
+        public String executingUser()
         {
             return ""; // Should never clash with a valid username
         }

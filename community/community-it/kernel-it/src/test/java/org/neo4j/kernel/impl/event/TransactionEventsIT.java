@@ -211,7 +211,7 @@ class TransactionEventsIT
             metaDataRef.set( txData.metaData() );
         } ) );
         AuthSubject subject = mock( AuthSubject.class );
-        when( subject.username() ).thenReturn( "Christof" );
+        when( subject.executingUser() ).thenReturn( "Christof" );
         LoginContext loginContext = new LoginContext( subject, EMBEDDED_CONNECTION )
         {
             @Override

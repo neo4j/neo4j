@@ -219,7 +219,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
 
     final String username()
     {
-        return transaction.securityContext().subject().username();
+        return transaction.securityContext().subject().executingUser();
     }
 
     final Optional<ExecutingQuery> executingQuery()

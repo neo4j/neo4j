@@ -214,7 +214,7 @@ public class StubKernelTransaction implements KernelTransaction
     public AuthSubject subjectOrAnonymous()
     {
         AuthSubject subject = mock( AuthSubject.class );
-        when( subject.username() ).thenReturn( "testUser" );
+        when( subject.executingUser() ).thenReturn( "testUser" );
         return subject;
     }
 
