@@ -29,7 +29,6 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -45,9 +44,8 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     private final Relationship relationship;
     private volatile TextValue type;
     private volatile MapValue properties;
-    private volatile NodeValue startNode;
-    private volatile NodeValue endNode;
-
+    private volatile VirtualNodeValue startNode;
+    private volatile VirtualNodeValue endNode;
     /**
      * Wraps a {@link Relationship}, reading out its meta data eagerly.
      */
@@ -220,7 +218,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     @Override
     public VirtualNodeValue startNode()
     {
-        NodeValue start = startNode;
+        VirtualNodeValue start = startNode;
         if ( start == null )
         {
             synchronized ( this )
@@ -238,7 +236,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     @Override
     public VirtualNodeValue endNode()
     {
-        NodeValue end = endNode;
+        VirtualNodeValue end = endNode;
         if ( end == null )
         {
             synchronized ( this )

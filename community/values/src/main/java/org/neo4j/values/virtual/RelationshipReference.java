@@ -33,13 +33,18 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipReference.class );
 
     private final long id;
-    private long startNode = NO_NODE;
-    private long endNode = NO_NODE;
-    private int type = NO_TYPE;
+    private long startNode;
+    private long endNode;
+    private int type;
 
     RelationshipReference( long id )
     {
-        this.id = id;
+        this( id, NO_NODE, NO_NODE, NO_TYPE );
+    }
+
+    RelationshipReference( long id, long startNode, long endNode )
+    {
+        this( id, startNode, endNode, NO_TYPE );
     }
 
     RelationshipReference( long id, long startNode, long endNode, int type )

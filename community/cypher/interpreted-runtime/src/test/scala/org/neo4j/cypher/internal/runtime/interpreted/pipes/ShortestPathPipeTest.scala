@@ -19,17 +19,27 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.Collections
-
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyInt
+import org.mockito.ArgumentMatchers.anyLong
+import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.runtime.Expander
+import org.neo4j.cypher.internal.runtime.KernelPredicate
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
+import org.neo4j.memory.MemoryTracker
+
+import java.util.Collections
 
 class ShortestPathPipeTest extends CypherFunSuite {
   test("should be lazy") {
@@ -39,9 +49,15 @@ class ShortestPathPipeTest extends CypherFunSuite {
     when(n1.getRelationships).thenReturn(Collections.emptyList[Relationship]())
     val input = new FakePipe(Seq.fill(10)(Map("start" -> n1, "end" -> n1)))
     val pipe = ShortestPathPipe(input, ShortestPathExpression(shortestPath))()
+    val context = mock[QueryContext](Mockito.RETURNS_DEEP_STUBS)
+    val p = mock[Path]
+    when(p.nodes()).thenReturn(java.util.List.of[Node](n1))
+    when(p.relationships()).thenReturn(Collections.emptyList[Relationship]())
+    when(context.singleShortestPath(anyLong(), anyLong(), anyInt(), any[Expander], any[KernelPredicate[Path]], any[Seq[KernelPredicate[Entity]]], any[MemoryTracker]))
+      .thenReturn(Some(p))
 
     // when
-    val res = pipe.createResults(QueryStateHelper.emptyWithValueSerialization)
+    val res = pipe.createResults(QueryStateHelper.emptyWith(query = context))
     res.next()
     // then
     input.numberOfPulledRows shouldBe 1

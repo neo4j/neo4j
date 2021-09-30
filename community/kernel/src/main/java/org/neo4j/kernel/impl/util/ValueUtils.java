@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.Entity;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -48,10 +49,14 @@ import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
+
+import static org.neo4j.values.storable.Values.stringArray;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public final class ValueUtils
 {
@@ -233,7 +238,7 @@ public final class ValueUtils
     public static ListValue asListOfEdges( Iterable<Relationship> rels )
     {
         return VirtualValues.list( StreamSupport.stream( rels.spliterator(), false )
-                .map( ValueUtils::fromRelationshipEntity ).toArray( RelationshipValue[]::new ) );
+                .map( ValueUtils::fromRelationshipEntity ).toArray( VirtualRelationshipValue[]::new ) );
     }
 
     public static ListValue asListOfEdges( Relationship[] rels )
@@ -291,24 +296,44 @@ public final class ValueUtils
         return builder.build();
     }
 
-    public static NodeValue fromNodeEntity( Node node )
+    public static VirtualNodeValue fromNodeEntity( Node node )
     {
-        return new NodeEntityWrappingNodeValue( node );
+        return VirtualValues.node( node.getId() );
     }
 
-    public static RelationshipValue fromRelationshipEntityLazyLoad( Relationship relationship )
+    public static NodeValue fromNodeEntityEager( Node node )
     {
-        return RelationshipEntityWrappingValue.wrapLazy( relationship );
+        return VirtualValues.nodeValue( node.getId(),
+                                        stringArray(
+                                                StreamSupport.stream( node.getLabels().spliterator(), false )
+                                                             .map( Label::name )
+                                                             .toArray( String[]::new ) ),
+                                        asMapValue( node.getAllProperties() ) );
     }
 
-    public static RelationshipValue fromRelationshipEntity( Relationship relationship )
+    public static VirtualRelationshipValue fromRelationshipEntity( Relationship relationship )
     {
-        return RelationshipEntityWrappingValue.wrapEager( relationship );
+        return VirtualValues.relationship( relationship.getId() );
     }
 
-    public static PathValue fromPath( Path path )
+    public static RelationshipValue fromRelationshipEntityEager( Relationship relationship )
     {
-        return new PathWrappingPathValue( path );
+        return VirtualValues.relationshipValue( relationship.getStartNodeId(),
+                                                fromNodeEntity( relationship.getStartNode() ),
+                                                fromNodeEntity( relationship.getEndNode() ),
+                                                stringValue(relationship.getType().name()),
+                                                asMapValue( relationship.getAllProperties() ) );
+    }
+
+    public static VirtualPathValue fromPath( Path path )
+    {
+        return VirtualValues.pathReference(
+                StreamSupport.stream(path.nodes().spliterator(), false )
+                             .map( ValueUtils::fromNodeEntity ).toArray( VirtualNodeValue[]::new ) ,
+                StreamSupport.stream(path.relationships().spliterator(), false )
+                             .map( ValueUtils::fromRelationshipEntity )
+                             .toArray( VirtualRelationshipValue[]::new )
+        );
     }
 
     public static VirtualPathValue pathReferenceFromPath( Path path )
@@ -366,11 +391,11 @@ public final class ValueUtils
     }
 
     @CalledFromGeneratedCode
-    public static NodeValue asNodeValue( Object object )
+    public static VirtualNodeValue asNodeValue( Object object )
     {
-        if ( object instanceof NodeValue )
+        if ( object instanceof VirtualNodeValue )
         {
-            return (NodeValue) object;
+            return (VirtualNodeValue) object;
         }
         if ( object instanceof Node )
         {
@@ -381,18 +406,21 @@ public final class ValueUtils
     }
 
     @CalledFromGeneratedCode
-    public static RelationshipValue asRelationshipValue( Object object )
+    public static VirtualRelationshipValue asRelationshipValue( Object object )
     {
-        if ( object instanceof RelationshipValue )
+        if ( object instanceof VirtualRelationshipValue )
         {
-            return (RelationshipValue) object;
+            return (VirtualRelationshipValue) object;
         }
-        if ( object instanceof Relationship )
+        else if ( object instanceof Relationship )
         {
             return fromRelationshipEntity( (Relationship) object );
         }
-        throw new IllegalArgumentException(
-                "Cannot produce a relationship from " + object.getClass().getName() );
+        else
+        {
+            throw new IllegalArgumentException(
+                    "Cannot produce a relationship from " + object.getClass().getName() );
+        }
     }
 
     @CalledFromGeneratedCode

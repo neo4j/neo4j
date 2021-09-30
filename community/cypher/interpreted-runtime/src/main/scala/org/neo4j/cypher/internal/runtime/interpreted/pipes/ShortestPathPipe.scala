@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
-import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -49,14 +49,14 @@ case class ShortestPathPipe(source: Pipe,
       val result = shortestPathExpression(ctx, state, memoryTracker) match {
         case in: ListValue => in
         case v if v eq Values.NO_VALUE => VirtualValues.EMPTY_LIST
-        case path: PathValue => VirtualValues.list(path)
+        case path: VirtualPathValue => VirtualValues.list(path)
       }
 
       shortestPathCommand.relIterator match {
         case Some(relName) =>
           result.iterator().asScala.map {
-            case path: PathValue =>
-              val relations = VirtualValues.list(path.relationships(): _*)
+            case path: VirtualPathValue =>
+              val relations = VirtualValues.list(path.relationshipIds().map(VirtualValues.relationship): _*)
               rowFactory.copyWith(ctx, pathName, path, relName, relations)
 
             case value =>
@@ -64,7 +64,7 @@ case class ShortestPathPipe(source: Pipe,
           }
         case None =>
           result.iterator().asScala.map {
-            case path: PathValue =>
+            case path: VirtualPathValue =>
               rowFactory.copyWith(ctx, pathName, path)
 
             case value =>

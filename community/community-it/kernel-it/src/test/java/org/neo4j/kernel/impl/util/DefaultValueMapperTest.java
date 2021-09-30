@@ -35,8 +35,9 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
@@ -44,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
-import static org.neo4j.values.virtual.VirtualValues.path;
+import static org.neo4j.values.virtual.VirtualValues.pathReference;
 
 @ImpermanentDbmsExtension
 class DefaultValueMapperTest
@@ -67,7 +68,7 @@ class DefaultValueMapperTest
         try ( Transaction tx = db.beginTx() )
         {
             var mapper = new DefaultValueMapper( (InternalTransaction) tx );
-            Path mapped = mapper.mapPath( path( asNodeValues( node ), asRelationshipsValues() ) );
+            Path mapped = mapper.mapPath( pathReference( asNodeValues( node ), asRelationshipsValues() ) );
             assertThat( mapped.length() ).isEqualTo( 0 );
             assertThat( mapped.startNode() ).isEqualTo( node );
             assertThat( mapped.endNode() ).isEqualTo( node );
@@ -98,7 +99,7 @@ class DefaultValueMapperTest
         try ( Transaction tx = db.beginTx() )
         {
             var mapper = new DefaultValueMapper( (InternalTransaction) tx );
-            Path mapped = mapper.mapPath( path( asNodeValues( start, end ), asRelationshipsValues( relationship ) ) );
+            Path mapped = mapper.mapPath( pathReference( asNodeValues( start, end ), asRelationshipsValues( relationship ) ) );
             assertThat( mapped.length() ).isEqualTo( 1 );
             assertThat( mapped.startNode() ).isEqualTo( start );
             assertThat( mapped.endNode() ).isEqualTo( end );
@@ -135,7 +136,7 @@ class DefaultValueMapperTest
         try ( Transaction tx = db.beginTx() )
         {
             var mapper = new DefaultValueMapper( (InternalTransaction) tx );
-            Path mapped = mapper.mapPath( path( asNodeValues( a, b, c, d, e ), asRelationshipsValues( r1, r2, r3, r4 ) ) );
+            Path mapped = mapper.mapPath( pathReference( asNodeValues( a, b, c, d, e ), asRelationshipsValues( r1, r2, r3, r4 ) ) );
             assertThat( mapped.length() ).isEqualTo( 4 );
             assertThat( mapped.startNode() ).isEqualTo( a );
             assertThat( mapped.endNode() ).isEqualTo( e );
@@ -177,14 +178,14 @@ class DefaultValueMapperTest
         }
     }
 
-    private static NodeValue[] asNodeValues( Node... nodes )
+    private static VirtualNodeValue[] asNodeValues( Node... nodes )
     {
-        return Arrays.stream( nodes ).map( ValueUtils::fromNodeEntity ).toArray( NodeValue[]::new );
+        return Arrays.stream( nodes ).map( ValueUtils::fromNodeEntity ).toArray( VirtualNodeValue[]::new );
     }
 
-    private static RelationshipValue[] asRelationshipsValues( Relationship... relationships )
+    private static VirtualRelationshipValue[] asRelationshipsValues( Relationship... relationships )
     {
         return Arrays.stream( relationships ).map( ValueUtils::fromRelationshipEntity )
-                .toArray( RelationshipValue[]::new );
+                .toArray( VirtualRelationshipValue[]::new );
     }
 }

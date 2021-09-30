@@ -52,8 +52,10 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.PathValue
 import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualPathValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues.list
 
 import scala.collection.JavaConverters.asJavaIterableConverter
@@ -105,13 +107,13 @@ object ImplicitValueConversion {
   implicit def toMapValue(m: java.util.Map[String, Any]): MapValue =
     ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
 
-  implicit def toNodeValue(n: Node): NodeValue = ValueUtils.fromNodeEntity(n)
+  implicit def toNodeValue(n: Node): VirtualNodeValue = ValueUtils.fromNodeEntity(n)
 
-  implicit def toRelationshipValue(r: Relationship): RelationshipValue = ValueUtils.fromRelationshipEntity(r)
+  implicit def toRelationshipValue(r: Relationship): VirtualRelationshipValue = ValueUtils.fromRelationshipEntity(r)
 
-  implicit def toPathValue(p: Path): PathValue = ValueUtils.fromPath(p)
+  implicit def toPathValue(p: Path): VirtualPathValue = ValueUtils.fromPath(p)
 
-  implicit def toPathValue(p: PathImpl): PathValue = ValueUtils.fromPath(p)
+  implicit def toPathValue(p: PathImpl): VirtualPathValue = ValueUtils.fromPath(p)
 
   implicit def toListValue(t: TraversableOnce[_]): ListValue =
     ValueUtils.asListValue(t.toIterable.asJava)

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.core.NodeEntity
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.Map
 import scala.collection.mutable
@@ -41,7 +41,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(positivePredicate = false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: NodeValue =>
+    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: VirtualNodeValue =>
       y.id()
     }.toSet
     ids should equal(Set(11, 12, 21, 22))
@@ -76,7 +76,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(positivePredicate = false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: NodeValue =>
+    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: VirtualNodeValue =>
       y.id()
     }.toSet
     ids should equal(Set(11, 12, 21, 22))
@@ -90,7 +90,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(positivePredicate = true, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: NodeValue =>
+    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: VirtualNodeValue =>
       y.id()
     }.toSet
     ids should equal(Set(2))
@@ -106,7 +106,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val pipe = TriadicSelectionPipe(positivePredicate = false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
-      case (a: NodeValue, c: NodeValue) =>
+      case (a: VirtualNodeValue, c: VirtualNodeValue) =>
         (a.id(), c.id())
       case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet
@@ -123,7 +123,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val pipe = TriadicSelectionPipe(positivePredicate = false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
-      case (a: NodeValue, c: NodeValue) =>
+      case (a: VirtualNodeValue, c: VirtualNodeValue) =>
         (a.id(), c.id())
       case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet
@@ -140,7 +140,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val pipe = TriadicSelectionPipe(positivePredicate = true, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
-      case (a: NodeValue, c: NodeValue) =>
+      case (a: VirtualNodeValue, c: VirtualNodeValue) =>
         (a.id(), c.id())
       case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet
@@ -157,7 +157,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val pipe = TriadicSelectionPipe(positivePredicate = false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
-      case (a: NodeValue, c: NodeValue) =>
+      case (a: VirtualNodeValue, c: VirtualNodeValue) =>
         (a.id, c.id)
       case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet
@@ -174,7 +174,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val pipe = TriadicSelectionPipe(positivePredicate = false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
     val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
-      case (a: NodeValue, c: NodeValue) =>
+      case (a: VirtualNodeValue, c: VirtualNodeValue) =>
         (a.id, c.id())
       case (a, b) => throw new IllegalStateException(s"$a and $b must be nodes")
     }.toSet

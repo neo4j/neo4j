@@ -83,9 +83,9 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualPathValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
@@ -961,7 +961,7 @@ public final class ProcedureCompilation
             Expression internalTransaction = invoke( context, methodReference( Context.class, InternalTransaction.class, "internalTransactionOrNull" ) );
             Expression getNode = invoke( internalTransaction,
                                          methodReference( InternalTransaction.class, Entity.class, "validateSameDB", Entity.class ), expression );
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, NodeValue.class, "fromNodeEntity", Node.class ), getNode ) );
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, VirtualNodeValue.class, "fromNodeEntity", Node.class ), getNode ) );
         }
         else if ( type.equals( RELATIONSHIP ) )
         {
@@ -969,11 +969,11 @@ public final class ProcedureCompilation
             Expression getRelationship =
                     invoke( internalTransaction, methodReference( InternalTransaction.class, Entity.class, "validateSameDB", Entity.class ), expression );
             return nullCheck( expression, invoke(
-                    methodReference( ValueUtils.class, RelationshipValue.class, "fromRelationshipEntity", Relationship.class ), getRelationship ) );
+                    methodReference( ValueUtils.class, VirtualRelationshipValue.class, "fromRelationshipEntity", Relationship.class ), getRelationship ) );
         }
         else if ( type.equals( PATH ) )
         {
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, PathValue.class, "fromPath", Path.class ), expression ));
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, VirtualPathValue.class, "fromPath", Path.class ), expression ));
         }
         else if ( type.equals( POINT ) )
         {
