@@ -53,22 +53,20 @@ import org.neo4j.values.virtual.VirtualValues
 
 import java.util.UUID
 
-import AdministrationCommandRuntime.getNameFields
-import AdministrationCommandRuntime.internalKey
-import AdministrationCommandRuntime.internalPrefix
-import AdministrationCommandRuntime.runtimeStringValue
-import AdministrationCommandRuntime.IdentityConverter
-import AdministrationCommandRuntime.NameFields
-
 trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
-  protected val followerError = "Administration commands must be executed on the LEADER server."
-  protected val secureHasher = new SecureHasher
-
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
 
   def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean
+}
 
-  protected def validatePassword(password: Array[Byte]): Array[Byte] = {
+object AdministrationCommandRuntime {
+  private[internal] val followerError = "Administration commands must be executed on the LEADER server."
+  private val secureHasher = new SecureHasher
+  private val internalPrefix: String = "__internal_"
+
+  private[internal] def internalKey(name: String): String = internalPrefix + name
+
+  private[internal] def validatePassword(password: Array[Byte]): Array[Byte] = {
     if (password == null || password.length == 0) throw new InvalidArgumentException("A password cannot be empty.")
     password
   }
@@ -96,7 +94,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                           bytesValue: Value,
                                           mapValueConverter: (Transaction, MapValue) => MapValue)
 
-  protected def getPasswordExpression(userNameParameter: Option[expressions.Expression], password: expressions.Expression, isEncryptedPassword: Boolean): PasswordExpression =
+  private[internal] def getPasswordExpression(userNameParameter: Option[expressions.Expression], password: expressions.Expression, isEncryptedPassword: Boolean): PasswordExpression =
     password match {
       case parameterPassword: Parameter =>
         validateStringParameterType(parameterPassword)
@@ -118,22 +116,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
         PasswordExpression(hashedPwParameterName, Values.NO_VALUE, s"${parameterPassword.name}_bytes", Values.NO_VALUE, convertPasswordParameters)
     }
 
-  protected def getPasswordFieldsCurrent(password: expressions.Expression): (String, Value, MapValue => MapValue) = {
-    password match {
-      case parameterPassword: Parameter =>
-        validateStringParameterType(parameterPassword)
-        val passwordParameter = parameterPassword.name
-        val renamedParameter = s"__current_${passwordParameter}_bytes"
-        def convertPasswordParameters(params: MapValue): MapValue = {
-          val encodedPassword = getValidPasswordParameter(params, passwordParameter)
-          validatePassword(encodedPassword)
-          params.updatedWith(renamedParameter, Values.byteArray(encodedPassword))
-        }
-        (renamedParameter, Values.NO_VALUE, convertPasswordParameters)
-    }
-  }
-
-  private def getValidPasswordParameter(params: MapValue, passwordParameter: String): Array[Byte] = {
+  private[internal] def getValidPasswordParameter(params: MapValue, passwordParameter: String): Array[Byte] = {
     params.get(passwordParameter) match {
       case bytes: ByteArray =>
         bytes.asObject()  // Have as few copies of the password in memory as possible
@@ -146,14 +129,14 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  private def validateStringParameterType(param: Parameter): Unit = {
+  private[internal] def validateStringParameterType(param: Parameter): Unit = {
     param.parameterType match {
       case _: StringType =>
       case _ => throw new ParameterWrongTypeException(s"Only $CTString values are accepted as password, got: " + param.parameterType)
     }
   }
 
-  protected def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
+  private[internal] def makeCreateUserExecutionPlan(userName: Either[String, Parameter],
                                             isEncryptedPassword: Boolean,
                                             password: expressions.Expression,
                                             requirePasswordChange: Boolean,
@@ -211,7 +194,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     )
   }
 
-  protected def makeAlterUserExecutionPlan(userName: Either[String, Parameter],
+  private[internal] def makeAlterUserExecutionPlan(userName: Either[String, Parameter],
                                            isEncryptedPassword: Option[Boolean],
                                            password: Option[expressions.Expression],
                                            requirePasswordChange: Option[Boolean],
@@ -279,7 +262,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     )
   }
 
-  protected def makeRenameExecutionPlan(entity: String,
+  private[internal] def makeRenameExecutionPlan(entity: String,
                                         fromName: Either[String, Parameter],
                                         toName: Either[String, Parameter],
                                         initFunction: MapValue => Boolean)
@@ -315,12 +298,6 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       parameterConverter = mapValueConverter
     )
   }
-}
-
-object AdministrationCommandRuntime {
-  private val internalPrefix: String = "__internal_"
-
-  protected[internal] def internalKey(name: String): String = internalPrefix + name
 
   /**
    *
@@ -329,7 +306,7 @@ object AdministrationCommandRuntime {
    * @param valueMapper function to apply to the value
    * @return
    */
-  protected[internal] def getNameFields(key: String,
+  private[internal] def getNameFields(key: String,
                               name: Either[String, Parameter],
                               valueMapper: String => String = identity): NameFields = name match {
     case Left(u) =>
@@ -339,7 +316,7 @@ object AdministrationCommandRuntime {
       NameFields(rename(parameter.name), Values.NO_VALUE, RenamingStringParameterConverter(parameter.name, rename, { v => Values.utf8Value(valueMapper(v.stringValue()))}))
   }
 
-  protected[internal] def runtimeStringValue(field: Either[String, Parameter], params: MapValue): String = field match {
+  private[internal] def runtimeStringValue(field: Either[String, Parameter], params: MapValue): String = field match {
     case Left(u) => u
     case Right(p)  => runtimeStringValue(p.name, params)
   }

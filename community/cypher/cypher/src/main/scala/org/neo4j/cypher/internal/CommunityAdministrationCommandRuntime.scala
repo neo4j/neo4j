@@ -23,12 +23,9 @@ import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.administration.ShowDatabasesExecutionPlanner
 import org.neo4j.cypher.internal.ast.AdministrationAction
 import org.neo4j.cypher.internal.ast.DbmsAction
-import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterUser
@@ -53,39 +50,32 @@ import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.procs.ActionMapper
 import org.neo4j.cypher.internal.procs.AuthorizationPredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.PredicateExecutionPlan
-import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
-import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
-import org.neo4j.cypher.internal.security.SystemGraphCredential
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.CantCompileQueryException
-import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
-import org.neo4j.exceptions.Neo4jException
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
-import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
-import org.neo4j.kernel.api.exceptions.Status
-import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.database.DefaultDatabaseResolver
-import org.neo4j.kernel.impl.api.security.OverriddenAccessMode
-import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.storable.ByteArray
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.MapValueBuilder
-import org.neo4j.values.virtual.VirtualValues
-import AdministrationCommandRuntime.getNameFields
-import AdministrationCommandRuntime.internalKey
+import AdministrationCommandRuntime.makeRenameExecutionPlan
 import AdministrationCommandRuntime.runtimeStringValue
+import org.neo4j.cypher.internal.administration.AlterUserExecutionPlanner
 import org.neo4j.cypher.internal.administration.CommunityExtendedDatabaseInfoMapper
+import org.neo4j.cypher.internal.administration.CreateUserExecutionPlanner
+import org.neo4j.cypher.internal.administration.DoNothingExecutionPlanner
+import org.neo4j.cypher.internal.administration.DropUserExecutionPlanner
+import org.neo4j.cypher.internal.administration.EnsureNodeExistsExecutionPlanner
+import org.neo4j.cypher.internal.administration.SetOwnPasswordExecutionPlanner
+import org.neo4j.cypher.internal.administration.ShowUsersExecutionPlanner
+import org.neo4j.cypher.internal.administration.SystemProcedureCallPlanner
 
 /**
  * This runtime takes on queries that work on the system database, such as multidatabase and security administration commands.
@@ -179,56 +169,18 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // SHOW USERS
     case ShowUsers(source, symbols, yields, returns) => context =>
-      SystemCommandExecutionPlan("ShowUsers",
-        normalExecutionEngine,
-        securityAuthorizationHandler,
-        s"""MATCH (u:User)
-           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended, null as home
-           |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
-           |""".stripMargin,
-        VirtualValues.EMPTY_MAP,
-        source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-      )
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+      ShowUsersExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planShowUsers(symbols, yields, returns, sourcePlan)
 
     // SHOW CURRENT USER
     case ShowCurrentUser(symbols, yields, returns) => _ =>
-      val currentUserKey = internalKey("currentUser")
-      SystemCommandExecutionPlan("ShowCurrentUser",
-        normalExecutionEngine,
-        securityAuthorizationHandler,
-        s"""MATCH (u:User)
-           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended, null as home
-           |WHERE user = $$`$currentUserKey`
-           |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
-           |""".stripMargin,
-        VirtualValues.EMPTY_MAP,
-        parameterGenerator = (_, securityContext) => VirtualValues.map(
-          Array(currentUserKey),
-          Array(Values.utf8Value(securityContext.subject().username()))),
-      )
+      ShowUsersExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planShowCurrentUser(symbols, yields, returns)
 
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD 'password'
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD $password
-    case CreateUser(source, userName, isEncryptedPassword, password, requirePasswordChange, suspendedOptional, defaultDatabase) => context =>
-      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-
-      def failWithError(command: String) : PredicateExecutionPlan = {
-        new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
-          val user = runtimeStringValue(userName, params)
-          throw new CantCompileQueryException(s"Failed to create the specified user '$user': '$command' is not available in community edition.")
-        })
-      }
-
-      if (suspendedOptional.isDefined) { // Users are always active in community
-        failWithError("SET STATUS")
-      } else if (defaultDatabase.isDefined) { // There is only one database in community
-        failWithError("HOME DATABASE")
-      }
-      else {
-        makeCreateUserExecutionPlan(
-          userName, isEncryptedPassword, password, requirePasswordChange, suspended = false, defaultDatabase = None
-        )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
-      }
+    case createUser: CreateUser => context =>
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(createUser.source, throwCantCompile).apply(context))
+      CreateUserExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planCreateUser(createUser, sourcePlan)
 
     // RENAME USER
     case RenameUser(source, fromUserName, toUserName) => context =>
@@ -241,97 +193,21 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
 
     // ALTER USER foo [SET [PLAINTEXT | ENCRYPTED] PASSWORD pw] [CHANGE [NOT] REQUIRED]
-    case AlterUser(source, userName, isEncryptedPassword, password, requirePasswordChange, suspended, defaultDatabase) => context =>
-      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-
-      def failWithError(command: String) : PredicateExecutionPlan = {
-        new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
-          val user = runtimeStringValue(userName, params)
-          throw new CantCompileQueryException(s"Failed to alter the specified user '$user': '$command' is not available in community edition.")
-        })
-      }
-
-      if (suspended.isDefined) { // Users are always active in community
-        failWithError("SET STATUS")
-      } else if (defaultDatabase.isDefined ) {
-        failWithError("HOME DATABASE")
-      } else {
-        makeAlterUserExecutionPlan(
-          userName, isEncryptedPassword, password, requirePasswordChange, suspended = None, defaultDatabase = None
-        )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
-      }
+    case alterUser: AlterUser => context =>
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(alterUser.source, throwCantCompile).apply(context))
+      AlterUserExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planAlterUser(alterUser, sourcePlan)
 
     // DROP USER foo [IF EXISTS]
     case DropUser(source, userName) => context =>
-      val userNameFields = getNameFields("username", userName)
-      UpdatingSystemCommandExecutionPlan("DropUser",
-        normalExecutionEngine,
-        securityAuthorizationHandler,
-        s"""MATCH (user:User {name: $$`${userNameFields.nameKey}`}) DETACH DELETE user
-          |RETURN 1 AS ignore""".stripMargin,
-        VirtualValues.map(Array(userNameFields.nameKey), Array(userNameFields.nameValue)),
-        QueryHandler
-          .handleError {
-            case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified user '${runtimeStringValue(userName, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to delete the specified user '${runtimeStringValue(userName, p)}'.", error)
-          },
-        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
-        parameterConverter = userNameFields.nameConverter
-      )
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+      DropUserExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDropUser(userName, sourcePlan)
 
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
     // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO $newPassword
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'newPassword'
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword
     case SetOwnPassword(newPassword, currentPassword) => _ =>
-      val usernameKey = internalKey("username")
-      val newPw = getPasswordExpression(None, newPassword, isEncryptedPassword = false)
-      val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
-      def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
-      val query =
-        s"""MATCH (user:User {name: $$`$usernameKey`})
-          |WITH user, user.credentials AS oldCredentials
-          |SET user.credentials = $$`${newPw.key}`
-          |SET user.passwordChangeRequired = false
-          |RETURN oldCredentials""".stripMargin
-
-      UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine,
-        securityAuthorizationHandler,
-        query,
-        VirtualValues.map(Array(newPw.key, newPw.bytesKey, currentKeyBytes), Array(newPw.value, newPw.bytesValue, currentValueBytes)),
-        QueryHandler
-          .handleError {
-            case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"User '${currentUser(p)}' failed to alter their own password: $followerError", error)
-            case (error: Neo4jException, _) => error
-            case (error, p) => new IllegalStateException(s"User '${currentUser(p)}' failed to alter their own password.", error)
-          }
-          .handleResult((_, value, p) => {
-            val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
-            val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
-            val currentValue = p.get(currentKeyBytes).asInstanceOf[ByteArray].asObject()
-            if (!oldCredentials.matchesPassword(currentValue))
-              Some(new InvalidArgumentException(s"User '${currentUser(p)}' failed to alter their own password: Invalid principal or credentials."))
-            else if (oldCredentials.matchesPassword(newValue))
-              Some(new InvalidArgumentException(s"User '${currentUser(p)}' failed to alter their own password: Old password and new password cannot be the same."))
-            else
-              None
-          })
-          .handleNoResult( p => {
-            if (currentUser(p).isEmpty) // This is true if the securityContext is AUTH_DISABLED (both for community and enterprise)
-              Some(new IllegalStateException("User failed to alter their own password: Command not available with auth disabled."))
-            else // The 'current user' doesn't exist in the system graph
-              Some(new IllegalStateException(s"User '${currentUser(p)}' failed to alter their own password: User does not exist."))
-          }),
-        checkCredentialsExpired = false,
-        finallyFunction = p => {
-          p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()
-          p.get(currentKeyBytes).asInstanceOf[ByteArray].zero()
-        },
-        parameterGenerator = (_, securityContext) => VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().username()))),
-        parameterConverter = (tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m))
-      )
+      SetOwnPasswordExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planSetOwnPassword(newPassword, currentPassword)
 
     // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW HOME DATABASE | SHOW DATABASE foo
     case ShowDatabase(scope, verbose, symbols, yields, returns) => _ =>
@@ -339,99 +215,28 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       .planShowDatabases(scope, verbose, symbols, yields, returns)
 
     case DoNothingIfNotExists(source, label, name, operation, valueMapper) => context =>
-      val nameFields = getNameFields("name", name, valueMapper = valueMapper)
-      UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists",
-        normalExecutionEngine,
-        securityAuthorizationHandler,
-        s"""
-           |MATCH (node:$label {name: $$`${nameFields.nameKey}`})
-           |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
-        QueryHandler
-          .ignoreNoResult()
-          .handleError {
-            case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
-          },
-        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
-        parameterConverter = nameFields.nameConverter
-      )
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfNotExists(label, name, valueMapper, operation, sourcePlan)
 
     case DoNothingIfExists(source, label, name, valueMapper) => context =>
-      val nameFields = getNameFields("name", name, valueMapper = valueMapper)
-      UpdatingSystemCommandExecutionPlan("DoNothingIfExists",
-        normalExecutionEngine,
-        securityAuthorizationHandler,
-        s"""
-           |MATCH (node:$label {name: $$`${nameFields.nameKey}`})
-           |RETURN node.name AS name
-        """.stripMargin, VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
-        QueryHandler
-          .ignoreOnResult()
-          .handleError {
-            case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to create the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
-          },
-        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
-        parameterConverter = nameFields.nameConverter
-      )
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfExists(label, name, valueMapper, sourcePlan)
 
     // Ensure that the role or user exists before being dropped
     case EnsureNodeExists(source, label, name, valueMapper) => context =>
-      val nameFields = getNameFields("name", name, valueMapper = valueMapper)
-      UpdatingSystemCommandExecutionPlan("EnsureNodeExists",
-        normalExecutionEngine,
-        securityAuthorizationHandler,
-        s"""MATCH (node:$label {name: $$`${nameFields.nameKey}`})
-           |RETURN node""".stripMargin,
-        VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
-        QueryHandler
-          .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $label does not exist.")))
-          .handleError {
-            case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
-          },
-        Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
-        parameterConverter = nameFields.nameConverter
-      )
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+      EnsureNodeExistsExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planEnsureNodeExists(label, name, valueMapper, sourcePlan)
 
     // SUPPORT PROCEDURES (need to be cleared before here)
-    case SystemProcedureCall(_, call, returns, _, checkCredentialsExpired) => context =>
-      val queryString = returns match {
-        case Return(_, ReturnItems(_, items, _), _, _, _, _) if items.nonEmpty => QueryRenderer.render(Seq(call, returns))
-        case _ => QueryRenderer.render(Seq(call))
-      }
-
-      def addParameterDefaults(params: MapValue): MapValue = {
-        val builder = call.treeFold(new MapValueBuilder()) {
-          case ImplicitProcedureArgument(name, _, defaultValue) => acc =>
-            acc.add(name, ValueUtils.of(defaultValue))
-            TraverseChildren(acc)
-        }
-        val defaults = builder.build()
-        defaults.updatedWith(params)
-      }
-
-      SystemCommandExecutionPlan("SystemProcedure",
-        normalExecutionEngine,
-        securityAuthorizationHandler,
-        queryString,
-        MapValue.EMPTY,
-        checkCredentialsExpired = checkCredentialsExpired,
-        parameterConverter = (_, params) => addParameterDefaults(params),
-        modeConverter = s => s.withMode(new OverriddenAccessMode(s.mode(), AccessMode.Static.READ)),
-      )
+    case SystemProcedureCall(_, call, returns, _, checkCredentialsExpired) => _ =>
+      SystemProcedureCallPlanner(normalExecutionEngine, securityAuthorizationHandler).planSystemProcedureCall(call, returns, checkCredentialsExpired)
 
     // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES
     case AllowedNonAdministrationCommands(statement) => _ =>
-      val queryString = QueryRenderer.render(statement)
       SystemCommandExecutionPlan("AllowedNonAdministrationCommand",
         normalExecutionEngine,
         securityAuthorizationHandler,
-        queryString,
+        QueryRenderer.render(statement),
         MapValue.EMPTY,
         modeConverter = s => s // Keep the users permissions
       )
