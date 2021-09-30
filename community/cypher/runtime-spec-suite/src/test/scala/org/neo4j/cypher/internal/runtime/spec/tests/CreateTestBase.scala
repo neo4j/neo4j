@@ -47,7 +47,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
                                                                sizeHint: Int
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-
   test("should create node with labels") {
     // given an empty data base
 
@@ -472,8 +471,10 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not create too many nodes when create is after after loop with continuations 2") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val nodes = given {
-      nodeGraph(sizeHint)
+      nodeGraph(size)
     }
 
     // when
@@ -489,12 +490,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
   }
 
   test("should not create too many nodes when create is after after loop with continuations 3") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val (nodes, _) = given {
-      circleGraph(sizeHint)
+      circleGraph(size)
     }
 
     // when
@@ -511,7 +514,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
   }
 
   test("should only create two nodes and one relationships if create if followed by loop with continuation") {
@@ -559,8 +562,10 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not create too many nodes if creates is between two loops with continuation 2") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val nodes = given {
-      nodeGraph(sizeHint)
+      nodeGraph(size)
     }
 
     // when
@@ -577,7 +582,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
   }
 
   test("should not create too many nodes if creates is between two loops with continuation 3") {
@@ -604,8 +609,10 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not create too many nodes if creates is between two loops with continuation 4") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val (_, rels) = given {
-      circleGraph(sizeHint)
+      circleGraph(size)
     }
 
     // when
@@ -622,12 +629,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels.flatMap(r => Seq.fill(2 * 10)(r))))
-      .withStatistics(nodesCreated = 2 * sizeHint, labelsAdded = 2 * 3 * sizeHint)
+      .withStatistics(nodesCreated = 2 * size, labelsAdded = 2 * 3 * size)
   }
 
   test("should not create too many nodes after a single node by id seek") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val nodes = given {
-      nodeGraph(sizeHint)
+      nodeGraph(size)
     }
 
     // when
@@ -648,8 +657,10 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not create too many nodes after a multiple node by id seek") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val nodes = given {
-      nodeGraph(sizeHint)
+      nodeGraph(size)
     }
 
     // when
@@ -666,12 +677,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
   }
 
   test("should not create too many nodes after a single directed relationship by id seek") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val (_, rels) = given {
-      circleGraph(sizeHint)
+      circleGraph(size)
     }
 
     // when
@@ -692,8 +705,10 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not create too many nodes after a multiple directed relationship by id seek") {
+    val size = 100
     val (_, rels) = given {
-      circleGraph(sizeHint)
+      //NOTE: using sizeHint here can make the tx state unnecessarily big
+      circleGraph(size)
     }
 
     // when
@@ -710,12 +725,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels.flatMap(r => Seq.fill(10)(r))))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
   }
 
   test("should not create too many nodes after a single undirected relationship by id seek") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val (_, rels) = given {
-      circleGraph(sizeHint)
+      circleGraph(size)
     }
 
     // when
@@ -736,8 +753,10 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not create too many nodes after a multiple undirected relationship by id seek") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val (_, rels) = given {
-      circleGraph(sizeHint)
+      circleGraph(size)
     }
 
     // when
@@ -754,13 +773,15 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels.flatMap(r => Seq.fill(20)(r))))
-      .withStatistics(nodesCreated = 2 * sizeHint, labelsAdded = 2 * 3 * sizeHint)
+      .withStatistics(nodesCreated = 2 * size, labelsAdded = 2 * 3 * size)
   }
 
   test("should not create too many nodes after a node index seek") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val nodes = given {
       nodeIndex("L", "prop")
-      nodePropertyGraph(sizeHint, {case i => Map("prop" -> i)}, "L")
+      nodePropertyGraph(size, { case i => Map("prop" -> i) }, "L")
     }
 
     // when
@@ -777,13 +798,15 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(r => Seq.fill(10)(r))))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
   }
 
   test("should not create too many nodes after a optional expand all") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val startNode = given {
       val Seq(start, end) = nodeGraph(2)
-      (1 to sizeHint).foreach(_ => start.createRelationshipTo(end, RelationshipType.withName("R")))
+      (1 to size).foreach(_ => start.createRelationshipTo(end, RelationshipType.withName("R")))
       start
     }
 
@@ -801,14 +824,17 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("n")
-      .withRows(singleColumn((1 to sizeHint).flatMap(_ => Seq.fill(10)(startNode))))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      .withRows(singleColumn((1 to size).flatMap(_ => Seq.fill(10)(startNode))))
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
   }
 
   test("should not create too many nodes after a optional expand into") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
     val (startNode, endNode) = given {
       val Seq(start, end) = nodeGraph(2)
-      (1 to sizeHint).foreach(_ => start.createRelationshipTo(end, RelationshipType.withName("R")))
+      //NOTE: using sizeHint here can make the tx state unnecessarily big
+      (1 to size).foreach(_ => start.createRelationshipTo(end, RelationshipType.withName("R")))
       (start, end)
     }
 
@@ -828,8 +854,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("n")
-      .withRows(singleColumn((1 to sizeHint).flatMap(_ => Seq.fill(10)(startNode))))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      .withRows(singleColumn((1 to size).flatMap(_ => Seq.fill(10)(startNode))))
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
   }
 
   test("should handle create after eager followed by loop with continuation") {
