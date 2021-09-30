@@ -30,44 +30,48 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Optional;
 
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
+import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StorageFilesState;
+import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
+import static org.mockito.Mockito.when;
 
-@PageCacheExtension
+@TestDirectoryExtension
 class StoreInfoCommandTest
 {
     @Inject
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fileSystem;
-    @Inject
-    private PageCache pageCache;
+
     private Path fooDbDirectory;
     private StoreInfoCommand command;
     private PrintStream out;
     private DatabaseLayout fooDbLayout;
     private Path homeDir;
+    private StorageEngineFactory storageEngineFactory;
+    private StorageEngineFactory.Selector storageEngineSelector;
 
     @BeforeEach
     void setUp() throws Exception
@@ -78,7 +82,11 @@ class StoreInfoCommandTest
         fileSystem.mkdirs( fooDbDirectory );
 
         out = mock( PrintStream.class );
-        command = new StoreInfoCommand( new ExecutionContext( homeDir, homeDir, out, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
+        storageEngineFactory = mock( StorageEngineFactory.class );
+        storageEngineSelector = mock( StorageEngineFactory.Selector.class );
+        when( storageEngineSelector.selectStorageEngine( any(), any(), any() ) ).thenReturn( Optional.empty() );
+        command = new StoreInfoCommand( new ExecutionContext( homeDir, homeDir, out, mock( PrintStream.class ), testDirectory.getFileSystem() ),
+                storageEngineSelector );
     }
 
     @Test
@@ -90,7 +98,7 @@ class StoreInfoCommandTest
             CommandLine.usage( command, new PrintStream( out ), CommandLine.Help.Ansi.OFF );
         }
         assertThat( baos.toString().trim() ).isEqualTo( String.format(
-                        "Print information about a Neo4j database store.%n" +
+                "Print information about a Neo4j database store.%n" +
                         "%n" +
                         "USAGE%n" +
                         "%n" +
@@ -133,47 +141,44 @@ class StoreInfoCommandTest
     @Test
     void readsLatestStoreVersionCorrectly() throws Exception
     {
-        var currentFormat = RecordFormatSelector.defaultFormat();
-        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
+        prepareStore( fooDbLayout, "A", "v1", null, null, 5 );
         CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
         command.execute();
 
         verify( out ).println( Mockito.<String>argThat( result ->
-            result.contains( String.format( "Store format version:         %s", currentFormat.storeVersion() ) ) &&
-            result.contains( String.format( "Store format introduced in:   %s", currentFormat.introductionVersion() ) )
+                result.contains( String.format( "Store format version:         %s", "A" ) ) &&
+                result.contains( String.format( "Store format introduced in:   %s", "v1" ) )
         ) );
     }
 
     @Test
     void readsOlderStoreVersionCorrectly() throws Exception
     {
-        prepareNeoStoreFile( StandardV3_4.RECORD_FORMATS.storeVersion(), fooDbLayout );
+        prepareStore( fooDbLayout, "A", "v1", "B", "v2", 5 );
         CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
         command.execute();
 
         verify( out ).println( Mockito.<String>argThat( result ->
-            result.contains( "Store format version:         v0.A.9" ) &&
-            result.contains( "Store format introduced in:   3.4.0" ) &&
-            result.contains( "Store format superseded in:   4.0.0" )
+                result.contains( "Store format version:         A" ) &&
+                result.contains( "Store format introduced in:   v1" ) &&
+                result.contains( "Store format superseded in:   v2" )
         ) );
     }
 
     @Test
     void throwsOnUnknownVersion() throws Exception
     {
-        prepareNeoStoreFile( "v9.9.9", fooDbLayout );
+        prepareStore( fooDbLayout, "unknown", "v1", null, null, 3 );
+        when( storageEngineFactory.versionInformation( "unknown" ) ).thenThrow( IllegalArgumentException.class );
         CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
         var exception = assertThrows( Exception.class, () -> command.execute() );
         assertThat( exception ).hasRootCauseInstanceOf( IllegalArgumentException.class );
-        assertThat( exception.getMessage() ).contains( "Unknown store version 'v9.9.9'" );
     }
 
     @Test
     void respectLockFiles() throws IOException
     {
-        var currentFormat = RecordFormatSelector.defaultFormat();
-        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
-
+        prepareStore( fooDbLayout, "A", "v1", null, null, 4 );
         try ( Locker locker = new DatabaseLocker( fileSystem, fooDbLayout ) )
         {
             locker.checkLock();
@@ -187,19 +192,17 @@ class StoreInfoCommandTest
     void doesNotThrowWhenUsingAllAndSomeDatabasesLocked() throws IOException
     {
         // given
-        var currentFormat = RecordFormatSelector.defaultFormat();
-
         var barDbDirectory = homeDir.resolve( "data/databases/bar" );
         var barDbLayout = DatabaseLayout.ofFlat( barDbDirectory );
         fileSystem.mkdirs( barDbDirectory );
 
-        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
-        prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );
+        prepareStore( fooDbLayout, "A", "v1", null, null, 4 );
+        prepareStore( barDbLayout, "A", "v1", null, null, 5 );
         var databasesRoot = homeDir.resolve( "data/databases" );
 
-        var expectedBar = expectedStructuredResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+        var expectedBar = expectedStructuredResult( "bar", false, "A", "v1", null, 5 );
 
-        var expectedFoo = expectedStructuredResult( "foo", true, null, null, null );
+        var expectedFoo = expectedStructuredResult( "foo", true, null, null, null, -1 );
 
         var expected = String.format( "[%s,%s]", expectedBar, expectedFoo );
 
@@ -216,27 +219,25 @@ class StoreInfoCommandTest
     }
 
     @Test
-    void retunsInfoForAllDatabasesInDirectory() throws IOException
+    void returnsInfoForAllDatabasesInDirectory() throws IOException
     {
         // given
-        var currentFormat = RecordFormatSelector.defaultFormat();
-
         var barDbDirectory = homeDir.resolve( "data/databases/bar" );
         var barDbLayout = DatabaseLayout.ofFlat( barDbDirectory );
         fileSystem.mkdirs( barDbDirectory );
 
-        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
-        prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );
+        prepareStore( fooDbLayout, "A", "v1", null, null, 9 );
+        prepareStore( barDbLayout, "A", "v1", null, null, 10 );
         var databasesRoot = homeDir.resolve( "data/databases" );
 
-        var expectedBar = expectedPrettyResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+        var expectedBar = expectedPrettyResult( "bar", false, "A", "v1", null, 10 );
 
-        var expectedFoo = expectedPrettyResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+        var expectedFoo = expectedPrettyResult( "foo", false, "A", "v1", null, 9 );
 
         var expected = expectedBar +
-                       System.lineSeparator() +
-                       System.lineSeparator() +
-                       expectedFoo;
+                System.lineSeparator() +
+                System.lineSeparator() +
+                expectedFoo;
 
         // when
         CommandLine.populateCommand( command, args( databasesRoot, true, false ) );
@@ -250,9 +251,8 @@ class StoreInfoCommandTest
     void returnsInfoStructuredAsJson() throws IOException
     {
         //given
-        var currentFormat = RecordFormatSelector.defaultFormat();
-        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
-        var expectedFoo = expectedStructuredResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+        prepareStore( fooDbLayout, "A", "v1", null, null, 13 );
+        var expectedFoo = expectedStructuredResult( "foo", false, "A", "v1", null, 13 );
 
         // when
         CommandLine.populateCommand( command, args( fooDbDirectory, false, true ) );
@@ -266,24 +266,22 @@ class StoreInfoCommandTest
     void prettyMultiStoreInfoResultHasTrailingLineSeparator() throws IOException
     {
         // given
-        var currentFormat = RecordFormatSelector.defaultFormat();
-
         var barDbDirectory = homeDir.resolve( "data/databases/bar" );
         var barDbLayout = DatabaseLayout.ofFlat( barDbDirectory );
         fileSystem.mkdirs( barDbDirectory );
 
-        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
-        prepareNeoStoreFile( currentFormat.storeVersion(), barDbLayout );
+        prepareStore( fooDbLayout, "B", "v2", null, null, 2 );
+        prepareStore( barDbLayout, "B", "v2", null, null, 3 );
         var databasesRoot = homeDir.resolve( "data/databases" );
 
-        var expectedBar = expectedPrettyResult( "bar", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+        var expectedBar = expectedPrettyResult( "bar", false, "B", "v2", null, 3 );
 
-        var expectedFoo = expectedPrettyResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+        var expectedFoo = expectedPrettyResult( "foo", false, "B", "v2", null, 2 );
 
         var expectedMulti = expectedBar +
-                       System.lineSeparator() +
-                       System.lineSeparator() +
-                       expectedFoo;
+                System.lineSeparator() +
+                System.lineSeparator() +
+                expectedFoo;
 
         // when
         CommandLine.populateCommand( command, args( databasesRoot, true, false ) );
@@ -297,10 +295,8 @@ class StoreInfoCommandTest
     void prettySingleStoreInfoResultHasTrailingLineSeparator() throws IOException
     {
         // given
-        var currentFormat = RecordFormatSelector.defaultFormat();
-
-        prepareNeoStoreFile( currentFormat.storeVersion(), fooDbLayout );
-        var expectedFoo = expectedPrettyResult( "foo", false, currentFormat.storeVersion(), currentFormat.introductionVersion(), null );
+        prepareStore( fooDbLayout, "B", "v2", null, null, 8 );
+        var expectedFoo = expectedPrettyResult( "foo", false, "B", "v2", null, 8 );
 
         // when
         CommandLine.populateCommand( command, args( fooDbDirectory, false, false ) );
@@ -310,29 +306,31 @@ class StoreInfoCommandTest
         verify( out ).println( expectedFoo );
     }
 
-    private static String expectedPrettyResult( String databaseName, boolean inUse, String version, String introduced, String superseded )
+    private static String expectedPrettyResult( String databaseName, boolean inUse, String version, String introduced, String superseded,
+            long lastCommittedTxId )
     {
         var nullSafeSuperseded = superseded == null ? "" : "Store format superseded in:   " + superseded + System.lineSeparator();
         return "Database name:                " + databaseName + System.lineSeparator() +
-               "Database in use:              " + inUse + System.lineSeparator() +
-               "Store format version:         " + version + System.lineSeparator() +
-               "Store format introduced in:   " + introduced + System.lineSeparator() +
-               nullSafeSuperseded +
-               "Last committed transaction id:-1" + System.lineSeparator() +
-               "Store needs recovery:         true";
+                "Database in use:              " + inUse + System.lineSeparator() +
+                "Store format version:         " + version + System.lineSeparator() +
+                "Store format introduced in:   " + introduced + System.lineSeparator() +
+                nullSafeSuperseded +
+                "Last committed transaction id:" + lastCommittedTxId + System.lineSeparator() +
+                "Store needs recovery:         true";
     }
 
-    private static String expectedStructuredResult( String databaseName, boolean inUse, String version, String introduced, String superseded )
+    private static String expectedStructuredResult( String databaseName, boolean inUse, String version, String introduced, String superseded,
+            long lastCommittedTxId )
     {
         return "{" +
-               "\"databaseName\":\"" + databaseName + "\"," +
-               "\"inUse\":\"" + inUse + "\"," +
-               "\"storeFormat\":" + nullSafeField( version ) + "," +
-               "\"storeFormatIntroduced\":" + nullSafeField( introduced ) + "," +
-               "\"storeFormatSuperseded\":" + nullSafeField( superseded ) + "," +
-               "\"lastCommittedTransaction\":\"-1\"," +
-               "\"recoveryRequired\":\"true\"" +
-               "}";
+                "\"databaseName\":\"" + databaseName + "\"," +
+                "\"inUse\":\"" + inUse + "\"," +
+                "\"storeFormat\":" + nullSafeField( version ) + "," +
+                "\"storeFormatIntroduced\":" + nullSafeField( introduced ) + "," +
+                "\"storeFormatSuperseded\":" + nullSafeField( superseded ) + "," +
+                "\"lastCommittedTransaction\":\"" + lastCommittedTxId + "\"," +
+                "\"recoveryRequired\":\"true\"" +
+                "}";
     }
 
     private static String nullSafeField( String value )
@@ -340,18 +338,40 @@ class StoreInfoCommandTest
         return value == null ? "null" : "\"" + value + "\"";
     }
 
-    private void prepareNeoStoreFile( String storeVersion, DatabaseLayout dbLayout ) throws IOException
+    private void prepareStore( DatabaseLayout databaseLayout, String storeVersion, String introducedInVersion, String successorStoreVersion,
+            String successorNeo4jVersion, long lastCommittedTxId ) throws IOException
     {
-        var neoStoreFile = createNeoStoreFile( dbLayout );
-        var value = MetaDataStore.versionStringToLong( storeVersion );
-        MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value, DEFAULT_DATABASE_NAME, NULL );
+        doReturn( Optional.of( storageEngineFactory ) ).when( storageEngineSelector ).selectStorageEngine( any(),
+                argThat( dbLayout -> dbLayout.databaseDirectory().equals( databaseLayout.databaseDirectory() ) ), any() );
+        doReturn( true ).when( storageEngineFactory ).storageExists( any(),
+                argThat( dbLayout -> dbLayout.databaseDirectory().equals( databaseLayout.databaseDirectory() ) ), any() );
+        doReturn( StorageFilesState.recoveredState() ).when( storageEngineFactory ).checkStoreFileState( any(),
+                argThat( dbLayout -> dbLayout.databaseDirectory().equals( databaseLayout.databaseDirectory() ) ), any() );
+
+        StoreVersionCheck storeVersionCheck = mock( StoreVersionCheck.class );
+        when( storeVersionCheck.storeVersion( any() ) ).thenReturn( Optional.of( storeVersion ) );
+        StoreVersion version1 = mockedStoreVersion( storeVersion, introducedInVersion, successorStoreVersion );
+        when( storageEngineFactory.versionInformation( storeVersion ) ).thenReturn( version1 );
+        if ( successorStoreVersion != null )
+        {
+            StoreVersion version2 = mockedStoreVersion( successorStoreVersion, successorNeo4jVersion, null );
+            when( storageEngineFactory.versionInformation( successorStoreVersion ) ).thenReturn( version2 );
+        }
+        doReturn( storeVersionCheck ).when( storageEngineFactory ).versionCheck( any(),
+                argThat( dbLayout -> dbLayout.databaseDirectory().equals( databaseLayout.databaseDirectory() ) ), any(), any(), any(), any() );
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        doReturn( transactionIdStore ).when( storageEngineFactory ).readOnlyTransactionIdStore( any(),
+                argThat( dbLayout -> dbLayout.databaseDirectory().equals( databaseLayout.databaseDirectory() ) ), any(), any() );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( lastCommittedTxId );
     }
 
-    private Path createNeoStoreFile( DatabaseLayout dbLayout ) throws IOException
+    private StoreVersion mockedStoreVersion( String storeVersion, String introducedInVersion, String supersededByStoreVersion )
     {
-        var neoStoreFile = dbLayout.metadataStore();
-        fileSystem.write( neoStoreFile ).close();
-        return neoStoreFile;
+        StoreVersion version = mock( StoreVersion.class );
+        when( version.storeVersion() ).thenReturn( storeVersion );
+        when( version.introductionNeo4jVersion() ).thenReturn( introducedInVersion );
+        when( version.successorStoreVersion() ).thenReturn( Optional.ofNullable( supersededByStoreVersion ) );
+        return version;
     }
 
     private static String[] args( Path path, boolean all, boolean structured )

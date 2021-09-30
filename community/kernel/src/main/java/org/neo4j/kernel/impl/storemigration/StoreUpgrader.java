@@ -45,6 +45,7 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.IndexCapabilities;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
@@ -84,6 +85,7 @@ public class StoreUpgrader
     private static final String MIGRATION_STATUS_FILE = "_status";
     private static final Pattern MIGRATION_LEFTOVERS_PATTERN = Pattern.compile( MIGRATION_LEFT_OVERS_DIRECTORY + "(_\\d*)?" );
 
+    private final StorageEngineFactory storageEngineFactory;
     private final StoreVersionCheck storeVersionCheck;
     private final MigrationProgressMonitor progressMonitor;
     private final LinkedHashMap<String, StoreMigrationParticipant> participants = new LinkedHashMap<>();
@@ -94,10 +96,10 @@ public class StoreUpgrader
     private final String configuredFormat;
     private final PageCacheTracer pageCacheTracer;
 
-    public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor, Config config,
-                          FileSystemAbstraction fileSystem, LogProvider logProvider, LogsUpgrader logsUpgrader,
-                          PageCacheTracer pageCacheTracer )
+    public StoreUpgrader( StorageEngineFactory storageEngineFactory, StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor,
+            Config config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogsUpgrader logsUpgrader, PageCacheTracer pageCacheTracer )
     {
+        this.storageEngineFactory = storageEngineFactory;
         this.storeVersionCheck = storeVersionCheck;
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
@@ -162,7 +164,7 @@ public class StoreUpgrader
                 Optional<String> storeVersion = storeVersionCheck.storeVersion( cursorContext );
                 if ( storeVersion.isPresent() )
                 {
-                    StoreVersion version = storeVersionCheck.versionInformation( storeVersion.get() );
+                    StoreVersion version = storageEngineFactory.versionInformation( storeVersion.get() );
                     if ( version.hasCapability( IndexCapabilities.LuceneCapability.LUCENE_5 ) )
                     {
                         throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
@@ -170,7 +172,7 @@ public class StoreUpgrader
                     else
                     {
                         String configuredVersion = storeVersionCheck.configuredVersion();
-                        if ( configuredVersion != null && !version.isCompatibleWith( storeVersionCheck.versionInformation( configuredVersion ) ) )
+                        if ( configuredVersion != null && !version.isCompatibleWith( storageEngineFactory.versionInformation( configuredVersion ) ) )
                         {
                             throw new UpgradeNotAllowedException();
                         }

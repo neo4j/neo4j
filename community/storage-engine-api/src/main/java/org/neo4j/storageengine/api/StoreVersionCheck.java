@@ -51,8 +51,6 @@ public interface StoreVersionCheck
      */
     boolean isVersionConfigured();
 
-    StoreVersion versionInformation( String storeVersion );
-
     /**
      * Should only be called if {@link #storeVersion(CursorContext)} and {@link #configuredVersion()} aren't equal.
      * Checks whether or not the store version can be upgraded to the desired (i.e. from configured) version.

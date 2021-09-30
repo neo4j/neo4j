@@ -61,15 +61,15 @@ public class RecordStoreVersion implements StoreVersion
     }
 
     @Override
-    public Optional<StoreVersion> successor()
+    public Optional<String> successorStoreVersion()
     {
-        return RecordFormatSelector.findSuccessor( format ).map( RecordStoreVersion::new );
+        return RecordFormatSelector.findSuccessor( format ).map( RecordFormats::storeVersion );
     }
 
     @Override
-    public StoreVersion latest()
+    public String latestStoreVersion()
     {
-        return RecordFormatSelector.findLatestFormatInFamily( format ).map( RecordStoreVersion::new ).orElse( this );
+        return RecordFormatSelector.findLatestFormatInFamily( format ).map( RecordFormats::storeVersion ).orElse( storeVersion() );
     }
 
     @Override

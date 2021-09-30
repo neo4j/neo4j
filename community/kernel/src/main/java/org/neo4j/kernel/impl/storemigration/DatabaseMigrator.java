@@ -94,7 +94,7 @@ public class DatabaseMigrator
         Log userLog = logService.getUserLog( DatabaseMigrator.class );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( userLog );
         LogProvider logProvider = logService.getInternalLogProvider();
-        StoreUpgrader storeUpgrader = new StoreUpgrader( versionCheck, progress, config, fs, logProvider, logsUpgrader, pageCacheTracer );
+        StoreUpgrader storeUpgrader = new StoreUpgrader( storageEngineFactory, versionCheck, progress, config, fs, logProvider, logsUpgrader, pageCacheTracer );
 
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants(

@@ -26,6 +26,9 @@ import org.neo4j.storageengine.api.format.CapabilityType;
 
 public interface StoreVersion
 {
+    /**
+     * @return store version, e.g. as in format version.
+     */
     String storeVersion();
 
     boolean hasCapability( Capability capability );
@@ -38,9 +41,15 @@ public interface StoreVersion
      */
     String introductionNeo4jVersion();
 
-    Optional<StoreVersion> successor();
+    /**
+     * @return if this version isn't the latest version the returned optional will contain the store version of the store version superseding this version.
+     */
+    Optional<String> successorStoreVersion();
 
-    StoreVersion latest();
+    /**
+     * @return the latest store version within the same version history line as this store version.
+     */
+    String latestStoreVersion();
 
     boolean isCompatibleWith( StoreVersion otherVersion );
 }

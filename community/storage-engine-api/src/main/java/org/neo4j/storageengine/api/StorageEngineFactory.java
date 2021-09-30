@@ -300,4 +300,11 @@ public interface StorageEngineFactory
 
         return defaultStorageEngine();
     }
+
+    interface Selector
+    {
+        Optional<StorageEngineFactory> selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );
+    }
+
+    Selector SELECTOR = StorageEngineFactory::selectStorageEngine;
 }

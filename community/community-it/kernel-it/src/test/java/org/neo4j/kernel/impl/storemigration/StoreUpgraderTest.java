@@ -81,8 +81,8 @@ import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -578,8 +578,9 @@ public class StoreUpgraderTest
         dependencies.satisfyDependencies( new Monitors() );
         LogsUpgrader logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache,
                                                       logsLocator, config, dependencies, pageCacheTracer, INSTANCE, databaseHealth, forceUpgrade );
-        StoreUpgrader upgrader = new StoreUpgrader(
-                storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader, pageCacheTracer );
+        StoreUpgrader upgrader =
+                new StoreUpgrader( storageEngineFactory, storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader,
+                        pageCacheTracer );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( NOT_PARTICIPATING );
         upgrader.addParticipant( NOT_PARTICIPATING );

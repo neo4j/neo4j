@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.neo4j.cli.AbstractCommand;
@@ -40,13 +41,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreVersion;
 
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
@@ -70,22 +69,29 @@ public class StoreInfoCommand extends AbstractCommand
     @Parameters( description = "Path to database store files, or databases directory if --all option is used" )
     private Path path;
 
+    private final StorageEngineFactory.Selector storageEngineSelector;
+
     public StoreInfoCommand( ExecutionContext ctx )
     {
+        this( ctx, StorageEngineFactory.SELECTOR );
+    }
+
+    StoreInfoCommand( ExecutionContext ctx, StorageEngineFactory.Selector storageEngineSelector )
+    {
         super( ctx );
+        this.storageEngineSelector = storageEngineSelector;
     }
 
     @Override
     public void execute()
     {
-        var storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         var config = CommandHelpers.buildConfig( ctx, allowCommandExpansion );
         var neo4jLayout = Neo4jLayout.of( config );
         try ( var fs = ctx.fs();
               var jobScheduler = createInitialisedScheduler();
               var pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler, PageCacheTracer.NULL ) )
         {
-            validatePath( fs, all, path, neo4jLayout );
+            validatePath( fs, pageCache, all, path, neo4jLayout );
             if ( all )
             {
                 var collector = structured ?
@@ -94,15 +100,15 @@ public class StoreInfoCommand extends AbstractCommand
                 var result = Arrays.stream( fs.listFiles( path ) )
                         .sorted( comparing( Path::getFileName ) )
                         .map( dbPath -> neo4jLayout.databaseLayout( dbPath.getFileName().toString() ) )
-                        .filter( dbLayout -> Validators.isExistingDatabase( fs, dbLayout ) )
-                        .map( dbLayout -> printInfo( fs, dbLayout, pageCache, storageEngineFactory, config, structured, true ) )
+                        .filter( dbLayout -> storageEngineSelector.selectStorageEngine( fs, dbLayout, pageCache ).isPresent() )
+                        .map( dbLayout -> printInfo( fs, dbLayout, pageCache, config, structured, true ) )
                         .collect( collector );
                 ctx.out().println( result );
             }
             else
             {
                 var databaseLayout = neo4jLayout.databaseLayout( path.getFileName().toString() );
-                ctx.out().println( printInfo( fs, databaseLayout, pageCache, storageEngineFactory, config, structured, false ) );
+                ctx.out().println( printInfo( fs, databaseLayout, pageCache, config, structured, false ) );
             }
         }
         catch ( CommandFailedException e )
@@ -115,7 +121,7 @@ public class StoreInfoCommand extends AbstractCommand
         }
     }
 
-    private static void validatePath( FileSystemAbstraction fs, boolean all, Path storePath, Neo4jLayout neo4jLayout )
+    private void validatePath( FileSystemAbstraction fs, PageCache pageCache, boolean all, Path storePath, Neo4jLayout neo4jLayout )
     {
         if ( !fs.isDirectory( storePath ) )
         {
@@ -124,7 +130,7 @@ public class StoreInfoCommand extends AbstractCommand
 
         var dirName = storePath.getFileName().toString();
         var databaseLayout = neo4jLayout.databaseLayout( dirName );
-        var pathIsDatabase = Validators.isExistingDatabase( fs, databaseLayout );
+        var pathIsDatabase = storageEngineSelector.selectStorageEngine( fs, databaseLayout, pageCache ).isPresent();
         if ( all && pathIsDatabase )
         {
             throw new IllegalArgumentException( format( "You used the --all option but directory %s contains the store files of a single database, " +
@@ -137,25 +143,24 @@ public class StoreInfoCommand extends AbstractCommand
         }
     }
 
-    private static String printInfo( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, StorageEngineFactory storageEngineFactory,
+    private String printInfo( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache,
             Config config, boolean structured, boolean failSilently )
     {
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
         try ( var ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
+            var storageEngineFactory = storageEngineSelector.selectStorageEngine( fs, databaseLayout, pageCache ).orElseThrow();
             var storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, Config.defaults(), pageCache,
                     NullLogService.getInstance(), PageCacheTracer.NULL );
             var storeVersion = storeVersionCheck.storeVersion( CursorContext.NULL )
                     .orElseThrow( () ->
                             new CommandFailedException( format( "Could not find version metadata in store '%s'", databaseLayout.databaseDirectory() ) ) );
-
             var versionInformation = storageEngineFactory.versionInformation( storeVersion );
-
-            var recoveryRequired = checkRecoveryState( fs, databaseLayout, config, memoryTracker );
+            var recoveryRequired = checkRecoveryState( fs, pageCache, databaseLayout, config, memoryTracker, storageEngineFactory );
             var txIdStore = storageEngineFactory.readOnlyTransactionIdStore( fs, databaseLayout, pageCache, CursorContext.NULL );
             var lastTxId = txIdStore.getLastCommittedTransactionId(); // Latest committed tx id found in metadata store. May be behind if recovery is required.
-            var successorString = versionInformation.successor().map( StoreVersion::introductionNeo4jVersion ).orElse( null );
-
+            var successorString = versionInformation.successorStoreVersion().map(
+                    successor -> storageEngineFactory.versionInformation( successor ).introductionNeo4jVersion() ).orElse( null );
             var storeInfo = StoreInfo.notInUseResult( databaseLayout.getDatabaseName(),
                     storeVersion,
                     versionInformation.introductionNeo4jVersion(),
@@ -184,11 +189,12 @@ public class StoreInfoCommand extends AbstractCommand
         }
     }
 
-    private static boolean checkRecoveryState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, MemoryTracker memoryTracker )
+    private static boolean checkRecoveryState( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, Config config,
+            MemoryTracker memoryTracker, StorageEngineFactory storageEngineFactory )
     {
         try
         {
-            return isRecoveryRequired( fs, databaseLayout, config, memoryTracker );
+            return isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty(), memoryTracker );
         }
         catch ( Exception e )
         {
