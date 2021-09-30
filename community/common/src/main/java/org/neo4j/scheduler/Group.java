@@ -111,6 +111,7 @@ public enum Group
     PANIC_SERVICE( "PanicService" ),
     CLUSTER_STATUS_CHECK_SERVICE( "ClusterStatusService" ),
     TOPOLOGY_LOGGER( "TopologyLogger" ),
+    TOPOLOGY_GRAPH_UPDATER( "TopologyGraphUpdater" ),
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
