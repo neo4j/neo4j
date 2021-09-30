@@ -28,22 +28,32 @@ object PipeHelper {
   /**
    * Evaluate a statically known expressions. Assert that it is a long value.
    *
-   * @param exp the expression
-   * @param state the query state
-   * @param prefix a prefix for error messages
-   * @param suffix a suffix for error messages
+   * @param exp      the expression
+   * @param validate validation method to check if `exp` is a valid long.
+   * @param state    the query state
+   * @param prefix   a prefix for error messages
+   * @param suffix   a suffix for error messages
    * @return the number
    */
   def evaluateStaticLongOrThrow(exp: Expression,
+                                validate: Long => Boolean,
                                 state: QueryState,
                                 prefix: String,
                                 suffix: String
                                ): Long = {
+    def fail(n: Any): Unit = {
+      throw new InvalidArgumentException(s"$prefix: Invalid input. '$n' is not a valid value.$suffix")
+    }
+
     val number = NumericHelper.evaluateStaticallyKnownNumber(exp, state)
     if (number.isInstanceOf[FloatingPointValue]) {
       val n = number.doubleValue()
-      throw new InvalidArgumentException(s"$prefix: Invalid input. '$n' is not a valid value.$suffix")
+      fail(n)
     }
-    number.longValue()
+    val res = number.longValue()
+    if (!validate(res)) {
+      fail(res)
+    }
+    res
   }
 }

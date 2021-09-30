@@ -161,11 +161,6 @@ object TransactionForeachPipe {
   }
 
   def evaluateBatchSize(batchSize: Expression, state: QueryState): Long = {
-    val n = PipeHelper.evaluateStaticLongOrThrow(batchSize, state, "OF ... ROWS", " Must be a positive integer.")
-
-    if (n <= 0) {
-      throw new InvalidArgumentException(s"OF ... ROWS: Invalid input. '$n' is not a valid value. Must be a positive integer.")
-    }
-    n
+    PipeHelper.evaluateStaticLongOrThrow(batchSize, _ > 0, state, "OF ... ROWS", " Must be a positive integer.")
   }
 }

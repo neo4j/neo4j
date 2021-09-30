@@ -48,11 +48,6 @@ object SkipPipe {
   }
 
   def evaluateStaticSkipOrLimitNumberOrThrow(skipExp: Expression, state: QueryState, prefix: String): Long = {
-    val n = PipeHelper.evaluateStaticLongOrThrow(skipExp, state, prefix, " Must be a non-negative integer.")
-
-    if (n < 0) {
-      throw new InvalidArgumentException(s"$prefix: Invalid input. '$n' is not a valid value. Must be a non-negative integer.")
-    }
-    n
+    PipeHelper.evaluateStaticLongOrThrow(skipExp, _ >= 0, state, prefix, " Must be a non-negative integer.")
   }
 }
