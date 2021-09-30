@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.graphdb.schema.IndexType
 
 object LogicalPlanToPlanBuilderString {
   private val expressionStringifier = ExpressionStringifier(expressionStringifierExtension, preferSingleQuotes = true)
@@ -368,51 +369,51 @@ object LogicalPlanToPlanBuilderString {
       case UndirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, indexOrder) =>
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
         s""" "($start)-[$idName:${typ.name}]-($end)", ${args.mkString(", ")} """.trim
-      case NodeIndexScan(idName, labelToken, properties, argumentIds, indexOrder, _) =>
+      case NodeIndexScan(idName, labelToken, properties, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
-        nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = false, propNames.mkString(", "))
-      case NodeIndexContainsScan(idName, labelToken, property, valueExpr, argumentIds, indexOrder, _) =>
+        nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = false, propNames.mkString(", "), indexType)
+      case NodeIndexContainsScan(idName, labelToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
         val propName = property.propertyKeyToken.name
-        nodeIndexOperator(idName, labelToken, Seq(property), argumentIds, indexOrder, unique = false, s"$propName CONTAINS ${expressionStringifier(valueExpr)}")
-      case NodeIndexEndsWithScan(idName, labelToken, property, valueExpr, argumentIds, indexOrder, _) =>
+        nodeIndexOperator(idName, labelToken, Seq(property), argumentIds, indexOrder, unique = false, s"$propName CONTAINS ${expressionStringifier(valueExpr)}", indexType)
+      case NodeIndexEndsWithScan(idName, labelToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
         val propName = property.propertyKeyToken.name
-        nodeIndexOperator(idName, labelToken, Seq(property), argumentIds, indexOrder, unique = false, s"$propName ENDS WITH ${expressionStringifier(valueExpr)}")
-      case NodeIndexSeek(idName, labelToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(FunctionInvocation(_, FunctionName("point"), _, args), distance, inclusive))), argumentIds, indexOrder, _) =>
-        pointDistanceNodeIndexSeek(idName, labelToken, properties, args.head, distance, argumentIds, indexOrder, inclusive = inclusive)
-      case NodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, _) =>
+        nodeIndexOperator(idName, labelToken, Seq(property), argumentIds, indexOrder, unique = false, s"$propName ENDS WITH ${expressionStringifier(valueExpr)}", indexType)
+      case NodeIndexSeek(idName, labelToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(FunctionInvocation(_, FunctionName("point"), _, args), distance, inclusive))), argumentIds, indexOrder, indexType) =>
+        pointDistanceNodeIndexSeek(idName, labelToken, properties, args.head, distance, argumentIds, indexOrder, inclusive = inclusive, indexType)
+      case NodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
-        nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = false, queryStr)
-      case NodeUniqueIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, _) =>
+        nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = false, queryStr, indexType)
+      case NodeUniqueIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
-        nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = true, queryStr)
-      case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, valueExpr, argumentIds, indexOrder, _) =>
+        nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = true, queryStr, indexType)
+      case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
-        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = true, queryStr)
-      case UndirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, valueExpr, argumentIds, indexOrder, _) =>
+        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = true, queryStr, indexType)
+      case UndirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
-        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = false, queryStr)
-      case DirectedRelationshipIndexScan(idName, start, end, typeToken, properties, argumentIds, indexOrder, _) =>
+        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = false, queryStr, indexType)
+      case DirectedRelationshipIndexScan(idName, start, end, typeToken, properties, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
-        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = true, propNames.mkString(", "))
-      case UndirectedRelationshipIndexScan(idName, start, end, typeToken, properties, argumentIds, indexOrder, _) =>
+        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = true, propNames.mkString(", "), indexType)
+      case UndirectedRelationshipIndexScan(idName, start, end, typeToken, properties, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
-        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = false, propNames.mkString(", "))
-      case DirectedRelationshipIndexContainsScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, _) =>
+        relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = false, propNames.mkString(", "), indexType)
+      case DirectedRelationshipIndexContainsScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
         val propName = property.propertyKeyToken.name
-        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = true,s"$propName CONTAINS ${expressionStringifier(valueExpr)}")
-      case UndirectedRelationshipIndexContainsScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, _) =>
+        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = true,s"$propName CONTAINS ${expressionStringifier(valueExpr)}", indexType)
+      case UndirectedRelationshipIndexContainsScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
         val propName = property.propertyKeyToken.name
-        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = false,s"$propName CONTAINS ${expressionStringifier(valueExpr)}")
-      case DirectedRelationshipIndexEndsWithScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, _) =>
+        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = false,s"$propName CONTAINS ${expressionStringifier(valueExpr)}", indexType)
+      case DirectedRelationshipIndexEndsWithScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
         val propName = property.propertyKeyToken.name
-        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = true,s"$propName ENDS WITH ${expressionStringifier(valueExpr)}")
-      case UndirectedRelationshipIndexEndsWithScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, _) =>
+        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = true,s"$propName ENDS WITH ${expressionStringifier(valueExpr)}", indexType)
+      case UndirectedRelationshipIndexEndsWithScan(idName, start, end, typeToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
         val propName = property.propertyKeyToken.name
-        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = false,s"$propName ENDS WITH ${expressionStringifier(valueExpr)}")
+        relationshipIndexOperator(idName, start, end, typeToken, Seq(property), argumentIds, indexOrder, directed = false,s"$propName ENDS WITH ${expressionStringifier(valueExpr)}", indexType)
       case RollUpApply(_, _, collectionName, variableToCollect) =>
         s"""${wrapInQuotations(collectionName)}, ${wrapInQuotations(variableToCollect)}"""
       case ForeachApply(_, _, variable, expression) =>
@@ -492,20 +493,22 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def nodeIndexOperator(idName: String,
-                            labelToken: LabelToken,
-                            properties: Seq[IndexedProperty],
-                            argumentIds: Set[String],
-                            indexOrder: IndexOrder,
-                            unique: Boolean,
-                            parenthesesContent: String): String = {
+                                labelToken: LabelToken,
+                                properties: Seq[IndexedProperty],
+                                argumentIds: Set[String],
+                                indexOrder: IndexOrder,
+                                unique: Boolean,
+                                parenthesesContent: String,
+                                indexType: IndexType): String = {
     val indexStr = s"$idName:${labelToken.name}($parenthesesContent)"
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
     val uniqueStr = s", unique = $unique"
+    val indexTypeStr = indexTypeToNamedArgumentString(indexType)
 
     val getValueBehaviors = indexedPropertyGetValueBehaviors(properties)
     val getValueStr = s", getValue = $getValueBehaviors"
-    s""" "$indexStr"$indexOrderStr$argStr$getValueStr$uniqueStr """.trim
+    s""" "$indexStr"$indexOrderStr$argStr$getValueStr$uniqueStr$indexTypeStr """.trim
   }
 
   private def relationshipIndexOperator(idName: String,
@@ -516,7 +519,8 @@ object LogicalPlanToPlanBuilderString {
                                         argumentIds: Set[String],
                                         indexOrder: IndexOrder,
                                         directed: Boolean,
-                                        parenthesesContent: String): String = {
+                                        parenthesesContent: String,
+                                        indexType: IndexType): String = {
     val rarrow = if (directed) "->" else "-"
     val indexStr = s"($start)-[$idName:${typeToken.name}($parenthesesContent)]$rarrow($end)"
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
@@ -524,7 +528,8 @@ object LogicalPlanToPlanBuilderString {
 
     val getValueBehaviors = indexedPropertyGetValueBehaviors(properties)
     val getValueStr = s", getValue = $getValueBehaviors"
-    s""" "$indexStr"$indexOrderStr$argStr$getValueStr """.trim
+    val indexTypeStr = indexTypeToNamedArgumentString(indexType)
+    s""" "$indexStr"$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
   }
 
   private def indexedPropertyGetValueBehaviors(properties: Seq[IndexedProperty]): String = {
@@ -575,7 +580,8 @@ object LogicalPlanToPlanBuilderString {
                                          distance: Expression,
                                          argumentIds: Set[String],
                                          indexOrder: IndexOrder,
-                                         inclusive: Boolean): String = {
+                                         inclusive: Boolean,
+                                         indexType: IndexType): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
@@ -589,7 +595,8 @@ object LogicalPlanToPlanBuilderString {
         }
     }
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
-    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(distance)}$indexOrderStr$argStr$getValueStr$inclusiveStr """.trim
+    val indexTypeStr = indexTypeToNamedArgumentString(indexType)
+    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(distance)}$indexOrderStr$argStr$getValueStr$inclusiveStr$indexTypeStr """.trim
   }
 
   private def idsStr(ids: SeekableArgs) = {
@@ -659,5 +666,9 @@ object LogicalPlanToPlanBuilderString {
     case SemanticDirection.OUTGOING => ("-", "->")
     case SemanticDirection.INCOMING => ("<-", "-")
     case SemanticDirection.BOTH => ("-", "-")
+  }
+
+  private def indexTypeToNamedArgumentString(indexType: IndexType): String = {
+    s", indexType = ${indexType.getDeclaringClass.getSimpleName}.${indexType.name}"
   }
 }

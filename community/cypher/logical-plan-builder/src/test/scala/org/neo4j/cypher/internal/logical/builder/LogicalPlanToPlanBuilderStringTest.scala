@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
+import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Modifier
 import scala.collection.mutable
@@ -800,7 +801,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.nodeIndexOperator("x:Honey(10 < prop < 20)")
       .apply()
-      .|.nodeIndexOperator("x:Honey(10 < prop <= 20)")
+      .|.nodeIndexOperator("x:Honey(10 < prop <= 20)", indexType = IndexType.RANGE)
       .apply()
       .|.nodeIndexOperator("x:Honey(10 <= prop < 20)")
       .apply()
@@ -816,7 +817,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", argumentIds = Set("a", "b"))
       .apply()
-      .|.nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending)
+      .|.nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending, indexType = IndexType.TEXT)
       .nodeIndexOperator("x:Honey(prop2 = 10, prop)")
       .build()
   })
@@ -864,7 +865,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     // NodeIndexContainsScan
     builder
       .apply()
-      .|.nodeIndexOperator("x:Label(text CONTAINS 'as')")
+      .|.nodeIndexOperator("x:Label(text CONTAINS 'as')", indexType = IndexType.TEXT)
       .apply()
       .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", getValue = _ => GetValue)
       .apply()
@@ -880,7 +881,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.nodeIndexOperator("x:Honey(text ENDS WITH 'as')", getValue = _ => GetValue)
       .apply()
       .|.nodeIndexOperator("x:Honey(text ENDS WITH 'as')", indexOrder = IndexOrderDescending)
-      .nodeIndexOperator("x:Honey(text ENDS WITH 'as')", argumentIds = Set("a", "b"))
+      .nodeIndexOperator("x:Honey(text ENDS WITH 'as')", argumentIds = Set("a", "b"), indexType = IndexType.TEXT)
 
     builder.build()
   })
@@ -1194,6 +1195,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.ir.HasHeaders
             |import org.neo4j.cypher.internal.ir.NoHeaders
             |import org.neo4j.cypher.internal.ir.EagernessReason
+            |import org.neo4j.graphdb.schema.IndexType
             |""".stripMargin)
         interpreter.bind("result", "Array[AnyRef]", res)
       }
