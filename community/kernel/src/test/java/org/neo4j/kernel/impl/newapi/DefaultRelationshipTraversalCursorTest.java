@@ -623,6 +623,12 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
+        public IndexDescriptor indexForSchemaAndIndexTypeNonTransactional( SchemaDescriptor schema, IndexType indexType )
+        {
+            return null;
+        }
+
+        @Override
         public Iterator<IndexDescriptor> indexForSchemaNonLocking( SchemaDescriptor schema )
         {
             return null;

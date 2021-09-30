@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.exceptions.InternalException
+import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Method
 import scala.annotation.tailrec
@@ -324,6 +325,8 @@ abstract class NodeIndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexLeafPlan
 
   override def copyWithoutGettingValues: NodeIndexLeafPlan
+
+  def indexType: IndexType
 }
 
 abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {

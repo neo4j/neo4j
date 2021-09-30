@@ -452,6 +452,13 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public IndexDescriptor indexForSchemaAndIndexTypeNonTransactional( SchemaDescriptor schema, IndexType indexType )
+    {
+        var index = storageReader.indexGetForSchemaAndType( schema, indexType );
+        return index == null ? IndexDescriptor.NO_INDEX : index;
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexForSchemaNonLocking( SchemaDescriptor schema )
     {
         return indexGetForSchema( storageReader, schema );

@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
 
@@ -40,6 +41,16 @@ public interface SchemaRead extends SchemaReadCore
      * @return An index matching the schema, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong.
      */
     Iterator<IndexDescriptor> indexForSchemaNonTransactional( SchemaDescriptor schema );
+
+    /**
+     * Acquire a reference to the index mapping the given {@code schema} and {@code indexType} without requiring a transaction to be open,
+     * and without taking any schema locks.
+     *
+     * @param schema    The schema for which to look up an index.
+     * @param indexType Type of an index to look up.
+     * @return An index matching the schema and type, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong.
+     */
+    IndexDescriptor indexForSchemaAndIndexTypeNonTransactional( SchemaDescriptor schema, IndexType indexType );
 
     /**
      * Acquire a reference to the index mapping the given {@code schema}, without taking any schema locks.

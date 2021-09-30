@@ -34,7 +34,7 @@ case class NodeIndexSeek(idName: String,
                          valueExpr: QueryExpression[Expression],
                          argumentIds: Set[String],
                          indexOrder: IndexOrder,
-                         indexType: IndexType)
+                         override val indexType: IndexType)
                         (implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds + idName

@@ -26,12 +26,13 @@ import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.internal
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.schema.IndexDescriptor
-import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 
 import scala.collection.mutable.ArrayBuffer
@@ -50,26 +51,24 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
   def registerLabelScan(): Unit = labelScan = true
   def registerTypeScan(): Unit = typeScan = true
 
-  def registerQueryIndex(label: LabelToken, property: IndexedProperty): Int = registerQueryIndex(label, Seq(property))
+  def registerQueryIndex(indexType: IndexType, label: LabelToken, property: IndexedProperty): Int =
+    registerQueryIndex(indexType, label, Seq(property))
 
-  def registerQueryIndex(label: LabelToken,
-                         properties: Seq[IndexedProperty]): Int = {
-    val reference = InternalIndexReference(label.nameId, properties.map(_.propertyKeyToken.nameId.id))
-    val index = indexReferences.indexOf(reference)
-    if (index > 0) {
-      index
-    } else {
-      val queryIndexId = indexReferences.size
-      indexReferences += reference
-      queryIndexId
-    }
-  }
+  def registerQueryIndex(indexType: IndexType, label: LabelToken, properties: Seq[IndexedProperty]): Int =
+    registerQueryIndex(indexType, label.nameId, properties)
 
-  def registerQueryIndex(typeToken: RelationshipTypeToken, property: IndexedProperty): Int = registerQueryIndex(typeToken, Seq(property))
+  def registerQueryIndex(indexType: IndexType, typeToken: RelationshipTypeToken, property: IndexedProperty): Int =
+    registerQueryIndex(indexType, typeToken, Seq(property))
 
-  def registerQueryIndex(typeToken: RelationshipTypeToken,
-                         properties: Seq[IndexedProperty]): Int = {
-    val reference = InternalIndexReference(typeToken.nameId, properties.map(_.propertyKeyToken.nameId.id))
+  def registerQueryIndex(indexType: IndexType, relationshipTypeToken: RelationshipTypeToken, properties: Seq[IndexedProperty]): Int =
+    registerQueryIndex(indexType, relationshipTypeToken.nameId, properties)
+
+  private def registerQueryIndex(indexType: IndexType, tokenNameId: NameId, properties: Seq[IndexedProperty]): Int = {
+    val reference = InternalIndexReference(
+      tokenNameId,
+      properties.map(_.propertyKeyToken.nameId.id),
+      internal.schema.IndexType.fromPublicApi(indexType),
+    )
     val index = indexReferences.indexOf(reference)
     if (index > 0) {
       index
@@ -81,28 +80,35 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
   }
 
   def result(): QueryIndexes = {
-    // We need to use firstOrNull because the indexes might have have been dropped while creating the plan
     val indexes =
       indexReferences.map {
-        case InternalIndexReference(LabelId(token), properties) =>
-          Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forLabel(token, properties: _*)))
-        case InternalIndexReference(RelTypeId(token), properties) =>
-          Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forRelType(token, properties: _*)))
+        case InternalIndexReference(LabelId(token), properties, indexType) =>
+          schemaRead.indexForSchemaAndIndexTypeNonTransactional(
+            SchemaDescriptors.forLabel(token, properties: _*),
+            indexType)
+
+        case InternalIndexReference(RelTypeId(token), properties, indexType) =>
+          schemaRead.indexForSchemaAndIndexTypeNonTransactional(
+            SchemaDescriptors.forRelType(token, properties: _*),
+            indexType)
+
         case _ => throw new IllegalStateException()
       }.toArray
 
     val labelTokenIndex = if (labelScan) {
+      // We need to use firstOrNull because the indexes might have have been dropped while creating the plan
       Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))))
     } else None
 
     val typeTokenIndex = if (typeScan) {
+      // We need to use firstOrNull because the indexes might have have been dropped while creating the plan
       Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP))))
     } else None
 
     QueryIndexes(indexes, labelTokenIndex, typeTokenIndex)
   }
 
-  private case class InternalIndexReference(token: NameId, properties: Seq[Int])
+  private case class InternalIndexReference(token: NameId, properties: Seq[Int], indexType: internal.schema.IndexType)
   private case class InternalTokenReference(token: NameId)
 }
 

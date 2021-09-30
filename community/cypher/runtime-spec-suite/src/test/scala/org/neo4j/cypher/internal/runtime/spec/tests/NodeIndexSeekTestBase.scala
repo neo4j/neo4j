@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.lock.LockType.EXCLUSIVE
 import org.neo4j.lock.LockType.SHARED
 import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
@@ -47,7 +49,13 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
                                                                  runtime: CypherRuntime[CONTEXT],
                                                                  val sizeHint: Int
                                                                )
-  extends RuntimeTestSuite[CONTEXT](edition, runtime)
+  extends RuntimeTestSuite[CONTEXT](
+    runtime = runtime,
+    edition = edition.copyWith(
+      GraphDatabaseInternalSettings.text_indexes_enabled -> Boolean.box(true),
+      GraphDatabaseInternalSettings.range_indexes_enabled -> Boolean.box(true),
+    )
+  )
   with RandomValuesTestSupport
 {
 
@@ -1104,6 +1112,39 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       }
     }
 
+  }
+
+  test("should work with multiple index types") {
+    val nodes = given {
+      nodeIndex(IndexType.RANGE, "Label", "prop")
+      nodeIndex(IndexType.TEXT, "Label", "prop")
+
+      nodePropertyGraph(sizeHint, {
+        case i if i % 2 == 0 => Map("prop" -> i)
+        case i if i % 2 == 1 => Map("prop" -> i.toString)
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .union()
+      .|.nodeIndexOperator("x:Label(prop > 42)", indexType = IndexType.RANGE)
+      .nodeIndexOperator("x:Label(prop CONTAINS '1')", indexType = IndexType.TEXT)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.filter { n =>
+      n.getProperty("prop") match {
+        case s: String => s.contains("1")
+        case i: Integer => i > 42
+        case _ => false
+      }
+    }
+
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   private def propFilter[T](predicate: T => Boolean): Node => Boolean = {

@@ -346,56 +346,56 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case DirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         DirectedRelationshipIndexSeekPipe(idName, startNode, endNode, typeToken, properties.toArray,
-          indexRegistrator.registerQueryIndex(typeToken, properties), valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties), valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case UndirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         UndirectedRelationshipIndexSeekPipe(idName, startNode, endNode, typeToken, properties.toArray,
-          indexRegistrator.registerQueryIndex(typeToken, properties), valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties), valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case DirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder, indexType) =>
         DirectedRelationshipIndexScanPipe(idName, startNode, endNode, typeToken, properties.toArray,
-          indexRegistrator.registerQueryIndex(typeToken, properties), indexOrder)(id = id)
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties), indexOrder)(id = id)
 
       case UndirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder, indexType) =>
         UndirectedRelationshipIndexScanPipe(idName, startNode, endNode, typeToken, properties.toArray,
-          indexRegistrator.registerQueryIndex(typeToken, properties), indexOrder)(id = id)
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties), indexOrder)(id = id)
 
       case DirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
         DirectedRelationshipIndexContainsScanPipe(idName, startNode, endNode, typeToken, property,
-          indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+          indexRegistrator.registerQueryIndex(indexType, typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
 
       case UndirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
         UndirectedRelationshipIndexContainsScanPipe(idName, startNode, endNode, typeToken, property,
-          indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+          indexRegistrator.registerQueryIndex(indexType, typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
 
       case DirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
         DirectedRelationshipIndexEndsWithScanPipe(idName, startNode, endNode, typeToken, property,
-          indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+          indexRegistrator.registerQueryIndex(indexType, typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
 
       case UndirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder, indexType) =>
         UndirectedRelationshipIndexEndsWithScanPipe(idName, startNode, endNode, typeToken, property,
-          indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+          indexRegistrator.registerQueryIndex(indexType, typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
 
       case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(label, properties),
+        NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(indexType, label, properties),
           valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(label, properties),
+        NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(indexType, label, properties),
           valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case NodeIndexScan(ident, label, properties, _, indexOrder, indexType) =>
-        NodeIndexScanPipe(ident, label, properties, indexRegistrator.registerQueryIndex(label, properties), indexOrder)(id = id)
+        NodeIndexScanPipe(ident, label, properties, indexRegistrator.registerQueryIndex(indexType, label, properties), indexOrder)(id = id)
 
       case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder, indexType) =>
-        NodeIndexContainsScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
+        NodeIndexContainsScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(indexType, label, property),
           buildExpression(valueExpr), indexOrder)(id = id)
 
       case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, indexOrder, indexType) =>
-        NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
+        NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(indexType, label, property),
           buildExpression(valueExpr), indexOrder)(id = id)
 
       case ShowIndexes(indexType, verbose, columns) => CommandPipe(ShowIndexesCommand(indexType, verbose, columns))(id)

@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
 
 import java.util.concurrent.TimeUnit
@@ -497,11 +498,17 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   // INDEXES
 
   /**
+   * Creates a BTREE index and restarts the transaction. This should be called before any data creation operation.
+   */
+  def nodeIndex(label: String, properties: String*): Unit =
+    nodeIndex(IndexType.BTREE, label, properties:_*)
+
+  /**
    * Creates an index and restarts the transaction. This should be called before any data creation operation.
    */
-  def nodeIndex(label: String, properties: String*): Unit = {
+  def nodeIndex(indexType: IndexType, label: String, properties: String*): Unit = {
     try {
-      var creator = runtimeTestSupport.tx.schema().indexFor(Label.label(label))
+      var creator = runtimeTestSupport.tx.schema().indexFor(Label.label(label)).withIndexType(indexType)
       properties.foreach(p => creator = creator.on(p))
       creator.create()
     } finally {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.lock.LockType.EXCLUSIVE
 import org.neo4j.lock.LockType.SHARED
 import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
@@ -45,7 +47,15 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
                                                                       edition: Edition[CONTEXT],
                                                                       runtime: CypherRuntime[CONTEXT],
                                                                       sizeHint: Int
-                                                                    ) extends RuntimeTestSuite[CONTEXT](edition, runtime) with RandomValuesTestSupport {
+                                                                    )
+  extends RuntimeTestSuite[CONTEXT](
+    runtime = runtime,
+    edition = edition.copyWith(
+      GraphDatabaseInternalSettings.text_indexes_enabled -> Boolean.box(true),
+      GraphDatabaseInternalSettings.range_indexes_enabled -> Boolean.box(true),
+    )
+  )
+  with RandomValuesTestSupport {
 
   test("should do double index seek") {
     // given
@@ -1624,5 +1634,48 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected = nodes(20)
     runtimeResult should beColumns("x").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test("should work with multiple index types") {
+    val nodes = given {
+      nodeIndex(IndexType.RANGE, "Label", "prop")
+      nodeIndex(IndexType.TEXT, "Label", "prop")
+
+      nodePropertyGraph(sizeHint, {
+        case i if i % 2 == 0 => Map("prop" -> i)
+        case i if i % 2 == 1 => Map("prop" -> i.toString)
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i", "s")
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("i:Label(prop > 42)", indexType = IndexType.RANGE),
+        _.nodeIndexSeek("s:Label(prop STARTS WITH '1')", indexType = IndexType.TEXT)
+      )
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = {
+      val strs = nodes.filter { n =>
+        n.getProperty("prop") match {
+          case s: String => s.startsWith("1")
+          case _ => false
+        }
+      }
+      val ints = nodes.filter { n =>
+        n.getProperty("prop") match {
+          case i: Integer => i > 42
+          case _ => false
+        }
+      }
+
+      for { i <- ints; s <- strs } yield Array(i, s)
+    }
+
+    runtimeResult should beColumns("i", "s").withRows(inAnyOrder(expected))
   }
 }
