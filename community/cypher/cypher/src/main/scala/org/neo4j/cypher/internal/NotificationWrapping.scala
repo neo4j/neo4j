@@ -147,10 +147,18 @@ object NotificationWrapping {
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
     case ExperimentalFeatureNotification(msg) =>
       NotificationCode.EXPERIMENTAL_FEATURE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("PARALLEL", msg))
-    case SuboptimalIndexForConstainsQueryNotification(label, properties) =>
-      NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
-    case SuboptimalIndexForEndsWithQueryNotification(label, properties) =>
-      NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.suboptimalIndex(label, properties: _*))
+    case SuboptimalIndexForConstainsQueryNotification(variableName, label, propertyKeys, entityType) =>
+      val detail = entityType match {
+        case EntityType.NODE => NotificationDetail.Factory.nodeIndex(variableName, label, propertyKeys: _*)
+        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipIndex(variableName, label, propertyKeys: _*)
+      }
+      NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(graphdb.InputPosition.empty, detail)
+    case SuboptimalIndexForEndsWithQueryNotification(variableName, label, propertyKeys, entityType) =>
+      val detail = entityType match {
+        case EntityType.NODE => NotificationDetail.Factory.nodeIndex(variableName, label, propertyKeys: _*)
+        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipIndex(variableName, label, propertyKeys: _*)
+      }
+      NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(graphdb.InputPosition.empty, detail)
     case MissingParametersNotification(names) =>
       NotificationCode.MISSING_PARAMETERS_FOR_EXPLAIN.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Explain with missing parameters", names.mkString("Missing parameters: ",", ","")))
     case CodeGenerationFailedNotification(msg) =>

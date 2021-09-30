@@ -49,7 +49,7 @@ class NotificationCodeTest
         assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
         assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
         assertThat( notification.getDescription() ).isEqualTo(
-                "The hinted index does not exist, please check the schema (hinted index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`))" );
+                "The hinted index does not exist, please check the schema (index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`))" );
     }
 
     @Test
@@ -63,7 +63,7 @@ class NotificationCodeTest
         assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
         assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
         assertThat( notification.getDescription() ).isEqualTo(
-                "The hinted index does not exist, please check the schema (hinted index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))" );
+                "The hinted index does not exist, please check the schema (index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))" );
     }
 
     @Test

@@ -19,13 +19,19 @@
  */
 package org.neo4j.cypher.internal.planning.notification
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.SlowContains
@@ -37,22 +43,50 @@ case class checkForSuboptimalIndexBehaviours(planContext: PlanContext) extends N
   def apply(plan: LogicalPlan): Set[InternalNotification] = {
 
     plan.treeFold[Set[InternalNotification]](Set.empty) {
-      case NodeIndexContainsScan(_, label, property, _, _, _, _) =>
+      case NodeIndexContainsScan(varName, label, property, _, _, _, _) =>
         acc =>
-          val notifications = getBehaviours(label, property.propertyKeyToken).collect {
-            case SlowContains => SuboptimalIndexForConstainsQueryNotification(label.name, Seq(property.propertyKeyToken.name))
+          val notifications = getNodeIndexBehaviours(label, property.propertyKeyToken).collect {
+            case SlowContains => SuboptimalIndexForConstainsQueryNotification(varName, label.name, Seq(property.propertyKeyToken.name), EntityType.NODE)
           }
           SkipChildren(acc ++ notifications)
-      case NodeIndexEndsWithScan(_, label, property, _, _, _, _) =>
+      case NodeIndexEndsWithScan(varName, label, property, _, _, _, _) =>
         acc =>
-          val notifications = getBehaviours(label, property.propertyKeyToken).collect {
-            case SlowContains => SuboptimalIndexForEndsWithQueryNotification(label.name, Seq(property.propertyKeyToken.name))
+          val notifications = getNodeIndexBehaviours(label, property.propertyKeyToken).collect {
+            case SlowContains => SuboptimalIndexForEndsWithQueryNotification(varName, label.name, Seq(property.propertyKeyToken.name), EntityType.NODE)
+          }
+          SkipChildren(acc ++ notifications)
+      case UndirectedRelationshipIndexContainsScan(varName, _, _, relType, property, _, _, _, _) =>
+        acc =>
+          val notifications = getRelationshipIndexBehaviours(relType, property.propertyKeyToken).collect {
+            case SlowContains => SuboptimalIndexForConstainsQueryNotification(varName, relType.name, Seq(property.propertyKeyToken.name), EntityType.RELATIONSHIP)
+          }
+          SkipChildren(acc ++ notifications)
+      case UndirectedRelationshipIndexEndsWithScan(varName, _, _, relType, property, _, _, _, _) =>
+        acc =>
+          val notifications = getRelationshipIndexBehaviours(relType, property.propertyKeyToken).collect {
+            case SlowContains => SuboptimalIndexForEndsWithQueryNotification(varName, relType.name, Seq(property.propertyKeyToken.name), EntityType.RELATIONSHIP)
+          }
+          SkipChildren(acc ++ notifications)
+      case DirectedRelationshipIndexContainsScan(varName, _, _, relType, property, _, _, _, _) =>
+        acc =>
+          val notifications = getRelationshipIndexBehaviours(relType, property.propertyKeyToken).collect {
+            case SlowContains => SuboptimalIndexForConstainsQueryNotification(varName, relType.name, Seq(property.propertyKeyToken.name), EntityType.RELATIONSHIP)
+          }
+          SkipChildren(acc ++ notifications)
+      case DirectedRelationshipIndexEndsWithScan(varName, _, _, relType, property, _, _, _, _) =>
+        acc =>
+          val notifications = getRelationshipIndexBehaviours(relType, property.propertyKeyToken).collect {
+            case SlowContains => SuboptimalIndexForEndsWithQueryNotification(varName, relType.name, Seq(property.propertyKeyToken.name), EntityType.RELATIONSHIP)
           }
           SkipChildren(acc ++ notifications)
     }
   }
 
-  private def getBehaviours(label: LabelToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
+  private def getNodeIndexBehaviours(label: LabelToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
     planContext.btreeIndexGetForLabelAndProperties(label.name, Seq(property.name)).fold(Set.empty[IndexBehaviour])(_.behaviours)
+  }
+
+  private def getRelationshipIndexBehaviours(relTypeToken: RelationshipTypeToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
+    planContext.btreeIndexGetForRelTypeAndProperties(relTypeToken.name, Seq(property.name)).fold(Set.empty[IndexBehaviour])(_.behaviours)
   }
 }

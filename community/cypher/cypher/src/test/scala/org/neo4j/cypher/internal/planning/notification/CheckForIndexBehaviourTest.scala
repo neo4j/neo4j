@@ -22,10 +22,12 @@ package org.neo4j.cypher.internal.planning.notification
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.when
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
 import org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -34,6 +36,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -43,7 +46,7 @@ class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTest
     when(planContext.btreeIndexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forLabel(Btree, LabelId(1), Seq(PropertyKeyId(1))).withBehaviours(Set[IndexBehaviour](SlowContains))))
     val plan = nodeIndexSeek("id:label(prop CONTAINS 'tron')")
 
-    checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForConstainsQueryNotification("label", Seq("prop"))))
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForConstainsQueryNotification("id", "label", Seq("prop"), EntityType.NODE)))
   }
 
   test("should notify for NodeIndexEndsWithScan backed by limited index") {
@@ -51,7 +54,7 @@ class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTest
     when(planContext.btreeIndexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(IndexDescriptor.forLabel(Btree, LabelId(1), Seq(PropertyKeyId(1))).withBehaviours(Set[IndexBehaviour](SlowContains))))
     val plan = nodeIndexSeek("id:label(prop ENDS WITH 'tron')")
 
-    checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForEndsWithQueryNotification("label", Seq("prop"))))
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForEndsWithQueryNotification("id", "label", Seq("prop"), EntityType.NODE)))
   }
 
   test("should not notify for NodeIndexContainsScan backed by index with no limitations") {
@@ -70,4 +73,67 @@ class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTest
     checkForSuboptimalIndexBehaviours(planContext)(plan) should be(empty)
   }
 
+  test("should notify for UndirectedRelationshipIndexContainsScan backed by limited index") {
+    val planContext = mock[PlanContext]
+    when(planContext.btreeIndexGetForRelTypeAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forRelType(Btree, RelTypeId(1), Seq(PropertyKeyId(1))).withBehaviours(Set[IndexBehaviour](SlowContains))))
+    val plan = relationshipIndexSeek("(a)-[id:REL(prop CONTAINS 'tron')]-(b)")
+
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForConstainsQueryNotification("id", "REL", Seq("prop"), EntityType.RELATIONSHIP)))
+  }
+
+  test("should notify for UndirectedRelationshipIndexEndsWithScan backed by limited index") {
+    val planContext = mock[PlanContext]
+    when(planContext.btreeIndexGetForRelTypeAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forRelType(Btree, RelTypeId(1), Seq(PropertyKeyId(1))).withBehaviours(Set[IndexBehaviour](SlowContains))))
+    val plan = relationshipIndexSeek("(a)-[id:REL(prop ENDS WITH 'tron')]-(b)")
+
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForEndsWithQueryNotification("id", "REL", Seq("prop"), EntityType.RELATIONSHIP)))
+  }
+
+  test("should not notify for UndirectedRelationshipIndexContainsScan backed index with no limitations") {
+    val planContext = mock[PlanContext]
+    when(planContext.btreeIndexGetForRelTypeAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forRelType(Btree, RelTypeId(1), Seq(PropertyKeyId(1))).withBehaviours(Set.empty[IndexBehaviour])))
+    val plan = relationshipIndexSeek("(a)-[id:REL(prop CONTAINS 'tron')]-(b)")
+
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should be(empty)
+  }
+
+  test("should not notify for UndirectedRelationshipIndexEndsWithScan backed index with no limitations") {
+    val planContext = mock[PlanContext]
+    when(planContext.btreeIndexGetForRelTypeAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forRelType(Btree, RelTypeId(1), Seq(PropertyKeyId(1))).withBehaviours(Set.empty[IndexBehaviour])))
+    val plan = relationshipIndexSeek("(a)-[id:REL(prop ENDS WITH 'tron')]-(b)")
+
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should be(empty)
+  }
+
+  test("should notify for DirectedRelationshipIndexContainsScan backed by limited index") {
+    val planContext = mock[PlanContext]
+    when(planContext.btreeIndexGetForRelTypeAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forRelType(Btree, RelTypeId(1), Seq(PropertyKeyId(1))).withBehaviours(Set[IndexBehaviour](SlowContains))))
+    val plan = relationshipIndexSeek("(a)-[id:REL(prop CONTAINS 'tron')]->(b)")
+
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForConstainsQueryNotification("id", "REL", Seq("prop"), EntityType.RELATIONSHIP)))
+  }
+
+  test("should notify for DirectedRelationshipIndexEndsWithScan backed by limited index") {
+    val planContext = mock[PlanContext]
+    when(planContext.btreeIndexGetForRelTypeAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forRelType(Btree, RelTypeId(1), Seq(PropertyKeyId(1))).withBehaviours(Set[IndexBehaviour](SlowContains))))
+    val plan = relationshipIndexSeek("(a)-[id:REL(prop ENDS WITH 'tron')]->(b)")
+
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForEndsWithQueryNotification("id", "REL", Seq("prop"), EntityType.RELATIONSHIP)))
+  }
+
+  test("should not notify for DirectedRelationshipIndexContainsScan backed index with no limitations") {
+    val planContext = mock[PlanContext]
+    when(planContext.btreeIndexGetForRelTypeAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forRelType(Btree, RelTypeId(1), Seq(PropertyKeyId(1))).withBehaviours(Set.empty[IndexBehaviour])))
+    val plan = relationshipIndexSeek("(a)-[id:REL(prop CONTAINS 'tron')]->(b)")
+
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should be(empty)
+  }
+
+  test("should not notify for DirectedRelationshipIndexEndsWithScan backed index with no limitations") {
+    val planContext = mock[PlanContext]
+    when(planContext.btreeIndexGetForRelTypeAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forRelType(Btree, RelTypeId(1), Seq(PropertyKeyId(1))).withBehaviours(Set.empty[IndexBehaviour])))
+    val plan = relationshipIndexSeek("(a)-[id:REL(prop ENDS WITH 'tron')]->(b)")
+
+    checkForSuboptimalIndexBehaviours(planContext)(plan) should be(empty)
+  }
 }

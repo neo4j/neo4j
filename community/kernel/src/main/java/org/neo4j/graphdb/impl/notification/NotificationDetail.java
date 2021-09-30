@@ -49,7 +49,7 @@ public interface NotificationDetail
                                                                              labelName,
                                                                              Arrays.asList( propertyKeyNames ),
                                                                              EntityType.NODE );
-            return createNotificationDetail( "hinted index", indexFormatString, true );
+            return createNotificationDetail( "index", indexFormatString, true );
         }
 
         public static NotificationDetail relationshipIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
@@ -58,13 +58,7 @@ public interface NotificationDetail
                                                                              relationshipTypeName,
                                                                              Arrays.asList( propertyKeyNames ),
                                                                              EntityType.RELATIONSHIP );
-            return createNotificationDetail( "hinted index", indexFormatString, true );
-        }
-
-        public static NotificationDetail suboptimalIndex( final String labelName, final String... propertyKeyNames )
-        {
-            return createNotificationDetail( "index",
-                    String.format( "index on :%s(%s)", labelName, String.join( ",", propertyKeyNames ) ), true );
+            return createNotificationDetail( "index", indexFormatString, true );
         }
 
         public static NotificationDetail label( final String labelName )

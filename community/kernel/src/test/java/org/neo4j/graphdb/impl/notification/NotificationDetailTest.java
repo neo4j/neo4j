@@ -36,9 +36,9 @@ class NotificationDetailTest
     {
         NotificationDetail detail = NotificationDetail.Factory.nodeIndex("person", "Person", "name" );
 
-        assertThat( detail.name() ).isEqualTo( "hinted index" );
+        assertThat( detail.name() ).isEqualTo( "index" );
         assertThat( detail.value() ).isEqualTo( "INDEX FOR (`person`:`Person`) ON (`person`.`name`)" );
-        assertThat( detail.toString() ).isEqualTo( "hinted index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`)" );
+        assertThat( detail.toString() ).isEqualTo( "index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`)" );
     }
 
     @Test
@@ -46,19 +46,9 @@ class NotificationDetailTest
     {
         NotificationDetail detail = NotificationDetail.Factory.relationshipIndex( "person", "Person", "name" );
 
-        assertThat( detail.name() ).isEqualTo( "hinted index" );
-        assertThat( detail.value() ).isEqualTo( "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" );
-        assertThat( detail.toString() ).isEqualTo( "hinted index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" );
-    }
-
-    @Test
-    void shouldConstructSuboptimalIndexDetails()
-    {
-        NotificationDetail detail = NotificationDetail.Factory.suboptimalIndex( "Person", "name" );
-
         assertThat( detail.name() ).isEqualTo( "index" );
-        assertThat( detail.value() ).isEqualTo( "index on :Person(name)" );
-        assertThat( detail.toString() ).isEqualTo( "index is: index on :Person(name)" );
+        assertThat( detail.value() ).isEqualTo( "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" );
+        assertThat( detail.toString() ).isEqualTo( "index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" );
     }
 
     @Test

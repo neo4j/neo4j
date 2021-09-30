@@ -23,9 +23,9 @@ import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 
-case class SuboptimalIndexForConstainsQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
+case class SuboptimalIndexForConstainsQueryNotification(variableName: String, labelOrRelType: String, propertyKeys: Seq[String], entityType: EntityType) extends InternalNotification
 
-case class SuboptimalIndexForEndsWithQueryNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
+case class SuboptimalIndexForEndsWithQueryNotification(variableName: String, labelOrRelType: String, propertyKeys: Seq[String], entityType: EntityType) extends InternalNotification
 
 case object StartUnavailableFallback extends InternalNotification
 
