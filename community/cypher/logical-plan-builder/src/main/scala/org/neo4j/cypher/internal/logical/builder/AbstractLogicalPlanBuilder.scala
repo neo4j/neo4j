@@ -142,6 +142,8 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Prober
@@ -823,6 +825,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     pointDistanceNodeIndexSeekExpr(node, labelName, property, point, literalFloat(distance), getValue, indexOrder, inclusive, argumentIds, indexType)
   }
 
+  def pointBoundingBoxNodeIndexSeek(node: String,
+                                    labelName: String,
+                                    property: String,
+                                    lowerLeft: String,
+                                    upperRight: String,
+                                    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                    indexOrder: IndexOrder = IndexOrderNone,
+                                    argumentIds: Set[String] = Set.empty,
+                                    indexType: IndexType = IndexType.BTREE): IMPL = {
+    pointBoundingBoxNodeIndexSeekExpr(node, labelName, property, lowerLeft, upperRight, getValue, indexOrder, argumentIds, indexType)
+  }
+
   def pointDistanceNodeIndexSeekExpr(node: String,
                                      labelName: String,
                                      property: String,
@@ -850,6 +864,38 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                argumentIds,
                                indexOrder,
                                indexType)(idGen)
+      newNode(varFor(plan.idName))
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
+  def pointBoundingBoxNodeIndexSeekExpr(node: String,
+                                        labelName: String,
+                                        property: String,
+                                        lowerLeft: String,
+                                        upperRight: String,
+                                        getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                        indexOrder: IndexOrder = IndexOrderNone,
+                                        argumentIds: Set[String] = Set.empty,
+                                        indexType: IndexType = IndexType.BTREE): IMPL = {
+    val label = resolver.getLabelId(labelName)
+
+    val propId = resolver.getPropertyKeyId(property)
+    val planBuilder = (idGen: IdGen) => {
+      val labelToken = LabelToken(labelName, LabelId(label))
+      val propToken = PropertyKeyToken(PropertyKeyName(property)(NONE), PropertyKeyId(propId))
+      val indexedProperty = IndexedProperty(propToken, getValue, NODE_TYPE)
+      val e =
+        RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
+          PointBoundingBoxRange(function("point", parseExpression(lowerLeft)), function("point", parseExpression(upperRight))))(NONE))
+      val plan = NodeIndexSeek(node,
+        labelToken,
+        Seq(indexedProperty),
+        e,
+        argumentIds,
+        indexOrder,
+        indexType)(idGen)
       newNode(varFor(plan.idName))
       plan
     }

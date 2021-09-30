@@ -138,6 +138,7 @@ object LogicalPlanToPlanBuilderString {
       case _:NodeIndexScan => "nodeIndexOperator"
       case _:DirectedRelationshipIndexScan => "relationshipIndexOperator"
       case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _, _) => "pointDistanceNodeIndexSeek"
+      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _,  _, _) => "pointBoundingBoxNodeIndexSeek"
       case _:NodeIndexSeek => "nodeIndexOperator"
       case _:NodeUniqueIndexSeek => "nodeIndexOperator"
       case _:NodeIndexContainsScan => "nodeIndexOperator"
@@ -378,8 +379,12 @@ object LogicalPlanToPlanBuilderString {
       case NodeIndexEndsWithScan(idName, labelToken, property, valueExpr, argumentIds, indexOrder, indexType) =>
         val propName = property.propertyKeyToken.name
         nodeIndexOperator(idName, labelToken, Seq(property), argumentIds, indexOrder, unique = false, s"$propName ENDS WITH ${expressionStringifier(valueExpr)}", indexType)
-      case NodeIndexSeek(idName, labelToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(FunctionInvocation(_, FunctionName("point"), _, args), distance, inclusive))), argumentIds, indexOrder, indexType) =>
-        pointDistanceNodeIndexSeek(idName, labelToken, properties, args.head, distance, argumentIds, indexOrder, inclusive = inclusive, indexType)
+      case NodeIndexSeek(idName, labelToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(PointFunction(arg), distance, inclusive))), argumentIds, indexOrder, indexType) =>
+        pointDistanceNodeIndexSeek(idName, labelToken, properties, arg, distance, argumentIds, indexOrder, inclusive = inclusive, indexType)
+      case NodeIndexSeek(idName, labelToken, properties,
+        RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
+          PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight)))), argumentIds, indexOrder, indexType) =>
+        pointBoundingBoxNodeIndexSeek(idName, labelToken, properties, lowerLeft, upperRight, argumentIds, indexOrder, indexType)
       case NodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
@@ -601,6 +606,30 @@ object LogicalPlanToPlanBuilderString {
     s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(distance)}$indexOrderStr$argStr$getValueStr$inclusiveStr$indexTypeStr """.trim
   }
 
+  private def pointBoundingBoxNodeIndexSeek(idName: String,
+                                            labelToken: LabelToken,
+                                            properties: Seq[IndexedProperty],
+                                            lowerLeft: Expression,
+                                            upperRight: Expression,
+                                            argumentIds: Set[String],
+                                            indexOrder: IndexOrder,
+                                            indexType: IndexType): String = {
+    val propName = properties.head.propertyKeyToken.name
+    val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
+    val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val getValueBehavior = properties.map(_.getValueFromIndex).reduce {
+      (v1, v2) =>
+        if (v1 == v2) {
+          v1
+        } else {
+          throw new UnsupportedOperationException("Index operators with different getValueFromIndex behaviors not supported.")
+        }
+    }
+    val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
+    val indexTypeStr = indexTypeToNamedArgumentString(indexType)
+    s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(lowerLeft)}", "${expressionStringifier(upperRight)}"$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
+  }
+
   private def idsStr(ids: SeekableArgs) = {
     val idsStr = ids match {
       case SingleSeekableArg(expr) => expressionStringifier(expr)
@@ -672,5 +701,13 @@ object LogicalPlanToPlanBuilderString {
 
   private def indexTypeToNamedArgumentString(indexType: IndexType): String = {
     s", indexType = ${indexType.getDeclaringClass.getSimpleName}.${indexType.name}"
+  }
+}
+
+object PointFunction {
+
+  def unapply(point: Expression): Option[Expression] = point match {
+    case FunctionInvocation(_, FunctionName("point"), _, args) => Some(args.head)
+    case _ => None
   }
 }
