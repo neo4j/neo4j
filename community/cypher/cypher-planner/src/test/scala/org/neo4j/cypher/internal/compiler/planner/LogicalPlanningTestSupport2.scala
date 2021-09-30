@@ -298,14 +298,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         }
       }
 
-      override def btreeIndexExistsForRelType(relTypeId: Int): Boolean = {
-        val relationshipTypeName = config.relTypesById(relTypeId)
-        config.indexes.keys.exists {
-          case IndexDef(IndexDefinition.EntityType.Relationship(`relationshipTypeName`), _) => true
-          case _ => false
-        }
-      }
-
       override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
         config.indexes.contains(IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKey))
 

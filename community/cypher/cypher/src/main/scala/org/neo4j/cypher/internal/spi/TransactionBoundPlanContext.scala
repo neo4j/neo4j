@@ -150,10 +150,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     btreeIndexesGetForLabel(labelId).nonEmpty
   }
 
-  override def btreeIndexExistsForRelType(relTypeId: Int): Boolean = {
-    btreeIndexesGetForRelType(relTypeId).nonEmpty
-  }
-
   override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
     descriptor.flatMap(indexGetForSchemaDescriptor(schema.IndexType.BTREE))

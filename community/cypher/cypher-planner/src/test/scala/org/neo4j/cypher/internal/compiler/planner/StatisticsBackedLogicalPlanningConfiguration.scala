@@ -594,10 +594,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         btreeIndexesGetForLabel(labelId).nonEmpty
       }
 
-      override def btreeIndexExistsForRelType(relTypeId: Int): Boolean = {
-        btreeIndexesGetForRelType(relTypeId).nonEmpty
-      }
-
       override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
         btreeIndexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
       }
