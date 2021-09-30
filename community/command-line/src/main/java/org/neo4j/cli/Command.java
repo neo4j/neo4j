@@ -45,6 +45,7 @@ public interface Command extends Callable<Integer>
         UNBIND,
         GET_SERVER_ID,
         PUSH_TO_CLOUD,
+        AGGREGATE_EXP,
         TEST //Used by test commands. Don't use this for any real command
     }
 }
