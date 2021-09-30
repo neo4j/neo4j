@@ -73,6 +73,7 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
+import static org.neo4j.server.configuration.ServerSettings.http_log_format;
 import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
@@ -342,7 +343,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
                 config.get( db_timezone ),
                 config.get( http_log_path ).toString(),
                 config.get( http_logging_rotation_size ),
-                config.get( http_logging_rotation_keep_number ) );
+                config.get( http_logging_rotation_keep_number ),
+                config.get( http_log_format ) );
         webServer.setRequestLog( requestLog );
     }
 

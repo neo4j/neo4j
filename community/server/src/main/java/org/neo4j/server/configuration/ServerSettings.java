@@ -35,9 +35,11 @@ import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.server.web.JettyThreadCalculator;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_log_format;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
@@ -49,6 +51,7 @@ import static org.neo4j.configuration.SettingValueParsers.NORMALIZED_RELATIVE_UR
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
+import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOfEnums;
 
 @ServiceProvider
@@ -127,6 +130,10 @@ public class ServerSettings implements SettingsDeclaration
     @Description( "Path to HTTP request log." )
     public static final Setting<Path> http_log_path =
             newBuilder( "dbms.logs.http.path", PATH, Path.of( "http.log" ) ).setDependency( logs_directory ).immutable().build();
+
+    @Description( "Log format to use for http logs." )
+    public static final Setting<FormattedLogFormat> http_log_format =
+            newBuilder( "dbms.logs.http.format", ofEnum( FormattedLogFormat.class ), null ).setDependency( default_log_format ).build();
 
     @Description( "Number of HTTP logs to keep." )
     public static final Setting<Integer> http_logging_rotation_keep_number =
