@@ -53,7 +53,7 @@ case class TransactionForeachPipe(source: Pipe, inner: Pipe)
       outerRow.invalidateCachedProperties()
 
       inNewTransaction(state) { stateWithNewTransaction =>
-        val entityTransformer = new EntityTransformer(stateWithNewTransaction.query.transactionalContext.internalTransaction)
+        val entityTransformer = new EntityTransformer(stateWithNewTransaction.query.entityAccessor)
         val reboundRow = entityTransformer.copyWithEntityWrappingValuesRebound(outerRow)
         val innerState = stateWithNewTransaction.withInitialContext(reboundRow)
         val ignoredResult = inner.createResults(innerState)
