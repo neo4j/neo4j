@@ -56,7 +56,7 @@ class PushdownPropertyReadsTest
         .build()
   }
 
-  test("should pushdown read in projection, but not too beyond optimum") {
+  test("should pushdown read in projection, but not beyond optimum") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
       .projection("n.prop AS x").withEffectiveCardinality(50)
@@ -74,6 +74,70 @@ class PushdownPropertyReadsTest
         .filter("id(n) <> 0")
         .allNodeScan("n")
         .build()
+  }
+
+  test("should pushdown read on top of projection") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("x")
+      .filter("n.prop IS NOT NULL").withEffectiveCardinality(10)
+      .expand("(n)--(o)").withEffectiveCardinality(100)
+      .expand("(n)--(m)").withEffectiveCardinality(5)
+      .projection("n.foo AS x").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(100)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .filter("n.prop IS NOT NULL")
+        .expand("(n)--(o)")
+        .cacheProperties("n.prop")
+        .expand("(n)--(m)")
+        .projection("n.foo AS x")
+        .allNodeScan("n")
+        .build()
+  }
+
+  test("should not pushdown read on top of projection if property is available from projection") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .filter("n.prop IS NOT NULL").withEffectiveCardinality(10)
+      .expand("(n)--(o)").withEffectiveCardinality(100)
+      .expand("(n)--(m)").withEffectiveCardinality(5)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(100)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown read on top of projection if property is available from before projection") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .filter("n.prop IS NOT NULL").withEffectiveCardinality(10)
+      .expand("(n)--(o)").withEffectiveCardinality(100)
+      .expand("(n)--(m)").withEffectiveCardinality(5)
+      .projection("n.foo AS x").withEffectiveCardinality(100)
+      .nodeIndexOperator("n:N(prop)", getValue = _ => CanGetValue).withEffectiveCardinality(100)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown read on top of projection if property is available from before projection, but entity is renamed in projection") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .filter("x.prop IS NOT NULL").withEffectiveCardinality(10)
+      .expand("(n)--(o)").withEffectiveCardinality(100)
+      .expand("(n)--(m)").withEffectiveCardinality(5)
+      .projection("n AS x").withEffectiveCardinality(100)
+      .nodeIndexOperator("n:N(prop)", getValue = _ => CanGetValue).withEffectiveCardinality(100)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
   }
 
   test("should not pushdown past a leaf") {

@@ -150,7 +150,7 @@ case object PushdownPropertyReads {
             }
 
           val renamedAvailableProperties =
-            acc.availableProperties.map(
+            (acc.availableProperties ++ newPropertyExpressions).map(
               prop => {
                 val propVariable = prop.map.asInstanceOf[LogicalVariable].name
                 renamings.get(propVariable) match {
