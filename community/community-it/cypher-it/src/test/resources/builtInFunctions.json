@@ -2085,6 +2085,41 @@
     "rolesBoostedExecution": []
   },
   {
+    "name": "point.withinBBox",
+    "category": "Spatial",
+    "description": "Returns true if the provided point is within the bounding box defined by the two provided points.",
+    "signature": "point.withinBBox(point :: POINT?, lowerLeft :: POINT?, upperRight :: POINT?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "point",
+        "description": "point :: POINT?",
+        "type": "POINT?"
+      },
+      {
+        "name": "lowerLeft",
+        "description": "lowerLeft :: POINT?",
+        "type": "POINT?"
+      },
+      {
+        "name": "upperRight",
+        "description": "upperRight :: POINT?",
+        "type": "POINT?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
     "name": "properties",
     "category": "Scalar",
     "description": "Returns a map containing all the properties of a node.",
