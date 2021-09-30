@@ -34,7 +34,7 @@ public interface TransactionLogService
      * @param initialTxId initial transaction id to retrieve channels from. Should be positive number and be in range of existing transaction ids.
      * @return object with access to read only transaction log channels to be able to access requested transaction logs content
      * @throws IOException on failure performing underlying transaction logs operation
-     * @throws IllegalArgumentException invalid transaction id
+     * @throws IllegalArgumentException invalid transaction id, transaction id not found in any of the log files
      */
     TransactionLogChannels logFilesChannels( long initialTxId ) throws IOException;
 }

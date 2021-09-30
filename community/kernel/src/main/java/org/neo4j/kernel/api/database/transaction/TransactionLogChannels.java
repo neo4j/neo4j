@@ -26,8 +26,8 @@ import org.neo4j.io.IOUtils;
 
 /**
  * List of transaction log channels and associated last closed transaction ids.
- * Channels come in sequence, as channel with earlier position in a list is actually comes before channel wiht later position.
- * Provided channels are read only and can be closed at any by the provided service.
+ * Channels come in a list. Channel that is before another channel in a list, is also before that channel in actual transactions logs.
+ * Provided channels are read only and can be closed at any time by the provided service.
  */
 public class TransactionLogChannels implements AutoCloseable
 {

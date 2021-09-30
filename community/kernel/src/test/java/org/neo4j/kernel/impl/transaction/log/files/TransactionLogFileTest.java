@@ -552,7 +552,7 @@ class TransactionLogFileTest
     }
 
     @Test
-    void logFilesExternalRidersRegistration() throws IOException, ExecutionException
+    void logFilesExternalReadersRegistration() throws IOException, ExecutionException
     {
         LogFiles logFiles = buildLogFiles();
         life.start();
