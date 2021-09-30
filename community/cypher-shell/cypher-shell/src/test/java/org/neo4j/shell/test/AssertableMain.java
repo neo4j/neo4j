@@ -44,10 +44,7 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.shell.Main.EXIT_FAILURE;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.cli.CliArgHelper.parseAndThrow;
@@ -192,7 +189,7 @@ public class AssertableMain
         {
             var logger = new AnsiLogger( false, Format.VERBOSE, new PrintStream( out ), new PrintStream( err ) );
             var parsedArgs = parseAndThrow( args.toArray( String[]::new ) );
-            var main = new Main( parsedArgs, in, out, logger, shell, isInputInteractive, isOutputInteractive, runnerFactory );
+            var main = new Main( parsedArgs, in, new PrintStream( out ), logger, shell, isInputInteractive, isOutputInteractive, runnerFactory );
             var exitCode = main.startShell();
             return new AssertableMain( exitCode, out, err, shell );
         }

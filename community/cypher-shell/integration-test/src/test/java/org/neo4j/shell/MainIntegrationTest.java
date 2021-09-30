@@ -25,6 +25,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.io.PrintStream;
+
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
@@ -552,7 +554,7 @@ class MainIntegrationTest
             assertNull( runnerFactory );
             assertNull( shell );
             var parsedArgs = parseAndThrow( args.toArray( String[]::new ) );
-            var main = new Main( parsedArgs, in, out, err, isInputInteractive, isOutputInteractive );
+            var main = new Main( parsedArgs, in, new PrintStream( out ), new PrintStream( err ), isInputInteractive, isOutputInteractive );
             var exitCode = main.startShell();
             return new AssertableMain( exitCode, out, err, main.getCypherShell() );
         }

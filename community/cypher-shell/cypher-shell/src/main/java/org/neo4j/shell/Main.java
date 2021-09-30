@@ -22,7 +22,6 @@ package org.neo4j.shell;
 import jline.console.ConsoleReader;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
@@ -49,7 +48,7 @@ public class Main
     static final String NEO_CLIENT_ERROR_SECURITY_UNAUTHORIZED = "Neo.ClientError.Security.Unauthorized";
     private final CliArgs args;
     private final InputStream in;
-    private final OutputStream out;
+    private final PrintStream out;
     private final Logger logger;
     private final CypherShell shell;
     private final boolean isInputInteractive;
@@ -58,18 +57,18 @@ public class Main
 
     public Main( CliArgs args )
     {
-        this( args, System.in, ShellRunner.getOutputStreamForInteractivePrompt(), System.err,
+        this( args, System.in, System.out, System.err,
               !args.getNonInteractive() && ShellRunner.isInputInteractive(),
               !args.getNonInteractive() && ShellRunner.isOutputInteractive() );
     }
 
     @VisibleForTesting
-    public Main( CliArgs args, InputStream in, OutputStream out, OutputStream err, boolean inputInteractive, boolean outputInteractive )
+    public Main( CliArgs args, InputStream in, PrintStream out, PrintStream err, boolean inputInteractive, boolean outputInteractive )
     {
         this.args = args;
         this.in = in;
         this.out = out;
-        this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, new PrintStream( out ), new PrintStream( err ) );
+        this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, out, err );
         this.shell = new CypherShell( logger, new PrettyConfig( args ), ShellRunner.shouldBeInteractive( args, inputInteractive ), args.getParameters() );
         this.isInputInteractive = inputInteractive;
         this.isOutputInteractive = outputInteractive;
@@ -77,7 +76,7 @@ public class Main
     }
 
     @VisibleForTesting
-    public Main( CliArgs args, InputStream in, OutputStream out, AnsiLogger logger, CypherShell shell,
+    public Main( CliArgs args, InputStream in, PrintStream out, AnsiLogger logger, CypherShell shell,
           boolean inputInteractive, boolean outputInteractive, ShellRunner.Factory runnerFactory )
     {
         this.args = args;
