@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator.SelectivitiesForPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator.selectivityForCompositeIndexPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator.unwrapPartialPredicates
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertySeekable
@@ -307,6 +308,10 @@ object CompositeExpressionSelectivityCalculator {
 
       // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
       case AsDistanceSeekable(_) =>
+        Selectivity(DEFAULT_RANGE_SEEK_FACTOR)
+
+      // WHERE point.withinBBox(p.prop, ll, ur) that could benefit from an index
+      case AsBoundingBoxSeekable(_) =>
         Selectivity(DEFAULT_RANGE_SEEK_FACTOR)
 
       // WHERE x.prop <, <=, >=, > that could benefit from an index

@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.NodeCountFromCountStoreTestB
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexContainsScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexEndsWithScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexPointBoundingBoxSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexPointDistanceSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexSeekTestBase
@@ -198,6 +199,7 @@ class InterpretedRelationshipIndexStartsWithSeekTest extends RelationshipIndexSt
 class InterpretedRelationshipIndexContainsScanTest extends RelationshipIndexContainsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRelationshipIndexEndsWithScanTest extends RelationshipIndexEndsWithScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexPointDistanceSeekTest extends NodeIndexPointDistanceSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedNodeIndexPointBoundingBoxSeekTest extends NodeIndexPointBoundingBoxSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedMultiNodeIndexSeekTest extends MultiNodeIndexSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedInputTest extends InputTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLoadCsvTest extends LoadCsvTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.Expression
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.getStringLength
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.indexSelectivityWithSizeHint
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
@@ -43,6 +44,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertySeekab
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.InequalityRangeSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
 import org.neo4j.cypher.internal.expressions.Contains
@@ -120,6 +122,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
     case AsDistanceSeekable(seekable) =>
       calculateSelectivityForPointDistanceSeekable(seekable, labelInfo, relTypeInfo)
+
+    // WHERE point.withinBBox(p.prop, ll, ur) that could benefit from an index
+    case AsBoundingBoxSeekable(seekable) =>
+      calculateSelectivityForPointBoundingBoxSeekable(seekable, labelInfo, relTypeInfo)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
     case AsValueRangeSeekable(seekable) =>
@@ -302,6 +308,15 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(seekable.ident.name, labelInfo, relTypeInfo, seekable.propertyKeyName)
     val indexDistanceSelectivities = indexPropertyExistsSelectivities.map(_ * Selectivity(DEFAULT_RANGE_SEEK_FACTOR))
     combiner.orTogetherSelectivities(indexDistanceSelectivities).getOrElse(DEFAULT_RANGE_SELECTIVITY)
+  }
+
+  private def calculateSelectivityForPointBoundingBoxSeekable(seekable: PointBoundingBoxSeekable,
+                                                            labelInfo: LabelInfo,
+                                                            relTypeInfo: RelTypeInfo)
+                                                          (implicit semanticTable: SemanticTable): Selectivity = {
+    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(seekable.ident.name, labelInfo, relTypeInfo, seekable.propertyKeyName)
+    val indexBBoxSelectivities = indexPropertyExistsSelectivities.map(_ * Selectivity(DEFAULT_RANGE_SEEK_FACTOR))
+    combiner.orTogetherSelectivities(indexBBoxSelectivities).getOrElse(DEFAULT_RANGE_SELECTIVITY)
   }
 
   private def calculateSelectivityForSubstringSargable(variable: String,

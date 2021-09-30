@@ -112,6 +112,7 @@ import org.neo4j.cypher.internal.expressions.functions.WithinBBox
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
@@ -124,6 +125,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters.ShortestPathsConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointBoundingBoxSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.VariableCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
@@ -279,6 +281,7 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
         .PrefixSeekRangeExpression(e.range.map(self.toCommandExpression(id,_)))
       case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(self.toCommandExpression(id,_)))
       case e: PointDistanceSeekRangeWrapper => PointDistanceSeekRangeExpression(e.range.map(self.toCommandExpression(id,_)))
+      case e: PointBoundingBoxSeekRangeWrapper => PointBoundingBoxSeekRangeExpression(e.range.map(self.toCommandExpression(id,_)))
       case e: internal.expressions.AndedPropertyInequalities => predicates
         .AndedPropertyComparablePredicates(variable(e.variable), toCommandProperty(id, e.property, self),
           e.inequalities.map(e => inequalityExpression(id, e, self)))

@@ -373,6 +373,8 @@ case class Match(
           acc => SkipChildren(acc :+ name)
         case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
           acc => SkipChildren(acc :+ name)
+        case FunctionInvocation(Namespace(List("point")), FunctionName("withinBBox"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _, _)) if id == variable =>
+          acc => SkipChildren(acc :+ name)
         case expr: InequalityExpression =>
           acc =>
             val newAcc: Seq[String] = Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>

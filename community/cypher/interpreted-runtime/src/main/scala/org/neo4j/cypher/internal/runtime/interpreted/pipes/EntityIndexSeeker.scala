@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointBoundingBoxSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PrefixSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
@@ -223,6 +224,14 @@ trait EntityIndexSeeker {
               bbox.other(),
               inclusive
             ))
+          case _ => Nil
+        }
+
+      case PointBoundingBoxSeekRangeExpression(range) =>
+        val valueRange = range.map(expr => makeValueNeoSafe(expr(row, state)))
+        (valueRange.lowerLeft, valueRange.upperRight) match {
+          case (lowerLeft: PointValue, upperRight: PointValue) =>
+            List(PropertyIndexQuery.range(propertyId, lowerLeft, true, upperRight, true))
           case _ => Nil
         }
     }

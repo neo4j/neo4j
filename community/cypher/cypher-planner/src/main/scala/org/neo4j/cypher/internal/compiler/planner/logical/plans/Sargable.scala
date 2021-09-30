@@ -50,6 +50,8 @@ import org.neo4j.cypher.internal.logical.plans.InclusiveBound
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRange
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
+import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
@@ -202,6 +204,15 @@ object AsDistanceSeekable {
         case _ => None
       }
 
+    case _ =>
+      None
+  }
+}
+
+object AsBoundingBoxSeekable {
+  def unapply(v: Any): Option[PointBoundingBoxSeekable] = v match {
+    case f@FunctionInvocation(Namespace(List("point")), FunctionName("withinBBox"), _, Seq(prop@Property(ident: LogicalVariable, PropertyKeyName(name)), lowerLeft, upperRight)) =>
+      Some(PointBoundingBoxSeekable(ident, prop, f, PointBoundingBoxRange(lowerLeft, upperRight)))
     case _ =>
       None
   }
