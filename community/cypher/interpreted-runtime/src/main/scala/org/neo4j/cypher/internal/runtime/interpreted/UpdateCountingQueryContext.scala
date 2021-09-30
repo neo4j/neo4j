@@ -20,12 +20,17 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
+import org.neo4j.cypher.internal.runtime.NodeOperations
+import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -35,12 +40,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
-
-import java.util.concurrent.atomic.AtomicInteger
-
-import org.neo4j.cypher.internal.runtime.NodeOperations
-import org.neo4j.cypher.internal.runtime.Operations
-import org.neo4j.cypher.internal.runtime.RelationshipOperations
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) with CountingQueryContext {
 
@@ -285,6 +284,4 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
       inner.setProperty(id, propertyKeyId, value)
     }
   }
-
-  override def createParallelQueryContext(): QueryContext = throw new UnsupportedOperationException("Not ")
 }
