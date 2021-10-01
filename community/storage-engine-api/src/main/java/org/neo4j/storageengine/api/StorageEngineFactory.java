@@ -61,8 +61,9 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engi
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 
 /**
- * A factory suitable for something like service-loading to load {@link StorageEngine} instances.
- * Also migration logic is provided by this factory.
+ * Represents a type of storage engine and is capable of creating/instantiating {@link StorageEngine storage engines}, where each such
+ * {@link StorageEngine} instance represents one storage engine running underneath a particular database. This factory also allows
+ * access to recovery status, migration logic and access to meta-data about a storage engine.
  */
 @Service
 public interface StorageEngineFactory
