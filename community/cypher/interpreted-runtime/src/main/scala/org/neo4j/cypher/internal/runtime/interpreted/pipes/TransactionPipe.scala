@@ -37,6 +37,8 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
@@ -158,10 +160,10 @@ trait TransactionPipe {
         other
     }
 
-    private def rebindNode(node: Node): NodeValue =
+    private def rebindNode(node: Node): VirtualNodeValue =
       ValueUtils.fromNodeEntity(entityFactory.newNodeEntity(node.getId))
 
-    private def rebindRelationship(relationship: Relationship): RelationshipValue =
-      ValueUtils.fromRelationshipEntityLazyLoad(entityFactory.newRelationshipEntity(relationship.getId))
+    private def rebindRelationship(relationship: Relationship): VirtualRelationshipValue =
+      ValueUtils.fromRelationshipEntity(entityFactory.newRelationshipEntity(relationship.getId))
   }
 }
