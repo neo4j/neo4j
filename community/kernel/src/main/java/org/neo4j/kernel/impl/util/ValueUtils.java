@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.Entity;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -48,21 +47,21 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
-
-import static org.neo4j.values.storable.Values.stringArray;
-import static org.neo4j.values.storable.Values.stringValue;
 
 public final class ValueUtils
 {
     private ValueUtils()
     {
         throw new UnsupportedOperationException( "do not instantiate" );
+    }
+
+    public static AnyValue of( Object object )
+    {
+        return of( object, false );
     }
 
     /**
@@ -72,7 +71,7 @@ public final class ValueUtils
      * @return the AnyValue corresponding to object.
      */
     @SuppressWarnings( "unchecked" )
-    public static AnyValue of( Object object )
+    public static AnyValue of( Object object, boolean wrapEntities )
     {
         if ( object instanceof AnyValue )
         {
@@ -89,11 +88,25 @@ public final class ValueUtils
             {
                 if ( object instanceof Node )
                 {
-                    return fromNodeEntity( (Node) object );
+                    if ( wrapEntities )
+                    {
+                        return wrapNodeEntity( (Node) object );
+                    }
+                    else
+                    {
+                        return fromNodeEntity( (Node) object );
+                    }
                 }
                 else if ( object instanceof Relationship )
                 {
-                    return fromRelationshipEntity( (Relationship) object );
+                    if ( wrapEntities )
+                    {
+                        return wrapRelationshipEntity( (Relationship) object );
+                    }
+                    else
+                    {
+                        return fromRelationshipEntity( (Relationship) object );
+                    }
                 }
                 else
                 {
@@ -104,20 +117,27 @@ public final class ValueUtils
             {
                 if ( object instanceof Path )
                 {
-                    return pathReferenceFromPath( (Path)object );
+                    if ( wrapEntities )
+                    {
+                        return wrapPath( (Path) object );
+                    }
+                    else
+                    {
+                        return pathReferenceFromPath( (Path) object );
+                    }
                 }
                 else if ( object instanceof List<?> )
                 {
-                    return asListValue( (List<Object>) object );
+                    return asListValue( (List<Object>) object, wrapEntities );
                 }
                 else
                 {
-                    return asListValue( (Iterable<Object>) object );
+                    return asListValue( (Iterable<Object>) object, wrapEntities );
                 }
             }
             else if ( object instanceof Map<?,?> )
             {
-                return asMapValue( (Map<String,Object>) object );
+                return asMapValue( (Map<String,Object>) object, wrapEntities );
             }
             else if ( object instanceof Iterator<?> )
             {
@@ -125,7 +145,7 @@ public final class ValueUtils
                 Iterator<?> iterator = (Iterator<?>) object;
                 while ( iterator.hasNext() )
                 {
-                    builder.add( ValueUtils.of( iterator.next() ) );
+                    builder.add( ValueUtils.of( iterator.next(), wrapEntities ) );
                 }
                 return builder.build();
             }
@@ -140,7 +160,7 @@ public final class ValueUtils
                 ListValueBuilder builder = ListValueBuilder.newListBuilder( array.length );
                 for ( Object o : array )
                 {
-                    builder.add( ValueUtils.of( o ) );
+                    builder.add( ValueUtils.of( o, wrapEntities ) );
                 }
                 return builder.build();
             }
@@ -194,6 +214,11 @@ public final class ValueUtils
 
     public static ListValue asListValue( List<?> collection )
     {
+        return asListValue( collection, false );
+    }
+
+    public static ListValue asListValue( List<?> collection, boolean wrapEntities )
+    {
         int size = collection.size();
         if ( size == 0 )
         {
@@ -203,17 +228,22 @@ public final class ValueUtils
         ListValueBuilder values = ListValueBuilder.newListBuilder( size );
         for ( Object o : collection )
         {
-            values.add( ValueUtils.of( o ) );
+            values.add( ValueUtils.of( o, wrapEntities ) );
         }
         return values.build();
     }
 
     public static ListValue asListValue( Iterable<?> collection )
     {
+        return asListValue( collection, false );
+    }
+
+    public static ListValue asListValue( Iterable<?> collection, boolean wrapEntities )
+    {
         ListValueBuilder values = ListValueBuilder.newListBuilder();
         for ( Object o : collection )
         {
-            values.add( ValueUtils.of( o ) );
+            values.add( ValueUtils.of( o, wrapEntities ) );
         }
         return values.build();
     }
@@ -255,8 +285,12 @@ public final class ValueUtils
         }
         return relValues.build();
     }
-
     public static MapValue asMapValue( Map<String,?> map )
+    {
+        return asMapValue( map, false );
+    }
+
+    public static MapValue asMapValue( Map<String,?> map, boolean wrapEntities )
     {
         int size = map.size();
         if ( size == 0 )
@@ -267,7 +301,7 @@ public final class ValueUtils
         MapValueBuilder builder = new MapValueBuilder( size );
         for ( Map.Entry<String,?> entry : map.entrySet() )
         {
-            builder.add( entry.getKey(), ValueUtils.of( entry.getValue() ) );
+            builder.add( entry.getKey(), ValueUtils.of( entry.getValue(), wrapEntities ) );
         }
         return builder.build();
     }
@@ -285,7 +319,7 @@ public final class ValueUtils
         {
             try
             {
-                builder.add( entry.getKey(), ValueUtils.of( entry.getValue() ) );
+                builder.add( entry.getKey(), ValueUtils.of( entry.getValue(), true ) );
             }
             catch ( IllegalArgumentException e )
             {
@@ -298,31 +332,50 @@ public final class ValueUtils
 
     public static VirtualNodeValue fromNodeEntity( Node node )
     {
-        return VirtualValues.node( node.getId() );
+        //sigh: negative ids are used as a mechanism for transferring "fake" entities from and to procedures.
+        //We use it ourselves in some internal procedures, see VirtualNodeHack, and it is also used extensively
+        //in apoc.
+        if ( node.getId() < 0 )
+        {
+            return wrapNodeEntity( node );
+        }
+        else
+        {
+            return VirtualValues.node( node.getId() );
+        }
     }
 
-    public static NodeValue fromNodeEntityEager( Node node )
+    //sigh: For procedures we must support "fake" entities from and to procedures.
+    //We use it ourselves in some internal procedures, see VirtualNodeHack, and it is also used extensively
+    // in apoc.
+    @Deprecated
+    public static VirtualNodeValue wrapNodeEntity( Node node )
     {
-        return VirtualValues.nodeValue( node.getId(),
-                                        stringArray(
-                                                StreamSupport.stream( node.getLabels().spliterator(), false )
-                                                             .map( Label::name )
-                                                             .toArray( String[]::new ) ),
-                                        asMapValue( node.getAllProperties() ) );
+        return new NodeEntityWrappingNodeValue( node );
     }
 
     public static VirtualRelationshipValue fromRelationshipEntity( Relationship relationship )
     {
-        return VirtualValues.relationship( relationship.getId() );
+        //sigh: negative ids are used as a mechanism for transferring "fake" entities from and to procedures.
+        //We use it ourselves in some internal procedures, see VirtualNodeHack, and it is also used extensively
+        //in apoc.
+        if ( relationship.getId() < 0 )
+        {
+            return wrapRelationshipEntity( relationship );
+        }
+        else
+        {
+            return VirtualValues.relationship( relationship.getId() );
+        }
     }
 
-    public static RelationshipValue fromRelationshipEntityEager( Relationship relationship )
+    //sigh: For procedures we must support "fake" entities from and to procedures.
+    //We use it ourselves in some internal procedures, see VirtualNodeHack, and it is also used extensively
+    // in apoc.
+    @Deprecated
+    public static VirtualRelationshipValue wrapRelationshipEntity( Relationship relationship )
     {
-        return VirtualValues.relationshipValue( relationship.getStartNodeId(),
-                                                fromNodeEntity( relationship.getStartNode() ),
-                                                fromNodeEntity( relationship.getEndNode() ),
-                                                stringValue(relationship.getType().name()),
-                                                asMapValue( relationship.getAllProperties() ) );
+        return RelationshipEntityWrappingValue.wrapLazy( relationship );
     }
 
     public static VirtualPathValue fromPath( Path path )
@@ -334,6 +387,15 @@ public final class ValueUtils
                              .map( ValueUtils::fromRelationshipEntity )
                              .toArray( VirtualRelationshipValue[]::new )
         );
+    }
+
+    //sigh: For procedures we must support "fake" entities from and to procedures.
+    //We use it ourselves in some internal procedures, see VirtualNodeHack, and it is also used extensively
+    // in apoc.
+    @Deprecated
+    public static VirtualPathValue wrapPath( Path path )
+    {
+        return new PathWrappingPathValue( path );
     }
 
     public static VirtualPathValue pathReferenceFromPath( Path path )

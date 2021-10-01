@@ -477,7 +477,11 @@ public final class CypherFunctions
     public static VirtualNodeValue startNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( anyValue instanceof VirtualRelationshipValue )
+        if ( anyValue instanceof RelationshipValue )
+        {
+            return ((RelationshipValue) anyValue).startNode();
+        }
+        else if ( anyValue instanceof VirtualRelationshipValue )
         {
             return startNode( (VirtualRelationshipValue) anyValue, access, cursor );
         }
@@ -507,7 +511,11 @@ public final class CypherFunctions
     public static VirtualNodeValue endNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( anyValue instanceof VirtualRelationshipValue )
+        if ( anyValue instanceof RelationshipValue )
+        {
+            return ((RelationshipValue) anyValue).endNode();
+        }
+        else if ( anyValue instanceof VirtualRelationshipValue )
         {
             return endNode( (VirtualRelationshipValue) anyValue, access, cursor );
         }

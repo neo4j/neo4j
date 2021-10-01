@@ -918,13 +918,13 @@ public final class ProcedureCompilation
         }
         else if ( type.equals( LIST ) )
         {
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, ListValue.class, "asListValue", Iterable.class ),
-                    expression ));
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, ListValue.class, "asListValue", Iterable.class, boolean.class ),
+                    expression, constant(true) ));
         }
         else if ( type.equals( MAP ) )
         {
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, MapValue.class, "asMapValue", Map.class ),
-                    expression ));
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, MapValue.class, "asMapValue", Map.class, boolean.class ),
+                    expression, constant(true) ));
         }
         else if ( type.equals( ZONED_DATE_TIME ) )
         {
@@ -961,7 +961,7 @@ public final class ProcedureCompilation
             Expression internalTransaction = invoke( context, methodReference( Context.class, InternalTransaction.class, "internalTransactionOrNull" ) );
             Expression getNode = invoke( internalTransaction,
                                          methodReference( InternalTransaction.class, Entity.class, "validateSameDB", Entity.class ), expression );
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, VirtualNodeValue.class, "fromNodeEntity", Node.class ), getNode ) );
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, VirtualNodeValue.class, "wrapNodeEntity", Node.class ), getNode ) );
         }
         else if ( type.equals( RELATIONSHIP ) )
         {
@@ -969,11 +969,11 @@ public final class ProcedureCompilation
             Expression getRelationship =
                     invoke( internalTransaction, methodReference( InternalTransaction.class, Entity.class, "validateSameDB", Entity.class ), expression );
             return nullCheck( expression, invoke(
-                    methodReference( ValueUtils.class, VirtualRelationshipValue.class, "fromRelationshipEntity", Relationship.class ), getRelationship ) );
+                    methodReference( ValueUtils.class, VirtualRelationshipValue.class, "wrapRelationshipEntity", Relationship.class ), getRelationship ) );
         }
         else if ( type.equals( PATH ) )
         {
-            return nullCheck( expression, invoke( methodReference( ValueUtils.class, VirtualPathValue.class, "fromPath", Path.class ), expression ));
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, VirtualPathValue.class, "wrapPath", Path.class ), expression ));
         }
         else if ( type.equals( POINT ) )
         {
@@ -982,7 +982,7 @@ public final class ProcedureCompilation
         }
         else
         {
-            return invoke( methodReference( ValueUtils.class, AnyValue.class, "of", Object.class ), expression );
+            return invoke( methodReference( ValueUtils.class, AnyValue.class, "of", Object.class, boolean.class ), expression, constant(true) );
         }
     }
 
