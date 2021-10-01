@@ -22,12 +22,12 @@ package org.neo4j.internal.helpers.collection;
 import java.util.stream.LongStream;
 
 import static java.lang.String.format;
-import static org.neo4j.util.Preconditions.checkState;
+import static org.neo4j.util.Preconditions.checkArgument;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
 public final class LongRange
 {
-    public static final LongRange EMPTY_RANGE = new LongRange( 0, 0 );
+    public static final LongRange EMPTY_RANGE = new LongRange( -1, -1 );
 
     public static LongRange range( long from, long to )
     {
@@ -35,6 +35,7 @@ public final class LongRange
         {
             return EMPTY_RANGE;
         }
+        assertIsRange( from, to );
         return new LongRange( from, to );
     }
 
@@ -50,7 +51,7 @@ public final class LongRange
     public static void assertIsRange( long from, long to )
     {
         requireNonNegative( from );
-        checkState( to >= from, "Not a valid range. Range to [%d] must be higher or equal to range from [%d].", to, from );
+        checkArgument( to >= from, "Not a valid range. Range to [%d] must be higher or equal to range from [%d].", to, from );
     }
 
     private final long from;
@@ -58,13 +59,16 @@ public final class LongRange
 
     private LongRange( long from, long to )
     {
-        assertIsRange( from, to );
         this.from = from;
         this.to = to;
     }
 
     public boolean isAdjacent( LongRange candidate )
     {
+        if ( isEmpty() )
+        {
+            return false;
+        }
         return this.to + 1 == candidate.from;
     }
 
@@ -74,6 +78,10 @@ public final class LongRange
      */
     public boolean isWithinRange( long val )
     {
+        if ( isEmpty() )
+        {
+            return false;
+        }
         return val >= from && val <= to;
     }
 
@@ -83,17 +91,21 @@ public final class LongRange
      */
     public boolean isWithinRangeExclusiveTo( long val )
     {
+        if ( isEmpty() )
+        {
+            return false;
+        }
         return val >= from && val < to;
     }
 
     public LongStream stream()
     {
-        return LongStream.rangeClosed( from, to );
+        return isEmpty() ? LongStream.empty() : LongStream.rangeClosed( from, to );
     }
 
     public boolean isEmpty()
     {
-        return from == to;
+        return from == -1;
     }
 
     @Override

@@ -83,7 +83,7 @@ class LogPruningTest
     void mustDeleteLogFilesThatCanBePruned() throws IOException
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
-                .thenReturn( upTo -> LongRange.range( 3, upTo ) );
+                .thenReturn( upTo -> LongRange.range( 3, upTo - 1 ) );
         LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config, new ReentrantLock() );
         pruning.pruneLogs( 5 );
         InOrder order = inOrder( fs );

@@ -78,7 +78,8 @@ class LongRangeTest
     void emptyRange()
     {
         assertTrue( LongRange.EMPTY_RANGE.isEmpty() );
-        assertTrue( LongRange.range( 5, 5 ).isEmpty() );
+        assertFalse( LongRange.range( 5, 5 ).isEmpty() );
+        assertEquals( 6, LongRange.range( 6, 6 ).stream().findAny().orElseThrow() );
     }
 
     @Test
