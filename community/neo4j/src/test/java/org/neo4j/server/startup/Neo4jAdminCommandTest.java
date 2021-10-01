@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -98,6 +100,19 @@ class Neo4jAdminCommandTest
             }
         }
 
+        @Test
+        void shouldExpandAtFilesWhenItReachesAdminCommand() throws Exception
+        {
+            Path commandFile = home.resolve( "fileWithArgs" );
+            Files.write( commandFile, "foo bar baz".getBytes() );
+            if ( fork.run( () -> execute( "@" + commandFile ) ) )
+            {
+                //In the command we expect the @file to be expanded
+                assertThat( err.toString() ).contains( "Unmatched argument", "'foo'", "'bar'", "'baz'" );
+            }
+            //else The bootloader should just forward the argument (tested below with FakeProcess)
+        }
+
         @Override
         protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup )
         {
@@ -108,6 +123,16 @@ class Neo4jAdminCommandTest
     @Nested
     class UsingFakeProcess extends BootloaderCommandTestBase
     {
+
+        @Test
+        void shouldNotExpandAtFilesInBootloader() throws Exception
+        {
+            Path commandFile = home.resolve( "fileWithArgs" );
+            Files.write( commandFile, "foo bar baz".getBytes() );
+            execute( "@" + commandFile );
+            assertThat( out.toString() ).contains( "@" + commandFile ).doesNotContain( "foo", "bar", "baz" );
+        }
+
         @Test
         void shouldPassParallelGcByDefault()
         {

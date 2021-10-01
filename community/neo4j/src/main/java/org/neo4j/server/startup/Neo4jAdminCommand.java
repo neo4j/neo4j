@@ -50,7 +50,8 @@ class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>
     {
         return addDefaultOptions( new CommandLine( new Neo4jAdminCommand( ctx ) ), ctx )
                 .setUnmatchedArgumentsAllowed( true )
-                .setUnmatchedOptionsArePositionalParams( true );
+                .setUnmatchedOptionsArePositionalParams( true )
+                .setExpandAtFiles( false );
     }
 
     @CommandLine.Parameters( hidden = true )
