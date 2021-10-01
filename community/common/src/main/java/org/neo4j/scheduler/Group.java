@@ -112,6 +112,7 @@ public enum Group
     CLUSTER_STATUS_CHECK_SERVICE( "ClusterStatusService" ),
     TOPOLOGY_LOGGER( "TopologyLogger" ),
     TOPOLOGY_GRAPH_UPDATER( "TopologyGraphUpdater" ),
+    TOPOLOGY_GRAPH_WRITE_SUPPORT( "TopologyGraphWriteSupport" ),
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
