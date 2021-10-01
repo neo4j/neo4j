@@ -2,22 +2,19 @@
  * Copyright (c) "Neo4j"
  * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package cypher.features
+package org.neo4j.cypher.internal.util.test_helpers
 
 import org.opencypher.tools.tck.api.Scenario
 
@@ -54,7 +51,7 @@ object DenylistEntry {
           new DenylistEntry(Some(featureName), scenarioName, None, isFlaky = questionMark.nonEmpty)
         case entryPattern(questionMark, featureName, scenarioName, _, exampleNumberOrName) =>
           new DenylistEntry(Some(featureName), scenarioName, Some(exampleNumberOrName), isFlaky = questionMark.nonEmpty)
-        case other => throw new UnsupportedOperationException(s"Could not parse blacklist entry $other")
+        case other => throw new UnsupportedOperationException(s"Could not parse denylist entry $other")
       }
 
     } else new DenylistEntry(None, line, None, isFlaky = false)

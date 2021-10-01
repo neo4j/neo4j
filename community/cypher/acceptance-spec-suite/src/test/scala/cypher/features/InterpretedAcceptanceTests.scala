@@ -19,29 +19,15 @@
  */
 package cypher.features
 
-import cypher.features.Neo4jAdapter.defaultTestConfig
-import cypher.features.ScenarioTestHelper.createTests
-import cypher.features.ScenarioTestHelper.printComputedDenylist
-import org.junit.jupiter.api.Assertions.fail
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.DynamicTest
-import org.junit.jupiter.api.TestFactory
-import org.neo4j.test.TestDatabaseManagementServiceBuilder
-
-import java.util
+import org.neo4j.graphdb.config.Setting
 
 class InterpretedAcceptanceTests extends BaseAcceptanceTest {
 
   // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
 
-  @TestFactory
-  def runCostInterpreted(): util.Collection[DynamicTest] = {
-    createTests(scenarios, InterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder(), featureName => defaultTestConfig(featureName))
-  }
+  override val config: TestConfig = InterpretedTestConfig
 
-  @Disabled
-  def generateDenylistCostInterpreted(): Unit = {
-    printComputedDenylist(scenarios, InterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder())
-    fail("Do not forget to add @Disabled to this method")
-  }
+  override def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef] = super.dbConfigPerFeature(featureName)
+
+  override val useBolt: Boolean = false
 }

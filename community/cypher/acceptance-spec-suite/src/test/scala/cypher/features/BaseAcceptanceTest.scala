@@ -19,8 +19,11 @@
  */
 package cypher.features
 
+import cypher.features.Neo4jAdapter.defaultTestConfig
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.opencypher.tools.tck.api.Scenario
 
 abstract class BaseAcceptanceTest extends BaseFeatureTest {
@@ -31,7 +34,11 @@ abstract class BaseAcceptanceTest extends BaseFeatureTest {
   val featureToRun = ""
   val scenarioToRun = ""
 
-  lazy val scenarios: Seq[Scenario] =  filterScenarios(BaseFeatureTestHolder.allAcceptanceScenarios, categoryToRun, featureToRun, scenarioToRun)
+  override lazy val scenarios: Seq[Scenario] =  filterScenarios(BaseFeatureTestHolder.allAcceptanceScenarios, categoryToRun, featureToRun, scenarioToRun)
+
+  override def graphDatabaseFactory(): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder()
+
+  override def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef] = defaultTestConfig(featureName)
 
   @Test
   def debugTokensNeedToBeEmpty(): Unit = {

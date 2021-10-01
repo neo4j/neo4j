@@ -19,7 +19,7 @@
  */
 package cypher.features
 
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.function.Executable
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
@@ -29,15 +29,14 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
-import org.opencypher.tools.tck.api.Execute
+import org.neo4j.cypher.internal.util.test_helpers.DenylistEntry
+import org.neo4j.cypher.internal.util.test_helpers.FeatureQueryTest
+import org.neo4j.cypher.internal.util.test_helpers.FeatureTest
 import org.opencypher.tools.tck.api.Scenario
 import org.scalatest.Assertion
-import org.scalatest.FunSpecLike
 import org.scalatest.Matchers
-import org.scalatest.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
-class PrettifierTCKTest extends BaseFeatureTest with FunSpecLike with Matchers {
+class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers {
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier(
     alwaysParens = true,
@@ -45,11 +44,9 @@ class PrettifierTCKTest extends BaseFeatureTest with FunSpecLike with Matchers {
     sensitiveParamsAsParams = true,
   ))
 
-  val scenariosPerFeature: Map[String, Seq[Scenario]] =
-    (BaseFeatureTestHolder.allAcceptanceScenarios ++ BaseFeatureTestHolder.allTckScenarios).groupBy(_.featureName)
-  var x = 0
+  override val scenarios: Seq[Scenario] = BaseFeatureTestHolder.allAcceptanceScenarios ++ BaseFeatureTestHolder.allTckScenarios
 
-  val DENYLIST: Set[String] = Set[String](
+  override def denylist: Seq[DenylistEntry] = Seq(
     // Does not parse
     """Feature "Mathematical3 - Subtraction": Scenario "Fail for invalid Unicode hyphen in subtraction"""",
     """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "26"""",
@@ -81,41 +78,15 @@ class PrettifierTCKTest extends BaseFeatureTest with FunSpecLike with Matchers {
     """Feature "ExplainAcceptance": Scenario "Explanation of query with return columns"""",
     """Feature "ExplainAcceptance": Scenario "Explanation of in-query procedure call"""",
     """Feature "ExplainAcceptance": Scenario "Explanation of query ending in unit subquery call"""",
-  )
+  ).map(DenylistEntry(_))
 
-  scenariosPerFeature foreach {
-    case (featureName, scenarios) =>
-      describe(featureName) {
-        scenarios
-          .filterNot(scenarioObj => DENYLIST(denyListEntry(scenarioObj)))
-          .foreach {
-            scenarioObj =>
-              val testName = denyListEntry(scenarioObj)
-              describe(testName) {
-                scenarioObj.steps foreach {
-                  case Execute(query, _, _) =>
-                    x = x + 1
-                    it(s"[$x]\n$query") {
-                      withClue(testName) {
-                        try {
-                          roundTripCheck(query)
-                        } catch {
-                          // Allow withClue to populate the testcase name
-                          case e: Exception => fail(e.getMessage, e)
-                        }
-                      }
-                    }
-                  case _ =>
-                }
-              }
-          }
-      }
-    case _ =>
+  // We don't execute tests that are expected to fail
+  override def runDenyListedQuery(scenario: Scenario, query: String): Option[Executable] = None
+
+  override def runQuery(scenario: Scenario, query: String): Option[Executable] = {
+    val executable: Executable = () => roundTripCheck(query)
+    Some(executable)
   }
-
-  // Use the same denylist format as the other TCK tests
-  private def denyListEntry(scenario:Scenario): String =
-    s"""Feature "${scenario.featureName}": Scenario "${scenario.name}"""" + scenario.exampleIndex.map(ix => s""": Example "$ix"""").getOrElse("")
 
   private def roundTripCheck(query: String): Assertion = {
     val parsed = parse(query)

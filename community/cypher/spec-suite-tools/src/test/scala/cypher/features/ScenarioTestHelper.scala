@@ -20,8 +20,15 @@
 package cypher.features
 
 import cypher.features.Neo4jAdapter.defaultTestConfig
-import org.junit.jupiter.api.DynamicTest
+import cypher.features.ScenarioTestHelper.checkForDuplicates
+import cypher.features.ScenarioTestHelper.parseDenylist
+import cypher.features.ScenarioTestHelper.printComputedDenylist
+import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.function.Executable
+import org.neo4j.cypher.internal.util.test_helpers.DenylistEntry
+import org.neo4j.cypher.internal.util.test_helpers.FeatureTest
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.opencypher.tools.tck.api.ExpectError
@@ -36,7 +43,6 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util
-import scala.collection.JavaConverters.asJavaCollectionConverter
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable
@@ -44,72 +50,86 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-object ScenarioTestHelper {
-  def createTests(scenarios: Seq[Scenario],
-                  config: TestConfig,
-                  graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
-                  dbConfigPerFeature: String => collection.Map[Setting[_], AnyRef],
-                  useBolt: Boolean = false,
-                  debugOutput: Boolean = false): util.Collection[DynamicTest] = {
-    val denylist = config.denylist.map(parseDenylist).getOrElse(Set.empty[DenylistEntry])
-    checkForDuplicates(scenarios, denylist.toList)
-    val (expectFail, expectPass) = scenarios.partition(s => denylist.exists(_.isDenylisted(s)))
-    if (debugOutput) {
-      val unusedDenylistEntries = denylist.filterNot(b => expectFail.exists(s => b.isDenylisted(s)))
-      if (unusedDenylistEntries.nonEmpty) {
-        println("The following entries of the denylist were not found in the denylist: \n"
-          + unusedDenylistEntries.mkString("\n"))
-      }
-    }
+/**
+ * Runs each scenario with neo4j.
+ * Implement the abstract methods to configure how to run scenarios.
+ */
+trait ScenarioTestHelper extends FeatureTest {
 
-    val expectFailTests: Seq[DynamicTest] = expectFail.map { scenario =>
-      val name = scenario.toString()
-      val scenarioExpectsError: Boolean = scenario.steps.exists(_.isInstanceOf[ExpectError])
-      val executable = new Executable {
-        override def execute(): Unit = {
-          Try {
-            scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfigPerFeature(scenario.featureName), useBolt)).run()
-          } match {
-            case Success(_) =>
-              if (!config.experimental) {
-                if (!denylist.exists(_.isFlaky(scenario)))
-                  throw new IllegalStateException("Unexpectedly succeeded in the following denylisted scenario:\n" + name)
-              }
-            case Failure(e) =>
-              e.getCause match {
-                case cause@Neo4jExecutionFailed(_, phase, _, _) =>
-                  // If the scenario expects an error (e.g. at compile time), but we throw it at runtime instead
-                  // That is not critical. Therefore, if the test is denylisted, we allow it to fail at runtime.
-                  // If, on the other hand, the scenario expects results and the test is denylisted, only compile
-                  // time failures are acceptable.
-                  if (phase == Phase.runtime && !scenarioExpectsError) {
-                    // That's not OK
-                    throw new Exception(
-                      s"""Failed at $phase in scenario $name for query
-                         |(NOTE: This test is marked as expected to fail, but failing at $phase is not ok)
-                         |""".stripMargin, cause.cause)
-                  }
-                  // else failed as expected
-                  // Not supported
-                case _ =>
-                  // TODO consider failing here, once we fixed Ordering in pipelined runtime.
-                  // Wrong results
-              }
+  def config: TestConfig
+
+  def graphDatabaseFactory(): TestDatabaseManagementServiceBuilder
+
+  def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef]
+
+  def useBolt: Boolean
+
+  final override def denylist: Seq[DenylistEntry] = config.denylist.map(parseDenylist).getOrElse(Seq.empty[DenylistEntry])
+
+  final override def runDenyListedScenario(scenario: Scenario): Seq[Executable] = {
+    val name = scenario.toString()
+    val scenarioExpectsError: Boolean = scenario.steps.exists(_.isInstanceOf[ExpectError])
+    val executable: Executable = () => {
+      Try {
+        scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfigPerFeature(scenario.featureName), useBolt)).run()
+      } match {
+        case Success(_) =>
+          if (!config.experimental) {
+            if (!denylist.exists(_.isFlaky(scenario)))
+              throw new IllegalStateException("Unexpectedly succeeded in the following denylisted scenario:\n" + name)
           }
-        }
+        case Failure(e) =>
+          e.getCause match {
+            case cause@Neo4jExecutionFailed(_, phase, _, _) =>
+              // If the scenario expects an error (e.g. at compile time), but we throw it at runtime instead
+              // That is not critical. Therefore, if the test is denylisted, we allow it to fail at runtime.
+              // If, on the other hand, the scenario expects results and the test is denylisted, only compile
+              // time failures are acceptable.
+              if (phase == Phase.runtime && !scenarioExpectsError) {
+                // That's not OK
+                throw new Exception(
+                  s"""Failed at $phase in scenario $name for query
+                     |(NOTE: This test is marked as expected to fail, but failing at $phase is not ok)
+                     |""".stripMargin, cause.cause)
+              }
+            // else failed as expected
+            // Not supported
+            case _ =>
+            // TODO consider failing here, once we fixed Ordering in pipelined runtime.
+            // Wrong results
+          }
       }
-      DynamicTest.dynamicTest("Denylisted Test: " + name, executable)
-    }
 
-    val expectPassTests: Seq[DynamicTest] = expectPass.map { scenario =>
-      val name = scenario.toString()
-      val runnable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfigPerFeature(scenario.featureName), useBolt))
-      DynamicTest.dynamicTest(name, () => runnable.run())
     }
-    (expectPassTests ++ expectFailTests).asJavaCollection
+    Seq(executable)
   }
 
-  def checkForDuplicates(scenarios: Seq[Scenario], denylist: Seq[DenylistEntry]): Unit = {
+  final override def runScenario(scenario: Scenario): Seq[Executable] = {
+    val runnable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfigPerFeature(scenario.featureName), useBolt))
+    val executable: Executable = () => runnable.run()
+    Seq(executable)
+  }
+
+  @Test
+  def checkDenyList(): Unit = {
+    checkForDuplicates(scenarios, denylist.toList)
+    val unusedDenylistEntries = denylist.filterNot(b => scenarios.exists(s => b.isDenylisted(s)))
+    if (unusedDenylistEntries.nonEmpty) {
+      throw new IllegalStateException("The following entries of the denylist were not found: \n"
+        + unusedDenylistEntries.mkString("\n"))
+    }
+  }
+
+  @Disabled
+  def generateDenylist(): Unit = {
+    printComputedDenylist(scenarios, config, graphDatabaseFactory)
+    fail("Do not forget to add @Disabled to this method")
+  }
+}
+
+object ScenarioTestHelper {
+
+  private def checkForDuplicates(scenarios: Seq[Scenario], denylist: Seq[DenylistEntry]): Unit = {
     // test scenarios
     val testScenarios = new mutable.HashSet[Scenario]()
     for (s <- scenarios) {
@@ -123,14 +143,14 @@ object ScenarioTestHelper {
     val testDenylist = new mutable.HashSet[DenylistEntry]()
     for (b <- denylist) {
       if (testDenylist.contains(b)) {
-        throw new IllegalStateException("Multiple denylists entrys exists for the following scenario: " + b)
+        throw new IllegalStateException("Multiple denylists entries exists for the following scenario: " + b)
       } else {
         testDenylist += b
       }
     }
   }
 
-  def parseDenylist(denylistFile: String): Seq[DenylistEntry] = {
+  private def parseDenylist(denylistFile: String): Seq[DenylistEntry] = {
     def validate(scenarioName: String): Unit = {
       if (scenarioName.head.isWhitespace || scenarioName.last.isWhitespace) {
         throw new Exception(s"Invalid whitespace in scenario name $scenarioName from file $denylistFile")
@@ -175,7 +195,7 @@ object ScenarioTestHelper {
     This method can be used to generate a denylist for a given TestConfig.
     It can be very useful when adding a new runtime for example.
    */
-  def printComputedDenylist(scenarios: Seq[Scenario],
+  private def printComputedDenylist(scenarios: Seq[Scenario],
                             config: TestConfig, graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
                             useBolt: Boolean = false): Unit = {
     //Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
@@ -193,7 +213,7 @@ object ScenarioTestHelper {
   }
 
   // This is the OpenCypher 1.0.0-M15 + a few months version of Scenario.toString way of formatting, which is used in the denylist
-  def scenarioToString(scenario: Scenario): String =
+  private def scenarioToString(scenario: Scenario): String =
     s"""Feature "${scenario.featureName}": Scenario "${scenario.name}"""" + scenario.exampleIndex.map(ix => s""": Example "$ix"""").getOrElse("")
 
 }
