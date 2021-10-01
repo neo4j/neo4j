@@ -71,8 +71,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
-import static org.neo4j.kernel.database.DatabaseCreationContext.selectStorageEngine;
-
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
 {
     private final NamedDatabaseId namedDatabaseId;
@@ -120,7 +118,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
                                            VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, LeaseService leaseService,
-                                           ExternalIdReuseConditionProvider externalIdReuseConditionProvider )
+                                           ExternalIdReuseConditionProvider externalIdReuseConditionProvider, StorageEngineFactory storageEngineFactory )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.globalConfig = globalModule.getGlobalConfig();
@@ -160,7 +158,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseAvailabilityGuardFactory =
                 databaseTimeoutMillis -> databaseAvailabilityGuardFactory( namedDatabaseId, globalModule, databaseTimeoutMillis );
         Neo4jLayout neo4jLayout = globalModule.getNeo4jLayout();
-        this.storageEngineFactory = selectStorageEngine( fs, neo4jLayout, pageCache, databaseConfig, namedDatabaseId );
+        this.storageEngineFactory = storageEngineFactory;
         this.databaseLayout = storageEngineFactory.databaseLayout( neo4jLayout, namedDatabaseId.name() );
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();

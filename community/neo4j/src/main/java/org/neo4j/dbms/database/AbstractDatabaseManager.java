@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -145,10 +146,13 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( namedDatabaseId );
         var globalProcedures = parentDependencies.resolveDependency( GlobalProcedures.class );
         var databaseConfig = new DatabaseConfig( databaseOptions.settings(), config, namedDatabaseId );
+        var storageEngineFactory = DatabaseCreationContext.selectStorageEngine( globalModule.getFileSystem(), globalModule.getNeo4jLayout(),
+                globalModule.getPageCache(), databaseConfig, namedDatabaseId );
 
         return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors,
                                                    editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ),
-                                                   databaseConfig, LeaseService.NO_LEASES, editionDatabaseComponents.getExternalIdReuseConditionProvider() );
+                                                   databaseConfig, LeaseService.NO_LEASES, editionDatabaseComponents.getExternalIdReuseConditionProvider(),
+                                                   storageEngineFactory );
     }
 
     private void forEachDatabase( BiConsumer<NamedDatabaseId,DB> consumer, boolean systemDatabaseLast, String operationName )
