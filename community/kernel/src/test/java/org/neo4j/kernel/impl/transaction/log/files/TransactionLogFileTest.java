@@ -586,17 +586,24 @@ class TransactionLogFileTest
         Futures.getAll( futures );
 
         var externalFileReaders = ((TransactionLogFile) logFile).getExternalFileReaders();
-        assertThat( externalFileReaders ).containsOnlyKeys( 1L, 2L, 3L );
-        for ( var entry : externalFileReaders.entrySet() )
+        try
         {
-            List<StoreChannel> channels = entry.getValue();
-            assertThat( channels ).hasSize( 10 );
-            // all channels should be equal
-            var exampleChannel = channels.get( 0 );
-            for ( StoreChannel channel : channels )
+            assertThat( externalFileReaders ).containsOnlyKeys( 1L, 2L, 3L );
+            for ( var entry : externalFileReaders.entrySet() )
             {
-                assertEquals( channel, exampleChannel);
+                List<StoreChannel> channels = entry.getValue();
+                assertThat( channels ).hasSize( 10 );
+                // all channels should be equal
+                var exampleChannel = channels.get( 0 );
+                for ( StoreChannel channel : channels )
+                {
+                    assertEquals( channel, exampleChannel );
+                }
             }
+        }
+        finally
+        {
+            logFile.terminateExternalReaders( 3 );
         }
     }
 
@@ -638,18 +645,25 @@ class TransactionLogFileTest
 
         logFile.terminateExternalReaders( 3 );
 
-        var externalFileReaders = ((TransactionLogFile) logFile).getExternalFileReaders();
-        assertThat( externalFileReaders ).containsOnlyKeys( 4L );
-        for ( var entry : externalFileReaders.entrySet() )
+        try
         {
-            List<StoreChannel> channels = entry.getValue();
-            assertThat( channels ).hasSize( 10 );
-            // all channels should be equal
-            var exampleChannel = channels.get( 0 );
-            for ( StoreChannel channel : channels )
+            var externalFileReaders = ((TransactionLogFile) logFile).getExternalFileReaders();
+            assertThat( externalFileReaders ).containsOnlyKeys( 4L );
+            for ( var entry : externalFileReaders.entrySet() )
             {
-                assertEquals( channel, exampleChannel);
+                List<StoreChannel> channels = entry.getValue();
+                assertThat( channels ).hasSize( 10 );
+                // all channels should be equal
+                var exampleChannel = channels.get( 0 );
+                for ( StoreChannel channel : channels )
+                {
+                    assertEquals( channel, exampleChannel );
+                }
             }
+        }
+        finally
+        {
+            logFile.terminateExternalReaders( 4 );
         }
     }
 
