@@ -28,6 +28,8 @@ import picocli.CommandLine;
 import picocli.CommandLine.ExitCode;
 
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -97,6 +99,25 @@ class Neo4jAdminCommandTest
             if ( fork.run( () -> execute( "test-command" ), Map.of( Bootloader.ENV_NEO4J_HOME, "foo" ) ) )
             {
                 assertThat( err.toString() ).contains( "NEO4J_HOME path doesn't exist" );
+            }
+        }
+
+        @Test
+        void shouldNotExpandAtFilesInBootloader() throws Exception
+        {
+            Path commandFile = home.resolve( "fileWithArgs" );
+            Files.write( commandFile, "foo bar baz".getBytes() );
+            if ( fork.run( () -> execute( "test-command", "@" + commandFile, "--verbose" ) ) )
+            {
+                //In the command we expect the @file to be expanded
+                assertThat( out.toString() ).containsSubsequence( "Test command executed", "foo", "bar", "baz" );
+            }
+            else
+            {
+                //But the command we execute should just forward the argument
+                assertThat( out.toString() )
+                        .containsSubsequence( "Executing command line:", "AdminTool test-command @" + commandFile + " --verbose" )
+                        .doesNotContain( "foo", "bar", "baz" );
             }
         }
 
@@ -250,6 +271,10 @@ class Neo4jAdminCommandTest
     static class TestCommand extends AbstractCommand
     {
         static final String MSG = "Test command executed";
+
+        @CommandLine.Parameters( hidden = true )
+        private List<String> allParameters = List.of();
+
         TestCommand( ExecutionContext ctx )
         {
             super( ctx );
@@ -259,6 +284,10 @@ class Neo4jAdminCommandTest
         protected void execute()
         {
             ctx.out().println( MSG );
+            for ( String param : allParameters )
+            {
+                ctx.out().println( param );
+            }
         }
     }
 
