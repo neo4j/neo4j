@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Arrays;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -45,7 +43,9 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -69,6 +69,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.lang.String.format;
+import static java.util.Arrays.stream;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 abstract class Read implements TxStateHolder,
@@ -99,6 +100,7 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
+        validateConstraints( constraints, indexSession, query );
 
         if ( indexSession.reference.schema().entityType() != EntityType.NODE )
         {
@@ -132,6 +134,7 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
+        validateConstraints( constraints, indexSession, query );
         if ( indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP )
         {
             throw new IndexNotApplicableKernelException( "Relationship index seek can not be performed on index: "
@@ -438,12 +441,25 @@ abstract class Read implements TxStateHolder,
         ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, selection, this, ktx );
     }
 
+    private void validateConstraints( IndexQueryConstraints constraints, DefaultIndexReadSession indexSession, PropertyIndexQuery[] query )
+    {
+        if ( constraints.needsValues() && !supportsValueCapability( indexSession.reference(), query ) )
+        {
+            throw new UnsupportedOperationException( format( "%s index has no value capability", indexSession.reference().getIndexType() ) );
+        }
+    }
+
+    private boolean supportsValueCapability( IndexDescriptor index, PropertyIndexQuery[] query )
+    {
+        return stream( query ).allMatch( p -> index.getCapability().valueCapability( p.valueCategory() ) != IndexValueCapability.NO );
+    }
+
     private <C extends Cursor> PartitionedScan<C> propertyIndexScan( IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext )
             throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
         return propertyIndexSeek( index, desiredNumberOfPartitions, queryContext,
-                                  Arrays.stream( index.reference().schema().getPropertyIds() )
+                                  stream( index.reference().schema().getPropertyIds() )
                                         .mapToObj( PropertyIndexQuery::exists )
                                         .toArray( PropertyIndexQuery[]::new ) );
     }

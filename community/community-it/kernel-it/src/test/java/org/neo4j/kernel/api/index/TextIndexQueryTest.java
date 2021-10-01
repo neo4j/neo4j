@@ -30,11 +30,13 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
@@ -46,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.schema.IndexType.TEXT;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
@@ -117,6 +120,19 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     }
 
     @Test
+    void shouldRejectInvalidConstraints()
+    {
+        var query = exact( token.propertyKey( NAME ), "Mike Smith" );
+        var needsValue = constrained( IndexOrder.NONE, true );
+
+        assertThat( assertThrows( UnsupportedOperationException.class, () -> indexedNodes( needsValue, query ) ).getMessage() )
+                .isEqualTo( "TEXT index has no value capability" );
+
+        assertThat( assertThrows( UnsupportedOperationException.class, () -> indexedRelations( needsValue, query ) ).getMessage() )
+                .isEqualTo( "TEXT index has no value capability" );
+    }
+
+    @Test
     void shouldFindNodes() throws Exception
     {
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "Mike Smith" ) ) ).isEqualTo( 1 );
@@ -167,11 +183,16 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
 
     private long indexedNodes( PropertyIndexQuery... query ) throws Exception
     {
+        return indexedNodes( unconstrained(), query );
+    }
+
+    private long indexedNodes( IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws Exception
+    {
         monitor.reset();
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( nodeIndexName ) );
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
-            read.nodeIndexSeek( tx.queryContext(), index, cursor, unconstrained(), query );
+            read.nodeIndexSeek( tx.queryContext(), index, cursor, constraints, query );
             assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
             return count( cursor );
         }
@@ -179,11 +200,16 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
 
     private long indexedRelations( PropertyIndexQuery query ) throws Exception
     {
+        return indexedRelations( unconstrained(), query );
+    }
+
+    private long indexedRelations( IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws Exception
+    {
         monitor.reset();
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( relIndexName ) );
         try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
-            read.relationshipIndexSeek( tx.queryContext(), index, cursor, unconstrained(), query );
+            read.relationshipIndexSeek( tx.queryContext(), index, cursor, constraints, query );
             assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
             return count( cursor );
         }
