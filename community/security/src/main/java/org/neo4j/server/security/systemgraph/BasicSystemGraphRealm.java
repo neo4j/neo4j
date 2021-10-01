@@ -22,6 +22,7 @@ package org.neo4j.server.security.systemgraph;
 import java.util.Map;
 
 import org.neo4j.cypher.internal.security.FormatException;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -81,6 +82,13 @@ public class BasicSystemGraphRealm extends AuthManager
         {
             AuthToken.clearCredentials( authToken );
         }
+    }
+
+    @Override
+    public LoginContext impersonate( LoginContext originalAuth, String userToImpersonate )
+    {
+        // TODO decide on error type
+        throw new InvalidArgumentException( "Not supported" );
     }
 
     @Override

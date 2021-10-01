@@ -73,6 +73,8 @@ public enum PrivilegeAction
     SET_USER_HOME_DATABASE,
     DROP_USER,
 
+    IMPERSONATE,
+
     SHOW_ROLE,
     CREATE_ROLE,
     RENAME_ROLE,
@@ -359,6 +361,7 @@ public enum PrivilegeAction
                            DATABASE_MANAGEMENT.satisfies( action ) ||
                            PRIVILEGE_MANAGEMENT.satisfies( action ) ||
                            EXECUTE_ADMIN == action ||
+                           IMPERSONATE == action ||
                            this == action;
                 }
             };

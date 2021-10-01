@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.security;
 
 import java.util.Map;
 
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -47,6 +48,8 @@ public abstract class AuthManager extends LifecycleAdapter
      */
     public abstract LoginContext login( Map<String,Object> authToken, ClientConnectionInfo connectionInfo ) throws InvalidAuthTokenException;
 
+    public abstract LoginContext impersonate( LoginContext originalAuth, String userToImpersonate );
+
     public abstract void log( String message, SecurityContext securityContext );
 
     /**
@@ -59,6 +62,13 @@ public abstract class AuthManager extends LifecycleAdapter
         {
             AuthToken.clearCredentials( authToken );
             return LoginContext.fullAccess( connectionInfo );
+        }
+
+        @Override
+        public LoginContext impersonate( LoginContext originalAuth, String userToImpersonate )
+        {
+            // TODO decide on error type
+            throw new InvalidArgumentException( "Not supported" );
         }
 
         @Override
