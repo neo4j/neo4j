@@ -1121,6 +1121,29 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val expected = nodes(20)
     runtimeResult should beColumns("x").withSingleRow(expected)
   }
+
+  test(s"should multi seek nodes of a unique index with property") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 2L, -2L, 3L, 4L, 5L).map(literalInt):_*))),
+        unique = true
+      )
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(nodes(2), nodes(3), nodes(4), nodes(5))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
 }
 
 // Supported by interpreted, slotted, pipelined, not by parallel
@@ -1329,6 +1352,29 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // then
     val expected = nodes(20)
     runtimeResult should beColumns("x").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test(s"should multi seek nodes of a unique index with locking") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodePropertyGraph(sizeHint, { case i if i % 10 == 0 => Map("prop" -> i) }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 0L, 1L, 10L, 20L).map(literalInt):_*))),
+        unique = true
+      )
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedLocks = Seq((EXCLUSIVE,INDEX_ENTRY), (EXCLUSIVE,INDEX_ENTRY), (SHARED,INDEX_ENTRY), (SHARED,INDEX_ENTRY), (SHARED,INDEX_ENTRY), (SHARED,LABEL))
+    val expected = Seq(Array(nodes(0)), Array(nodes(10)), Array(nodes(20)))
+    runtimeResult should beColumns("x").withRows(expected).withLocks(expectedLocks:_*)
   }
 }
 
