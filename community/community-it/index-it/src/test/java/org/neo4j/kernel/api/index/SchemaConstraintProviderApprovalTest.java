@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -35,7 +36,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -200,7 +200,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         @Override
         public boolean equals( Object obj )
         {
-            return obj instanceof ArrayEqualityObject && ArrayUtil.equals( array, ((ArrayEqualityObject) obj).array );
+            return obj instanceof ArrayEqualityObject && Objects.deepEquals( array, ((ArrayEqualityObject) obj).array );
         }
 
         @Override

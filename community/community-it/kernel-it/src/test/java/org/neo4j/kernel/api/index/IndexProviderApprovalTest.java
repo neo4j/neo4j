@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -37,7 +38,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -154,6 +154,10 @@ public abstract class IndexProviderApprovalTest
 
         String errorMessage = currentValue.toString();
 
+        if ( !noIndexResult.equals( indexResult ) )
+        {
+            System.out.println("");
+        }
         assertEquals( noIndexResult, indexResult, errorMessage );
     }
 
@@ -206,7 +210,7 @@ public abstract class IndexProviderApprovalTest
         @Override
         public boolean equals( Object obj )
         {
-            return obj instanceof ArrayEqualityObject && ArrayUtil.equals( array, ((ArrayEqualityObject) obj).array );
+            return obj instanceof ArrayEqualityObject && Objects.deepEquals( array, ((ArrayEqualityObject) obj).array );
         }
 
         @Override

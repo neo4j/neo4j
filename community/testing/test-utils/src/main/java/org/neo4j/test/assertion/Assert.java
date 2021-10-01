@@ -23,7 +23,6 @@ import org.assertj.core.api.Condition;
 import org.awaitility.core.ConditionFactory;
 import org.junit.jupiter.api.function.Executable;
 
-import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -32,8 +31,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.function.ThrowingAction;
-import org.neo4j.internal.helpers.ArrayUtil;
-import org.neo4j.internal.helpers.Strings;
 
 import static java.time.Duration.ZERO;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -64,29 +61,6 @@ public final class Assert
                 .pollInterval( 50, MILLISECONDS )
                 .pollInSameThread()
                 .untilAsserted( condition::apply );
-    }
-
-    public static void assertObjectOrArrayEquals( Object expected, Object actual )
-    {
-        assertObjectOrArrayEquals( "", expected, actual );
-    }
-
-    public static void assertObjectOrArrayEquals( String message, Object expected, Object actual )
-    {
-        if ( expected.getClass().isArray() )
-        {
-            if ( !ArrayUtil.equals( expected, actual ) )
-            {
-                throw newAssertionError( message, expected, actual );
-            }
-        }
-        else
-        {
-            if ( !Objects.equals( expected, actual ) )
-            {
-                throw newAssertionError( message, expected, actual );
-            }
-        }
     }
 
     public static <T> void assertEventually( Callable<T> actual, Predicate<? super T> predicate, long timeout, TimeUnit timeUnit )
@@ -155,12 +129,5 @@ public final class Assert
     {
         return await( alias ).atMost( timeout, timeUnit )
                              .pollDelay( pollDelay, pollUnit ).pollInSameThread();
-    }
-
-    private static AssertionError newAssertionError( String message, Object expected, Object actual )
-    {
-        return new AssertionError( ((message == null || message.isEmpty()) ? "" : message + "\n") +
-                                   "Expected: " + Strings.prettyPrint( expected ) +
-                                   ", actual: " + Strings.prettyPrint( actual ) );
     }
 }

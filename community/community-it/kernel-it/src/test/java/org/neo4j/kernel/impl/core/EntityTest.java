@@ -36,11 +36,11 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.api.TokenHolder;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 @ImpermanentDbmsExtension
 public abstract class EntityTest
@@ -94,7 +94,7 @@ public abstract class EntityTest
         assertEquals( properties.size(), listedProperties.size() );
         for ( String key : properties.keySet() )
         {
-            assertObjectOrArrayEquals( properties.get( key ), listedProperties.get( key ) );
+            assertThat( properties.get( key ) ).isEqualTo( listedProperties.get( key ) );
         }
     }
 

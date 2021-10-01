@@ -21,7 +21,6 @@ package org.neo4j.internal.helpers;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.Objects;
 
 import static java.util.Arrays.copyOf;
 
@@ -32,66 +31,6 @@ import static java.util.Arrays.copyOf;
 public final class ArrayUtil
 {
     public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
-
-    public interface ArrayEquality
-    {
-        boolean typeEquals( Class<?> firstType, Class<?> otherType );
-
-        boolean itemEquals( Object firstArray, Object otherArray );
-    }
-
-    private static final ArrayEquality DEFAULT_ARRAY_EQUALITY = new ArrayEquality()
-    {
-        @Override
-        public boolean typeEquals( Class<?> firstType, Class<?> otherType )
-        {
-            return firstType == otherType;
-        }
-
-        @Override
-        public boolean itemEquals( Object lhs, Object rhs )
-        {
-            return Objects.equals( lhs, rhs );
-        }
-    };
-
-    public static boolean equals( Object firstArray, Object otherArray )
-    {
-        return equals( firstArray, otherArray, DEFAULT_ARRAY_EQUALITY );
-    }
-
-    /**
-     * Check if two arrays are equal.
-     * I also can't believe this method is missing from {@link Arrays}.
-     * Both arguments must be arrays of some type.
-     *
-     * @param firstArray value to compare to the other value
-     * @param otherArray value to compare to the first value
-     * @param equality equality logic
-     * @return Returns {@code true} if the arrays are equal
-     *
-     * @see Arrays#equals(byte[], byte[]) for similar functionality.
-     */
-    public static boolean equals( Object firstArray, Object otherArray, ArrayEquality equality )
-    {
-        assert firstArray.getClass().isArray() : firstArray + " is not an array";
-        assert otherArray.getClass().isArray() : otherArray + " is not an array";
-
-        int length;
-        if ( equality.typeEquals( firstArray.getClass().getComponentType(), otherArray.getClass().getComponentType() )
-                && (length = Array.getLength( firstArray )) == Array.getLength( otherArray ) )
-        {
-            for ( int i = 0; i < length; i++ )
-            {
-                if ( !equality.itemEquals( Array.get( firstArray, i ), Array.get( otherArray, i ) ) )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
-    }
 
     /**
      * Count missing items in an array.

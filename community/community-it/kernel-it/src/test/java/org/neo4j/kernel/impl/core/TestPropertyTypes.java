@@ -35,7 +35,6 @@ import java.util.Arrays;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -48,10 +47,10 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 
 class TestPropertyTypes extends AbstractNeo4jTestCase
@@ -1579,7 +1578,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
             Array.set( readValue, 0, poison );
 
             // THEN reading the value one more time should still yield the set property
-            assertTrue( ArrayUtil.equals( value, node1.getProperty( key ) ),
+            assertThat( value ).isEqualTo( node1.getProperty( key ) ).describedAs(
                     format( "Expected %s, but was %s", Strings.prettyPrint( value ), Strings.prettyPrint( readValue ) ) );
             transaction.commit();
         }
@@ -1605,7 +1604,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
             Array.set( readValue, 0, poison );
 
             // THEN reading the value one more time should still yield the set property
-            assertTrue( ArrayUtil.equals( value, node1.getProperty( key ) ),
+            assertThat( value ).isEqualTo( node1.getProperty( key ) ).describedAs(
                     format( "Expected %s, but was %s", Strings.prettyPrint( value ), Strings.prettyPrint( readValue ) ) );
             transaction.commit();
         }
