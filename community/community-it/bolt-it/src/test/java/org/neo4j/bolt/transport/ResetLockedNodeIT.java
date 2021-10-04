@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
 import static org.neo4j.bolt.testing.MessageConditions.msgIgnored;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
-import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceivesSelectedProtocolVersion;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newMessageEncoder;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
@@ -130,8 +130,8 @@ public class ResetLockedNodeIT
 
     private void initializeConnection( SocketConnection connection, HostnamePort address ) throws Exception
     {
-        connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 2, 4} ) );
+        connection.connect( address ).send( TransportTestUtil.defaultAcceptedVersions() );
+        assertThat( connection ).satisfies( eventuallyReceivesSelectedProtocolVersion() );
 
         connection.send( util.chunk( new HelloMessage( map( "user_agent", "TESTCLIENT/4.2" ) ) ) );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
