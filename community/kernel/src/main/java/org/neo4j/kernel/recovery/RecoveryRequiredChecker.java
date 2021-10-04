@@ -66,7 +66,7 @@ class RecoveryRequiredChecker
         return LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
                     .withConfig( config )
                     .withMemoryTracker( memoryTracker )
-                    .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
+                    .withStorageEngineFactory( storageEngineFactory )
                     .withLogEntryReader( reader ).build();
     }
 

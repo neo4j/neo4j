@@ -219,7 +219,7 @@ class DumpCommandIT
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, testDirectory.getFileSystem() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withCommandReaderFactory( StorageEngineFactory.defaultStorageEngine().commandReaderFactory() )
+                .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan ignored = new Lifespan( logFiles ) )

@@ -150,7 +150,7 @@ class RecoverIndexDropIT
             StorageEngineFactory storageEngineFactory ) throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs )
-                .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
+                .withStorageEngineFactory( storageEngineFactory )
                 .build();
         LogFile logFile = logFiles.getLogFile();
 

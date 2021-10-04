@@ -42,7 +42,6 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
-import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -65,7 +64,7 @@ public class TransactionLogInitializer
     private static final String RESET_TRANSACTION_OFFSET_TAG = "ResetTransactionOffset";
     private final FileSystemAbstraction fs;
     private final MetadataProvider store;
-    private final CommandReaderFactory commandReaderFactory;
+    private final StorageEngineFactory storageEngineFactory;
     private final PageCacheTracer tracer;
 
     /**
@@ -79,7 +78,7 @@ public class TransactionLogInitializer
             try
             {
                 TransactionLogInitializer initializer = new TransactionLogInitializer(
-                        fileSystem, store, StorageEngineFactory.defaultStorageEngine().commandReaderFactory(),
+                        fileSystem, store, StorageEngineFactory.defaultStorageEngine(),
                         PageCacheTracer.NULL );
                 initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason );
             }
@@ -90,12 +89,12 @@ public class TransactionLogInitializer
         };
     }
 
-    public TransactionLogInitializer( FileSystemAbstraction fs, MetadataProvider store, CommandReaderFactory commandReaderFactory,
+    public TransactionLogInitializer( FileSystemAbstraction fs, MetadataProvider store, StorageEngineFactory storageEngineFactory,
                                       PageCacheTracer tracer )
     {
         this.fs = fs;
         this.store = store;
-        this.commandReaderFactory = commandReaderFactory;
+        this.storageEngineFactory = storageEngineFactory;
         this.tracer = tracer;
     }
 
@@ -129,7 +128,7 @@ public class TransactionLogInitializer
             LogFiles logFiles = span.getLogFiles();
             LogFile logFile = logFiles.getLogFile();
             LogHeader logHeader = logFile.extractHeader( logFile.getLowestLogVersion() );
-            VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( commandReaderFactory, false );
+            VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory(), false );
             try ( var readableChannel = logFile.getReader( logHeader.getStartPosition() );
                   var cursor = new LogEntryCursor( entryReader, readableChannel ) )
             {
@@ -156,7 +155,7 @@ public class TransactionLogInitializer
                                            .withTransactionIdStore( store )
                                            .withStoreId( store.getStoreId() )
                                            .withLogsDirectory( transactionLogsDirectory )
-                                           .withCommandReaderFactory( commandReaderFactory )
+                                           .withStorageEngineFactory( storageEngineFactory )
                                            .withDatabaseHealth( new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ) )
                                            .build();
         return new LogFilesSpan( new Lifespan( logFiles ), logFiles );

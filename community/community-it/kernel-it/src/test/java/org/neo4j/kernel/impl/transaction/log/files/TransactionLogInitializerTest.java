@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
@@ -40,7 +41,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.INSTANCE;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_STORE_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -65,7 +65,8 @@ class TransactionLogInitializerTest
         DatabaseLayout databaseLayout = Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
 
         //When
-        var initializer = new TransactionLogInitializer( testDirectory.getFileSystem(), metaStore, INSTANCE, PageCacheTracer.NULL );
+        var initializer =
+                new TransactionLogInitializer( testDirectory.getFileSystem(), metaStore, StorageEngineFactory.defaultStorageEngine(), PageCacheTracer.NULL );
         initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory(), "LostFiles" );
 
         //Then

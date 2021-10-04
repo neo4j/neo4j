@@ -65,7 +65,7 @@ class LogPruningIT
         LogFiles logFiles = LogFilesBuilder.builder( db.databaseLayout(), fs )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withLastCommittedTransactionIdSupplier( () -> 1 )
-                .withCommandReaderFactory( db.getDependencyResolver().resolveDependency( StorageEngineFactory.class ).commandReaderFactory() )
+                .withStorageEngineFactory( db.getDependencyResolver().resolveDependency( StorageEngineFactory.class ) )
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
 
         // Force transaction log rotation

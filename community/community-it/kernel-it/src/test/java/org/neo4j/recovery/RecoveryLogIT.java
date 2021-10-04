@@ -34,7 +34,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -70,7 +69,6 @@ class RecoveryLogIT
         Path tmpLogDir = testDirectory.directory("logs");
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        StorageEngineFactory storageEngineFactory = db.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -81,7 +79,6 @@ class RecoveryLogIT
         }
 
         Path[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
-                                       .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                                        .build().logFiles();
         for ( Path file : txLogs )
         {
@@ -96,7 +93,6 @@ class RecoveryLogIT
         }
 
         for ( Path file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fileSystem )
-                .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
                 .build().logFiles() )
         {
             fileSystem.moveToDirectory( file, databaseLayout.getTransactionLogsDirectory() );

@@ -830,7 +830,7 @@ class RecoveryCorruptedTransactionLogIT
                 .withLogVersionRepository( versionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( StoreId.UNKNOWN )
-                .withCommandReaderFactory( StorageEngineFactory.defaultStorageEngine().commandReaderFactory() )
+                .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() )
                 .build();
         try ( Lifespan lifespan = new Lifespan( internalLogFiles ) )
         {
@@ -861,7 +861,7 @@ class RecoveryCorruptedTransactionLogIT
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( storeId )
                 .withLogProvider( logProvider )
-                .withCommandReaderFactory( StorageEngineFactory.defaultStorageEngine().commandReaderFactory() )
+                .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() )
                 .build();
     }
 

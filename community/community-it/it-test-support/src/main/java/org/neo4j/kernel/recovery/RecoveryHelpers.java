@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public final class RecoveryHelpers
 {
@@ -59,9 +58,6 @@ public final class RecoveryHelpers
 
      private static LogFiles buildLogFiles( DatabaseLayout dbLayout, FileSystemAbstraction fs ) throws IOException
      {
-          return LogFilesBuilder
-                  .logFilesBasedOnlyBuilder( dbLayout.getTransactionLogsDirectory(), fs )
-                  .withCommandReaderFactory( StorageEngineFactory.defaultStorageEngine().commandReaderFactory() )
-                  .build();
+         return LogFilesBuilder.logFilesBasedOnlyBuilder( dbLayout.getTransactionLogsDirectory(), fs ).build();
      }
 }

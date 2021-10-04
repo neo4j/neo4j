@@ -90,14 +90,10 @@ class TransactionLogsInSeparateLocationIT
 
     private void verifyTransactionLogs( Path txDirectory, Path storeDir, StorageEngineFactory storageEngineFactory ) throws IOException
     {
-        LogFiles storeDirLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fileSystem )
-                .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
-                .build();
+        LogFiles storeDirLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fileSystem ).build();
         assertFalse( storeDirLogs.getLogFile().versionExists( 0 ) );
 
-        LogFiles txDirectoryLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( txDirectory, fileSystem )
-                .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
-                .build();
+        LogFiles txDirectoryLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( txDirectory, fileSystem ).build();
         assertTrue( txDirectoryLogs.getLogFile().versionExists( 0 ) );
         try ( PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel = txDirectoryLogs.getLogFile().openForVersion( 0 ) )
         {

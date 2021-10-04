@@ -44,7 +44,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
-import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -475,7 +474,6 @@ public class StoreUpgraderTest
     private Path[] getLogFiles( Path directory ) throws IOException
     {
         return LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
-                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                 .build()
                 .logFiles();
     }
@@ -483,7 +481,6 @@ public class StoreUpgraderTest
     private Set<String> getLogFileNames( Path directory ) throws IOException
     {
         return Arrays.stream( LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
-                     .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                      .build()
                      .logFiles() )
                          .map( Path::getFileName )
@@ -612,7 +609,7 @@ public class StoreUpgraderTest
     public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, Path databaseDirectory ) throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fileSystem )
-                .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
+                .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() )
                 .build();
         LogTailInformation logTailInformation = logFiles.getTailInformation();
 

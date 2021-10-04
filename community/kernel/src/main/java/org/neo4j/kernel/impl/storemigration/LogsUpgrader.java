@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
@@ -161,18 +160,17 @@ public class LogsUpgrader
 
     public void upgrade( DatabaseLayout layout )
     {
-        CommandReaderFactory commandReaderFactory = storageEngineFactory.commandReaderFactory();
         try ( MetadataProvider store = getMetaDataStore() )
         {
             TransactionLogInitializer logInitializer = new TransactionLogInitializer(
-                    fs, store, commandReaderFactory, tracer );
+                    fs, store, storageEngineFactory, tracer );
 
             Path transactionLogsDirectory = layout.getTransactionLogsDirectory();
             Path legacyLogsDirectory = legacyLogsLocator.getTransactionLogsDirectory();
             boolean filesNeedsToMove = !transactionLogsDirectory.equals( legacyLogsDirectory );
 
             LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fs )
-                    .withCommandReaderFactory( commandReaderFactory )
+                    .withStorageEngineFactory( storageEngineFactory )
                     .build();
             // Move log files to their intended directory, if they are not there already.
             Path[] legacyFiles = logFiles.logFiles();

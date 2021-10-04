@@ -573,7 +573,7 @@ public class Database extends LifecycleAdapter
                 .withMemoryTracker( otherDatabaseMemoryTracker )
                 .withMonitors( databaseMonitors )
                 .withClock( clock )
-                .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
+                .withStorageEngineFactory( storageEngineFactory )
                 .build();
     }
 

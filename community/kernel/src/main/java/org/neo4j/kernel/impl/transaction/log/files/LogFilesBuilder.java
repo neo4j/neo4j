@@ -79,7 +79,7 @@ public class LogFilesBuilder
 
     private boolean readOnly;
     private PageCache pageCache;
-    private CommandReaderFactory commandReaderFactory = CommandReaderFactory.NO_COMMANDS;
+    private StorageEngineFactory storageEngineFactory;
     private DatabaseLayout databaseLayout;
     private Path logsDirectory;
     private Config config;
@@ -257,9 +257,9 @@ public class LogFilesBuilder
         return this;
     }
 
-    public LogFilesBuilder withCommandReaderFactory( CommandReaderFactory commandReaderFactory )
+    public LogFilesBuilder withStorageEngineFactory( StorageEngineFactory storageEngineFactory )
     {
-        this.commandReaderFactory = commandReaderFactory;
+        this.storageEngineFactory = storageEngineFactory;
         return this;
     }
 
@@ -286,8 +286,9 @@ public class LogFilesBuilder
     {
         if ( logEntryReader == null )
         {
-            requireNonNull( commandReaderFactory );
-            logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
+            logEntryReader = new VersionAwareLogEntryReader(
+                    storageEngineFactory == null && fileBasedOperationsOnly ? CommandReaderFactory.NO_COMMANDS
+                                                                            : storageEngineFactory().commandReaderFactory() );
         }
         if ( config == null )
         {
@@ -326,6 +327,15 @@ public class LogFilesBuilder
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier,
                 fileSystem, logProvider, databaseTracers, storeIdSupplier, nativeAccess, memoryTracker, monitors, config.get( fail_on_corrupted_log_files ),
                 health, kernelVersionRepository, clock, databaseLayout.getDatabaseName(), config );
+    }
+
+    private StorageEngineFactory storageEngineFactory()
+    {
+        if ( storageEngineFactory == null )
+        {
+            storageEngineFactory = StorageEngineFactory.selectStorageEngine( fileSystem, databaseLayout, pageCache ).orElseThrow();
+        }
+        return storageEngineFactory;
     }
 
     private Clock getClock()
@@ -553,21 +563,19 @@ public class LogFilesBuilder
 
     private TransactionIdStore readOnlyTransactionIdStore() throws IOException
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         var pageCacheTracer = databaseTracers.getPageCacheTracer();
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( READ_ONLY_TRANSACTION_STORE_READER_TAG ) ) )
         {
-            return storageEngineFactory.readOnlyTransactionIdStore( fileSystem, databaseLayout, pageCache, cursorContext );
+            return storageEngineFactory().readOnlyTransactionIdStore( fileSystem, databaseLayout, pageCache, cursorContext );
         }
     }
 
     private LogVersionRepository readOnlyLogVersionRepository() throws IOException
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         var pageCacheTracer = databaseTracers.getPageCacheTracer();
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( READ_ONLY_LOG_VERSION_READER_TAG ) ) )
         {
-            return storageEngineFactory.readOnlyLogVersionRepository( databaseLayout, pageCache, cursorContext );
+            return storageEngineFactory().readOnlyLogVersionRepository( databaseLayout, pageCache, cursorContext );
         }
     }
 
