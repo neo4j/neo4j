@@ -794,4 +794,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Enable per page file metrics collection in a default page cache and cursor tracer." )
     public static final Setting<Boolean> per_file_metrics_counters = newBuilder( "unsupported.dbms.page.file.tracer", BOOL, false ).build();
 
+    @Internal
+    @Description( "Enables legacy strategy for loading pages from a profile." +
+            " This strategy uses an aggressive per-file parallelism which turns what is mostly sequential IO into random IO." +
+            " As a result, in most environments, this strategy is slower and stresses the IO subsystem more than the default strategy." )
+    public static final Setting<Boolean> pagecache_warmup_legacy_profile_loader =
+            newBuilder( "unsupported.dbms.memory.pagecache.warmup.legacy_profile_loader", BOOL, false ).build();
+
 }
