@@ -27,9 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
@@ -738,6 +736,7 @@ public class ForsetiClient implements Locks.Client
 
     void copyWaitListTo( Set<ForsetiClient> other )
     {
+        other.add( this );
         other.addAll( waitList );
     }
 
@@ -911,7 +910,6 @@ public class ForsetiClient implements Locks.Client
     private void clearWaitList()
     {
         waitList.clear();
-        waitList.add( this );
     }
 
     private void waitFor( ForsetiLockManager.Lock lock, ResourceType type, long resourceId, int tries )
