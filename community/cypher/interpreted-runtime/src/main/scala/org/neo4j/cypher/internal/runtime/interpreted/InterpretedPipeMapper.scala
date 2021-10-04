@@ -133,6 +133,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
@@ -263,6 +264,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.TestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
@@ -887,6 +889,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case TransactionForeach(_, _, batchSize) =>
         TransactionForeachPipe(lhs, rhs, buildExpression(batchSize))(id = id)
+
+      case TransactionApply(_, _, batchSize) =>
+        TransactionApplyPipe(lhs, rhs, buildExpression(batchSize))(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")
