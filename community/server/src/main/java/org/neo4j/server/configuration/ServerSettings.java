@@ -197,7 +197,12 @@ public class ServerSettings implements SettingsDeclaration
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
     public static final Setting<String> browser_remote_content_hostname_whitelist =
-            newBuilder( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost").build();
+            newBuilder( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost" ).build();
+
+    @SuppressWarnings( "unused" ) // accessed from browser and other graph apps
+    @Description( "Configure client applications such as Browser and Bloom to send Product Analytics data." )
+    public static final Setting<Boolean> allow_telemetry =
+            newBuilder( "clients.allow_telemetry", BOOL, true ).build();
 
     @Internal
     @Description( "The legacy data endpoint. This is kept for back-compatibility purpose." )
