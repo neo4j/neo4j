@@ -519,12 +519,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should only create two nodes and one relationships if create if followed by loop with continuation") {
     // given an empty data base
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .nonFuseable()
-      .unwind(s"range(1, $sizeHint) AS r")
+      .unwind(s"range(1, $size) AS r")
       .create(Seq(createNode("n"), createNode("m")), Seq(createRelationship("rel", "n", "R", "m")))
       .argument()
       .build(readOnly = false)
@@ -533,12 +535,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("r")
-      .withRows(singleColumn(1 to sizeHint))
+      .withRows(singleColumn(1 to size))
       .withStatistics(nodesCreated = 2, relationshipsCreated = 1)
   }
 
   test("should not create too many nodes if creates is between two loops with continuation") {
     // given an empty data base
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -546,7 +550,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
       .create(createNode("n", "A", "B", "C"))
-      .unwind(s"range(1, $sizeHint) AS r1")
+      .unwind(s"range(1, $size) AS r1")
       .argument()
       .build(readOnly = false)
 
@@ -555,10 +559,10 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     val nodes = tx.getAllNodes.asScala
     runtimeResult should beColumns("r1")
-      .withRows(singleColumn((1 to sizeHint).flatMap(i => Seq.fill(10)(i))))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      .withRows(singleColumn((1 to size).flatMap(i => Seq.fill(10)(i))))
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
     nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
-    nodes should have size sizeHint
+    nodes should have size size
   }
 
   test("should not create too many nodes if creates is between two loops with continuation 2") {
@@ -587,6 +591,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should not create too many nodes if creates is between two loops with continuation 3") {
     // given an empty data base
+    val size = 100
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -598,14 +603,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, inputValues((1 to sizeHint).map(i => Array[Any](i)):_*))
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, inputValues((1 to size).map(i => Array[Any](i)):_*))
     consume(runtimeResult)
     val nodes = tx.getAllNodes.asScala
     runtimeResult should beColumns("r1").
-      withRows(singleColumn((1 to sizeHint).flatMap(i => Seq.fill(10)(i))))
-      .withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      withRows(singleColumn((1 to size).flatMap(i => Seq.fill(10)(i))))
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
     nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
-    nodes should have size sizeHint
+    nodes should have size size
   }
 
   test("should not create too many nodes if creates is between two loops with continuation 4") {
@@ -790,7 +795,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
       .create(createNode("o", "A", "B", "C"))
-      .nodeIndexOperator("n:L(prop IN ???)", paramExpr = Some(listOf((0 until sizeHint).map(i => literalInt(i)):_*)))
+      .nodeIndexOperator("n:L(prop IN ???)", paramExpr = Some(listOf((0 until size).map(i => literalInt(i)):_*)))
       .build(readOnly = false)
 
     // then
@@ -833,7 +838,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val size = 100
     val (startNode, endNode) = given {
       val Seq(start, end) = nodeGraph(2)
-      //NOTE: using sizeHint here can make the tx state unnecessarily big
       (1 to size).foreach(_ => start.createRelationshipTo(end, RelationshipType.withName("R")))
       (start, end)
     }
@@ -881,6 +885,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle create after antiConditionalApply followed by loop with continuation") {
     // given an empty data base
+    val size = 100
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r1")
@@ -889,7 +894,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .create(createNode("n"))
       .antiConditionalApply("r1")
       .|.argument()
-      .unwind(s"range(1, $sizeHint) AS r1")
+      .unwind(s"range(1, $size) AS r1")
       .argument()
       .build(readOnly = false)
 
@@ -897,8 +902,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("r1")
-      .withRows(singleColumn((1 to sizeHint).flatMap(i => Seq.fill(10)(i))))
-      .withStatistics(nodesCreated = sizeHint)
+      .withRows(singleColumn((1 to size).flatMap(i => Seq.fill(10)(i))))
+      .withStatistics(nodesCreated = size)
   }
 
   test("should handle create after union followed by loop with continuation") {
@@ -926,6 +931,9 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle create after union followed by loop with continuation2") {
     // given an empty data base
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
+
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -933,9 +941,9 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .unwind(s"range(1, 10) AS r2")
       .create(createNode("n"))
       .union()
-      .|.unwind(s"range(1, $sizeHint) AS x")
+      .|.unwind(s"range(1, $size) AS x")
       .|.argument()
-      .unwind(s"range(1, $sizeHint) AS x")
+      .unwind(s"range(1, $size) AS x")
       .argument()
       .build(readOnly = false)
 
@@ -943,8 +951,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("x")
-      .withRows(singleColumn((1 to sizeHint).flatMap(i => Seq.fill(20)(i))))
-      .withStatistics(nodesCreated = 2 * sizeHint)
+      .withRows(singleColumn((1 to size).flatMap(i => Seq.fill(20)(i))))
+      .withStatistics(nodesCreated = 2 * size)
   }
 }
 
