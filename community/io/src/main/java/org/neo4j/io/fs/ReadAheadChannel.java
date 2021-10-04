@@ -191,15 +191,15 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChecksu
 
     private void ensureDataExists( int requestedNumberOfBytes ) throws IOException
     {
-        if ( !channel.isOpen() )
-        {
-            throw new ClosedChannelException();
-        }
-
         int remaining = aheadBuffer.remaining();
         if ( remaining >= requestedNumberOfBytes )
         {
             return;
+        }
+
+        if ( !channel.isOpen() )
+        {
+            throw new ClosedChannelException();
         }
 
         // Update checksum with consumed bytes
