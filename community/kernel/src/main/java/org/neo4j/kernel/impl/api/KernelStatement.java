@@ -217,7 +217,12 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         return format( "Statements were not correctly closed. Number of leaked statements: %d.%s", leakedStatements, additionalInstruction );
     }
 
-    final String username()
+    final String authenticatedUser()
+    {
+        return transaction.securityContext().subject().authenticatedUser();
+    }
+
+    final String executingUser()
     {
         return transaction.securityContext().subject().executingUser();
     }

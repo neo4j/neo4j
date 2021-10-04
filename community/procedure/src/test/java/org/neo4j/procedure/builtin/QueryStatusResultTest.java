@@ -45,7 +45,7 @@ class QueryStatusResultTest
     void testQueryWithoutTransaction()
     {
         var queryFactory = new ExecutingQueryFactory( Clocks.nanoClock(), cpuClockRef, Config.defaults() );
-        ExecutingQuery query = queryFactory.createUnbound( "test1", MapValue.EMPTY, mock( ClientConnectionInfo.class ), "user", Map.of() );
+        ExecutingQuery query = queryFactory.createUnbound( "test1", MapValue.EMPTY, mock( ClientConnectionInfo.class ), "user", "user", Map.of() );
         assertDoesNotThrow( () -> new QueryStatusResult( query, mock( TransactionalEntityFactory.class ), ZoneId.systemDefault(), "database" ) );
     }
 }

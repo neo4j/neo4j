@@ -165,8 +165,8 @@ public class SecurityLogHelper
                    Objects.equals( expected.expectedSource, map.get( "source" ) ) &&
                    Objects.equals( expected.expectedDatabase, map.get( "database" ) ) &&
                    Objects.equals( expected.expectedExecutingUser, map.get( "username" ) ) &&
-                   Objects.equals( expected.expectedExecutingUser, map.get( "executing_user" ) ) &&
-                   Objects.equals( expected.expectedAuthenticatedUser, map.get( "authenticated_user" ) ) &&
+                   Objects.equals( expected.expectedExecutingUser, map.get( "executingUser" ) ) &&
+                   Objects.equals( expected.expectedAuthenticatedUser, map.get( "authenticatedUser" ) ) &&
                    Objects.equals( expected.expectedMessage, map.get( "message" ) );
         }
 
@@ -176,9 +176,9 @@ public class SecurityLogHelper
             assertEquals( expected.expectedLevel, map.get( "level" ), "'level' mismatch" );
             assertEquals( expected.expectedSource, map.get( "source" ), "'source' mismatch" );
             assertEquals( expected.expectedDatabase, map.get( "database" ), "'database' mismatch" );
-            assertEquals( expected.expectedExecutingUser, map.get( "username" ), "'user' mismatch" );
-            assertEquals( expected.expectedExecutingUser, map.get( "executing_user" ), "'user' mismatch" );
-            assertEquals( expected.expectedAuthenticatedUser, map.get( "authenticated_user" ), "'user' mismatch" );
+            assertEquals( expected.expectedExecutingUser, map.get( "username" ), "'username' mismatch" );
+            assertEquals( expected.expectedExecutingUser, map.get( "executingUser" ), "'executingUser' mismatch" );
+            assertEquals( expected.expectedAuthenticatedUser, map.get( "authenticatedUser" ), "'authenticatedUser' mismatch" );
             assertMessage( expected, map.get( "message" ) );
         }
     }
@@ -191,7 +191,7 @@ public class SecurityLogHelper
                 "^(?<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{4}) " +
                 "(?<level>\\w{4,5})\\s{1,2}" +
                 "((?<source>embedded-session\\t|bolt-session[^>]*>|server-session(?:\\t[^\\t]*){3})\\t)?" +
-                "(\\[(?<user>[^\\s]+)]: )?" +
+                "(\\[(?<authenticatedUser>[^\\s:]+)(:(?<executingUser>[^\\s:]+))?]: )?" +
                 "(?<message>.+?)" );
 
         private LoggerContentValidator( String[] contentLines )
@@ -235,7 +235,9 @@ public class SecurityLogHelper
             Matcher matcher = LOGGER_LINE_PARSER.matcher( contentLine );
             return matcher.matches() &&
                    Objects.equals( expected.expectedLevel, matcher.group( "level" ) ) &&
-                   (expected.expectedExecutingUser == null || Objects.equals( expected.expectedExecutingUser, matcher.group( "user" ) ) ) &&
+                   (expected.expectedAuthenticatedUser == null || Objects.equals( expected.expectedAuthenticatedUser, matcher.group( "authenticatedUser" ) )) &&
+                   (expected.expectedExecutingUser == null || expected.expectedExecutingUser.equals( expected.expectedAuthenticatedUser ) ||
+                    Objects.equals( expected.expectedExecutingUser, matcher.group( "executingUser" ) )) &&
                    Objects.equals( expected.expectedMessage, matcher.group( "message" ) );
         }
 
@@ -244,10 +246,17 @@ public class SecurityLogHelper
             Matcher matcher = LOGGER_LINE_PARSER.matcher( contentLine );
             assertTrue( matcher.matches() );
             assertEquals( expected.expectedLevel, matcher.group( "level" ), "'level' mismatch" );
-            if ( expected.expectedExecutingUser != null )
+
+            if ( expected.expectedAuthenticatedUser != null )
             {
-                assertEquals( expected.expectedExecutingUser, matcher.group( "user" ), "'user' mismatch" );
+                assertEquals( expected.expectedAuthenticatedUser, matcher.group( "authenticatedUser" ), "'authenticatedUser' mismatch" );
             }
+
+            if ( expected.expectedExecutingUser != null && !expected.expectedExecutingUser.equals( expected.expectedAuthenticatedUser ) )
+            {
+                assertEquals( expected.expectedExecutingUser, matcher.group( "executingUser" ), "'executingUser' mismatch" );
+            }
+
             assertMessage( expected, matcher.group( "message" ) );
         }
     }
@@ -303,6 +312,11 @@ public class SecurityLogHelper
         public LogLineContent executingUser( String username )
         {
             this.expectedExecutingUser = username;
+            return this;
+        }
+
+        public LogLineContent authenticatedUser( String username )
+        {
             this.expectedAuthenticatedUser = username;
             return this;
         }

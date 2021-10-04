@@ -444,7 +444,7 @@ public class BuiltInDbmsProcedures
         {
             for ( ExecutingQuery query : getActiveFabricQueries( tx ) )
             {
-                String username = query.username();
+                String username = query.executingUsername();
                 var action = new AdminActionOnResource( SHOW_TRANSACTION, ALL, new UserSegment( username ) );
                 if ( isSelfOrAllows( username, action ) )
                 {
@@ -483,7 +483,7 @@ public class BuiltInDbmsProcedures
         // Include both the executing query and any previous queries (parent queries of nested query) in the result.
         while ( query != null )
         {
-            String username = query.username();
+            String username = query.executingUsername();
             var action = new AdminActionOnResource( SHOW_TRANSACTION,
                                                     dbScope,
                                                     new UserSegment( username ) );
@@ -690,7 +690,7 @@ public class BuiltInDbmsProcedures
     {
         Optional<ExecutingQuery> query = handle.executingQuery();
         ExecutingQuery executingQuery = query.orElseThrow( () -> new IllegalStateException( "Query should exist since we filtered based on query ids" ) );
-        String username = executingQuery.username();
+        String username = executingQuery.executingUsername();
         var action = new AdminActionOnResource( TERMINATE_TRANSACTION, new DatabaseScope( databaseId.name() ), new UserSegment( username ) );
         if ( isSelfOrAllows( username, action ) )
         {
@@ -712,7 +712,7 @@ public class BuiltInDbmsProcedures
 
     private QueryTerminationResult killFabricQueryTransaction( QueryId queryId, FabricTransaction tx, ExecutingQuery query )
     {
-        String username = query.username();
+        String username = query.executingUsername();
         var action = new AdminActionOnResource( TERMINATE_TRANSACTION, ALL, new UserSegment( username ) );
         if ( isSelfOrAllows( username, action ) )
         {

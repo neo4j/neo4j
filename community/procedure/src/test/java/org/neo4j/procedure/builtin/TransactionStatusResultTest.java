@@ -223,10 +223,11 @@ class TransactionStatusResultTest
 
     private static ExecutingQuery createExecutingQuery( long queryId )
     {
-        return new ExecutingQuery( queryId, getTestConnectionInfo(), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), "testUser", "testQuery", EMPTY_MAP,
-                stringObjectEmptyMap(), () -> 1L, () -> 1, () -> 2,
-                Thread.currentThread().getId(), Thread.currentThread().getName(),
-                new CountingNanoClock(), new CountingCpuClock(), true );
+        return new ExecutingQuery( queryId, getTestConnectionInfo(), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), "testUser", "testUser", "testQuery",
+                                   EMPTY_MAP,
+                                   stringObjectEmptyMap(), () -> 1L, () -> 1, () -> 2,
+                                   Thread.currentThread().getId(), Thread.currentThread().getName(),
+                                   new CountingNanoClock(), new CountingCpuClock(), true );
     }
 
     private static HttpConnectionInfo getTestConnectionInfo()

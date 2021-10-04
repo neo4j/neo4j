@@ -110,9 +110,14 @@ public class QuerySnapshot
         return query.planDescriptionSupplier();
     }
 
-    public String username()
+    public String executingUsername()
     {
-        return query.username();
+        return query.executingUsername();
+    }
+
+    public String authenticatedUsername()
+    {
+        return query.authenticatedUsername();
     }
 
     public Optional<NamedDatabaseId> databaseId()

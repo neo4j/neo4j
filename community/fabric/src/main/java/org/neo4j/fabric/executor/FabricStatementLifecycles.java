@@ -80,6 +80,7 @@ public class FabricStatementLifecycles
                 statement, params,
                 transactionInfo.getClientConnectionInfo(),
                 transactionInfo.getLoginContext().subject().executingUser(),
+                transactionInfo.getLoginContext().subject().authenticatedUser(),
                 transactionInfo.getTxMetadata() );
 
         return new StatementLifecycle( executingQuery );

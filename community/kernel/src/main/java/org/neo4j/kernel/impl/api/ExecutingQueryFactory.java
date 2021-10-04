@@ -55,20 +55,23 @@ public class ExecutingQueryFactory
         ExecutingQuery executingQuery = createUnbound( queryText,
                                                        queryParameters,
                                                        transaction.clientInfo(),
-                                                       statement.username(),
+                                                       statement.executingUser(),
+                                                       statement.authenticatedUser(),
                                                        transaction.getMetaData() );
         bindToStatement( executingQuery, statement );
         return executingQuery;
     }
 
     public ExecutingQuery createUnbound( String queryText, MapValue queryParameters,
-                                         ClientConnectionInfo clientConnectionInfo, String username, Map<String,Object> transactionMetaData )
+                                         ClientConnectionInfo clientConnectionInfo, String executingUser, String authenticatedUser,
+                                         Map<String,Object> transactionMetaData )
     {
         Thread thread = Thread.currentThread();
         return new ExecutingQuery(
                 lastQueryId.incrementAndGet(),
                 clientConnectionInfo,
-                username,
+                executingUser,
+                authenticatedUser,
                 queryText,
                 queryParameters,
                 transactionMetaData,

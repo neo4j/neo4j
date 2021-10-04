@@ -139,7 +139,14 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
         {
             if ( executingUser != null && executingUser.length() > 0 )
             {
-                sb.append( "[" ).append( escape( executingUser ) ).append( "]: " );
+                if ( executingUser.equals( authenticatedUser ) )
+                {
+                    sb.append( "[" ).append( escape( executingUser ) ).append( "]: " );
+                }
+                else
+                {
+                    sb.append( String.format( "[%s:%s]: ", escape( authenticatedUser ), escape( executingUser ) ) );
+                }
             }
             sb.append( message );
         }
@@ -156,11 +163,11 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
             if ( executingUser != null && executingUser.length() > 0 )
             {
                 fieldConsumer.add( "username", executingUser );
-                fieldConsumer.add( "executing_user", executingUser );
+                fieldConsumer.add( "executingUser", executingUser );
             }
             if ( authenticatedUser != null && authenticatedUser.length() > 0 )
             {
-                fieldConsumer.add( "authenticated_user", authenticatedUser );
+                fieldConsumer.add( "authenticatedUser", authenticatedUser );
             }
             fieldConsumer.add( "message", message );
         }

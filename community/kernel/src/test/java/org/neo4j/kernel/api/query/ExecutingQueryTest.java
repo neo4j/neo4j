@@ -198,15 +198,16 @@ class ExecutingQueryTest
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
-                ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), "neo4j", "hello world",
-                EMPTY_MAP,
-                Collections.emptyMap(),
-                () -> lockCount, () -> 0, () -> 1,
-                Thread.currentThread().getId(),
-                Thread.currentThread().getName(),
-                clock,
-                FakeCpuClock.NOT_AVAILABLE,
-                true );
+                                                   ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), "neo4j", "neo4j",
+                                                   "hello world",
+                                                   EMPTY_MAP,
+                                                   Collections.emptyMap(),
+                                                   () -> lockCount, () -> 0, () -> 1,
+                                                   Thread.currentThread().getId(),
+                                                   Thread.currentThread().getName(),
+                                                   clock,
+                                                   FakeCpuClock.NOT_AVAILABLE,
+                                                   true );
 
         // when
         QuerySnapshot snapshot = query.snapshot();
@@ -222,7 +223,7 @@ class ExecutingQueryTest
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
                                                    ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
-                                        "neo4j", "hello world",
+                                                   "neo4j", "neo4j", "hello world",
                                                    EMPTY_MAP,
                                                    Collections.emptyMap(),
                                                    () -> lockCount,
@@ -247,7 +248,7 @@ class ExecutingQueryTest
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
                                                    ClientConnectionInfo.EMBEDDED_CONNECTION, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
-                                         "neo4j", "hello world",
+                                                   "neo4j", "neo4j", "hello world",
                                                    EMPTY_MAP,
                                                    Collections.emptyMap(),
                                                    () -> lockCount,
@@ -397,9 +398,9 @@ class ExecutingQueryTest
     private ExecutingQuery createExecutingQuery( int queryId, String hello_world, PageCursorCountersStub page,
             FakeClock clock, FakeCpuClock cpuClock, NamedDatabaseId dbID, MapValue params )
     {
-        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, dbID, "neo4j", hello_world,
-                params, Collections.emptyMap(), () -> lockCount, page::hits, page::faults, Thread.currentThread().getId(),
-                Thread.currentThread().getName(), clock, cpuClock, true );
+        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, dbID, "neo4j", "neo4j", hello_world,
+                                   params, Collections.emptyMap(), () -> lockCount, page::hits, page::faults, Thread.currentThread().getId(),
+                                   Thread.currentThread().getName(), clock, cpuClock, true );
     }
 
     private static class PageCursorCountersStub implements PageCursorCounters

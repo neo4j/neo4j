@@ -56,7 +56,8 @@ public class ExecutingQuery
             newUpdater( ExecutingQuery.class, "waitTimeNanos" );
     private final long queryId;
     private final LockTracer lockTracer = this::waitForLock;
-    private final String username;
+    private final String executingUsername;
+    private final String authenticatedUsername;
     private final ClientConnectionInfo clientConnection;
     private final String rawQueryText;
     private final MapValue rawQueryParameters;
@@ -109,7 +110,8 @@ public class ExecutingQuery
     private long outerTransactionId = -1L;
 
     public ExecutingQuery(
-            long queryId, ClientConnectionInfo clientConnection, String username, String queryText, MapValue queryParameters,
+            long queryId, ClientConnectionInfo clientConnection, String executingUsername, String authenticatedUsername, String queryText,
+            MapValue queryParameters,
             Map<String,Object> transactionAnnotationData,
             long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock, boolean trackQueryAllocations )
     {
@@ -120,7 +122,8 @@ public class ExecutingQuery
         // then continue with assigning fields
         this.queryId = queryId;
         this.clientConnection = clientConnection;
-        this.username = username;
+        this.executingUsername = executingUsername;
+        this.authenticatedUsername = authenticatedUsername;
         this.rawQueryText = queryText;
         this.rawQueryParameters = queryParameters;
         this.transactionAnnotationData = transactionAnnotationData;
@@ -133,14 +136,16 @@ public class ExecutingQuery
 
     // NOTE: test/benchmarking constructor
     public ExecutingQuery(
-            long queryId, ClientConnectionInfo clientConnection, NamedDatabaseId namedDatabaseId, String username, String queryText, MapValue queryParameters,
+            long queryId, ClientConnectionInfo clientConnection, NamedDatabaseId namedDatabaseId, String executingUsername, String authenticatedUsername,
+            String queryText, MapValue queryParameters,
             Map<String,Object> transactionAnnotationData, LongSupplier activeLockCount, LongSupplier hitsSupplier, LongSupplier faultsSupplier,
             long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock, boolean trackQueryAllocations )
     {
         this(
                 queryId,
                 clientConnection,
-                username,
+                executingUsername,
+                authenticatedUsername,
                 queryText,
                 queryParameters,
                 transactionAnnotationData,
@@ -394,9 +399,14 @@ public class ExecutingQuery
         return Long.toString( internalQueryId() );
     }
 
-    public String username()
+    public String executingUsername()
     {
-        return username;
+        return executingUsername;
+    }
+
+    public String authenticatedUsername()
+    {
+        return authenticatedUsername;
     }
 
     public String rawQueryText()

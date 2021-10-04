@@ -44,6 +44,7 @@ class ExecutingQueryFactoryTest
                 MapValue.EMPTY,
                 ClientConnectionInfo.EMBEDDED_CONNECTION,
                 "user",
+                "user",
                 Collections.emptyMap()
         );
 
