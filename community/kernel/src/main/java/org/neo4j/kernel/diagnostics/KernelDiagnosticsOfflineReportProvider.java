@@ -54,7 +54,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     {
         this.fs = fs;
         this.config = config;
-        this.databaseLayout = DatabaseLayout.ofFlat( storeDirectory );
+        this.databaseLayout = DatabaseLayout.ofFlat( storeDirectory.resolve( defaultDatabaseName ) );
     }
 
     @Override
