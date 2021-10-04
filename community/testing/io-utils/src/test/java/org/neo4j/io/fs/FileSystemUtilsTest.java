@@ -119,4 +119,13 @@ abstract class FileSystemUtilsTest
 
         assertThat( FileSystemUtils.size( fs, dir ) ).isEqualTo( 3L );
     }
+
+    @Test
+    void shouldReturnZeroIfFileDoesNotExist()
+    {
+        var dir = testDirectory.directory( "dir" );
+        var file = dir.resolve( "file" );
+        assertThat( FileSystemUtils.size( fs, file ) ).isZero();
+    }
+
 }

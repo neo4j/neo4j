@@ -73,27 +73,36 @@ public final class FileSystemUtils
 
     /**
      * Calculates the size of a given directory or file given the provided abstract filesystem.
+     * Returns zero if file does not exist.
      *
      * @param fs the filesystem abstraction to use.
      * @param file to the file or directory.
      * @return the size, in bytes, of the file or the total size of the content in the directory, including
      * subdirectories.
      */
-    public static long size( FileSystemAbstraction fs, Path file ) throws IOException
+    public static long size( FileSystemAbstraction fs, Path file )
     {
-        if ( fs.isDirectory( file ) )
+        try
         {
-            Path[] files = fs.listFiles( file );
-            long size = 0L;
-            for ( Path child : files )
+            if ( fs.isDirectory( file ) )
             {
-                size += size( fs, child );
+                Path[] files = fs.listFiles( file );
+                long size = 0L;
+                for ( Path child : files )
+                {
+                    size += size( fs, child );
+                }
+                return size;
             }
-            return size;
+            else
+            {
+                return fs.getFileSize( file );
+            }
         }
-        else
+        catch ( IOException e )
         {
-            return fs.getFileSize( file );
+            // usually it's file that was deleted while evaluating directory size
+            return 0;
         }
     }
 
