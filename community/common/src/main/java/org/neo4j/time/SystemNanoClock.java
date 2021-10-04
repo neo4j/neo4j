@@ -28,7 +28,7 @@ public class SystemNanoClock extends Clock
 {
     static final SystemNanoClock INSTANCE = new SystemNanoClock();
 
-    protected SystemNanoClock()
+    public SystemNanoClock()
     {
         // please use shared instance
     }
