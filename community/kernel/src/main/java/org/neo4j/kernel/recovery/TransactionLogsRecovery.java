@@ -57,11 +57,12 @@ public class TransactionLogsRecovery extends LifecycleAdapter
     private final boolean failOnCorruptedLogFiles;
     private final RecoveryStartupChecker recoveryStartupChecker;
     private final PageCacheTracer pageCacheTracer;
+    private final RecoveryPredicate recoveryPredicate;
     private int numberOfRecoveredTransactions;
 
-    public TransactionLogsRecovery( RecoveryService recoveryService, CorruptedLogsTruncator logsTruncator, Lifecycle schemaLife,
-            RecoveryMonitor monitor, ProgressReporter progressReporter, boolean failOnCorruptedLogFiles, RecoveryStartupChecker recoveryStartupChecker,
-            PageCacheTracer pageCacheTracer )
+    public TransactionLogsRecovery( RecoveryService recoveryService, CorruptedLogsTruncator logsTruncator, Lifecycle schemaLife, RecoveryMonitor monitor,
+            ProgressReporter progressReporter, boolean failOnCorruptedLogFiles, RecoveryStartupChecker recoveryStartupChecker,
+            RecoveryPredicate recoveryPredicate, PageCacheTracer pageCacheTracer )
     {
         this.recoveryService = recoveryService;
         this.monitor = monitor;
@@ -71,6 +72,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.recoveryStartupChecker = recoveryStartupChecker;
         this.pageCacheTracer = pageCacheTracer;
+        this.recoveryPredicate = recoveryPredicate;
     }
 
     @Override
@@ -126,7 +128,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 try ( var transactionsToRecover = recoveryService.getTransactions( recoveryStartPosition );
                         var recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, pageCacheTracer, RECOVERY_TAG ) )
                 {
-                    while ( transactionsToRecover.next() )
+                    while ( transactionsToRecover.next() && recoveryPredicate.test( transactionsToRecover.get() ) )
                     {
                         recoveryStartupChecker.checkIfCanceled();
                         lastTransaction = transactionsToRecover.get();

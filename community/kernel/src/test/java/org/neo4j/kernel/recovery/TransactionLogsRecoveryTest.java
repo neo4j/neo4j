@@ -269,7 +269,7 @@ class TransactionLogsRecoveryTest
                         }
                     };
                 }
-            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, NULL ) );
+            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, RecoveryPredicate.ALL, NULL ) );
 
             life.start();
 
@@ -335,7 +335,7 @@ class TransactionLogsRecoveryTest
             } );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
                                                                                txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ), false ),
-                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, NULL ) );
+                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, RecoveryPredicate.ALL, NULL ) );
 
             life.start();
 
@@ -508,7 +508,7 @@ class TransactionLogsRecoveryTest
         RecoveryMonitor monitor = mock( RecoveryMonitor.class );
 
         TransactionLogsRecovery logsRecovery = new TransactionLogsRecovery( recoveryService, logPruner, schemaLife, monitor, ProgressReporter.SILENT,
-                true, EMPTY_CHECKER, NULL );
+                true, EMPTY_CHECKER, RecoveryPredicate.ALL, NULL );
 
         logsRecovery.init();
 
@@ -583,7 +583,7 @@ class TransactionLogsRecoveryTest
             monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
                                                                                txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ), false ),
-                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker, NULL ) );
+                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker, RecoveryPredicate.ALL, NULL ) );
 
             life.start();
         }

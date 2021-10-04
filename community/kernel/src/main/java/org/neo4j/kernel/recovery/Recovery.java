@@ -89,6 +89,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.kernel.recovery.facade.DatabaseRecoveryFacade;
+import org.neo4j.kernel.recovery.facade.RecoveryCriteria;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -156,9 +158,10 @@ public final class Recovery
      * @param config custom configuration
      * @return helper recovery checker
      */
-    public static RecoveryFacade recoveryFacade( FileSystemAbstraction fs, PageCache pageCache, Tracers tracers, Config config, MemoryTracker memoryTracker )
+    public static DatabaseRecoveryFacade recoveryFacade( FileSystemAbstraction fs, PageCache pageCache, Tracers tracers, Config config,
+            MemoryTracker memoryTracker )
     {
-        return new RecoveryFacade( fs, pageCache, new DatabaseTracers( tracers ), config, memoryTracker );
+        return new DatabaseRecoveryFacade( fs, pageCache, new DatabaseTracers( tracers ), config, memoryTracker );
     }
 
     /**
@@ -182,7 +185,7 @@ public final class Recovery
     /**
      * Performs recovery of database described by provided layout.
      * Transaction logs should be located in their default location.
-     * If recovery is not required nothing will be done to the the database or logs.
+     * If recovery is not required - nothing will be done to the database or logs.
      * Note: used by external tools.
      * @param databaseLayout database to recover layout.
      * @param tracers underlying events tracers.
@@ -248,6 +251,26 @@ public final class Recovery
      *
      * @param fs database filesystem
      * @param pageCache page cache used to perform database recovery.
+     * @param config custom configuration
+     * @param databaseLayout database to recover layout.
+     * @param recoveryCriteria predicate for transactions that recovery should recover. We always replay everything, but can do early termination
+     * based on predicate for point in time recovery
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
+     */
+    public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
+            Config config, DatabaseLayout databaseLayout, MemoryTracker memoryTracker, RecoveryCriteria recoveryCriteria ) throws IOException
+    {
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine( fs, databaseLayout, pageCache, config ), false,
+                memoryTracker, recoveryCriteria );
+    }
+
+    /**
+     * Performs recovery of database described by provided layout.
+     * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
+     * If recovery is not required - nothing will be done to the database or logs.
+     *
+     * @param fs database filesystem
+     * @param pageCache page cache used to perform database recovery.
      * @param tracers underlying operations tracer
      * @param config custom configuration
      * @param databaseLayout database to recover layout.
@@ -260,8 +283,34 @@ public final class Recovery
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, DatabaseLayout databaseLayout,
             StorageEngineFactory storageEngineFactory, boolean forceRunRecovery, MemoryTracker memoryTracker ) throws IOException
     {
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, forceRunRecovery, memoryTracker,
-                NullLogProvider.getInstance() );
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, forceRunRecovery, memoryTracker, NullLogProvider.getInstance(),
+                RecoveryPredicate.ALL );
+    }
+
+    /**
+     * Performs recovery of database described by provided layout.
+     * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
+     * If recovery is not required - nothing will be done to the database or logs.
+     *
+     * @param fs database filesystem
+     * @param pageCache page cache used to perform database recovery.
+     * @param tracers underlying operations tracer
+     * @param config custom configuration
+     * @param databaseLayout database to recover layout.
+     * @param storageEngineFactory storage engine factory
+     * @param forceRunRecovery to force recovery to run even if the usual checks indicates that it's not required.
+     * In specific cases, like after store copy there's always a need for doing a recovery or at least to start the db, checkpoint and shut down,
+     * even if the normal "is recovery required" checks says that recovery isn't required.
+     * @param recoveryCriteria predicate for transactions that recovery should recover. We always replay everything, but can do early termination
+     * based on predicate for point in time recovery
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
+     */
+    public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, DatabaseLayout databaseLayout,
+            StorageEngineFactory storageEngineFactory, boolean forceRunRecovery, MemoryTracker memoryTracker, RecoveryCriteria recoveryCriteria )
+            throws IOException
+    {
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, forceRunRecovery, memoryTracker, NullLogProvider.getInstance(),
+                recoveryCriteria.toPredicate() );
     }
 
     /**
@@ -275,19 +324,21 @@ public final class Recovery
      * @param databaseLayout database to recover layout.
      * @param memoryTracker memory tracker for recovery to track consumed memory
      * @param logProvider log provider for recovery loggers
+     * @param recoveryPredicate predicate for transactions that recovery should recover. We always replay everything, but can do early termination
+     * based on predicate for point in time recovery
      * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
-    public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
-            Config config, DatabaseLayout databaseLayout, MemoryTracker memoryTracker, LogProvider logProvider ) throws IOException
+    public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, DatabaseLayout databaseLayout,
+            MemoryTracker memoryTracker, LogProvider logProvider, RecoveryPredicate recoveryPredicate ) throws IOException
     {
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine( fs, databaseLayout, pageCache, config ), false, memoryTracker,
-                logProvider );
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine( fs, databaseLayout, pageCache, config ), false,
+                memoryTracker, logProvider, recoveryPredicate );
     }
 
     /**
      * Performs recovery of database described by provided layout.
      * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
-     * If recovery is not required nothing will be done to the the database or logs.
+     * If recovery is not required - nothing will be done to the database or logs.
      *
      * @param fs database filesystem
      * @param pageCache page cache used to perform database recovery.
@@ -299,11 +350,13 @@ public final class Recovery
      * In specific cases, like after store copy there's always a need for doing a recovery or at least to start the db, checkpoint and shut down,
      * even if the normal "is recovery required" checks says that recovery isn't required.
      * @param logProvider log provider used for recovery loggers
+     * @param recoveryPredicate predicate for transactions that recovery should recover. We always replay everything, but can do early termination
+     * based on predicate for point in time recovery
      * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config,
             DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery, MemoryTracker memoryTracker,
-            LogProvider logProvider ) throws IOException
+            LogProvider logProvider, RecoveryPredicate recoveryPredicate ) throws IOException
     {
         requireNonNull( fs );
         requireNonNull( pageCache );
@@ -313,7 +366,7 @@ public final class Recovery
         //remove any custom logical logs location
         Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
         performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, StorageEngineFactory.defaultStorageEngine(), forceRunRecovery,
-                logProvider, new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock() );
+                logProvider, new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock(), recoveryPredicate );
     }
 
     /**
@@ -332,13 +385,15 @@ public final class Recovery
      * @param forceRunRecovery to force recovery to run even if the usual checks indicates that it's not required.
      * In specific cases, like after store copy there's always a need for doing a recovery or at least to start the db, checkpoint and shut down,
      * even if the normal "is recovery required" checks says that recovery isn't required.
+     * @param recoveryPredicate predicate for transactions that recovery should recover. We always replay everything, but can do early termination
+     * based on predicate for point in time recovery
      * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
             Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery,
             LogProvider logProvider, Monitors globalMonitors,
             Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogFiles> providedLogFiles,
-            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock ) throws IOException
+            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock, RecoveryPredicate recoveryPredicate ) throws IOException
     {
         Log recoveryLog = logProvider.getLog( Recovery.class );
         if ( !forceRunRecovery && !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogFiles, memoryTracker ) )
@@ -429,7 +484,7 @@ public final class Recovery
                 transactionLogRecovery( fs, metadataProvider, monitors.newMonitor( RecoveryMonitor.class ),
                                         monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine,
                                         transactionStore, metadataProvider, schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog,
-                                        startupChecker, tracers.getPageCacheTracer(), memoryTracker, doParallelRecovery );
+                                        startupChecker, tracers.getPageCacheTracer(), memoryTracker, doParallelRecovery, recoveryPredicate );
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
@@ -495,7 +550,7 @@ public final class Recovery
             RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
             Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log, RecoveryStartupChecker startupChecker,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, boolean doParallelRecovery )
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, boolean doParallelRecovery, RecoveryPredicate recoveryPredicate )
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, transactionIdStore, logicalTransactionStore,
                                                                       logVersionRepository, logFiles, positionMonitor, log, doParallelRecovery );
@@ -503,7 +558,7 @@ public final class Recovery
                 new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker );
         ProgressReporter progressReporter = new LogProgressReporter( log );
         return new TransactionLogsRecovery( recoveryService, logsTruncator, schemaLife, recoveryMonitor, progressReporter, failOnCorruptedLogFiles,
-                startupChecker, pageCacheTracer );
+                startupChecker, recoveryPredicate, pageCacheTracer );
     }
 
     private static Iterable<ExtensionFactory<?>> loadExtensions()

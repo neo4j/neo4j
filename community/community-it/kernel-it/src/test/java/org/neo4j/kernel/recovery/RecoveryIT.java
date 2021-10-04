@@ -1022,7 +1022,8 @@ class RecoveryIT
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
         Recovery.performRecovery( fileSystem, pageCache, EMPTY, Config.defaults(), layout, defaultStorageEngine(), true, NullLogProvider.getInstance(),
-                monitors, Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), null, INSTANCE, Clock.systemUTC() );
+                monitors, Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), null, INSTANCE, Clock.systemUTC(),
+                RecoveryPredicate.ALL );
 
         // then
         assertFalse( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE ) );

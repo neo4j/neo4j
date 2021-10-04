@@ -73,7 +73,7 @@ class RecoveryProgressIndicatorTest
 
         AssertableProgressReporter progressReporter = new AssertableProgressReporter( expectedMax );
         TransactionLogsRecovery recovery = new TransactionLogsRecovery( recoveryService, logsTruncator, new LifecycleAdapter(), recoveryMonitor,
-                progressReporter, true, EMPTY_CHECKER, PageCacheTracer.NULL );
+                progressReporter, true, EMPTY_CHECKER, RecoveryPredicate.ALL, PageCacheTracer.NULL );
         recovery.init();
 
         progressReporter.verify();

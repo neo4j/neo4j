@@ -21,10 +21,10 @@ package org.neo4j.kernel.builtinprocs;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.annotations.Public;
 import org.neo4j.capabilities.CapabilitiesRegistry;
 import org.neo4j.capabilities.CapabilitiesSettings;
 import org.neo4j.capabilities.Capability;
@@ -32,14 +32,12 @@ import org.neo4j.capabilities.CapabilityDeclaration;
 import org.neo4j.capabilities.CapabilityProvider;
 import org.neo4j.capabilities.CapabilityProviderContext;
 import org.neo4j.capabilities.DBMSCapabilities;
-import org.neo4j.annotations.Public;
 import org.neo4j.capabilities.Name;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -51,7 +49,6 @@ import org.neo4j.values.storable.Values;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

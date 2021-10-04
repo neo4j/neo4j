@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.recovery;
+package org.neo4j.kernel.recovery.facade;
 
 import java.io.IOException;
 
@@ -29,8 +29,9 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
+import static org.neo4j.kernel.recovery.facade.RecoveryFacadeMonitor.EMPTY_MONITOR;
 
-public class RecoveryFacade
+public class DatabaseRecoveryFacade implements RecoveryFacade
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
@@ -38,7 +39,7 @@ public class RecoveryFacade
     private final Config config;
     private final MemoryTracker memoryTracker;
 
-    RecoveryFacade( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, MemoryTracker memoryTracker )
+    public DatabaseRecoveryFacade( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, MemoryTracker memoryTracker )
     {
         this.fs = fs;
         this.pageCache = pageCache;
@@ -47,8 +48,23 @@ public class RecoveryFacade
         this.memoryTracker = memoryTracker;
     }
 
+    @Override
     public void recovery( DatabaseLayout databaseLayout ) throws IOException
     {
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, memoryTracker );
+        recovery( databaseLayout, EMPTY_MONITOR );
+    }
+
+    @Override
+    public void recovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException
+    {
+        recovery( databaseLayout, RecoveryCriteria.ALL, monitor );
+    }
+
+    @Override
+    public void recovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException
+    {
+        monitor.recoveryStarted();
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, memoryTracker, recoveryCriteria );
+        monitor.recoveryCompleted();
     }
 }
