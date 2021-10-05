@@ -267,9 +267,19 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         try
         {
+            //This is a mess really..
+            //Since different values can have different signs (as allowed by Cypher & embedded)
+            //We need to check all combinations of values for overflow
+
+            //Nanos are normalized to [0, NANOS_PER_SEC-1] so first we check that seconds don't overflow
+            long secondsWithNanos = secondsWithNanos( seconds, nanos );
+            if ( nanos < 0 )
+            {
+                secondsWithNanos = Math.subtractExact( secondsWithNanos, 1 );
+            }
+            //Then we check that the days+months+seconds dont overflow, with and without the nanos included
             calcAverageLengthInSeconds( months, days, seconds );
-            //noinspection ResultOfMethodCallIgnored
-            secondsWithNanos( seconds, nanos );
+            calcAverageLengthInSeconds( months, days, secondsWithNanos );
         }
         catch ( java.lang.ArithmeticException | org.neo4j.exceptions.ArithmeticException e )
         {
