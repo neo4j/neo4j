@@ -522,6 +522,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.index_searcher_cache_size", INT, Integer.MAX_VALUE ).addConstraint( min( 1 ) ).build();
 
     // Lucene schema indexes
+    @Deprecated( since = "4.4.0", forRemoval = true )
     public enum SchemaIndex
     {
         NATIVE_BTREE10( "native-btree", "1.0", false ),
@@ -582,7 +583,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     "A native index has some limitations around key size and slower execution of CONTAINS and ENDS WITH string index queries, " +
                     "compared to a Lucene index.\n" +
                     "Deprecated: Which index provider to use will be a fully internal concern." )
-    @Deprecated
+    @Deprecated( since = "4.0.0", forRemoval = true )
     public static final Setting<String> default_schema_provider =
             newBuilder( "dbms.index.default_schema_provider", STRING, SchemaIndex.NATIVE_BTREE10.toString() ).build();
 
